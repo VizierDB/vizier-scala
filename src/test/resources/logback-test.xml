@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
+  <!--+++++++++++++++++++++++  Dummy Commands  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.test.DummyPrint$"         level="DEBUG" />
+  <logger name="info.vizierdb.test.DummyConsume$"       level="DEBUG" />
+
+  <!--+++++++++++++++++++++++    Viztrails     +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.viztrails.Scheduler$"     level="TRACE" />
+  <logger name="info.vizierdb.viztrails.Provenance$"    level="TRACE" />
+
+  
+  <root level="ERROR">
+    <appender-ref ref="STDOUT" />
+  </root>
+ 
+</configuration>

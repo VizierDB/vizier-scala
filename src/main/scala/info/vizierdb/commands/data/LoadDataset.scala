@@ -1,0 +1,35 @@
+package info.vizierdb.commands.data
+
+import play.api.libs.json.JsValue
+import info.vizierdb.commands._
+
+object LoadDataset extends Command
+{
+  def name: String = "Load Dataset"
+  def parameters = Seq[Parameter](
+    FileParameter(name = "Source File", id = "file"),
+    StringParameter(name = "Dataset Name", id = "name"),
+    EnumerableParameter(name = "Load Format", id = "loadFormat", values = EnumerableValue.withNames(
+      "CSV"          -> "csv",
+      "JSON"         -> "json",
+      "PDF"          -> "mimir.exec.spark.datasource.pdf",
+      "Google Sheet" -> "mimir.exec.spark.datasource.google.spreadsheet",
+      "XML"          -> "com.databricks.spark.xml",
+      "Excel"        -> "com.crealytics.spark.excel",
+      "JDBC Source"  -> "jdbc",
+      "Text"         -> "text",
+      "Parquet"      -> "parquet",
+      "ORC"          -> "orc",
+    ), default = Some(0)),
+    BooleanParameter(name = "Guess Types", id = "loadInferTypes", default = Some(false)),
+    BooleanParameter(name = "File Has Headers", id = "loadDetectHeaders", default = Some(false)),
+    BooleanParameter(name = "Annotate Load Errors", id = "loadDataSourceErrors", default = Some(false)),
+    ListParameter(name = "Load Options", id = "loadOptions", required = false, components = Seq(
+      StringParameter(name = "Option Key", id  = "loadOptionKey"),
+      StringParameter(name = "Option Value", id  = "loadOptionValue"),
+    ))
+  )
+  def format(arguments: Arguments): String = 
+    s"LOAD DATASET ${arguments.pretty("name")} AS ${arguments.pretty("loadFormat")} FROM ${arguments.pretty("file")}"
+  def process(arguments: Arguments, context: ExecutionContext): Unit = ???
+}
