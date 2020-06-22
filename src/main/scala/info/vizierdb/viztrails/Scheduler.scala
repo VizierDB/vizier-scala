@@ -6,6 +6,7 @@ import org.squeryl.PrimitiveTypeMode._
 import info.vizierdb.Types._
 import info.vizierdb.commands._
 import com.typesafe.scalalogging.LazyLogging
+import org.squeryl.dsl.GroupWithMeasures
 
 object Scheduler
   extends LazyLogging
@@ -100,4 +101,21 @@ object Scheduler
       curr = nextStaleCellForWorkflow(workflowId)
     }
   }
+
+  def allPendingWork: Seq[Cell] =
+  {
+    inTransaction {
+      from(Viztrails.cells) { c => 
+        where(c.state === ExecutionState.STALE)
+          .groupBy(c.workflowId)
+          .compute( max(c.position) )
+
+      }.flatMap { c:GroupWithMeasures[Identifier, Option[Int]] => 
+        c.measures.map { position =>
+          Viztrails.cells.lookup(compositeKey(c.key, position)).get
+        }
+      }.toSeq
+    }
+  }
+
 }
