@@ -13,7 +13,7 @@ object SharedTestResources
     synchronized { 
       if(!sharedSetupComplete) {
         Vizier.initSQLite("target/Test.db")
-        transaction { 
+        Vizier.catalogTransaction { 
           // Try to drop the table before to clean up.  
           // ignore errors... just means there's no tables yet
           // (better than doing it after, since this deals with crashes and allows us to

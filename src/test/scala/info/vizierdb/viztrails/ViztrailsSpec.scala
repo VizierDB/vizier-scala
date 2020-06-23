@@ -7,6 +7,7 @@ import org.squeryl.PrimitiveTypeMode._
 import play.api.libs.json.{ Json, JsString }
 
 import info.vizierdb.Vizier
+import info.vizierdb.Vizier.catalogTransaction
 import info.vizierdb.test.SharedTestResources
 
 class ViztrailsSpec
@@ -19,7 +20,7 @@ class ViztrailsSpec
     val id = transaction {
       Project("Test Project").id
     }
-    transaction {
+    catalogTransaction {
       val project = Viztrails.projects.lookup(id).getOrElse { 
                       ko("newly created project doesn't exist"); null
                     }

@@ -42,6 +42,7 @@ object Provenance
     Viztrails.cells.update(
       cell.successors
           .map { curr => 
+            logger.trace(s"Updating execution state for $curr")
             curr.state match {
               case ExecutionState.STALE => {
                 hitFirstStaleCell = true
@@ -50,11 +51,11 @@ object Provenance
                 if(checkForConflicts(curr, scope)){ 
                   // There is a conflict.  The cell now officially needs to be re-executed.
                   hitFirstStaleCell = true
-                  cell.state = ExecutionState.STALE
+                  curr.state = ExecutionState.STALE
                 } else if(!hitFirstStaleCell) {
                   // There is no conflict, and we haven't hit the first stale cell yet.  
                   // Can safely re-use the prior cell execution results
-                  cell.state = ExecutionState.DONE
+                  curr.state = ExecutionState.DONE
                 }
               }
 

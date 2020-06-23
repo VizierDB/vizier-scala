@@ -1,5 +1,5 @@
 
-- [ ] Set up a simple, naive background worker (pools?)
+- [x] Set up a simple, naive background worker (Java's ForkJoinPool.)
 - [ ] Link to Mimir-API
     - [ ] "Load Dataset" (load)
     - [ ] "Empty Dataset" (empty)

@@ -25,6 +25,11 @@ class ExecutionContext(
     outputs.put(name, artifact)
   }
 
+  def error(message: String)
+  {
+    errorMessage = Some(message)
+  }
+
   def logEntry(content: String, mime: String = "text/plain")
   {
     logEntry(content.getBytes(), mime)
@@ -38,4 +43,6 @@ class ExecutionContext(
     {
       s"SCOPE: { ${scope.map { case (ds, id) => ds+" -> "+id }.mkString(", ")} }"
     }
+
+  def isError = errorMessage.isDefined
 }
