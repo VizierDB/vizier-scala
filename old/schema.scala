@@ -255,17 +255,6 @@ class Branch(
 
 }
 
-object ActionType extends Enumeration
-{
-  type T = Value
-
-  val CREATE,
-      APPEND,
-      DELETE,
-      INSERT,
-      UPDATE = Value
-}
-
 /**
  * One version of a workflow.  
  *

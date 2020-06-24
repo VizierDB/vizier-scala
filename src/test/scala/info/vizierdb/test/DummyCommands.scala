@@ -1,11 +1,10 @@
 package info.vizierdb.test
 
-import org.squeryl.PrimitiveTypeMode._
 import play.api.libs.json._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.commands._
-import info.vizierdb.viztrails.{ ArtifactType, Artifact }
-import info.vizierdb.Vizier.catalogTransaction
+import info.vizierdb.catalog.Artifact
+import info.vizierdb.types.ArtifactType
 
 
 object DummyCommands 
@@ -49,12 +48,10 @@ object DummyCreate extends Command with LazyLogging
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val dataset = arguments.get[String]("dataset")
-    catalogTransaction {
-      val artifact = Artifact.make(ArtifactType.BLOB, arguments.get[String]("content").getBytes())
-      context.output(dataset, artifact)
-      logger.debug(s"Creating: $dataset -> ${artifact.id}")
-      context.logEntry(s"Created artifact $dataset -> ${artifact.id} ")
-    }
+    val artifact = Artifact.make(ArtifactType.BLOB, arguments.get[String]("content").getBytes())
+    context.output(dataset, artifact)
+    logger.debug(s"Creating: $dataset -> ${artifact.id}")
+    context.logEntry(s"Created artifact $dataset -> ${artifact.id} ")
   }
 }
 
@@ -73,10 +70,8 @@ object DummyConsume extends Command with LazyLogging
     val datasets = arguments.get[Seq[Map[String, JsValue]]]("datasets")
                             .map { _("dataset").as[String] }
     logger.debug(s"Consuming Datasets ${datasets.mkString(", ")} with context $context")
-    catalogTransaction {
-      val results = 
-        datasets.map { context.artifact(_).get.string } 
-      context.logEntry(results.mkString)
-    }
+    val results = 
+      datasets.map { context.artifact(_).get.string } 
+    context.logEntry(results.mkString)
   }
 }

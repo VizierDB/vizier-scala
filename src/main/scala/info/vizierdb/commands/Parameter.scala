@@ -1,6 +1,7 @@
 package info.vizierdb.commands
 
 import play.api.libs.json._
+import info.vizierdb.VizierException
 
 sealed trait Parameter
 {
@@ -30,7 +31,7 @@ trait StringEncoder
   def encode(v: Any): JsValue = 
     v match {
       case x:String => JsString(x)
-      case _ => throw new Exception(s"Invalid Parameter to $name (expected String)")
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected String)")
     }
 }
 
@@ -42,7 +43,7 @@ trait IntegerEncoder
       case x:Int => JsNumber(x)
       case x:Integer => JsNumber(x:Int)
       case x:Long => JsNumber(x)
-      case _ => throw new Exception(s"Invalid Parameter to $name (expected Int/Long)")
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long)")
     }
 }
 
@@ -56,7 +57,7 @@ trait FloatEncoder
       case x:Long => JsNumber(x)
       case x:Float => JsNumber(x)
       case x:Double => JsNumber(x)
-      case _ => throw new Exception(s"Invalid Parameter to $name (expected Int/Long/Float/Double)")
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long/Float/Double)")
     }
 }
 
@@ -78,7 +79,7 @@ case class BooleanParameter(
   def encode(v: Any): JsValue = 
     v match {
       case x:Boolean => JsBoolean(x)
-      case _ => throw new Exception("Invalid Parameter to $name (expected Boolean)")
+      case _ => throw new VizierException("Invalid Parameter to $name (expected Boolean)")
     }
 }
 
@@ -217,10 +218,10 @@ case class ListParameter(
             elems.map { elem => Map(components.head.id -> components.head.encode(elem)) }
           )
         } else {
-          throw new Exception(s"Invalid Parameter to $name (expected Seq to contain Maps)")
+          throw new VizierException(s"Invalid Parameter to $name (expected Seq to contain Maps)")
         }
       }
-      case _ => throw new Exception(s"Invalid Parameter to $name (expected Seq)")
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Seq)")
     }
 }
 

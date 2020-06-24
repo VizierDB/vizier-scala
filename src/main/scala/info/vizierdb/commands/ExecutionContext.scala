@@ -1,14 +1,14 @@
 package info.vizierdb.commands
 
-import info.vizierdb.Types
-import info.vizierdb.viztrails.Viztrails
-import info.vizierdb.viztrails.Artifact
+import info.vizierdb.types._
+import info.vizierdb.Vizier
+import info.vizierdb.catalog.Artifact
 
 class ExecutionContext(
-  val scope: Map[String, Types.Identifier]
+  val scope: Map[String, Identifier]
 )
 {
-  val inputs = scala.collection.mutable.Map[String, Types.Identifier]()
+  val inputs = scala.collection.mutable.Map[String, Identifier]()
   val outputs = scala.collection.mutable.Map[String, Artifact]()
   val logEntries = scala.collection.mutable.Buffer[(Array[Byte], String)]()
   var errorMessage: Option[String] = None

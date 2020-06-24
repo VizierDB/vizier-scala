@@ -1,30 +1,22 @@
 package info.vizierdb
 
-import java.io.File
+import scalikejdbc._
 
-import org.squeryl.PrimitiveTypeMode._
-import org.squeryl.{ SessionFactory, Session } 
-import org.squeryl.adapters.SQLiteAdapter
-
-import info.vizierdb.viztrails.Viztrails
-import info.vizierdb.catalog.SharedConnectionSession
-import org.squeryl.AbstractSession
+import java.sql.DriverManager
+import info.vizierdb.types._
+import info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyDriver
 
 object Vizier
 {
-  var globalSession:Option[AbstractSession] = None
-  def catalogTransaction[A](op: => A) = 
-    globalSession match {
-      case Some(session) => synchronized { using(session)(op) } 
-      case None => org.squeryl.PrimitiveTypeMode.transaction[A] { op }
-    }
 
   def initSQLite(db: String) = 
   {
-    Class.forName("org.sqlite.JDBC")
-    globalSession = Some(Session.create(
-        java.sql.DriverManager.getConnection("jdbc:sqlite:" + db),
-        new SQLiteAdapter()
-    ))
+    DriverManager.registerDriver(SQLiteNoReadOnlyDriver)
+    ConnectionPool.singleton(
+      url = "no-read-only:jdbc:sqlite:" + db,
+      user = "",
+      password = ""
+    )
   }
+  
 }

@@ -3,8 +3,6 @@ package info.vizierdb.viztrails
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import org.specs2.specification.AfterAll
-import org.squeryl.PrimitiveTypeMode._
-import info.vizierdb.Vizier.catalogTransaction
 import play.api.libs.json._
 
 import info.vizierdb.Vizier
@@ -17,7 +15,7 @@ class SchedulerSpec
 {
   def beforeAll = SharedTestResources.init
 
-  lazy val project = Project("Executor Test")
+  lazy val project = Project.create("Executor Test")
 
   def append(packageId: String, commandId: String)(args: (String,Any)*): Workflow = 
   {

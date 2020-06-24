@@ -1,15 +1,14 @@
 package info.vizierdb.viztrails
 
 import play.api.libs.json.{ JsValue, JsObject }
-import org.squeryl.PrimitiveTypeMode._
-
+import scalikejdbc._
+import java.util.concurrent.{ ForkJoinTask, ForkJoinPool }
 import com.typesafe.scalalogging.LazyLogging
-import org.squeryl.dsl.GroupWithMeasures
-import java.util.concurrent.ForkJoinTask
-import java.util.concurrent.ForkJoinPool
-import info.vizierdb.Vizier.catalogTransaction
-import info.vizierdb.Types._
+
+import info.vizierdb.types._
 import info.vizierdb.commands._
+import info.vizierdb.catalog.binders._
+import info.vizierdb.catalog.{ Workflow, Cell, Result }
 
 object Scheduler
   extends LazyLogging
@@ -58,16 +57,19 @@ object Scheduler
    * Initialize the scheduler after a from-scratch startup, starting execution for all non-aborted
    * workflows with operations still pending.
    */
-  def init()
+  def init(implicit session: DBSession)
   {
     logger.debug("Initalizing Viztrails scheduler")
     this.synchronized {
-      from(Viztrails.workflows){ w => 
-        where( (w.aborted === false) and exists( from(w.cells) { c => 
-                  where(c.state === ExecutionState.STALE).select(1) } 
-              ))
-          .select(w)
-      }.foreach { schedule(_) }
+      sql"""
+        SELECT workflow.* 
+        FROM workflow,
+             (SELECT DISTINCT workflowid 
+              FROM cell WHERE state = ${ExecutionState.STALE.id}) stale_cells
+        WHERE workflow.id = stale_cells.workflowid
+        """
+        .map { Workflow(_) }.list.apply()
+        .foreach { schedule(_) }
     }
   }
 
@@ -111,19 +113,20 @@ object Scheduler
    * @argument  message   The error message
    * @return              The Result object for the cell
    */
-  private def errorResult(cell: Cell, message: String): Result = {
-    catalogTransaction {
-      val result = cell.finish(ExecutionState.ERROR)
-      val position = cell.position
-      val workflowId = cell.workflowId
-      result.addLogEntry(message.getBytes(), "text/plain")
-      update(Viztrails.cells) { c =>
-        where((c.workflowId === workflowId) and (c.position gt position))
-          .set(c.state := ExecutionState.ERROR,
-               c.resultId := None)
-      }
-      result
-    }
+  private def errorResult(cell: Cell, message: String)(implicit session: DBSession): Result = {
+    ???
+    // catalogTransaction {
+    //   val result = cell.finish(ExecutionState.ERROR)
+    //   val position = cell.position
+    //   val workflowId = cell.workflowId
+    //   result.addLogEntry(message.getBytes(), "text/plain")
+    //   update(Viztrails.cells) { c =>
+    //     where((c.workflowId === workflowId) and (c.position gt position))
+    //       .set(c.state := ExecutionState.ERROR,
+    //            c.resultId := None)
+    //   }
+    //   result
+    // }
   }
   /**
    * Register a execution result for the provided cell based on the provided execution context.
@@ -132,28 +135,29 @@ object Scheduler
    * @argument  cell      The cell to register an error for
    * @argument  message   The error message
    */
-  private def normalResult(cell: Cell, context: ExecutionContext): Result = 
+  private def normalResult(cell: Cell, context: ExecutionContext)(implicit session: DBSession): Result = 
   {
-    if(context.isError){ errorResult(cell, context.errorMessage.get) }
-    else {
-      catalogTransaction { 
-        val result = cell.finish(ExecutionState.DONE)
-        for((userFacingName, identifier) <- context.inputs) {
-          result.addInput( userFacingName, identifier )
-        }
-        for((userFacingName, artifact) <- context.outputs) {
-          result.addOutput( userFacingName, artifact.id )
-        }
-        for((data, mimeType) <- context.logEntries) {
-          result.addLogEntry( data, mimeType )
-        }
+    ???
+    // if(context.isError){ errorResult(cell, context.errorMessage.get) }
+    // else {
+    //   catalogTransaction { 
+    //     val result = cell.finish(ExecutionState.DONE)
+    //     for((userFacingName, identifier) <- context.inputs) {
+    //       result.addInput( userFacingName, identifier )
+    //     }
+    //     for((userFacingName, artifact) <- context.outputs) {
+    //       result.addOutput( userFacingName, artifact.id )
+    //     }
+    //     for((data, mimeType) <- context.logEntries) {
+    //       result.addLogEntry( data, mimeType )
+    //     }
 
-        Provenance.updateSuccessorState(cell, 
-          context.scope ++ context.outputs.mapValues { _.id }
-        )
-        result
-      }
-    }
+    //     Provenance.updateSuccessorState(cell, 
+    //       context.scope ++ context.outputs.mapValues { _.id }
+    //     )
+    //     result
+    //   }
+    // }
   }
 
   /**
@@ -164,38 +168,39 @@ object Scheduler
    */
   def processSynchronously(cell: Cell): Result =
   {
-    logger.trace(s"Processing $cell")
-    val (command, arguments, context) =
-      catalogTransaction {
-        val module = cell.module
-        val command = 
-          Commands.getOption(module.packageId, module.commandId)
-                  .getOrElse { return errorResult(cell, s"Command ${module.packageId}.${module.commandId} does not exist"); }
-        val scope = Provenance.getScope(cell)
-        val context = new ExecutionContext(scope)
-        val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
-        val argumentErrors = arguments.validate
-        if(!argumentErrors.isEmpty){
-          errorResult(cell, "Error in module arguments:\n"+argumentErrors.mkString("\n"))
-        }
-        val result = cell.start
+    ???
+    // logger.trace(s"Processing $cell")
+    // val (command, arguments, context) =
+    //   catalogTransaction {
+    //     val module = cell.module
+    //     val command = 
+    //       Commands.getOption(module.packageId, module.commandId)
+    //               .getOrElse { return errorResult(cell, s"Command ${module.packageId}.${module.commandId} does not exist"); }
+    //     val scope = Provenance.getScope(cell)
+    //     val context = new ExecutionContext(scope)
+    //     val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
+    //     val argumentErrors = arguments.validate
+    //     if(!argumentErrors.isEmpty){
+    //       errorResult(cell, "Error in module arguments:\n"+argumentErrors.mkString("\n"))
+    //     }
+    //     val result = cell.start
 
-        /* return */ (command, arguments, context)
-      }
+    //     /* return */ (command, arguments, context)
+    //   }
 
-    try {
-      command.process(arguments, context)
-    } catch {
-      case e:Exception => {
-        e.printStackTrace()
-        return errorResult(cell, s"An internal error occurred: ${e.getMessage()}")
-      }
-    }
-    if(context.errorMessage.isEmpty){ 
-      return normalResult(cell, context)
-    } else { 
-      return errorResult(cell, context.errorMessage.get)
-    }
+    // try {
+    //   command.process(arguments, context)
+    // } catch {
+    //   case e:Exception => {
+    //     e.printStackTrace()
+    //     return errorResult(cell, s"An internal error occurred: ${e.getMessage()}")
+    //   }
+    // }
+    // if(context.errorMessage.isEmpty){ 
+    //   return normalResult(cell, context)
+    // } else { 
+    //   return errorResult(cell, context.errorMessage.get)
+    // }
   }
 
   class WorkflowExecution(workflow: Workflow)
@@ -205,15 +210,25 @@ object Scheduler
 
     // Workflow caches dependent cells, so this should be able to avoid going to the DB entirely
     def nextTarget: Option[Cell] = 
-      catalogTransaction {
-        workflow.cells.filter { cell => /* println(cell); */ cell.state == ExecutionState.STALE }
-                      .toIterator
-                      .foldLeft(None:Option[Cell]) { 
-                        case (None, y) => Some(y)
-                        case (Some(x), y) if y.position < x.position => Some(y)
-                        case (Some(x), _) => Some(x)
-                      }
+      DB readOnly { implicit session =>
+        val c = Cell.syntax
+        withSQL {
+          select
+            .from(Cell as c)
+            .where.eq(c.state, ExecutionState.STALE)
+            .orderBy(c.position)
+            .limit(1)
+        }.map { Cell(_) }.single.apply()
       }
+      // catalogTransaction {
+      //   workflow.cells.filter { cell => /* println(cell); */ cell.state == ExecutionState.STALE }
+      //                 .toIterator
+      //                 .foldLeft(None:Option[Cell]) { 
+      //                   case (None, y) => Some(y)
+      //                   case (Some(x), y) if y.position < x.position => Some(y)
+      //                   case (Some(x), _) => Some(x)
+      //                 }
+      // }
 
     def exec(): Boolean = 
     {

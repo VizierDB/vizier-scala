@@ -7,6 +7,10 @@
     </encoder>
   </appender>
   
+
+  <!--+++++++++++++++++++++++  Catalog  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.catalog.Schema$"          level="TRACE" />
+
   <!--+++++++++++++++++++++++  Dummy Commands  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.test.DummyPrint$"         level="DEBUG" />
   <logger name="info.vizierdb.test.DummyConsume$"       level="DEBUG" />

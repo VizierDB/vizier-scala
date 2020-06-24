@@ -1,6 +1,7 @@
 package info.vizierdb.commands
 
 import play.api.libs.json.{ JsObject, JsValue }
+import info.vizierdb.VizierException
 
 trait Command
 {
@@ -21,7 +22,7 @@ trait Command
           arguments.get(parameter.id)
                    .map { _.toString() }
                    .getOrElse{ "<missing>" }
-        throw new RuntimeException(
+        throw new VizierException(
           s"Error in value '$argString' for ${parameter.name}:\n   ${errors.mkString("\n   ")}"
         )
       }

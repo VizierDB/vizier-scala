@@ -33,16 +33,20 @@ excludeDependencies ++= Seq(
 // Custom Dependencies
 libraryDependencies ++= Seq(
   // Mimir
-  "org.mimirdb"                   %% "mimir-caveats"             % "0.1",
-  "org.mimirdb"                   %% "mimir-api"                 % "0.1",
+  "org.mimirdb"                   %% "mimir-caveats"                    % "0.1",
+  "org.mimirdb"                   %% "mimir-api"                        % "0.1" excludeAll( ExclusionRule("org.xerial")),
 
   // Catalog management (trying this out... might be good to bring into mimir-api as well)
-  "org.squeryl"                   %% "squeryl"                   % "0.9.15",
+  // "org.squeryl"                   %% "squeryl"                   % "0.9.15",
+  "org.scalikejdbc"               %% "scalikejdbc"                      % "3.4.2",
+  "org.scalikejdbc"               %% "scalikejdbc-syntax-support-macro" % "3.4.2",
+  "org.scalikejdbc"               %% "scalikejdbc-test"                 % "3.4.2" % "test",
+  "org.xerial"                    %  "sqlite-jdbc"                      % "3.32.3",
 
   // Testing
-  "org.specs2"                    %%  "specs2-core"              % "4.8.2" % "test",
-  "org.specs2"                    %%  "specs2-matcher-extra"     % "4.8.2" % "test",
-  "org.specs2"                    %%  "specs2-junit"             % "4.8.2" % "test",
+  "org.specs2"                    %%  "specs2-core"                     % "4.8.2" % "test",
+  "org.specs2"                    %%  "specs2-matcher-extra"            % "4.8.2" % "test",
+  "org.specs2"                    %%  "specs2-junit"                    % "4.8.2" % "test",
 
 )
 
