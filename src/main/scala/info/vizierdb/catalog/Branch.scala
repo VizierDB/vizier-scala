@@ -29,6 +29,10 @@ case class Branch(
       prevWorkflowId = headId,
       addModules = Seq(module.id -> Workflow.getLength(headId))
     )
+  def append(packageId: String, commandId: String)
+            (args: (String, Any)*)
+            (implicit session: DBSession): (Branch, Workflow) =
+    append(Module.make(packageId, commandId)(args:_*))
   def insert(position: Int, module: Module)(implicit session: DBSession): (Branch, Workflow) =
     modify(
       module = Some(module),
@@ -36,8 +40,12 @@ case class Branch(
       prevWorkflowId = headId,
       updatePosition = sqls"case when position >= $position then position + 1 else position end",
       updateState = sqls"case when position >= $position then ${ExecutionState.WAITING.id} else state end",
-      addModules = Seq(module.id -> Workflow.getLength(headId))
+      addModules = Seq(module.id -> position)
     )
+  def insert(position: Int, packageId: String, commandId: String)
+            (args: (String, Any)*)
+            (implicit session: DBSession): (Branch, Workflow) =
+    insert(position, Module.make(packageId, commandId)(args:_*))
   def update(position: Int, module: Module)(implicit session: DBSession): (Branch, Workflow) = 
     modify(
       module = Some(module),
@@ -47,6 +55,10 @@ case class Branch(
       keepCells = sqls"position <> $position",
       addModules = Seq(module.id -> position)
     )
+  def update(position: Int, packageId: String, commandId: String)
+            (args: (String, Any)*)
+            (implicit session: DBSession): (Branch, Workflow) =
+    update(position, Module.make(packageId, commandId)(args:_*))
 
   private[catalog] def initWorkflow(
     prevId: Option[Identifier] = None,
@@ -112,7 +124,7 @@ case class Branch(
           updateState + sqls" as state",
         ) {
           _.from(Cell as c)
-           .where.eq(c.workflowId, workflow.id).and(Some(keepCells))
+           .where.eq(c.workflowId, headId).and(Some(keepCells))
         }
     }.update.apply()
     for((moduleId, position) <- addModules){
@@ -128,6 +140,7 @@ case class Branch(
           )
       }.update.apply()
     }
+
     return (branch, workflow)
   }
 
@@ -138,6 +151,7 @@ object Branch
   extends SQLSyntaxSupport[Branch]
 {
   def apply(rs: WrappedResultSet): Branch = autoConstruct(rs, (Branch.syntax).resultName)
+  override def columns = Schema.columns(table)
 
   def get(target: Identifier)(implicit session:DBSession): Branch = lookup(target).get
   def lookup(target: Identifier)(implicit session:DBSession): Option[Branch] = 

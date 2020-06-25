@@ -29,6 +29,8 @@ class Module(
 object Module
   extends SQLSyntaxSupport[Module]
 {
+  def apply(rs: WrappedResultSet): Module = autoConstruct(rs, (Module.syntax).resultName)
+  override def columns = Schema.columns(table)
   def make(
     packageId: String, 
     commandId: String, 
@@ -54,7 +56,6 @@ object Module
     }.updateAndReturnGeneratedKey.apply())
   }
 
-  def apply(rs: WrappedResultSet): Module = autoConstruct(rs, (Module.syntax).resultName)
 
   def get(target: Identifier)(implicit session:DBSession): Module = lookup(target).get
   def lookup(target: Identifier)(implicit session:DBSession): Option[Module] = 

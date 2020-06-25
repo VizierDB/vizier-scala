@@ -20,20 +20,16 @@ object Scheduler
    * Schedule a workflow for execution.  This should be automatically called from the branch
    * mutator operations.
    */
-  def schedule(workflow: Workflow) 
+  def schedule(workflowId: Identifier) 
   {
-    logger.debug(s"Scheduling Workflow ${workflow.id}")
+    logger.debug(s"Scheduling Workflow ${workflowId}")
     this.synchronized {
-      if(runningWorkflows contains workflow.id){
-        logger.warn(s"Ignoring attempt to reschedule workflow ${workflow.id}")
+      if(runningWorkflows contains workflowId){
+        logger.warn(s"Ignoring attempt to reschedule workflow ${workflowId}")
         return
       }
-      if(workflow.aborted){
-        logger.warn(s"Ignoring attempt to schedule aborted workflow ${workflow.id}")
-        return        
-      }
-      val executor = new WorkflowExecution(workflow)
-      runningWorkflows.put(workflow.id, executor)
+      val executor = new WorkflowExecution(workflowId)
+      runningWorkflows.put(workflowId, executor)
       workers.execute(executor)
     }
   }
@@ -62,13 +58,13 @@ object Scheduler
     logger.debug("Initalizing Viztrails scheduler")
     this.synchronized {
       sql"""
-        SELECT workflow.* 
+        SELECT workflow.id
         FROM workflow,
              (SELECT DISTINCT workflowid 
               FROM cell WHERE state = ${ExecutionState.STALE.id}) stale_cells
         WHERE workflow.id = stale_cells.workflowid
         """
-        .map { Workflow(_) }.list.apply()
+        .map { _.int(1) }.list.apply()
         .foreach { schedule(_) }
     }
   }
@@ -102,7 +98,7 @@ object Scheduler
       runningWorkflows.get(workflowId).getOrElse { 
         throw new RuntimeException(s"Workflow $workflowId is not running or has already been cleaned up") }
     }
-    executor.join()
+    executor.join() 
     cleanup(workflowId)
   }
 
@@ -113,20 +109,20 @@ object Scheduler
    * @argument  message   The error message
    * @return              The Result object for the cell
    */
-  private def errorResult(cell: Cell, message: String)(implicit session: DBSession): Result = {
-    ???
-    // catalogTransaction {
-    //   val result = cell.finish(ExecutionState.ERROR)
-    //   val position = cell.position
-    //   val workflowId = cell.workflowId
-    //   result.addLogEntry(message.getBytes(), "text/plain")
-    //   update(Viztrails.cells) { c =>
-    //     where((c.workflowId === workflowId) and (c.position gt position))
-    //       .set(c.state := ExecutionState.ERROR,
-    //            c.resultId := None)
-    //   }
-    //   result
-    // }
+  private def errorResult(cell: Cell, message: String)(implicit session: DBSession): Result = 
+  {
+    val result = cell.finish(ExecutionState.ERROR)._2
+    val position = cell.position
+    val workflowId = cell.workflowId
+    result.addMessage(message)
+    withSQL {
+      val c = Cell.column
+      update(Cell)
+        .set(c.state -> ExecutionState.ERROR, c.resultId -> None)
+        .where.eq(c.workflowId, cell.workflowId)
+          .and.gt(c.position, cell.position)
+    }.update.apply()
+    return result
   }
   /**
    * Register a execution result for the provided cell based on the provided execution context.
@@ -137,27 +133,23 @@ object Scheduler
    */
   private def normalResult(cell: Cell, context: ExecutionContext)(implicit session: DBSession): Result = 
   {
-    ???
-    // if(context.isError){ errorResult(cell, context.errorMessage.get) }
-    // else {
-    //   catalogTransaction { 
-    //     val result = cell.finish(ExecutionState.DONE)
-    //     for((userFacingName, identifier) <- context.inputs) {
-    //       result.addInput( userFacingName, identifier )
-    //     }
-    //     for((userFacingName, artifact) <- context.outputs) {
-    //       result.addOutput( userFacingName, artifact.id )
-    //     }
-    //     for((data, mimeType) <- context.logEntries) {
-    //       result.addLogEntry( data, mimeType )
-    //     }
+    if(context.errorMessage.isDefined){ return errorResult(cell, context.errorMessage.get) }
+    val result = cell.finish(ExecutionState.DONE)._2
 
-    //     Provenance.updateSuccessorState(cell, 
-    //       context.scope ++ context.outputs.mapValues { _.id }
-    //     )
-    //     result
-    //   }
-    // }
+    for((userFacingName, identifier) <- context.inputs) {
+      result.addInput( userFacingName, identifier )
+    }
+    for((userFacingName, artifact) <- context.outputs) {
+      result.addOutput( userFacingName, artifact.id )
+    }
+    for((mimeType, data) <- context.messages) {
+      result.addMessage( mimeType, data )
+    }
+
+    Provenance.updateSuccessorState(cell, 
+      context.scope ++ context.outputs.mapValues { _.id }
+    )
+    return result
   }
 
   /**
@@ -168,42 +160,40 @@ object Scheduler
    */
   def processSynchronously(cell: Cell): Result =
   {
-    ???
-    // logger.trace(s"Processing $cell")
-    // val (command, arguments, context) =
-    //   catalogTransaction {
-    //     val module = cell.module
-    //     val command = 
-    //       Commands.getOption(module.packageId, module.commandId)
-    //               .getOrElse { return errorResult(cell, s"Command ${module.packageId}.${module.commandId} does not exist"); }
-    //     val scope = Provenance.getScope(cell)
-    //     val context = new ExecutionContext(scope)
-    //     val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
-    //     val argumentErrors = arguments.validate
-    //     if(!argumentErrors.isEmpty){
-    //       errorResult(cell, "Error in module arguments:\n"+argumentErrors.mkString("\n"))
-    //     }
-    //     val result = cell.start
+    logger.trace(s"Processing $cell")
+    val (command, arguments, context, startedCell) =
+      DB autoCommit { implicit session =>
+        val module = cell.module
+        val command = 
+          Commands.getOption(module.packageId, module.commandId)
+                  .getOrElse { return errorResult(cell, s"Command ${module.packageId}.${module.commandId} does not exist"); }
+        val scope = Provenance.getScope(cell)
+        val context = new ExecutionContext(scope)
+        val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
+        val argumentErrors = arguments.validate
+        if(!argumentErrors.isEmpty){
+          errorResult(cell, "Error in module arguments:\n"+argumentErrors.mkString("\n"))
+        }
+        val (startedCell, result) = cell.start
+        /* return */ (command, arguments, context, startedCell)
+      }
 
-    //     /* return */ (command, arguments, context)
-    //   }
-
-    // try {
-    //   command.process(arguments, context)
-    // } catch {
-    //   case e:Exception => {
-    //     e.printStackTrace()
-    //     return errorResult(cell, s"An internal error occurred: ${e.getMessage()}")
-    //   }
-    // }
-    // if(context.errorMessage.isEmpty){ 
-    //   return normalResult(cell, context)
-    // } else { 
-    //   return errorResult(cell, context.errorMessage.get)
-    // }
+    try {
+      command.process(arguments, context)
+    } catch {
+      case e:Exception => {
+        e.printStackTrace()
+        return DB autoCommit { implicit session => 
+          errorResult(startedCell, s"An internal error occurred: ${e.getMessage()}")
+        }
+      }
+    }
+    return DB autoCommit { implicit session => 
+      normalResult(startedCell, context)
+    }
   }
 
-  class WorkflowExecution(workflow: Workflow)
+  class WorkflowExecution(workflowId: Identifier)
     extends ForkJoinTask[Unit]
   {
     var currentCellExecution = null
@@ -216,9 +206,20 @@ object Scheduler
           select
             .from(Cell as c)
             .where.eq(c.state, ExecutionState.STALE)
+              .and.eq(c.workflowId, workflowId)
             .orderBy(c.position)
             .limit(1)
         }.map { Cell(_) }.single.apply()
+      }
+
+    def aborted: Boolean =
+      DB readOnly { implicit session =>
+        val w = Workflow.syntax
+        withSQL { 
+          select(w.aborted)
+            .from(Workflow as w)
+            .where.eq(w.id, workflowId)
+        }.map { _.int(1) > 0 }.single.apply().getOrElse { true }
       }
       // catalogTransaction {
       //   workflow.cells.filter { cell => /* println(cell); */ cell.state == ExecutionState.STALE }
@@ -232,13 +233,16 @@ object Scheduler
 
     def exec(): Boolean = 
     {
-      logger.debug(s"Starting processing of Workflow ${workflow.id}")
+      if(aborted) {
+        logger.debug(s"Aborted processing of Workflow ${workflowId} before start")
+      }
+      logger.debug(s"Starting processing of Workflow ${workflowId}")
       var cell: Option[Cell] = nextTarget
-      while( (!workflow.aborted) &&  (cell != None) ){
+      while( (!aborted) &&  (cell != None) ){
         processSynchronously(cell.get)
         cell = nextTarget
       }
-      logger.debug(s"Done processing Workflow ${workflow.id}")
+      logger.debug(s"Done processing Workflow ${workflowId}")
       return true
     }
     def setRawResult(x: Unit): Unit = {}

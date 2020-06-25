@@ -2,7 +2,10 @@ package info.vizierdb.commands.data
 
 import play.api.libs.json.JsValue
 import info.vizierdb.commands._
-
+import org.mimirdb.api.request.LoadRequest
+import info.vizierdb.VizierException
+import info.vizierdb.types._
+import org.mimirdb.api.{ Tuple => MimirTuple }
 object LoadDataset extends Command
 {
   def name: String = "Load Dataset"
@@ -31,5 +34,28 @@ object LoadDataset extends Command
   )
   def format(arguments: Arguments): String = 
     s"LOAD DATASET ${arguments.pretty("name")} AS ${arguments.pretty("loadFormat")} FROM ${arguments.pretty("file")}"
-  def process(arguments: Arguments, context: ExecutionContext): Unit = ???
+  def process(arguments: Arguments, context: ExecutionContext): Unit = 
+  {
+    val datasetName = arguments.get[String]("name").toLowerCase()
+    if(context.artifactExists(datasetName))
+    {
+      throw new VizierException("Dataset $name already exists.")
+    }
+    val file = arguments.get[FileArgument]("file")
+    val dsArtifact = context.output(datasetName, ArtifactType.DATASET, Array[Byte]())
+    println(arguments.yaml())
+    val result = LoadRequest(
+      file = file.getPath,
+      format = arguments.get[String]("loadFormat"),
+      inferTypes = arguments.get[Boolean]("loadInferTypes"),
+      detectHeaders = arguments.get[Boolean]("loadDetectHeaders"),
+      humanReadableName = Some(file.filename.getOrElse { datasetName }),
+      backendOption = arguments.getList("loadOptions")
+                               .map { option => MimirTuple(option.get[String]("loadOptionKey"),
+                                                           option.get[String]("loadOptionValue")) },
+      dependencies = Seq(),
+      resultName = Some(dsArtifact.nameInBackend)
+    ).handle
+    context.displayDataset(dsArtifact.id)
+  }
 }

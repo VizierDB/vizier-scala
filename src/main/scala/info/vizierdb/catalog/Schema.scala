@@ -25,8 +25,9 @@ object Schema
   }
   def drop = 
   {
+    val currentVersion = schemaVersion
     DB autoCommit { implicit session => 
-      for(migration <- MIGRATIONS.take(schemaVersion).reverse){
+      for(migration <- MIGRATIONS.take(currentVersion).reverse){
         try {
           migration.drop
         } catch {
@@ -54,6 +55,8 @@ object Schema
     }
   }
 
+  def columns(table: String): Seq[String] =
+    TABLES(table.toLowerCase()).columns.map { _.name }
 
   val MIGRATIONS = Seq[Migration](
     ///////////////////// Metadata ///////////////////// 
@@ -136,7 +139,64 @@ object Schema
         Column("state",           SQL.SMALLINT, "smallint",     isRequired = true)
       )
     )),
+    ///////////////////// Artifact ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Artifact",
+      columns = List(
+        Column("id",              SQL.INTEGER,  "integer",      isRequired = true, 
+                                                                isPrimaryKey = true,
+                                                                isAutoIncrement = true),
+        Column("t",               SQL.INTEGER,  "integer",      isRequired = false),
+        Column("created",         SQL.TIMESTAMP,"timestamp",    isRequired = true),
+        Column("data",            SQL.BLOB,     "text",         isRequired = false),
+      )
+    )),
+    ///////////////////// Output ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Output", 
+      columns = List(
+        Column("result_id",       SQL.INTEGER,  "integer",      isRequired = false, 
+                                                                isPrimaryKey = true),
+        Column("user_facing_name",SQL.VARCHAR,  "varchar(255)", isRequired = false,
+                                                                isPrimaryKey = true),
+        Column("artifact_id",     SQL.INTEGER,  "integer",      isRequired = true),
+      )
+    )),
+    ///////////////////// Input ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Input",
+      columns = List(
+        Column("result_id",       SQL.INTEGER,  "integer",      isRequired = false, 
+                                                                isPrimaryKey = true),
+        Column("user_facing_name",SQL.VARCHAR,  "varchar(255)", isRequired = false,
+                                                                isPrimaryKey = true),
+        Column("artifact_id",     SQL.INTEGER,  "integer",      isRequired = true),
+      )
+    )),
+    ///////////////////// Message ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Message",
+      columns = List(
+        Column("result_id",       SQL.INTEGER,  "integer",      isRequired = true),
+        Column("mime_type",       SQL.VARCHAR,  "varchar(30)",  isRequired = false),
+        Column("data",            SQL.BLOB,     "text",         isRequired = false),
+      )
+    )),
+    ///////////////////// Result ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Result",
+      columns = List(
+        Column("id",              SQL.INTEGER,  "integer",      isRequired = true, 
+                                                                isPrimaryKey = true,
+                                                                isAutoIncrement = true),
+        Column("started",         SQL.TIMESTAMP,"timestamp",    isRequired = true),
+        Column("finished",        SQL.TIMESTAMP,"timestamp",    isRequired = false)
+      )
+    )),
 
   )
+
+  val TABLES: Map[String, Table] =
+    MIGRATIONS.foldLeft(Map[String, Table]()){ case (sch, mig) => mig.updateSchema(sch) }
 
 }

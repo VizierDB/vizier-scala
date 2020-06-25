@@ -19,6 +19,22 @@ class Arguments(values: Map[String, (JsValue, Parameter)])
   }
   def validate: Seq[String] =
     values.values.flatMap { case (value, param) => param.validate(value) }.toSeq
+  def yaml(indent: String = "", firstIndent: Option[String] = None): String =
+    values.map { 
+      case (arg, (_, _:ListParameter)) => {
+        val list = getList(arg)
+
+        s"${firstIndent.getOrElse(indent)}$arg:"+
+          (if(list.size > 0) {
+            "\n"+list.map { _.yaml(s"$indent    ", Some(s"$indent  - ")) }.mkString("\n")
+          } else { "" })
+      }
+      case (arg, (value, param)) => 
+        s"${firstIndent.getOrElse(indent)}$arg: ${param.stringify(value)}"
+    }.mkString(s"\n")
+    for((k, v) <- values) {
+
+    }
 }
 object Arguments
 {

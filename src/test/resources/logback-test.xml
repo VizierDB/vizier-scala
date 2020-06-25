@@ -7,6 +7,9 @@
     </encoder>
   </appender>
   
+  <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
+  <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />
+  <logger name="info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyConnection" level="DEBUG" />
 
   <!--+++++++++++++++++++++++  Catalog  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.catalog.Schema$"          level="TRACE" />

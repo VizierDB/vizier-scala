@@ -144,12 +144,19 @@ case class FileParameter(
   name: String,
   required: Boolean = true,
   hidden: Boolean = false
-) extends Parameter with StringEncoder
+) extends Parameter
 {
   def datatype = "fileid"
-  def stringify(j: JsValue): String = j.toString()
-  def doValidate(j: JsValue) = if(j.isInstanceOf[JsObject]){ None }
-                               else { Some(s"Expected an object for $name") }
+  def stringify(j: JsValue): String = j.as[FileArgument].toString()
+  def doValidate(j: JsValue) = if(j.isInstanceOf[JsObject]){ 
+                                  j.as[FileArgument].validate.map { _+" for "+name }
+                               } else { Some(s"Expected an object for $name") }
+  def encode(v: Any): JsValue = 
+    Json.toJson(v match {
+      case s:String => FileArgument( url = Some(s) )
+      case f:FileArgument => f
+      case _ => throw new VizierException(s"Invalid argument to $name (Expected FileArgument or String)")
+    })
 }
 
 case class IntParameter(
@@ -223,6 +230,7 @@ case class ListParameter(
       }
       case _ => throw new VizierException(s"Invalid Parameter to $name (expected Seq)")
     }
+  override def getDefault: JsValue = JsArray(Seq())
 }
 
 case class RecordParameter(
@@ -290,6 +298,8 @@ case class EnumerableParameter(
       }
     }
     else { Some(s"Expected a string/enumerable for $name") }
+  override def getDefault: JsValue = 
+    Json.toJson(default.map { values(_).value })
 }
 
 case class StringParameter(
@@ -304,4 +314,6 @@ case class StringParameter(
   def stringify(j: JsValue): String = j.as[String]
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
                                else { Some(s"Expected a string for $name") }
+  override def getDefault: JsValue = 
+    Json.toJson(default)
 }

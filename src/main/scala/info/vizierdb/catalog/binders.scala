@@ -42,4 +42,13 @@ object binders
   implicit val executionStateParameterBinder = ParameterBinderFactory[ExecutionState.T] {
     value => (stmt, idx) => stmt.setInt(idx, value.id)
   }
+  
+  //// ArtifactType ////
+  implicit val artifactTypeTypeBinder: TypeBinder[ArtifactType.T] = new TypeBinder[ArtifactType.T] {
+    def apply(rs: ResultSet, label: String): ArtifactType.T = ArtifactType(rs.getInt(label))
+    def apply(rs: ResultSet, index: Int): ArtifactType.T = ArtifactType(rs.getInt(index))
+  }
+  implicit val artifactTypeParameterBinder = ParameterBinderFactory[ArtifactType.T] {
+    value => (stmt, idx) => stmt.setInt(idx, value.id)
+  }
 }

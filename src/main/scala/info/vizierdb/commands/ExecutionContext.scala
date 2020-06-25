@@ -1,8 +1,12 @@
 package info.vizierdb.commands
 
+import scalikejdbc._
 import info.vizierdb.types._
 import info.vizierdb.Vizier
 import info.vizierdb.catalog.Artifact
+import org.mimirdb.api.request.QueryTableRequest
+// import java.sql.Connection
+// import org.apache.commons.dbcp2.DelegatingConnection
 
 class ExecutionContext(
   val scope: Map[String, Identifier]
@@ -10,19 +14,33 @@ class ExecutionContext(
 {
   val inputs = scala.collection.mutable.Map[String, Identifier]()
   val outputs = scala.collection.mutable.Map[String, Artifact]()
-  val logEntries = scala.collection.mutable.Buffer[(Array[Byte], String)]()
+  val messages = scala.collection.mutable.Buffer[(String, Array[Byte])]()
   var errorMessage: Option[String] = None
+
+  def artifactExists(name: String): Boolean = {
+    scope.contains(name.toLowerCase()) || outputs.contains(name.toLowerCase())
+  }
 
   def artifact(name: String, registerInput: Boolean = true): Option[Artifact] = 
   {
-    val ret = scope.get(name).flatMap { Artifact.get(_) } 
-    if(registerInput){ ret.foreach { a => inputs.put(name, a.id) } }
-    ret
+    println(s"Retrieving $name")
+    if(outputs contains name.toLowerCase()){
+      return Some(outputs(name.toLowerCase()))
+    }
+    val ret = scope.get(name.toLowerCase()).map { id =>
+      DB autoCommit { implicit session =>
+        Artifact.get(id)(session)   
+      }
+    }
+    if(registerInput){ ret.foreach { a => inputs.put(name.toLowerCase(), a.id) } }
+    return ret
   }
 
-  def output(name: String, artifact: Artifact)
+  def output(name: String, t: ArtifactType.T, data: Array[Byte]): Artifact =
   {
-    outputs.put(name, artifact)
+    val artifact = DB autoCommit { implicit s => Artifact.make(t, data) }
+    outputs.put(name.toLowerCase(), artifact)
+    return artifact
   }
 
   def error(message: String)
@@ -30,13 +48,25 @@ class ExecutionContext(
     errorMessage = Some(message)
   }
 
-  def logEntry(content: String, mime: String = "text/plain")
+  def message(content: String)
   {
-    logEntry(content.getBytes(), mime)
+    message("text/plain", content.getBytes())
   }
-  def logEntry(content: Array[Byte], mime: String)
+  def message(mime: String, content: Array[Byte])
   {
-    logEntries.append( (content, mime) )
+    messages.append( (mime, content) )
+  }
+  def displayDataset(artifactId: Identifier) = 
+  {
+    message("datset/view", 
+      QueryTableRequest(
+        Artifact.nameInBackend(ArtifactType.DATASET, artifactId),
+        columns = None,
+        limit = Some(10),
+        offset = None,
+        includeUncertainty = true
+      ).handle.toString.getBytes
+    )
   }
 
   override def toString: String =

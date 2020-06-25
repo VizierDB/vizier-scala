@@ -1,7 +1,7 @@
 
 - [x] Set up a simple, naive background worker (Java's ForkJoinPool.)
 - [ ] Link to Mimir-API
-    - [ ] "Load Dataset" (load)
+    - [x] "Load Dataset" (load)
     - [ ] "Empty Dataset" (empty)
     - [ ] "Clone Dataset" (clone)
     - [ ] "Unload Dataset" (unload)
@@ -11,9 +11,11 @@
 - [ ] Implement sub-process execution
     - [ ] "Scala Script" (code)
     - [ ] "Python Script" (code)
-- [ ] Import remaining Vizier packages
+- [ ] Python Compatibility Layer through JEP
     - [ ] "Markdown Code" (code)
     - [ ] "Simple Chart" (chart)
+    - [ ] "R Script" (code)
+- [ ] Import remaining Vizier packages
     - [ ] "Basic Sample" (basic_sample)
     - [ ] "Manually Stratified Sample" (manual_stratified_sample)
     - [ ] "Automatically Stratified Sample" (automatic_stratified_sample)
@@ -40,4 +42,3 @@
     - [ ] "Comment Lens" (comment)
     - [ ] "Pivot" (pivot)
     - [ ] "Shred" (shred)
-    - [ ] "R Script" (code)

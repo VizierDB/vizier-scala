@@ -4,6 +4,8 @@ import scalikejdbc._
 
 import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
+import java.time.ZonedDateTime
+import info.vizierdb.VizierException
 
 /**
  * One cell in a workflow.  
@@ -47,20 +49,90 @@ import info.vizierdb.catalog.binders._
  *
  * In summary resultId should usually be ignored in all states except ERROR and DONE.
  */
-class Cell(
-  val workflowId: Identifier,
-  val position: Int,
-  val moduleId: Identifier,
-  var resultId: Option[Identifier],
-  var state: ExecutionState.T
+case class Cell(
+  workflowId: Identifier,
+  position: Int,
+  moduleId: Identifier,
+  resultId: Option[Identifier],
+  state: ExecutionState.T
 )
 {
   def module(implicit session: DBSession) = Module.get(moduleId)
+  def result(implicit session: DBSession) = resultId.map { Result.get(_) }
+
+  def inputs(implicit session: DBSession): Seq[ArtifactRef] = 
+    withSQL { 
+      val i = InputArtifactRef.syntax
+      select.from(InputArtifactRef as i).where.eq(i.resultId, resultId)
+    }.map { InputArtifactRef(_) }.list.apply()
+  def outputs(implicit session: DBSession): Seq[ArtifactRef] = 
+    withSQL { 
+      val o = OutputArtifactRef.syntax
+      select.from(OutputArtifactRef as o).where.eq(o.resultId, resultId)
+    }.map { OutputArtifactRef(_) }.list.apply()
+  def messages(implicit session: DBSession):Iterable[Message] = 
+    withSQL { 
+      val m = Message.syntax
+      selectFrom(Message as m).where.eq(m.resultId, resultId)
+    }.map { Message(_) }.list.apply()
+  def successors(implicit session: DBSession): Seq[Cell] = 
+    withSQL { 
+      val c = Cell.syntax
+      select.from(Cell as c)
+            .where.eq(c.workflowId, workflowId).and.gt(c.position, position)
+            .orderBy(c.position.asc)
+    }.map { Cell(_) }.list.apply()
+
+  def start(implicit session: DBSession): (Cell, Result) = 
+  {
+    val newResultId = withSQL {
+      val r = Result.column
+      insertInto(Result).
+        namedValues(r.started -> ZonedDateTime.now())
+    }.updateAndReturnGeneratedKey.apply()
+    withSQL {
+      val c = Cell.column
+      update(Cell)
+        .set(c.resultId -> newResultId)
+        .where.eq(c.workflowId, workflowId)
+          .and.eq(c.position, position)
+    }.update.apply()
+    return (copy(resultId = Some(newResultId)), Result.get(newResultId))
+  }
+  def finish(state: ExecutionState.T)(implicit session: DBSession): (Cell, Result) = 
+  {
+    val resultId = this.resultId.getOrElse {
+      throw new VizierException("Attempting to finish un-started cell $this")
+    }
+    val newCell = updateState(state)
+    withSQL { 
+      val r = Result.column
+      update(Result)
+        .set(r.finished -> ZonedDateTime.now())
+        .where.eq(r.id, resultId)
+    }.update.apply()
+
+    return (newCell, Result.get(resultId))
+  }
+  def updateState(state: ExecutionState.T)(implicit session: DBSession): Cell =
+  {
+    withSQL { 
+      val c = Cell.column
+      update(Cell)
+        .set(c.state -> state)
+        .where.eq(c.workflowId, workflowId)
+          .and.eq(c.position, position)
+    }.update.apply()
+    copy(state = state)
+  }
+
+  override def toString = s"Workflow $workflowId @ $position: Module $moduleId ($state)"
 }
 object Cell 
   extends SQLSyntaxSupport[Cell]
 {
   def apply(rs: WrappedResultSet): Cell = autoConstruct(rs, (Cell.syntax).resultName)
+  override def columns = Schema.columns(table)
 
   def get(workflowId: Identifier, position: Int)(implicit session:DBSession): Cell = lookup(workflowId, position).get
   def lookup(workflowId: Identifier, position: Int)(implicit session:DBSession): Option[Cell] = 

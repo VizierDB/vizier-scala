@@ -77,6 +77,7 @@ object Project
   extends SQLSyntaxSupport[Project]
 {
   def apply(rs: WrappedResultSet): Project = autoConstruct(rs, (Project.syntax).resultName)
+  override def columns = Schema.columns(table)
   def create(
     name: String, 
     properties: JsObject = Json.obj()
@@ -96,8 +97,7 @@ object Project
           )
       }.updateAndReturnGeneratedKey.apply()
     )
-    project.createBranch("default", isInitialBranch = true, activate = true)
-    return project
+    return project.createBranch("default", isInitialBranch = true, activate = true)._1
   }
 
   def get(target: Identifier)(implicit session:DBSession): Project = lookup(target).get
@@ -109,4 +109,27 @@ object Project
         .where.eq(p.id, target) 
     }.map { apply(_) }.single.apply()
 
+  def activeBranchFor(id: Identifier)(implicit session:DBSession): Branch = 
+    withSQL { 
+      val p = Project.syntax
+      val b = Branch.syntax
+      select(b.resultAll)
+        .from(Project as p)
+        .join(Branch as b)
+        .where.eq(p.activeBranchId, b.id)
+          .and.eq(p.id, id)
+    }.map { Branch(_) }.single.apply().get
+  def activeHeadFor(id: Identifier)(implicit session:DBSession): Workflow = 
+    withSQL { 
+      val p = Project.syntax
+      val b = Branch.syntax
+      val w = Workflow.syntax
+      select(w.resultAll)
+        .from(Project as p)
+        .join(Branch as b)
+        .join(Workflow as w)
+        .where.eq(p.activeBranchId, b.id)
+          .and.eq(b.headId, w.id)
+          .and.eq(p.id, id)
+    }.map { Workflow(_) }.single.apply().get
 }

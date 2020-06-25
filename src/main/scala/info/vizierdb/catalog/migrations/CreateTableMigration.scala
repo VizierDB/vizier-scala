@@ -41,4 +41,10 @@ case class CreateTableMigration(
     );
     """
   }
+
+  def updateSchema(sch: Map[String, Table]): Map[String, Table] = 
+  {
+    assert(!(sch contains table.name))
+    sch ++ Map(table.name.toLowerCase() -> table)
+  }
 }

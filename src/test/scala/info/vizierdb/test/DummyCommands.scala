@@ -32,7 +32,7 @@ object DummyPrint extends Command with LazyLogging
   {
     val v = arguments.get[String]("value")
     logger.debug(s"Printing: $v")
-    context.logEntry(v)
+    context.message(v)
   }
 }
 
@@ -47,11 +47,10 @@ object DummyCreate extends Command with LazyLogging
     s"CREATE DUMMY ${arguments.pretty("dataset")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    val dataset = arguments.get[String]("dataset")
-    val artifact = Artifact.make(ArtifactType.BLOB, arguments.get[String]("content").getBytes())
-    context.output(dataset, artifact)
+    val dataset = arguments.get[String]("dataset") 
+    val artifact = context.output(dataset, ArtifactType.BLOB, arguments.get[String]("content").getBytes())
     logger.debug(s"Creating: $dataset -> ${artifact.id}")
-    context.logEntry(s"Created artifact $dataset -> ${artifact.id} ")
+    context.message(s"Created artifact $dataset -> ${artifact.id} ")
   }
 }
 
@@ -71,7 +70,7 @@ object DummyConsume extends Command with LazyLogging
                             .map { _("dataset").as[String] }
     logger.debug(s"Consuming Datasets ${datasets.mkString(", ")} with context $context")
     val results = 
-      datasets.map { context.artifact(_).get.string } 
-    context.logEntry(results.mkString)
+      datasets.map { context.artifact(_).get.string }  
+    context.message(results.mkString)
   }
 }

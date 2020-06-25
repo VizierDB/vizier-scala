@@ -27,14 +27,60 @@ case class Workflow(
       select
         .from(Cell as c)
         .where.eq(c.workflowId, id)
+    }.map { Cell(_) }.list.apply()
+  def cellsInOrder(implicit session: DBSession): Seq[Cell] = 
+    withSQL {
+      val c = Cell.syntax
+      select
+        .from(Cell as c)
+        .where.eq(c.workflowId, id)
         .orderBy(c.position)
     }.map { Cell(_) }.list.apply()
+  def modules(implicit session: DBSession): Seq[Module] = 
+    withSQL {
+      val c = Cell.syntax
+      val m = Module.syntax
+      select(m.resultAll)
+        .from(Cell as c)
+        .join(Module as m)
+        .where.eq(c.workflowId, id)
+          .and.eq(m.id, c.moduleId)
+    }.map { Module(_) }.list.apply()
+  def modulesInOrder(implicit session: DBSession): Seq[Module] = 
+    withSQL {
+      val c = Cell.syntax
+      val m = Module.syntax
+      select(m.resultAll)
+        .from(Cell as c)
+        .join(Module as m)
+        .where.eq(c.workflowId, id)
+          .and.eq(m.id, c.moduleId)
+        .orderBy(c.position)
+    }.map { Module(_) }.list.apply()
   def length(implicit session: DBSession): Int = Workflow.getLength(id)
+  def abort(implicit session:DBSession): Workflow =
+  {
+    withSQL {
+      val w = Workflow.column
+      update(Workflow)
+        .set(w.aborted -> 1)
+        .where.eq(w.id, id)
+    }.update.apply()
+    withSQL {
+      val c = Cell.column
+      update(Cell)
+        .set(c.state -> ExecutionState.ERROR)
+        .where.ne(c.state, ExecutionState.DONE)
+          .and.eq(c.workflowId, id)
+    }.update.apply()
+    copy(aborted = true)
+  }
 }
 object Workflow 
   extends SQLSyntaxSupport[Workflow]
 {
   def apply(rs: WrappedResultSet): Workflow = autoConstruct(rs, (Workflow.syntax).resultName)
+  override def columns = Schema.columns(table)
 
   def getLength(workflowId: Identifier)(implicit session:DBSession) =
     sql"select max(position) from cell where workflow_id = $workflowId"
@@ -48,4 +94,5 @@ object Workflow
         .from(Workflow as w)
         .where.eq(w.id, target)  
     }.map { apply(_) }.single.apply()
+
 }
