@@ -8,6 +8,7 @@
     - [ ] "SQL Query" (query)
 - [ ] Develop web-api-async compatible API
     - [ ] Import built web-ui
+- [ ] File Upload/Download
 - [ ] Implement sub-process execution
     - [ ] "Scala Script" (code)
     - [ ] "Python Script" (code)
