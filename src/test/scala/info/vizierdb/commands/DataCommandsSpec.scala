@@ -30,6 +30,30 @@ class DataCommandsSpec
       "loadDetectHeaders" -> true
     )
     project.waitUntilReady
+
+    project.append("data", "clone")(
+      "dataset" -> "test_r",
+      "name" -> "clone_r",
+    )
+    project.waitUntilReady
+
+    project.append("data", "unload")(
+      "dataset" -> "clone_r",
+      "unloadFormat" -> "csv"
+    )
+    project.waitUntilReady
+
+    project.append("data", "empty")(
+      "name" -> "empty_ds"
+    )
+    project.waitUntilReady
+
+    project.append("sql", "query")(
+      "source" -> "SELECT * FROM empty_ds, test_r",
+      "name" -> "query_result"
+    )
+    project.waitUntilReady
+
     ok
   }
 }

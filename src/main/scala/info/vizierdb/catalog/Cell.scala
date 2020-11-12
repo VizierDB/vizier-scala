@@ -54,7 +54,8 @@ case class Cell(
   position: Int,
   moduleId: Identifier,
   resultId: Option[Identifier],
-  state: ExecutionState.T
+  state: ExecutionState.T,
+  created: ZonedDateTime
 )
 {
   def module(implicit session: DBSession) = Module.get(moduleId)

@@ -22,7 +22,7 @@ case class Result(
           m.data -> data
         )
     }.update.apply()
-  def addOutput(userFacingName: String, artifactId: Identifier)(implicit session: DBSession): Unit =
+  def addOutput(userFacingName: String, artifactId: Option[Identifier])(implicit session: DBSession): Unit =
   {
     withSQL {
       val o = OutputArtifactRef.column
@@ -34,6 +34,8 @@ case class Result(
         )
     }.update.apply()
   }
+  def addOutput(userFacingName: String, artifactId: Identifier)(implicit session: DBSession): Unit =
+    addOutput(userFacingName, Some(artifactId))
   def addInput(userFacingName: String, artifactId: Identifier)(implicit session: DBSession): Unit = 
   {
     withSQL {
@@ -61,4 +63,28 @@ object Result
         .from(Result as b)
         .where.eq(b.id, target) 
     }.map { apply(_) }.single.apply()
+
+  def outputs(target: Identifier)(implicit session:DBSession): Seq[Message] =
+    withSQL {
+      val m = Message.syntax
+      select
+        .from(Message as m)
+        .where.eq(m.resultId, target)
+    }.map { Message(_) }.list.apply()
+
+  def outputArtifacts(target: Identifier)(implicit session:DBSession): Seq[ArtifactRef] =
+    withSQL {
+      val r = OutputArtifactRef.syntax
+      select
+        .from(OutputArtifactRef as r)
+        .where.eq(r.resultId, target)
+    }.map { OutputArtifactRef(_) }.list.apply()
+  
+  def inputArtifacts(target: Identifier)(implicit session:DBSession): Seq[ArtifactRef] =
+    withSQL {
+      val r = InputArtifactRef.syntax
+      select
+        .from(InputArtifactRef as r)
+        .where.eq(r.resultId, target)
+    }.map { InputArtifactRef(_) }.list.apply()
 }

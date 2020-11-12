@@ -9,9 +9,9 @@ import info.vizierdb.types.ArtifactType
 
 object DummyCommands 
 {
-  def init
+  def init =
   {
-    Commands.register("dummy")(
+    Commands.register("dummy", "Testing Commands", "dummy")(
       "print" -> DummyPrint,
       "create" -> DummyCreate,
       "consume" -> DummyConsume

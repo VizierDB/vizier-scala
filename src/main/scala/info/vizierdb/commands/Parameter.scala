@@ -23,6 +23,35 @@ sealed trait Parameter
     } else { doValidate(j: JsValue) }
   def doValidate(j: JsValue): Iterable[String]
   def encode(v: Any): JsValue
+  def describe: Map[String, JsValue] =
+    Map(
+      "id"       -> JsString(id),
+      "name"     -> JsString(name),
+      "datatype" -> JsString(datatype),
+      "hidden"   -> JsBoolean(hidden),
+      "required" -> JsBoolean(required)
+    )
+}
+
+object Parameter
+{
+
+  def describe(list: Seq[Parameter]): JsValue =
+    JsArray(doDescribe(list, 0)._1.map { JsObject(_) })
+
+  private def doDescribe(list: Seq[Parameter], startIdx: Int): (Seq[Map[String, JsValue]], Int) =
+  {
+    list.foldLeft( (Seq[Map[String, JsValue]](), startIdx) ) { case ((accum, idx), curr) =>
+      curr match {
+        case l:ListParameter => 
+          val (components, nextIdx) = doDescribe(l.components, idx+1)
+          (accum ++ Seq(l.describe ++ Map("index" -> JsNumber(idx))) ++ components, nextIdx)
+
+        case _ => (accum ++ Seq(curr.describe ++ Map("index" -> JsNumber(idx))), idx + 1)
+      }
+    }
+  }
+
 }
 
 trait StringEncoder
@@ -95,6 +124,7 @@ case class CodeParameter(
   def stringify(j: JsValue): String = j.as[String].toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
                                else { Some(s"Expected a string for $name") }
+  override def describe = super.describe ++ Map("language" -> JsString(language))
 }
 
 case class ColIdParameter(
@@ -300,6 +330,13 @@ case class EnumerableParameter(
     else { Some(s"Expected a string/enumerable for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default.map { values(_).value })
+  override def describe = super.describe ++ Map("values" -> JsArray(
+    values.zipWithIndex.map { case (v, idx) => Json.obj(
+      "isDefault" -> JsBoolean(default.map { _ == idx }.getOrElse(false)),
+      "text"      -> v.text,
+      "value"     -> v.value
+    )}
+  ))
 }
 
 case class StringParameter(

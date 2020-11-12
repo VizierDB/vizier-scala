@@ -1,24 +1,60 @@
 package info.vizierdb.commands
 
+import play.api.libs.json._
+
 object Commands
 {
-  val commands = scala.collection.mutable.Map[String, Command]()
+  val packages = 
+    scala.collection.mutable.Map[String, Package]()
 
   def getOption(packageId: String, commandId: String): Option[Command] =
-    commands.get(s"${packageId}.${commandId}")
+    packages.get(packageId)
+            .flatMap { _.getOption(commandId) }
   def get(packageId: String, commandId: String): Command =
     getOption(packageId, commandId).get
 
-  def register(packageId: String, commandId: String, command: Command): Unit = 
-    commands.put(s"${packageId}.${commandId}", command)
-  def register(packageId: String, commands: Iterable[(String, Command)]): Unit =
-    for((commandId, command) <- commands){ register(packageId, commandId, command) }
-  def register(packageId: String)(commands: (String, Command)*): Unit =
-    register(packageId, commands)
+  def register(packageId: String, name: String, category: String)(commands: (String, Command)*): Unit =
+  {
+    val pkg = Package(packageId, name, category)
+    packages.put(packageId, pkg)
+    for((commandId, command) <- commands){
+      pkg.register(commandId, command)
+    }
+  } 
+
+  def toJson: JsValue =
+  {
+    JsArray(
+      packages.values.map { pkg => 
+        Json.obj(
+          "category" -> pkg.category,
+          "id"       -> pkg.id,
+          "name"     -> pkg.name,
+          "commands" -> JsArray(
+            pkg.commands.map { case (commandId, command) =>
+              var idx = 0
+              Json.obj(
+                "id" -> commandId,
+                "name" -> command.name,
+                "parameters" -> Parameter.describe(command.parameters),
+                "suggest" -> false
+              )
+            }.toSeq
+          ),
+        )
+      }.toSeq
+    )
+  }
 
 
-  register("data")(
+  register(packageId = "data", name = "Data", category = "data")(
     "load"   -> info.vizierdb.commands.data.LoadDataset,
     "unload" -> info.vizierdb.commands.data.UnloadDataset,
+    "clone"  -> info.vizierdb.commands.data.CloneDataset,
+    "empty"  -> info.vizierdb.commands.data.EmptyDataset, 
+  )
+
+  register(packageId = "sql", name = "SQL", category = "code")(
+    "query"  -> info.vizierdb.commands.sql.Query
   )
 }

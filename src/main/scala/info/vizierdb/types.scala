@@ -3,6 +3,8 @@ package info.vizierdb
 object types 
 {
   type Identifier = Long
+  type DatasetIdentifier = String
+  type FileIdentifier = java.util.UUID
 
   object ActionType extends Enumeration
   {
@@ -28,6 +30,20 @@ object types
                                           needs to be recomputed, but is blocked on another one */
     val STALE   = Value(5, "STALE")    /* The referenced execution is incorrect for this workflow and 
                                           needs to be recomputed */
+    val CANCELLED = Value(6, "CANCELLED")  /* Execution of the cell or a cell preceding it was 
+                                              cancelled (equivalent to ERROR) */
+
+    def translateToClassicVizier(state: T): Int = 
+    {
+      state match {
+        case DONE => 4      // MODULE_SUCCESS
+        case ERROR => 3     // MODULE_ERROR
+        case WAITING => 0   // MODULE_PENDING
+        case BLOCKED => 0   // MODULE_PENDING
+        case STALE => 1     // MODULE_RUNNING
+        case CANCELLED => 2 // MODULE_CANCELLED
+      }
+    }
   }
 
   object ArtifactType extends Enumeration
@@ -37,6 +53,16 @@ object types
     val DATASET  = Value(1, "Dataset")
     val FUNCTION = Value(2, "Function")
     val BLOB     = Value(3, "Blob")
+    val FILE     = Value(4, "File")
+    val CHART    = Value(5, "Chart")
+  }
+
+  object StreamType extends Enumeration
+  {
+    type T = Value
+
+    val STDOUT = Value(1, "stdout")
+    val STDERR = Value(1, "stderr")
   }
 }
 

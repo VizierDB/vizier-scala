@@ -16,11 +16,11 @@ object SharedTestResources
         GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
           enabled = true,
           singleLineMode = true,
-          logLevel = 'error,
+          logLevel = 'trace,
         ) 
 
-        Vizier.initSQLite("target/Test.db")
-        Vizier.initMimir("target/Mimir.db")
+        Vizier.initSQLite()
+        Vizier.initMimir()
         Schema.drop
         Schema.initialize
         DummyCommands.init

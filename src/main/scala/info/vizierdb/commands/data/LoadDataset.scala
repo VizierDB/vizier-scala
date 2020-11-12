@@ -6,7 +6,11 @@ import org.mimirdb.api.request.LoadRequest
 import info.vizierdb.VizierException
 import info.vizierdb.types._
 import org.mimirdb.api.{ Tuple => MimirTuple }
-object LoadDataset extends Command
+import com.typesafe.scalalogging.LazyLogging
+
+object LoadDataset
+  extends Command
+  with LazyLogging
 {
   def name: String = "Load Dataset"
   def parameters = Seq[Parameter](
@@ -42,8 +46,8 @@ object LoadDataset extends Command
       throw new VizierException("Dataset $name already exists.")
     }
     val file = arguments.get[FileArgument]("file")
-    val dsArtifact = context.output(datasetName, ArtifactType.DATASET, Array[Byte]())
-    println(arguments.yaml())
+    val (dsName, dsId) = context.outputDataset(datasetName)
+    logger.trace(arguments.yaml())
     val result = LoadRequest(
       file = file.getPath,
       format = arguments.get[String]("loadFormat"),
@@ -53,9 +57,11 @@ object LoadDataset extends Command
       backendOption = arguments.getList("loadOptions")
                                .map { option => MimirTuple(option.get[String]("loadOptionKey"),
                                                            option.get[String]("loadOptionValue")) },
-      dependencies = Seq(),
-      resultName = Some(dsArtifact.nameInBackend)
+      dependencies = None,
+      resultName = Some(dsName),
+      properties = None,
+      proposedSchema = None
     ).handle
-    context.displayDataset(dsArtifact.id)
+    context.displayDataset(dsId)
   }
 }

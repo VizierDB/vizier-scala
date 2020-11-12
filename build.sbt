@@ -33,8 +33,8 @@ excludeDependencies ++= Seq(
 // Custom Dependencies
 libraryDependencies ++= Seq(
   // Mimir
-  "org.mimirdb"                   %% "mimir-caveats"                    % "0.1",
   "org.mimirdb"                   %% "mimir-api"                        % "0.2-SNAPSHOT" excludeAll( ExclusionRule("org.xerial")),
+  "org.mimirdb"                   %% "mimir-caveats"                    % "0.2.8",
 
   // Catalog management (trying this out... might be good to bring into mimir-api as well)
   // "org.squeryl"                   %% "squeryl"                   % "0.9.15",

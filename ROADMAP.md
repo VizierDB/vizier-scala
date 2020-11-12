@@ -1,11 +1,11 @@
 
 - [x] Set up a simple, naive background worker (Java's ForkJoinPool.)
-- [ ] Link to Mimir-API
+- [x] Link to Mimir-API
     - [x] "Load Dataset" (load)
-    - [ ] "Empty Dataset" (empty)
-    - [ ] "Clone Dataset" (clone)
-    - [ ] "Unload Dataset" (unload)
-    - [ ] "SQL Query" (query)
+    - [x] "Empty Dataset" (empty)
+    - [x] "Clone Dataset" (clone)
+    - [x] "Unload Dataset" (unload)
+    - [x] "SQL Query" (query)
 - [ ] Develop web-api-async compatible API
     - [ ] Import built web-ui
 - [ ] File Upload/Download

@@ -25,7 +25,7 @@ object Provenance
      .list.apply()
      .foldLeft(Map[String, Identifier]()) { 
       (scope:Map[String, Identifier], output:(String, Identifier)) =>
-        logger.trace("Get Scope: Adding $output")
+        logger.trace(s"Get Scope: Adding $output")
         // Thanks to the orderBy above, the first version of each identifier
         // that we encounter should be the right one.
         if(scope contains output._1) { scope }
@@ -34,11 +34,20 @@ object Provenance
   }
 
   def updateScope(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Map[String, Identifier] = 
-    scope ++ cell.outputs.map { o => o.userFacingName -> o.artifactId }.toMap
+    updateScope(cell.outputs.map { o => o.userFacingName -> o.artifactId }, scope)
+  def updateScope(outputs: Seq[(String, Option[Identifier])], scope: Map[String, Identifier]): Map[String, Identifier] =
+  {
+    val (deleteRefs, insertRefs) = outputs.partition { _._2.isEmpty }
+    val deletions = deleteRefs.map { _._1 }.toSet
+    val insertions = insertRefs.toMap.mapValues { _.get }
+    scope.filterNot { case (k, v) => deletions(k) } ++ insertions
+  }
+
 
   def checkForConflicts(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Boolean =
     cell.inputs.iterator.exists { i => (scope contains i.userFacingName) &&
-                                       (scope(i.userFacingName) != i.artifactId) }
+                                       (i.artifactId.map { scope(i.userFacingName) != _ }
+                                                    .getOrElse { true }) }
 
   def updateSuccessorState(cell: Cell, outputs: Map[String, Identifier])(implicit session: DBSession): Unit =
   {

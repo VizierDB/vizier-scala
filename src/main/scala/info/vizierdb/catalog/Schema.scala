@@ -86,15 +86,17 @@ object Schema
     CreateTableMigration(Table(
       name = "Branch",
       columns = List(
-        Column("id",              SQL.INTEGER,  "integer",      isRequired = true,
-                                                                isPrimaryKey = true,
-                                                                isAutoIncrement = true),
-        Column("project_id",      SQL.INTEGER,  "integer",      isRequired = true),
-        Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true),
-        Column("properties",      SQL.BLOB,     "text",         isRequired = false),
-        Column("head_id",         SQL.INTEGER,  "integer",      isRequired = true),
-        Column("created",         SQL.TIMESTAMP,"timestamp",    isRequired = true),
-        Column("modified",        SQL.TIMESTAMP,"timestamp",    isRequired = true)
+        Column("id",                       SQL.INTEGER,  "integer",      isRequired = true,
+                                                                         isPrimaryKey = true,
+                                                                         isAutoIncrement = true),
+        Column("project_id",               SQL.INTEGER,  "integer",      isRequired = true),
+        Column("name",                     SQL.VARCHAR,  "varchar(255)", isRequired = true),
+        Column("properties",               SQL.BLOB,     "text",         isRequired = false),
+        Column("head_id",                  SQL.INTEGER,  "integer",      isRequired = true),
+        Column("created",                  SQL.TIMESTAMP,"timestamp",    isRequired = true),
+        Column("modified",                 SQL.TIMESTAMP,"timestamp",    isRequired = true),
+        Column("created_from_branch_id",   SQL.INTEGER,  "integer",      isRequired = false),
+        Column("created_from_workflow_id", SQL.INTEGER,  "integer",      isRequired = false),
       )
     )),
     ///////////////////// Workflows ///////////////////// 
@@ -136,7 +138,8 @@ object Schema
                                                                 isPrimaryKey = true),
         Column("module_id",       SQL.INTEGER,  "integer",      isRequired = true),
         Column("result_id",       SQL.INTEGER,  "integer",      isRequired = false),
-        Column("state",           SQL.SMALLINT, "smallint",     isRequired = true)
+        Column("state",           SQL.SMALLINT, "smallint",     isRequired = true),
+        Column("created",         SQL.TIMESTAMP,"timestamp",    isRequired = true)
       )
     )),
     ///////////////////// Artifact ///////////////////// 
@@ -147,6 +150,7 @@ object Schema
                                                                 isPrimaryKey = true,
                                                                 isAutoIncrement = true),
         Column("t",               SQL.INTEGER,  "integer",      isRequired = false),
+        Column("mimeType",        SQL.VARCHAR,  "varchar(255)", isRequired = false),
         Column("created",         SQL.TIMESTAMP,"timestamp",    isRequired = true),
         Column("data",            SQL.BLOB,     "text",         isRequired = false),
       )
@@ -159,7 +163,7 @@ object Schema
                                                                 isPrimaryKey = true),
         Column("user_facing_name",SQL.VARCHAR,  "varchar(255)", isRequired = false,
                                                                 isPrimaryKey = true),
-        Column("artifact_id",     SQL.INTEGER,  "integer",      isRequired = true),
+        Column("artifact_id",     SQL.INTEGER,  "integer",      isRequired = false),
       )
     )),
     ///////////////////// Input ///////////////////// 
@@ -180,6 +184,7 @@ object Schema
         Column("result_id",       SQL.INTEGER,  "integer",      isRequired = true),
         Column("mime_type",       SQL.VARCHAR,  "varchar(30)",  isRequired = false),
         Column("data",            SQL.BLOB,     "text",         isRequired = false),
+        Column("stream",          SQL.INTEGER,  "integer",      isRequired = true),
       )
     )),
     ///////////////////// Result ///////////////////// 

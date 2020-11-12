@@ -51,4 +51,13 @@ object binders
   implicit val artifactTypeParameterBinder = ParameterBinderFactory[ArtifactType.T] {
     value => (stmt, idx) => stmt.setInt(idx, value.id)
   }
+  
+  //// StreamType ////
+  implicit val streamTypeTypeBinder: TypeBinder[StreamType.T] = new TypeBinder[StreamType.T] {
+    def apply(rs: ResultSet, label: String): StreamType.T = StreamType(rs.getInt(label))
+    def apply(rs: ResultSet, index: Int): StreamType.T = StreamType(rs.getInt(index))
+  }
+  implicit val streamTypeParameterBinder = ParameterBinderFactory[StreamType.T] {
+    value => (stmt, idx) => stmt.setInt(idx, value.id)
+  }
 }

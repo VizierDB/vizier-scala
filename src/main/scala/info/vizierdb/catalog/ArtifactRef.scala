@@ -6,7 +6,7 @@ import java.time.ZonedDateTime
 
 case class ArtifactRef(
   val resultId: Identifier,
-  val artifactId: Identifier,
+  val artifactId: Option[Identifier],
   val userFacingName: String
 ){ 
 }

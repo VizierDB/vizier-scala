@@ -5,7 +5,11 @@ import play.api.libs.json._
 import info.vizierdb.types._
 import java.time.ZonedDateTime
 
+import java.time.format.DateTimeFormatter
 import info.vizierdb.catalog.binders._
+import info.vizierdb.util.HATEOAS
+import info.vizierdb.VizierAPI
+import info.vizierdb.Vizier
 
 /**
  * A vistrails project.  The project may have an optional set of user-defined properties.
@@ -31,10 +35,29 @@ case class Project(
     name: String,
     properties: JsObject = Json.obj(), 
     activate: Boolean = false,
-    isInitialBranch: Boolean = false
+    isInitialBranch: Boolean = false,
+    fromBranch: Option[Identifier] = None,
+    fromWorkflow: Option[Identifier] = None
   )(implicit session: DBSession): (Project, Branch, Workflow) = {
     val b = Branch.column
     val now = ZonedDateTime.now()
+    val sourceBranch = 
+      if(isInitialBranch) { None }
+      else { 
+        Some(
+          fromBranch.map { Branch.lookup(id, _).get }
+                    .getOrElse { activeBranch }
+        )
+      }
+    val sourceWorkflowId =
+      if(isInitialBranch) { None }
+      else {
+        Some( 
+          fromWorkflow.map { Workflow.lookup(sourceBranch.get.id, _).get.id }
+                      .getOrElse { sourceBranch.get.headId }
+        )
+      }
+
     val branchId = withSQL {
       insertInto(Branch)
         .namedValues(
@@ -43,14 +66,18 @@ case class Project(
           b.properties -> properties, 
           b.headId -> 0, 
           b.created -> now, 
-          b.modified -> now
+          b.modified -> now,
+          b.createdFromBranchId -> sourceBranch.map { _.id },
+          b.createdFromWorkflowId -> sourceWorkflowId
         )
     }.updateAndReturnGeneratedKey.apply()
 
     var (branch, workflow) = {
       var branch = Branch.get(branchId)
       if(isInitialBranch){ branch.initWorkflow() }
-      else { branch.cloneWorkflow(activeBranch.headId) }
+      else { 
+        branch.cloneWorkflow(sourceWorkflowId.get)
+      }
     }
 
     val project = 
@@ -72,6 +99,30 @@ case class Project(
     }.update.apply()
     this.copy(activeBranchId = branchId, modified = now)
   }
+
+  def describe(implicit session:DBSession): JsObject =
+    JsObject(
+      summarize.value ++ Map(
+        "branches" -> JsArray(branches.map { _.summarize })
+      )
+    )
+
+  def summarize: JsObject = 
+    Json.obj(
+      "id"             -> JsString(id.toString),
+      "createdAt"      -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(created),
+      "lastModifiedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(modified),
+      "properties"     -> properties,
+      HATEOAS.LINKS    -> HATEOAS(
+        HATEOAS.SELF           -> VizierAPI.urls.getProject(id.toString),
+        HATEOAS.API_HOME       -> VizierAPI.urls.serviceDescriptor,
+        HATEOAS.API_DOC        -> VizierAPI.urls.apiDoc,
+        HATEOAS.PROJECT_DELETE -> VizierAPI.urls.deleteProject(id.toString),
+        HATEOAS.PROJECT_UPDATE -> VizierAPI.urls.updateProject(id.toString),
+        HATEOAS.BRANCH_CREATE  -> VizierAPI.urls.createBranch(id.toString),
+        HATEOAS.FILE_UPLOAD    -> VizierAPI.urls.uploadFile(id.toString)
+      ),
+    )
 }
 object Project
   extends SQLSyntaxSupport[Project]
@@ -108,6 +159,12 @@ object Project
         .from(Project as p)
         .where.eq(p.id, target) 
     }.map { apply(_) }.single.apply()
+  def list(implicit session:DBSession): Seq[Project] = 
+    withSQL { 
+      val p = Project.syntax 
+      select
+        .from(Project as p)
+    }.map { apply(_) }.list.apply()
 
   def activeBranchFor(id: Identifier)(implicit session:DBSession): Branch = 
     withSQL { 

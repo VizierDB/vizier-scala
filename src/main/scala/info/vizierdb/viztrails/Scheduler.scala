@@ -140,14 +140,17 @@ object Scheduler
       result.addInput( userFacingName, identifier )
     }
     for((userFacingName, artifact) <- context.outputs) {
-      result.addOutput( userFacingName, artifact.id )
+      result.addOutput( userFacingName, artifact.map { _.id } )
     }
     for((mimeType, data) <- context.messages) {
       result.addMessage( mimeType, data )
     }
 
     Provenance.updateSuccessorState(cell, 
-      context.scope ++ context.outputs.mapValues { _.id }
+      Provenance.updateScope(
+        context.outputs.mapValues { _.map { _.id } }.toSeq,
+        context.scope
+      )
     )
     return result
   }
@@ -177,6 +180,7 @@ object Scheduler
         val (startedCell, result) = cell.start
         /* return */ (command, arguments, context, startedCell)
       }
+    logger.trace(s"About to Process [${command.name}]($arguments) <- ($context)")
 
     try {
       command.process(arguments, context)

@@ -1,10 +1,16 @@
 package info.vizierdb.commands
 
 import play.api.libs.json.{ JsValue, Reads }
+import play.api.libs.json.JsNull
 
 class Arguments(values: Map[String, (JsValue, Parameter)])
 {
   def get[T](arg: String)(implicit read:Reads[T]): T = values(arg)._1.as[T]
+  def getOpt[T](arg: String)(implicit read:Reads[T]): Option[T] = 
+    values(arg)._1 match {
+      case JsNull => None
+      case other => Some(other.as[T])
+    }
   def getList(arg: String): Seq[Arguments] =
     values(arg) match { 
       case (j, ListParameter(_, _, components, _, _)) => 
@@ -35,6 +41,9 @@ class Arguments(values: Map[String, (JsValue, Parameter)])
     for((k, v) <- values) {
 
     }
+
+  override def toString = 
+    values.map { x => s"${x._1}: ${x._2._2.stringify(x._2._1)}" }.mkString(", ")
 }
 object Arguments
 {

@@ -5,8 +5,11 @@ import scalikejdbc.interpolation.SQLSyntax
 import java.time.ZonedDateTime
 import play.api.libs.json._
 import info.vizierdb.types._
+import java.time.format.DateTimeFormatter
+import info.vizierdb.util.HATEOAS
 import info.vizierdb.catalog.binders._
 import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.VizierAPI
 
 /**
  * One branch of the project
@@ -18,7 +21,9 @@ case class Branch(
   properties: JsObject,
   headId: Identifier,
   created: ZonedDateTime,
-  modified: ZonedDateTime
+  modified: ZonedDateTime,
+  createdFromBranchId: Option[Identifier],
+  createdFromWorkflowId: Option[Identifier]
 )
 {
   def head(implicit session: DBSession): Workflow = Workflow.get(headId)
@@ -144,8 +149,45 @@ case class Branch(
     return (branch, workflow)
   }
 
+  def createdFromModuleId(implicit session:DBSession): Option[Identifier] =
+    createdFromWorkflowId.flatMap { Workflow.get(_).actionModuleId }
+
   private[catalog] def cloneWorkflow(workflowId: Identifier)(implicit session: DBSession): (Branch, Workflow) =
     modify(None, ActionType.CREATE, workflowId)
+
+  def workflows(implicit session:DBSession): Seq[Workflow] = 
+    withSQL { 
+      val w = Workflow.syntax 
+      select
+        .from(Workflow as w)
+        .where.eq(w.branchId, id)  
+    }.map { Workflow(_) }.list.apply()
+
+
+  def describe(implicit session:DBSession): JsObject =
+    JsObject(
+      summarize.value ++ Map(
+        "workflows" -> JsArray(workflows.map { _.summarize })
+      )
+    )
+
+  def summarize(implicit session:DBSession): JsObject = 
+    Json.obj(
+      "id"             -> JsString(id.toString),
+      "createdAt"      -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(created),
+      "lastModifiedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(modified),
+      "sourceBranch"   -> createdFromBranchId.map { _.toString },
+      "sourceWorkflow" -> createdFromWorkflowId.map { _.toString },
+      "sourceModule"   -> createdFromModuleId.map { _.toString },
+      "isDefault"      -> Project.get(projectId).activeBranchId.equals(id),
+      "properties"     -> properties,
+      HATEOAS.LINKS    -> HATEOAS(
+        HATEOAS.SELF           -> VizierAPI.urls.getBranch(projectId.toString, id.toString),
+        HATEOAS.BRANCH_DELETE  -> VizierAPI.urls.deleteBranch(projectId.toString, id.toString),
+        HATEOAS.BRANCH_HEAD    -> VizierAPI.urls.getBranchHead(projectId.toString, id.toString),
+        HATEOAS.BRANCH_UPDATE  -> VizierAPI.urls.updateBranch(projectId.toString, id.toString),
+      ),
+    )
 }
 object Branch 
   extends SQLSyntaxSupport[Branch]
@@ -161,4 +203,14 @@ object Branch
         .from(Branch as b)
         .where.eq(b.id, target) 
     }.map { apply(_) }.single.apply()
+
+  def lookup(projectID: Identifier, branchId: Identifier)(implicit session:DBSession): Option[Branch] = 
+    withSQL { 
+      val b = Branch.syntax 
+      select
+        .from(Branch as b)
+        .where.eq(b.id, branchId) 
+          .and.eq(b.projectId, projectID)
+    }.map { apply(_) }.single.apply()
+
 }
