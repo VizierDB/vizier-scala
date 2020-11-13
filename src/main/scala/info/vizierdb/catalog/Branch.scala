@@ -127,6 +127,7 @@ case class Branch(
           c.moduleId,
           c.resultId,
           updateState + sqls" as state",
+          c.created,
         ) {
           _.from(Cell as c)
            .where.eq(c.workflowId, headId).and(Some(keepCells))
@@ -141,7 +142,8 @@ case class Branch(
             c.position -> position,
             c.moduleId -> moduleId,
             c.resultId -> None,
-            c.state -> ExecutionState.STALE
+            c.state -> ExecutionState.STALE,
+            c.created -> ZonedDateTime.now()
           )
       }.update.apply()
     }

@@ -3,6 +3,7 @@ package info.vizierdb.catalog
 import scalikejdbc._
 import java.time.ZonedDateTime
 import info.vizierdb.types._
+import info.vizierdb.catalog.binders._
 
 case class Result(
   id: Identifier,
@@ -11,15 +12,18 @@ case class Result(
 )
 {
   def addMessage(message: String)(implicit session: DBSession):Unit = 
-    addMessage("text/plain", message.getBytes())
+    addMessage("text/plain", message.getBytes(), StreamType.STDOUT)
   def addMessage(mimeType: String, data: Array[Byte])(implicit session: DBSession):Unit = 
+    addMessage(mimeType, data, StreamType.STDOUT)
+  def addMessage(mimeType: String, data: Array[Byte], stream: StreamType.T)(implicit session: DBSession):Unit = 
     withSQL { 
       val m = Message.column
       insertInto(Message)
         .namedValues(
           m.resultId -> id,
           m.mimeType -> mimeType,
-          m.data -> data
+          m.data -> data,
+          m.stream -> stream
         )
     }.update.apply()
   def addOutput(userFacingName: String, artifactId: Option[Identifier])(implicit session: DBSession): Unit =

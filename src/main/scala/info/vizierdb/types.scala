@@ -62,7 +62,7 @@ object types
     type T = Value
 
     val STDOUT = Value(1, "stdout")
-    val STDERR = Value(1, "stderr")
+    val STDERR = Value(2, "stderr")
   }
 }
 

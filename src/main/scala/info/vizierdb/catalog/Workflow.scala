@@ -65,7 +65,7 @@ case class Workflow(
     withSQL {
       val c = Cell.syntax
       val m = Module.syntax
-      select(Cell as c, Module as m)
+      select(c.resultAll, m.resultAll)
         .from(Cell as c)
         .join(Module as m)
         .where.eq(c.workflowId, id)
@@ -73,6 +73,17 @@ case class Workflow(
         .orderBy(c.position)
     }.map { rs => (Cell(rs), Module(rs)) }
      .list.apply()
+
+  def cellByModuleId(moduleId: Identifier)(implicit session: DBSession): Option[Cell] =
+    {
+      withSQL {
+        val c = Cell.syntax
+        select(c.resultAll)
+          .from(Cell as c)
+          .where.eq(c.workflowId, id)
+            .and.eq(c.moduleId, moduleId)
+      }.map { Cell(_) }.single.apply()
+    }
 
   def length(implicit session: DBSession): Int = Workflow.getLength(id)
   def abort(implicit session:DBSession): Workflow =
@@ -93,12 +104,12 @@ case class Workflow(
     copy(aborted = true)
   }
 
-  def artifactIds(implicit session: DBSession): Seq[ArtifactRef] =
+  def outputArtifacts(implicit session: DBSession): Seq[ArtifactRef] =
   {
     val c = Cell.syntax
     val o = OutputArtifactRef.syntax
     withSQL {
-      select(OutputArtifactRef as o)
+      select(o.resultAll)
         .from(Cell as c)
         .join(OutputArtifactRef as o)
         .where.eq(c.resultId, o.resultId)
@@ -120,10 +131,13 @@ case class Workflow(
   {
     val branch = Branch.get(branchId)
     val cellsAndModules = cellsAndModulesInOrder
-    val artifacts = artifactIds.filter { _.artifactId.equals(None) }
-                               .map { ref => Artifact.lookupSummary(ref.artifactId.get).get }
+    val artifacts = outputArtifacts.filter { !_.artifactId.equals(None) }
+                                   .map { ref => 
+                                      ref.userFacingName -> 
+                                        Artifact.lookupSummary(ref.artifactId.get).get 
+                                    }
     val (datasets, dataobjects) =
-      artifacts.partition { _.t.equals(ArtifactType.DATASET) }
+      artifacts.partition { _._2.t.equals(ArtifactType.DATASET) }
     val summary = makeSummary(branch, actionModuleId.map { Module.get(_) })
 
     val isRunning = cellsAndModules.exists { !_._1.state.equals(ExecutionState.DONE) }
@@ -145,8 +159,8 @@ case class Workflow(
         "modules" -> JsArray(cellsAndModules.map { case (cell, module) =>
           module.describe(cell, branch.projectId, branchId, id)
         }),
-        "datasets" -> JsArray(datasets.map { _.describe }),
-        "dataobjects" -> JsArray(dataobjects.map { _.describe }),
+        "datasets" -> JsArray(datasets.map { case (name, d) => d.summarize(name) }),
+        "dataobjects" -> JsArray(dataobjects.map { case (name, d) => d.summarize(name) }),
         "readOnly" -> JsBoolean(!branch.headId.equals(id))
       )
     )
@@ -207,7 +221,7 @@ object Workflow
       val b = Branch.syntax 
       select
         .from(Workflow as w)
-        .from(Branch as b)
+        .join(Branch as b)
         .where.eq(w.id, workflowId)  
           .and.eq(w.branchId, branchId)  
           .and.eq(b.id, w.branchId)  

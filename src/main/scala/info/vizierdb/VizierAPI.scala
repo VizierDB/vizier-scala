@@ -86,10 +86,10 @@ object VizierServlet
   extends HttpServlet 
   with LazyLogging
 {
-  val PREFIX   = "\\/api\\/v1(\\/.*)".r
+  val PREFIX   = "\\/vizier-db/api\\/v1(\\/.*)".r
   val PROJECT  = "\\/projects\\/([^/]+)(\\/.*|)".r
   val BRANCH   = "\\/branches\\/([^/]+)(\\/.*|)".r
-  val HEAD = "\\/head\\/(.*)".r
+  val HEAD = "\\/head(\\/.*|)".r
   val WORKFLOW = "\\/workflows\\/([^/]+)(\\/.*|)".r
   val MODULE = "\\/modules\\/([^/]+)(\\/.*|)".r
   val CHART = "\\/charts\\/([^/]+)".r
@@ -170,8 +170,8 @@ object VizierServlet
 
   override def doGet(req: HttpServletRequest, output: HttpServletResponse)
   {
-    logger.debug(s"Vizier GET ${req.getPathInfo}")
-    req.getPathInfo match {
+    logger.info(s"Vizier GET ${req.getPathInfo}")
+    req.getRequestURI match {
       case PREFIX(route) => 
         route match { 
           case "/" => 
@@ -179,34 +179,48 @@ object VizierServlet
           case "/projects" => 
             process(ListProjectsRequest(), output) // list projects
           case PROJECT(projectId, "") => 
-            process(GetProjectRequest(projectId), output) // export project
+            process(GetProjectRequest(projectId.toLong), output) // export project
           case PROJECT(projectId, "/export") => 
             ??? // export project
           case PROJECT(projectId, "/branches") => 
-            process(ListBranchesRequest(projectId), output) // export project
+            process(ListBranchesRequest(projectId.toLong), output) // export project
           case PROJECT(projectId, BRANCH(branchId, "")) => 
-            process(GetBranchRequest(projectId, branchId), output) // get the branch
+            process(GetBranchRequest(projectId.toLong, branchId.toLong), output) // get the branch
           case PROJECT(projectId, BRANCH(branchId, "/head")) => 
-            process(GetWorkflowRequest(projectId, branchId, None), output)
-            ??? // get the branch head workflow
+            process(GetWorkflowRequest(projectId.toLong, branchId.toLong, None), output) // get the branch head workflow
           case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, ""))) => 
-            ??? // get the specified workflow
+            process(GetWorkflowRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong)), output) // get the specified workflow
+          case PROJECT(projectId, BRANCH(branchId, HEAD("/modules"))) => 
+            process(GetAllModulesRequest(projectId.toLong, branchId.toLong, None), output) // get the specified module from the branch head
+          case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/modules"))) => 
+            process(GetAllModulesRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong)), output) // get the specified module from the branch head
           case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(moduleId, "")))) => 
-            ??? // get the specified module from the branch head
+            process(GetModuleRequest(projectId.toLong, branchId.toLong, None, moduleId.toLong), output) // get the specified module from the branch head
           case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, "")))) => 
-            ??? // get the specified module
+            process(GetModuleRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), moduleId.toLong), output)  // get the specified module
           case PROJECT(projectId, BRANCH(branchId, HEAD("/sql"))) => 
-            ??? // sql query on the tail of the specified branch
+            process(WorkflowSQLRequest(projectId.toLong, branchId.toLong, None, req.getParameter("query")), output) // sql query on the tail of the specified branch
           case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/sql"))) => 
-            ??? // sql query on the tail of the specified branch/workflow
+            process(WorkflowSQLRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), req.getParameter("query")), output) // sql query on the tail of the specified branch/workflow
           case PROJECT(projectId, DATASET(datasetId, "")) =>
-            ??? // retrieve the specified dataset
+            process(GetArtifactRequest(
+              projectId.toLong, 
+              datasetId.toLong, 
+              expectedType = Some(ArtifactType.DATASET), 
+              offset = Option(req.getParameter("offset")).map { _.toLong },
+              limit = Option(req.getParameter("limit")).map { _.toInt },
+              forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
+            ), output) // retrieve the specified dataset
           case PROJECT(projectId, DATASET(datasetId, "/annotations")) =>
-            ??? // retrieve the specified dataset with annotations
+            process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
+                    .Annotations(
+                      columnId = Option(req.getParameter("column")).map { _.toInt },
+                      rowId = Option(req.getParameter("row"))
+                    ), output) // retrieve the specified dataset with annotations
           case PROJECT(projectId, DATASET(datasetId, "/descriptor")) =>
-            ??? // retrieve the specified dataset's descriptor
+            process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary, output) // retrieve the specified dataset's descriptor
           case PROJECT(projectId, DATASET(datasetId, "/csv")) =>
-            ??? // retrieve the specified dataset as a csv file
+            process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV, output) // retrieve the specified dataset as a csv file
           case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, CHART(chartId))))) => 
             ??? // get the specified module's chart
           case PROJECT(projectId, FILE(fileId, "")) =>
@@ -227,8 +241,8 @@ object VizierServlet
 
   override def doPost(req: HttpServletRequest, output: HttpServletResponse)
   {
-    logger.debug(s"Vizier POST ${req.getPathInfo}")
-    req.getPathInfo match {
+    logger.info(s"Vizier POST ${req.getPathInfo}")
+    req.getRequestURI match {
       case PREFIX(route) => 
         route match { 
           case "/reload" => 
@@ -263,8 +277,8 @@ object VizierServlet
 
   override def doDelete(req: HttpServletRequest, output: HttpServletResponse)
   {
-    logger.debug(s"Vizier DELETE ${req.getPathInfo}")
-    req.getPathInfo match {
+    logger.info(s"Vizier DELETE ${req.getPathInfo}")
+    req.getRequestURI match {
       case PREFIX(route) => 
         route match { 
           case PROJECT(projectId, "") => 
@@ -283,8 +297,8 @@ object VizierServlet
 
   override def doPut(req: HttpServletRequest, output: HttpServletResponse)
   {
-    logger.debug(s"Vizier PUT ${req.getPathInfo}")
-    req.getPathInfo match {
+    logger.info(s"Vizier PUT ${req.getPathInfo}")
+    req.getRequestURI match {
       case PREFIX(route) => 
         route match { 
           case PROJECT(projectId, "") => 

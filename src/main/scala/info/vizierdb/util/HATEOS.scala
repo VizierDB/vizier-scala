@@ -9,7 +9,7 @@ object HATEOAS
     Json.toJson(build(links))
 
   def build(links: Seq[(String, URL)]): Seq[Map[String, String]] = 
-    links.filter { _._2 == null }
+    links.filter { _._2 != null }
          .map { case (rel, href) => Map("rel" -> rel, "href" -> href.toString) }
          .toSeq
 

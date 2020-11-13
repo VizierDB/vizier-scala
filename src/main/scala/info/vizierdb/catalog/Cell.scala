@@ -84,6 +84,17 @@ case class Cell(
             .orderBy(c.position.asc)
     }.map { Cell(_) }.list.apply()
 
+  def projectId(implicit session: DBSession): Identifier = 
+    withSQL {
+      val w = Workflow.syntax
+      val b = Branch.syntax
+      select(b.projectId)
+          .from(Workflow as w)
+          .join(Branch as b)
+          .where.eq(w.branchId, b.id)
+            .and.eq(w.id, workflowId)
+    }.map { _.get[Identifier](1)}.single.apply().get
+
   def start(implicit session: DBSession): (Cell, Result) = 
   {
     val newResultId = withSQL {

@@ -12,7 +12,10 @@
   </appender>
 
   <!--+++++++++++++++++++++++  Vizier  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.VizierAPI$"       level="DEBUG" />
+  <logger name="info.vizierdb.VizierAPI$"             level="DEBUG" />
+  <logger name="info.vizierdb.VizierServlet$"         level="DEBUG" />
+  <logger name="info.vizierdb.api.WorkflowSQLRequest" level="TRACE" />
+  <logger name="info.vizierdb.catalog.Module"         level="DEBUG" />
 
 
     

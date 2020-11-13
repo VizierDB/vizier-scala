@@ -9,6 +9,7 @@ import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
 
 class ExecutionContext(
+  val projectId: Identifier,
   val scope: Map[String, Identifier]
 )
 {
@@ -91,7 +92,7 @@ class ExecutionContext(
    */
   def output(name: String, t: ArtifactType.T, data: Array[Byte], mimeType: String = "text/plain"): Artifact =
   { 
-    val artifact = DB autoCommit { implicit s => Artifact.make(t, mimeType, data) }
+    val artifact = DB autoCommit { implicit s => Artifact.make(projectId, t, mimeType, data) }
     outputs.put(name.toLowerCase(), Some(artifact))
     return artifact
   }
@@ -124,7 +125,7 @@ class ExecutionContext(
    * @returns                 The newly allocated backend-facing name and its identifier
    */
   def outputDataset(name: String): (String, Identifier) =
-    { val ds = output(name, ArtifactType.DATASET, Array[Byte]()); (ds.nameInBackend, ds.id) }
+    { val ds = output(name, ArtifactType.DATASET, Array[Byte](), "mimir/dataset"); (ds.nameInBackend, ds.id) }
 
   /**
    * Allocate a new dataset object and register it as an output

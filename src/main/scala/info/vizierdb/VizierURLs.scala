@@ -20,6 +20,8 @@ class VizierURLs(
 
   def url(spec: String, query: Map[String,String] = Map.empty): URL =
     new URL(base, spec+queryString(query))
+  def compose(base: URL, rest: String) =
+    new URL(base.toString + rest)
 
   def createProject =
     listProjects
@@ -48,17 +50,17 @@ class VizierURLs(
   def getWorkflow(projectID: String, branchID: String, workflowID: String) =
     url(s"projects/$projectID/branches/$branchID/workflows/$workflowID")
   def appendBranchHead(projectID: String, branchID: String) =
-    new URL(getBranchHead(projectID, branchID), "modules")
+    compose(getBranchHead(projectID, branchID), "/modules")
   def appendWorkflow(projectID: String, branchID: String, workflowID: String) =
-    new URL(getWorkflow(projectID, branchID, workflowID), "modules")
+    compose(getWorkflow(projectID, branchID, workflowID), "/modules")
   def cancelBranchHead(projectID: String, branchID: String) =
-    new URL(getBranchHead(projectID, branchID), "cancel")
+    compose(getBranchHead(projectID, branchID), "/cancel")
   def cancelWorkflow(projectID: String, branchID: String, workflowID: String) =
-    new URL(getWorkflow(projectID, branchID, workflowID), "cancel")
+    compose(getWorkflow(projectID, branchID, workflowID), "/cancel")
   def getBranchHeadModule(projectID: String, branchID: String, moduleID: String) =
-    new URL(getBranchHead(projectID, branchID), s"modules/$moduleID")
+    compose(getBranchHead(projectID, branchID), s"/modules/$moduleID")
   def getWorkflowModule(projectID: String, branchID: String, workflowID: String, moduleID: String) =
-    new URL(getWorkflow(projectID, branchID, workflowID), s"modules/$moduleID")
+    compose(getWorkflow(projectID, branchID, workflowID), s"/modules/$moduleID")
   def deleteBranchHeadModule(projectID: String, branchID: String, moduleID: String) =
     getBranchHeadModule(projectID, branchID, moduleID)
   def deleteWorkflowModule(projectID: String, branchID: String, workflowID: String, moduleID: String) =
@@ -74,6 +76,7 @@ class VizierURLs(
 
 
   def getDataset(
+    projectId: String, 
     datasetID: String, 
     forceProfiler: Boolean = false, 
     offset: Option[Int] = None, 
@@ -85,32 +88,32 @@ class VizierURLs(
       ++ offset.map { "offset" -> _.toString }
       ++ limit.map { "limit" -> _.toString }
     )
-    url(s"artifacts/$datasetID", query)
+    url(s"projects/$projectId/artifacts/$datasetID", query)
   }
-  def downloadDataset(datasetID: String) =
-    new URL(getDataset(datasetID), "csv")
-  def getDatasetCaveats(datasetID: String, columnID: Option[Int] = None, rowID: Option[String] = None) =
-    new URL(getDataset(datasetID), "annotations"+queryString(
+  def downloadDataset(projectId: String, datasetID: String) =
+    compose(getDataset(projectId, datasetID), "/csv")
+  def getDatasetCaveats(projectId: String, datasetID: String, columnID: Option[Int] = None, rowID: Option[String] = None) =
+    compose(getDataset(projectId, datasetID), "/annotations"+queryString(
       (
         columnID.toSeq.map { "column" -> _.toString }
         ++ rowID.toSeq.map { "row" -> _.toString }
       ).toMap
     ))
-  def getDatasetDescriptor(datasetID: String) =
-    new URL(getDataset(datasetID), "descriptor")    
+  def getDatasetDescriptor(projectId: String, datasetID: String) =
+    compose(getDataset(projectId, datasetID), "/descriptor")    
 
 
   def getHeadChartView(projectID: String, branchID: String, moduleID: String, chartID: String) =
-    new URL(getBranchHeadModule(projectID, branchID, moduleID), s"charts/$chartID")
+    compose(getBranchHeadModule(projectID, branchID, moduleID), s"/charts/$chartID")
   def getChartView(projectID: String, branchID: String, workflowID: String, moduleID: String, chartID: String) =
-    new URL(getWorkflowModule(projectID, branchID, workflowID, moduleID), s"charts/$chartID")
+    compose(getWorkflowModule(projectID, branchID, workflowID, moduleID), s"/charts/$chartID")
 
   def downloadFile(projectID: String, fileID: String) =
-    new URL(getProject(projectID), s"files/$fileID")
+    compose(getProject(projectID), s"/files/$fileID")
   def uploadFile(projectID: String) =
-    new URL(getProject(projectID), "files")
+    compose(getProject(projectID), "/files")
 
-  def getArtifact(artifactID: String) =
-    url(s"artifacts/$artifactID")
+  def getArtifact(projectId: String, artifactID: String) =
+    url(s"projects/$projectId/artifacts/$artifactID")
 }
 

@@ -30,4 +30,6 @@ object CloneDataset extends Command
     context.output(arguments.get[String]("name"), artifact)
     context.message("Dataset Cloned")
   }
+  def predictProvenance(arguments: Arguments) = 
+    (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name")))
 }

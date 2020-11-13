@@ -149,8 +149,9 @@ object Schema
         Column("id",              SQL.INTEGER,  "integer",      isRequired = true, 
                                                                 isPrimaryKey = true,
                                                                 isAutoIncrement = true),
+        Column("project_id",      SQL.INTEGER,  "integer",      isRequired = true),
         Column("t",               SQL.INTEGER,  "integer",      isRequired = false),
-        Column("mimeType",        SQL.VARCHAR,  "varchar(255)", isRequired = false),
+        Column("mime_type",       SQL.VARCHAR,  "varchar(255)", isRequired = false),
         Column("created",         SQL.TIMESTAMP,"timestamp",    isRequired = true),
         Column("data",            SQL.BLOB,     "text",         isRequired = false),
       )

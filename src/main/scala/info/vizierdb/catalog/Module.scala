@@ -7,6 +7,7 @@ import info.vizierdb.VizierException
 import info.vizierdb.types._
 import info.vizierdb.commands.Commands
 import info.vizierdb.catalog.binders._
+import com.typesafe.scalalogging.LazyLogging
 
 /**
  * One step in an arbitrary workflow.
@@ -27,7 +28,11 @@ class Module(
   val properties: JsObject,
   val revisionOfId: Option[Identifier] = None
 )
+  extends LazyLogging
 {
+  override def toString = 
+    s"[$id] $packageId.$commandId($arguments)"
+
   def describe(cell: Cell, projectId: Identifier, branchId: Identifier, workflowId: Identifier)(implicit session:DBSession): JsObject = 
   {
     val command = Commands.getOption(packageId, commandId)
@@ -44,7 +49,10 @@ class Module(
     val artifacts = cell.resultId.map { Result.outputArtifacts(_) }
                         .toSeq.flatten
                         .filter { !_.artifactId.isEmpty }
-                        .map { ref => ref.userFacingName -> Artifact.lookupSummary(ref.artifactId.get).get }
+                        .map { ref => 
+                          logger.trace(s"Looking up artifact ${ref.userFacingName} -> ${ref.artifactId}")
+                          ref.userFacingName -> Artifact.lookupSummary(ref.artifactId.get).get 
+                        }
 
     val datasets    = artifacts.filter { _._2.t.equals(ArtifactType.DATASET) }
     val charts      = artifacts.filter { _._2.t.equals(ArtifactType.CHART) }
@@ -67,9 +75,9 @@ class Module(
       "text" -> JsString(command.map { _.format(arguments) }
                                 .getOrElse { s"UNKNOWN COMMAND $packageId.$commandId" }),
       "timestamps" -> timestamps,
-      "datasets"  -> datasets   .map { _._2.describe },
-      "charts"    -> charts     .map { _._2.describe },
-      "artifacts" -> dataobjects.map { _._2.describe },
+      "datasets"  -> datasets   .map { case (name, d) => d.summarize(name) },
+      "charts"    -> charts     .map { case (name, d) => d.summarize(name) },
+      "artifacts" -> dataobjects.map { case (name, d) => d.summarize(name) },
       "outputs" -> Json.obj(
         "stdout" -> messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
         "stderr" -> messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }

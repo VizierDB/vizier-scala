@@ -55,11 +55,21 @@ object Vizier
   def getProject(id: Identifier) =
     DB.readOnly { implicit s => Project.get(id) }
 
+  def initORMLogging()
+  {
+    GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
+      enabled = true,
+      singleLineMode = true,
+      logLevel = 'trace,
+    ) 
+  }
+
   def main(args: Array[String]) 
   {
     println("Starting SQLite...")
     initSQLite()
     Schema.initialize()
+    initORMLogging()
     // createProject("TEST PROJECT")
     println("Starting Mimir...")
     initMimir()
