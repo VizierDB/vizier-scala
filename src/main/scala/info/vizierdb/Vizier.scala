@@ -49,12 +49,6 @@ object Vizier
     MimirAPI.runServer(MimirAPI.DEFAULT_API_PORT) // Starts the Mimir server **in the background**
   }
 
-  def createProject(name: String) =
-    DB.autoCommit { implicit s => Project.create(name) }
-  
-  def getProject(id: Identifier) =
-    DB.readOnly { implicit s => Project.get(id) }
-
   def initORMLogging()
   {
     GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
@@ -70,7 +64,6 @@ object Vizier
     initSQLite()
     Schema.initialize()
     initORMLogging()
-    // createProject("TEST PROJECT")
     println("Starting Mimir...")
     initMimir()
     println("Starting Server...")

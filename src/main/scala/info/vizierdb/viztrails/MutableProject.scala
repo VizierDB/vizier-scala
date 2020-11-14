@@ -59,6 +59,7 @@ class MutableProject(
 
 object MutableProject
 {
-  def apply(name: String): MutableProject = new MutableProject(Vizier.createProject(name).id)
+  def apply(name: String): MutableProject = 
+    new MutableProject(DB.autoCommit { implicit s => Project.create(name).id })
   def apply(projectId: Identifier): MutableProject = new MutableProject(projectId)
 }

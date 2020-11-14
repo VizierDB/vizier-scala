@@ -98,4 +98,25 @@ case class GetArtifactRequest(
       }
     } 
   }
+
+  object File extends Request
+  {
+    def handle: Response =
+    {
+      getArtifact(Some(ArtifactType.FILE)) match {
+        case Some(artifact) => 
+          return FileResponse(
+            file = artifact.file, 
+            mimeType = artifact.mimeType, 
+            name = artifact.jsonData
+                           .as[Map[String, JsValue]]
+                           .get("filename")
+                           .map { _ .as[String] }
+                           .getOrElse { s"unnamed_file_${artifact.id}" }
+          )
+        case None => 
+          return NoSuchEntityResponse() 
+      }
+    }
+  }
 }

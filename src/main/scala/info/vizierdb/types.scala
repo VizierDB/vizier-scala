@@ -64,6 +64,15 @@ object types
     val STDOUT = Value(1, "stdout")
     val STDERR = Value(2, "stderr")
   }
+
+  object MIME
+  {
+    val CHART_VIEW    = "chart/view"
+    val TEXT          = "text/plain"
+    val HTML          = "text/html"
+    val MARKDOWN      = "text/markdown"
+    val DATASET_VIEW  = "dataset/view"
+  }
 }
 
 

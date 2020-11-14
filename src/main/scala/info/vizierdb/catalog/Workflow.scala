@@ -152,7 +152,7 @@ case class Workflow(
         HATEOAS.LINKS -> HATEOAS.extend(summary.value(HATEOAS.LINKS),
           HATEOAS.WORKFLOW_CANCEL -> (
             if(isRunning) { null }
-            else { VizierAPI.urls.cancelWorkflow(branch.projectId.toString, branchId.toString, id.toString) } 
+            else { VizierAPI.urls.cancelWorkflow(branch.projectId, branchId, id) } 
           )
         ),
         "state" -> JsNumber(ExecutionState.translateToClassicVizier(state)),
@@ -178,12 +178,12 @@ case class Workflow(
       "packageId"   -> actionModule.map { _.packageId },
       "commandId"   -> actionModule.map { _.commandId },
       HATEOAS.LINKS -> HATEOAS(
-        HATEOAS.SELF             -> VizierAPI.urls.getWorkflow(branch.projectId.toString, branchId.toString, id.toString),
-        HATEOAS.WORKFLOW_APPEND  -> VizierAPI.urls.appendWorkflow(branch.projectId.toString, branchId.toString, id.toString),
-        HATEOAS.WORKFLOW_BRANCH  -> VizierAPI.urls.getBranch(branch.projectId.toString, branchId.toString),
-        HATEOAS.BRANCH_HEAD      -> VizierAPI.urls.getBranchHead(branch.projectId.toString, branchId.toString),
-        HATEOAS.WORKFLOW_PROJECT -> VizierAPI.urls.getProject(branch.projectId.toString),
-        HATEOAS.FILE_UPLOAD      -> VizierAPI.urls.uploadFile(branch.projectId.toString),
+        HATEOAS.SELF             -> VizierAPI.urls.getWorkflow(branch.projectId, branchId, id),
+        HATEOAS.WORKFLOW_APPEND  -> VizierAPI.urls.appendWorkflow(branch.projectId, branchId, id),
+        HATEOAS.WORKFLOW_BRANCH  -> VizierAPI.urls.getBranch(branch.projectId, branchId),
+        HATEOAS.BRANCH_HEAD      -> VizierAPI.urls.getBranchHead(branch.projectId, branchId),
+        HATEOAS.WORKFLOW_PROJECT -> VizierAPI.urls.getProject(branch.projectId),
+        HATEOAS.FILE_UPLOAD      -> VizierAPI.urls.uploadFile(branch.projectId),
       )
     )
 }

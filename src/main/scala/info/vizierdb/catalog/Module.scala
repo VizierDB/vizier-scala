@@ -102,17 +102,35 @@ object Module
   )(arguments: (String, Any)*)(implicit session: DBSession): Module =
   {
     val command = Commands.getOption(packageId, commandId)
-                      .getOrElse {
-                        throw new VizierException(s"Invalid Command ${packageId}.${commandId}")
-                      }
-    
+                  .getOrElse {
+                    throw new VizierException(s"Invalid Command ${packageId}.${commandId}")
+                  }
+    make(packageId, commandId, properties, revisionOfId, command.encodeArguments(arguments.toMap))
+  }
+
+  def make(
+    packageId: String, 
+    commandId: String, 
+    arguments: JsObject,
+    revisionOfId: Option[Identifier]
+  )(implicit session: DBSession): Module =
+    make(packageId, commandId, Json.obj(), revisionOfId)
+
+  def make(
+    packageId: String, 
+    commandId: String, 
+    properties: JsObject,
+    revisionOfId: Option[Identifier],
+    arguments: JsObject
+  )(implicit session: DBSession): Module =
+  {    
     get( withSQL {
       val m = Module.column
       insertInto(Module)
         .namedValues(
           m.packageId -> packageId,
           m.commandId -> commandId,
-          m.arguments -> command.encodeArguments(arguments.toMap),
+          m.arguments -> arguments,
           m.properties -> properties,
           m.revisionOfId -> revisionOfId
         )

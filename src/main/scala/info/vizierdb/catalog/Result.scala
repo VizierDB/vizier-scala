@@ -12,7 +12,9 @@ case class Result(
 )
 {
   def addMessage(message: String)(implicit session: DBSession):Unit = 
-    addMessage("text/plain", message.getBytes(), StreamType.STDOUT)
+    addMessage(message, StreamType.STDOUT)
+  def addMessage(message: String, stream: StreamType.T)(implicit session: DBSession):Unit = 
+    addMessage("text/plain", message.getBytes(), stream)
   def addMessage(mimeType: String, data: Array[Byte])(implicit session: DBSession):Unit = 
     addMessage(mimeType, data, StreamType.STDOUT)
   def addMessage(mimeType: String, data: Array[Byte], stream: StreamType.T)(implicit session: DBSession):Unit = 

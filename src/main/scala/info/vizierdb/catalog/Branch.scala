@@ -184,10 +184,10 @@ case class Branch(
       "isDefault"      -> Project.get(projectId).activeBranchId.equals(id),
       "properties"     -> properties,
       HATEOAS.LINKS    -> HATEOAS(
-        HATEOAS.SELF           -> VizierAPI.urls.getBranch(projectId.toString, id.toString),
-        HATEOAS.BRANCH_DELETE  -> VizierAPI.urls.deleteBranch(projectId.toString, id.toString),
-        HATEOAS.BRANCH_HEAD    -> VizierAPI.urls.getBranchHead(projectId.toString, id.toString),
-        HATEOAS.BRANCH_UPDATE  -> VizierAPI.urls.updateBranch(projectId.toString, id.toString),
+        HATEOAS.SELF           -> VizierAPI.urls.getBranch(projectId, id),
+        HATEOAS.BRANCH_DELETE  -> VizierAPI.urls.deleteBranch(projectId, id),
+        HATEOAS.BRANCH_HEAD    -> VizierAPI.urls.getBranchHead(projectId, id),
+        HATEOAS.BRANCH_UPDATE  -> VizierAPI.urls.updateBranch(projectId, id),
       ),
     )
 }

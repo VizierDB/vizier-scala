@@ -1,5 +1,7 @@
 package info.vizierdb.commands
 
+import java.io.File
+import play.api.libs.json._
 import scalikejdbc._
 import info.vizierdb.types._
 import info.vizierdb.Vizier
@@ -7,6 +9,8 @@ import info.vizierdb.catalog.Artifact
 import org.mimirdb.api.request.QueryTableRequest
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
+import info.vizierdb.artifacts.Chart
+import org.mimirdb.api.MimirAPI
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -16,7 +20,7 @@ class ExecutionContext(
   val inputs = scala.collection.mutable.Map[String, Identifier]()
   val outputs = scala.collection.mutable.Map[String, Option[Artifact]]()
   val messages = scala.collection.mutable.Buffer[(String, Array[Byte])]()
-  var errorMessage: Option[String] = None
+  var errorMessages = scala.collection.mutable.Buffer[(String, Array[Byte])]()
 
   /**
    * Check to see if the specified artifact appears in the scope
@@ -83,6 +87,47 @@ class ExecutionContext(
   }
 
   /**
+   * Allocate, output and optionally message a chart
+   *
+   * @param   chart           The chart description
+   * @param   withMessage     Include a message containing the chart
+   * @param   withArtifact    Include an message containing the chart
+   */
+  def chart(chart: Chart, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
+  {
+    val dataset = artifact(chart.dataset)
+                             .getOrElse{ 
+                               error(s"Dataset ${chart.dataset} does not exist")
+                               return false
+                             }
+    val df = 
+      MimirAPI.catalog.getOption(dataset.nameInBackend)
+                      .getOrElse {
+                        error(s"Dataset ${chart.dataset} [id:${dataset.nameInBackend}] does not exist")
+                        return false
+                      }
+    val encoded = 
+      chart.render(df).toString.getBytes
+
+    if(withMessage){
+      message(
+        mimeType = MIME.CHART_VIEW, 
+        content = encoded
+      )
+    }
+    if(withArtifact){
+      output(
+        name = chart.name,
+        t = ArtifactType.CHART,
+        data = encoded,
+        mimeType = MIME.CHART_VIEW
+      )
+    }
+
+    return true
+  }
+
+  /**
    * Allocate and output an artifact
    *
    * @param   name            The user-facing name of the artifact
@@ -103,9 +148,10 @@ class ExecutionContext(
    * @param    name           The new name of the artifact
    * @param    artifact       The artifact to output
    */
-  def output(name: String, artifact: Artifact) =
+  def output(name: String, artifact: Artifact): Artifact =
   {
     outputs.put(name.toLowerCase(), Some(artifact))
+    return artifact
   }
 
   /**
@@ -133,8 +179,8 @@ class ExecutionContext(
    * @param   name            The user-facing name of the dataset
    * @returns                 The newly allocated backend-facing name
    */
-  def outputFile(name: String): String =
-    output(name, ArtifactType.DATASET, Array[Byte]()).nameInBackend
+  def outputFile(name: String, mimeType: String = MIME.TEXT, properties: JsObject = Json.obj()): Artifact =
+    output(name, ArtifactType.DATASET, properties.toString.getBytes, mimeType)
 
   /**
    * Record that this execution failed with the specified name
@@ -143,7 +189,7 @@ class ExecutionContext(
    */
   def error(message: String)
   {
-    errorMessage = Some(message)
+    errorMessages.append( (MIME.TEXT, message.getBytes) )
   }
 
   /**
@@ -153,7 +199,7 @@ class ExecutionContext(
    */
   def message(content: String)
   {
-    message("text/plain", content.getBytes())
+    message(MIME.TEXT, content.getBytes())
   }
 
   /**
@@ -162,9 +208,9 @@ class ExecutionContext(
    * @param   mimeType        The MIME-Type of the message content
    * @param   content         The text to communicate
    */
-  def message(mime: String, content: String)
+  def message(mimeType: String, content: String)
   {
-    message(mime, content.getBytes())
+    message(mimeType, content.getBytes())
   }
 
   /**
@@ -173,9 +219,9 @@ class ExecutionContext(
    * @param   mimeType        The MIME-Type of the message content
    * @param   content         The bytes of data to communicate
    */
-  def message(mime: String, content: Array[Byte])
+  def message(mimeType: String, content: Array[Byte])
   {
-    messages.append( (mime, content) )
+    messages.append( (mimeType, content) )
   }
 
   /**
@@ -202,5 +248,5 @@ class ExecutionContext(
       s"SCOPE: { ${scope.map { case (ds, id) => ds+" -> "+id }.mkString(", ")} }"
     }
 
-  def isError = errorMessage.isDefined
+  def isError = !errorMessages.isEmpty
 }

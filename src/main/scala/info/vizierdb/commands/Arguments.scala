@@ -17,6 +17,12 @@ class Arguments(values: Map[String, (JsValue, Parameter)])
         j.as[Seq[Map[String, JsValue]]].map { Arguments(_, components) }
       case _ => throw new RuntimeException(s"$arg is not a list")
     }
+  def getRecord(arg: String): Arguments =
+    values(arg) match {
+      case (j, RecordParameter(_, _, components, _, _)) =>
+        Arguments(j.as[Map[String, JsValue]], components)
+      case _ => throw new RuntimeException(s"$arg is not a record")
+    }
 
   def pretty(arg:String) = 
   {

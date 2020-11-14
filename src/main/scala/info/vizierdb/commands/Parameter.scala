@@ -266,13 +266,28 @@ case class ListParameter(
 case class RecordParameter(
   id: String,
   name: String,
+  components: Seq[Parameter],
   required: Boolean = true,
   hidden: Boolean = false
 ) extends Parameter with StringEncoder
 {
   def datatype = "record"
-  def stringify(j: JsValue): String = j.toString()
-  def doValidate(j: JsValue): Iterable[String] = None
+  def stringify(j: JsValue): String = 
+  {
+    val record = j.as[Map[String, JsValue]]
+    "<" + components.map { t => t.stringify(record(t.id)) }.mkString(", ") + ">"
+  }
+  def zipParameters[T](record: Map[String,T]): Seq[(Parameter, Option[T])] =
+    components.map { component => component -> record.get(component.id) }
+
+  def doValidate(j: JsValue): Iterable[String] =
+    if(!j.isInstanceOf[JsObject]){ return Some(s"Expected an object for $name") }
+    else {
+      zipParameters(j.as[Map[String, JsValue]])
+        .flatMap { case (component, v) => 
+          component.validate( v.getOrElse { component.getDefault } )
+        }
+    }
 }
 
 case class RowIdParameter(

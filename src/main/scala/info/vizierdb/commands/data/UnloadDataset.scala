@@ -1,6 +1,6 @@
 package info.vizierdb.commands.data
 
-import play.api.libs.json.JsValue
+import play.api.libs.json.Json
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
@@ -41,10 +41,33 @@ object UnloadDataset extends Command
                            context.error(s"Dataset $datasetName does not exist"); return
                          }
     val format = arguments.get[String]("unloadFormat")
-    val (file, identifier) = Filestore.freshFile
+
+    val mimeTypeForFile = format match {
+      case "mimir.exec.spark.datasource.google.spreadsheet" 
+                                  => None
+      case "jdbc"                 => None
+      case "csv"                  => Some("text/csv")
+      case "json"                 => Some("application/json")
+      case "xml"                  => Some("application/xml")
+      case "text"                 => Some("text/plain")
+      case _                      => Some("application/octet-stream")
+    }
+
+    val artifactIfNeeded = 
+      mimeTypeForFile.map { mimeType => 
+        context.outputFile(
+          name = "file_export", 
+          properties = Json.obj(
+            "name" -> "export_$datasetName"
+          ),
+          mimeType = mimeType
+        )
+      }
+
     val response: UnloadResponse = UnloadRequest(
       input = dataset,
-      file = file.toString(),
+      file = artifactIfNeeded.map { _.file.toString }
+                             .getOrElse { "unknown_file" },
       format = format,
       backendOption = 
         arguments.getList("unloadOptions")
@@ -54,16 +77,21 @@ object UnloadDataset extends Command
 
     logger.debug(response.toString())
 
-    context.message("text/html", 
-      response
-        .outputFiles
-        .map { f => new File(f) }
-        .map { f =>
-          s"<div><a href='${VizierAPI.filePath(identifier)}/${f.getName}' download='${datasetName}${f.getName}'>"+
-            s"Download ${f.getName}</a></div>"
-        }
-        .mkString("\n")
-    )
+    artifactIfNeeded match {
+      case Some(artifact) => 
+        context.message("text/html", 
+          response
+            .outputFiles
+            .map { f => new File(f) }
+            .map { f =>
+              s"<div><a href='${VizierAPI.urls.downloadFile(context.projectId, artifact.id, f.getName)}' download='${datasetName}${f.getName}'>"+
+                s"Download ${f.getName}</a></div>"
+            }
+            .mkString("\n")
+        )
+      case None => 
+         context.message("Export Successful")
+    }
 
   }
 }

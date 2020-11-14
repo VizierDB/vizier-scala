@@ -2,8 +2,19 @@ package info.vizierdb.api
 
 import play.api.libs.json._
 import org.mimirdb.api.JsonResponse
+import javax.servlet.http.HttpServletResponse
 
-case class RawJsonResponse(data: JsValue) extends JsonResponse[RawJsonResponse]
+case class RawJsonResponse(
+  data: JsValue, 
+  status: Option[Int] = None
+) extends JsonResponse[RawJsonResponse]
+{
+  override def write(output: HttpServletResponse)
+  {
+    status.foreach { output.setStatus(_) }
+    super.write(output)
+  }
+}
 
 object RawJsonResponse
 {

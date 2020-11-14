@@ -198,8 +198,7 @@ object Schema
         Column("started",         SQL.TIMESTAMP,"timestamp",    isRequired = true),
         Column("finished",        SQL.TIMESTAMP,"timestamp",    isRequired = false)
       )
-    )),
-
+    ))
   )
 
   val TABLES: Map[String, Table] =

@@ -49,7 +49,7 @@ object LoadDataset
     val (dsName, dsId) = context.outputDataset(datasetName)
     logger.trace(arguments.yaml())
     val result = LoadRequest(
-      file = file.getPath,
+      file = file.getPath(context.projectId),
       format = arguments.get[String]("loadFormat"),
       inferTypes = arguments.get[Boolean]("loadInferTypes"),
       detectHeaders = arguments.get[Boolean]("loadDetectHeaders"),

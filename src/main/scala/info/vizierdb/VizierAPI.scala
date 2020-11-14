@@ -22,6 +22,7 @@ import java.net.URL
 import java.sql.Time
 import java.time.LocalDateTime
 import info.vizierdb.api._
+import com.amazonaws.services.codepipeline.model.Artifact
 
 object VizierAPI
 {
@@ -34,9 +35,8 @@ object VizierAPI
   val MAX_UPLOAD_SIZE = 1024*1024*100 // 100MB
   val MAX_DOWNLOAD_ROW_LIMIT = Query.RESULT_THRESHOLD
   val VERSION="1.0.0"
+  val DEFAULT_DISPLAY_ROWS = 20
 
-  def filePath(file: FileIdentifier): String = 
-    s"STUFF$file"
 
   var urls: VizierURLs = null
   var started: LocalDateTime = null
@@ -134,7 +134,8 @@ object VizierServlet
 
   def processJson[Q <: Request](
     req: HttpServletRequest,
-    output: HttpServletResponse
+    output: HttpServletResponse,
+    properties: (String,Identifier)*
   )(
     implicit format: Format[Q]
   ){ 
@@ -142,7 +143,14 @@ object VizierServlet
     logger.debug(s"$text")
     val parsed: Either[Request, Response] = 
       try { 
-        Left(Json.parse(text).as[Q])
+        var parsed = Json.parse(text)
+        if(!properties.isEmpty){
+          parsed = JsObject(
+            parsed.as[Map[String,JsValue]]
+              ++ properties.toMap.mapValues { JsNumber(_) }
+          )
+        }
+        Left(parsed.as[Q])
       } catch {
         case e@JsResultException(errors) => {
           logger.error(e.getMessage + "\n" + e.getStackTrace.map(_.toString).mkString("\n"))
@@ -222,17 +230,9 @@ object VizierServlet
           case PROJECT(projectId, DATASET(datasetId, "/csv")) =>
             process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV, output) // retrieve the specified dataset as a csv file
           case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, CHART(chartId))))) => 
-            ??? // get the specified module's chart
+            process(GetArtifactRequest(projectId.toLong, chartId.toLong, expectedType = Some(ArtifactType.CHART)), output) // get the specified module's chart
           case PROJECT(projectId, FILE(fileId, "")) =>
-            ??? // retrieve the specified file
-          case ARTIFACT(artifactId, "/descriptor") => 
-            ??? // retrieve the specified artifact descriptor
-          case ARTIFACT(artifactId, "") => 
-            ??? // retrieve the specified artifact body
-          case ARTIFACT(artifactId, "/annotations") => 
-            ??? // retrieve the specified artifact's annotations if it is a dataset
-          case ARTIFACT(artifactId, "/csv") => 
-            ??? // retrieve the specified artifact as csv if it is a dataset
+            process(GetArtifactRequest(projectId.toLong, fileId.toLong).File, output) // retrieve the specified file
           case _ => fourOhFour(req, output)
         }
       case _ => fourOhFour(req, output)
@@ -246,21 +246,21 @@ object VizierServlet
       case PREFIX(route) => 
         route match { 
           case "/reload" => 
-            ??? // clear caches
+            process(ReloadRequest, output) // clear caches
           case "/projects" => 
-            ??? // create a new project
+            processJson[CreateProject](req, output) // create a new project
           case "/projects/import" => 
             ??? // import a project
           case PROJECT(projectId, "") => 
-            ??? // get the project
+            processJson[UpdateProject](req, output, "projectId" -> projectId.toLong) // update the project properties
           case PROJECT(projectId, "/branches") => 
-            ??? // create a branch
+            processJson[CreateBranch](req, output, "projectId" -> projectId.toLong) // create a branch
           case PROJECT(projectId, BRANCH(branchId, "/head")) => 
-            ??? // append a module to the branch head
+            processJson[AppendModule](req, output, "projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // append a module to the branch head
           case PROJECT(projectId, BRANCH(branchId, HEAD("/cancel"))) => 
-            ??? // cancel the head workflow
+            process(CancelWorkflow(projectId.toLong, branchId.toLong, None), output) // cancel the head workflow
           case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/cancel"))) => 
-            ??? // cancel the head workflow
+            process(CancelWorkflow(projectId.toLong, branchId.toLong, Some(workflowId.toLong)), output) // cancel the specified workflow
           case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(moduleId, "")))) => 
             ??? // insert a module before the specified module
           case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, "")))) => 

@@ -87,12 +87,29 @@ case class Project(
     return (project, branch, workflow)
   }
 
+  def update(
+    name: String = null, 
+    properties: Map[String,JsValue] = null
+  )(implicit session: DBSession): Project =
+  {
+    val now = ZonedDateTime.now()
+    withSQL {
+      val p = Project.column
+      scalikejdbc.update(Project)
+        .set(p.name       -> Option(name).getOrElse { this.name },
+             p.properties -> Option(properties).getOrElse { this.properties }.toString,
+             p.modified   -> now)
+        .where.eq(p.id, id)
+    }.update.apply()
+    Project.get(id)
+  }
+
   def activateBranch(branchId: Identifier)(implicit session: DBSession): Project = 
   {
     val now = ZonedDateTime.now()
     withSQL {
       val p = Project.column
-      update(Project)
+      scalikejdbc.update(Project)
         .set(p.activeBranchId -> branchId,
              p.modified -> now)
         .where.eq(p.id, id)
@@ -114,13 +131,13 @@ case class Project(
       "lastModifiedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(modified),
       "properties"     -> properties,
       HATEOAS.LINKS    -> HATEOAS(
-        HATEOAS.SELF           -> VizierAPI.urls.getProject(id.toString),
+        HATEOAS.SELF           -> VizierAPI.urls.getProject(id),
         HATEOAS.API_HOME       -> VizierAPI.urls.serviceDescriptor,
         HATEOAS.API_DOC        -> VizierAPI.urls.apiDoc,
-        HATEOAS.PROJECT_DELETE -> VizierAPI.urls.deleteProject(id.toString),
-        HATEOAS.PROJECT_UPDATE -> VizierAPI.urls.updateProject(id.toString),
-        HATEOAS.BRANCH_CREATE  -> VizierAPI.urls.createBranch(id.toString),
-        HATEOAS.FILE_UPLOAD    -> VizierAPI.urls.uploadFile(id.toString)
+        HATEOAS.PROJECT_DELETE -> VizierAPI.urls.deleteProject(id),
+        HATEOAS.PROJECT_UPDATE -> VizierAPI.urls.updateProject(id),
+        HATEOAS.BRANCH_CREATE  -> VizierAPI.urls.createBranch(id),
+        HATEOAS.FILE_UPLOAD    -> VizierAPI.urls.uploadFile(id)
       ),
     )
 }

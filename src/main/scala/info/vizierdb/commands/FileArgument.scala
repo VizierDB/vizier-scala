@@ -1,6 +1,8 @@
 package info.vizierdb.commands
 
 import play.api.libs.json._
+import info.vizierdb.types.Identifier
+import info.vizierdb.filestore.Filestore
 
 case class FileDescription(
   preview: Option[String]
@@ -11,9 +13,9 @@ object FileDescription
 }
 
 case class FileArgument(
-  fileid: Option[String] = None,
+  fileid: Option[Identifier] = None,
   filename: Option[String] = None,
-  file: Option[FileDescription] = Some(FileDescription(None)),
+  file: Option[FileDescription] = None,
   url: Option[String] = None
 )
 {
@@ -22,9 +24,12 @@ case class FileArgument(
     if(fileid.isEmpty && url.isEmpty){
       Some("Expecting either url or fileid")
     } else { None }
-  def getPath =
+  def getPath(projectId: Identifier): String =
     url.getOrElse { 
-      throw new UnsupportedOperationException("Uploaded Files Not Supported Yet")
+      fileid.map { Filestore.get(projectId, _).toString }
+      .getOrElse { 
+        throw new IllegalArgumentException("Need at least one of fileid or url")
+      }
     }
 }
 object FileArgument

@@ -106,15 +106,26 @@ object Scheduler
    * Register an error result for the provided cell
    *
    * @argument  cell      The cell to register an error for
-   * @argument  message   The error message
+   * @argument  message   The error messages
    * @return              The Result object for the cell
    */
   private def errorResult(cell: Cell, message: String)(implicit session: DBSession): Result = 
+    errorResult(cell, Seq(MIME.TEXT -> message.getBytes))
+  /**
+   * Register an error result for the provided cell
+   *
+   * @argument  cell      The cell to register an error for
+   * @argument  message   The error messages
+   * @return              The Result object for the cell
+   */
+  private def errorResult(cell: Cell, messages: Seq[(String, Array[Byte])])(implicit session: DBSession): Result = 
   {
     val result = cell.finish(ExecutionState.ERROR)._2
     val position = cell.position
     val workflowId = cell.workflowId
-    result.addMessage(message)
+    for((mimeType, message) <- messages){
+      result.addMessage(mimeType, message, StreamType.STDERR)
+    }
     withSQL {
       val c = Cell.column
       update(Cell)
@@ -133,7 +144,7 @@ object Scheduler
    */
   private def normalResult(cell: Cell, context: ExecutionContext)(implicit session: DBSession): Result = 
   {
-    if(context.errorMessage.isDefined){ return errorResult(cell, context.errorMessage.get) }
+    if(context.isError){ return errorResult(cell, context.errorMessages) }
     val result = cell.finish(ExecutionState.DONE)._2
 
     for((userFacingName, identifier) <- context.inputs) {

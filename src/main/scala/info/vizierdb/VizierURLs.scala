@@ -2,6 +2,7 @@ package info.vizierdb
 
 import java.net.URL
 import java.net.URLEncoder
+import info.vizierdb.types.Identifier
 
 class VizierURLs(
   base: URL,
@@ -29,57 +30,57 @@ class VizierURLs(
     url("projects")
   def importProject =
     url("projects/import")
-  def getProject(projectID: String) =
-    url(s"projects/$projectID")
-  def deleteProject(projectID: String) =
-    getProject(projectID)
-  def updateProject(projectID: String) =
-    getProject(projectID)
-  def listBranches(projectID: String) =
-    url(s"projects/$projectID/branches")
-  def createBranch(projectID: String) =
-    listBranches(projectID)
-  def getBranch(projectID: String, branchID: String) =
-    url(s"projects/$projectID/branches/$branchID")
-  def deleteBranch(projectID: String, branchID: String) =
-    getBranch(projectID, branchID)
-  def updateBranch(projectID: String, branchID: String) =
-    getBranch(projectID, branchID)
-  def getBranchHead(projectID: String, branchID: String) =
-    url(s"projects/$projectID/branches/$branchID/head")
-  def getWorkflow(projectID: String, branchID: String, workflowID: String) =
-    url(s"projects/$projectID/branches/$branchID/workflows/$workflowID")
-  def appendBranchHead(projectID: String, branchID: String) =
-    compose(getBranchHead(projectID, branchID), "/modules")
-  def appendWorkflow(projectID: String, branchID: String, workflowID: String) =
-    compose(getWorkflow(projectID, branchID, workflowID), "/modules")
-  def cancelBranchHead(projectID: String, branchID: String) =
-    compose(getBranchHead(projectID, branchID), "/cancel")
-  def cancelWorkflow(projectID: String, branchID: String, workflowID: String) =
-    compose(getWorkflow(projectID, branchID, workflowID), "/cancel")
-  def getBranchHeadModule(projectID: String, branchID: String, moduleID: String) =
-    compose(getBranchHead(projectID, branchID), s"/modules/$moduleID")
-  def getWorkflowModule(projectID: String, branchID: String, workflowID: String, moduleID: String) =
-    compose(getWorkflow(projectID, branchID, workflowID), s"/modules/$moduleID")
-  def deleteBranchHeadModule(projectID: String, branchID: String, moduleID: String) =
-    getBranchHeadModule(projectID, branchID, moduleID)
-  def deleteWorkflowModule(projectID: String, branchID: String, workflowID: String, moduleID: String) =
-    getWorkflowModule(projectID, branchID, workflowID, moduleID)
-  def insertBranchHeadModule(projectID: String, branchID: String, moduleID: String) =
-    getBranchHeadModule(projectID, branchID, moduleID)
-  def insertWorkflowModule(projectID: String, branchID: String, workflowID: String, moduleID: String) =
-    getWorkflowModule(projectID, branchID, workflowID, moduleID)
-  def replaceBranchHeadModule(projectID: String, branchID: String, moduleID: String) =
-    getBranchHeadModule(projectID, branchID, moduleID)
-  def replaceWorkflowModule(projectID: String, branchID: String, workflowID: String, moduleID: String) =
-    getWorkflowModule(projectID, branchID, workflowID, moduleID)
+  def getProject(projectId: Identifier) =
+    url(s"projects/$projectId")
+  def deleteProject(projectId: Identifier) =
+    getProject(projectId)
+  def updateProject(projectId: Identifier) =
+    getProject(projectId)
+  def listBranches(projectId: Identifier) =
+    url(s"projects/$projectId/branches")
+  def createBranch(projectId: Identifier) =
+    listBranches(projectId)
+  def getBranch(projectId: Identifier, branchId: Identifier) =
+    url(s"projects/$projectId/branches/$branchId")
+  def deleteBranch(projectId: Identifier, branchId: Identifier) =
+    getBranch(projectId, branchId)
+  def updateBranch(projectId: Identifier, branchId: Identifier) =
+    getBranch(projectId, branchId)
+  def getBranchHead(projectId: Identifier, branchId: Identifier) =
+    url(s"projects/$projectId/branches/$branchId/head")
+  def getWorkflow(projectId: Identifier, branchId: Identifier, workflowId: Identifier) =
+    url(s"projects/$projectId/branches/$branchId/workflows/$workflowId")
+  def appendBranchHead(projectId: Identifier, branchId: Identifier) =
+    compose(getBranchHead(projectId, branchId), "/modules")
+  def appendWorkflow(projectId: Identifier, branchId: Identifier, workflowId: Identifier) =
+    compose(getWorkflow(projectId, branchId, workflowId), "/modules")
+  def cancelBranchHead(projectId: Identifier, branchId: Identifier) =
+    compose(getBranchHead(projectId, branchId), "/cancel")
+  def cancelWorkflow(projectId: Identifier, branchId: Identifier, workflowId: Identifier) =
+    compose(getWorkflow(projectId, branchId, workflowId), "/cancel")
+  def getBranchHeadModule(projectId: Identifier, branchId: Identifier, moduleId: Identifier) =
+    compose(getBranchHead(projectId, branchId), s"/modules/$moduleId")
+  def getWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier) =
+    compose(getWorkflow(projectId, branchId, workflowId), s"/modules/$moduleId")
+  def deleteBranchHeadModule(projectId: Identifier, branchId: Identifier, moduleId: Identifier) =
+    getBranchHeadModule(projectId, branchId, moduleId)
+  def deleteWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier) =
+    getWorkflowModule(projectId, branchId, workflowId, moduleId)
+  def insertBranchHeadModule(projectId: Identifier, branchId: Identifier, moduleId: Identifier) =
+    getBranchHeadModule(projectId, branchId, moduleId)
+  def insertWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier) =
+    getWorkflowModule(projectId, branchId, workflowId, moduleId)
+  def replaceBranchHeadModule(projectId: Identifier, branchId: Identifier, moduleId: Identifier) =
+    getBranchHeadModule(projectId, branchId, moduleId)
+  def replaceWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier) =
+    getWorkflowModule(projectId, branchId, workflowId, moduleId)
 
 
   def getDataset(
-    projectId: String, 
-    datasetID: String, 
+    projectId: Identifier, 
+    datasetId: Identifier, 
     forceProfiler: Boolean = false, 
-    offset: Option[Int] = None, 
+    offset: Option[Long] = None, 
     limit: Option[Int] = None,
   ) = 
   {
@@ -88,32 +89,34 @@ class VizierURLs(
       ++ offset.map { "offset" -> _.toString }
       ++ limit.map { "limit" -> _.toString }
     )
-    url(s"projects/$projectId/artifacts/$datasetID", query)
+    url(s"projects/$projectId/artifacts/$datasetId", query)
   }
-  def downloadDataset(projectId: String, datasetID: String) =
-    compose(getDataset(projectId, datasetID), "/csv")
-  def getDatasetCaveats(projectId: String, datasetID: String, columnID: Option[Int] = None, rowID: Option[String] = None) =
-    compose(getDataset(projectId, datasetID), "/annotations"+queryString(
+  def downloadDataset(projectId: Identifier, datasetId: Identifier) =
+    compose(getDataset(projectId, datasetId), "/csv")
+  def getDatasetCaveats(projectId: Identifier, datasetId: Identifier, columnID: Option[Int] = None, rowID: Option[String] = None) =
+    compose(getDataset(projectId, datasetId), "/annotations"+queryString(
       (
         columnID.toSeq.map { "column" -> _.toString }
         ++ rowID.toSeq.map { "row" -> _.toString }
       ).toMap
     ))
-  def getDatasetDescriptor(projectId: String, datasetID: String) =
-    compose(getDataset(projectId, datasetID), "/descriptor")    
+  def getDatasetDescriptor(projectId: Identifier, datasetId: Identifier) =
+    compose(getDataset(projectId, datasetId), "/descriptor")    
 
 
-  def getHeadChartView(projectID: String, branchID: String, moduleID: String, chartID: String) =
-    compose(getBranchHeadModule(projectID, branchID, moduleID), s"/charts/$chartID")
-  def getChartView(projectID: String, branchID: String, workflowID: String, moduleID: String, chartID: String) =
-    compose(getWorkflowModule(projectID, branchID, workflowID, moduleID), s"/charts/$chartID")
+  def getHeadChartView(projectId: Identifier, branchId: Identifier, moduleId: Identifier, chartId: Identifier) =
+    compose(getBranchHeadModule(projectId, branchId, moduleId), s"/charts/$chartId")
+  def getChartView(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier, chartId: Identifier) =
+    compose(getWorkflowModule(projectId, branchId, workflowId, moduleId), s"/charts/$chartId")
 
-  def downloadFile(projectID: String, fileID: String) =
-    compose(getProject(projectID), s"/files/$fileID")
-  def uploadFile(projectID: String) =
-    compose(getProject(projectID), "/files")
+  def downloadFile(projectId: Identifier, fileId: Identifier, component: String) =
+    compose(getProject(projectId), s"/files/$fileId/$component")
+  def downloadFile(projectId: Identifier, fileId: Identifier) =
+    compose(getProject(projectId), s"/files/$fileId")
+  def uploadFile(projectId: Identifier) =
+    compose(getProject(projectId), "/files")
 
-  def getArtifact(projectId: String, artifactID: String) =
-    url(s"projects/$projectId/artifacts/$artifactID")
+  def getArtifact(projectId: Identifier, artifactId: Identifier) =
+    url(s"projects/$projectId/artifacts/$artifactId")
 }
 

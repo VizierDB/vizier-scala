@@ -5,8 +5,8 @@ import java.net.URL
 
 object HATEOAS
 {
-  def apply(links: (String, URL)*): JsValue =
-    Json.toJson(build(links))
+  def apply(links: (String, URL)*): JsArray =
+    JsArray(build(links).map { v => JsObject(v.mapValues{ JsString(_) }) })
 
   def build(links: Seq[(String, URL)]): Seq[Map[String, String]] = 
     links.filter { _._2 != null }

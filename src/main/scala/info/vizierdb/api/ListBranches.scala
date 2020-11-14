@@ -21,7 +21,7 @@ case class ListBranchesRequest(projectId: Identifier)
               Json.obj(
                 "branches" -> JsArray(project.branches.map { _.summarize }),
                 HATEOAS.LINKS -> HATEOAS(
-                  HATEOAS.SELF -> VizierAPI.urls.listBranches(projectId.toString)
+                  HATEOAS.SELF -> VizierAPI.urls.listBranches(projectId)
                 )
               )
             )
