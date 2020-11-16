@@ -47,6 +47,15 @@ case class Branch(
       updateState = sqls"case when position >= $position then ${ExecutionState.WAITING.id} else state end",
       addModules = Seq(module.id -> position)
     )
+  def delete(position: Int)(implicit session: DBSession): (Branch, Workflow) =
+    modify(
+      module = None,
+      action = ActionType.DELETE,
+      prevWorkflowId = headId,
+      updatePosition = sqls"case when position > $position then position - 1 else position end",
+      updateState = sqls"case when position >= $position then ${ExecutionState.WAITING.id} else state end",
+      keepCells = sqls"position <> $position"
+    )
   def insert(position: Int, packageId: String, commandId: String)
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
@@ -190,6 +199,17 @@ case class Branch(
         HATEOAS.BRANCH_UPDATE  -> VizierAPI.urls.updateBranch(projectId, id),
       ),
     )
+  def deleteBranch(implicit session: DBSession)
+  {
+    for(workflow <- workflows){
+      workflow.deleteWorkflow
+    }
+    withSQL {
+      val b = Branch.syntax
+      deleteFrom(Branch)
+        .where.eq(b.id, id)
+    }.update.apply()
+  }
 }
 object Branch 
   extends SQLSyntaxSupport[Branch]
@@ -206,13 +226,13 @@ object Branch
         .where.eq(b.id, target) 
     }.map { apply(_) }.single.apply()
 
-  def lookup(projectID: Identifier, branchId: Identifier)(implicit session:DBSession): Option[Branch] = 
+  def lookup(projectId: Identifier, branchId: Identifier)(implicit session:DBSession): Option[Branch] = 
     withSQL { 
       val b = Branch.syntax 
       select
         .from(Branch as b)
         .where.eq(b.id, branchId) 
-          .and.eq(b.projectId, projectID)
+          .and.eq(b.projectId, projectId)
     }.map { apply(_) }.single.apply()
 
 }

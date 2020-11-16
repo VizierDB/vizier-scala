@@ -28,6 +28,13 @@ case class Project(
       val b = Branch.syntax
       select.from(Branch as b).where.eq(b.projectId, id)
     }.map { Branch(_) }.list.apply()
+
+  def artifacts(implicit session: DBSession): Seq[Artifact] =
+    withSQL {
+      val a = Artifact.syntax
+      select.from(Artifact as a).where.eq(a.projectId, id)
+    }.map { Artifact(_) }.list.apply()
+
   def activeBranch(implicit session: DBSession):Branch = 
     Branch.get(activeBranchId)
 
@@ -140,6 +147,21 @@ case class Project(
         HATEOAS.FILE_UPLOAD    -> VizierAPI.urls.uploadFile(id)
       ),
     )
+
+  def deleteProject(implicit session: DBSession)
+  {
+    for(artifact <- artifacts){
+      artifact.deleteArtifact
+    }
+    for(branch <- branches){
+      branch.deleteBranch
+    }
+    withSQL {
+      val p = Project.syntax
+      deleteFrom(Project)
+        .where.eq(p.id, id)
+    }.update.apply()
+  }
 }
 object Project
   extends SQLSyntaxSupport[Project]

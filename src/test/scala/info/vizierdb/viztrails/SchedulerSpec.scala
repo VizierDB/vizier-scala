@@ -18,7 +18,10 @@ class SchedulerSpec
 {
   def beforeAll = SharedTestResources.init
 
-  lazy val projectId = Vizier.createProject("Executor Test").id
+  lazy val projectId = 
+    DB.autoCommit { implicit s => 
+      Project.create("Executor Test").id
+    }
   def project(implicit session: DBSession) = Project.get(projectId)
   def activeBranch(implicit session: DBSession) = Project.activeBranchFor(projectId)
   def activeHead(implicit session: DBSession) = Project.activeHeadFor(projectId)

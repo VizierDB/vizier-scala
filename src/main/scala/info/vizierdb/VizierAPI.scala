@@ -1,5 +1,6 @@
 package info.vizierdb
 
+import java.io.File
 import play.api.libs.json._
 import info.vizierdb.types._
 import org.eclipse.jetty.server.Server
@@ -12,6 +13,8 @@ import org.eclipse.jetty.server.handler.HandlerCollection
 import org.eclipse.jetty.server.Handler
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.servlet.ServletContextHandler
+import org.eclipse.jetty.server.{ Request => JettyRequest }
+import javax.servlet.MultipartConfigElement
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import com.typesafe.scalalogging.LazyLogging
 
@@ -33,6 +36,7 @@ object VizierAPI
   val BACKEND = "SCALA"
   val SERVICE_NAME = s"MIMIR ($BACKEND)"
   val MAX_UPLOAD_SIZE = 1024*1024*100 // 100MB
+  val MAX_FILE_MEMORY = 1024*1024*10  // 10MB
   val MAX_DOWNLOAD_ROW_LIMIT = Query.RESULT_THRESHOLD
   val VERSION="1.0.0"
   val DEFAULT_DISPLAY_ROWS = 20
@@ -41,7 +45,7 @@ object VizierAPI
   var urls: VizierURLs = null
   var started: LocalDateTime = null
 
-  def init(port: Int = DEFAULT_PORT)
+  def init(port: Int = DEFAULT_PORT, path: File = Vizier.basePath)
   {
     if(server != null){ 
       throw new RuntimeException("Can't have two Vizier servers running in one JVM")
@@ -66,6 +70,13 @@ object VizierAPI
       // Actual API
       vizierServlet.setContextPath("/vizier-db")
       val holder = new ServletHolder(VizierServlet)
+      holder.getRegistration()
+            .setMultipartConfig(new MultipartConfigElement(
+              /* location          = */ (new File(path, "temp")).toString,
+              /* maxFileSize       = */ MAX_UPLOAD_SIZE.toLong,
+              /* maxRequestSize    = */ MAX_UPLOAD_SIZE.toLong,
+              /* fileSizeThreshold = */ MAX_FILE_MEMORY
+            ))
       vizierServlet.addServlet(holder, "/*")
     }
 
@@ -262,13 +273,11 @@ object VizierServlet
           case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/cancel"))) => 
             process(CancelWorkflow(projectId.toLong, branchId.toLong, Some(workflowId.toLong)), output) // cancel the specified workflow
           case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(moduleId, "")))) => 
-            ??? // insert a module before the specified module
-          case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, "")))) => 
-            ??? // insert a module before the specified module
+            processJson[InsertModule](req, output, "projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "moduleId" -> moduleId.toLong) // insert a module before the specified module
           case PROJECT(projectId, "/datasets") => 
-            ??? // create a new dataset in the data store
+            processJson[CreateDataset](req, output, "projectId" -> projectId.toLong) // create a new dataset in the data store
           case PROJECT(projectId, "/files") => 
-            ??? // create a new file in the data store
+            process(CreateFile(projectId.toLong, req.asInstanceOf[JettyRequest]), output)// create a new file in the data store
           case _ => fourOhFour(req, output)
         }
       case _ => fourOhFour(req, output)
@@ -282,13 +291,11 @@ object VizierServlet
       case PREFIX(route) => 
         route match { 
           case PROJECT(projectId, "") => 
-            ??? // delete the project
+            process(DeleteProject(projectId.toLong), output) // delete the project
           case PROJECT(projectId, BRANCH(branchId, "")) => 
-            ??? // delete the branch
+            process(DeleteBranch(projectId.toLong, branchId.toLong), output) // delete the branch
           case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(moduleId, "")))) => 
-            ??? // delete the specified module
-          case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, "")))) => 
-            ??? // delete the specified module
+            process(DeleteModule(projectId.toLong, branchId.toLong, moduleId.toLong), output) // delete the specified module
           case _ => fourOhFour(req, output)
         }
       case _ => fourOhFour(req, output)
@@ -306,8 +313,6 @@ object VizierServlet
           case PROJECT(projectId, BRANCH(branchId, "")) => 
             ??? // update the branch properties
           case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(moduleId, "")))) => 
-            ??? // replace the specified module
-          case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, "")))) => 
             ??? // replace the specified module
           case TASK(taskId) =>
             ??? // update the state of a running task

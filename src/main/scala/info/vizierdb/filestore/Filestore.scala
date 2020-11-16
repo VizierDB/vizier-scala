@@ -13,4 +13,7 @@ object Filestore
   def get(name: String) = new File(path, name)
   def get(projectId: Identifier, artifactId: Identifier): File =
     get(s"proj_${projectId}_file_${Artifact.nameInBackend(ArtifactType.FILE, artifactId)}")
+
+  def remove(projectId: Identifier, artifactId: Identifier) =
+    get(projectId, artifactId).delete()
 }

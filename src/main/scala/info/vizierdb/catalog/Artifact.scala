@@ -142,6 +142,23 @@ case class Artifact(
       includeUncertainty = includeUncertainty
     ).handle
   }
+
+  def deleteArtifact(implicit session: DBSession) =
+  {
+    withSQL { 
+      val a = Artifact.syntax
+      deleteFrom(Artifact)
+        .where.eq(a.id, id)
+    }.update.apply()
+
+    t match {
+      case ArtifactType.FILE => 
+        Filestore.remove(projectId, id)
+      case ArtifactType.DATASET =>
+        // MimirAPI.catalog.drop()
+      case _ => ()
+    }
+  }
 }
 
 case class ArtifactSummary(

@@ -48,6 +48,7 @@ libraryDependencies ++= Seq(
   "org.specs2"                    %%  "specs2-matcher-extra"            % "4.8.2" % "test",
   "org.specs2"                    %%  "specs2-junit"                    % "4.8.2" % "test",
 
+  //
 )
 
 ////// Publishing Metadata //////

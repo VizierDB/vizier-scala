@@ -186,6 +186,91 @@ case class Workflow(
         HATEOAS.FILE_UPLOAD      -> VizierAPI.urls.uploadFile(branch.projectId),
       )
     )
+
+  def deleteWorkflow(implicit session: DBSession)
+  {
+
+    val (resultIds, moduleIds) = 
+      withSQL {
+        val c = Cell.syntax
+        val m = Module.syntax
+        select(c.resultId, m.id)
+          .from(Cell as c)
+          .join(Module as m)
+          .where.eq(c.workflowId, id)
+            .and.eq(c.moduleId, m.id)
+      }.map { rs => (rs.longOpt(1), rs.long(2)) }
+       .list.apply()
+       .unzip
+
+    // Delete Cells in the workflow
+    withSQL { 
+      val c = Cell.syntax
+      deleteFrom(Cell as c)
+        .where.eq(c.workflowId, id)
+    }.update.apply()
+
+
+    // Garbage Collect Results
+    val resultsLosingAReference: Set[Identifier] = 
+      resultIds.flatten.toSet
+    val stillReferencedResults: Set[Identifier] =
+      withSQL {
+        val c = Cell.syntax
+        select(c.resultId)
+          .from(Cell as c)
+          .where.in(c.resultId, resultsLosingAReference.toSeq)
+      }.map { _.longOpt(1) }
+       .list.apply()
+       .flatten
+       .toSet
+    val resultsToTrash:Set[Identifier] = 
+      resultsLosingAReference -- stillReferencedResults
+
+    withSQL {
+      val r = OutputArtifactRef.syntax
+      deleteFrom(OutputArtifactRef)
+        .where.in(r.resultId, resultsToTrash.toSeq)
+    }.update.apply()
+
+    withSQL {
+      val r = InputArtifactRef.syntax
+      deleteFrom(InputArtifactRef)
+        .where.in(r.resultId, resultsToTrash.toSeq)
+    }.update.apply()
+
+    withSQL {
+      val m = Message.syntax
+      deleteFrom(Message)
+        .where.in(m.resultId, resultsToTrash.toSeq)
+    }.update.apply()
+
+    withSQL {
+      val r = Result.syntax
+      deleteFrom(Result)
+        .where.in(r.id, resultsToTrash.toSeq)
+    }.update.apply()
+
+    val modulesLosingAReference: Set[Identifier] =
+      moduleIds.toSet
+    val stillReferencedModules: Set[Identifier] =
+      withSQL {
+        val c = Cell.syntax
+        select(c.moduleId)
+          .from(Cell as c)
+          .where.in(c.moduleId, resultsLosingAReference.toSeq)
+      }.map { _.long(1) }
+       .list.apply()
+       .toSet
+    val modulesToTrash: Set[Identifier] =
+      modulesLosingAReference -- stillReferencedModules
+
+    withSQL {
+      val m = Module.syntax
+      deleteFrom(Module)
+        .where.in(m.id, modulesToTrash.toSeq)
+    }.update.apply()
+  }
 }
 object Workflow 
   extends SQLSyntaxSupport[Workflow]
