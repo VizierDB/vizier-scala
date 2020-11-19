@@ -8,6 +8,7 @@ import info.vizierdb.catalog.Project
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
+import info.vizierdb.api.response._
 
 case class UpdateProject(
   projectId: Identifier,
@@ -23,7 +24,7 @@ case class UpdateProject(
                .getOrElse { 
                  return NoSuchEntityResponse()
                }
-               .update(
+               .updateProperties(
                   properties.get("name")
                             .map { _.as[String] }
                             .getOrElse { "Untitled Project" },

@@ -9,6 +9,7 @@ import org.mimirdb.api.{Request, Response}
 import info.vizierdb.types.{ Identifier, ArtifactType }
 import org.mimirdb.api.request.QueryMimirRequest
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.api.response._
 
 case class WorkflowSQLRequest(projectId: Identifier, branchId: Identifier, workflowId: Option[Identifier], query: String)
   extends Request

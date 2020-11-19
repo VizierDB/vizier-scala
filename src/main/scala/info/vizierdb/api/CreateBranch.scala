@@ -8,6 +8,7 @@ import info.vizierdb.catalog.{ Project, Branch, Workflow }
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
+import info.vizierdb.api.response._
 
 case class SourceBranch(
   branchId: Identifier,

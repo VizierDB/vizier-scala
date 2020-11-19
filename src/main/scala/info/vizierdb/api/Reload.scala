@@ -5,6 +5,7 @@ import org.mimirdb.api.{ Request, JsonResponse }
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.commands.Commands
+import info.vizierdb.api.response._
 
 object ReloadRequest
   extends Request

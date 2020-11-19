@@ -7,6 +7,7 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow }
 import org.mimirdb.api.Request
 import info.vizierdb.types.Identifier
+import info.vizierdb.api.response._
 
 case class GetWorkflowRequest(projectId: Identifier, branchId: Identifier, workflowId: Option[Identifier])
   extends Request

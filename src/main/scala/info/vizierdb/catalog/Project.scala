@@ -10,6 +10,7 @@ import info.vizierdb.catalog.binders._
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
+import info.vizierdb.util.StupidReactJsonMap
 
 /**
  * A vistrails project.  The project may have an optional set of user-defined properties.
@@ -94,7 +95,7 @@ case class Project(
     return (project, branch, workflow)
   }
 
-  def update(
+  def updateProperties(
     name: String = null, 
     properties: Map[String,JsValue] = null
   )(implicit session: DBSession): Project =
@@ -133,10 +134,11 @@ case class Project(
 
   def summarize: JsObject = 
     Json.obj(
-      "id"             -> JsString(id.toString),
+      "id"             -> id.toString,
       "createdAt"      -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(created),
       "lastModifiedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(modified),
-      "properties"     -> properties,
+      "defaultBranch"  -> activeBranchId.toString,
+      "properties"     -> StupidReactJsonMap(properties.value.toMap, "name" -> JsString(name)),
       HATEOAS.LINKS    -> HATEOAS(
         HATEOAS.SELF           -> VizierAPI.urls.getProject(id),
         HATEOAS.API_HOME       -> VizierAPI.urls.serviceDescriptor,

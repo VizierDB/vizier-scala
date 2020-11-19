@@ -5,6 +5,7 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import info.vizierdb.catalog.Branch
 import javax.servlet.http.HttpServletResponse
+import info.vizierdb.api.response._
 
 case class DeleteModule(
   projectId: Identifier,

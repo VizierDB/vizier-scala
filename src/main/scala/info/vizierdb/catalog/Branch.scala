@@ -10,6 +10,7 @@ import info.vizierdb.util.HATEOAS
 import info.vizierdb.catalog.binders._
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.VizierAPI
+import info.vizierdb.util.StupidReactJsonMap
 
 /**
  * One branch of the project
@@ -191,7 +192,7 @@ case class Branch(
       "sourceWorkflow" -> createdFromWorkflowId.map { _.toString },
       "sourceModule"   -> createdFromModuleId.map { _.toString },
       "isDefault"      -> Project.get(projectId).activeBranchId.equals(id),
-      "properties"     -> properties,
+      "properties"     -> StupidReactJsonMap(properties.value.toMap, "name" -> JsString(name)),
       HATEOAS.LINKS    -> HATEOAS(
         HATEOAS.SELF           -> VizierAPI.urls.getBranch(projectId, id),
         HATEOAS.BRANCH_DELETE  -> VizierAPI.urls.deleteBranch(projectId, id),
@@ -209,6 +210,23 @@ case class Branch(
       deleteFrom(Branch)
         .where.eq(b.id, id)
     }.update.apply()
+  }
+
+  def updateProperties(
+    name: String,
+    properties: Map[String, JsValue]
+  )(implicit session: DBSession): Branch =
+  {
+    val now = ZonedDateTime.now()
+    withSQL {
+      val b = Branch.column
+      scalikejdbc.update(Branch)
+        .set(b.name       -> Option(name).getOrElse { this.name },
+             b.properties -> Option(properties).getOrElse { this.properties }.toString,
+             b.modified   -> now)
+        .where.eq(b.id, id)
+    }.update.apply()
+    Branch.get(id)
   }
 }
 object Branch 

@@ -8,21 +8,24 @@ import info.vizierdb.catalog.Project
 import org.mimirdb.api.Request
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
+import info.vizierdb.api.response._
+import info.vizierdb.util.StupidReactJsonMap
 
 case class CreateProject(
-  properties: Map[String, JsValue]
+  properties: StupidReactJsonMap.T
 )
   extends Request
 {
   def handle = 
   {
+    val saneProperties = StupidReactJsonMap.decode(properties)
     val project = 
       DB.autoCommit { implicit s => 
         Project.create(
-          properties.get("name")
-                    .map { _.as[String] }
-                    .getOrElse { "Untitled Project" },
-          properties = JsObject(properties)
+          saneProperties.get("name")
+                        .map { _.as[String] }
+                        .getOrElse { "Untitled Project" },
+          properties = JsObject(saneProperties)
         ) 
       }
     RawJsonResponse(

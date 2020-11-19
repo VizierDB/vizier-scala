@@ -10,6 +10,7 @@ import info.vizierdb.types.{ Identifier, ArtifactType }
 import org.mimirdb.api.request.Explain
 import org.mimirdb.api.CaveatFormat._
 import org.mimirdb.api.MimirAPI
+import info.vizierdb.api.response._
 
 case class GetArtifactRequest(
   projectId: Identifier, 

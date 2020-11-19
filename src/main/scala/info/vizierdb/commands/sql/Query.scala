@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 object Query extends Command
   with LazyLogging
 {
-  def name: String = "Clone Dataset"
+  def name: String = "SQL Query"
   def parameters: Seq[Parameter] = Seq(
     CodeParameter(id = "source", language = "sql", name = "SQL Code"),
     StringParameter(id = "name", name = "Output Dataset", required = false)

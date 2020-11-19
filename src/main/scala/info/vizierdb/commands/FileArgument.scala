@@ -31,6 +31,11 @@ case class FileArgument(
         throw new IllegalArgumentException("Need at least one of fileid or url")
       }
     }
+  override def toString =
+    filename
+      .orElse(fileid.map { _.toString })
+      .getOrElse { "<unknown file>" }
+
 }
 object FileArgument
 {

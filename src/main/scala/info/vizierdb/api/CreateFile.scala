@@ -15,6 +15,7 @@ import info.vizierdb.filestore.Filestore
 import java.io.FileOutputStream
 import info.vizierdb.util.Streams
 import org.eclipse.jetty.server.{ Request => JettyRequest }
+import info.vizierdb.api.response._
 
 case class CreateFile(
   projectId: Identifier,

@@ -12,11 +12,18 @@
   </appender>
 
   <!--+++++++++++++++++++++++  Vizier  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.VizierAPI$"             level="DEBUG" />
-  <logger name="info.vizierdb.VizierServlet$"         level="DEBUG" />
-  <logger name="info.vizierdb.api.WorkflowSQLRequest" level="TRACE" />
-  <logger name="info.vizierdb.catalog.Module"         level="DEBUG" />
+  <logger name="info.vizierdb.VizierAPI$"                        level="DEBUG" />
+  <logger name="info.vizierdb.VizierServlet$"                    level="DEBUG" />
+  <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="TRACE" />
+  <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
 
+  <!--+++++++++++++++++++++++  Jetty  +++++++++++++++++++++++++-->
+  <logger name="org.eclipse.jetty.server.Server"                 level="WARN" />
+  <logger name="org.eclipse.jetty.server.handler.ContextHandler" level="WARN" />
+  <logger name="org.eclipse.jetty.server.ResourceService"        level="WARN" />
+  <logger name="org.eclipse.jetty.servlet.ServletHandler"        level="WARN" />
+  <logger name="org.eclipse.jetty.servlet.DefaultServlet"        level="WARN" />
+  <logger name="org.eclipse.jetty.server.session"                level="WARN" />
 
     
   <root level="ERROR">

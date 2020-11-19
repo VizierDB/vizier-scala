@@ -28,12 +28,16 @@ resolvers += Resolver.mavenLocal
 excludeDependencies ++= Seq(
   // Hadoop brings in more logging backends.  Kill it with fire.
   ExclusionRule("org.slf4j", "slf4j-log4j12"),
+  // Jetty shows up in infinite places with incompatible java servlet APIs
+  ExclusionRule( organization = "org.xerial"), 
+  ExclusionRule( organization = "org.mortbay.jetty"), 
+  ExclusionRule( organization = "javax.servlet") ,
 )
 
 // Custom Dependencies
 libraryDependencies ++= Seq(
   // Mimir
-  "org.mimirdb"                   %% "mimir-api"                        % "0.2-SNAPSHOT" excludeAll( ExclusionRule("org.xerial")),
+  "org.mimirdb"                   %% "mimir-api"                        % "0.2-SNAPSHOT",
   "org.mimirdb"                   %% "mimir-caveats"                    % "0.2.8",
 
   // Catalog management (trying this out... might be good to bring into mimir-api as well)
@@ -48,7 +52,8 @@ libraryDependencies ++= Seq(
   "org.specs2"                    %%  "specs2-matcher-extra"            % "4.8.2" % "test",
   "org.specs2"                    %%  "specs2-junit"                    % "4.8.2" % "test",
 
-  //
+  // jetty
+  "javax.servlet"                 %   "javax.servlet-api"               % "3.1.0",
 )
 
 ////// Publishing Metadata //////

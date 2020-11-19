@@ -8,6 +8,7 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types._
 import info.vizierdb.artifacts.{ DatasetColumn, DatasetRow, DatasetAnnotation }
 import org.mimirdb.api.request.LoadInlineRequest
+import info.vizierdb.api.response._
 
 case class CreateDataset(
   projectId: Identifier,
