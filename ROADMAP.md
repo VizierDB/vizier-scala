@@ -1,4 +1,3 @@
-
 - [x] Set up a simple, naive background worker (Java's ForkJoinPool.)
 - [x] Link to Mimir-API
     - [x] "Load Dataset" (load)
@@ -7,16 +6,16 @@
     - [x] "Unload Dataset" (unload)
     - [x] "SQL Query" (query)
 - [ ] Develop web-api-async compatible API
-    - [ ] Import built web-ui
-- [ ] File Upload/Download
+    - [x] Import built web-ui
+- [x] File Upload/Download
 - [ ] Implement sub-process execution
     - [ ] "Scala Script" (code)
     - [ ] "Python Script" (code)
 - [ ] Python Compatibility Layer through JEP
     - [ ] "Markdown Code" (code)
-    - [ ] "Simple Chart" (chart)
     - [ ] "R Script" (code)
 - [ ] Import remaining Vizier packages
+    - [x] "Simple Chart" (chart)
     - [ ] "Basic Sample" (basic_sample)
     - [ ] "Manually Stratified Sample" (manual_stratified_sample)
     - [ ] "Automatically Stratified Sample" (automatic_stratified_sample)
