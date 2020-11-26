@@ -64,6 +64,13 @@ case class Artifact(
 
             (
               Json.obj(
+                "columns"    -> JsArray(data.schema.zipWithIndex.map { case (field, idx) => 
+                                  Json.obj(
+                                    "id" -> idx,
+                                    "name" -> field.name,
+                                    "type" -> DATATYPE.fromSpark(field.dataType).toString
+                                  )
+                                }),
                 "rows"       -> JsArray(
                   data.data
                       .zip(data.prov)
@@ -116,10 +123,10 @@ case class Artifact(
 
     JsObject(base.value ++ extensions.value ++ 
       Map(
-        HATEOAS.LINKS -> JsObject(
+        HATEOAS.LINKS -> JsArray(
           base.value(HATEOAS.LINKS)
-              .as[Map[String, JsValue]] 
-              ++ links.as[Map[String, JsValue]]
+              .as[Seq[JsValue]] 
+              ++ links.as[Seq[JsValue]]
         )
       )
     )
@@ -202,10 +209,12 @@ object Artifact
       val b = Artifact.syntax 
       select
         .from(Artifact as b)
-        .where(sqls.toAndConditionOpt(
-                projectId.map { sqls.eq(b.projectId, _) }
-              ))
-           .and.eq(b.id, target) 
+        .where(
+          sqls.toAndConditionOpt(
+            Some(sqls.eq(b.id, target)),
+            projectId.map { sqls.eq(b.projectId, _) }
+          )
+        )
     }.map { apply(_) }.single.apply()
 
   def nameInBackend(t: ArtifactType.T, artifactId: Identifier): String =
@@ -233,7 +242,7 @@ object Artifact
         Seq(
           HATEOAS.SELF -> (t match {
             case ArtifactType.DATASET => 
-              VizierAPI.urls.getDataset(projectId, id, limit = Some(VizierAPI.DEFAULT_DISPLAY_ROWS))
+              VizierAPI.urls.getDataset(projectId, id)
             case ArtifactType.CHART => 
               VizierAPI.urls.getChartView(projectId, 0, 0, 0, id)
             case _ => 

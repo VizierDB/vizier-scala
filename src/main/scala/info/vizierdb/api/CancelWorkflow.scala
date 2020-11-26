@@ -21,8 +21,8 @@ case class CancelWorkflow(
 {
   def handle: Response = 
   {
-    DB.readOnly { implicit s => 
-      val workflow:Workflow =
+    var workflow:Workflow =
+      DB.readOnly { implicit s => 
         workflowId match { 
           case None => 
             Branch.lookup(projectId, branchId)
@@ -36,7 +36,16 @@ case class CancelWorkflow(
                        return NoSuchEntityResponse()
                     }
         }
-      workflow.abort
+      }
+
+    // has to happen outside of a DB block
+    Scheduler.abort(workflow.id)
+
+    DB.autoCommit { implicit s => 
+      workflow = workflow.abort
+    }
+
+    DB.readOnly { implicit s => 
       RawJsonResponse(
         workflow.describe
       )

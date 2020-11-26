@@ -36,6 +36,6 @@ object Query extends Command
       properties = None
     ).handle
 
-    context.displayDataset(dsId)
+    context.displayDataset(datasetName)
   }
 }

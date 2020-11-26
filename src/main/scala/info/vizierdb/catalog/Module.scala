@@ -8,6 +8,8 @@ import info.vizierdb.types._
 import info.vizierdb.commands.Commands
 import info.vizierdb.catalog.binders._
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.util.HATEOAS
+import info.vizierdb.VizierAPI
 
 /**
  * One step in an arbitrary workflow.
@@ -64,7 +66,7 @@ class Module(
 
     Json.obj(
       "id" -> id,
-      "state" -> cell.state.toString,
+      "state" -> ExecutionState.translateToClassicVizier(cell.state),
       "command" -> Json.obj(
         "packageId" -> packageId,
         "commandId" -> commandId,
@@ -81,6 +83,12 @@ class Module(
       "outputs" -> Json.obj(
         "stdout" -> messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
         "stderr" -> messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
+      ),
+      HATEOAS.LINKS -> HATEOAS(
+        HATEOAS.SELF           -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, id),
+        HATEOAS.MODULE_INSERT  -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, id),
+        HATEOAS.MODULE_DELETE  -> VizierAPI.urls.deleteWorkflowModule(projectId, branchId, workflowId, id),
+        HATEOAS.MODULE_REPLACE -> VizierAPI.urls.replaceWorkflowModule(projectId, branchId, workflowId, id),
       )
     )
 
@@ -88,6 +96,7 @@ class Module(
 }
 object Module
   extends SQLSyntaxSupport[Module]
+    with LazyLogging
 {
 
 
@@ -114,7 +123,7 @@ object Module
     arguments: JsObject,
     revisionOfId: Option[Identifier]
   )(implicit session: DBSession): Module =
-    make(packageId, commandId, Json.obj(), revisionOfId)
+    make(packageId, commandId, Json.obj(), revisionOfId, arguments)
 
   def make(
     packageId: String, 
@@ -124,17 +133,20 @@ object Module
     arguments: JsObject
   )(implicit session: DBSession): Module =
   {    
-    get( withSQL {
-      val m = Module.column
-      insertInto(Module)
-        .namedValues(
-          m.packageId -> packageId,
-          m.commandId -> commandId,
-          m.arguments -> arguments,
-          m.properties -> properties,
-          m.revisionOfId -> revisionOfId
-        )
-    }.updateAndReturnGeneratedKey.apply())
+    get(
+      withSQL {
+        logger.trace(s"Creating Module: ${packageId}.${commandId}(${arguments})")
+        val m = Module.column
+        insertInto(Module)
+          .namedValues(
+            m.packageId -> packageId,
+            m.commandId -> commandId,
+            m.arguments -> arguments,
+            m.properties -> properties,
+            m.revisionOfId -> revisionOfId
+          )
+      }.updateAndReturnGeneratedKey.apply()
+    )
   }
 
 

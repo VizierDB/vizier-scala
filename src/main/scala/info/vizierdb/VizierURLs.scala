@@ -15,9 +15,10 @@ class VizierURLs(
   def queryString(query: Map[String, String]): String =
     if(query.isEmpty){ "" }
     else { "?" + query.map { case (k, v) => 
-      URLEncoder.encode(k, "UTF-8")+"="+
-        URLEncoder.encode(v, "UTF-8")
-    }.mkString("&")}
+        URLEncoder.encode(k, "UTF-8")+"="+
+          URLEncoder.encode(v, "UTF-8")
+      }.mkString("&")
+    }
 
   def url(spec: String, query: Map[String,String] = Map.empty): URL =
     new URL(base, spec+queryString(query))

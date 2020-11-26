@@ -1,7 +1,8 @@
 package info.vizierdb.test
 
+import java.net.URL
 import scalikejdbc.{ GlobalSettings, LoggingSQLAndTimeSettings }
-import info.vizierdb.Vizier
+import info.vizierdb.{ Vizier, VizierAPI, VizierURLs }
 import info.vizierdb.catalog.Schema
 
 object SharedTestResources
@@ -24,6 +25,12 @@ object SharedTestResources
         Schema.drop
         Schema.initialize
         DummyCommands.init
+
+        VizierAPI.urls = 
+          new VizierURLs(
+            new URL(s"http://localhost:5000/vizier-db/api/v1/"), 
+            None
+          )
       }
       sharedSetupComplete = true
     }

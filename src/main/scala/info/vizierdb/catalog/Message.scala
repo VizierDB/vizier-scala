@@ -17,7 +17,10 @@ case class Message(
   def describe: JsObject = 
     Json.obj(
       "type" -> mimeType,
-      "value" -> new String(data)
+      "value" -> (mimeType match {
+        case MIME.DATASET_VIEW => Json.parse(data)
+        case _ => println("MIME: " +mimeType); JsString(new String(data))
+      })
     )
 }
 object Message 

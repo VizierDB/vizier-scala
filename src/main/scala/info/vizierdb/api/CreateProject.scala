@@ -16,7 +16,7 @@ case class CreateProject(
 )
   extends Request
 {
-  def handle = 
+  def handle: RawJsonResponse = 
   {
     val saneProperties = StupidReactJsonMap.decode(properties)
     val project = 

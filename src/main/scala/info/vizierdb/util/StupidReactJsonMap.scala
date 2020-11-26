@@ -14,14 +14,22 @@ object StupidReactJsonMap
 {
   type T = Seq[StupidReactJsonField]
 
-  def apply(saneMap: Map[String, JsValue], extras: (String, JsValue)*): JsArray =
-    JsArray((saneMap.toSeq ++ extras).map { case (k, v) => 
-      Json.obj("key" -> k, "value" -> v)
-    })
+  def apply(saneMap: Map[String, JsValue], extras: (String, JsValue)*): T =
+    (saneMap ++ extras.toMap).toSeq.map { case (k, v) => 
+      StupidReactJsonField(k, v)
+    }
+
+  def apply(elements: (String, JsValue)*): T =
+    elements.map { case (k, v) => 
+      StupidReactJsonField(k, v)
+    }
 
   def decode(dumbMap: T): Map[String, JsValue] =
     dumbMap.map { field => 
       field.key -> field.value
     }.toMap
+
+  def decode(json: JsValue): Map[String, JsValue] =
+    decode(json.as[T])
 
 }

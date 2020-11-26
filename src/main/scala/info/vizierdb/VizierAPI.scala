@@ -21,7 +21,7 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.response._
 
-import org.mimirdb.api.{ Request, Response, ErrorResponse }
+import org.mimirdb.api.{ Request, Response }
 import org.mimirdb.api.request.Query
 import org.mimirdb.util.JsonUtils.stringifyJsonParseErrors
 import java.net.URL
@@ -125,18 +125,16 @@ object VizierServlet
 
   def fourOhFour(req: HttpServletRequest, output: HttpServletResponse)
   {
-    output.setStatus(HttpServletResponse.SC_NOT_FOUND)
     logger.error(s"Vizier API ${req.getMethod} Not Handled: '${req.getPathInfo}' / '${req.getRequestURI}'")
-    ErrorResponse(
+    VizierErrorResponse(
+      "NotFound",
       s"Vizier API ${req.getMethod} Not Handled: ${req.getPathInfo}",
-      "Unknown Request:"+ req.getPathInfo, 
-      Thread.currentThread().getStackTrace.map(_.toString).mkString("\n") 
+      HttpServletResponse.SC_NOT_FOUND
     ).write(output)
   }
 
-  def process(
-    handler: Request
-  ): ((HttpServletRequest, HttpServletResponse) => Unit) =
+  def process(handler: Request)
+             (request: HttpServletRequest, output: HttpServletResponse): Unit =
   {
     val response: Response = 
       try {
@@ -144,16 +142,13 @@ object VizierServlet
       } catch {
         case e: Throwable => 
           logger.error(e.getMessage + "\n" + e.getStackTrace.map { _.toString }.mkString("\n"))
-          ErrorResponse(
+          VizierErrorResponse(
             e.getClass.getCanonicalName(),
-            e.getMessage(),
-            e.getStackTrace.map { _.toString }.mkString("\n")
+            e.getMessage()
           )
       }
-    {
-      (_:HttpServletRequest, output: HttpServletResponse) => 
-        response.write(output)
-    }
+    logger.trace(s"${handler.getClass()} -> $response")
+    response.write(output)
   }
 
   def processJson[Q <: Request](
@@ -179,18 +174,16 @@ object VizierServlet
           } catch {
             case e@JsResultException(errors) => {
               logger.error(e.getMessage + "\n" + e.getStackTrace.map(_.toString).mkString("\n"))
-              Right(ErrorResponse(
+              Right(VizierErrorResponse(
                 e.getClass().getCanonicalName(),
-                s"Error(s) parsing API request\n${ellipsize(text, 100)}\n"+stringifyJsonParseErrors(errors).mkString("\n"),
-                e.getStackTrace.map(_.toString).mkString("\n")
+                s"Error(s) parsing API request\n${ellipsize(text, 100)}\n"+stringifyJsonParseErrors(errors).mkString("\n")
               ))
             }
             case e:Throwable => {
               logger.error(e.getMessage + "\n" + e.getStackTrace.map(_.toString).mkString("\n"))
-              Right(ErrorResponse(
+              Right(VizierErrorResponse(
                 e.getClass().getCanonicalName(),
-                s"Error(s) parsing API request\n${ellipsize(text, 100)}\n",
-                e.getStackTrace.map(_.toString).mkString("\n")
+                s"Error(s) parsing API request\n${ellipsize(text, 100)}\n"
               ))
             }
           }
@@ -216,10 +209,15 @@ object VizierServlet
             "content-type"
           ).mkString(", "))
           output.setHeader("Allow", responses.map { _._1.toString }.mkString(", "))
+          output.setHeader("Access-Control-Allow-Methods", responses.map { _._1.toString }.mkString(", "))
         case _ => 
+          logger.trace(s"Possible Responses: ${responses.map { _._1 }.mkString(", ")}")
           responses.find { _._1.equals(method) } match {
             case None                 => fourOhFour(req, output)
-            case Some( (_, handler) ) => handler(req, output)
+            case Some( (t, handler) ) => {
+              logger.trace(s"Selected $t -> $handler")
+              handler(req, output)
+            }
           }
       }
     }
@@ -282,8 +280,6 @@ object VizierServlet
       case PROJECT(projectId, BRANCH(branchId, "/head")) => 
         respond(
           GET -> process(GetWorkflowRequest(projectId.toLong, branchId.toLong, None)) // get the branch head workflow
-          ,
-          POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // append a module to the branch head
         )
       case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, ""))) => 
         respond(
@@ -292,10 +288,14 @@ object VizierServlet
       case PROJECT(projectId, BRANCH(branchId, HEAD("/modules"))) => 
         respond(
           GET -> process(GetAllModulesRequest(projectId.toLong, branchId.toLong, None)) // get the specified module from the branch head
+          ,
+          POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // append a module to the branch head
         )
       case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/modules"))) => 
         respond(
           GET -> process(GetAllModulesRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // get the specified module from the branch head
+          ,
+          POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "workflowId" -> workflowId.toLong) // append a module to the branch head
         )
       case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(moduleId, "")))) => 
         respond(
@@ -310,6 +310,12 @@ object VizierServlet
       case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, "")))) => 
         respond(
           GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), moduleId.toLong))  // get the specified module
+          ,
+          POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "moduleId" -> moduleId.toLong, "workflowId" -> workflowId.toLong) // insert a module before the specified module
+          ,
+          DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, moduleId.toLong, Some(workflowId.toLong))) // delete the specified module
+          ,
+          PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "moduleId" -> moduleId.toLong, "workflowId" -> workflowId.toLong) // replace the specified module
         )
       case PROJECT(projectId, BRANCH(branchId, HEAD("/sql"))) => 
         respond(
@@ -329,7 +335,17 @@ object VizierServlet
             projectId.toLong, 
             datasetId.toLong, 
             expectedType = Some(ArtifactType.DATASET), 
-            offset = Option(req.getParameter("offset")).map { _.toLong },
+            offset = Option(req.getParameter("offset")).map { _.split(",")(0).toLong },
+            limit = Option(req.getParameter("limit")).map { _.toInt },
+            forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
+          )) // retrieve the specified dataset
+        )
+      case PROJECT(projectId, ARTIFACT(artifactId, "")) =>
+        respond(
+          GET -> process(GetArtifactRequest(
+            projectId.toLong, 
+            artifactId.toLong, 
+            offset = Option(req.getParameter("offset")).map { _.split(",")(0).toLong },
             limit = Option(req.getParameter("limit")).map { _.toInt },
             forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
           )) // retrieve the specified dataset
@@ -356,7 +372,7 @@ object VizierServlet
         )
       case PROJECT(projectId, "/files") => 
         respond(
-          POST -> process(CreateFile(projectId.toLong, req.asInstanceOf[JettyRequest]))// create a new file in the data store
+          POST -> CreateFile.handler(projectId.toLong)// create a new file in the data store
         )
       case PROJECT(projectId, FILE(fileId, "")) =>
         respond(

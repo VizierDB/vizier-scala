@@ -4,16 +4,18 @@ import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
-import info.vizierdb.catalog.{ Branch, Module }
+import info.vizierdb.catalog.{ Branch, Module, Workflow }
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.viztrails.Scheduler
 
 case class ReplaceModule(
   projectId: Identifier,
   branchId: Identifier,
   moduleId: Identifier,
+  workflowId: Option[Identifier],
   packageId: String,
   commandId: String,
   arguments: JsArray
@@ -22,37 +24,49 @@ case class ReplaceModule(
 {
   def handle: Response = 
   {
-    DB.autoCommit { implicit s => 
-      val branch: Branch = 
-        Branch.lookup(projectId, branchId)
-               .getOrElse { 
-                 return NoSuchEntityResponse()
-               }
-      val cell =
-        branch.head
-              .cellByModuleId(moduleId)
-              .getOrElse { 
-                 return NoSuchEntityResponse()
-               }
+    val workflow: Workflow = 
+      DB.autoCommit { implicit s => 
+        val branch: Branch = 
+          Branch.lookup(projectId, branchId)
+                 .getOrElse { 
+                   return NoSuchEntityResponse()
+                 }
+        val cell =
+          branch.head
+                .cellByModuleId(moduleId)
+                .getOrElse { 
+                   return NoSuchEntityResponse()
+                 }
 
-      val (_, workflow) = branch.update(cell.position, 
-        Module.make(
-          packageId = packageId,
-          commandId = commandId,
-          arguments = JsObject(
-            arguments.as[Seq[Map[String, JsValue]]]
-                     .map { arg =>
-                       arg("id").as[String] -> 
-                        arg("value")
-                     }
-                     .toMap
-          ),
-          revisionOfId = None
-        )
-      )
+        if(workflowId.isDefined) {
+          if(branch.headId != workflowId.get){
+            return VizierErrorResponse("Invalid", "Trying to modify an immutable workflow")
+          }
+        }
 
+        val module = 
+          Module.make(
+            packageId = packageId,
+            commandId = commandId,
+            arguments = JsObject(
+              arguments.as[Seq[Map[String, JsValue]]]
+                       .map { arg =>
+                         arg("id").as[String] -> 
+                          arg("value")
+                       }
+                       .toMap
+            ),
+            revisionOfId = Some(cell.moduleId)
+          )
+          
+        /* return */ branch.update(cell.position, module)._2
+    }
+
+    Scheduler.schedule(workflow.id)
+
+    DB.readOnly { implicit s => 
       RawJsonResponse(
-        branch.summarize
+        workflow.describe
       )
     }
   } 

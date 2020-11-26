@@ -154,4 +154,15 @@ object Cell
         .from(Cell as c)
         .where.eq(c.workflowId, workflowId).and.eq(c.position, position)
     }.map { apply(_) }.single.apply()
+
+  def abortEverything()(implicit session: DBSession) =
+  {
+    withSQL {
+      val c = Cell.column
+      update(Cell)
+        .set(c.state -> ExecutionState.ERROR)
+        .where.ne(c.state, ExecutionState.ERROR)
+          .and.ne(c.state, ExecutionState.DONE)
+    }.update.apply()
+  }
 }

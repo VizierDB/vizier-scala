@@ -37,18 +37,32 @@ object Parameter
 {
 
   def describe(list: Seq[Parameter]): JsValue =
-    JsArray(doDescribe(list, 0)._1.map { JsObject(_) })
+    JsArray(doDescribe(list, 0, None)._1.map { JsObject(_) })
 
-  private def doDescribe(list: Seq[Parameter], startIdx: Int): (Seq[Map[String, JsValue]], Int) =
+  private def doDescribe(
+    list: Seq[Parameter], 
+    startIdx: Int, 
+    parent: Option[String]
+  ): (Seq[Map[String, JsValue]], Int) =
   {
-    list.foldLeft( (Seq[Map[String, JsValue]](), startIdx) ) { case ((accum, idx), curr) =>
-      curr match {
-        case l:ListParameter => 
-          val (components, nextIdx) = doDescribe(l.components, idx+1)
-          (accum ++ Seq(l.describe ++ Map("index" -> JsNumber(idx))) ++ components, nextIdx)
+    list.foldLeft( (Seq[Map[String, JsValue]](), startIdx) ) { 
+      case ((accum, idx), curr) =>
+        val currDescription =
+          curr.describe ++ 
+          parent.map { p => Map("parent" -> JsString(p)) }
+                .getOrElse { Map.empty } ++ 
+          Map("index" -> JsNumber(idx))
 
-        case _ => (accum ++ Seq(curr.describe ++ Map("index" -> JsNumber(idx))), idx + 1)
-      }
+        curr match {
+          case l:ListParameter => 
+            val (components, nextIdx) = doDescribe(l.components, idx+1, Some(l.id))
+            (
+              accum ++ Seq(currDescription) ++ components,
+              nextIdx
+            )
+
+          case _ => (accum ++ Seq(currDescription), idx + 1)
+        }
     }
   }
 

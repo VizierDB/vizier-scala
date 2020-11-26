@@ -10,6 +10,7 @@ import org.mimirdb.api.request.QueryTableRequest
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
 import info.vizierdb.artifacts.Chart
+import info.vizierdb.VizierAPI
 import org.mimirdb.api.MimirAPI
 
 class ExecutionContext(
@@ -171,7 +172,7 @@ class ExecutionContext(
    * @returns                 The newly allocated backend-facing name and its identifier
    */
   def outputDataset(name: String): (String, Identifier) =
-    { val ds = output(name, ArtifactType.DATASET, Array[Byte](), "mimir/dataset"); (ds.nameInBackend, ds.id) }
+    { val ds = output(name, ArtifactType.DATASET, Array[Byte](), MIME.DATASET_VIEW); (ds.nameInBackend, ds.id) }
 
   /**
    * Allocate a new dataset object and register it as an output
@@ -229,17 +230,12 @@ class ExecutionContext(
    * 
    * @param   artifactId      The artifact identifier of the dataset to display 
    */
-  def displayDataset(artifactId: Identifier) = 
+  def displayDataset(name: String, limit: Int = VizierAPI.DEFAULT_DISPLAY_ROWS) = 
   {
-    message("datset/view", 
-      QueryTableRequest(
-        table = Artifact.nameInBackend(ArtifactType.DATASET, artifactId),
-        columns = None,
-        limit = Some(10),
-        offset = None,
-        includeUncertainty = true,
-        profile = Some(false)
-      ).handle.toString.getBytes
+    message(MIME.DATASET_VIEW, 
+      artifact(name).get
+                    .describe(name = name, limit = Some(limit))
+                    .toString.getBytes
     )
   }
 

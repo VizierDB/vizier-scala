@@ -8,7 +8,7 @@ import org.mimirdb.data.{ JDBCMetadataBackend => MimirJDBC, Catalog => MimirCata
 
 import info.vizierdb.types._
 import info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyDriver
-import info.vizierdb.catalog.{ Project, Schema }
+import info.vizierdb.catalog.{ Project, Schema, Cell }
 import org.mimirdb.data.LocalFSStagingProvider
 import java.io.File
 
@@ -58,12 +58,20 @@ object Vizier
     ) 
   }
 
+  def bringDatabaseToSaneState()
+  {
+    DB.autoCommit { implicit s => 
+      Cell.abortEverything()
+    }
+  }
+
   def main(args: Array[String]) 
   {
     println("Starting SQLite...")
     initSQLite()
     Schema.initialize()
     initORMLogging()
+    bringDatabaseToSaneState()
     println("Starting Mimir...")
     initMimir()
     println("Starting Server...")

@@ -14,8 +14,14 @@
   <!--+++++++++++++++++++++++  Vizier  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.VizierAPI$"                        level="DEBUG" />
   <logger name="info.vizierdb.VizierServlet$"                    level="DEBUG" />
-  <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="TRACE" />
+  <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="WARN" />
+  <logger name="info.vizierdb.api.AppendModule"                  level="WARN" />
   <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
+  <logger name="info.vizierdb.viztrails.Scheduler$"              level="TRACE" />
+
+  <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
+  <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />
+  <logger name="info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyConnection" level="DEBUG" />
 
   <!--+++++++++++++++++++++++  Jetty  +++++++++++++++++++++++++-->
   <logger name="org.eclipse.jetty.server.Server"                 level="WARN" />

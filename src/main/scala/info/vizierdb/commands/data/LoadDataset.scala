@@ -62,6 +62,6 @@ object LoadDataset
       properties = None,
       proposedSchema = None
     ).handle
-    context.displayDataset(dsId)
+    context.displayDataset(datasetName)
   }
 }

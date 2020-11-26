@@ -1,6 +1,6 @@
 package info.vizierdb.commands
 
-import play.api.libs.json.{ JsObject, JsValue }
+import play.api.libs.json._
 import info.vizierdb.VizierException
 
 trait Command
@@ -28,5 +28,10 @@ trait Command
       }
       parameter.id -> encoded
     }.toMap)
-
+  def encodeArgumentsForReact(arguments: Map[String, Any]): JsArray =
+    JsArray(
+      encodeArguments(arguments).value
+        .toSeq
+        .map { case (arg, v) => Json.obj("id" -> arg, "value" -> v) }
+    )
 }
