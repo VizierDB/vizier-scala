@@ -350,6 +350,14 @@ object VizierServlet
             forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
           )) // retrieve the specified dataset
         )
+      case PROJECT(projectId, ARTIFACT(datasetId, "/annotations")) =>
+        respond(
+          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
+                            .Annotations(
+                              columnId = Option(req.getParameter("column")).map { _.toInt },
+                              rowId = Option(req.getParameter("row"))
+                            )) // retrieve the specified dataset with annotations
+        )
       case PROJECT(projectId, DATASET(datasetId, "/annotations")) =>
         respond(
           GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
@@ -358,9 +366,21 @@ object VizierServlet
                               rowId = Option(req.getParameter("row"))
                             )) // retrieve the specified dataset with annotations
         )
+      case PROJECT(projectId, ARTIFACT(datasetId, "/descriptor")) =>
+        respond(
+          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary) // retrieve the specified dataset's descriptor
+        )
       case PROJECT(projectId, DATASET(datasetId, "/descriptor")) =>
         respond(
           GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary) // retrieve the specified dataset's descriptor
+        )
+      case PROJECT(projectId, ARTIFACT(datasetId, "/csv")) =>
+        respond(
+          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
+        )
+      case PROJECT(projectId, ARTIFACT(datasetId, "/csv")) =>
+        respond(
+          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
         )
       case PROJECT(projectId, DATASET(datasetId, "/csv")) =>
         respond(

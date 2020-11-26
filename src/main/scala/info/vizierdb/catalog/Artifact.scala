@@ -82,7 +82,7 @@ case class Artifact(
                             data.schema.zip(row)
                                 .map { case (col, v) => SparkPrimitive.encode(v, col.dataType) }
                           ),
-                          "rowAnnotationFlags" -> JsArray(attrCaveats.map { JsBoolean(_) }),
+                          "rowAnnotationFlags" -> JsArray(attrCaveats.map { c => JsBoolean(!c) }),
                           "rowIsAnnotated"     -> rowCaveatted
                         )
                       }
