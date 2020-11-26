@@ -58,7 +58,7 @@ object UnloadDataset extends Command
         context.outputFile(
           name = "file_export", 
           properties = Json.obj(
-            "name" -> "export_$datasetName"
+            "filename" -> s"export_$datasetName"
           ),
           mimeType = mimeType
         )

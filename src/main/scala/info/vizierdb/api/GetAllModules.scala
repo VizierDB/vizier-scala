@@ -4,7 +4,7 @@ import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
-import info.vizierdb.catalog.{ Branch, Workflow }
+import info.vizierdb.catalog.{ Branch, Workflow, Module }
 import org.mimirdb.api.Request
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
@@ -24,11 +24,11 @@ case class GetAllModulesRequest(projectId: Identifier, branchId: Identifier, wor
         } 
       workflowMaybe match {
         case Some(workflow) => RawJsonResponse(
-          JsArray(
+          Module.describeAll(
+            projectId = projectId,
+            branchId = branchId, 
+            workflowId = workflow.id,
             workflow.cellsAndModulesInOrder
-                    .map { case (cell, module) => 
-                      module.describe(cell, projectId, branchId, workflow.id)
-                    }
           )
         )
         case None => NoSuchEntityResponse()

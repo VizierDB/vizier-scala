@@ -10,6 +10,7 @@ import info.vizierdb.catalog.binders._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
+import info.vizierdb.viztrails.Provenance
 
 /**
  * One step in an arbitrary workflow.
@@ -35,7 +36,7 @@ class Module(
   override def toString = 
     s"[$id] $packageId.$commandId($arguments)"
 
-  def describe(cell: Cell, projectId: Identifier, branchId: Identifier, workflowId: Identifier)(implicit session:DBSession): JsObject = 
+  def describe(cell: Cell, projectId: Identifier, branchId: Identifier, workflowId: Identifier, artifacts: Seq[ArtifactRef])(implicit session:DBSession): JsObject = 
   {
     val command = Commands.getOption(packageId, commandId)
     val timestamps:Map[String,String] = Map(
@@ -48,17 +49,17 @@ class Module(
       }
     }.toMap
 
-    val artifacts = cell.resultId.map { Result.outputArtifacts(_) }
-                        .toSeq.flatten
+    val artifactSummaries = 
+                      artifacts
                         .filter { !_.artifactId.isEmpty }
                         .map { ref => 
                           logger.trace(s"Looking up artifact ${ref.userFacingName} -> ${ref.artifactId}")
                           ref.userFacingName -> Artifact.lookupSummary(ref.artifactId.get).get 
                         }
 
-    val datasets    = artifacts.filter { _._2.t.equals(ArtifactType.DATASET) }
-    val charts      = artifacts.filter { _._2.t.equals(ArtifactType.CHART) }
-    val dataobjects = artifacts.filter { !_._2.t.equals(ArtifactType.DATASET) }
+    val datasets    = artifactSummaries.filter { _._2.t.equals(ArtifactType.DATASET) }
+    val charts      = artifactSummaries.filter { _._2.t.equals(ArtifactType.CHART) }
+    val dataobjects = artifactSummaries.filter { !_._2.t.equals(ArtifactType.DATASET) }
 
     val messages: Seq[Message] = 
       cell.resultId.map { Result.outputs(_) }.toSeq.flatten
@@ -158,5 +159,29 @@ object Module
         .from(Module as w)
         .where.eq(w.id, target) 
     }.map { apply(_) }.single.apply()
+
+  def describeAll(
+    projectId: Identifier, 
+    branchId: Identifier, 
+    workflowId: Identifier,
+    cells: Seq[(Cell, Module)]
+  )(implicit session: DBSession): JsArray =
+  { 
+    var scope = Map[String,ArtifactRef]()
+    JsArray(
+      cells.sortBy { _._1.position }
+           .map { case (cell, module) => 
+             scope = Provenance.updateRefScope(cell, scope)
+             module.describe(
+               cell = cell, 
+               projectId = projectId,
+               branchId = branchId,
+               workflowId = workflowId,
+               artifacts = scope.values.toSeq
+             )
+           }
+    )
+  }
+
 
 }

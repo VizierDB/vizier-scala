@@ -1,6 +1,7 @@
 package info.vizierdb.catalog
 
 import java.io.File
+import java.net.URL
 import scalikejdbc._
 import play.api.libs.json._
 import info.vizierdb.types._
@@ -27,7 +28,8 @@ case class Artifact(
   def string = new String(data)
   def nameInBackend = Artifact.nameInBackend(t, id)
   def file: File = Filestore.get(projectId, id)
-  def summarize(name: String = null) = Artifact.summarize(id, projectId, t, created, mimeType, Option(name))
+  def summarize(name: String = null) = 
+    Artifact.summarize(id, projectId, t, created, mimeType, Option(name))
   def jsonData = Json.parse(data)
 
 
@@ -38,8 +40,7 @@ case class Artifact(
     forceProfiler: Boolean = false
   ): JsObject = 
   {
-    val base = summarize(name = name)
-    val (extensions, links): (JsObject, JsArray) = 
+    val (extensions, links): (Map[String,JsValue], Seq[(String,URL)]) = 
       t match { 
         case ArtifactType.DATASET => 
           {
@@ -53,82 +54,36 @@ case class Artifact(
                           includeUncertainty = true
                         )
             val rowCount: Long = 
-              data.properties
-                  .get("count")
-                  .map { _.as[Long] }
-                  .getOrElse { MimirAPI.catalog
-                                       .get(nameInBackend)
-                                       .count() }
-            
-            val actualOffset: Long = offset.getOrElse { 0 }
+                data.properties
+                    .get("count")
+                    .map { _.as[Long] }
+                    .getOrElse { MimirAPI.catalog
+                                         .get(nameInBackend)
+                                         .count() }
 
-            (
-              Json.obj(
-                "columns"    -> JsArray(data.schema.zipWithIndex.map { case (field, idx) => 
-                                  Json.obj(
-                                    "id" -> idx,
-                                    "name" -> field.name,
-                                    "type" -> DATATYPE.fromSpark(field.dataType).toString
-                                  )
-                                }),
-                "rows"       -> JsArray(
-                  data.data
-                      .zip(data.prov)
-                      .zip(data.rowTaint.zip(data.colTaint))
-                      .map { case ((row, rowid), (rowCaveatted, attrCaveats)) => 
-                        Json.obj(
-                          "id" -> rowid,
-                          "values" -> JsArray(
-                            data.schema.zip(row)
-                                .map { case (col, v) => SparkPrimitive.encode(v, col.dataType) }
-                          ),
-                          "rowAnnotationFlags" -> JsArray(attrCaveats.map { c => JsBoolean(!c) }),
-                          "rowIsAnnotated"     -> rowCaveatted
-                        )
-                      }
-                ),
-                "rowCount"   -> rowCount,
-                "offset"     -> actualOffset,
-                "properties" -> data.properties,
-              ),
-              HATEOAS(
-                HATEOAS.PAGE_FIRST -> (if(actualOffset <= 0){ null }
-                                       else { VizierAPI.urls.getDataset(
-                                                projectId, id, 
-                                                offset = Some(0), 
-                                                limit = Some(actualLimit)) }),
-                HATEOAS.PAGE_PREV  -> (if(actualOffset <= 0){ null }
-                                       else { VizierAPI.urls.getDataset(
-                                                projectId, id, 
-                                                offset = Some(if(actualOffset - actualLimit > 0) { 
-                                                                (actualOffset - actualLimit) 
-                                                              } else { 0l }), 
-                                                limit = Some(actualLimit)) }),
-                HATEOAS.PAGE_NEXT  -> (if(actualOffset + actualLimit >= rowCount){ null }
-                                       else { VizierAPI.urls.getDataset(
-                                                projectId, id, 
-                                                offset = Some(actualOffset + actualLimit), 
-                                                limit = Some(actualLimit)) }),
-                HATEOAS.PAGE_LAST  -> (if(actualOffset + actualLimit >= rowCount){ null }
-                                       else { VizierAPI.urls.getDataset(
-                                                projectId, id, 
-                                                offset = Some(rowCount - (rowCount % actualLimit)), 
-                                                limit = Some(actualLimit)) }),
-              )
+            Artifact.translateDatasetContainerToVizierClassic(
+              projectId = projectId,
+              artifactId = id,
+              data = data,
+              offset = offset.getOrElse { 0 },
+              limit = actualLimit,
+              rowCount = rowCount
             )
+            
           }
         case ArtifactType.BLOB | ArtifactType.FUNCTION | ArtifactType.FILE | ArtifactType.CHART => 
-          (Json.obj(), HATEOAS())
+          (Map.empty, Seq.empty)
       }
 
-    JsObject(base.value ++ extensions.value ++ 
-      Map(
-        HATEOAS.LINKS -> JsArray(
-          base.value(HATEOAS.LINKS)
-              .as[Seq[JsValue]] 
-              ++ links.as[Seq[JsValue]]
-        )
-      )
+    Artifact.summarize(
+      artifactId = id, 
+      projectId = projectId, 
+      t = t, 
+      created = created, 
+      mimeType = mimeType, 
+      name = Option(name),
+      extraHateoas = links,
+      extraFields = extensions,
     )
   }
 
@@ -231,31 +186,112 @@ object Artifact
      .single.apply()
   }
 
-  def summarize(id: Identifier, projectId: Identifier, t: ArtifactType.T, created: ZonedDateTime, mimeType: String, name: Option[String]): JsObject =
-    Json.obj(
-      "key" -> id,
-      "id" -> id,
-      "objType" -> mimeType, 
-      "category" -> t.toString,
-      "name" -> JsString(name.getOrElse(id.toString)),
+  def summarize(
+    artifactId: Identifier, 
+    projectId: Identifier, 
+    t: ArtifactType.T, 
+    created: ZonedDateTime, 
+    mimeType: String, 
+    name: Option[String],
+    extraHateoas: Seq[(String, URL)] = Seq.empty,
+    extraFields: Map[String, JsValue] = Map.empty
+  ): JsObject =
+    JsObject(Map(
+      "key" -> JsNumber(artifactId),
+      "id" -> JsNumber(artifactId),
+      "objType" -> JsString(mimeType), 
+      "category" -> JsString(t.toString),
+      "name" -> JsString(name.getOrElse(artifactId.toString)),
       HATEOAS.LINKS -> HATEOAS((
         Seq(
           HATEOAS.SELF -> (t match {
             case ArtifactType.DATASET => 
-              VizierAPI.urls.getDataset(projectId, id)
+              VizierAPI.urls.getDataset(projectId, artifactId)
             case ArtifactType.CHART => 
-              VizierAPI.urls.getChartView(projectId, 0, 0, 0, id)
+              VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
             case _ => 
-              VizierAPI.urls.getArtifact(projectId, id)
+              VizierAPI.urls.getArtifact(projectId, artifactId)
           })
         ) ++ (t match {
           case ArtifactType.DATASET => Seq(
-            HATEOAS.DATASET_FETCH_ALL -> VizierAPI.urls.getDataset(projectId, id, limit = Some(-1)),
-            HATEOAS.DATASET_DOWNLOAD  -> VizierAPI.urls.downloadDataset(projectId, id),
-            HATEOAS.ANNOTATIONS_GET   -> VizierAPI.urls.getDatasetCaveats(projectId, id)
+            HATEOAS.DATASET_FETCH_ALL -> VizierAPI.urls.getDataset(projectId, artifactId, limit = Some(-1)),
+            HATEOAS.DATASET_DOWNLOAD  -> VizierAPI.urls.downloadDataset(projectId, artifactId),
+            HATEOAS.ANNOTATIONS_GET   -> VizierAPI.urls.getDatasetCaveats(projectId, artifactId)
           )
           case _ => Seq()
-        })
-      ):_*)
+        }) ++ extraHateoas
+      ):_*),
+    ) ++ extraFields)
+
+  /**
+   * Translate a Mimir DataContainer to something the frontend UI wants to see
+   *
+   * The main use of this is to produce Dataset Artifacts for consumption by the
+   * frontend via artifact.describe, but we occasionally need to create 
+   * similar structures elsewhere (e.g., when we want to cache a DataContainer)
+   */
+  def translateDatasetContainerToVizierClassic(
+    projectId: Identifier,
+    artifactId: Identifier, 
+    data: DataContainer,
+    offset: Long,
+    limit: Int,
+    rowCount: Long
+  ): (Map[String,JsValue],Seq[(String, URL)]) = 
+  {
+    (
+      Map(
+        "columns"    -> JsArray(data.schema.zipWithIndex.map { case (field, idx) => 
+                          Json.obj(
+                            "id" -> idx,
+                            "name" -> field.name,
+                            "type" -> DATATYPE.fromSpark(field.dataType).toString
+                          )
+                        }),
+        "rows"       -> JsArray(
+          data.data
+              .zip(data.prov)
+              .zip(data.rowTaint.zip(data.colTaint))
+              .map { case ((row, rowid), (rowCaveatted, attrCaveats)) => 
+                Json.obj(
+                  "id" -> rowid,
+                  "values" -> JsArray(
+                    data.schema.zip(row)
+                        .map { case (col, v) => SparkPrimitive.encode(v, col.dataType) }
+                  ),
+                  "rowAnnotationFlags" -> JsArray(attrCaveats.map { c => JsBoolean(!c) }),
+                  "rowIsAnnotated"     -> rowCaveatted
+                )
+              }
+        ),
+        "rowCount"   -> JsNumber(rowCount),
+        "offset"     -> JsNumber(offset),
+        "properties" -> JsObject(data.properties),
+      ),
+      Seq(
+        HATEOAS.PAGE_FIRST -> (if(offset <= 0){ null }
+                               else { VizierAPI.urls.getDataset(
+                                        projectId, artifactId, 
+                                        offset = Some(0), 
+                                        limit = Some(limit)) }),
+        HATEOAS.PAGE_PREV  -> (if(offset <= 0){ null }
+                               else { VizierAPI.urls.getDataset(
+                                        projectId, artifactId, 
+                                        offset = Some(if(offset - limit > 0) { 
+                                                        (offset - limit) 
+                                                      } else { 0l }), 
+                                        limit = Some(limit)) }),
+        HATEOAS.PAGE_NEXT  -> (if(offset + limit >= rowCount){ null }
+                               else { VizierAPI.urls.getDataset(
+                                        projectId, artifactId, 
+                                        offset = Some(offset + limit), 
+                                        limit = Some(limit)) }),
+        HATEOAS.PAGE_LAST  -> (if(offset + limit >= rowCount){ null }
+                               else { VizierAPI.urls.getDataset(
+                                        projectId, artifactId, 
+                                        offset = Some(rowCount - (rowCount % limit)), 
+                                        limit = Some(limit)) }),
+      )
     )
+  }
 }

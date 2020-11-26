@@ -8,6 +8,7 @@ import info.vizierdb.catalog.{ Branch, Workflow, Cell }
 import org.mimirdb.api.Request
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
+import info.vizierdb.viztrails.Provenance
 
 case class GetModuleRequest(projectId: Identifier, branchId: Identifier, workflowId: Option[Identifier], moduleId: Identifier)
   extends Request
@@ -26,7 +27,13 @@ case class GetModuleRequest(projectId: Identifier, branchId: Identifier, workflo
         workflowMaybe.flatMap { _.cellByModuleId(moduleId) }
       cellMaybe match {
         case Some(cell) => RawJsonResponse(
-          cell.module.describe(cell, projectId, branchId, workflowMaybe.get.id)
+          cell.module.describe(
+            cell = cell, 
+            projectId = projectId, 
+            branchId = branchId, 
+            workflowId = workflowMaybe.get.id,
+            artifacts = Provenance.getRefScope(cell).values.toSeq
+          )
         )
         case None => NoSuchEntityResponse()
       }

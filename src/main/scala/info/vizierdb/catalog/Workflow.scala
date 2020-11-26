@@ -156,9 +156,13 @@ case class Workflow(
           )
         ),
         "state" -> JsNumber(ExecutionState.translateToClassicVizier(state)),
-        "modules" -> JsArray(cellsAndModules.map { case (cell, module) =>
-          module.describe(cell, branch.projectId, branchId, id)
-        }),
+        "modules" -> 
+          Module.describeAll(
+            projectId = branch.projectId,
+            branchId = branchId,
+            workflowId = id,
+            cells = cellsAndModules
+          ),
         "datasets" -> JsArray(datasets.map { case (name, d) => d.summarize(name) }),
         "dataobjects" -> JsArray(dataobjects.map { case (name, d) => d.summarize(name) }),
         "readOnly" -> JsBoolean(!branch.headId.equals(id))

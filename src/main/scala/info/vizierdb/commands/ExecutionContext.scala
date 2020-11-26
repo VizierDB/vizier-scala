@@ -12,6 +12,7 @@ import info.vizierdb.catalog.binders._
 import info.vizierdb.artifacts.Chart
 import info.vizierdb.VizierAPI
 import org.mimirdb.api.MimirAPI
+import info.vizierdb.catalog.DatasetMessage
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -181,7 +182,7 @@ class ExecutionContext(
    * @returns                 The newly allocated backend-facing name
    */
   def outputFile(name: String, mimeType: String = MIME.TEXT, properties: JsObject = Json.obj()): Artifact =
-    output(name, ArtifactType.DATASET, properties.toString.getBytes, mimeType)
+    output(name, ArtifactType.FILE, properties.toString.getBytes, mimeType)
 
   /**
    * Record that this execution failed with the specified name
@@ -230,12 +231,37 @@ class ExecutionContext(
    * 
    * @param   artifactId      The artifact identifier of the dataset to display 
    */
-  def displayDataset(name: String, limit: Int = VizierAPI.DEFAULT_DISPLAY_ROWS) = 
+  def displayDataset(name: String, offset: Long = 0l, limit: Int = VizierAPI.DEFAULT_DISPLAY_ROWS) = 
   {
+    val dataset = artifact(name).get
+    val data =  dataset.getDataset(
+                  offset = Some(offset),
+                  limit  = Some(limit),
+                  includeUncertainty = true
+                )
+    val rowCount: Long = 
+        data.properties
+            .get("count")
+            .map { _.as[Long] }
+            .getOrElse { MimirAPI.catalog
+                                 .get(Artifact.nameInBackend(
+                                          ArtifactType.DATASET, 
+                                          dataset.id
+                                      ))
+                                 .count() }
+
     message(MIME.DATASET_VIEW, 
-      artifact(name).get
-                    .describe(name = name, limit = Some(limit))
-                    .toString.getBytes
+      Json.toJson(
+        DatasetMessage(
+          name = Some(name),
+          artifactId = dataset.id,
+          projectId = dataset.projectId,
+          offset = offset,
+          dataCache = Some(data),
+          rowCount = rowCount,
+          created = dataset.created
+        )
+      ).toString.getBytes
     )
   }
 

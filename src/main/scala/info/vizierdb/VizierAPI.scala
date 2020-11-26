@@ -394,9 +394,15 @@ object VizierServlet
         respond(
           POST -> CreateFile.handler(projectId.toLong)// create a new file in the data store
         )
+      case PROJECT(_, FILE(_, ".")) | PROJECT(_, FILE(_, "..")) =>
+        fourOhFour(req, output)
       case PROJECT(projectId, FILE(fileId, "")) =>
         respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File) // retrieve the specified file
+          GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File()) // retrieve the specified file
+        )
+      case PROJECT(projectId, FILE(fileId, subpath)) =>
+        respond(
+          GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File(Some(subpath.substring(1/* trim off leading '/'*/)))) // retrieve the specified file
         )
       case TASK(taskId) =>
         ??? // update the state of a running task

@@ -100,14 +100,25 @@ case class GetArtifactRequest(
     } 
   }
 
-  object File extends Request
+
+  val SANE_FILE_CHARACTERS = "^([\\-_.,a-zA-Z0-9]*)$".r
+  case class File(subpath: Option[String] = None) extends Request
   {
     def handle: Response =
     {
       getArtifact(Some(ArtifactType.FILE)) match {
         case Some(artifact) => 
+        {
+          var path = artifact.file
+          subpath match {
+            case None => ()
+            case Some(SANE_FILE_CHARACTERS(saneSubpath)) =>
+              path = new java.io.File(path, saneSubpath)
+            case Some(x) => 
+              throw new IllegalArgumentException(s"Invalid subpath $x")
+          }
           return FileResponse(
-            file = artifact.file, 
+            file = path, 
             mimeType = artifact.mimeType, 
             name = artifact.jsonData
                            .as[Map[String, JsValue]]
@@ -115,6 +126,7 @@ case class GetArtifactRequest(
                            .map { _ .as[String] }
                            .getOrElse { s"unnamed_file_${artifact.id}" }
           )
+        }
         case None => 
           return NoSuchEntityResponse() 
       }
