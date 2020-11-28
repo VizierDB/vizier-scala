@@ -5,12 +5,22 @@ import scalikejdbc._
 import info.vizierdb.types._
 import info.vizierdb.catalog.{ Cell, OutputArtifactRef, InputArtifactRef, ArtifactRef }
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.catalog.{ Artifact, ArtifactSummary }
 
 object Provenance
   extends LazyLogging
 {
   def getScope(cell: Cell)(implicit session: DBSession): Map[String, Identifier] =
     getRefScope(cell).mapValues { _.artifactId.get }
+
+  def getSummaryScope(cell: Cell)(implicit session: DBSession): Map[String, ArtifactSummary] =
+  {
+    val refs = getRefScope(cell).mapValues { _.artifactId.get }
+    val summaries = Artifact.lookupSummaries(refs.values.toSeq)
+                            .map { a => a.id -> a }
+                            .toMap
+    refs.mapValues { summaries(_) }
+  }
 
   def getRefScope(cell: Cell)(implicit session: DBSession): Map[String, ArtifactRef] = 
   {

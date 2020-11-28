@@ -57,4 +57,8 @@ object Commands
   register(packageId = "sql", name = "SQL", category = "code")(
     "query"  -> info.vizierdb.commands.sql.Query
   )
+
+  register(packageId = "script", name = "Scripts", category = "code")(
+    "python"  -> info.vizierdb.commands.python.Python
+  )
 }

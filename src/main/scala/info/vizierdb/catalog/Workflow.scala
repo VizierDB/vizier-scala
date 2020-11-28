@@ -73,6 +73,15 @@ case class Workflow(
         .orderBy(c.position)
     }.map { rs => (Cell(rs), Module(rs)) }
      .list.apply()
+     
+  def cellByPosition(position: Int)(implicit session: DBSession): Option[Cell] =
+    withSQL {
+      val c = Cell.syntax
+      select
+        .from(Cell as c)
+        .where.eq(c.position, position)
+          .and.eq(c.workflowId, id)
+    }.map { Cell(_) }.single.apply()
 
   def cellByModuleId(moduleId: Identifier)(implicit session: DBSession): Option[Cell] =
     {

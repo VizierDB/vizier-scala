@@ -13,11 +13,14 @@ import info.vizierdb.artifacts.Chart
 import info.vizierdb.VizierAPI
 import org.mimirdb.api.MimirAPI
 import info.vizierdb.catalog.DatasetMessage
+import info.vizierdb.catalog.ArtifactSummary
+import com.typesafe.scalalogging.LazyLogging
 
 class ExecutionContext(
   val projectId: Identifier,
-  val scope: Map[String, Identifier]
+  val scope: Map[String, ArtifactSummary]
 )
+  extends LazyLogging
 {
   val inputs = scala.collection.mutable.Map[String, Identifier]()
   val outputs = scala.collection.mutable.Map[String, Option[Artifact]]()
@@ -39,7 +42,7 @@ class ExecutionContext(
    */
   def artifact(name: String, registerInput: Boolean = true): Option[Artifact] = 
   {
-    println(s"Retrieving $name")
+    logger.debug(s"Retrieving $name")
     if(outputs contains name.toLowerCase()){
       val ret = outputs(name.toLowerCase())
       if(ret.isEmpty){ 
@@ -48,9 +51,7 @@ class ExecutionContext(
       return Some(ret.get)
     }
     val ret = scope.get(name.toLowerCase()).map { id =>
-      DB autoCommit { implicit session =>
-        Artifact.get(id)(session)   
-      }
+      DB readOnly { implicit s => id.materialize }
     }
     if(registerInput){ ret.foreach { a => inputs.put(name.toLowerCase(), a.id) } }
     return ret
@@ -73,19 +74,14 @@ class ExecutionContext(
    */
   def allDatasets: Map[String, Artifact] =
   {
-    val datasets = 
-      DB.readOnly { implicit s => 
-        val a = Artifact.syntax
-        withSQL { 
-          select
-            .from(Artifact as a)
-            .where.in(a.id, scope.values.toSeq)
-              .and.eq(a.t, ArtifactType.DATASET)
-        }.map { Artifact(_) }.list.apply()
-      }.map { a => a.id -> a }.toMap
-    scope.flatMap { case (userFacingName, artifactId) => 
-                          datasets.get(artifactId).map { userFacingName -> _ } }
-         .toMap
+    DB.readOnly { implicit s => 
+      scope.filter { _._2.t == ArtifactType.DATASET }
+           .filterNot { outputs contains _._1 }
+           .mapValues { _.materialize } ++
+      outputs.filter { _._2.isDefined }
+             .mapValues { _.get }
+             .filter { _._2.t == ArtifactType.DATASET }
+    }
   }
 
   /**
@@ -267,7 +263,7 @@ class ExecutionContext(
 
   override def toString: String =
     {
-      s"SCOPE: { ${scope.map { case (ds, id) => ds+" -> "+id }.mkString(", ")} }"
+      s"SCOPE: { ${scope.map { case (ds, art) => ds+" -> "+art.id }.mkString(", ")} }"
     }
 
   def isError = !errorMessages.isEmpty

@@ -160,7 +160,7 @@ object Scheduler
     Provenance.updateSuccessorState(cell, 
       Provenance.updateScope(
         context.outputs.mapValues { _.map { _.id } }.toSeq,
-        context.scope
+        context.scope.mapValues { _.id }
       )
     )
     return result
@@ -181,7 +181,7 @@ object Scheduler
         val command = 
           Commands.getOption(module.packageId, module.commandId)
                   .getOrElse { return errorResult(cell, s"Command ${module.packageId}.${module.commandId} does not exist"); }
-        val scope = Provenance.getScope(cell)
+        val scope = Provenance.getSummaryScope(cell)
         val context = new ExecutionContext(cell.projectId, scope)
         val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
         val argumentErrors = arguments.validate

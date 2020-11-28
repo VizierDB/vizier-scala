@@ -55,6 +55,15 @@ class MutableProject(
   {
     Scheduler.joinWorkflow(head.id)
   }
+
+  def apply(idx: Int): Option[Seq[Message]] =
+  {
+    DB.readOnly { implicit s => 
+      Project.activeHeadFor(projectId)
+             .cellByPosition(idx)
+             .map { _.messages.toSeq }
+    }
+  }
 }
 
 object MutableProject

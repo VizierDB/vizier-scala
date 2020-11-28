@@ -19,6 +19,11 @@
   <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
   <logger name="info.vizierdb.viztrails.Scheduler$"              level="TRACE" />
 
+  <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.commands.python.Python$"           level="DEBUG" />
+  <logger name="info.vizierdb.commands.python.PythonClient"      level="DEBUG" />
+  <logger name="info.vizierdb.commands.python.PythonDataset"     level="DEBUG" />
+
   <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
   <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />
   <logger name="info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyConnection" level="DEBUG" />

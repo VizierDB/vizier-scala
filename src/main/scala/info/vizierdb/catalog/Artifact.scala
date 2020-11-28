@@ -15,6 +15,8 @@ import org.mimirdb.api.request.QueryTableRequest
 import org.mimirdb.api.MimirAPI
 import org.mimirdb.spark.SparkPrimitive
 import info.vizierdb.filestore.Filestore
+import org.mimirdb.api.request.SchemaForTableRequest
+import org.mimirdb.api.request.SchemaList
 
 case class Artifact(
   id: Identifier,
@@ -105,6 +107,12 @@ case class Artifact(
     ).handle
   }
 
+  def getSchema(profile: Boolean = false): SchemaList =
+    SchemaForTableRequest(
+      table = nameInBackend,
+      profile = Some(profile)
+    ).handle
+
   def deleteArtifact(implicit session: DBSession) =
   {
     withSQL { 
@@ -134,6 +142,14 @@ case class ArtifactSummary(
   def nameInBackend = Artifact.nameInBackend(t, id)
   def summarize(name: String = null) = Artifact.summarize(id, projectId, t, created, mimeType, Option(name))
   def file = Filestore.get(projectId, id)
+  def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
+}
+object ArtifactSummary
+  extends SQLSyntaxSupport[ArtifactSummary]
+{
+  def apply(rs: WrappedResultSet): ArtifactSummary = autoConstruct(rs, (ArtifactSummary.syntax).resultName)
+  override def columns = Schema.columns(table).filterNot { _.equals("data") }  
+  override def tableName: String = Artifact.tableName
 }
 
 object Artifact
@@ -178,12 +194,22 @@ object Artifact
   def lookupSummary(target: Identifier)(implicit session:DBSession): Option[ArtifactSummary] =
   {
     withSQL {
-      val a = Artifact.syntax
-      select(a.projectId, a.t, a.created, a.mimeType)
-        .from(Artifact as a)
+      val a = ArtifactSummary.syntax
+      select
+        .from(ArtifactSummary as a)
         .where.eq(a.id, target)
-    }.map { rs => ArtifactSummary(target, rs.long(1), ArtifactType(rs.int(2)), rs.dateTime(3), rs.string(4)) }
+    }.map { ArtifactSummary(_) }
      .single.apply()
+  }
+  def lookupSummaries(targets: Seq[Identifier])(implicit session:DBSession): Seq[ArtifactSummary] =
+  {
+    withSQL {
+      val a = ArtifactSummary.syntax
+      select
+        .from(ArtifactSummary as a)
+        .where.in(a.id, targets)
+    }.map { ArtifactSummary(_) }
+     .list.apply()
   }
 
   def summarize(

@@ -54,6 +54,9 @@ libraryDependencies ++= Seq(
 
   // jetty
   "javax.servlet"                 %   "javax.servlet-api"               % "3.1.0",
+
+  // Language integration
+  "org.python"                    %   "jython-standalone"               % "2.7.2",
 )
 
 ////// Publishing Metadata //////
