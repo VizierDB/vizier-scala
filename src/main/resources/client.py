@@ -1,68 +1,33 @@
-package info.vizierdb.commands.python
+from typing import Dict, Any, IO
 
-import java.io.Writer
-import info.vizierdb.commands.ExecutionContext
-import org.python.core.PyObject
-import org.python.core.PyString
-import info.vizierdb.types._
-import org.python.util.PythonInterpreter
-import java.util.Arrays
 
-case class PythonClient(context: ExecutionContext, interpreter: PythonInterpreter)
-{
-  def print(message: String) = context.message(message)
-  def error(message: String) = context.error(message)
-  
-  def __getitem__(x: PyObject): Object = 
-  {
-    val name = 
-      x match { 
-        case s: PyString => s.getString
-        case _ => throw new IllegalArgumentException(s"Artifact names are strings, not '$x.getClass()'")
-      }
+class Artifact(object):
+    def __init__(self,
+                 name: str,
+                 artifact_type: str,
+                 name_in_backend: str,
+                 file: str
+                 ):
+        self.name = name
+        self.artifact_type = artifact_type
+        self.name_in_backend = name_in_backend
+        self.file = file
 
-    context.artifact(name.toLowerCase()) match {
-      case None => throw new IndexOutOfBoundsException(s"No artifact named $name")
-      case Some(artifact) => 
-        artifact.t match {
-          case ArtifactType.DATASET => 
-            return PythonDataset(this).populateFrom(name, artifact)
-          case ArtifactType.FUNCTION => 
-            return interpreter.compile(artifact.data.toString)
-          case ArtifactType.FILE => 
-            return interpreter.eval(s"open(${artifact.file.toString})")
-          case ArtifactType.BLOB => 
-            return artifact.data
-          case ArtifactType.CHART => 
-            throw new IllegalArgumentException("$name is an immutable chart")
 
-        }
-    }
-  }
-
-  object Stdout extends Writer
-  {
-    def close(){}
-    def flush(){}
-    def write(txt: Array[Char], offset: Int, len: Int)
-    {
-      print(new String(Arrays.copyOfRange(txt, offset, len)))
-    }
-  }
-
-  object Stderr extends Writer
-  {
-    def close(){}
-    def flush(){}
-    def write(txt: Array[Char], offset: Int, len: Int)
-    {
-      val message = new String(Arrays.copyOfRange(txt, offset, len))
-      System.err.println(message)
-      error(message)
-    }
-  }
-
-/*
+class VizierDBClient(object):
+    """The Vizier DB Client provides access to datasets that are identified by
+    a unique name. The client is a wrapper around a given database state.
+    """
+    def __init__(self,
+                 artifacts: Dict[str, Artifact],
+                 source: str,
+                 raw_output: IO,
+                 project_id: str
+                 ):
+        self.artifacts = artifacts
+        self.source = source
+        self.project_id = project_id
+        self.raw_output = IO
 
     def __getitem__(self, key):
         return self.get_dataset(key)
@@ -603,5 +568,3 @@ class Analyzer(ast.NodeVisitor):
     def get_Source(self):
         return self.source
     
-*/
-}

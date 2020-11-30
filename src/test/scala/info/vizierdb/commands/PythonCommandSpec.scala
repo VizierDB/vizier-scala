@@ -83,6 +83,13 @@ ds.save("Q")
     script("ds = vizierdb[\"Q\"];print(ds)")
 
     lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)\n")
+
+    script("""
+ds = vizierdb["test_r"]
+print(ds.to_bokeh())
+""")
+
+    lastOutputString must beEqualTo("floop")
   }
 
 }

@@ -6,7 +6,6 @@ import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import org.mimirdb.api.request.CreateViewRequest
 import com.typesafe.scalalogging.LazyLogging
-import org.python.util.PythonInterpreter
 
 object Python extends Command
   with LazyLogging
@@ -20,19 +19,41 @@ object Python extends Command
     arguments.pretty("source")
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
+    logger.debug("Initializing...")
     val script = arguments.get[String]("source")
+    val interface = PythonInterface(script, context)
+    val python = PythonProcess()
 
-    logger.debug("Initializing Interpreter")
-    val interpreter = new PythonInterpreter()
-    logger.debug("Initializing Scope")
-    val client = PythonClient(context, interpreter)
-    interpreter.set("vizierdb", client)
-    interpreter.setOut(client.Stdout)
-    interpreter.setErr(client.Stderr)
+    python.send("script", "script" -> JsString(script), "artifacts" -> 
+      JsObject(context.scope.mapValues { artifact => 
+        Json.obj(
+          "nameInBackend" -> artifact.nameInBackend,
+          "file" -> artifact.file.toString,
+          "type" -> artifact.t.toString
+        )
+      })
+    )
 
-    logger.debug("Running Script")
-    interpreter.exec(script)
+    val ret = python.monitor { event => 
+      logger.debug(s"STDIN: $event")
+      (event\"event").as[String] match {
+        case "message" => 
+          (event\"stream").as[String] match {  
+            case "stdout" => context.message( (event\"content").as[String] )
+            case "stderr" => context.error( (event\"content").as[String] )
+            case x => context.error(s"Received message on unknown stream '$x'")
+          }
+        case x =>
+          // stdinWriter.close()
+          context.error(s"Received unknown event '$x': $event")
+      }
+    } { logger.error(_) }
+
+    if(ret != 0){
+      context.error("Unexpected exit code $ret")
+    }
+
+    // io.cleanup()
     logger.debug("Done")
-
   }
 }

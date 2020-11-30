@@ -21,8 +21,10 @@
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.python.Python$"           level="DEBUG" />
-  <logger name="info.vizierdb.commands.python.PythonClient"      level="DEBUG" />
-  <logger name="info.vizierdb.commands.python.PythonDataset"     level="DEBUG" />
+  <logger name="info.vizierdb.commands.python.PythonProcess$"    level="DEBUG" />
+  <logger name="info.vizierdb.commands.python.PythonProcess"     level="DEBUG" />
+  <logger name="info.vizierdb.commands.python.PythonInterface"   level="DEBUG" />
+  <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
 
   <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
   <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />

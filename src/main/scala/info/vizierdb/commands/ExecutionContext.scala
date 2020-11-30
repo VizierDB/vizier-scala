@@ -219,6 +219,7 @@ class ExecutionContext(
    */
   def message(mimeType: String, content: Array[Byte])
   {
+    logger.trace(s"APPEND[$mimeType]: $content")
     messages.append( (mimeType, content) )
   }
 
