@@ -3,16 +3,18 @@ package info.vizierdb.commands.python
 import java.io._
 import scala.io._
 import play.api.libs.json._
-// Scala process builder is optimized for classic pipe-style
-// execution models.  The bi-directional interface that we want here is
-// beyond it.
-import java.lang.Process
-import java.lang.ProcessBuilder
 import scala.util.matching.Regex
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.commands.ExecutionContext
 
-class PythonProcess(python: Process)
+// Note: Scala does have a ProcessBuilder.  However, Scala's ProcessBuilder
+// (inherited from SBT) is optimized for shell-like streaming pipes between 
+// independent processes.  It does *very* aggressive buffering, resulting 
+// in livelocks when we try to do bi-directional communication.  As a result
+// we're going to use the lower level Java process builder here.
+import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder}
+
+class PythonProcess(python: JProcess)
   extends LazyLogging
 {
 
@@ -47,6 +49,11 @@ class PythonProcess(python: Process)
     }
 
     return python.waitFor()
+  }
+
+  def kill()
+  {
+    python.destroyForcibly()
   }
 }
 
@@ -95,7 +102,7 @@ object PythonProcess
   def apply(): PythonProcess =
   {
     val cmd = 
-      new ProcessBuilder(PYTHON_COMMAND, scriptPath)
+      new JProcessBuilder(PYTHON_COMMAND, scriptPath)
         .start()
     return new PythonProcess(cmd)
   }

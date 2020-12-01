@@ -1,0 +1,20 @@
+[flake8]
+ignore = 
+  # E111: indentation is not a multiple of four
+  E111,
+  # E114: Indentation is not a multiple of four (comment)
+  E114,
+  # E121: continuation line under-indented for hanging indent
+  E121,
+  # E124: closing bracket does not match visual indentation
+  E124,
+  # E126: continuation line over-indented for hanging indent
+  E126,
+  # E127: continuation line over-indented for visual indent
+  E127,
+  # E128: continuation line under-indented for visual indent
+  E128,
+  # E131: continuation line unaligned for hanging indent
+  E131,
+  # E221: multiple spaces before operator
+  E221

@@ -74,6 +74,7 @@ object types
     val HTML          = "text/html"
     val MARKDOWN      = "text/markdown"
     val DATASET_VIEW  = "dataset/view"
+    val PYTHON        = "application/python"
   }
 
   object DATATYPE extends Enumeration
