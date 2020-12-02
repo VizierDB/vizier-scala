@@ -104,5 +104,13 @@ show(vizierdb["q"])
     project.lastOutput.map { _.mimeType } must contain(MIME.DATASET_VIEW)
   }
 
+  "Arrow DataFrames" >>
+  {
+    project.script("""
+df = vizierdb.get_data_frame("q")
+print(df['A'].sum())
+""")
+    project.lastOutputString must beEqualTo("12\n")
+  }
 
 }

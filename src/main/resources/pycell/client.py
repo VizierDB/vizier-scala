@@ -415,7 +415,7 @@ class VizierDBClient(object):
     if exp_name in self.datasets:
       del self.datasets[exp_name]
 
-  def get_dataset_frame(self, name: str) -> pandas.DataFrame:
+  def get_data_frame(self, name: str) -> pandas.DataFrame:
     """Get dataset with given name as a pandas dataframe.
 
     Raises ValueError if the specified dataset does not exist.
@@ -430,7 +430,7 @@ class VizierDBClient(object):
       raise ValueError("Artifact '{}' is not a dataset".format(name))
 
     response = self.vizier_request("get_data_frame",
-      table=name,
+      name=name,
       includeUncertainty=True,
       has_response=True
     )

@@ -4,3 +4,4 @@ inspect
 ast
 matplotlib
 astor
+pyarrow
