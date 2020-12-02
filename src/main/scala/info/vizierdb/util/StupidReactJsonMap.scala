@@ -24,6 +24,11 @@ object StupidReactJsonMap
       StupidReactJsonField(k, v)
     }
 
+  def encode(saneMap: Map[String, JsValue], extras: (String, JsValue)*): JsArray =
+    JsArray(apply(saneMap, extras:_*).map { Json.toJson(_) })
+  def encode(elements: (String, JsValue)*): JsArray =
+    JsArray(apply(elements:_*).map { Json.toJson(_) })
+
   def decode(dumbMap: T): Map[String, JsValue] =
     dumbMap.map { field => 
       field.key -> field.value

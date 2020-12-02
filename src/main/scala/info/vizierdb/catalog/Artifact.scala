@@ -17,6 +17,8 @@ import org.mimirdb.spark.SparkPrimitive
 import info.vizierdb.filestore.Filestore
 import org.mimirdb.api.request.SchemaForTableRequest
 import org.mimirdb.api.request.SchemaList
+import org.mimirdb.spark.{ Schema => SparkSchema }
+import info.vizierdb.util.StupidReactJsonMap
 
 case class Artifact(
   id: Identifier,
@@ -31,7 +33,29 @@ case class Artifact(
   def nameInBackend = Artifact.nameInBackend(t, id)
   def file: File = Filestore.get(projectId, id)
   def summarize(name: String = null) = 
-    Artifact.summarize(id, projectId, t, created, mimeType, Option(name))
+  {
+    val extras = t match {
+      case ArtifactType.DATASET => 
+        Map(
+          "columns" -> 
+            JsArray(
+              getSchema()
+                .schema
+                .zipWithIndex
+                .map { case (field, idx) => 
+                  Json.toJson(
+                    Map(
+                      "id" -> JsNumber(idx),
+                      "name" -> JsString(field.name),
+                      "type" -> JsString(SparkSchema.encodeType(field.dataType))
+                    )
+                  )
+                }
+            )
+        )
+    }
+    Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
+  }
   def jsonData = Json.parse(data)
 
 
@@ -140,9 +164,38 @@ case class ArtifactSummary(
 )
 {
   def nameInBackend = Artifact.nameInBackend(t, id)
-  def summarize(name: String = null) = Artifact.summarize(id, projectId, t, created, mimeType, Option(name))
+  def summarize(name: String = null) = 
+  {
+    val extras = t match {
+      case ArtifactType.DATASET => 
+        Map(
+          "columns" -> 
+            JsArray(
+              getSchema()
+                .schema
+                .zipWithIndex
+                .map { case (field, idx) => 
+                  Json.toJson(
+                    Map(
+                      "id" -> JsNumber(idx),
+                      "name" -> JsString(field.name),
+                      "type" -> JsString(SparkSchema.encodeType(field.dataType))
+                    )
+                  )
+                }
+            )
+        )
+    }
+    Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
+  }
   def file = Filestore.get(projectId, id)
   def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
+
+  def getSchema(profile: Boolean = false): SchemaList =
+    SchemaForTableRequest(
+      table = nameInBackend,
+      profile = Some(profile)
+    ).handle
 }
 object ArtifactSummary
   extends SQLSyntaxSupport[ArtifactSummary]
@@ -271,7 +324,7 @@ object Artifact
                           Json.obj(
                             "id" -> idx,
                             "name" -> field.name,
-                            "type" -> DATATYPE.fromSpark(field.dataType).toString
+                            "type" -> SparkSchema.encodeType(field.dataType)
                           )
                         }),
         "rows"       -> JsArray(

@@ -67,6 +67,12 @@ object Commands
   )
 
   register(packageId = "sample", name = "Dataset Sampling", category = "data")(
-    "basic_sample" -> info.vizierdb.commands.sample.BasicSample
+    "basic_sample"                -> info.vizierdb.commands.sample.BasicSample,
+    "automatic_stratified_sample" -> info.vizierdb.commands.sample.AutomaticStratifiedSample,
+    "manual_stratified_sample"    -> info.vizierdb.commands.sample.ManualStratifiedSample
+  )
+
+  register(packageId = "vizual", name = "Vizual", category = "vizual")(
+    "deleteColumn" -> info.vizierdb.commands.vizual.DeleteColumn
   )
 }
