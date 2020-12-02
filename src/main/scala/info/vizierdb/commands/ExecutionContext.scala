@@ -5,7 +5,7 @@ import play.api.libs.json._
 import scalikejdbc._
 import info.vizierdb.types._
 import info.vizierdb.Vizier
-import info.vizierdb.catalog.Artifact
+import info.vizierdb.catalog.{ Artifact, Module, Cell }
 import org.mimirdb.api.request.QueryTableRequest
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
@@ -18,7 +18,9 @@ import com.typesafe.scalalogging.LazyLogging
 
 class ExecutionContext(
   val projectId: Identifier,
-  val scope: Map[String, ArtifactSummary]
+  val scope: Map[String, ArtifactSummary],
+  cell: Cell,
+  module: Module
 )
   extends LazyLogging
 {
@@ -75,12 +77,18 @@ class ExecutionContext(
   def allDatasets: Map[String, Artifact] =
   {
     DB.readOnly { implicit s => 
-      scope.filter { _._2.t == ArtifactType.DATASET }
-           .filterNot { outputs contains _._1 }
-           .mapValues { _.materialize } ++
-      outputs.filter { _._2.isDefined }
-             .mapValues { _.get }
-             .filter { _._2.t == ArtifactType.DATASET }
+      (
+        scope.filter { _._2.t == ArtifactType.DATASET }
+             .filterNot { outputs contains _._1 }
+             .mapValues { _.materialize } ++
+        outputs.filter { _._2.isDefined }
+               .mapValues { _.get }
+               .filter { _._2.t == ArtifactType.DATASET }
+      // The following line forces execution of the query
+      // HERE, instead of "intelligently" deferring query
+      // execution until we're outside of the "readOnly"
+      // block
+      ).toIndexedSeq.toMap
     }
   }
 
@@ -260,6 +268,39 @@ class ExecutionContext(
         )
       ).toString.getBytes
     )
+  }
+
+  /**
+   * Modify the arguments of the calling cell (DANGEROUS)
+   *
+   * Alter a subset of the arguments to the cell currently being
+   * executed.  This function should be used with EXTREME care.
+   *
+   * The motivating use case for this function is when the cell
+   * is capable of making educated, but non-static guesses about 
+   * the "correct" value about one or more of its parameters, while
+   * also providing the ability for the user to later re-run the
+   * cell, overriding some of these guesses.  For example, the Load 
+   * Dataset cell attempts to infer the schema of the loaded dataset, 
+   * but should also allow users to manually override the guessed
+   * schema.
+   * 
+   * Broadly, the guideline for using this function is that the
+   * act of overriding the cell's arguments MUST be idempotent.  That
+   * is, if the cell is re-run, the output should be identical.
+   *
+   * The other viable use case is when the cell's behavior is 
+   * nondeterministic (e.g., a Sample cell).  A "seed" parameter can
+   * be registered as an argument to make subsequent calls 
+   * deterministic.
+   */
+  def updateArguments(args: (String, Any)*)
+  {
+    val command = Commands.get(module.packageId, module.commandId)
+    val newArgs = command.encodeArguments(args.toMap, module.arguments.value.toMap)
+    DB.autoCommit { implicit s => 
+      cell.replaceArguments(newArgs)
+    }
   }
 
   override def toString: String =

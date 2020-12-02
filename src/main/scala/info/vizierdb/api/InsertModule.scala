@@ -15,7 +15,7 @@ import info.vizierdb.viztrails.Scheduler
 case class InsertModule(
   projectId: Identifier,
   branchId: Identifier,
-  moduleId: Identifier,
+  modulePosition: Int,
   workflowId: Option[Identifier],
   packageId: String,
   commandId: String,
@@ -36,7 +36,7 @@ case class InsertModule(
                 }
         val cell = 
           branch.head
-                .cellByModuleId(moduleId)
+                .cellByPosition(modulePosition)
                 .getOrElse {
                   return NoSuchEntityResponse()
                 }
@@ -51,14 +51,7 @@ case class InsertModule(
           Module.make(
             packageId = packageId,
             commandId = commandId,
-            arguments = JsObject(
-              arguments.as[Seq[Map[String, JsValue]]]
-                       .map { arg =>
-                         arg("id").as[String] -> 
-                          arg("value")
-                       }
-                       .toMap
-            ),
+            arguments = command.decodeReactArguments(arguments),
             revisionOfId = None
           )
         

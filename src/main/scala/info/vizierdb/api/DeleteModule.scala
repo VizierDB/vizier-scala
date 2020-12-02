@@ -11,7 +11,7 @@ import info.vizierdb.viztrails.Scheduler
 case class DeleteModule(
   projectId: Identifier,
   branchId: Identifier,
-  moduleId: Identifier,
+  modulePosition: Int,
   workflowId: Option[Identifier] = None
 ) extends Request
 {
@@ -30,7 +30,7 @@ case class DeleteModule(
           }
         }
         val cellToDelete =
-          branch.head.cellByModuleId(moduleId)
+          branch.head.cellByPosition(modulePosition)
                 .getOrElse {
                     return NoSuchEntityResponse()
                 }

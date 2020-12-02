@@ -21,20 +21,24 @@ object Query extends Command
     s"${arguments.pretty("source")} TO ${arguments.pretty("output_dataset")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    val scope = context.allDatasets.mapValues { _.nameInBackend }
+    val scope = context.allDatasets
     val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { "temporary_dataset" }
     val (dsName, dsId) = context.outputDataset(datasetName)
     val query = arguments.get[String]("source")
 
     logger.debug(s"$scope : $query")
 
-    CreateViewRequest(
-      input = scope, 
+    val response = CreateViewRequest(
+      input = scope.mapValues { _.nameInBackend }, 
       functions = None,
       query = query, 
       resultName = Some(dsName),
       properties = None
     ).handle
+
+    for(dep <- response.dependencies){
+      context.inputs.put(dep, scope(dep).id)
+    }
 
     context.displayDataset(datasetName)
   }

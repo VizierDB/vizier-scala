@@ -59,22 +59,22 @@ class VizierURLs(
     compose(getBranchHead(projectId, branchId), "/cancel")
   def cancelWorkflow(projectId: Identifier, branchId: Identifier, workflowId: Identifier) =
     compose(getWorkflow(projectId, branchId, workflowId), "/cancel")
-  def getBranchHeadModule(projectId: Identifier, branchId: Identifier, moduleId: Identifier) =
-    compose(getBranchHead(projectId, branchId), s"/modules/$moduleId")
-  def getWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier) =
-    compose(getWorkflow(projectId, branchId, workflowId), s"/modules/$moduleId")
-  def deleteBranchHeadModule(projectId: Identifier, branchId: Identifier, moduleId: Identifier) =
-    getBranchHeadModule(projectId, branchId, moduleId)
-  def deleteWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier) =
-    getWorkflowModule(projectId, branchId, workflowId, moduleId)
-  def insertBranchHeadModule(projectId: Identifier, branchId: Identifier, moduleId: Identifier) =
-    getBranchHeadModule(projectId, branchId, moduleId)
-  def insertWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier) =
-    getWorkflowModule(projectId, branchId, workflowId, moduleId)
-  def replaceBranchHeadModule(projectId: Identifier, branchId: Identifier, moduleId: Identifier) =
-    getBranchHeadModule(projectId, branchId, moduleId)
-  def replaceWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier) =
-    getWorkflowModule(projectId, branchId, workflowId, moduleId)
+  def getBranchHeadModule(projectId: Identifier, branchId: Identifier, modulePosition: Int) =
+    compose(getBranchHead(projectId, branchId), s"/modules/$modulePosition")
+  def getWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int) =
+    compose(getWorkflow(projectId, branchId, workflowId), s"/modules/$modulePosition")
+  def deleteBranchHeadModule(projectId: Identifier, branchId: Identifier, modulePosition: Int) =
+    getBranchHeadModule(projectId, branchId, modulePosition)
+  def deleteWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int) =
+    getWorkflowModule(projectId, branchId, workflowId, modulePosition)
+  def insertBranchHeadModule(projectId: Identifier, branchId: Identifier, modulePosition: Int) =
+    getBranchHeadModule(projectId, branchId, modulePosition)
+  def insertWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int) =
+    getWorkflowModule(projectId, branchId, workflowId, modulePosition)
+  def replaceBranchHeadModule(projectId: Identifier, branchId: Identifier, modulePosition: Int) =
+    getBranchHeadModule(projectId, branchId, modulePosition)
+  def replaceWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int) =
+    getWorkflowModule(projectId, branchId, workflowId, modulePosition)
 
 
   def getDataset(
@@ -105,10 +105,10 @@ class VizierURLs(
     compose(getDataset(projectId, datasetId), "/descriptor")    
 
 
-  def getHeadChartView(projectId: Identifier, branchId: Identifier, moduleId: Identifier, chartId: Identifier) =
-    compose(getBranchHeadModule(projectId, branchId, moduleId), s"/charts/$chartId")
-  def getChartView(projectId: Identifier, branchId: Identifier, workflowId: Identifier, moduleId: Identifier, chartId: Identifier) =
-    compose(getWorkflowModule(projectId, branchId, workflowId, moduleId), s"/charts/$chartId")
+  def getHeadChartView(projectId: Identifier, branchId: Identifier, modulePosition: Int, chartId: Identifier) =
+    compose(getBranchHeadModule(projectId, branchId, modulePosition), s"/charts/$chartId")
+  def getChartView(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int, chartId: Identifier) =
+    compose(getWorkflowModule(projectId, branchId, workflowId, modulePosition), s"/charts/$chartId")
 
   def downloadFile(projectId: Identifier, fileId: Identifier, component: String) =
     compose(getProject(projectId), s"/files/$fileId/$component")

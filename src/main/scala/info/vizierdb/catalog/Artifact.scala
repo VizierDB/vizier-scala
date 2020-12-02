@@ -292,7 +292,7 @@ object Artifact
         ),
         "rowCount"   -> JsNumber(rowCount),
         "offset"     -> JsNumber(offset),
-        "properties" -> JsObject(data.properties),
+        "properties" -> JsObject(data.properties)
       ),
       Seq(
         HATEOAS.PAGE_FIRST -> (if(offset <= 0){ null }

@@ -36,6 +36,17 @@ class Module(
   override def toString = 
     s"[$id] $packageId.$commandId($arguments)"
 
+  def replaceArguments(newArguments: JsObject)(implicit session: DBSession): Module =
+  {
+    Module.make(
+      packageId = packageId,
+      commandId = commandId,
+      arguments = newArguments,
+      properties = properties,
+      revisionOfId = Some(id)
+    )
+  }
+
   def describe(cell: Cell, projectId: Identifier, branchId: Identifier, workflowId: Identifier, artifacts: Seq[ArtifactRef])(implicit session:DBSession): JsObject = 
   {
     val command = Commands.getOption(packageId, commandId)
@@ -72,7 +83,18 @@ class Module(
         "packageId" -> packageId,
         "commandId" -> commandId,
         "arguments" -> JsArray(
-          arguments.value.map { case (arg, v) => Json.obj("id" -> arg, "value" -> v) }.toSeq
+          command match { 
+            case None => 
+              arguments.value.map { case (arg, v) => Json.obj("id" -> arg, "value" -> v) }.toSeq
+            case Some(cmd) => 
+              cmd.parameters map { param => 
+                val v = arguments.value.getOrElse(param.id, param.getDefault)
+                Json.obj(
+                  "id" -> param.id,
+                  "value" -> param.convertToReact(v)
+                )
+              }
+          }
         )
       ),
       "text" -> JsString(command.map { _.format(arguments) }
@@ -86,13 +108,12 @@ class Module(
         "stderr" -> messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
       ),
       HATEOAS.LINKS -> HATEOAS(
-        HATEOAS.SELF           -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, id),
-        HATEOAS.MODULE_INSERT  -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, id),
-        HATEOAS.MODULE_DELETE  -> VizierAPI.urls.deleteWorkflowModule(projectId, branchId, workflowId, id),
-        HATEOAS.MODULE_REPLACE -> VizierAPI.urls.replaceWorkflowModule(projectId, branchId, workflowId, id),
+        HATEOAS.SELF           -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_INSERT  -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_DELETE  -> VizierAPI.urls.deleteWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_REPLACE -> VizierAPI.urls.replaceWorkflowModule(projectId, branchId, workflowId, cell.position),
       )
     )
-
   } 
 }
 object Module

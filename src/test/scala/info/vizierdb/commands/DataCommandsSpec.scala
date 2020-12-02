@@ -3,7 +3,7 @@ package info.vizierdb.commands
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import org.specs2.specification.AfterAll
-import play.api.libs.json.{ Json, JsString }
+import play.api.libs.json._
 
 import scalikejdbc._
 
@@ -30,6 +30,16 @@ class DataCommandsSpec
       "loadDetectHeaders" -> true
     )
     project.waitUntilReady
+    
+    {
+      val workflow = project.head
+      val lastModule =
+        DB readOnly { implicit s => 
+          workflow.modulesInOrder
+                  .last
+        }
+      lastModule.arguments.value("schema").as[Seq[JsValue]] must not beEmpty
+    }
 
     project.append("data", "clone")(
       "dataset" -> "test_r",
@@ -50,7 +60,7 @@ class DataCommandsSpec
 
     project.append("sql", "query")(
       "source" -> "SELECT * FROM empty_ds, test_r",
-      "name" -> "query_result"
+      "output_dataset" -> "query_result"
     )
     project.waitUntilReady
 

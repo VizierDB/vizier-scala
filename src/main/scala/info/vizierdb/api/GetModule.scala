@@ -10,7 +10,12 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Provenance
 
-case class GetModuleRequest(projectId: Identifier, branchId: Identifier, workflowId: Option[Identifier], moduleId: Identifier)
+case class GetModuleRequest(
+  projectId: Identifier, 
+  branchId: Identifier, 
+  workflowId: Option[Identifier], 
+  modulePosition: Int
+)
   extends Request
 {
   def handle = 
@@ -24,7 +29,7 @@ case class GetModuleRequest(projectId: Identifier, branchId: Identifier, workflo
             Branch.lookup(projectId, projectId).map { _.head }
         } 
       val cellMaybe: Option[Cell] = 
-        workflowMaybe.flatMap { _.cellByModuleId(moduleId) }
+        workflowMaybe.flatMap { _.cellByPosition(modulePosition) }
       cellMaybe match {
         case Some(cell) => RawJsonResponse(
           cell.module.describe(

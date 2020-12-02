@@ -2,6 +2,7 @@ package info.vizierdb.catalog
 
 import scalikejdbc._
 
+import play.api.libs.json._
 import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import java.time.ZonedDateTime
@@ -136,6 +137,18 @@ case class Cell(
           .and.eq(c.position, position)
     }.update.apply()
     copy(state = state)
+  }
+  def replaceArguments(arguments: JsObject)(implicit session: DBSession): Cell =
+  {
+    val updatedModule = module.replaceArguments(arguments)
+    withSQL { 
+      val c = Cell.column
+      update(Cell)
+        .set(c.moduleId -> updatedModule.id)
+        .where.eq(c.workflowId, workflowId)
+          .and.eq(c.position, position)
+    }.update.apply()
+    copy(moduleId = updatedModule.id)
   }
 
   override def toString = s"Workflow $workflowId @ $position: Module $moduleId ($state)"

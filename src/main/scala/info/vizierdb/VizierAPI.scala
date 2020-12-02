@@ -297,25 +297,25 @@ object VizierServlet
           ,
           POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "workflowId" -> workflowId.toLong) // append a module to the branch head
         )
-      case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(moduleId, "")))) => 
+      case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(modulePosition, "")))) => 
         respond(
-          GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, None, moduleId.toLong)) // get the specified module from the branch head
+          GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, None, modulePosition.toInt)) // get the specified module from the branch head
           ,
-          POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "moduleId" -> moduleId.toLong) // insert a module before the specified module
+          POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt) // insert a module before the specified module
           ,
-          DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, moduleId.toLong)) // delete the specified module
+          DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, modulePosition.toInt)) // delete the specified module
           ,
-          PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "moduleId" -> moduleId.toLong) // replace the specified module
+          PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt) // replace the specified module
         )
-      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, "")))) => 
+      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(modulePosition, "")))) => 
         respond(
-          GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), moduleId.toLong))  // get the specified module
+          GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), modulePosition.toInt))  // get the specified module
           ,
-          POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "moduleId" -> moduleId.toLong, "workflowId" -> workflowId.toLong) // insert a module before the specified module
+          POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt, "workflowId" -> workflowId.toLong) // insert a module before the specified module
           ,
-          DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, moduleId.toLong, Some(workflowId.toLong))) // delete the specified module
+          DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, modulePosition.toInt, Some(workflowId.toLong))) // delete the specified module
           ,
-          PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "moduleId" -> moduleId.toLong, "workflowId" -> workflowId.toLong) // replace the specified module
+          PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt, "workflowId" -> workflowId.toLong) // replace the specified module
         )
       case PROJECT(projectId, BRANCH(branchId, HEAD("/sql"))) => 
         respond(
@@ -386,7 +386,7 @@ object VizierServlet
         respond(
           GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
         )
-      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(moduleId, CHART(chartId))))) => 
+      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(modulePosition, CHART(chartId))))) => 
         respond(
           GET -> process(GetArtifactRequest(projectId.toLong, chartId.toLong, expectedType = Some(ArtifactType.CHART))) // get the specified module's chart
         )

@@ -10,11 +10,12 @@ import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.commands.Commands
 
 case class ReplaceModule(
   projectId: Identifier,
   branchId: Identifier,
-  moduleId: Identifier,
+  modulePosition: Int,
   workflowId: Option[Identifier],
   packageId: String,
   commandId: String,
@@ -33,7 +34,7 @@ case class ReplaceModule(
                  }
         val cell =
           branch.head
-                .cellByModuleId(moduleId)
+                .cellByPosition(modulePosition)
                 .getOrElse { 
                    return NoSuchEntityResponse()
                  }
@@ -44,18 +45,13 @@ case class ReplaceModule(
           }
         }
 
+        val command = Commands.get(packageId, commandId)
+
         val module = 
           Module.make(
             packageId = packageId,
             commandId = commandId,
-            arguments = JsObject(
-              arguments.as[Seq[Map[String, JsValue]]]
-                       .map { arg =>
-                         arg("id").as[String] -> 
-                          arg("value")
-                       }
-                       .toMap
-            ),
+            arguments = command.decodeReactArguments(arguments),
             revisionOfId = Some(cell.moduleId)
           )
           
