@@ -56,6 +56,24 @@ class MutableProject(
     Scheduler.joinWorkflow(head.id)
   }
 
+  def waitUntilReadyAndThrowOnError
+  {
+    waitUntilReady
+    val workflow = head
+    DB.readOnly { implicit s => 
+      for(cell <- workflow.cellsInOrder){
+        if(cell.state == ExecutionState.ERROR) {
+          throw new RuntimeException(
+            cell.messages
+                .filter { _.mimeType.equals(MIME.TEXT) }
+                .map { _.dataString }
+                .mkString("\n")
+          )
+        }
+      }
+    }
+  }
+
   def apply(idx: Int): Option[Seq[Message]] =
   {
     DB.readOnly { implicit s => 
@@ -63,6 +81,53 @@ class MutableProject(
              .cellByPosition(idx)
              .map { _.messages.toSeq }
     }
+  }
+
+  def load(
+    file: String, 
+    name: String, 
+    format: String="csv", 
+    inferTypes: Boolean = true
+  ){
+    append("data", "load")(
+      "file" -> file,
+      "name" -> name,
+      "loadFormat" -> format,
+      "loadInferTypes" -> inferTypes,
+      "loadDetectHeaders" -> true
+    )
+    waitUntilReadyAndThrowOnError
+  }
+
+  def script(script: String, language: String = "python") = 
+  {
+    append("script", "python")("source" -> script)
+    waitUntilReadyAndThrowOnError
+  }
+  def lastOutput =
+  {
+    val workflow = head
+    DB.readOnly { implicit s => 
+      workflow.cells.reverse.head.messages
+    }
+  }
+  def lastOutputString =
+    lastOutput.map { _.dataString }.mkString
+
+  def artifactRefs: Seq[ArtifactRef] = 
+  {
+    val workflow = head
+    DB.readOnly { implicit s => 
+      workflow.outputArtifacts
+    }
+  }
+
+  def artifacts: Seq[Artifact] =
+  {
+    val refs = artifactRefs
+    DB.readOnly { implicit s => 
+      refs.map { _.get.get }
+    }    
   }
 }
 

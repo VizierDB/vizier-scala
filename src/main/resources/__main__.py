@@ -51,7 +51,8 @@ try:
     variables = {
         "vizierdb": client,
         "show": client.show,
-        "open": client.pycell_open
+        "open": client.pycell_open,
+        **client.get_artifact_proxies()
     }
     exec(script, variables, variables)
     sys.stdout.soft_flush()

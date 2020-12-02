@@ -133,6 +133,7 @@ case class Workflow(
         if(scope contains artifact.userFacingName) { scope }
         else { scope ++ Map(artifact.userFacingName -> artifact) }
      }
+     .filter { _._2.artifactId.isDefined }
      .values.toSeq
   }
 

@@ -48,6 +48,15 @@ object Python extends Command
 
     val ret = python.monitor { event => 
       logger.debug(s"STDIN: $event")
+      def withArtifact(handler: Artifact => Unit) =
+        context.artifact( (event\"name").as[String] ) match {
+          case None => 
+            val name = (event\"name").as[String]
+            context.error("No such artifact '$name'")
+            python.kill()
+          case Some(artifact) => 
+            handler(artifact)
+        }
       try { 
         (event\"event").as[String] match {
           case "message" => 
@@ -62,18 +71,27 @@ object Python extends Command
               case x => context.error(s"Received message on unknown stream '$x'")
             }
           case "get_dataset" => 
-            context.artifact( (event\"name").as[String] ) match {
-              case None => 
-                val name = (event\"name").as[String]
-                context.error("No such dataset '$name'")
-                python.kill()
-              case Some(artifact) => 
-                python.send("dataset",
-                  "data" -> Json.toJson(
-                    artifact.getDataset(includeUncertainty = true)
-                  ),
-                  "artifactId" -> JsNumber(artifact.id)
-                )
+            withArtifact { artifact => 
+              python.send("dataset",
+                "data" -> Json.toJson(
+                  artifact.getDataset(includeUncertainty = true)
+                ),
+                "artifactId" -> JsNumber(artifact.id)
+              )
+            }
+          case "get_blob" => 
+            withArtifact { artifact => 
+              python.send("blob",
+                "data" -> JsString(new String(artifact.data)),
+                "artifactId" -> JsNumber(artifact.id)
+              )
+            }
+          case "get_file" => 
+            withArtifact { artifact => 
+              python.send("file",
+                "path" -> JsString(artifact.file.toString),
+                "artifactId" -> JsNumber(artifact.id)
+              )
             }
           case "save_dataset" =>
             {
@@ -96,12 +114,13 @@ object Python extends Command
             }
           case "save_artifact" =>
             {
-              val id = context.output(
+              val artifact = context.output(
                 name = (event\"name").as[String],
                 t = ArtifactType.withName( (event\"artifactType").as[String] ),
                 mimeType = (event\"mimeType").as[String],
                 data = (event\"data").as[String].getBytes
               )
+              python.send("artifactId","artifactId" -> JsNumber(artifact.id))
             }
           case "delete_artifact" => 
             {
@@ -109,45 +128,36 @@ object Python extends Command
             }
           case "rename_artifact" => 
             {
-              context.artifact( (event\"name").as[String] ) match {
-                case None => 
-                  val name = (event\"name").as[String]
-                  context.error(s"No such dataset '$name'")
+              withArtifact { artifact => 
+                if(context.artifactExists( (event\"newName").as[String] )){
+                  val newName = (event\"newName").as[String]
+                  context.error(s"Artifact '$newName' already exists")
                   python.kill()
-                case Some(artifact) => 
-                  if(context.artifactExists( (event\"newName").as[String] )){
-                    val newName = (event\"newName").as[String]
-                    context.error(s"Artifact '$newName' already exists")
-                    python.kill()
-                  } else {
-                    context.output( (event\"newName").as[String], artifact )
-                    context.delete( (event\"name").as[String] )
-                  }
+                } else {
+                  context.output( (event\"newName").as[String], artifact )
+                  context.delete( (event\"name").as[String] )
+                }
               }
             }
           case "get_data_frame" => 
             {
-              context.artifact( (event\"name").as[String] ) match {
-                case None => 
-                  val name = (event\"name").as[String]
-                  context.error(s"No such dataset '$name'")
-                  python.kill()
-                case Some(artifact) => 
-                  val response = QueryDataFrameRequest(
-                    input = None,
-                    query = s"SELECT * FROM ${artifact.nameInBackend}",
-                    includeUncertainty = Some(true),
-                    includeReasons = Some(false)
-                  ).handle
-                  python.send("data_frame",
-                    "port" -> JsNumber(response.port),
-                    "secret" -> JsString(response.secret)
-                  )
+              withArtifact { artifact => 
+                val response = QueryDataFrameRequest(
+                  input = None,
+                  query = s"SELECT * FROM ${artifact.nameInBackend}",
+                  includeUncertainty = Some(true),
+                  includeReasons = Some(false)
+                ).handle
+                python.send("data_frame",
+                  "port" -> JsNumber(response.port),
+                  "secret" -> JsString(response.secret)
+                )
               }
             }
           case x =>
             // stdinWriter.close()
             context.error(s"Received unknown event '$x': $event")
+            python.kill()
         }
       } catch {
         case e: Exception => 

@@ -53,6 +53,39 @@ class Artifact(object):
     self.artifact_id = artifact_id
 
 
+class ArtifactProxy(object):
+  def __init__(self,
+               client: "VizierDBClient",
+               artifact_name: str):
+    self.__client = client
+    self.__artifact = None
+    self.__artifact_name = artifact_name
+
+  def load_if_needed(self):
+    if self.__artifact is None:
+      self.__artifact = self.__client[self.__artifact_name]
+
+  def __getattr__(self, name):
+    self.load_if_needed()
+    return self.__artifact.__getattribute__(name)
+
+  def __setattr__(self, name, value):
+    if name == "_ArtifactProxy__client" or name == "_ArtifactProxy__artifact" or name == "_ArtifactProxy__artifact_name":
+      super(ArtifactProxy, self).__setattr__(name, value)
+    else:
+      self.load_if_needed()
+      return self.__artifact.__setattribute__(name, value)
+
+  def __call__(self, *args, **kwargs):
+    self.load_if_needed()
+    return self.__artifact.__call__(*args, **kwargs)
+
+  @property
+  def __class__(self):
+    self.load_if_needed()
+    return self.__artifact.__class__
+
+
 class VizierDBClient(object):
   """The Vizier DB Client provides access to datasets that are identified by
   a unique name. The client is a wrapper around a given database state.
@@ -68,9 +101,23 @@ class VizierDBClient(object):
     self.project_id = project_id
     self.raw_output = raw_output
     self.datasets = {}
+    self.py_objects = {}
 
-  def __getitem__(self, key: str) -> DatasetClient:
-    return self.get_dataset(key)
+  def __getitem__(self, key: str) -> Any:
+    key = key.lower()
+    if key not in self.artifacts:
+      raise ValueError("unknown artifact \'{}\'".format(key))
+    artifact = self.artifacts[key]
+    if artifact.artifact_type == ARTIFACT_TYPE_DATASET:
+      return self.get_dataset(key)
+    elif artifact.artifact_type == ARTIFACT_TYPE_FUNCTION:
+      return self.get_module(key)
+    else:
+      raise ValueError("Unsupported artifact \'{}\' ({} [{}])".format(
+                key,
+                artifact.artifact_type,
+                artifact.mime_type
+              ))
 
   def vizier_request(self,
                      event: str,
@@ -86,7 +133,47 @@ class VizierDBClient(object):
       response = sys.stdin.readline()
       return json.loads(response)
 
-  def get_dataset(self, name: str) -> None:
+  def get_artifact_proxies(self) -> Dict[str, ArtifactProxy]:
+    return {
+      self.artifacts[artifact].name: 
+        ArtifactProxy(client=self, artifact_name=self.artifacts[artifact].name)
+      for artifact in self.artifacts
+      if self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_FUNCTION
+    }
+
+  def get_module(self, name: str) -> Any:
+    name = name.lower()
+    if name in self.py_objects:
+      return self.py_objects[name]
+    if name not in self.artifacts:
+      raise ValueError("unknown module \'{}\'".format(name))
+    if self.artifacts[name].artifact_type != ARTIFACT_TYPE_FUNCTION:
+      raise ValueError("\'{}\' is not a module".format(name))
+    response = self.vizier_request(
+        event="get_blob",
+        name=name,
+        has_response=True
+      )
+
+    def output_exported(x):
+      self.py_objects[name] = x
+      return None
+
+    def return_type(dt):
+      def wrap(x):
+        return x
+      return wrap
+
+    variables = {
+      "return_type": return_type,
+      "export": output_exported,
+      "vizierdb": self
+    }
+
+    exec("@export\n" + response["data"], variables, variables)
+    return self.py_objects[name]
+
+  def get_dataset(self, name: str) -> DatasetClient:
     """Get dataset with given name.
 
     Raises ValueError if the specified dataset does not exist.
@@ -168,12 +255,16 @@ class VizierDBClient(object):
 
     Raises ValueError if no dataset with given name exist.
     """
+    name = name.lower()
+    if name not in self.artifacts:
+      raise ValueError('dataset \'{}\' does not exist'.format(name))
     self.vizier_request("delete_artifact",
-      name=name.lower(),
+      name=name,
       has_response=False,
     )
     del self.artifacts[name]
-    del self.datasets[name]
+    if name in self.datasets:
+      del self.datasets[name]
 
   def new_dataset(self) -> DatasetClient:
     """Get a dataset client instance for a new dataset.
@@ -203,6 +294,9 @@ class VizierDBClient(object):
       self.datasets[name].existing_name = new_name
       self.datasets[new_name] = self.datasets[name]
       del self.datasets[name]
+    if name in self.py_objects:
+      self.py_objects[new_name] = self.py_objects[name]
+      del self.py_objects[name]
 
   def pycell_open(self,
                   file: str,
@@ -220,7 +314,7 @@ class VizierDBClient(object):
   def show(self,
            value: Any,
            mime_type: Optional[str] = None,
-           force_to_string: bool = True
+           force_to_string: bool = False
            ) -> None:
     if force_to_string:
       value = str(value)
@@ -269,17 +363,6 @@ class VizierDBClient(object):
   def show_html(self, value):
     self.show(value, mime_type=OUTPUT_HTML)
 
-  def export_module_decorator(self, original_func):
-    def wrapper(*args, **kwargs):
-      self.read.add(original_func.__name__)
-      result = original_func(*args, **kwargs)
-      return result
-    return wrapper
-
-  def wrap_variable(self, original_variable, name):
-    self.read.add(name)
-    return original_variable
-
   def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
     if name_override is not None:
       exp_name = name_override
@@ -288,7 +371,7 @@ class VizierDBClient(object):
     elif callable(exp):
       exp_name = exp.__name__
     else:
-      # If its a variable we grab the original name from the stack 
+      # If its a variable we grab the original name from the stack
       lcls = inspect.stack()[1][0].f_locals
       for name in lcls:
         if lcls[name] == exp:
@@ -316,9 +399,11 @@ class VizierDBClient(object):
         raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_module(exp, name_override=\"{}\")".format(exp_name, exp_name))
 
     response = self.vizier_request("save_artifact",
-        value=src,
+        name=exp_name,
+        data=src,
         mimeType=MIME_TYPE_PYTHON,
         artifactType=ARTIFACT_TYPE_FUNCTION,
+        has_response=True
       )
 
     self.artifacts[exp_name] = Artifact(
@@ -327,103 +412,104 @@ class VizierDBClient(object):
       mime_type=MIME_TYPE_PYTHON,
       artifact_id=response["artifactId"]
     )
-    del self.datasets[exp_name]
+    if exp_name in self.datasets:
+      del self.datasets[exp_name]
 
-    def get_dataset_frame(self, name: str) -> pandas.Dataframe:
-      """Get dataset with given name as a pandas dataframe.
+  def get_dataset_frame(self, name: str) -> pandas.DataFrame:
+    """Get dataset with given name as a pandas dataframe.
 
-      Raises ValueError if the specified dataset does not exist.
-      """
-      import pyarrow as pa  # type: ignore
-      from pyspark.rdd import _load_from_socket  # type: ignore
-      from pyspark.sql.pandas.serializers import ArrowCollectSerializer  # type: ignore
-      name = name.lower()
-      if name not in self.artifacts:
-        raise ValueError("Unknown artifact: '{}'".format(name))
-      if self.artifacts[name].artifact_type != ARTIFACT_TYPE_DATASET:
-        raise ValueError("Artifact '{}' is not a dataset".format(name))
+    Raises ValueError if the specified dataset does not exist.
+    """
+    import pyarrow as pa  # type: ignore
+    from pyspark.rdd import _load_from_socket  # type: ignore
+    from pyspark.sql.pandas.serializers import ArrowCollectSerializer  # type: ignore
+    name = name.lower()
+    if name not in self.artifacts:
+      raise ValueError("Unknown artifact: '{}'".format(name))
+    if self.artifacts[name].artifact_type != ARTIFACT_TYPE_DATASET:
+      raise ValueError("Artifact '{}' is not a dataset".format(name))
 
-      response = self.vizier_request("get_data_frame",
-        table=name,
-        includeUncertainty=True,
-        has_response=True
-      )
-      results = list(_load_from_socket((response['port'], response['secret']), ArrowCollectSerializer()))
-      batches = results[:-1]
-      batch_order = results[-1]
-      ordered_batches = [batches[i] for i in batch_order]
-      table = pa.Table.from_batches(ordered_batches)
-      return table.to_pandas()
+    response = self.vizier_request("get_data_frame",
+      table=name,
+      includeUncertainty=True,
+      has_response=True
+    )
+    results = list(_load_from_socket((response['port'], response['secret']), ArrowCollectSerializer()))
+    batches = results[:-1]
+    batch_order = results[-1]
+    ordered_batches = [batches[i] for i in batch_order]
+    table = pa.Table.from_batches(ordered_batches)
+    return table.to_pandas()
 
-    def dataset_from_s3(self,
-                        bucket: str,
-                        folder: str,
-                        file: str,
-                        line_extracter: Callable[[re.Match, str], Tuple[str, str]]
-                          = lambda rematch, line: ('col0', line),
-                        additional_col_gen: Optional[Callable[[re.Match, str], Tuple[str, str]]] = None,
-                        delimeter: str = ",",
-                        line_delimeter: str = "\n"
-                        ) -> Optional[DatasetClient]:
-      from minio import Minio  # type: ignore[import]
-      from minio.error import ResponseError  # type: ignore[import]
-      from minio.select.errors import SelectCRCValidationError  # type: ignore[import]
-      client = Minio(os.environ.get('S3A_ENDPOINT', 's3.vizier.app'),
-                     access_key=os.environ.get('AWS_ACCESS_KEY_ID', "----------------------"),
-                     secret_key=os.environ.get('AWS_SECRET_ACCESS_KEY', "---------------------------"))
-      try:
-        import io
+  def dataset_from_s3(self,
+                      bucket: str,
+                      folder: str,
+                      file: str,
+                      line_extracter: Callable[[re.Match, str], Tuple[str, str]]
+                        = lambda rematch, line: ('col0', line),
+                      additional_col_gen: Optional[Callable[[re.Match, str], Tuple[str, str]]] = None,
+                      delimeter: str = ",",
+                      line_delimeter: str = "\n"
+                      ) -> Optional[DatasetClient]:
+    from minio import Minio  # type: ignore[import]
+    from minio.error import ResponseError  # type: ignore[import]
+    from minio.select.errors import SelectCRCValidationError  # type: ignore[import]
+    client = Minio(os.environ.get('S3A_ENDPOINT', 's3.vizier.app'),
+                   access_key=os.environ.get('AWS_ACCESS_KEY_ID', "----------------------"),
+                   secret_key=os.environ.get('AWS_SECRET_ACCESS_KEY', "---------------------------"))
+    try:
+      import io
 
-        ds = self.new_dataset()
-        objects = client.list_objects_v2(bucket, prefix=folder, recursive=True)
+      ds = self.new_dataset()
+      objects = client.list_objects_v2(bucket, prefix=folder, recursive=True)
 
-        subObjs = []
-        for obj in objects:
-          subObjs.append(obj)
+      subObjs = []
+      for obj in objects:
+        subObjs.append(obj)
 
-        for logObj in subObjs:
-          log = logObj.object_name
-          result = re.match(file, log)
-          # Check file name suffix is .log
-          if result:
-            data = client.get_object(bucket, log)
-            rdat = io.StringIO()
-            for d in data.stream(100 * 1024):
-              rdat.write(str(d.decode('utf-8')))
-            lines = rdat.getvalue().split(line_delimeter)
+      for logObj in subObjs:
+        log = logObj.object_name
+        result = re.match(file, log)
+        # Check file name suffix is .log
+        if result:
+          data = client.get_object(bucket, log)
+          rdat = io.StringIO()
+          for d in data.stream(100 * 1024):
+            rdat.write(str(d.decode('utf-8')))
+          lines = rdat.getvalue().split(line_delimeter)
 
-            entry: Dict[str, str] = {}
-            if additional_col_gen is not None:
-              entry = dict({additional_col_gen(result, line) for line in lines})
-            line_entries = dict({line_extracter(result, line) for line in lines})
-            entry = {**entry, **line_entries}
-            # The following line seems to be OK only because
-            # the preceding line is a { ** } constructor.
-            # I have absolutely no clue why the following works,
-            # otherwise.  Either way, let's shut mypy up for now
-            # -OK
-            entry.pop(None, None)  # type: ignore
+          entry: Dict[str, str] = {}
+          if additional_col_gen is not None:
+            entry = dict({additional_col_gen(result, line) for line in lines})
+          line_entries = dict({line_extracter(result, line) for line in lines})
+          entry = {**entry, **line_entries}
+          # The following line seems to be OK only because
+          # the preceding line is a { ** } constructor.
+          # I have absolutely no clue why the following works,
+          # otherwise.  Either way, let's shut mypy up for now
+          # -OK
+          entry.pop(None, None)  # type: ignore
 
-            # Append unknown dictionary keys to the list
-            for attr in list(set(entry.keys()) - set([col.name for col in ds.columns])):
-              ds.insert_column(attr)
+          # Append unknown dictionary keys to the list
+          for attr in list(set(entry.keys()) - set([col.name for col in ds.columns])):
+            ds.insert_column(attr)
 
-            # Make sure the record is in the right order
-            row = [
-              entry.get(col.name, None)
-              for col in ds.columns
-            ]
+          # Make sure the record is in the right order
+          row = [
+            entry.get(col.name, None)
+            for col in ds.columns
+          ]
 
-            ds.insert_row(values=row)
+          ds.insert_row(values=row)
 
-            return ds
+          return ds
 
-      except SelectCRCValidationError:
-        return None
-        pass
-      except ResponseError:
-        return None
-        pass
+    except SelectCRCValidationError:
+      return None
+      pass
+    except ResponseError:
+      return None
+      pass
 
 
 class Analyzer(ast.NodeVisitor):
@@ -436,7 +522,7 @@ class Analyzer(ast.NodeVisitor):
   def visit_FunctionDef(self, node):
     self.context.append(('function', set()))
     if node.name == self.name:
-      self.source = "@vizierdb.export_module_decorator\n" + astor.to_source(node)
+      self.source = astor.to_source(node)
       self.generic_visit(node)
     self.context.pop()
 
@@ -447,14 +533,14 @@ class Analyzer(ast.NodeVisitor):
     self.context.append(('assignment', set()))
     target = node.targets[0]
     if target.id == self.name:
-      self.source = "{} = vizierdb.wrap_variable({}, '{}')".format(self.name, astor.to_source(node.value), self.name)
+      self.source = astor.to_source(node.value)
       self.generic_visit(target)
     self.context.pop()
 
   def visit_ClassDef(self, node):
     self.context.append(('class', ()))
     if node.name == self.name:
-      self.source = "@vizierdb.export_module_decorator\n" + astor.to_source(node)
+      self.source = astor.to_source(node)
       self.generic_visit(node)
     self.context.pop()
 
@@ -470,8 +556,8 @@ class Analyzer(ast.NodeVisitor):
 
   def visit_Name(self, node):
     ctx, g = self.context[-1]
-    if node.id == self.name and (ctx == 'global' or node.id in g):
-      print('exported {} at line {} of {}'.format(node.id, node.lineno, self.source))
+    # if node.id == self.name and (ctx == 'global' or node.id in g):
+    # print('exported {} at line {} of {}'.format(node.id, node.lineno, self.source))
 
   def get_Source(self):
     return self.source

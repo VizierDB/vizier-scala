@@ -18,42 +18,42 @@ class PythonCommandSpec
   lazy val project = MutableProject("Data Project")
   sequential
 
-  def script(script: String) = 
-  {
-    project.append("script", "python")("source" -> script)
-    project.waitUntilReady
-  }
-  def lastOutput =
-  {
-    val workflow = project.head
-    DB.readOnly { implicit s => 
-      workflow.cells.reverse.head.messages
-    }
-  }
-  def lastOutputString =
-    lastOutput.map { _.dataString }.mkString
 
   "run simple python scripts" >> 
   {
-    script("""
+    project.script("""
 print("Hello Wookie")
 """)
-    
-    lastOutputString must beEqualTo("Hello Wookie\n")
+    project.lastOutputString must beEqualTo("Hello Wookie\n")
   }
+
+  "share python functions" >>
+  {
+    project.script("""
+def foo(bar):
+  print("YY: "+bar)
+foo("x")
+vizierdb.export_module(foo)
+""")
+    project.lastOutputString must beEqualTo("YY: x\n")
+
+    project.script("""
+vizierdb["foo"]("z")
+""")
+    project.lastOutputString must beEqualTo("YY: z\n")
+
+    project.script("""
+foo("w")
+""")
+    project.lastOutputString must beEqualTo("YY: w\n")
+  }
+
 
   "interact with datasets" >> 
   {
-    project.append("data", "load")(
-      "file" -> "test_data/r.csv",
-      "name" -> "test_r",
-      "loadFormat" -> "csv",
-      "loadInferTypes" -> true,
-      "loadDetectHeaders" -> true
-    )
-    project.waitUntilReady
+    project.load("test_data/r.csv", "test_r")
 
-    script("""
+    project.script("""
 ds = vizierdb["test_r"]
 print("success: {} / {}".format(
   ds.get_column("A"),
@@ -70,26 +70,39 @@ for row in ds.rows:
 
 ds.save("Q")
 """)
+    project.artifactRefs.map { _.userFacingName } must contain("q")
 
-    print(lastOutputString)
-
-    lastOutputString.split("\n").toSeq must contain(eachOf(
+    project.lastOutputString.split("\n").toSeq must contain(eachOf(
       "success: A(short) / None",
       "A at: 0",
       "1 at: 1",
       "<1, 1>"
     ))
 
-    script("ds = vizierdb[\"Q\"];print(ds)")
+    project.script("ds = vizierdb[\"Q\"];print(ds)")
 
-    lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)\n")
+    project.lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)\n")
 
-    script("""
-ds = vizierdb["test_r"]
+    project.artifactRefs.map { _.userFacingName } must contain("test_r")
+    project.script("""
+vizierdb.drop_dataset("test_r")
+""")
+    project.artifactRefs.map { _.userFacingName } must not contain("test_r")
+  }
+
+  "basic 'show' outputs" >> 
+  {
+    project.script("""
+ds = vizierdb["q"]
 print(ds.to_bokeh())
 """)
+    project.lastOutputString must startWith("ColumnDataSource")
 
-    lastOutputString must startWith("ColumnDataSource")
+    project.script("""
+show(vizierdb["q"])
+""")
+    project.lastOutput.map { _.mimeType } must contain(MIME.DATASET_VIEW)
   }
+
 
 }
