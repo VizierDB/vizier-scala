@@ -70,7 +70,10 @@ class DatasetColumn(object):
     self.name = name
     self.data_type = data_type
 
-  def __str__(self) -> str:
+  def __str__(self):
+    return self.__repr__()
+
+  def __repr__(self) -> str:
     """Human-readable string representation for the column.
 
     Returns
@@ -114,16 +117,25 @@ class MutableDatasetRow(object):
     """
     self.identifier = identifier
     self.values = values
+    self.dataset = dataset
     if caveats is not None:
       self.caveats = caveats
     else:
       self.values = [False for col in values]
     self.row_caveat = row_caveat
 
+  def __str__(self):
+    return self.__repr__()
+
   def __repr__(self):
-    return "DatasetRow({}@< {} >)".format(
-      self.identifier,
-      ", ".join(str(v) for v in self.values)
+    return "<{}>{}".format(
+      ", ".join(
+        "{}{}".format(
+          str(v),
+          "*" if c else ""
+        ) for v, c in zip(self.values, self.caveats)
+      ),
+      "*" if self.row_caveat else ""
     )
 
   def __getitem__(self, key):
@@ -189,7 +201,7 @@ class DatasetClient(object):
           name=column["name"],
           data_type=column["type"]
         )
-        for (column, idx) in enumerate(dataset["schema"])
+        for (idx, column) in enumerate(dataset["schema"])
       ]
       assert(identifier is not None)
       self.identifier = identifier
@@ -204,7 +216,7 @@ class DatasetClient(object):
         )
         for identifier, values, caveats, row_caveat in zip(
           dataset["prov"],
-          dataset["rows"],
+          dataset["data"],
           dataset["colTaint"],
           dataset["rowTaint"]
         )
@@ -218,6 +230,15 @@ class DatasetClient(object):
 
   def __getitem__(self, key):
     return self.get_column(key)
+
+  def __str__(self):
+    return self.__repr__()
+
+  def __repr__(self):
+    return "<{}> ({} rows)".format(
+      ", ".join(col.__repr__() for col in self.columns),
+      len(self.rows)
+    )
 
   def save(self, name: Optional[str] = None):
     if self.client is None:
@@ -513,6 +534,24 @@ class DatasetClient(object):
 
   def show(self):
       self.client.show(self)
+
+  def to_json(self, limit: Optional[int] = None):
+    rows = self._rows
+    if limit is not None:
+      rows = rows[:limit]
+    return {
+      "schema": [
+        {
+          "name": col.name,
+          "type": col.data_type
+        } for col in self.columns
+      ],
+      "data": [row.values for row in rows],
+      "prov": [row.identifier for row in rows],
+      "colTaint": [row.caveats for row in rows],
+      "rowTaint": [row.row_caveat for row in rows],
+      "properties": self._properties
+    }
 
 
 def collabel_2_index(label):

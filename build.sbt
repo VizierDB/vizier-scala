@@ -54,6 +54,9 @@ libraryDependencies ++= Seq(
 
   // jetty
   "javax.servlet"                 %   "javax.servlet-api"               % "3.1.0",
+
+  // command-specific libraries
+  // "org.clapper"                   %% "markwrap"                         % "1.2.0"
 )
 
 ////// Publishing Metadata //////

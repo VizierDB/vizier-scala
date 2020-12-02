@@ -61,4 +61,8 @@ object Commands
   register(packageId = "script", name = "Scripts", category = "code")(
     "python"  -> info.vizierdb.commands.python.Python
   )
+
+  register(packageId = "docs", name = "Documentation", category = "docs")(
+    "markdown" -> info.vizierdb.commands.markdown.Markdown
+  )
 }

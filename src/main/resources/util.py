@@ -5,19 +5,28 @@ import itertools
 
 
 class IO_Wrapper(IOBase):
-    def __init__(self, stream, io):
-        self.stream = stream
-        self.io = io
+  def __init__(self, stream, io):
+    self.stream = stream
+    self.io = io
+    self.buffer = ""
 
-    def write(self, b):
-        self.io.write(json.dumps({
-            "event": "message",
-            "stream": self.stream,
-            "content": b
-        })+"\n")
+  def write(self, b):
+    self.buffer += b
+    if "\n" in self.buffer:
+      self.soft_flush()
 
-    def flush(self):
-        self.io.flush()
+  def soft_flush(self):
+    if len(self.buffer) > 0:
+      self.io.write(json.dumps({
+        "event": "message",
+        "stream": self.stream,
+        "content": self.buffer
+      }) + "\n")
+      self.buffer = ""
+
+  def flush(self):
+    self.soft_flush()
+    self.io.flush()
 
 
 def debug_is_on():

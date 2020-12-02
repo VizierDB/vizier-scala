@@ -5,15 +5,14 @@
     - [x] "Clone Dataset" (clone)
     - [x] "Unload Dataset" (unload)
     - [x] "SQL Query" (query)
-- [ ] Develop web-api-async compatible API
+- [x] Develop web-api-async compatible API
     - [x] Import built web-ui
 - [x] File Upload/Download
-- [ ] Implement sub-process execution
+- [x] Implement sub-process execution
+    - [x] "Python Script" (code)
     - [ ] "Scala Script" (code)
-    - [ ] "Python Script" (code)
-- [ ] Python Compatibility Layer through JEP
-    - [ ] "Markdown Code" (code)
     - [ ] "R Script" (code)
+- [x] "Markdown Code" (code)
 - [ ] Import remaining Vizier packages
     - [x] "Simple Chart" (chart)
     - [ ] "Basic Sample" (basic_sample)

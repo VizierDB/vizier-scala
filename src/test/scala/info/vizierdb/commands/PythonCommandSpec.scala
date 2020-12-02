@@ -65,7 +65,7 @@ print("1 at: {}".format(ds.column_index(1)))
 ds.delete_column("B")
 
 print(ds)
-for row in ds.rows():
+for row in ds.rows:
   print(row)
 
 ds.save("Q")
@@ -89,7 +89,7 @@ ds = vizierdb["test_r"]
 print(ds.to_bokeh())
 """)
 
-    lastOutputString must beEqualTo("floop")
+    lastOutputString must startWith("ColumnDataSource")
   }
 
 }

@@ -2,3 +2,5 @@ numpy
 bokeh
 inspect
 ast
+matplotlib
+astor

@@ -2,6 +2,7 @@ import json
 import sys
 from util import IO_Wrapper, format_stack_trace
 from pycell.client import VizierDBClient, Artifact
+from pycell.plugins import python_cell_preload
 
 raw_output = sys.stdout
 raw_stderr = sys.stderr
@@ -26,29 +27,35 @@ try:
         if cmd["event"] == "script":
             script = cmd["script"]
             artifacts = cmd["artifacts"]
-            project_id = cmd["project_id"]
+            project_id = cmd["projectId"]
         else:
             print("Unknown event type '{}'".format(cmd["event"]))
+
     client = VizierDBClient(
             artifacts={
                 artifact: Artifact(
                     name=artifact,
                     artifact_type=artifacts[artifact]["type"],
-                    name_in_backend=artifacts[artifact]["nameInBackend"],
-                    file=artifacts[artifact]["file"],
-                    artifact_id=artifacts[artifact]["artifactId"]
+                    artifact_id=artifacts[artifact]["artifactId"],
+                    mime_type=artifacts[artifact]["mimeType"]
                 )
                 for artifact in artifacts
             },
             source=script,
-            project_id=project_id
+            project_id=project_id,
+            raw_output=raw_output
         )
+
+    python_cell_preload(client)
+
     variables = {
         "vizierdb": client,
         "show": client.show,
         "open": client.pycell_open
     }
     exec(script, variables, variables)
+    sys.stdout.soft_flush()
+    sys.stderr.soft_flush()
 except Exception as ex:
     if type(ex) is SyntaxError:
         context, line, pos, content = ex.args[1]

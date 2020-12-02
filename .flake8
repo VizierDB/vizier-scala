@@ -17,4 +17,6 @@ ignore =
   # E131: continuation line unaligned for hanging indent
   E131,
   # E221: multiple spaces before operator
-  E221
+  E221,
+  # E501: line too long
+  E501
