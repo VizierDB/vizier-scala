@@ -11,19 +11,22 @@ object BasicSample extends Command
   def name: String = "Basic Sample"
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = "input_dataset", name = "Input Dataset"),
-    DecimalParameter(id = "sample_rate", default = Some(0.1), name = "Sampling Rate (0.0-1.0)"),
+    DecimalParameter(id = "sample_rate", default = Some(0.1), required = false, name = "Sampling Rate (0.0-1.0)"),
     StringParameter(id = "output_dataset", required = false, name = "Output Dataset"),
     StringParameter(id = "seed", hidden = true, required = false, default = None, name = "Sample Seed")
   )
   def format(arguments: Arguments): String = 
-    s"CREATE ${arguments.pretty("sample_rate")} SAMPLE OF ${arguments.pretty("input_dataset")} AS ${arguments.pretty("output_dataset")}"
+    s"CREATE ${arguments.pretty("sample_rate")} SAMPLE OF ${arguments.pretty("input_dataset")}"+
+    (if(arguments.contains("output_dataset")) {
+      s" AS ${arguments.pretty("output_dataset")}"
+    } else { "" })
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val inputName = arguments.get[String]("input_dataset")
     val outputName = arguments.getOpt[String]("output_dataset")
                               .getOrElse { inputName }
     val probability = arguments.get[Float]("sample_rate")
-    val seed = arguments.get[String]("seed").toLong
+    val seed = arguments.getOpt[String]("seed").map { _.toLong }
 
     val input = context.dataset(inputName)
                        .getOrElse { throw new IllegalArgumentException(s"No such dataset $inputName")}
@@ -32,7 +35,7 @@ object BasicSample extends Command
     val response = CreateSampleRequest(
       source = input,
       samplingMode = Uniform(probability),
-      seed = None,
+      seed = seed,
       resultName = Some(output),
       properties = None
     ).handle

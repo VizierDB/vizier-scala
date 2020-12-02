@@ -65,4 +65,8 @@ object Commands
   register(packageId = "docs", name = "Documentation", category = "docs")(
     "markdown" -> info.vizierdb.commands.markdown.Markdown
   )
+
+  register(packageId = "sample", name = "Dataset Sampling", category = "data")(
+    "basic_sample" -> info.vizierdb.commands.sample.BasicSample
+  )
 }

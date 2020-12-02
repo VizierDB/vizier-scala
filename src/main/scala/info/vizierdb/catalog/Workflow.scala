@@ -137,17 +137,31 @@ case class Workflow(
      .values.toSeq
   }
 
+  def allArtifacts(implicit session: DBSession): Seq[ArtifactRef] =
+  {
+    val c = Cell.syntax
+    val o = OutputArtifactRef.syntax
+    withSQL {
+      select(o.resultAll)
+        .from(Cell as c)
+        .join(OutputArtifactRef as o)
+        .where.eq(c.resultId, o.resultId)
+          .and.eq(c.workflowId, id)
+          .and.isNotNull(o.artifactId)
+    }.map { OutputArtifactRef(_) }
+     .list.apply()
+  }
+
   def describe(implicit session: DBSession): JsObject = 
   {
     val branch = Branch.get(branchId)
     val cellsAndModules = cellsAndModulesInOrder
-    val artifacts = outputArtifacts.filter { !_.artifactId.equals(None) }
-                                   .map { ref => 
-                                      ref.userFacingName -> 
-                                        Artifact.lookupSummary(ref.artifactId.get).get 
-                                    }
+    val artifacts = allArtifacts.map { _.artifactId.get }
+                                .toSet
+                                .toSeq
+                                .map { id: Identifier => Artifact.lookupSummary(id).get }
     val (datasets, dataobjects) =
-      artifacts.partition { _._2.t.equals(ArtifactType.DATASET) }
+      artifacts.partition { _.t.equals(ArtifactType.DATASET) }
     val summary = makeSummary(branch, actionModuleId.map { Module.get(_) })
 
     val isRunning = cellsAndModules.exists { !_._1.state.equals(ExecutionState.DONE) }
@@ -173,8 +187,8 @@ case class Workflow(
             workflowId = id,
             cells = cellsAndModules
           ),
-        "datasets" -> JsArray(datasets.map { case (name, d) => d.summarize(name) }),
-        "dataobjects" -> JsArray(dataobjects.map { case (name, d) => d.summarize(name) }),
+        "datasets" -> JsArray(datasets.map { _.summarize() }),
+        "dataobjects" -> JsArray(dataobjects.map { _.summarize() }),
         "readOnly" -> JsBoolean(!branch.headId.equals(id))
       )
     )

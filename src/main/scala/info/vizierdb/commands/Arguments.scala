@@ -5,6 +5,12 @@ import play.api.libs.json.JsNull
 
 class Arguments(values: Map[String, (JsValue, Parameter)])
 {
+  def contains(arg: String): Boolean = 
+    values.get(arg) match { 
+      case None => false 
+      case Some((JsNull, _)) => false
+      case _ => true
+    }
   def get[T](arg: String)(implicit read:Reads[T]): T = values(arg)._1.as[T]
   def getOpt[T](arg: String)(implicit read:Reads[T]): Option[T] = 
     values(arg)._1 match {

@@ -14,8 +14,12 @@ sealed trait Parameter
   def getDefault: JsValue = JsNull
 
   def stringify(j: JsValue): String =
-    if(validate(j).isEmpty){ doStringify(j) }
-    else { s"invalid $datatype[$j]" }
+    j match {
+      case JsNull => "null"
+      case _ => 
+        if(validate(j).isEmpty){ doStringify(j) }
+        else { s"invalid $datatype[$j]" }
+    }
 
   def doStringify(j: JsValue): String
   /**
