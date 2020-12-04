@@ -148,6 +148,7 @@ case class Workflow(
         .where.eq(c.resultId, o.resultId)
           .and.eq(c.workflowId, id)
           .and.isNotNull(o.artifactId)
+        .orderBy(c.position)
     }.map { OutputArtifactRef(_) }
      .list.apply()
   }
@@ -156,15 +157,18 @@ case class Workflow(
   {
     val branch = Branch.get(branchId)
     val cellsAndModules = cellsAndModulesInOrder
-    val artifacts = allArtifacts.map { _.artifactId.get }
-                                .toSet
+    val artifacts = allArtifacts.map { a => a.artifactId.get -> a.userFacingName }
+                                .toMap
                                 .toSeq
-                                .map { id: Identifier => Artifact.lookupSummary(id).get }
+                                .map { case (id: Identifier, name: String) => 
+                                          (Artifact.lookupSummary(id).get, name) }
     val (datasets, dataobjects) =
-      artifacts.partition { _.t.equals(ArtifactType.DATASET) }
+      artifacts.partition { _._1.t.equals(ArtifactType.DATASET) }
     val summary = makeSummary(branch, actionModuleId.map { Module.get(_) })
 
-    val isRunning = cellsAndModules.exists { !_._1.state.equals(ExecutionState.DONE) }
+    val isRunning = cellsAndModules.exists { cellAndModule => 
+                      ExecutionState.isRunningOrPendingState(cellAndModule._1.state)
+                    }
 
     val state = cellsAndModules.foldLeft(ExecutionState.DONE) { (prev, curr) =>
       if(!prev.equals(ExecutionState.DONE)){ prev }
@@ -175,8 +179,9 @@ case class Workflow(
       summary.value ++ Map(
         HATEOAS.LINKS -> HATEOAS.extend(summary.value(HATEOAS.LINKS),
           HATEOAS.WORKFLOW_CANCEL -> (
-            if(isRunning) { null }
-            else { VizierAPI.urls.cancelWorkflow(branch.projectId, branchId, id) } 
+            if(isRunning) { 
+              VizierAPI.urls.cancelWorkflow(branch.projectId, branchId, id) 
+            } else { null }
           )
         ),
         "state" -> JsNumber(ExecutionState.translateToClassicVizier(state)),
@@ -187,8 +192,8 @@ case class Workflow(
             workflowId = id,
             cells = cellsAndModules
           ),
-        "datasets" -> JsArray(datasets.map { _.summarize() }),
-        "dataobjects" -> JsArray(dataobjects.map { _.summarize() }),
+        "datasets" -> JsArray(datasets.map { d => d._1.summarize(name = d._2) }),
+        "dataobjects" -> JsArray(dataobjects.map { d => d._1.summarize(name = d._2) }),
         "readOnly" -> JsBoolean(!branch.headId.equals(id))
       )
     )

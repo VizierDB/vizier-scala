@@ -46,6 +46,18 @@ object types
         case CANCELLED => 2 // MODULE_CANCELLED
       }
     }
+
+    def isRunningOrPendingState(state: T) = 
+    {
+      state match { 
+        case DONE => false
+        case ERROR => false
+        case WAITING => true
+        case BLOCKED => true
+        case STALE => true
+        case CANCELLED => false
+      }
+    }
   }
 
   object ArtifactType extends Enumeration

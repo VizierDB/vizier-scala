@@ -73,6 +73,10 @@ object Commands
   )
 
   register(packageId = "vizual", name = "Vizual", category = "vizual")(
-    "deleteColumn" -> info.vizierdb.commands.vizual.DeleteColumn
+    "deleteColumn" -> info.vizierdb.commands.vizual.DeleteColumn,
+    "deleteRow"    -> info.vizierdb.commands.vizual.DeleteRow,
+    "dropDataset"  -> info.vizierdb.commands.vizual.DropDataset,
+    "insertColumn" -> info.vizierdb.commands.vizual.InsertColumn,
+    "insertRow"    -> info.vizierdb.commands.vizual.InsertRow
   )
 }

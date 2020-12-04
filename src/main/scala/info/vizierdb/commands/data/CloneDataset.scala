@@ -18,7 +18,7 @@ object CloneDataset extends Command
     StringParameter(id = "name", name = "Name of Copy")
   )
   def format(arguments: Arguments): String = 
-    s"CLONE DATASET ${arguments.pretty("dataset")} TO ${arguments.pretty("name")}"
+    s"CLONE DATASET ${arguments.get[String]("dataset")} TO ${arguments.pretty("name")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")

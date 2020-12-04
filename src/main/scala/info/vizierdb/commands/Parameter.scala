@@ -353,8 +353,13 @@ case class RowIdParameter(
 ) extends Parameter with IntegerEncoder
 {
   def datatype = "rowid"
-  def doStringify(j: JsValue): String = j.toString()
-  def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+  def doStringify(j: JsValue): String = j match {
+    case JsNumber(n) => s"[$n]"
+    case JsString(s) => s"[$s]"
+    case _ => s"[???]"
+  }
+  def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber] || 
+                                  j.isInstanceOf[JsString]){ None }
                                else { Some(s"Expected a number/rowid for $name") }
 }
 

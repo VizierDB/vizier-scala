@@ -75,6 +75,14 @@ class Module(
     val messages: Seq[Message] = 
       cell.resultId.map { Result.outputs(_) }.toSeq.flatten
 
+    val description = 
+      try { 
+        command.map { _.format(arguments) }
+               .getOrElse { s"UNKNOWN COMMAND $packageId.$commandId" }
+      } catch { 
+        case e: Exception => 
+          s"Error formatting command: [$e]"
+      }
 
     Json.obj(
       "id" -> id,
@@ -97,8 +105,7 @@ class Module(
           }
         )
       ),
-      "text" -> JsString(command.map { _.format(arguments) }
-                                .getOrElse { s"UNKNOWN COMMAND $packageId.$commandId" }),
+      "text" -> JsString(description),
       "timestamps" -> timestamps,
       "datasets"  -> datasets   .map { case (name, d) => d.summarize(name) },
       "charts"    -> charts     .map { case (name, d) => d.summarize(name) },

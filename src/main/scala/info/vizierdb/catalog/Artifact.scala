@@ -34,7 +34,7 @@ case class Artifact(
   def file: File = Filestore.get(projectId, id)
   def summarize(name: String = null) = 
   {
-    val extras = t match {
+    val extras:Map[String,JsValue] = t match {
       case ArtifactType.DATASET => 
         Map(
           "columns" -> 
@@ -53,6 +53,7 @@ case class Artifact(
                 }
             )
         )
+      case _ => Map.empty
     }
     Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
   }

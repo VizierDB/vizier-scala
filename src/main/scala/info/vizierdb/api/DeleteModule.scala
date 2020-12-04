@@ -1,6 +1,7 @@
 package info.vizierdb.api
 
 import scalikejdbc.DB
+import play.api.libs.json._
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import info.vizierdb.catalog.Branch
@@ -40,6 +41,10 @@ case class DeleteModule(
     // The workflow must be scheduled AFTER the enclosing transaction finishes
     Scheduler.schedule(workflow.id)
 
-    return NoContentResponse()
+    DB.readOnly { implicit s => 
+      return RawJsonResponse(
+        workflow.describe
+      )
+    }
   }
 }

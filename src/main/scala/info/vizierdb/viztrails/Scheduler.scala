@@ -185,10 +185,12 @@ object Scheduler
         val context = new ExecutionContext(cell.projectId, scope, cell, module)
         val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
         val argumentErrors = arguments.validate
-        if(!argumentErrors.isEmpty){
-          errorResult(cell, "Error in module arguments:\n"+argumentErrors.mkString("\n"))
-        }
         val (startedCell, result) = cell.start
+        if(!argumentErrors.isEmpty){
+          val msg = "Error in module arguments:\n"+argumentErrors.mkString("\n")
+          logger.warn(msg)
+          errorResult(startedCell, msg)
+        }
         /* return */ (command, arguments, context, startedCell)
       }
     logger.trace(s"About to Process [${command.name}]($arguments) <- ($context)")
@@ -253,9 +255,15 @@ object Scheduler
       }
       logger.debug(s"Starting processing of Workflow ${workflowId}")
       var cell: Option[Cell] = nextTarget
-      while( (!aborted) &&  (cell != None) ){
-        processSynchronously(cell.get)
-        cell = nextTarget
+      try { 
+        while( (!aborted) &&  (cell != None) ){
+          processSynchronously(cell.get)
+          cell = nextTarget
+        }
+      } catch {
+        case e: Exception => 
+          logger.error(s"Error processing: $e")
+          e.printStackTrace()
       }
       logger.debug(s"Done processing Workflow ${workflowId}")
       return true
