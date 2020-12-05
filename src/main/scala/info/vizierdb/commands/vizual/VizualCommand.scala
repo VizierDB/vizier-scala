@@ -22,12 +22,14 @@ trait VizualCommand
   {
     val datasetName = arguments.get[String]("dataset")
 
-    logger.debug(s"${this.getClass().getName()}($arguments)")
+    logger.debug(s"${this.getClass().getName()}($arguments) <- $datasetName")
 
     val input = context.dataset(datasetName)
                          .getOrElse { 
                             throw new IllegalArgumentException(s"No such dataset '$datasetName'")
                          }
+
+    val vizualScript = script(arguments, context)
 
     val (output, _) = context.outputDataset(datasetName)
 
@@ -35,7 +37,7 @@ trait VizualCommand
 
     VizualRequest(
       input = input,
-      script = script(arguments, context),
+      script = vizualScript,
       resultName = Some(output),
       compile = Some(false)
     ).handle

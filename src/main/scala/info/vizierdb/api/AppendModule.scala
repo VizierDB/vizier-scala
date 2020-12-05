@@ -49,14 +49,7 @@ case class AppendModule(
           Module.make(
             packageId = packageId,
             commandId = commandId,
-            arguments = JsObject(
-              arguments.as[Seq[Map[String, JsValue]]]
-                       .map { arg =>
-                         arg("id").as[String] -> 
-                          arg("value")
-                       }
-                       .toMap
-            ),
+            arguments = command.decodeReactArguments(arguments),
             revisionOfId = None
           )
 

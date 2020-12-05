@@ -15,6 +15,8 @@ import org.mimirdb.api.MimirAPI
 import info.vizierdb.catalog.DatasetMessage
 import info.vizierdb.catalog.ArtifactSummary
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.StructField
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -70,6 +72,24 @@ class ExecutionContext(
       .map { a => if(a.t != ArtifactType.DATASET) { 
                     throw new VizierException(s"$name is not a dataset (it's actually a ${a.t})" )
                   } else { a.nameInBackend } }
+
+  /** 
+   * Retrieve the spark dataframe for the specified dataset
+   * 
+   * @param   name            The user-facing name of the dataset (relative to the scope)
+   * @returns                 The spark dataframe for the specified datset
+   */
+  def dataframe(name: String, registerInput: Boolean = true): Option[DataFrame] =
+    dataset(name, registerInput).map { MimirAPI.catalog.get(_) }
+
+  /** 
+   * Retrieve the schema for the specified dataset
+   * 
+   * @param   name            The user-facing name of the dataset (relative to the scope)
+   * @returns                 The spark dataframe for the specified datset
+   */
+  def datasetSchema(name: String, registerInput: Boolean = true): Option[Seq[StructField]] =
+    dataframe(name, registerInput).map { _.schema.fields } 
 
   /**
    * Retrieve all datasets in scope
@@ -298,6 +318,38 @@ class ExecutionContext(
   {
     val command = Commands.get(module.packageId, module.commandId)
     val newArgs = command.encodeArguments(args.toMap, module.arguments.value.toMap)
+    DB.autoCommit { implicit s => 
+      cell.replaceArguments(newArgs)
+    }
+  }
+
+  /**
+   * Modify the arguments of the calling cell (DANGEROUS)
+   *
+   * Alter a subset of the arguments to the cell currently being
+   * executed.  This function should be used with EXTREME care.
+   *
+   * The motivating use case for this function is when the cell
+   * is capable of making educated, but non-static guesses about 
+   * the "correct" value about one or more of its parameters, while
+   * also providing the ability for the user to later re-run the
+   * cell, overriding some of these guesses.  For example, the Load 
+   * Dataset cell attempts to infer the schema of the loaded dataset, 
+   * but should also allow users to manually override the guessed
+   * schema.
+   * 
+   * Broadly, the guideline for using this function is that the
+   * act of overriding the cell's arguments MUST be idempotent.  That
+   * is, if the cell is re-run, the output should be identical.
+   *
+   * The other viable use case is when the cell's behavior is 
+   * nondeterministic (e.g., a Sample cell).  A "seed" parameter can
+   * be registered as an argument to make subsequent calls 
+   * deterministic.
+   */
+  def updateJsonArguments(args: (String, JsValue)*)
+  {
+    val newArgs = JsObject(module.arguments.value ++ args.toMap)
     DB.autoCommit { implicit s => 
       cell.replaceArguments(newArgs)
     }

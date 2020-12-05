@@ -11,6 +11,15 @@ trait Command
   def format(arguments: JsObject): String = format(Arguments(arguments.as[Map[String, JsValue]], parameters))
   def format(arguments: Arguments): String
   def process(arguments: Arguments, context: ExecutionContext): Unit
+
+  def validate(arguments: Map[String, JsValue]): Seq[String] = 
+    parameters.flatMap { parameter => 
+      arguments.get(parameter.id) match {
+        case Some(argument) => parameter.validate(argument)
+        case None if parameter.required => Seq(s"Missing argument $parameter.id")
+        case None => Seq()
+      }
+    }
   def encodeArguments(
       arguments: Map[String, Any], 
       base: Map[String, JsValue] = Map.empty

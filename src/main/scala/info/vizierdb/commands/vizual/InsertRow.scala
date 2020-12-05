@@ -10,7 +10,7 @@ object InsertRow extends VizualCommand
     IntParameter(id = "position", name = "Position", required = false),
   )
   def format(arguments: Arguments): String = 
-    s"INSERT ROW INTO DATASET ${arguments.pretty("dataset")} AT POSITION ${arguments.get[Int]("position")}"
+    s"INSERT ROW INTO DATASET ${arguments.get[String]("dataset")} AT POSITION ${arguments.get[Int]("position")}"
 
   def script(arguments: Arguments, context: ExecutionContext) = 
     Seq(

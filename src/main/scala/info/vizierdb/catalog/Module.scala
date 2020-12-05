@@ -162,6 +162,15 @@ object Module
     arguments: JsObject
   )(implicit session: DBSession): Module =
   {    
+    val command = 
+      Commands.getOption(packageId, commandId)
+              .getOrElse { 
+                throw new VizierException(s"Invalid Command $packageId.$commandId")
+              }
+    val argErrors = command.validate(arguments.value.toMap)
+    if(!argErrors.isEmpty){
+      throw new VizierException(s"Error in command: $packageId.$commandId($arguments)\n${argErrors.mkString("\n")}")
+    }
     get(
       withSQL {
         logger.trace(s"Creating Module: ${packageId}.${commandId}(${arguments})")
