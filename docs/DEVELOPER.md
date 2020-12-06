@@ -217,3 +217,10 @@ Clone Cell
 
 Currently, the heavy asynchronous lifting is done by Java's `ForkJoinPool` and `ForkJoinTask` (which is subclassed by `Scheduler.WorkflowExecution`).  These iteratively identify the next `Cell` for execution, and then call `Scheduler.processSynchronously`, which loads all relevant context, allocates a `Result` object, and invokes the appropriate `Command` handler.
 
+-----
+
+The last thing in this package is the `MutableProject` class.  This is mainly meant for testing purposes, but kind of acts like a "client" wrapper for `Catalog`.  It's not really complete, but is meant to abstract away some of the immutability of the append-only catalog model.
+
+#### `src/main/scala/info/vizierdb/api`
+
+This package includes all of the handlers referenced in `VizierAPI`.  These adopt the API handler model used by `mimir-api`.  Nothing super fancy here.
