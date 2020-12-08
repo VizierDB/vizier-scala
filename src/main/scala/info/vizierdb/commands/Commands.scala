@@ -86,6 +86,8 @@ object Commands
   )
 
   register(packageId = "mimir", name = "Lenses", category = "mimir")(
-    "repair_key"   -> info.vizierdb.commands.mimir.RepairKey,
+    "repair_key"    -> info.vizierdb.commands.mimir.RepairKey,
+    "missing_value" -> info.vizierdb.commands.mimir.MissingValue,
+    "missing_key"   -> info.vizierdb.commands.mimir.RepairSequence,
   )
 }

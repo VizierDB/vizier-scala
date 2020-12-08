@@ -3,7 +3,7 @@ package info.vizierdb
 import scalikejdbc._
 import java.sql.DriverManager
 
-import org.mimirdb.api.{ MimirAPI, InitSpark }
+import org.mimirdb.api.{ MimirAPI, InitSpark, MimirConfig }
 import org.mimirdb.data.{ JDBCMetadataBackend => MimirJDBC, Catalog => MimirCatalog }
 
 import info.vizierdb.types._
@@ -43,10 +43,17 @@ object Vizier
     MimirAPI.metadata = new MimirJDBC("sqlite", new File(basePath, db).toString)
     MimirAPI.catalog = new MimirCatalog(
       MimirAPI.metadata,
-      new LocalFSStagingProvider(stagingDirectory),
+      new LocalFSStagingProvider(new File(basePath, stagingDirectory).toString),
       MimirAPI.sparkSession
     )
     MimirAPI.runServer(MimirAPI.DEFAULT_API_PORT) // Starts the Mimir server **in the background**
+    MimirAPI.conf = 
+      new MimirConfig(Seq(
+        "--python", info.vizierdb.commands.python.PythonProcess.PYTHON_COMMAND,
+        "--data-dir", new File(basePath, "mimir_data").toString,
+        "--staging-dir", new File(basePath, stagingDirectory).toString
+      ))
+    MimirAPI.conf.verify
   }
 
   def initORMLogging()
