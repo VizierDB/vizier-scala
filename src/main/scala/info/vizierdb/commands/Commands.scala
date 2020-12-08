@@ -83,6 +83,7 @@ object Commands
     "projection"   -> info.vizierdb.commands.vizual.FilterColumns,
     "renameColumn" -> info.vizierdb.commands.vizual.RenameColumn,
     "renameDataset"-> info.vizierdb.commands.vizual.RenameDataset,
+    "updateCell"   -> info.vizierdb.commands.vizual.UpdateCell,
   )
 
   register(packageId = "mimir", name = "Lenses", category = "mimir")(

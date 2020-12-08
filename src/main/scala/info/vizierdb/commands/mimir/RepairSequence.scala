@@ -4,6 +4,7 @@ import play.api.libs.json._
 import info.vizierdb.commands._
 import org.apache.spark.sql.types.StructField
 import org.mimirdb.lenses.implementation.MissingKeyLensConfig
+import org.apache.spark.sql.types.{ ShortType, IntegerType, LongType }
 
 object RepairSequence 
   extends LensCommand
@@ -27,6 +28,12 @@ object RepairSequence
     val high = arguments.getOpt[Long]("high")
     val step = arguments.getOpt[Long]("step")
     val field = schema(arguments.get[Int]("column"))
+
+    field.dataType match {
+      case ShortType | IntegerType | LongType => ()
+      case _ => 
+        throw new IllegalArgumentException(s"The key column should be an integer type and not ${field.dataType.prettyJson}")
+    }
 
     if(low.isDefined && high.isDefined && step.isDefined){
       Json.toJson(MissingKeyLensConfig(key = field.name, t = field.dataType, 
