@@ -8,16 +8,17 @@ import org.mimirdb.lenses.implementation.{
   MissingValueLensConfig,
   MissingValueImputerConfig
 }
+import org.mimirdb.lenses.Lenses
 
 object MissingValue
   extends LensCommand
 {
   def name = "Impute Missing Values"
-  def lens = "missing_value"
+  def lens = Lenses.missingValue
 
   def lensParameters: Seq[Parameter] = Seq(
     ListParameter(id = "columns", name = "Columns", components = Seq(
-      ColIdParameter(id = "column", name = "Column"),
+      TemplateParameters.COLUMN,
       EnumerableParameter(id = "model", name = "Model", values = EnumerableValue.withNames(
         "<Pick One For Me>"      -> s"__PICKONE__",
         "Mean"                   -> "MeanMedianImputer/mean",

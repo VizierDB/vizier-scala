@@ -5,15 +5,16 @@ import info.vizierdb.commands._
 import org.apache.spark.sql.types.StructField
 import org.mimirdb.lenses.implementation.MissingKeyLensConfig
 import org.apache.spark.sql.types.{ ShortType, IntegerType, LongType }
+import org.mimirdb.lenses.Lenses
 
 object RepairSequence 
   extends LensCommand
 {
   def name = "Repair Sequence"
-  def lens = "missing_key"
+  def lens = Lenses.missingKey
 
   def lensParameters: Seq[Parameter] = Seq(
-    ColIdParameter(id = "column", name = "Column"),
+    TemplateParameter.COLUMN,
     IntParameter(id = "low", name = "Low Value (optional)", required = false),
     IntParameter(id = "high", name = "High Value (optional)", required = false),
     IntParameter(id = "step", name = "Step Size (optional)", required = false),

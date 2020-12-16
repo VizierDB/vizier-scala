@@ -30,21 +30,7 @@ object LoadDataset
       "Parquet"      -> "parquet",
       "ORC"          -> "orc",
     ), default = Some(0)),
-    ListParameter(name = "Schema (leave blank to guess)", id = "schema", required = false, components = Seq(
-      StringParameter(name = "Column Name", id = "schema_column", required = false),
-      EnumerableParameter(name = "Data Type", id = "schema_datatype", required = false, values = EnumerableValue.withNames(
-        "String"         -> "string",
-        "Real"           -> "real",
-        "Float"          -> "float",
-        "Bool"           -> "boolean",
-        "16-bit Integer" -> "short",
-        "32-bit Integer" -> "int",
-        "64-bit Integer" -> "long",
-        "1 Byte"         -> "byte",
-        "Date"           -> "date",
-        "Date+Time"      -> "timestamp",
-      ), default = Some(0))
-    )),
+    TemplateParameters.SCHEMA,
     BooleanParameter(name = "Guess Types", id = "loadInferTypes", default = Some(false)),
     BooleanParameter(name = "File Has Headers", id = "loadDetectHeaders", default = Some(false)),
     BooleanParameter(name = "Annotate Load Errors", id = "loadDataSourceErrors", default = Some(false)),
