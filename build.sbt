@@ -90,8 +90,67 @@ pomExtra := <url>http://vizierdb.info</url>
 
 publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
+///////////////////////////////////////////
+/////// Build a release
+///////////////////////////////////////////
+lazy val bootstrap = taskKey[Unit]("Generate Bootstrap Jar")
+bootstrap := {
+  import scala.sys.process._
+  import java.nio.file.{ Files, Paths }
 
+  val logger = ProcessLogger(println(_), println(_))
+  val coursier_bin = "bin/coursier"
+  val coursier_url = "https://git.io/coursier-cli"
+  val mimir_bin = "bin/mimir"
+  if(!Files.exists(Paths.get("bin/coursier"))){
+
+    println("Downloading Coursier...")
+    Process(List(
+      "curl", "-L",
+      "-o", coursier_bin,
+      coursier_url
+    )) ! logger match {
+      case 0 => 
+      case n => sys.error(s"Could not download Coursier")
+    }
+    Process(List(
+      "chmod", "+x", coursier_bin
+    )) ! logger
+    println("... done")
+  }
+
+  println("Coursier available.  Generating Repository List")
+
+  val resolverArgs = resolvers.value.map { 
+    case r: MavenRepository => Seq("-r", r.root)
+  }.flatten
+
+  val (art, file) = packagedArtifact.in(Compile, packageBin).value
+  val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+)$", "")
+  val full_artifact_name = s"${organization.value}:${qualified_artifact_name}:${version.value}"
+  println("Rendering bootstraps for "+full_artifact_name)
+  for(resolver <- resolverArgs){
+    println("  "+resolver)
+  }
+  println
+  println("Generating Vizier binary")
+
+  Process(List(
+    coursier_bin,
+    "bootstrap",
+    full_artifact_name,
+    "-f",
+    "-o", "bin/mimir",
+    "-r", "central"
+  )++resolverArgs) ! logger match {
+      case 0 => 
+      case n => sys.error(s"Bootstrap failed")
+  }
+  
+}
+///////////////////////////////////////////
 /////// Helpful command to get dependencies
+///////////////////////////////////////////
 lazy val checkout = taskKey[Unit]("Check Out Dependencies")
 checkout := {
   import java.lang.ProcessBuilder
