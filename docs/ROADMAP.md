@@ -35,7 +35,7 @@
     - [x] "Fix Sequence" (missing_key)
     - [x] "Merge Columns" (picker)
     - [x] "Detect Field Types" (type_inference)
-    - [ ] "Shape Detector" (shape_watcher)
+    - [x] "Shape Detector" (shape_watcher)
     - [ ] "Comment Lens" (comment)
     - [ ] "Pivot" (pivot)
     - [ ] "Shred" (shred)

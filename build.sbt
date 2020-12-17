@@ -4,8 +4,9 @@ organization := "info.vizierdb"
 scalaVersion := "2.12.10"
 
 // Project and subprojects
-lazy val core = (project in file(".")).dependsOn(mimir)
-lazy val mimir = (project in file("mimir"))
+lazy val vizier = (project in file(".")).dependsOn(mimir, caveats)
+lazy val mimir = (project in file("upstream/mimir")).dependsOn(caveats)
+lazy val caveats = (project in file("upstream/caveats"))
 
 // Make the UX work in SBT
 fork := true
@@ -88,3 +89,50 @@ pomExtra := <url>http://vizierdb.info</url>
 // your own local ivy cache
 
 publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
+
+
+/////// Helpful command to get dependencies
+lazy val checkout = taskKey[Unit]("Check Out Dependencies")
+checkout := {
+  import java.lang.ProcessBuilder
+  import java.nio.file.{ Files, Paths }
+
+  val upstream = Paths.get("upstream")
+  if(!Files.exists(upstream)){
+    Files.createDirectory(upstream)
+  }
+  Seq(
+    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"      , "ui"     ), 
+    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"     , "mimir"  ),
+    ("Caveats"  , "git@github.com:UBOdin/mimir-caveatgs.git", "caveats"),
+  ).foreach { case (name, repo, stub) => 
+    val dir = upstream.resolve(stub)
+    if(!Files.exists(dir.resolve(".git"))){
+      println(s"Checking out $name into $dir")
+      if(!Files.exists(dir)){
+        new ProcessBuilder("git", "clone", repo, dir.toString)
+              .start
+              .waitFor
+      } else { 
+        // need a little bit of a hack since SBT creates project directories with 
+        // a target folder automatically -- a straight checkout fails due to 
+        // non-empty repo
+        new ProcessBuilder("git", "init", dir.toString)
+              .start
+              .waitFor
+        new ProcessBuilder("git", "remote", "add", "origin", repo)
+              .directory(dir.toFile)
+              .start
+              .waitFor
+        new ProcessBuilder("git", "pull", "origin", "master")
+              .directory(dir.toFile)
+              .start
+              .waitFor
+      }
+      
+    } else { 
+      println(s"$name already checked out")
+    }
+  }
+
+}
