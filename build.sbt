@@ -99,10 +99,10 @@ bootstrap := {
   import java.nio.file.{ Files, Paths }
 
   val logger = ProcessLogger(println(_), println(_))
-  val coursier_bin = "bin/coursier"
+  val coursier_bin = "upstream/coursier"
   val coursier_url = "https://git.io/coursier-cli"
   val mimir_bin = "bin/mimir"
-  if(!Files.exists(Paths.get("bin/coursier"))){
+  if(!Files.exists(Paths.get(coursier_bin))){
 
     println("Downloading Coursier...")
     Process(List(
@@ -140,7 +140,7 @@ bootstrap := {
     "bootstrap",
     full_artifact_name,
     "-f",
-    "-o", "bin/mimir",
+    "-o", mimir_bin,
     "-r", "central"
   )++resolverArgs) ! logger match {
       case 0 => 
