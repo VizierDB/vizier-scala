@@ -1,6 +1,0 @@
-[submodule "ui"]
-	path = ui
-	url = git@github.com:VizierDB/web-ui.git
-[submodule "mimir"]
-	path = mimir
-	url = git@github.com:UBOdin/mimir-api.git

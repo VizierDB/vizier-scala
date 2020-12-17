@@ -14,7 +14,7 @@ object RepairSequence
   def lens = Lenses.missingKey
 
   def lensParameters: Seq[Parameter] = Seq(
-    TemplateParameter.COLUMN,
+    TemplateParameters.COLUMN,
     IntParameter(id = "low", name = "Low Value (optional)", required = false),
     IntParameter(id = "high", name = "High Value (optional)", required = false),
     IntParameter(id = "step", name = "Step Size (optional)", required = false),

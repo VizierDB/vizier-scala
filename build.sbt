@@ -3,6 +3,10 @@ version := "0.1-SNAPSHOT"
 organization := "info.vizierdb"
 scalaVersion := "2.12.10"
 
+// Project and subprojects
+lazy val core = (project in file(".")).dependsOn(mimir)
+lazy val mimir = (project in file("mimir"))
+
 // Make the UX work in SBT
 fork := true
 outputStrategy in run := Some(StdoutOutput)
@@ -17,6 +21,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 // Specs2 Requirement:
 scalacOptions in Test ++= Seq("-Yrangepos")
+
 
 // Support Test Resolvers
 resolvers += "MimirDB" at "https://maven.mimirdb.info/"
