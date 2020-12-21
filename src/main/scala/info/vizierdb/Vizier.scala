@@ -84,6 +84,7 @@ object Vizier
     println("Starting Server...")
     VizierAPI.init()
     println("... Server running!")
+    println(s" Launch Vizier By Going to < ${VizierAPI.urls.ui} >")
     VizierAPI.server.join()
   }
 }

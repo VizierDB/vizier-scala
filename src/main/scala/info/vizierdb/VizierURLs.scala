@@ -5,7 +5,8 @@ import java.net.URLEncoder
 import info.vizierdb.types.Identifier
 
 class VizierURLs(
-  base: URL,
+  val ui: URL,
+  val base: URL,
   api: Option[URL]
 )
 {

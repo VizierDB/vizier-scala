@@ -43,8 +43,8 @@ excludeDependencies ++= Seq(
 // Custom Dependencies
 libraryDependencies ++= Seq(
   // Mimir
-  "org.mimirdb"                   %% "mimir-api"                        % "0.2-SNAPSHOT",
-  "org.mimirdb"                   %% "mimir-caveats"                    % "0.2.8",
+  "org.mimirdb"                   %% "mimir-api"                        % "0.2",
+  "org.mimirdb"                   %% "mimir-caveats"                    % "0.2.9",
 
   // Catalog management (trying this out... might be good to bring into mimir-api as well)
   // "org.squeryl"                   %% "squeryl"                   % "0.9.15",
@@ -88,7 +88,33 @@ pomExtra := <url>http://vizierdb.info</url>
 // use `sbt publish` to update the package in 
 // your own local ivy cache
 
-publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
+publishTo := Some(Resolver.file("file",  new File("/var/www/maven_repo/")))
+// publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
+
+///////////////////////////////////////////
+/////// Build and update the UI
+///////////////////////////////////////////
+lazy val buildUI = taskKey[Unit]("Build the UI")
+buildUI := {
+  import java.lang.ProcessBuilder
+  import java.nio.file.{ Files, Paths }
+
+  val sourceDir = Paths.get("upstream/ui")
+  val source = sourceDir.resolve("build")
+  val target = Paths.get("src/main/resources/ui")
+
+  new ProcessBuilder("yarn", "build")
+        .directory(sourceDir.toFile)
+        .start
+        .waitFor
+  
+  if(Files.exists(target)){
+    new ProcessBuilder("rm", "-r", target.toString)
+          .start
+          .waitFor
+  }
+  Files.move(source, target)
+}
 
 ///////////////////////////////////////////
 /////// Build a release

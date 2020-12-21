@@ -1,0 +1,12 @@
+
+test:
+  stage: test
+  script:
+    - sbt test
+
+deploy:
+  stage: deploy
+  only: 
+    - master
+  script:
+    - sbt +publish

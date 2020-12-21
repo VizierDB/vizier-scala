@@ -49,7 +49,7 @@ object VizierAPI
   var urls: VizierURLs = null
   var started: LocalDateTime = null
 
-  lazy val WEB_UI_URL = getClass().getClassLoader().getResource("web-ui")
+  lazy val WEB_UI_URL = getClass().getClassLoader().getResource("ui")
 
   def init(port: Int = DEFAULT_PORT, path: File = Vizier.basePath)
   {
@@ -87,7 +87,11 @@ object VizierAPI
       context.addServlet(webUI, "/*")
     }
 
-    urls = new VizierURLs(new URL(s"http://localhost:$port/vizier-db/api/v1/"), None)
+    urls = new VizierURLs(
+      ui = new URL(s"http://localhost:$port/"),
+      base = new URL(s"http://localhost:$port/vizier-db/api/v1/"),
+      api = None
+    )
     server.start()
     // server.dump(System.err)
     started = LocalDateTime.now()
