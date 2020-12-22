@@ -70,6 +70,22 @@ object Scheduler
   }
 
   /**
+   * A list of currently running workflows
+   */
+  def running(implicit session: DBSession): Seq[Workflow] =
+  {
+    this.synchronized {
+      runningWorkflows
+        .filterNot { _._2.isDone() }
+        .map { _._1 }
+        .toSeq
+    }.map { 
+      Workflow.get(_)
+    }
+  }
+
+
+  /**
    * Free resources associated with the specified workflow if they are no longer needed.
    */
   def cleanup(workflowId: Identifier)

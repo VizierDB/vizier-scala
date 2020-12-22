@@ -58,6 +58,6 @@ trait LensCommand
       context.updateJsonArguments(updates.toSeq:_*)
     }
 
-    context.message(s"Created Lens on  $datasetName")
+    context.message(s"Created $name Lens on $datasetName")
   }
 }

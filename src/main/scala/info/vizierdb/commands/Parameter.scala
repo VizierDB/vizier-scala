@@ -376,7 +376,32 @@ case class ScalarParameter(
                                else { Some(s"Expected a number for $name") }
 }
 
+/**
+ * One option for the EnumerableParameter
+ * 
+ * e.g., Create a list of these with
+ * ```
+ * EnumerableValue.withNames(
+ *   key1 -> "Description 1",
+ *   key2 -> "Description 2",
+ *   ...
+ * )
+ * ```
+ */
 case class EnumerableValue(text: String, value: String)
+
+/**
+ * One option for the EnumerableParameter
+ * 
+ * e.g., Create a list of these with
+ * ```
+ * EnumerableValue.withNames(
+ *   key1 -> "Description 1",
+ *   key2 -> "Description 2",
+ *   ...
+ * )
+ * ```
+ */
 object EnumerableValue
 {
   def withNames(textAndValue:(String, String)*): Seq[EnumerableValue] = 

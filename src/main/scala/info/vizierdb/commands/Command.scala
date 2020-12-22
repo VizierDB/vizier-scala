@@ -47,7 +47,7 @@ trait Command
     val saneArguments = 
       arguments.as[Seq[Map[String,JsValue]]]
                .map { arg => 
-                 arg("id").as[String] -> arg("value")
+                 arg("id").as[String] -> arg.getOrElse("value", JsNull)
                }
                .toMap
 

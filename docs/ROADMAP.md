@@ -1,17 +1,16 @@
 
-
-## Vizier 0.3
-- [ ] Lightweight Spark Runtime
-
 ## Vizier 0.2
+- [ ] Lightweight Spark Runtime
 - [ ] "Scala Script" (code)
 - [ ] The final lenses
-    - [ ] "Comment Lens" (comment)
-    - [ ] "Pivot" (pivot)
-    - [ ] "Shred" (shred)
-    - [ ] "Geocode" (geocode)
+    - [x] "Comment Lens" (comment)
+    - [x] "Pivot" (pivot)
+    - [x] "Geocode" (geocode)
 - [ ] Minor Bugs
     - [x] "Font MIME encoding"
+- [ ] Lens Families
+    - [ ] Shape Detector Lens
+- [ ] Copyright Comments
 
 ## Vizier 0.1
 - [x] Set up a simple, naive background worker (Java's ForkJoinPool.)

@@ -1,6 +1,7 @@
 package info.vizierdb.commands
 
 import play.api.libs.json._
+import info.vizierdb.VizierException
 
 object Commands
 {
@@ -11,7 +12,10 @@ object Commands
     packages.get(packageId)
             .flatMap { _.getOption(commandId) }
   def get(packageId: String, commandId: String): Command =
-    getOption(packageId, commandId).get
+    getOption(packageId, commandId)
+          .getOrElse {
+            throw new VizierException(s"Unknown Command '$packageId.$commandId'")
+          }
 
   def register(packageId: String, name: String, category: String)(commands: (String, Command)*): Unit =
   {
@@ -92,6 +96,9 @@ object Commands
     "missing_key"    -> info.vizierdb.commands.mimir.RepairSequence,
     "picker"         -> info.vizierdb.commands.mimir.MergeColumns,
     "type_inference" -> info.vizierdb.commands.mimir.TypeInference,
-    "shape_watcher"  -> info.vizierdb.commands.mimir.DatasetShapeWatcher,
+    "shape_watcher"  -> info.vizierdb.commands.mimir.ShapeWatcher,
+    "comment"        -> info.vizierdb.commands.mimir.Comment,
+    "pivot"          -> info.vizierdb.commands.mimir.Pivot,
+    "geocode"        -> info.vizierdb.commands.mimir.Geocode
   )
 }

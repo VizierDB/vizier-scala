@@ -462,6 +462,10 @@ object VizierServlet
           respond(
             GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File(Some(subpath.substring(1/* trim off leading '/'*/)))) // retrieve the specified file
           )
+        case "/tasks" | TASK("") =>
+          respond(
+            GET -> process(ListTasks)
+          )
         case TASK(taskId) =>
           ??? // update the state of a running task
         case _ => fourOhFour(req, output)
