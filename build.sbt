@@ -1,6 +1,3 @@
-name := "vizier" 
-version := "0.1-SNAPSHOT"
-organization := "info.vizierdb"
 scalaVersion := "2.12.10"
 
 val MIMIR_VERSION = "0.2"
@@ -9,19 +6,26 @@ val CAVEATS_VERSION = "0.2.9"
 // Project and subprojects
 lazy val vizier = (project in file("."))
                       .dependsOn(
-                        mimir   % "compile->compile", 
-                        caveats % "compile->compile"
+                        mimir, 
+                        caveats
+                      )
+                      .settings(
+                        name := "vizier",
+                        version := "0.1-SNAPSHOT",
+                        organization := "info.vizierdb"
                       )
 lazy val mimir = (project in file("upstream/mimir"))
                       .dependsOn(
-                        caveats % "compile->compile"
+                        caveats
                       )
                       .settings(
-                        version := MIMIR_VERSION
+                        version := MIMIR_VERSION,
+                        organization := "remove-me"
                       )
 lazy val caveats = (project in file("upstream/caveats"))
                       .settings(
-                        version := CAVEATS_VERSION
+                        version := CAVEATS_VERSION,
+                        organization := "remove-me"
                       )
 
 // Make the UX work in SBT
@@ -100,6 +104,16 @@ pomExtra := <url>http://vizierdb.info</url>
     <connection>scm:git:git@github.com:vizierdb/vizier-scala.git</connection>
   </scm>
 
+// pomPostProcess := { (node: Node) => 
+//   val deleteInternalDeps = new RewriteRule { 
+//     case elem: Elem if elem.label.equals("d")
+//   }
+//   for(deps <- (node \\ "dependencies")) {
+//     deps.filter { }
+
+//   }
+// }
+
 /////// Publishing Options ////////
 // use `sbt publish` to update the package in 
 // your own local ivy cache
@@ -164,7 +178,10 @@ bootstrap := {
   println("Coursier available.  Generating Repository List")
 
   val resolverArgs = resolvers.value.map { 
-    case r: MavenRepository => Seq("-r", r.root)
+    case r: MavenRepository => 
+      if(!r.root.startsWith("file:")){
+        Seq("-r", r.root)
+      } else { Seq() }
   }.flatten
 
   val (art, file) = packagedArtifact.in(Compile, packageBin).value
@@ -177,14 +194,17 @@ bootstrap := {
   println
   println("Generating Vizier binary")
 
-  Process(List(
+  val cmd = List(
     coursier_bin,
     "bootstrap",
     full_artifact_name,
     "-f",
     "-o", vizier_bin,
     "-r", "central"
-  )++resolverArgs) ! logger match {
+  )++resolverArgs
+  println(cmd.mkString(" "))
+
+  Process(cmd) ! logger match {
       case 0 => 
       case n => sys.error(s"Bootstrap failed")
   }
