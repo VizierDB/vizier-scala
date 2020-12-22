@@ -3,10 +3,26 @@ version := "0.1-SNAPSHOT"
 organization := "info.vizierdb"
 scalaVersion := "2.12.10"
 
+val MIMIR_VERSION = "0.2"
+val CAVEATS_VERSION = "0.2.9"
+
 // Project and subprojects
-lazy val vizier = (project in file(".")).dependsOn(mimir, caveats)
-lazy val mimir = (project in file("upstream/mimir")).dependsOn(caveats)
+lazy val vizier = (project in file("."))
+                      .dependsOn(
+                        mimir   % "compile->compile", 
+                        caveats % "compile->compile"
+                      )
+lazy val mimir = (project in file("upstream/mimir"))
+                      .dependsOn(
+                        caveats % "compile->compile"
+                      )
+                      .settings(
+                        version := MIMIR_VERSION
+                      )
 lazy val caveats = (project in file("upstream/caveats"))
+                      .settings(
+                        version := CAVEATS_VERSION
+                      )
 
 // Make the UX work in SBT
 fork := true
@@ -43,8 +59,8 @@ excludeDependencies ++= Seq(
 // Custom Dependencies
 libraryDependencies ++= Seq(
   // Mimir
-  "org.mimirdb"                   %% "mimir-api"                        % "0.2",
-  "org.mimirdb"                   %% "mimir-caveats"                    % "0.2.9",
+  "org.mimirdb"                   %% "mimir-api"                        % MIMIR_VERSION,
+  "org.mimirdb"                   %% "mimir-caveats"                    % CAVEATS_VERSION,
 
   // Catalog management (trying this out... might be good to bring into mimir-api as well)
   // "org.squeryl"                   %% "squeryl"                   % "0.9.15",
@@ -127,7 +143,7 @@ bootstrap := {
   val logger = ProcessLogger(println(_), println(_))
   val coursier_bin = "upstream/coursier"
   val coursier_url = "https://git.io/coursier-cli"
-  val mimir_bin = "bin/mimir"
+  val vizier_bin = "bin/vizier"
   if(!Files.exists(Paths.get(coursier_bin))){
 
     println("Downloading Coursier...")
@@ -166,7 +182,7 @@ bootstrap := {
     "bootstrap",
     full_artifact_name,
     "-f",
-    "-o", mimir_bin,
+    "-o", vizier_bin,
     "-r", "central"
   )++resolverArgs) ! logger match {
       case 0 => 
