@@ -1,3 +1,19 @@
+
+
+## Vizier 0.3
+- [ ] Lightweight Spark Runtime
+
+## Vizier 0.2
+- [ ] "Scala Script" (code)
+- [ ] The final lenses
+    - [ ] "Comment Lens" (comment)
+    - [ ] "Pivot" (pivot)
+    - [ ] "Shred" (shred)
+    - [ ] "Geocode" (geocode)
+- [ ] Minor Bugs
+    - [x] "Font MIME encoding"
+
+## Vizier 0.1
 - [x] Set up a simple, naive background worker (Java's ForkJoinPool.)
 - [x] Link to Mimir-API
     - [x] "Load Dataset" (load)
@@ -10,10 +26,8 @@
 - [x] File Upload/Download
 - [x] Implement sub-process execution
     - [x] "Python Script" (code)
-    - [ ] "Scala Script" (code)
-    - [ ] "R Script" (code)
 - [x] "Markdown Code" (code)
-- [ ] Import remaining Vizier packages
+- [x] Import remaining Vizier packages
     - [x] "Simple Chart" (chart)
     - [x] "Basic Sample" (basic_sample)
     - [x] "Manually Stratified Sample" (manual_stratified_sample)
@@ -36,7 +50,3 @@
     - [x] "Merge Columns" (picker)
     - [x] "Detect Field Types" (type_inference)
     - [x] "Shape Detector" (shape_watcher)
-    - [ ] "Comment Lens" (comment)
-    - [ ] "Pivot" (pivot)
-    - [ ] "Shred" (shred)
-    - [ ] "Geocode" (geocode)

@@ -105,16 +105,25 @@ object VizierUIServlet
   {
     try {
       var components = req.getPathInfo.split("/")
+      // Strip the leading /
       if(components.headOption.equals(Some(""))){
         components = components.tail
       }
+      // Ensure that we have at least one element
       if(components.isEmpty) {
         components = Array("")
       }
+      // Redirect meta-URLs to the standard react index page.
+      if(components(0).equals("projects")) {
+        components = Array("")
+      }
+      // Redirect empty paths to the relevant index
       if(components.last.equals("")){
         components.update(components.size - 1, "index.html")
-      } else 
+      } 
+      // Strip out directory cheats
       components = components.filterNot { _.startsWith(".") }
+      // Static files are stored in resources/ui
       components = "ui" +: components
 
       val resourcePath = components.mkString("/")
@@ -270,191 +279,197 @@ object VizierServlet
       }
     }
 
-    req.getPathInfo match {
-      case "/" => 
-        respond(
-          GET -> process(ServiceDescriptorRequest()) // service descriptor
-        )
-      case "/projects" => 
-        respond(
-          GET -> process(ListProjectsRequest()) // list projects
-          ,
-          POST -> processJson[CreateProject]() // create a new project
-        )
+    try {
+      req.getPathInfo match {
+        case "/" => 
+          respond(
+            GET -> process(ServiceDescriptorRequest()) // service descriptor
+          )
+        case "/projects" => 
+          respond(
+            GET -> process(ListProjectsRequest()) // list projects
+            ,
+            POST -> processJson[CreateProject]() // create a new project
+          )
 
-      case "/reload" => 
-        respond(
-          POST -> process(ReloadRequest) // clear caches
-        )
+        case "/reload" => 
+          respond(
+            POST -> process(ReloadRequest) // clear caches
+          )
 
 
-      case "/projects/import" => 
-        ??? // import a project
-      case PROJECT(projectId, "/export") => 
-        ??? // export project
+        case "/projects/import" => 
+          ??? // import a project
+        case PROJECT(projectId, "/export") => 
+          ??? // export project
 
-      case PROJECT(projectId, "") => 
-        respond(
-          GET -> process(GetProjectRequest(projectId.toLong)) // export project
-          ,
-          POST -> processJson[UpdateProject]("projectId" -> projectId.toLong) // update the project properties
-          ,
-          DELETE -> process(DeleteProject(projectId.toLong)) // delete the project
-          ,
-          PUT -> processJson[UpdateProject]("projectId" -> projectId.toLong) // update the project properties
-        )
-      case PROJECT(projectId, "/branches") => 
-        respond(
-          GET -> process(ListBranchesRequest(projectId.toLong)) // export project
-          ,
-          POST -> processJson[CreateBranch]("projectId" -> projectId.toLong) // create a branch
-        )
-      case PROJECT(projectId, BRANCH(branchId, "")) => 
-        respond(
-          GET -> process(GetBranchRequest(projectId.toLong, branchId.toLong)) // get the branch
-          ,
-          DELETE -> process(DeleteBranch(projectId.toLong, branchId.toLong)) // delete the branch
-          ,
-          PUT -> processJson[UpdateBranch]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // update the branch properties
-        )
-      case PROJECT(projectId, BRANCH(branchId, HEAD("/cancel"))) => 
-        respond(
-          POST -> process(CancelWorkflow(projectId.toLong, branchId.toLong, None)) // cancel the head workflow
-        )
-      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/cancel"))) => 
-        respond(
-          POST -> process(CancelWorkflow(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // cancel the specified workflow
-        )
-      case PROJECT(projectId, BRANCH(branchId, "/head")) => 
-        respond(
-          GET -> process(GetWorkflowRequest(projectId.toLong, branchId.toLong, None)) // get the branch head workflow
-        )
-      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, ""))) => 
-        respond(
-          GET -> process(GetWorkflowRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // get the specified workflow
-        )
-      case PROJECT(projectId, BRANCH(branchId, HEAD("/modules"))) => 
-        respond(
-          GET -> process(GetAllModulesRequest(projectId.toLong, branchId.toLong, None)) // get the specified module from the branch head
-          ,
-          POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // append a module to the branch head
-        )
-      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/modules"))) => 
-        respond(
-          GET -> process(GetAllModulesRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // get the specified module from the branch head
-          ,
-          POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "workflowId" -> workflowId.toLong) // append a module to the branch head
-        )
-      case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(modulePosition, "")))) => 
-        respond(
-          GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, None, modulePosition.toInt)) // get the specified module from the branch head
-          ,
-          POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt) // insert a module before the specified module
-          ,
-          DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, modulePosition.toInt)) // delete the specified module
-          ,
-          PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt) // replace the specified module
-        )
-      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(modulePosition, "")))) => 
-        respond(
-          GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), modulePosition.toInt))  // get the specified module
-          ,
-          POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt, "workflowId" -> workflowId.toLong) // insert a module before the specified module
-          ,
-          DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, modulePosition.toInt, Some(workflowId.toLong))) // delete the specified module
-          ,
-          PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt, "workflowId" -> workflowId.toLong) // replace the specified module
-        )
-      case PROJECT(projectId, BRANCH(branchId, HEAD("/sql"))) => 
-        respond(
-          GET -> process(WorkflowSQLRequest(projectId.toLong, branchId.toLong, None, req.getParameter("query"))) // sql query on the tail of the specified branch
-        )
-      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/sql"))) => 
-        respond(
-          GET -> process(WorkflowSQLRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), req.getParameter("query"))) // sql query on the tail of the specified branch/workflow
-        )
-      case PROJECT(projectId, "/datasets") => 
-        respond(
-          POST -> processJson[CreateDataset]("projectId" -> projectId.toLong) // create a new dataset in the data store
-        )
-      case PROJECT(projectId, DATASET(datasetId, "")) =>
-        respond(
-          GET -> process(GetArtifactRequest(
-            projectId.toLong, 
-            datasetId.toLong, 
-            expectedType = Some(ArtifactType.DATASET), 
-            offset = Option(req.getParameter("offset")).map { _.split(",")(0).toLong },
-            limit = Option(req.getParameter("limit")).map { _.toInt },
-            forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
-          )) // retrieve the specified dataset
-        )
-      case PROJECT(projectId, ARTIFACT(artifactId, "")) =>
-        respond(
-          GET -> process(GetArtifactRequest(
-            projectId.toLong, 
-            artifactId.toLong, 
-            offset = Option(req.getParameter("offset")).map { _.split(",")(0).toLong },
-            limit = Option(req.getParameter("limit")).map { _.toInt },
-            forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
-          )) // retrieve the specified dataset
-        )
-      case PROJECT(projectId, ARTIFACT(datasetId, "/annotations")) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
-                            .Annotations(
-                              columnId = Option(req.getParameter("column")).map { _.toInt },
-                              rowId = Option(req.getParameter("row"))
-                            )) // retrieve the specified dataset with annotations
-        )
-      case PROJECT(projectId, DATASET(datasetId, "/annotations")) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
-                            .Annotations(
-                              columnId = Option(req.getParameter("column")).map { _.toInt },
-                              rowId = Option(req.getParameter("row"))
-                            )) // retrieve the specified dataset with annotations
-        )
-      case PROJECT(projectId, ARTIFACT(datasetId, "/descriptor")) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary) // retrieve the specified dataset's descriptor
-        )
-      case PROJECT(projectId, DATASET(datasetId, "/descriptor")) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary) // retrieve the specified dataset's descriptor
-        )
-      case PROJECT(projectId, ARTIFACT(datasetId, "/csv")) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
-        )
-      case PROJECT(projectId, ARTIFACT(datasetId, "/csv")) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
-        )
-      case PROJECT(projectId, DATASET(datasetId, "/csv")) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
-        )
-      case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(modulePosition, CHART(chartId))))) => 
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, chartId.toLong, expectedType = Some(ArtifactType.CHART))) // get the specified module's chart
-        )
-      case PROJECT(projectId, "/files") => 
-        respond(
-          POST -> CreateFile.handler(projectId.toLong)// create a new file in the data store
-        )
-      case PROJECT(_, FILE(_, ".")) | PROJECT(_, FILE(_, "..")) =>
-        fourOhFour(req, output)
-      case PROJECT(projectId, FILE(fileId, "")) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File()) // retrieve the specified file
-        )
-      case PROJECT(projectId, FILE(fileId, subpath)) =>
-        respond(
-          GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File(Some(subpath.substring(1/* trim off leading '/'*/)))) // retrieve the specified file
-        )
-      case TASK(taskId) =>
-        ??? // update the state of a running task
-      case _ => fourOhFour(req, output)
+        case PROJECT(projectId, "") => 
+          respond(
+            GET -> process(GetProjectRequest(projectId.toLong)) // export project
+            ,
+            POST -> processJson[UpdateProject]("projectId" -> projectId.toLong) // update the project properties
+            ,
+            DELETE -> process(DeleteProject(projectId.toLong)) // delete the project
+            ,
+            PUT -> processJson[UpdateProject]("projectId" -> projectId.toLong) // update the project properties
+          )
+        case PROJECT(projectId, "/branches") => 
+          respond(
+            GET -> process(ListBranchesRequest(projectId.toLong)) // export project
+            ,
+            POST -> processJson[CreateBranch]("projectId" -> projectId.toLong) // create a branch
+          )
+        case PROJECT(projectId, BRANCH(branchId, "")) => 
+          respond(
+            GET -> process(GetBranchRequest(projectId.toLong, branchId.toLong)) // get the branch
+            ,
+            DELETE -> process(DeleteBranch(projectId.toLong, branchId.toLong)) // delete the branch
+            ,
+            PUT -> processJson[UpdateBranch]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // update the branch properties
+          )
+        case PROJECT(projectId, BRANCH(branchId, HEAD("/cancel"))) => 
+          respond(
+            POST -> process(CancelWorkflow(projectId.toLong, branchId.toLong, None)) // cancel the head workflow
+          )
+        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/cancel"))) => 
+          respond(
+            POST -> process(CancelWorkflow(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // cancel the specified workflow
+          )
+        case PROJECT(projectId, BRANCH(branchId, "/head")) => 
+          respond(
+            GET -> process(GetWorkflowRequest(projectId.toLong, branchId.toLong, None)) // get the branch head workflow
+          )
+        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, ""))) => 
+          respond(
+            GET -> process(GetWorkflowRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // get the specified workflow
+          )
+        case PROJECT(projectId, BRANCH(branchId, HEAD("/modules"))) => 
+          respond(
+            GET -> process(GetAllModulesRequest(projectId.toLong, branchId.toLong, None)) // get the specified module from the branch head
+            ,
+            POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // append a module to the branch head
+          )
+        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/modules"))) => 
+          respond(
+            GET -> process(GetAllModulesRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // get the specified module from the branch head
+            ,
+            POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "workflowId" -> workflowId.toLong) // append a module to the branch head
+          )
+        case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(modulePosition, "")))) => 
+          respond(
+            GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, None, modulePosition.toInt)) // get the specified module from the branch head
+            ,
+            POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt) // insert a module before the specified module
+            ,
+            DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, modulePosition.toInt)) // delete the specified module
+            ,
+            PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt) // replace the specified module
+          )
+        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(modulePosition, "")))) => 
+          respond(
+            GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), modulePosition.toInt))  // get the specified module
+            ,
+            POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt, "workflowId" -> workflowId.toLong) // insert a module before the specified module
+            ,
+            DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, modulePosition.toInt, Some(workflowId.toLong))) // delete the specified module
+            ,
+            PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt, "workflowId" -> workflowId.toLong) // replace the specified module
+          )
+        case PROJECT(projectId, BRANCH(branchId, HEAD("/sql"))) => 
+          respond(
+            GET -> process(WorkflowSQLRequest(projectId.toLong, branchId.toLong, None, req.getParameter("query"))) // sql query on the tail of the specified branch
+          )
+        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/sql"))) => 
+          respond(
+            GET -> process(WorkflowSQLRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), req.getParameter("query"))) // sql query on the tail of the specified branch/workflow
+          )
+        case PROJECT(projectId, "/datasets") => 
+          respond(
+            POST -> processJson[CreateDataset]("projectId" -> projectId.toLong) // create a new dataset in the data store
+          )
+        case PROJECT(projectId, DATASET(datasetId, "")) =>
+          respond(
+            GET -> process(GetArtifactRequest(
+              projectId.toLong, 
+              datasetId.toLong, 
+              expectedType = Some(ArtifactType.DATASET), 
+              offset = Option(req.getParameter("offset")).map { _.split(",")(0).toLong },
+              limit = Option(req.getParameter("limit")).map { _.toInt },
+              forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
+            )) // retrieve the specified dataset
+          )
+        case PROJECT(projectId, ARTIFACT(artifactId, "")) =>
+          respond(
+            GET -> process(GetArtifactRequest(
+              projectId.toLong, 
+              artifactId.toLong, 
+              offset = Option(req.getParameter("offset")).map { _.split(",")(0).toLong },
+              limit = Option(req.getParameter("limit")).map { _.toInt },
+              forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
+            )) // retrieve the specified dataset
+          )
+        case PROJECT(projectId, ARTIFACT(datasetId, "/annotations")) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
+                              .Annotations(
+                                columnId = Option(req.getParameter("column")).map { _.toInt },
+                                rowId = Option(req.getParameter("row"))
+                              )) // retrieve the specified dataset with annotations
+          )
+        case PROJECT(projectId, DATASET(datasetId, "/annotations")) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
+                              .Annotations(
+                                columnId = Option(req.getParameter("column")).map { _.toInt },
+                                rowId = Option(req.getParameter("row"))
+                              )) // retrieve the specified dataset with annotations
+          )
+        case PROJECT(projectId, ARTIFACT(datasetId, "/descriptor")) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary) // retrieve the specified dataset's descriptor
+          )
+        case PROJECT(projectId, DATASET(datasetId, "/descriptor")) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary) // retrieve the specified dataset's descriptor
+          )
+        case PROJECT(projectId, ARTIFACT(datasetId, "/csv")) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
+          )
+        case PROJECT(projectId, ARTIFACT(datasetId, "/csv")) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
+          )
+        case PROJECT(projectId, DATASET(datasetId, "/csv")) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
+          )
+        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(modulePosition, CHART(chartId))))) => 
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, chartId.toLong, expectedType = Some(ArtifactType.CHART))) // get the specified module's chart
+          )
+        case PROJECT(projectId, "/files") => 
+          respond(
+            POST -> CreateFile.handler(projectId.toLong)// create a new file in the data store
+          )
+        case PROJECT(_, FILE(_, ".")) | PROJECT(_, FILE(_, "..")) =>
+          fourOhFour(req, output)
+        case PROJECT(projectId, FILE(fileId, "")) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File()) // retrieve the specified file
+          )
+        case PROJECT(projectId, FILE(fileId, subpath)) =>
+          respond(
+            GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File(Some(subpath.substring(1/* trim off leading '/'*/)))) // retrieve the specified file
+          )
+        case TASK(taskId) =>
+          ??? // update the state of a running task
+        case _ => fourOhFour(req, output)
+      }
+    } catch {
+      // we should never hit this point... this indicates a bug
+      case e: Throwable => 
+        e.printStackTrace()
     }
   }
 

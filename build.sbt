@@ -1,6 +1,7 @@
 scalaVersion := "2.12.10"
 
-val MIMIR_VERSION = "0.2"
+val VIZIER_VERSION = "0.2-SNAPSHOT"
+val MIMIR_VERSION = "0.3-SNAPSHOT"
 val CAVEATS_VERSION = "0.2.9"
 
 // Project and subprojects
@@ -11,7 +12,7 @@ lazy val vizier = (project in file("."))
                       )
                       .settings(
                         name := "vizier",
-                        version := "0.1",
+                        version := VIZIER_VERSION,
                         organization := "info.vizierdb"
                       )
 lazy val mimir = (project in file("upstream/mimir"))
@@ -59,7 +60,6 @@ excludeDependencies ++= Seq(
   // Jetty shows up in infinite places with incompatible java servlet APIs
   // ExclusionRule( organization = "org.xerial"), 
   ExclusionRule( organization = "org.mortbay.jetty"), 
-  ExclusionRule( organization = "javax.servlet") ,
 )
 
 // Custom Dependencies

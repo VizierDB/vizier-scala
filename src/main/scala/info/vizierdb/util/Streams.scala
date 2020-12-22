@@ -22,7 +22,7 @@ object Streams
   {
     var b = source.read()
     val buffer = Buffer[Byte]()
-    while(b >= 1){
+    while(b >= 0){
       buffer.append(b.toByte)
       b = source.read()
     }

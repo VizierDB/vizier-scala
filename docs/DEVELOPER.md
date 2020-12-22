@@ -1,3 +1,19 @@
+## Getting Started
+
+As normal for scala development, you should have the following:
+ * Java (1.8+)
+ * SBT (1.3+)
+
+From the root of this repository, run the following:
+```
+$> sbt checkout         # Checks out upstream repositories.  Not required
+$> sbt compile          # Compiles the code
+$> sbt run              # Runs the code
+```
+
+Given how ... erm ... blazingly fast SBT is, you may want to check out [bloop](https://scalacenter.github.io/bloop/) and/or [metals](https://scalameta.org/metals/) to make things a bit faster.
+
+
 ## Gotchas
 
 If you take nothing else away from this document, read this section.  It highlights the oddities of this codebase.  These are things that will cause you grief if you try to make changes without realizing what's going on.
