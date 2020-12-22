@@ -11,7 +11,7 @@ lazy val vizier = (project in file("."))
                       )
                       .settings(
                         name := "vizier",
-                        version := "0.1-SNAPSHOT",
+                        version := "0.1",
                         organization := "info.vizierdb"
                       )
 lazy val mimir = (project in file("upstream/mimir"))

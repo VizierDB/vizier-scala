@@ -24,11 +24,13 @@ import info.vizierdb.api.response._
 import org.mimirdb.api.{ Request, Response }
 import org.mimirdb.api.request.Query
 import org.mimirdb.util.JsonUtils.stringifyJsonParseErrors
-import java.net.URL
+import java.net.{ URL, URI }
 import java.sql.Time
 import java.time.LocalDateTime
 import info.vizierdb.api._
-import com.amazonaws.services.codepipeline.model.Artifact
+import java.net.URLConnection
+import info.vizierdb.util.Streams
+import scala.io.Source
 
 object VizierAPI
 {
@@ -78,12 +80,7 @@ object VizierAPI
     }
 
     {
-      val webUI = new ServletHolder("default", new DefaultServlet)
-      webUI.setInitParameter("resourceBase", 
-        WEB_UI_URL.toExternalForm()
-      )
-      webUI.setInitParameter("dirAllowed", "true")
-      webUI.setInitParameter("pathInfoOnly", "true")
+      val webUI = new ServletHolder("default", VizierUIServlet)
       context.addServlet(webUI, "/*")
     }
 
@@ -95,6 +92,53 @@ object VizierAPI
     server.start()
     // server.dump(System.err)
     started = LocalDateTime.now()
+  }
+}
+
+object VizierUIServlet
+  extends HttpServlet
+  with LazyLogging
+{
+  lazy val CLASS_LOADER = getClass().getClassLoader()
+
+  override def doGet(req: HttpServletRequest, output: HttpServletResponse) = 
+  {
+    try {
+      var components = req.getPathInfo.split("/")
+      if(components.headOption.equals(Some(""))){
+        components = components.tail
+      }
+      if(components.isEmpty) {
+        components = Array("")
+      }
+      if(components.last.equals("")){
+        components.update(components.size - 1, "index.html")
+      } else 
+      components = components.filterNot { _.startsWith(".") }
+      components = "ui" +: components
+
+      val resourcePath = components.mkString("/")
+
+      logger.debug(s"STATIC GET: $resourcePath")
+
+      val data = getClass()
+                    .getClassLoader()
+                    .getResourceAsStream(components.mkString("/"))
+      if(data == null){
+        output.setStatus(HttpServletResponse.SC_NOT_FOUND)
+        output.getOutputStream().println("NOT FOUND")
+      } else {
+        val content = Streams.readAll(data)
+        val f = new File(resourcePath)
+        val mime = URLConnection.guessContentTypeFromName(f.getName())
+        output.setContentType(mime)
+        output.setContentLength(content.length)
+        output.getOutputStream().write(content)
+      }
+    } catch {
+      case e: Throwable => 
+        e.printStackTrace()
+    }
   }
 }
 

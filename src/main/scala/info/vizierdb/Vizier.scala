@@ -14,7 +14,7 @@ import java.io.File
 
 object Vizier
 {
-  var basePath = { val d = new File(".vizierdb"); if(!d.exists()){ d.mkdir() }; d }
+  var basePath = { val d = new File("vizier.db"); if(!d.exists()){ d.mkdir() }; d }
 
   def initSQLite(db: String = "Vizier.db") = 
   {
@@ -83,8 +83,7 @@ object Vizier
     initMimir()
     println("Starting Server...")
     VizierAPI.init()
-    println("... Server running!")
-    println(s" Launch Vizier By Going to < ${VizierAPI.urls.ui} >")
+    println(s"... Server running at < ${VizierAPI.urls.ui} >")
     VizierAPI.server.join()
   }
 }

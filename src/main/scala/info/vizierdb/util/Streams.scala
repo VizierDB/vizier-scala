@@ -1,6 +1,7 @@
 package info.vizierdb.util
 
 import java.io.{InputStream, OutputStream, BufferedInputStream}
+import scala.collection.mutable.Buffer
 
 object Streams
 {
@@ -15,6 +16,16 @@ object Streams
       } else { Thread.sleep(100) }
       readSize = in.read(buffer, 0, buffer.size)
     }
+  }
 
+  def readAll(source: InputStream): Array[Byte] =
+  {
+    var b = source.read()
+    val buffer = Buffer[Byte]()
+    while(b >= 1){
+      buffer.append(b.toByte)
+      b = source.read()
+    }
+    buffer.toArray
   }
 }
