@@ -19,12 +19,14 @@ lazy val mimir = (project in file("upstream/mimir"))
                         caveats
                       )
                       .settings(
-                        version := MIMIR_VERSION,
+                        // flag this artificial dependency so we can remove
+                        // it when generating the POM file
                         organization := "remove-me"
                       )
 lazy val caveats = (project in file("upstream/caveats"))
                       .settings(
-                        version := CAVEATS_VERSION,
+                        // flag this artificial dependency so we can remove
+                        // it when generating the POM file
                         organization := "remove-me"
                       )
 
@@ -55,7 +57,7 @@ excludeDependencies ++= Seq(
   // Hadoop brings in more logging backends.  Kill it with fire.
   ExclusionRule("org.slf4j", "slf4j-log4j12"),
   // Jetty shows up in infinite places with incompatible java servlet APIs
-  ExclusionRule( organization = "org.xerial"), 
+  // ExclusionRule( organization = "org.xerial"), 
   ExclusionRule( organization = "org.mortbay.jetty"), 
   ExclusionRule( organization = "javax.servlet") ,
 )
