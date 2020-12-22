@@ -28,6 +28,7 @@ object SharedTestResources
 
         VizierAPI.urls = 
           new VizierURLs(
+            new URL(s"http://localhost:5000/"), 
             new URL(s"http://localhost:5000/vizier-db/api/v1/"), 
             None
           )

@@ -75,12 +75,21 @@ A,B,C
       packageId = "data",
       commandId = "load",
       arguments = 
-        JsArray(StupidReactJsonMap(LoadDataset.encodeArguments(Map(
-          "file" -> FileArgument(filename = Some("R.csv"), fileid = Some(fileId)),
-          "name" -> "R",
-          "loadFormat" -> "csv",
-          "loadDetectHeaders" -> true,
-        )).as[Map[String,JsValue]]).map { Json.toJson(_) })
+        JsArray(
+          LoadDataset.encodeArguments(Map(
+            "file" -> FileArgument(filename = Some("R.csv"), fileid = Some(fileId)),
+            "name" -> "R",
+            "loadFormat" -> "csv",
+            "loadDetectHeaders" -> true,
+          )).as[Map[String,JsValue]]
+          .toSeq
+          .map { case (k, v) => 
+            Json.obj(
+              "id" -> k,
+              "value" -> v
+            )
+          }
+        )
     ).handle
 
     ok

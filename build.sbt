@@ -152,7 +152,7 @@ bootstrap := {
   }.flatten
 
   val (art, file) = packagedArtifact.in(Compile, packageBin).value
-  val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+)$", "")
+  val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+(-SNAPSHOT)?)$", "")
   val full_artifact_name = s"${organization.value}:${qualified_artifact_name}:${version.value}"
   println("Rendering bootstraps for "+full_artifact_name)
   for(resolver <- resolverArgs){
