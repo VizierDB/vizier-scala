@@ -104,15 +104,30 @@ pomExtra := <url>http://vizierdb.info</url>
     <connection>scm:git:git@github.com:vizierdb/vizier-scala.git</connection>
   </scm>
 
-// pomPostProcess := { (node: Node) => 
-//   val deleteInternalDeps = new RewriteRule { 
-//     case elem: Elem if elem.label.equals("d")
-//   }
-//   for(deps <- (node \\ "dependencies")) {
-//     deps.filter { }
-
-//   }
-// }
+// The upstream components pose a slight annoyance here.  If they're checked
+// out already, then the POM file gets generated properly, using the appropriate
+// build.sbt settings from those projects.  However, if not, then we end up
+// defaulting to settings from *this* file.  OTOH, there doesn't seem to be a 
+// way to incorporate upstream classpaths without marking them as an explicit
+// dependency.  ANNOYING!  To avoid having to check-out upstream packages on 
+// the build server, we just give the "default" package settings a dummy groupId
+// and strip them out of the automatically derived dependencies here.
+import scala.xml.{ Node => XNode }
+pomPostProcess := { (node:XNode) => 
+  import scala.xml._
+  import scala.xml.transform._
+  val stripLocalDependencies = new RewriteRule { 
+    override def transform(n: Node): Seq[Node] = 
+    {
+      if(n.label.equals("dependency")){
+        if( (n \ "groupId").text.equals("remove-me") ){
+          Seq() // ~= remove this dependency
+        } else { n }
+      } else { n }
+    }
+  }
+  (new RuleTransformer(stripLocalDependencies)).transform(node).head
+}
 
 /////// Publishing Options ////////
 // use `sbt publish` to update the package in 
