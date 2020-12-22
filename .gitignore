@@ -2,7 +2,7 @@
 .bloop
 /project
 /target
-/.vizierdb
+/vizier.db
 /upstream
 /.bsp
 __pycache__

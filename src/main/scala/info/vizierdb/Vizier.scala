@@ -16,7 +16,7 @@ object Vizier
 {
   var basePath = { val d = new File("vizier.db"); if(!d.exists()){ d.mkdir() }; d }
 
-  def initSQLite(db: String = "Vizier.db") = 
+  def initSQLite(db: String = "vizier.db") = 
   {
     // Instead of using the default SQLite driver, we're going to use the following workaround.
     // Specifically, The SQLite driver doesn't like it when you change the READ-ONLY status of a 
