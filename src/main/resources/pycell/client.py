@@ -445,9 +445,9 @@ class VizierDBClient(object):
                       bucket: str,
                       folder: str,
                       file: str,
-                      line_extracter: Callable[[re.Match, str], Tuple[str, str]]
+                      line_extracter: Callable[["re.Match", str], Tuple[str, str]]
                         = lambda rematch, line: ('col0', line),
-                      additional_col_gen: Optional[Callable[[re.Match, str], Tuple[str, str]]] = None,
+                      additional_col_gen: Optional[Callable[["re.Match", str], Tuple[str, str]]] = None,
                       delimeter: str = ",",
                       line_delimeter: str = "\n"
                       ) -> Optional[DatasetClient]:
