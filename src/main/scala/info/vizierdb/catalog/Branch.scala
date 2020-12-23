@@ -75,11 +75,12 @@ case class Branch(
             (implicit session: DBSession): (Branch, Workflow) =
     update(position, Module.make(packageId, commandId)(args:_*))
 
-  private[catalog] def initWorkflow(
+  private[vizierdb] def initWorkflow(
     prevId: Option[Identifier] = None,
     action: ActionType.T = ActionType.CREATE,
     actionModuleId: Option[Identifier] = None,
-    setHead: Boolean = true
+    setHead: Boolean = true,
+    createdAt: Option[ZonedDateTime] = None
   )(implicit session: DBSession): (Branch, Workflow) = {
     val w = Workflow.column
     val now = ZonedDateTime.now()
@@ -90,21 +91,15 @@ case class Branch(
           w.branchId -> id,
           w.action -> action,
           w.actionModuleId -> actionModuleId,
-          w.created -> now,
+          w.created -> createdAt.getOrElse { now },
           w.aborted -> false
         )
     }.updateAndReturnGeneratedKey.apply()
     val workflow = Workflow.get(workflowId)
 
     if(setHead) { 
-      val now = ZonedDateTime.now()
-      val b = Branch.column
-      withSQL {
-        scalikejdbc.update(Branch)
-          .set(b.modified -> now, b.headId -> workflowId)
-          .where.eq(b.id, id)
-      }.update.apply()
-      return (copy(headId = workflowId, modified = now), workflow)
+      Branch.setHead(id, workflowId)
+      return (Branch.get(id), workflow)
     } else {
       return (this, workflow)
     }
@@ -144,18 +139,14 @@ case class Branch(
         }
     }.update.apply()
     for((moduleId, position) <- addModules){
-      val c = Cell.column
-      withSQL {
-        insertInto(Cell)
-          .namedValues(
-            c.workflowId -> workflow.id,
-            c.position -> position,
-            c.moduleId -> moduleId,
-            c.resultId -> None,
-            c.state -> ExecutionState.STALE,
-            c.created -> ZonedDateTime.now()
-          )
-      }.update.apply()
+      Cell.make(
+        workflowId = workflow.id,
+        position = position,
+        moduleId = moduleId,
+        resultId = None,
+        state = ExecutionState.STALE,
+        created = ZonedDateTime.now()
+      )
     }
 
     return (branch, workflow)
@@ -164,7 +155,7 @@ case class Branch(
   def createdFromModuleId(implicit session:DBSession): Option[Identifier] =
     createdFromWorkflowId.flatMap { Workflow.get(_).actionModuleId }
 
-  private[catalog] def cloneWorkflow(workflowId: Identifier)(implicit session: DBSession): (Branch, Workflow) =
+  private[vizierdb] def cloneWorkflow(workflowId: Identifier)(implicit session: DBSession): (Branch, Workflow) =
     modify(None, ActionType.CREATE, workflowId)
 
   def workflows(implicit session:DBSession): Seq[Workflow] = 
@@ -253,4 +244,26 @@ object Branch
           .and.eq(b.projectId, projectId)
     }.map { apply(_) }.single.apply()
 
+
+  /**
+   * Overwrite the Branch Head (DO NOT USE)
+   * 
+   * Self-contained mechanism for manipulating the branch head.  In general, this method
+   * should be avoided.  
+   * 
+   * USE CLASS METHODS ON [[Branch]] INSTEAD
+   * 
+   * This method is here mainly to facilitate the manual manipulation needed
+   * for import/export.
+   */
+  private[vizierdb] def setHead(branchId: Identifier, workflowId: Identifier)(implicit session: DBSession) =
+  {
+    val now = ZonedDateTime.now()
+    val b = Branch.column
+    withSQL {
+      scalikejdbc.update(Branch)
+        .set(b.modified -> now, b.headId -> workflowId)
+        .where.eq(b.id, branchId)
+    }.update.apply()
+  }
 }

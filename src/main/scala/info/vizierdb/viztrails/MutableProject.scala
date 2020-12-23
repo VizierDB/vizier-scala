@@ -1,9 +1,17 @@
 package info.vizierdb.viztrails
 
+import play.api.libs.json._
+
 import scalikejdbc._
+import java.io.File
+import java.net.URLConnection
 import info.vizierdb.Vizier
 import info.vizierdb.catalog._
 import info.vizierdb.types._
+import info.vizierdb.util.Streams
+import java.io.FileInputStream
+import java.io.FileOutputStream
+
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
  * its dependencies.  Generally, this class should only be used for testing or interactive 
@@ -129,6 +137,33 @@ class MutableProject(
       refs.map { _.get.get }
     }    
   }
+
+  def addFile(
+    file: File, 
+    name: Option[String] = None,
+    mimetype: Option[String] = None
+  ): Artifact = 
+  {
+    val realName = name.getOrElse { file.getName() }
+    val realMimetype = URLConnection.guessContentTypeFromName(realName)
+    val artifact = 
+      DB.autoCommit { implicit s => 
+        Artifact.make(
+          projectId = projectId,
+          ArtifactType.FILE,
+          realMimetype,
+          Json.obj(
+            "filename" -> realName
+          ).toString.getBytes
+        )
+      }
+    Streams.cat(
+      new FileInputStream(file),
+      new FileOutputStream(artifact.file)
+    )
+    return artifact
+  }
+
 }
 
 object MutableProject

@@ -39,13 +39,35 @@ case class Project(
   def activeBranch(implicit session: DBSession):Branch = 
     Branch.get(activeBranchId)
 
+  /**
+   * Create a branch 
+   *  
+   * @param  name                        The initial name of the new branch
+   * @param  properties                  The initial properties for the new branch
+   * @param  activate                    Optional.  Pass true to make this the default 
+   *                                     branch for the project.
+   * @param  isInitialBranch             For internal use.  Pass true to make this the
+   *                                     an initial "blank" workflow
+   * @param  fromBranch                  Indicate the source branch (requires fromWorkflow set
+   *                                     and isInitialBranch = false)
+   * @param  fromWorkflow                Indicate the source workflow to clone (requires 
+   *                                     fromBranch set and isInitialBranch = false)
+   * @param  skipWorkflowInitialization  For internal use.  Pass true to make this branch
+   *                                     set up with no workflow so that workflow 
+   *                                     initialization can happens manually e.g., during 
+   *                                     import. (forces activate = false, and results
+   *                                     in the first / last return values being undefined)
+   */
   def createBranch(
     name: String,
     properties: JsObject = Json.obj(), 
     activate: Boolean = false,
     isInitialBranch: Boolean = false,
     fromBranch: Option[Identifier] = None,
-    fromWorkflow: Option[Identifier] = None
+    fromWorkflow: Option[Identifier] = None,
+    skipWorkflowInitialization: Boolean = false,
+    createdAt: Option[ZonedDateTime] = None,
+    modifiedAt: Option[ZonedDateTime] = None 
   )(implicit session: DBSession): (Project, Branch, Workflow) = {
     val b = Branch.column
     val now = ZonedDateTime.now()
@@ -73,13 +95,16 @@ case class Project(
           b.name -> name, 
           b.properties -> properties, 
           b.headId -> 0, 
-          b.created -> now, 
-          b.modified -> now,
+          b.created -> createdAt.getOrElse { now }, 
+          b.modified -> modifiedAt.orElse { createdAt }.getOrElse { now },
           b.createdFromBranchId -> sourceBranch.map { _.id },
           b.createdFromWorkflowId -> sourceWorkflowId
         )
     }.updateAndReturnGeneratedKey.apply()
 
+    if(skipWorkflowInitialization){
+      return (this, Branch.get(branchId), null)
+    }
     var (branch, workflow) = {
       var branch = Branch.get(branchId)
       if(isInitialBranch){ branch.initWorkflow() }
@@ -172,7 +197,10 @@ object Project
   override def columns = Schema.columns(table)
   def create(
     name: String, 
-    properties: JsObject = Json.obj()
+    properties: JsObject = Json.obj(),
+    createdAt: Option[ZonedDateTime] = None,
+    modifiedAt: Option[ZonedDateTime] = None,
+    dontCreateDefaultBranch: Boolean = false
   )(implicit session:DBSession): Project = 
   {
     val project = get(
@@ -184,12 +212,16 @@ object Project
             p.name -> name, 
             p.activeBranchId -> 0, 
             p.properties -> properties, 
-            p.created -> now, 
-            p.modified -> now
+            p.created -> createdAt.getOrElse { now }, 
+            p.modified -> modifiedAt.orElse { createdAt }.getOrElse { now }
           )
       }.updateAndReturnGeneratedKey.apply()
     )
-    return project.createBranch("default", isInitialBranch = true, activate = true)._1
+    if(dontCreateDefaultBranch){
+      return project
+    } else {
+      return project.createBranch("default", isInitialBranch = true, activate = true)._1
+    }
   }
 
   def get(target: Identifier)(implicit session:DBSession): Project = lookup(target).get

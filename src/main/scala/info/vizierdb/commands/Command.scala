@@ -42,7 +42,10 @@ trait Command
       }
       parameter.id -> encoded
     }.toMap)
-  def decodeReactArguments(arguments: JsValue): JsObject =
+  def decodeReactArguments(
+    arguments: JsValue, 
+    preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x } 
+  ): JsObject =
   {
     val saneArguments = 
       arguments.as[Seq[Map[String,JsValue]]]
@@ -54,7 +57,10 @@ trait Command
     JsObject(
       parameters.flatMap { param => 
         saneArguments.get(param.id).map { v => 
-          param.id -> param.convertFromReact(v)
+          param.id -> param.convertFromReact(
+            preprocess(param, v), 
+            preprocess
+          )
         }
       }.toMap
     )

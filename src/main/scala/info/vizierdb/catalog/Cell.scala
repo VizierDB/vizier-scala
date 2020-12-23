@@ -178,4 +178,36 @@ object Cell
           .and.ne(c.state, ExecutionState.DONE)
     }.update.apply()
   }
+
+  /** 
+   * Manually create a cell (DO NOT USE)
+   * 
+   * Self-contained mechanism for creating cells.  In general, this method
+   * should be avoided.  
+   * 
+   * USE CLASS METHODS ON [[Branch]] INSTEAD
+   * 
+   * This method is here mainly to facilitate the manual manipulation needed
+   * for import/export.
+   */
+  private[vizierdb] def make(
+    workflowId: Identifier,
+    position: Int,
+    moduleId: Identifier,
+    resultId: Option[Identifier],
+    state: ExecutionState.T,
+    created: ZonedDateTime
+  )(implicit session: DBSession): Identifier = 
+      withSQL {
+        val c = Cell.column
+        insertInto(Cell)
+          .namedValues(
+            c.workflowId -> workflowId,
+            c.position -> position,
+            c.moduleId -> moduleId,
+            c.resultId -> None,
+            c.state -> ExecutionState.STALE,
+            c.created -> ZonedDateTime.now()
+          )
+      }.updateAndReturnGeneratedKey.apply()
 }

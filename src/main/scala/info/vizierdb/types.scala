@@ -17,6 +17,17 @@ object types
         DELETE,
         INSERT,
         UPDATE = Value
+
+    def decode(str: String): T = 
+    {
+      str.toLowerCase match {
+        case "create" | "cre" => CREATE
+        case "append" | "apd" => APPEND
+        case "delete" | "del" => DELETE
+        case "insert" | "ins" => INSERT
+        case "update" | "upd" => UPDATE
+      }
+    }
   }
 
   object ExecutionState extends Enumeration

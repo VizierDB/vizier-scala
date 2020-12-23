@@ -41,7 +41,10 @@ sealed trait Parameter
       "required" -> JsBoolean(required)
     )
   def convertToReact(j: JsValue): JsValue = j
-  def convertFromReact(j: JsValue): JsValue = j
+  def convertFromReact(
+    j: JsValue,
+    preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
+  ): JsValue = j
 }
 
 object Parameter
@@ -288,7 +291,7 @@ case class ListParameter(
     Json.toJson(
       j.as[Seq[Map[String,JsValue]]].map { row =>
         components.map { param => 
-          val v = row(param.id)
+          val v = row.getOrElse(param.id, param.getDefault)
           Map(
             "id" -> JsString(param.id),
             "value" -> param.convertToReact(v)
@@ -297,7 +300,10 @@ case class ListParameter(
       }
     )
   }
-  override def convertFromReact(j: JsValue): JsValue = 
+  override def convertFromReact(
+    j: JsValue,
+    preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
+  ): JsValue = 
   {
     JsArray(
       j.as[Seq[Seq[Map[String,JsValue]]]].map { case row => 
@@ -308,7 +314,13 @@ case class ListParameter(
         JsObject(
           components.flatMap { param => 
             arguments.get(param.id)
-                     .map { param.id -> _ }
+                     .map { v => 
+                        param.id -> 
+                          param.convertFromReact(
+                            preprocess(param, v),
+                            preprocess
+                          )
+                     }
           }
           .toMap
         )
@@ -343,6 +355,43 @@ case class RecordParameter(
           component.validate( v.getOrElse { component.getDefault } )
         }
     }
+  override def convertToReact(j: JsValue): JsValue = 
+  {
+    val record = j.as[Map[String,JsValue]]
+    Json.toJson(
+      components.map { param => 
+        val v = record.getOrElse(param.id, param.getDefault)
+        Map(
+          "id" -> JsString(param.id),
+          "value" -> param.convertToReact(v)
+        )
+      }
+    )
+  }
+  override def convertFromReact(
+    j: JsValue,
+    preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
+  ): JsValue = 
+  {
+    val arguments = j.as[Seq[Map[String,JsValue]]]
+                     .map { arg => 
+                         arg("id").as[String] -> arg("value")
+                     }
+                    .toMap
+    JsObject(
+      components.flatMap { param => 
+        arguments.get(param.id)
+                 .map { v => 
+                    param.id -> 
+                      param.convertFromReact(
+                        preprocess(param, v),
+                        preprocess
+                      )
+                 }
+      }
+      .toMap
+    )
+  }
 }
 
 case class RowIdParameter(

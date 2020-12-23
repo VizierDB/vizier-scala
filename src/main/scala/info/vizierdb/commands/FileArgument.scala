@@ -40,4 +40,17 @@ case class FileArgument(
 object FileArgument
 {
   implicit val format: Format[FileArgument] = Json.format
+
+  /**
+   * Parse a file argument, applying a decoder to the fileid (for import)
+   */
+  def apply(j: JsValue, decodeFileId: String => Identifier): FileArgument = 
+  {
+    FileArgument(
+      (j \ "fileid").asOpt[String].map { decodeFileId },
+      (j \ "filename").asOpt[String],
+      (j \ "file").asOpt[FileDescription],
+      (j \ "url").asOpt[String]
+    )
+  }
 }

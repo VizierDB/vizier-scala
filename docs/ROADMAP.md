@@ -1,8 +1,11 @@
 
 ## Vizier 0.2
+- [ ] Import / Export
+    - [ ] Import
+    - [ ] Export
 - [ ] Lightweight Spark Runtime
 - [ ] "Scala Script" (code)
-- [ ] The final lenses
+- [x] The final lenses
     - [x] "Comment Lens" (comment)
     - [x] "Pivot" (pivot)
     - [x] "Geocode" (geocode)

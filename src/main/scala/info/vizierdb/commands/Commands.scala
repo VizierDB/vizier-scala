@@ -58,6 +58,10 @@ object Commands
     "empty"  -> info.vizierdb.commands.data.EmptyDataset, 
   )
 
+  register(packageId = "plot", name = "Data Plotting", category = "plot")(
+    "chart"  -> info.vizierdb.commands.plot.SimpleChart
+  )
+
   register(packageId = "sql", name = "SQL", category = "code")(
     "query"  -> info.vizierdb.commands.sql.Query
   )

@@ -11,8 +11,17 @@ object Filestore
   lazy val path = { val d = new File(Vizier.basePath, "files"); if(!d.exists()){ d.mkdir() }; d }
 
   def get(name: String) = new File(path, name)
+  def projectDir(projectId: Identifier): File = 
+  {
+    val dir = get(s"proj_$projectId")
+    if(!dir.exists){ dir.mkdir() }
+    return dir
+  }
   def get(projectId: Identifier, artifactId: Identifier): File =
-    get(s"proj_${projectId}_file_${Artifact.nameInBackend(ArtifactType.FILE, artifactId)}")
+    new File(
+      projectDir(projectId = projectId),
+      s"artifact_${Artifact.nameInBackend(ArtifactType.FILE, artifactId)}"
+    )
 
   def remove(projectId: Identifier, artifactId: Identifier) =
     get(projectId, artifactId).delete()

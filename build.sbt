@@ -69,11 +69,13 @@ libraryDependencies ++= Seq(
   "org.mimirdb"                   %% "mimir-caveats"                    % CAVEATS_VERSION,
 
   // Catalog management (trying this out... might be good to bring into mimir-api as well)
-  // "org.squeryl"                   %% "squeryl"                   % "0.9.15",
   "org.scalikejdbc"               %% "scalikejdbc"                      % "3.4.2",
   "org.scalikejdbc"               %% "scalikejdbc-syntax-support-macro" % "3.4.2",
   "org.scalikejdbc"               %% "scalikejdbc-test"                 % "3.4.2" % "test",
   "org.xerial"                    %  "sqlite-jdbc"                      % "3.32.3",
+
+  // Import/Export
+  "org.apache.commons"            % "commons-compress"                  % "1.20",
 
   // Testing
   "org.specs2"                    %%  "specs2-core"                     % "4.8.2" % "test",

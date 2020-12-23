@@ -69,6 +69,7 @@ object Provenance
   }
 
   def checkForConflicts(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Boolean =
+    cell.resultId.isEmpty ||
     cell.inputs.iterator.exists { i => (scope contains i.userFacingName) &&
                                        (i.artifactId.map { scope(i.userFacingName) != _ }
                                                     .getOrElse { true }) }
