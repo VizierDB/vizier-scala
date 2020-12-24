@@ -167,7 +167,7 @@ case class ArtifactSummary(
   def nameInBackend = Artifact.nameInBackend(t, id)
   def summarize(name: String = null) = 
   {
-    val extras = t match {
+    val extras:Map[String,JsValue] = t match {
       case ArtifactType.DATASET => 
         Map(
           "columns" -> 
@@ -186,6 +186,7 @@ case class ArtifactSummary(
                 }
             )
         )
+      case _ => Map.empty
     }
     Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
   }

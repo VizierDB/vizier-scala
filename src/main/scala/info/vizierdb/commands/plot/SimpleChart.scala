@@ -11,6 +11,7 @@ import org.mimirdb.api.request.ResultTooBig
 import org.mimirdb.caveats.implicits._
 import org.mimirdb.api.request.Query
 import org.apache.spark.unsafe.types.UTF8String
+import info.vizierdb.VizierException
 
 object SimpleChart extends Command
 {
@@ -42,17 +43,20 @@ object SimpleChart extends Command
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
+    val schema = context.datasetSchema(datasetName).getOrElse {
+      throw new VizierException(s"Unknown Dataset $datasetName")
+    }
     context.chart(
       Chart(
         dataset         = datasetName,
         name            = arguments.getOpt[String]("name").getOrElse { datasetName },
         chartType       = arguments.getRecord("chart").get[String]("chartType"),
-        grouped         = arguments.getRecord("chart").get[Boolean]("chartGrouped"),
-        xaxis           = arguments.getRecord("xaxis").getOpt[String]("xaxis_column"),
+        grouped         = arguments.getRecord("chart").getOpt[Boolean]("chartGrouped").getOrElse(true),
+        xaxis           = arguments.getRecord("xaxis").getOpt[Int]("xaxis_column").map { schema(_).name },
         xaxisConstraint = arguments.getRecord("xaxis").getOpt[String]("xaxis_constraint"),
         series = arguments.getList("series").map { series => 
           ChartSeries(
-            column     = series.get[String]("series_column"),
+            column     = schema(series.get[Int]("series_column")).name,
             label      = series.getOpt[String]("series_label"),
             constraint = series.getOpt[String]("series_constraint")
           )

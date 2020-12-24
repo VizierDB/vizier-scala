@@ -8,7 +8,7 @@ object UpdateCell extends VizualCommand
   def name: String = "Update Cell"
   def vizualParameters: Seq[Parameter] = Seq(
     ColIdParameter(id = "column", name = "Column"),
-    StringParameter(id = "row", name = "Row (optional)", required = false),
+    StringParameter(id = "row", name = "Row (optional)", required = false, relaxed = true),
     StringParameter(id = "value", name = "Value", required = false)
   )
   def format(arguments: Arguments): String = 

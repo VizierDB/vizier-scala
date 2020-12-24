@@ -246,7 +246,7 @@ case class ListParameter(
   {
     val rows = j.as[Seq[Map[String, JsValue]]]
     rows.map { row => 
-      "<" + components.map { t => t.stringify(row(t.id)) }.mkString(",") + ">"
+      "<" + components.map { t => t.stringify(row.getOrElse(t.id, t.getDefault)) }.mkString(",") + ">"
     }.mkString("; ")
   }
   def zipParameters[T](record: Map[String,T]): Seq[(Parameter, Option[T])] =
@@ -342,7 +342,7 @@ case class RecordParameter(
   def doStringify(j: JsValue): String = 
   {
     val record = j.as[Map[String, JsValue]]
-    "<" + components.map { t => t.stringify(record(t.id)) }.mkString(", ") + ">"
+    "<" + components.map { t => t.stringify(record.getOrElse(t.id, t.getDefault)) }.mkString(", ") + ">"
   }
   def zipParameters[T](record: Map[String,T]): Seq[(Parameter, Option[T])] =
     components.map { component => component -> record.get(component.id) }
@@ -493,12 +493,23 @@ case class StringParameter(
   name: String,
   default: Option[String] = None,
   required: Boolean = true,
-  hidden: Boolean = false
+  hidden: Boolean = false,
+  relaxed: Boolean = false
 ) extends Parameter with StringEncoder
 {
   def datatype = "string"
-  def doStringify(j: JsValue): String = j.as[String]
+  def doStringify(j: JsValue): String = 
+    j match {
+      case JsString(s) => s
+      case JsBoolean(b) if relaxed => b.toString()
+      case JsNumber(n) if relaxed => n.toString()
+      case JsNull if required => default.getOrElse("<undefined>")
+      case _ => throw new IllegalArgumentException(s"Invalid string parameter $j")
+    }
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
+                               else if(relaxed && (j.isInstanceOf[JsBoolean] 
+                                                 || j.isInstanceOf[JsNumber])){ None }
+                               else if(!required && (j.equals(JsNull))){ None }
                                else { Some(s"Expected a string for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default)
