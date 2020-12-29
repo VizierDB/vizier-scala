@@ -11,10 +11,13 @@ import info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyDriver
 import info.vizierdb.catalog.{ Project, Schema, Cell }
 import org.mimirdb.data.LocalFSStagingProvider
 import java.io.File
+import java.util.Properties
+import com.typesafe.scalalogging.LazyLogging
 
 object Vizier
+  extends LazyLogging
 {
-  var basePath = { val d = new File("vizier.db"); if(!d.exists()){ d.mkdir() }; d }
+  var config: Config = null
 
   def initSQLite(db: String = "Vizier.db") = 
   {
@@ -25,7 +28,7 @@ object Vizier
     // slightly slower, 
     DriverManager.registerDriver(SQLiteNoReadOnlyDriver)
     ConnectionPool.singleton(
-      url = "no-read-only:jdbc:sqlite:" + new File(basePath, db).toString,
+      url = "no-read-only:jdbc:sqlite:" + new File(config.basePath(), db).toString,
       user = "",
       password = "",
       settings = ConnectionPoolSettings(
@@ -38,22 +41,30 @@ object Vizier
 
   def initMimir(db: String = "Mimir.db", stagingDirectory: String = ".") =
   {
+
     MimirAPI.sparkSession = InitSpark.local
     InitSpark.initPlugins(MimirAPI.sparkSession)
-    MimirAPI.metadata = new MimirJDBC("sqlite", new File(basePath, db).toString)
+    MimirAPI.metadata = new MimirJDBC("sqlite", new File(config.basePath(), db).toString)
     MimirAPI.catalog = new MimirCatalog(
       MimirAPI.metadata,
-      new LocalFSStagingProvider(new File(basePath, stagingDirectory).toString),
+      new LocalFSStagingProvider(config.basePath()),
       MimirAPI.sparkSession
     )
     MimirAPI.runServer(MimirAPI.DEFAULT_API_PORT) // Starts the Mimir server **in the background**
-    MimirAPI.conf = 
-      new MimirConfig(Seq(
-        "--python", info.vizierdb.commands.python.PythonProcess.PYTHON_COMMAND,
-        "--data-dir", new File(basePath, "mimir_data").toString,
-        "--staging-dir", new File(basePath, stagingDirectory).toString
-      ))
-    MimirAPI.conf.verify
+    val geocoders = 
+      Seq(
+        config.googleAPIKey.map { k =>
+          logger.debug("Google Services Will Be Available")
+          new org.mimirdb.lenses.implementation.GoogleGeocoder(k) 
+        }.toOption,
+        config.osmServer.map { k =>
+          logger.debug("OSM Services Will Be Available")
+          new org.mimirdb.lenses.implementation.OSMGeocoder(k) 
+        }.toOption
+      ).flatten
+    if(!geocoders.isEmpty){ 
+      org.mimirdb.lenses.Lenses.initGeocoding(geocoders, MimirAPI.catalog) 
+    }
   }
 
   def initORMLogging()
@@ -74,7 +85,9 @@ object Vizier
 
   def main(args: Array[String]) 
   {
-    println("Starting SQLite...")
+    println("Loading Config...")
+    config = new Config(args)
+    println("Loading Project...")
     initSQLite()
     Schema.initialize()
     initORMLogging()

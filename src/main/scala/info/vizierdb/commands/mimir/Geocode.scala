@@ -25,8 +25,8 @@ object Geocode
     ColIdParameter(id = PARA_CITY, name = "City"),
     ColIdParameter(id = PARA_STATE, name = "State"),
     EnumerableParameter(id = PARA_GEOCODER, name = "Geocoder", values = EnumerableValue.withNames(
-        "GOOGLE" -> "Google Maps",
-        "OSM" -> "Open Street Maps"
+        "Google Maps" -> "GOOGLE",
+        "Open Street Maps" -> "OSM"
       ),
       default = Some(1)
     ),

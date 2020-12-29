@@ -25,7 +25,8 @@ class ImportSpec
   "Import Food System Test" >> {
     ImportProject(
       new FileInputStream("test_data/workflows/FoodSystemsBuffalo.tar.gz"),
-      execute = true
+      // This one requires a geocoder, so no automatic tests
+      // execute = true
     )
     ok
   }

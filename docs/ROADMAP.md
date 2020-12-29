@@ -4,7 +4,7 @@
 
 ## Vizier 0.2
 - [ ] Import / Export
-    - [ ] Import
+    - [x] Import
     - [ ] Export
 - [ ] "Scala Script" (code)
 - [x] The final lenses
@@ -16,7 +16,7 @@
     - [x] Report SQL parse exceptions properly 
         - [x] org.apache.spark.sql.catalyst.parser.ParseException
         - [x] org.apache.spark.sql.AnalysisException
-    - [ ] NOT LIKE killing manual edits --- This is a problem with selection pushdown https://github.com/UBOdin/mimir-api/issues/33
+    - [ ] Selection pushdown happening too aggressively https://github.com/UBOdin/mimir-api/issues/33
 - [ ] Copyright Comments
 - [x] Add a task to publish SNAPSHOT releases to local coursier repo
 

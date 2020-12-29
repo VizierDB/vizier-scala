@@ -2,7 +2,7 @@ package info.vizierdb.test
 
 import java.net.URL
 import scalikejdbc.{ GlobalSettings, LoggingSQLAndTimeSettings }
-import info.vizierdb.{ Vizier, VizierAPI, VizierURLs }
+import info.vizierdb.{ Vizier, VizierAPI, VizierURLs, Config }
 import info.vizierdb.catalog.Schema
 
 object SharedTestResources
@@ -19,7 +19,7 @@ object SharedTestResources
           singleLineMode = true,
           logLevel = 'trace,
         ) 
-
+        Vizier.config = Config(Seq())
         Vizier.initSQLite()
         Vizier.initMimir()
         Schema.drop

@@ -19,7 +19,9 @@ object TemplateParameters
         "1 Byte"         -> "byte",
         "Date"           -> "date",
         "Date+Time"      -> "timestamp",
-      ), default = Some(0))
+      ), default = Some(0), aliases = Map(
+        "integer" -> "int"
+      ))
     )),
 
 }

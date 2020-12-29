@@ -481,10 +481,11 @@ case class EnumerableParameter(
   values: Seq[EnumerableValue],
   default: Option[Int] = None,
   required: Boolean = true,
-  hidden: Boolean = false
+  hidden: Boolean = false,
+  aliases: Map[String,String] = Map.empty
 ) extends Parameter with StringEncoder
 {
-  lazy val possibilities = Set(values.map { _.value }:_*)
+  lazy val possibilities = Set(values.map { _.value }:_*) ++ aliases.keySet
   def datatype = "string"
   def doStringify(j: JsValue): String = j.as[String]
   def doValidate(j: JsValue) = 
@@ -505,6 +506,13 @@ case class EnumerableParameter(
       "value"     -> v.value
     )}
   ))
+  override def convertFromReact(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
+  {
+    super.convertFromReact(j, preprocess) match { 
+      case JsString(key) => JsString(aliases.getOrElse(key, key))
+      case x => x
+    }
+  }
 }
 
 case class StringParameter(
