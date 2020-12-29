@@ -10,14 +10,16 @@ import scala.collection.mutable.HashMap
 import info.vizierdb.types._
 import info.vizierdb.VizierException
 import info.vizierdb.util.Streams
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.viztrails.{ MutableProject, Scheduler }
 import info.vizierdb.catalog._
 import info.vizierdb.commands.Commands
 import java.io.FileOutputStream
 import info.vizierdb.util.StupidReactJsonField
 import info.vizierdb.commands.{ FileParameter, FileArgument }
+import com.typesafe.scalalogging.LazyLogging
 
 object ImportProject
+  extends LazyLogging
 {
   val FILE = "fs/(.+)".r
   val VERSION = 1
@@ -63,7 +65,7 @@ object ImportProject
     })
   }
 
-  def apply(input: InputStream) = 
+  def apply(input: InputStream, execute: Boolean = false, blockOnExecution: Boolean = true): Identifier = 
   {
     val gz = new GzipCompressorInputStream(input)
     val tar = new TarArchiveInputStream(gz)
@@ -97,7 +99,7 @@ object ImportProject
             if(version > VERSION){
               throw new VizierException("Archive version is too new")
             }
-            println(s"Version of imported project is ${version}")
+            logger.info(s"Version of imported project is ${version}")
           }
           //////////////////////////////////////
           case "project.json" => {
@@ -111,6 +113,7 @@ object ImportProject
         throw new VizierException("Not a valid archive (missing version.txt)")
       }
 
+
       val projectId = 
         DB.autoCommit { implicit s => 
           Project.create(
@@ -121,6 +124,7 @@ object ImportProject
             dontCreateDefaultBranch = true
           ).id
         }
+      logger.info(s"Importing project '${exportedProject.name} as ID $projectId")
       val mutableProject = MutableProject(projectId)
 
       val files = 
@@ -133,7 +137,7 @@ object ImportProject
                 name = Some(file.name),
                 mimetype = Some(file.mimetype)
               )
-            println(s"Imported file ${file.id} as ${fileArtifact.file} (${file.name})")
+            logger.info(s"Imported file ${file.id} as ${fileArtifact.file} (${file.name})")
             file.id -> fileArtifact
           }
           .toMap
@@ -148,6 +152,8 @@ object ImportProject
       val workflows = HashMap[(String,String),Workflow]()
       DB.autoCommit { implicit s => 
         for( exportedBranch <- exportedProject.branches ){
+
+
           if(exportedBranch.sourceBranch.isDefined != exportedBranch.sourceWorkflow.isDefined)
           {
             throw new VizierException(s"Corrupted Import: Branch ${exportedBranch.id} was derived from Branch ${exportedBranch.sourceBranch} / Workflow ${exportedBranch.sourceWorkflow}")
@@ -166,6 +172,7 @@ object ImportProject
               createdAt = Some(exportedBranch.createdAt),
               modifiedAt = Some(exportedBranch.lastModifiedAt)
             )
+          logger.debug(s"Importing branch ${exportedBranch.name}[${exportedBranch.id}] as ID ${branch.id}")
 
           branches.put(exportedBranch.id, branch)
 
@@ -196,6 +203,7 @@ object ImportProject
               (exportedBranch.id, exportedWorkflow.id),
               updatedWorkflow
             )
+            logger.debug(s"Importing workflow ${exportedBranch.id}/${exportedWorkflow.id}] as ID ${updatedWorkflow.id}")
 
             // next create the cells
             for( (exportedModuleRef, position) <- exportedWorkflow.modules.zipWithIndex) 
@@ -226,20 +234,29 @@ object ImportProject
 
             workflow = updatedWorkflow
 
-            println( s"Importing ${exportedWorkflow.action}(${(exportedWorkflow.packageId.toSeq++exportedWorkflow.commandId).mkString(".")})" )
+            logger.trace( s"Importing ${exportedWorkflow.action}(${(exportedWorkflow.packageId.toSeq++exportedWorkflow.commandId).mkString(".")})" )
           }
           Branch.setHead(branch.id, workflow.id)
         }
 
-        project.activateBranch(
+        logger.info( s"Activating branch ${branches(exportedProject.defaultBranch).id}" )
+        project = project.activateBranch(
           branches(exportedProject.defaultBranch).id
         )
       }
 
-
-
-
-      // println(exported.as[Map[String,JsValue]].keys.mkString("\n"))
+      if(execute){
+        logger.info("Triggering workflow execution")
+        val mutableProject = MutableProject(project.id)
+        val head = mutableProject.head
+        DB.autoCommit { implicit s => head.discardResults() }
+        Scheduler.schedule(head.id)
+        if(blockOnExecution){
+          mutableProject.waitUntilReadyAndThrowOnError
+        }
+      }
+      return projectId
+      // logger.info(exported.as[Map[String,JsValue]].keys.mkString("\n"))
     } finally { 
       for(file <- rawFiles.values){ if(file.exists) { file.delete() } }
     }

@@ -28,6 +28,9 @@
   <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="DEBUG" />
   <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
 
+  <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.export.ImportProject$"             level="DEBUG" />
+
   <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
   <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />
   <logger name="info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyConnection" level="DEBUG" />

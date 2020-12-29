@@ -304,6 +304,25 @@ case class Workflow(
         .where.in(m.id, modulesToTrash.toSeq)
     }.update.apply()
   }
+
+  /**
+   * Discard all results for the workflow, preparing it for re-execution
+   * This shouldn't really be used in general, but is currently
+   * needed as a work-around for importing exported files from classic
+   * 
+   * Remember that [[Workflow]] *can not* schedule its own execution (since 
+   * the DBSession needs to be committed first).  The caller is responsible 
+   * for invoking [[Scheduler]].
+   */
+  def discardResults()(implicit session: DBSession) =
+  {
+    withSQL { 
+      val c = Cell.column
+      update(Cell)
+        .set(c.state -> ExecutionState.STALE, c.resultId -> None)
+        .where.eq(c.workflowId, id)
+    }.update.apply()
+  }
 }
 object Workflow 
   extends SQLSyntaxSupport[Workflow]

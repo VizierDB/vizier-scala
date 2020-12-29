@@ -15,8 +15,10 @@ class ImportSpec
   def beforeAll = SharedTestResources.init
 
   "Import NYC Causes of Death" >> {
-    ImportProject(new FileInputStream("test_data/NYCCauseOfDeath.tar.gz"))
-
+    ImportProject(
+      new FileInputStream("test_data/workflows/NYCCauseOfDeath.tar.gz"),
+      execute = true
+    )
     ok
   }
 }
