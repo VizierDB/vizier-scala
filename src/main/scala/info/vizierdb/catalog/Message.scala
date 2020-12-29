@@ -75,6 +75,7 @@ case class Message(
       "type" -> mimeType,
       "value" -> (mimeType match {
         case MIME.DATASET_VIEW => Json.parse(data).as[DatasetMessage].describe
+        case MIME.CHART_VIEW => Json.parse(data)
         case _ => JsString(new String(data))
       })
     )

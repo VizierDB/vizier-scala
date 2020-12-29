@@ -226,7 +226,7 @@ object ImportProject
 
             workflow = updatedWorkflow
 
-            println( s"Importing ${exportedWorkflow.action} of ${exportedWorkflow.packageId}.${exportedWorkflow.commandId}" )
+            println( s"Importing ${exportedWorkflow.action}(${(exportedWorkflow.packageId.toSeq++exportedWorkflow.commandId).mkString(".")})" )
           }
           Branch.setHead(branch.id, workflow.id)
         }
