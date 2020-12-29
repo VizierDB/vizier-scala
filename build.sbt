@@ -274,15 +274,16 @@ checkout := {
     Files.createDirectory(upstream)
   }
   Seq(
-    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"      , "ui"     ), 
-    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"     , "mimir"  ),
-    ("Caveats"  , "git@github.com:UBOdin/mimir-caveatgs.git", "caveats"),
-  ).foreach { case (name, repo, stub) => 
+    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"      , "ui"     , Some("scala")), 
+    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"     , "mimir"  , None),
+    ("Caveats"  , "git@github.com:UBOdin/mimir-caveatgs.git", "caveats", None),
+  ).foreach { case (name, repo, stub, branch) => 
     val dir = upstream.resolve(stub)
     if(!Files.exists(dir.resolve(".git"))){
       println(s"Checking out $name into $dir")
       if(!Files.exists(dir)){
-        new ProcessBuilder("git", "clone", repo, dir.toString)
+        val cmd = Seq("git", "clone", repo, dir.toString) ++ branch.toSeq.flatMap { Seq("-b", _) }
+        new ProcessBuilder(cmd:_*)
               .start
               .waitFor
       } else { 
@@ -296,7 +297,7 @@ checkout := {
               .directory(dir.toFile)
               .start
               .waitFor
-        new ProcessBuilder("git", "pull", "origin", "master")
+        new ProcessBuilder("git", "pull", "origin", branch.getOrElse("master"))
               .directory(dir.toFile)
               .start
               .waitFor
