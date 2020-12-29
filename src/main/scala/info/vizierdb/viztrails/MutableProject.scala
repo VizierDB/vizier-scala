@@ -11,6 +11,11 @@ import info.vizierdb.types._
 import info.vizierdb.util.Streams
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import info.vizierdb.VizierException
+import org.mimirdb.vizual.{ Command => VizualCommand }
+import info.vizierdb.commands.vizual.{ Script => VizualScript }
+import org.apache.spark.sql.types.DataType
+import org.mimirdb.spark.{ Schema => SparkSchema }
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -95,14 +100,20 @@ class MutableProject(
     file: String, 
     name: String, 
     format: String="csv", 
-    inferTypes: Boolean = true
+    inferTypes: Boolean = true,
+    schema: Seq[(String, DataType)] = Seq.empty
   ){
     append("data", "load")(
       "file" -> file,
       "name" -> name,
       "loadFormat" -> format,
       "loadInferTypes" -> inferTypes,
-      "loadDetectHeaders" -> true
+      "loadDetectHeaders" -> true,
+      "schema" -> 
+        schema.map { case (name, dataType) => Map(
+          "schema_column" -> name, 
+          "schema_type" -> SparkSchema.encodeType(dataType)
+        )}
     )
     waitUntilReadyAndThrowOnError
   }
@@ -112,6 +123,26 @@ class MutableProject(
     append("script", "python")("source" -> script)
     waitUntilReadyAndThrowOnError
   }
+
+  def vizual(dataset: String, script: VizualCommand*) =
+  {
+    append("vizual", "script")(
+      "dataset" -> dataset,
+      "script" -> VizualScript.encode(script)
+    )
+    waitUntilReadyAndThrowOnError
+  }
+  def sql(script: String): Unit = sql(script -> null)
+  def sql(scriptTarget: (String, String)): Unit =
+  {
+    append("sql", "query")(
+      "source" -> scriptTarget._1,
+      "output_dataset" -> Option(scriptTarget._2)
+    )
+    waitUntilReadyAndThrowOnError
+  }
+
+
   def lastOutput =
   {
     val workflow = head
@@ -163,6 +194,33 @@ class MutableProject(
     )
     return artifact
   }
+
+  def artifact(artifactName: String): Artifact = 
+  {
+    val ref = (
+      artifactRefs.find { _.userFacingName.equalsIgnoreCase(artifactName) }
+                  .getOrElse { 
+                    throw new VizierException(s"No Such Artifact $artifactName")
+                  }
+    )
+    return DB.readOnly { implicit s => ref.get.get }
+  }
+  def show(artifactName: String, rows: Integer = null): Unit =
+  {
+
+    val artifact: Artifact = this.artifact(artifactName)
+    artifact.t match {
+      case ArtifactType.DATASET => {
+        import org.mimirdb.api.MimirAPI
+        import org.mimirdb.caveats.implicits._
+        MimirAPI.catalog
+                .get(artifact.nameInBackend)
+                .showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
+      }
+      case _ => throw new VizierException(s"Show unsupported for ${artifact.t}")
+    }
+  }
+
 
 }
 

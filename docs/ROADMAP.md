@@ -1,9 +1,11 @@
 
+## Vizier 0.3
+- [ ] Lightweight Spark Runtime
+
 ## Vizier 0.2
 - [ ] Import / Export
     - [ ] Import
     - [ ] Export
-- [ ] Lightweight Spark Runtime
 - [ ] "Scala Script" (code)
 - [x] The final lenses
     - [x] "Comment Lens" (comment)
@@ -11,9 +13,12 @@
     - [x] "Geocode" (geocode)
 - [ ] Minor Bugs
     - [x] "Font MIME encoding"
-- [ ] Lens Families
-    - [ ] Shape Detector Lens
+    - [ ] Report SQL parse exceptions properly 
+        - [ ] org.apache.spark.sql.catalyst.parser.ParseException
+        - [ ] org.apache.spark.sql.AnalysisException
+    - [ ] NOT LIKE killing manual edits --- This is a problem with selection pushdown https://github.com/UBOdin/mimir-api/issues/33
 - [ ] Copyright Comments
+- [ ] Add a task to publish SNAPSHOT releases to local coursier repo
 
 ## Vizier 0.1
 - [x] Set up a simple, naive background worker (Java's ForkJoinPool.)
@@ -52,3 +57,8 @@
     - [x] "Merge Columns" (picker)
     - [x] "Detect Field Types" (type_inference)
     - [x] "Shape Detector" (shape_watcher)
+
+## Later
+
+- [ ] Make rowids more "elegant" for Vizual operations
+- [ ] R script again (via Arrow?)

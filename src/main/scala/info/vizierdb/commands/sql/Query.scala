@@ -28,18 +28,24 @@ object Query extends Command
 
     logger.debug(s"$scope : $query")
 
-    val response = CreateViewRequest(
-      input = scope.mapValues { _.nameInBackend }, 
-      functions = None,
-      query = query, 
-      resultName = Some(dsName),
-      properties = None
-    ).handle
+    try { 
+      val response = CreateViewRequest(
+        input = scope.mapValues { _.nameInBackend }, 
+        functions = None,
+        query = query, 
+        resultName = Some(dsName),
+        properties = None
+      ).handle
 
-    for(dep <- response.dependencies){
-      context.inputs.put(dep, scope(dep).id)
+      for(dep <- response.dependencies){
+        context.inputs.put(dep, scope(dep).id)
+      }
+
+      context.displayDataset(datasetName)
+    } catch { 
+      case e: org.mimirdb.api.FormattedError => 
+        context.error(e.response.errorMessage)
     }
 
-    context.displayDataset(datasetName)
   }
 }

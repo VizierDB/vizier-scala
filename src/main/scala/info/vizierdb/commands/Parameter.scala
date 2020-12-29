@@ -88,7 +88,9 @@ trait StringEncoder
   def encode(v: Any): JsValue = 
     v match {
       case x:String => JsString(x)
-      case _ => throw new VizierException(s"Invalid Parameter to $name (expected String)")
+      case None => JsNull
+      case Some(x) => encode(x)
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected String, but got $v)")
     }
 }
 
@@ -100,7 +102,9 @@ trait IntegerEncoder
       case x:Int => JsNumber(x)
       case x:Integer => JsNumber(x:Int)
       case x:Long => JsNumber(x)
-      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long)")
+      case None => JsNull
+      case Some(x) => encode(x)
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long, but got $v)")
     }
 }
 
@@ -114,7 +118,9 @@ trait FloatEncoder
       case x:Long => JsNumber(x)
       case x:Float => JsNumber(x)
       case x:Double => JsNumber(x)
-      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long/Float/Double)")
+      case None => JsNull
+      case Some(x) => encode(x)
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long/Float/Double, but got $v)")
     }
 }
 
@@ -280,7 +286,7 @@ case class ListParameter(
           } else if(components.length == 1) {
             elems.map { elem => Map(components.head.id -> components.head.encode(elem)) }
           } else {
-            throw new VizierException(s"Invalid Parameter to $name (expected Seq to contain Maps)")
+            throw new VizierException(s"Invalid Parameter to $name (expected Seq to contain Maps, but instead has ${elems.head})")
           }
         return Json.toJson(ret)
       }
