@@ -210,7 +210,7 @@ bootstrap := {
   for(resolver <- resolverArgs){
     println("  "+resolver)
   }
-  println
+
   println("Generating Vizier binary")
 
   val cmd = List(
@@ -229,8 +229,8 @@ bootstrap := {
   }
 }
 
-lazy val updateLocalBootstrap = taskKey[Unit]("Update Local Bootstrap Jars")
-updateLocalBootstrap := {
+lazy val updateBootstrap = taskKey[Unit]("Update Local Bootstrap Jars")
+updateBootstrap := {
   import java.nio.file.{ Files, Paths }
   import scala.sys.process._
   val (art, file) = packagedArtifact.in(Compile, packageBin).value
