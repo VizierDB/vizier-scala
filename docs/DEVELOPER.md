@@ -22,7 +22,7 @@ of each of these repos, but if you want to co-develop any of them along with
 Vizier, do the following:
 
 ```
-$> sbt checkout         # Checks out upstream repositories.  Not required
+$> sbt checkout
 ...
 $> ls upstream
 caveats  mimir  ui
