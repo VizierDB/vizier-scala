@@ -93,8 +93,6 @@ libraryDependencies ++= Seq(
 // use `sbt publish make-pom` to generate 
 // a publishable jar artifact and its POM metadata
 
-publishMavenStyle := true
-
 pomExtra := <url>http://vizierdb.info</url>
   <licenses>
     <license>
@@ -137,7 +135,9 @@ pomPostProcess := { (node:XNode) =>
 // use `sbt publish` to update the package in 
 // your own local ivy cache
 
-publishTo := Some(Resolver.file("file",  new File("/var/www/maven_repo/")))
+publishMavenStyle := true
+publishTo := Some(MavenCache("local-maven",  file("/var/www/maven_repo/")))
+
 // publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
 ///////////////////////////////////////////
@@ -201,7 +201,7 @@ bootstrap := {
       if(!r.root.startsWith("file:")){
         Seq("-r", r.root)
       } else { Seq() }
-  }.flatten
+  }
 
   val (art, file) = packagedArtifact.in(Compile, packageBin).value
   val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+(-SNAPSHOT)?)$", "")
@@ -220,15 +220,47 @@ bootstrap := {
     "-f",
     "-o", vizier_bin,
     "-r", "central"
-  )++resolverArgs
+  )++resolverArgs.flatten
   println(cmd.mkString(" "))
 
   Process(cmd) ! logger match {
       case 0 => 
       case n => sys.error(s"Bootstrap failed")
   }
-  
 }
+
+lazy val updateLocalBootstrap = taskKey[Unit]("Update Local Bootstrap Jars")
+updateLocalBootstrap := {
+  import java.nio.file.{ Files, Paths }
+  import scala.sys.process._
+  val (art, file) = packagedArtifact.in(Compile, packageBin).value
+  val home = Paths.get(System.getProperty("user.home"))
+  val coursier_cache = home.resolve(".cache").resolve("coursier")
+  if(Files.exists(coursier_cache)){
+    val maven_mimir = 
+      coursier_cache.resolve("v1")
+                    .resolve("https")
+                    .resolve("maven.mimirdb.info")
+    val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+(-SNAPSHOT)?)$", "")
+    val pathComponents = 
+      (organization.value.split("\\.") :+ qualified_artifact_name :+ version.value)
+    val repo_dir = pathComponents.foldLeft(maven_mimir) { _.resolve(_) }
+    val target = repo_dir.resolve(s"$qualified_artifact_name-${version.value}.jar")
+
+    if(Files.exists(target)){
+      val cmd = Seq("cp", file.toString, target.toString)
+      println(cmd.mkString(" "))
+      Process(cmd) .!!
+    } else {
+      println(s"$target does not exist")
+    }
+
+
+  } else { 
+    println(s"$coursier_cache does not exist")
+  }
+}
+
 ///////////////////////////////////////////
 /////// Helpful command to get dependencies
 ///////////////////////////////////////////
@@ -274,5 +306,4 @@ checkout := {
       println(s"$name already checked out")
     }
   }
-
 }

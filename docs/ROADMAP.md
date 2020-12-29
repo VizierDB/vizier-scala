@@ -13,12 +13,12 @@
     - [x] "Geocode" (geocode)
 - [ ] Minor Bugs
     - [x] "Font MIME encoding"
-    - [ ] Report SQL parse exceptions properly 
-        - [ ] org.apache.spark.sql.catalyst.parser.ParseException
-        - [ ] org.apache.spark.sql.AnalysisException
+    - [x] Report SQL parse exceptions properly 
+        - [x] org.apache.spark.sql.catalyst.parser.ParseException
+        - [x] org.apache.spark.sql.AnalysisException
     - [ ] NOT LIKE killing manual edits --- This is a problem with selection pushdown https://github.com/UBOdin/mimir-api/issues/33
 - [ ] Copyright Comments
-- [ ] Add a task to publish SNAPSHOT releases to local coursier repo
+- [x] Add a task to publish SNAPSHOT releases to local coursier repo
 
 ## Vizier 0.1
 - [x] Set up a simple, naive background worker (Java's ForkJoinPool.)
