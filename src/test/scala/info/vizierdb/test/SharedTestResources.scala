@@ -20,6 +20,7 @@ object SharedTestResources
           logLevel = 'trace,
         ) 
         Vizier.config = Config(Seq())
+        if(!Vizier.config.basePath().exists) { Vizier.config.basePath().mkdir() }
         Vizier.initSQLite()
         Vizier.initMimir()
         Schema.drop

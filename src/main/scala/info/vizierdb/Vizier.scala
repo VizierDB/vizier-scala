@@ -13,6 +13,8 @@ import org.mimirdb.data.LocalFSStagingProvider
 import java.io.File
 import java.util.Properties
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.export.ImportProject
+import java.io.FileInputStream
 
 object Vizier
   extends LazyLogging
@@ -41,7 +43,7 @@ object Vizier
 
   def initMimir(db: String = "Mimir.db", stagingDirectory: String = ".") =
   {
-
+    config.setMimirConfig
     MimirAPI.sparkSession = InitSpark.local
     InitSpark.initPlugins(MimirAPI.sparkSession)
     MimirAPI.metadata = new MimirJDBC("sqlite", new File(config.basePath(), db).toString)
@@ -85,15 +87,26 @@ object Vizier
 
   def main(args: Array[String]) 
   {
-    println("Loading Config...")
     config = new Config(args)
-    println("Loading Project...")
+
+    println("Setting Up Project Library...")
+    if(!config.basePath().exists) { config.basePath().mkdir() }
     initSQLite()
     Schema.initialize()
     initORMLogging()
     bringDatabaseToSaneState()
+
     println("Starting Mimir...")
     initMimir()
+
+    if(config.ingest.file.isSupplied){
+      ImportProject(
+        new FileInputStream(config.ingest.file()),
+        execute = config.ingest.execute()
+      )
+      return
+    }
+
     println("Starting Server...")
     VizierAPI.init()
     println(s"... Server running at < ${VizierAPI.urls.ui} >")
