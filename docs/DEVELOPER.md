@@ -6,40 +6,96 @@ As normal for scala development, you should have the following:
 
 From the root of this repository, run the following:
 ```
-$> sbt checkout         # Checks out upstream repositories.  Not required
 $> sbt compile          # Compiles the code
 $> sbt run              # Runs the code
 ```
 
-Given how ... erm ... blazingly fast SBT is, you may want to check out [bloop](https://scalacenter.github.io/bloop/) and/or [metals](https://scalameta.org/metals/) to make things a bit faster.
+Given how ... erm ... blazingly fast SBT is, you may want to check out
+[bloop](https://scalacenter.github.io/bloop/) and/or 
+[metals](https://scalameta.org/metals/) to make things a bit faster.
+
+#### Upstream development
+
+Vizier depends on several upstream repositories: Mimir, Caveats, and Vizier-UI. 
+The instructions above will set you up to work with the latest published version
+of each of these repos, but if you want to co-develop any of them along with 
+Vizier, do the following:
+
+```
+$> sbt checkout         # Checks out upstream repositories.  Not required
+...
+$> ls upstream
+caveats  mimir  ui
+```
+
+###### Mimir/Caveats development
+
+`caveats` and `mimir` will automatically be recognized by SBT (and bloop) as 
+dependent projects.  Changes to either will be recompiled and added to the 
+`vizier` classpath. 
+
+###### UI development
+
+To develop the Vizier UI (or debug issues with the UI), open a new terminal and
+```
+$> cd upstream/ui
+$> yarn install
+$> yarn run
+```
+This will start a new server on `http://localhost:3000` (note the different
+port) that will connect to the main Vizier instance.  
+
+To compile the UI and bring the changes into Vizier itself, run the following 
+from the vizier-scala root:
+```
+$> sbt buildUI
+```
 
 
 ## Gotchas
 
-If you take nothing else away from this document, read this section.  It highlights the oddities of this codebase.  These are things that will cause you grief if you try to make changes without realizing what's going on.
+If you take nothing else away from this document, read this section.  It 
+highlights the oddities of this codebase.  These are things that will cause you 
+grief if you try to make changes without realizing what's going on.
 
 #### ScalikeJDBC
 
-[ScalikeJDBC](http://scalikejdbc.org/) is a scala-native wrapper around JDBC connections (analogous to Python's Alchemy).  It makes *extensive* use of scala implicits, which can be a little confusing if you're just getting started with scala, so let's start with a quick primer on the part of implicits that you need to know.
+[ScalikeJDBC](http://scalikejdbc.org/) is a scala-native wrapper around JDBC 
+connections (analogous to Python's Alchemy).  It makes *extensive* use of scala 
+implicits, which can be a little confusing if you're just getting started with 
+scala, so let's start with a quick primer on the part of implicits that you need
+to know.
 
-Global state is annoying, but can be more programmer friendly when you need to keep passing that state into functions.  For example, let's say you have a JDBC connection.  You need to keep passing that connection into every function that might potentially need it.  That makes code hard to read and write, because you always have that extra argument hanging off the end.  It can be easier just to dump the connection into a global variable and use it when needed.  Global state, however, drives functional people mad (for good reasons).
+Global state is annoying, but can be more programmer friendly when you need to 
+keep passing that state into functions.  For example, let's say you have a JDBC 
+connection.  You need to keep passing that connection into every function that 
+might potentially need it.  That makes code hard to read and write, because you 
+always have that extra argument hanging off the end.  It can be easier just to 
+dump the connection into a global variable and use it when needed.  Global 
+state, however, drives functional people mad (for good reasons).
 
-Scala (kind of?) avoids the pitfals of global state through something it calls implicit parameters.  Take the following function:
+Scala (kind of?) avoids the pitfals of global state through something it calls 
+implicit parameters.  Take the following function:
 ```
 def foo(implicit x: Bar) = x.baz
 ```
-To call this function, you don't need to pass the `x` parameter explicitly.  You would just write
+To call this function, you don't need to pass the `x` parameter explicitly.  You
+would just write
 ```
 println(s"${foo}")
 ```
-Of course, this example is a little too simple... if you actually try the following, the compiler will yell at you:
+Of course, this example is a little too simple... if you actually try the 
+following, the compiler will yell at you:
 ```
 def myFunction() = 
 {
   println(s"${foo}")
 }
 ```
-What's happening under the hood here is that instead of manually passing a `Bar` object around, the compiler tries to automatically pick and plug in a `Bar` object that you happen to have lying around.  Since you don't have one, it gets confused.  Let's try the following: 
+What's happening under the hood here is that instead of manually passing a `Bar`
+object around, the compiler tries to automatically pick and plug in a `Bar` 
+object that you happen to have lying around.  Since you don't have one, it gets 
+confused.  Let's try the following: 
 ```
 def myFunction() = 
 {
@@ -47,7 +103,9 @@ def myFunction() =
   println(s"${foo}")
 }
 ```
-That still won't work, because the compiler won't look for just any old variables.  You have to explicitly mark a variable as implicit for it to work, like so:
+That still won't work, because the compiler won't look for just any old 
+variables.  You have to explicitly mark a variable as implicit for it to work, 
+like so:
 ```
 def myFunction() = 
 {
@@ -55,11 +113,18 @@ def myFunction() =
   println(s"${foo}")
 }
 ```
-Again, looking under the hood, when you call foo (without parameters), the compiler will see the *implicit* `x` parameter of type `Bar`, try to find a `Bar` object in scope (possibly with a different name), and automatically plug that object in to the function call.
+Again, looking under the hood, when you call foo (without parameters), the 
+compiler will see the *implicit* `x` parameter of type `Bar`, try to find a 
+`Bar` object in scope (possibly with a different name), and automatically plug 
+that object in to the function call.
 
 ----
 
-ScalikeJDBC makes *extensive* use of implicit variables to keep track of session state.  Specifically, in this codebase you will see a lot of functions with `(implicit session: DBSession)`.  These are functions that **DO** assume that you have an open session.  Conversely, functions without this parameter assume that you **DO NOT** have an implicit session active.
+ScalikeJDBC makes *extensive* use of implicit variables to keep track of session
+state.  Specifically, in this codebase you will see a lot of functions with 
+`(implicit session: DBSession)`.  These are functions that **DO** assume that 
+you have an open session.  Conversely, functions without this parameter assume 
+that you **DO NOT** have an implicit session active.
 
 To create a session, use one of the following two constructs:
 ```
@@ -70,7 +135,8 @@ or
 DB.autoCommit { implicit s => /* your code goes here */ }
 ```
 
-**Gotcha**: Nested session creation is *verbotten*.  If you find code myseriously hanging or getting SQL timeouts, you are creating a nested session.  
+**Gotcha**: Nested session creation is *verbotten*.  If you find code 
+myseriously hanging or getting SQL timeouts, you are creating a nested session.  
 
 The following guidelines apply with respect to session creation:
 
@@ -90,11 +156,13 @@ The following guidelines apply with respect to session creation:
 * `types`: A repository of Enums and typecasts for the entire project
 * `Vizier`: The entry point into Vizier -- Main function, initialization, etc...
 * `VizierAPI`: Jetty routes (to handlers in `.api`)
-* `VizierURLs`: URL constructors for the routes in `VizierAPI` (would be nice to automate this eventually).
+* `VizierURLs`: URL constructors for the routes in `VizierAPI` (would be nice to
+                automate this eventually).
 
 #### `src/main/scala/info/vizierdb/catalog`
 
-Objects for the Vizier ORM.  Classes in this package **must not create DB sessions**; Instead mark methods with implicit session parameters where needed.
+Objects for the Vizier ORM.  Classes in this package **must not create DB 
+sessions**; Instead mark methods with implicit session parameters where needed.
 
 * `Metadata`: Preferences/general settings for the local install
 * `Project`: A single project/notebook
@@ -110,7 +178,11 @@ Objects for the Vizier ORM.  Classes in this package **must not create DB sessio
                         * has one `Artifact`
                     * has many `Message`: Logging or data visualization outputs generated as a result of executing a cell.
 
-A `Workflow` is the heart of Vizier, and represents an ordered sequence of `Module`s in the notebook.  `Cell` serves as a many-many relationship table, assigning specific `Module`s to (i) Their position in the workflow, and (ii) The `Result` of executing them at that point in the workflow.  This may seem a little overcomplicated, but it is necessary.
+A `Workflow` is the heart of Vizier, and represents an ordered sequence of 
+`Module`s in the notebook.  `Cell` serves as a many-many relationship table, 
+assigning specific `Module`s to (i) Their position in the workflow, and (ii) The
+`Result` of executing them at that point in the workflow.  This may seem a 
+little overcomplicated, but it is necessary.
 * A single `Module` may be re-used across workflows.  In principle, we could create a copy of the entire workflow every time we modify it, but apart from wasting space, this makes it *much* harder to track relationships between workflows.
 * A single `Result` may *also* be re-used across workflows (e.g., when we discover that a module's inputs --- `InputArtifactRef` that is --- remain unchanged).
 * Thus, `Cell` acts as a 3-way many/many relationship between `Workflow`, `Module` and `Result`.  Note that the `Result` relationship is optional (e.g., if we have not yet figured out whether the cell needs to be recomputed).  
