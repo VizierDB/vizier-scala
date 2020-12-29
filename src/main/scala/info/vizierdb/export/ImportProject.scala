@@ -135,7 +135,7 @@ object ImportProject
               mutableProject.addFile(
                 file = rawFiles(file.id),
                 name = Some(file.name),
-                mimetype = Some(file.mimetype)
+                mimetype = Some(file.mimetype.getOrElse { MIME.TEXT })
               )
             logger.info(s"Imported file ${file.id} as ${fileArtifact.file} (${file.name})")
             file.id -> fileArtifact

@@ -16,7 +16,8 @@ trait Command
     parameters.flatMap { parameter => 
       arguments.get(parameter.id) match {
         case Some(argument) => parameter.validate(argument)
-        case None if parameter.required => Seq(s"Missing argument $parameter.id")
+        case None if parameter.required && parameter.getDefault.equals(JsNull) 
+                            => Seq(s"Missing argument ${parameter.id} // ${parameter.getDefault}")
         case None => Seq()
       }
     }

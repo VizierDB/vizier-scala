@@ -21,4 +21,13 @@ class ImportSpec
     )
     ok
   }
+
+  "Import Food System Test" >> {
+    ImportProject(
+      new FileInputStream("test_data/workflows/FoodSystemsBuffalo.tar.gz"),
+      execute = true
+    )
+    ok
+  }
+
 }
