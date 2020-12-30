@@ -308,3 +308,63 @@ checkout := {
     }
   }
 }
+
+///////////////////////////////////////////
+/////// Helpful command to get dependencies
+///////////////////////////////////////////
+lazy val fixCopyrights = taskKey[Unit]("Update copyright headers on files")
+fixCopyrights := {
+  import java.nio.file.{ Files, Path }
+  import scala.io.Source
+  import sbt.nio.file.FileTreeView
+  import sbt.io.RegularFileFilter
+  import java.io.{ BufferedWriter, FileWriter, OutputStreamWriter }
+  val licenseLines = Source.fromFile("LICENSE.txt").getLines.toSeq
+  val firstLine = "-- copyright-header:v1 --"
+  val lastLine  = "-- copyright-header:end --"
+  def license(start: String = "", end: String = "", line: String = "") = 
+    (start+firstLine) +: (licenseLines :+ (lastLine+end)).map { line+_ }
+
+  // val scalaFiles = Glob("src") / **
+  // println(FileTreeView.default.list(scalaFiles).toSeq)
+
+  def injectHeaderIfNeeded(file: Path, start: String, end: String, line: String) =
+  {
+    val lines = Source.fromFile(file.toString).getLines.toIndexedSeq
+    if(!lines.head.equals(start+firstLine)){
+      println(s"Fixing $file")
+      val tempFile = file.resolveSibling(file.getFileName()+".tmp")
+      val writer = Files.newBufferedWriter(tempFile)
+      // val writer = new OutputStreamWriter(System.out)
+      val linesPlusBlankEnd = 
+      if(!lines.reverse.head.equals("")) { lines :+ "" } 
+        else {lines}
+
+      for(line <- (license(start, end, line) ++ linesPlusBlankEnd)){
+        // println(s"Writing: $line")
+        writer.write((line+"\n"))
+      }
+      writer.flush()
+      writer.close()
+      Files.delete(file)
+      Files.move(tempFile, file)
+    } else { 
+      // println(s"No need to fix $file")
+    }
+  }
+
+  fileTreeView.value.list(
+    Glob(s"${baseDirectory.value}/src/**"), 
+    RegularFileFilter.toNio && "**/*.scala"
+  ).map { _._1 }
+   // .take(1)
+   .foreach { injectHeaderIfNeeded(_, "/* ", " */", " * ") }
+
+  fileTreeView.value.list(
+    Glob(s"${baseDirectory.value}/src/**"), 
+    RegularFileFilter.toNio && "**/*.py"
+  ).map { _._1 }
+   // .take(2)
+   .foreach { injectHeaderIfNeeded(_, "# ", "", "# ") }
+
+}
