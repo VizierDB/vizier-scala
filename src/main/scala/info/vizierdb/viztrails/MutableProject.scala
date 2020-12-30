@@ -134,7 +134,7 @@ class MutableProject(
 
   def script(script: String, language: String = "python") = 
   {
-    append("script", "python")("source" -> script)
+    append("script", language)("source" -> script)
     waitUntilReadyAndThrowOnError
   }
 

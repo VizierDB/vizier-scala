@@ -93,7 +93,18 @@ class ExecutionContext(
    * @param   name            The user-facing name of the dataset (relative to the scope)
    * @returns                 The spark dataframe for the specified datset
    */
-  def dataframe(name: String, registerInput: Boolean = true): Option[DataFrame] =
+  def dataframe(name: String, registerInput: Boolean = true): DataFrame =
+    dataframeOpt(name, registerInput).getOrElse {
+      throw new VizierException(s"No such dataset: $name")
+    }
+
+  /** 
+   * Retrieve the spark dataframe for the specified dataset
+   * 
+   * @param   name            The user-facing name of the dataset (relative to the scope)
+   * @returns                 The spark dataframe for the specified datset
+   */
+  def dataframeOpt(name: String, registerInput: Boolean = true): Option[DataFrame] =
     dataset(name, registerInput).map { MimirAPI.catalog.get(_) }
 
   /** 
@@ -103,7 +114,7 @@ class ExecutionContext(
    * @returns                 The spark dataframe for the specified datset
    */
   def datasetSchema(name: String, registerInput: Boolean = true): Option[Seq[StructField]] =
-    dataframe(name, registerInput).map { _.schema.fields } 
+    dataframeOpt(name, registerInput).map { _.schema.fields } 
 
   /**
    * Retrieve all datasets in scope

@@ -81,7 +81,8 @@ object Commands
   )
 
   register(packageId = "script", name = "Scripts", category = "code")(
-    "python"  -> info.vizierdb.commands.python.Python
+    "python"  -> info.vizierdb.commands.python.Python,
+    "scala"   -> info.vizierdb.commands.jvmScript.ScalaScript,
   )
 
   register(packageId = "docs", name = "Documentation", category = "docs")(

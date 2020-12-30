@@ -1,4 +1,4 @@
-scalaVersion := "2.12.10"
+scalaVersion := "2.12.12"
 
 val VIZIER_VERSION = "0.2-SNAPSHOT"
 val MIMIR_VERSION = "0.3-SNAPSHOT"
