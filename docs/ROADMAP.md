@@ -16,7 +16,7 @@
         - [x] org.apache.spark.sql.AnalysisException
 - [x] Copyright Comments
 - [x] Add a task to publish SNAPSHOT releases to local coursier repo
-- [ ] Make python error reporting prettier (full path to jar -> [Vizier])
+- [x] Make python error reporting prettier (full path to jar -> [Vizier])
 
 ## Vizier 0.1
 - [x] Set up a simple, naive background worker (Java's ForkJoinPool.)

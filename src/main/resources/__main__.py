@@ -87,8 +87,8 @@ except Exception as ex:
                     )
     else:
         message = "{}{}\n{}".format(
-            type(ex).__name__, 
-            ((": " + "; ".join(str(arg) for arg in ex.args)) if ex.args is not None else "" ), 
+            type(ex).__name__,
+            ((": " + "; ".join(str(arg) for arg in ex.args)) if ex.args is not None else ""),
             format_stack_trace(ex)
         )
     sys.stderr.write(message)
@@ -97,4 +97,3 @@ except Exception as ex:
 
 raw_output.flush()
 # exit(0)
-
