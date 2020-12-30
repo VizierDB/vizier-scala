@@ -23,10 +23,10 @@
   <logger name="info.vizierdb.viztrails.Scheduler$"              level="TRACE" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.commands.python.Python$"           level="DEBUG" />
+  <logger name="info.vizierdb.commands.python.Python$"           level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
-  <logger name="info.vizierdb.commands.python.PythonProcess"     level="DEBUG" />
-  <logger name="info.vizierdb.commands.python.PythonInterface"   level="DEBUG" />
+  <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />
+  <logger name="info.vizierdb.commands.python.PythonInterface"   level="WARN" />
   <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="DEBUG" />
   <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
 
