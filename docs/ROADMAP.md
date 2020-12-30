@@ -3,20 +3,17 @@
 - [ ] Lightweight Spark Runtime
 
 ## Vizier 0.2
-- [ ] Import / Export
-    - [x] Import
-    - [ ] Export
+- [x] Import
 - [ ] "Scala Script" (code)
 - [x] The final lenses
     - [x] "Comment Lens" (comment)
     - [x] "Pivot" (pivot)
     - [x] "Geocode" (geocode)
-- [ ] Minor Bugs
+- [x] Minor Bugs
     - [x] "Font MIME encoding"
     - [x] Report SQL parse exceptions properly 
         - [x] org.apache.spark.sql.catalyst.parser.ParseException
         - [x] org.apache.spark.sql.AnalysisException
-    - [ ] Selection pushdown happening too aggressively https://github.com/UBOdin/mimir-api/issues/33
 - [ ] Copyright Comments
 - [x] Add a task to publish SNAPSHOT releases to local coursier repo
 
@@ -62,3 +59,5 @@
 
 - [ ] Make rowids more "elegant" for Vizual operations
 - [ ] R script again (via Arrow?)
+- [ ] Export
+- [ ] Selection pushdown happening too aggressively https://github.com/UBOdin/mimir-api/issues/33

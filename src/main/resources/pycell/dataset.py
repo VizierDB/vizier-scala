@@ -121,7 +121,7 @@ class MutableDatasetRow(object):
     if caveats is not None:
       self.caveats = caveats
     else:
-      self.values = [False for col in values]
+      self.caveats = [False for col in values]
     self.row_caveat = row_caveat
 
   def __str__(self):
@@ -336,7 +336,11 @@ class DatasetClient(object):
                     ) -> DatasetColumn:
     """Add a new column to the dataset schema.
     """
-    column = DatasetColumn(name=name, data_type=data_type)
+    if len(self.columns) > 0:
+      idx = max(column.identifier for column in self.columns) + 1
+    else:
+      idx = 0
+    column = DatasetColumn(name=name, data_type=data_type, identifier=idx)
     self.columns = list(self.columns)
     if position is not None:
       self.columns.insert(position, column)
