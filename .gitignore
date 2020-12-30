@@ -6,3 +6,5 @@
 /upstream
 /.bsp
 __pycache__
+/bin/vizier
+/src/main/resources/__pycache__

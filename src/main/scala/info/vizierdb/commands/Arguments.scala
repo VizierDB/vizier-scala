@@ -1,7 +1,21 @@
+/* -- copyright-header:v1 --
+ * Copyright (C) 2017-2020 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.commands
 
-import play.api.libs.json.{ JsValue, Reads }
-import play.api.libs.json.JsNull
+import play.api.libs.json._
+import info.vizierdb.VizierException
 
 class Arguments(values: Map[String, (JsValue, Parameter)])
 {
@@ -11,11 +25,20 @@ class Arguments(values: Map[String, (JsValue, Parameter)])
       case Some((JsNull, _)) => false
       case _ => true
     }
-  def get[T](arg: String)(implicit read:Reads[T]): T = values(arg)._1.as[T]
+  def get[T](arg: String)(implicit read:Reads[T]): T = 
+    getOpt[T](arg).get
   def getOpt[T](arg: String)(implicit read:Reads[T]): Option[T] = 
-    values(arg)._1 match {
-      case JsNull => None
-      case other => Some(other.as[T])
+    try { 
+      val (argument, parameter) = values(arg)
+      argument match {
+        case JsNull if parameter.required => 
+          throw new VizierException(s"Undefined required parameter ${parameter.name}")
+        case JsNull => None
+        case other => Some(other.as[T])
+      }
+    } catch {
+      case _:JsResultException => 
+        throw new VizierException(s"Error parsing $arg ('${values(arg)._1}')")
     }
   def getList(arg: String): Seq[Arguments] =
     values(arg) match { 
@@ -70,3 +93,4 @@ object Arguments
     )
   }
 }
+

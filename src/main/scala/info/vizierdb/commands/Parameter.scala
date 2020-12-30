@@ -1,3 +1,17 @@
+/* -- copyright-header:v1 --
+ * Copyright (C) 2017-2020 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.commands
 
 import play.api.libs.json._
@@ -41,7 +55,10 @@ sealed trait Parameter
       "required" -> JsBoolean(required)
     )
   def convertToReact(j: JsValue): JsValue = j
-  def convertFromReact(j: JsValue): JsValue = j
+  def convertFromReact(
+    j: JsValue,
+    preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
+  ): JsValue = j
 }
 
 object Parameter
@@ -85,7 +102,9 @@ trait StringEncoder
   def encode(v: Any): JsValue = 
     v match {
       case x:String => JsString(x)
-      case _ => throw new VizierException(s"Invalid Parameter to $name (expected String)")
+      case None => JsNull
+      case Some(x) => encode(x)
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected String, but got $v)")
     }
 }
 
@@ -97,7 +116,9 @@ trait IntegerEncoder
       case x:Int => JsNumber(x)
       case x:Integer => JsNumber(x:Int)
       case x:Long => JsNumber(x)
-      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long)")
+      case None => JsNull
+      case Some(x) => encode(x)
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long, but got $v)")
     }
 }
 
@@ -111,7 +132,9 @@ trait FloatEncoder
       case x:Long => JsNumber(x)
       case x:Float => JsNumber(x)
       case x:Double => JsNumber(x)
-      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long/Float/Double)")
+      case None => JsNull
+      case Some(x) => encode(x)
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Int/Long/Float/Double, but got $v)")
     }
 }
 
@@ -127,6 +150,7 @@ case class BooleanParameter(
   def datatype = "bool"
   def doStringify(j: JsValue): String = j.as[Boolean].toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsBoolean]){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a boolean for $name") }
   override def getDefault: JsValue = 
     default.map { JsBoolean(_) }.getOrElse { JsNull }
@@ -148,6 +172,7 @@ case class CodeParameter(
   def datatype = "code"
   def doStringify(j: JsValue): String = j.as[String].toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a string for $name") }
   override def describe = super.describe ++ Map("language" -> JsString(language))
 }
@@ -162,6 +187,7 @@ case class ColIdParameter(
   def datatype = "colid"
   def doStringify(j: JsValue): String = j.toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a number/column id for $name") }
 }
 
@@ -175,6 +201,7 @@ case class DatasetParameter(
   def datatype = "dataset"
   def doStringify(j: JsValue): String = j.toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a string/dataset id for $name") }
 }
 
@@ -189,6 +216,7 @@ case class DecimalParameter(
   def datatype = "decimal"
   def doStringify(j: JsValue): String = j.as[Double].toString
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a number for $name") }
   override def getDefault: JsValue = 
     default.map { JsNumber(_) }.getOrElse { JsNull }
@@ -205,7 +233,9 @@ case class FileParameter(
   def doStringify(j: JsValue): String = j.as[FileArgument].toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsObject]){ 
                                   j.as[FileArgument].validate.map { _+" for "+name }
-                               } else { Some(s"Expected an object for $name") }
+                               } 
+                               else if ((j == JsNull) && (!required)) { None }
+                               else { Some(s"Expected an object for $name") }
   def encode(v: Any): JsValue = 
     Json.toJson(v match {
       case s:String => FileArgument( url = Some(s) )
@@ -225,6 +255,7 @@ case class IntParameter(
   def datatype = "int"
   def doStringify(j: JsValue): String = j.as[Int].toString
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a number for $name") }
   override def getDefault: JsValue = 
     default.map { JsNumber(_) }.getOrElse { JsNull }
@@ -243,14 +274,15 @@ case class ListParameter(
   {
     val rows = j.as[Seq[Map[String, JsValue]]]
     rows.map { row => 
-      "<" + components.map { t => t.stringify(row(t.id)) }.mkString(",") + ">"
+      "<" + components.map { t => t.stringify(row.getOrElse(t.id, t.getDefault)) }.mkString(",") + ">"
     }.mkString("; ")
   }
   def zipParameters[T](record: Map[String,T]): Seq[(Parameter, Option[T])] =
     components.map { component => component -> record.get(component.id) }
 
   def doValidate(j: JsValue): Iterable[String] = 
-    if(!j.isInstanceOf[JsArray]){ return Some(s"Expected a list for $name") }
+    if ((j == JsNull) && (!required)) { return None }
+    else if(!j.isInstanceOf[JsArray]){ return Some(s"Expected a list for $name") }
     else { 
       j.as[Seq[JsValue]].flatMap { elem => 
         if(!elem.isInstanceOf[JsObject]) { 
@@ -277,7 +309,7 @@ case class ListParameter(
           } else if(components.length == 1) {
             elems.map { elem => Map(components.head.id -> components.head.encode(elem)) }
           } else {
-            throw new VizierException(s"Invalid Parameter to $name (expected Seq to contain Maps)")
+            throw new VizierException(s"Invalid Parameter to $name (expected Seq to contain Maps, but instead has ${elems.head})")
           }
         return Json.toJson(ret)
       }
@@ -288,7 +320,7 @@ case class ListParameter(
     Json.toJson(
       j.as[Seq[Map[String,JsValue]]].map { row =>
         components.map { param => 
-          val v = row(param.id)
+          val v = row.getOrElse(param.id, param.getDefault)
           Map(
             "id" -> JsString(param.id),
             "value" -> param.convertToReact(v)
@@ -297,7 +329,10 @@ case class ListParameter(
       }
     )
   }
-  override def convertFromReact(j: JsValue): JsValue = 
+  override def convertFromReact(
+    j: JsValue,
+    preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
+  ): JsValue = 
   {
     JsArray(
       j.as[Seq[Seq[Map[String,JsValue]]]].map { case row => 
@@ -308,7 +343,13 @@ case class ListParameter(
         JsObject(
           components.flatMap { param => 
             arguments.get(param.id)
-                     .map { param.id -> _ }
+                     .map { v => 
+                        param.id -> 
+                          param.convertFromReact(
+                            preprocess(param, v),
+                            preprocess
+                          )
+                     }
           }
           .toMap
         )
@@ -330,19 +371,57 @@ case class RecordParameter(
   def doStringify(j: JsValue): String = 
   {
     val record = j.as[Map[String, JsValue]]
-    "<" + components.map { t => t.stringify(record(t.id)) }.mkString(", ") + ">"
+    "<" + components.map { t => t.stringify(record.getOrElse(t.id, t.getDefault)) }.mkString(", ") + ">"
   }
   def zipParameters[T](record: Map[String,T]): Seq[(Parameter, Option[T])] =
     components.map { component => component -> record.get(component.id) }
 
   def doValidate(j: JsValue): Iterable[String] =
-    if(!j.isInstanceOf[JsObject]){ return Some(s"Expected an object for $name") }
+    if ((j == JsNull) && (!required)) { None }
+    else if(!j.isInstanceOf[JsObject]){ return Some(s"Expected an object for $name") }
     else {
       zipParameters(j.as[Map[String, JsValue]])
         .flatMap { case (component, v) => 
           component.validate( v.getOrElse { component.getDefault } )
         }
     }
+  override def convertToReact(j: JsValue): JsValue = 
+  {
+    val record = j.as[Map[String,JsValue]]
+    Json.toJson(
+      components.map { param => 
+        val v = record.getOrElse(param.id, param.getDefault)
+        Map(
+          "id" -> JsString(param.id),
+          "value" -> param.convertToReact(v)
+        )
+      }
+    )
+  }
+  override def convertFromReact(
+    j: JsValue,
+    preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
+  ): JsValue = 
+  {
+    val arguments = j.as[Seq[Map[String,JsValue]]]
+                     .map { arg => 
+                         arg("id").as[String] -> arg("value")
+                     }
+                    .toMap
+    JsObject(
+      components.flatMap { param => 
+        arguments.get(param.id)
+                 .map { v => 
+                    param.id -> 
+                      param.convertFromReact(
+                        preprocess(param, v),
+                        preprocess
+                      )
+                 }
+      }
+      .toMap
+    )
+  }
 }
 
 case class RowIdParameter(
@@ -360,6 +439,7 @@ case class RowIdParameter(
   }
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber] || 
                                   j.isInstanceOf[JsString]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a number/rowid for $name") }
 }
 
@@ -373,6 +453,7 @@ case class ScalarParameter(
   def datatype = "scalar"
   def doStringify(j: JsValue): String = j.toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a number for $name") }
 }
 
@@ -414,10 +495,11 @@ case class EnumerableParameter(
   values: Seq[EnumerableValue],
   default: Option[Int] = None,
   required: Boolean = true,
-  hidden: Boolean = false
+  hidden: Boolean = false,
+  aliases: Map[String,String] = Map.empty
 ) extends Parameter with StringEncoder
 {
-  lazy val possibilities = Set(values.map { _.value }:_*)
+  lazy val possibilities = Set(values.map { _.value }:_*) ++ aliases.keySet
   def datatype = "string"
   def doStringify(j: JsValue): String = j.as[String]
   def doValidate(j: JsValue) = 
@@ -427,6 +509,7 @@ case class EnumerableParameter(
         Some(s"Expected $name to be one of ${possibilities.mkString(", ")}, but got $j")
       }
     }
+    else if ((j == JsNull) && (default.isDefined || !required)) { None }
     else { Some(s"Expected a string/enumerable for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default.map { values(_).value })
@@ -437,6 +520,13 @@ case class EnumerableParameter(
       "value"     -> v.value
     )}
   ))
+  override def convertFromReact(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
+  {
+    super.convertFromReact(j, preprocess) match { 
+      case JsString(key) => JsString(aliases.getOrElse(key, key))
+      case x => x
+    }
+  }
 }
 
 case class StringParameter(
@@ -444,13 +534,25 @@ case class StringParameter(
   name: String,
   default: Option[String] = None,
   required: Boolean = true,
-  hidden: Boolean = false
+  hidden: Boolean = false,
+  relaxed: Boolean = false
 ) extends Parameter with StringEncoder
 {
   def datatype = "string"
-  def doStringify(j: JsValue): String = j.as[String]
+  def doStringify(j: JsValue): String = 
+    j match {
+      case JsString(s) => s
+      case JsBoolean(b) if relaxed => b.toString()
+      case JsNumber(n) if relaxed => n.toString()
+      case JsNull if required => default.getOrElse("<undefined>")
+      case _ => throw new IllegalArgumentException(s"Invalid string parameter $j")
+    }
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
+                               else if(relaxed && (j.isInstanceOf[JsBoolean] 
+                                                 || j.isInstanceOf[JsNumber])){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a string for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default)
 }
+

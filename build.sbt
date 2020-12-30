@@ -1,4 +1,4 @@
-scalaVersion := "2.12.10"
+scalaVersion := "2.12.12"
 
 val VIZIER_VERSION = "0.2-SNAPSHOT"
 val MIMIR_VERSION = "0.3-SNAPSHOT"
@@ -69,11 +69,13 @@ libraryDependencies ++= Seq(
   "org.mimirdb"                   %% "mimir-caveats"                    % CAVEATS_VERSION,
 
   // Catalog management (trying this out... might be good to bring into mimir-api as well)
-  // "org.squeryl"                   %% "squeryl"                   % "0.9.15",
   "org.scalikejdbc"               %% "scalikejdbc"                      % "3.4.2",
   "org.scalikejdbc"               %% "scalikejdbc-syntax-support-macro" % "3.4.2",
   "org.scalikejdbc"               %% "scalikejdbc-test"                 % "3.4.2" % "test",
   "org.xerial"                    %  "sqlite-jdbc"                      % "3.32.3",
+
+  // Import/Export
+  "org.apache.commons"            % "commons-compress"                  % "1.20",
 
   // Testing
   "org.specs2"                    %%  "specs2-core"                     % "4.8.2" % "test",
@@ -90,8 +92,6 @@ libraryDependencies ++= Seq(
 ////// Publishing Metadata //////
 // use `sbt publish make-pom` to generate 
 // a publishable jar artifact and its POM metadata
-
-publishMavenStyle := true
 
 pomExtra := <url>http://vizierdb.info</url>
   <licenses>
@@ -135,7 +135,9 @@ pomPostProcess := { (node:XNode) =>
 // use `sbt publish` to update the package in 
 // your own local ivy cache
 
-publishTo := Some(Resolver.file("file",  new File("/var/www/maven_repo/")))
+publishMavenStyle := true
+publishTo := Some(MavenCache("local-maven",  file("/var/www/maven_repo/")))
+
 // publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
 ///////////////////////////////////////////
@@ -199,7 +201,7 @@ bootstrap := {
       if(!r.root.startsWith("file:")){
         Seq("-r", r.root)
       } else { Seq() }
-  }.flatten
+  }
 
   val (art, file) = packagedArtifact.in(Compile, packageBin).value
   val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+(-SNAPSHOT)?)$", "")
@@ -208,7 +210,7 @@ bootstrap := {
   for(resolver <- resolverArgs){
     println("  "+resolver)
   }
-  println
+
   println("Generating Vizier binary")
 
   val cmd = List(
@@ -218,15 +220,47 @@ bootstrap := {
     "-f",
     "-o", vizier_bin,
     "-r", "central"
-  )++resolverArgs
+  )++resolverArgs.flatten
   println(cmd.mkString(" "))
 
   Process(cmd) ! logger match {
       case 0 => 
       case n => sys.error(s"Bootstrap failed")
   }
-  
 }
+
+lazy val updateBootstrap = taskKey[Unit]("Update Local Bootstrap Jars")
+updateBootstrap := {
+  import java.nio.file.{ Files, Paths }
+  import scala.sys.process._
+  val (art, file) = packagedArtifact.in(Compile, packageBin).value
+  val home = Paths.get(System.getProperty("user.home"))
+  val coursier_cache = home.resolve(".cache").resolve("coursier")
+  if(Files.exists(coursier_cache)){
+    val maven_mimir = 
+      coursier_cache.resolve("v1")
+                    .resolve("https")
+                    .resolve("maven.mimirdb.info")
+    val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+(-SNAPSHOT)?)$", "")
+    val pathComponents = 
+      (organization.value.split("\\.") :+ qualified_artifact_name :+ version.value)
+    val repo_dir = pathComponents.foldLeft(maven_mimir) { _.resolve(_) }
+    val target = repo_dir.resolve(s"$qualified_artifact_name-${version.value}.jar")
+
+    if(Files.exists(target)){
+      val cmd = Seq("cp", file.toString, target.toString)
+      println(cmd.mkString(" "))
+      Process(cmd) .!!
+    } else {
+      println(s"$target does not exist")
+    }
+
+
+  } else { 
+    println(s"$coursier_cache does not exist")
+  }
+}
+
 ///////////////////////////////////////////
 /////// Helpful command to get dependencies
 ///////////////////////////////////////////
@@ -240,15 +274,16 @@ checkout := {
     Files.createDirectory(upstream)
   }
   Seq(
-    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"      , "ui"     ), 
-    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"     , "mimir"  ),
-    ("Caveats"  , "git@github.com:UBOdin/mimir-caveatgs.git", "caveats"),
-  ).foreach { case (name, repo, stub) => 
+    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"      , "ui"     , Some("scala")), 
+    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"     , "mimir"  , None),
+    ("Caveats"  , "git@github.com:UBOdin/mimir-caveatgs.git", "caveats", None),
+  ).foreach { case (name, repo, stub, branch) => 
     val dir = upstream.resolve(stub)
     if(!Files.exists(dir.resolve(".git"))){
       println(s"Checking out $name into $dir")
       if(!Files.exists(dir)){
-        new ProcessBuilder("git", "clone", repo, dir.toString)
+        val cmd = Seq("git", "clone", repo, dir.toString) ++ branch.toSeq.flatMap { Seq("-b", _) }
+        new ProcessBuilder(cmd:_*)
               .start
               .waitFor
       } else { 
@@ -262,7 +297,7 @@ checkout := {
               .directory(dir.toFile)
               .start
               .waitFor
-        new ProcessBuilder("git", "pull", "origin", "master")
+        new ProcessBuilder("git", "pull", "origin", branch.getOrElse("master"))
               .directory(dir.toFile)
               .start
               .waitFor
@@ -272,5 +307,64 @@ checkout := {
       println(s"$name already checked out")
     }
   }
+}
+
+///////////////////////////////////////////
+/////// Helpful command to get dependencies
+///////////////////////////////////////////
+lazy val fixCopyrights = taskKey[Unit]("Update copyright headers on files")
+fixCopyrights := {
+  import java.nio.file.{ Files, Path }
+  import scala.io.Source
+  import sbt.nio.file.FileTreeView
+  import sbt.io.RegularFileFilter
+  import java.io.{ BufferedWriter, FileWriter, OutputStreamWriter }
+  val licenseLines = Source.fromFile("LICENSE.txt").getLines.toSeq
+  val firstLine = "-- copyright-header:v1 --"
+  val lastLine  = "-- copyright-header:end --"
+  def license(start: String = "", end: String = "", line: String = "") = 
+    (start+firstLine) +: (licenseLines :+ (lastLine+end)).map { line+_ }
+
+  // val scalaFiles = Glob("src") / **
+  // println(FileTreeView.default.list(scalaFiles).toSeq)
+
+  def injectHeaderIfNeeded(file: Path, start: String, end: String, line: String) =
+  {
+    val lines = Source.fromFile(file.toString).getLines.toIndexedSeq
+    if(!lines.head.equals(start+firstLine)){
+      println(s"Fixing $file")
+      val tempFile = file.resolveSibling(file.getFileName()+".tmp")
+      val writer = Files.newBufferedWriter(tempFile)
+      // val writer = new OutputStreamWriter(System.out)
+      val linesPlusBlankEnd = 
+      if(!lines.reverse.head.equals("")) { lines :+ "" } 
+        else {lines}
+
+      for(line <- (license(start, end, line) ++ linesPlusBlankEnd)){
+        // println(s"Writing: $line")
+        writer.write((line+"\n"))
+      }
+      writer.flush()
+      writer.close()
+      Files.delete(file)
+      Files.move(tempFile, file)
+    } else { 
+      // println(s"No need to fix $file")
+    }
+  }
+
+  fileTreeView.value.list(
+    Glob(s"${baseDirectory.value}/src/**"), 
+    RegularFileFilter.toNio && "**/*.scala"
+  ).map { _._1 }
+   // .take(1)
+   .foreach { injectHeaderIfNeeded(_, "/* ", " */", " * ") }
+
+  fileTreeView.value.list(
+    Glob(s"${baseDirectory.value}/src/**"), 
+    RegularFileFilter.toNio && "**/*.py"
+  ).map { _._1 }
+   // .take(2)
+   .foreach { injectHeaderIfNeeded(_, "# ", "", "# ") }
 
 }

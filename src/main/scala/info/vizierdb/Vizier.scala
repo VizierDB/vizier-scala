@@ -1,3 +1,17 @@
+/* -- copyright-header:v1 --
+ * Copyright (C) 2017-2020 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb
 
 import scalikejdbc._
@@ -11,10 +25,15 @@ import info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyDriver
 import info.vizierdb.catalog.{ Project, Schema, Cell }
 import org.mimirdb.data.LocalFSStagingProvider
 import java.io.File
+import java.util.Properties
+import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.export.ImportProject
+import java.io.FileInputStream
 
 object Vizier
+  extends LazyLogging
 {
-  var basePath = { val d = new File("vizier.db"); if(!d.exists()){ d.mkdir() }; d }
+  var config: Config = null
 
   def initSQLite(db: String = "Vizier.db") = 
   {
@@ -25,7 +44,7 @@ object Vizier
     // slightly slower, 
     DriverManager.registerDriver(SQLiteNoReadOnlyDriver)
     ConnectionPool.singleton(
-      url = "no-read-only:jdbc:sqlite:" + new File(basePath, db).toString,
+      url = "no-read-only:jdbc:sqlite:" + new File(config.basePath(), db).toString,
       user = "",
       password = "",
       settings = ConnectionPoolSettings(
@@ -38,22 +57,30 @@ object Vizier
 
   def initMimir(db: String = "Mimir.db", stagingDirectory: String = ".") =
   {
+    config.setMimirConfig
     MimirAPI.sparkSession = InitSpark.local
     InitSpark.initPlugins(MimirAPI.sparkSession)
-    MimirAPI.metadata = new MimirJDBC("sqlite", new File(basePath, db).toString)
+    MimirAPI.metadata = new MimirJDBC("sqlite", new File(config.basePath(), db).toString)
     MimirAPI.catalog = new MimirCatalog(
       MimirAPI.metadata,
-      new LocalFSStagingProvider(new File(basePath, stagingDirectory).toString),
+      new LocalFSStagingProvider(config.basePath()),
       MimirAPI.sparkSession
     )
     MimirAPI.runServer(MimirAPI.DEFAULT_API_PORT) // Starts the Mimir server **in the background**
-    MimirAPI.conf = 
-      new MimirConfig(Seq(
-        "--python", info.vizierdb.commands.python.PythonProcess.PYTHON_COMMAND,
-        "--data-dir", new File(basePath, "mimir_data").toString,
-        "--staging-dir", new File(basePath, stagingDirectory).toString
-      ))
-    MimirAPI.conf.verify
+    val geocoders = 
+      Seq(
+        config.googleAPIKey.map { k =>
+          logger.debug("Google Services Will Be Available")
+          new org.mimirdb.lenses.implementation.GoogleGeocoder(k) 
+        }.toOption,
+        config.osmServer.map { k =>
+          logger.debug("OSM Services Will Be Available")
+          new org.mimirdb.lenses.implementation.OSMGeocoder(k) 
+        }.toOption
+      ).flatten
+    if(!geocoders.isEmpty){ 
+      org.mimirdb.lenses.Lenses.initGeocoding(geocoders, MimirAPI.catalog) 
+    }
   }
 
   def initORMLogging()
@@ -74,13 +101,26 @@ object Vizier
 
   def main(args: Array[String]) 
   {
-    println("Starting SQLite...")
+    config = new Config(args)
+
+    println("Setting Up Project Library...")
+    if(!config.basePath().exists) { config.basePath().mkdir() }
     initSQLite()
     Schema.initialize()
     initORMLogging()
     bringDatabaseToSaneState()
+
     println("Starting Mimir...")
     initMimir()
+
+    if(config.ingest.file.isSupplied){
+      ImportProject(
+        new FileInputStream(config.ingest.file()),
+        execute = config.ingest.execute()
+      )
+      return
+    }
+
     println("Starting Server...")
     VizierAPI.init()
     println(s"... Server running at < ${VizierAPI.urls.ui} >")

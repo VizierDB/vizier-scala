@@ -1,3 +1,17 @@
+# -- copyright-header:v1 --
+# Copyright (C) 2017-2020 University at Buffalo,
+#                         New York University,
+#                         Illinois Institute of Technology.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# -- copyright-header:end --
 import json
 import sys
 from util import IO_Wrapper, format_stack_trace
@@ -73,8 +87,8 @@ except Exception as ex:
                     )
     else:
         message = "{}{}\n{}".format(
-            type(ex).__name__, 
-            ((": " + "; ".join(str(arg) for arg in ex.args)) if ex.args is not None else "" ), 
+            type(ex).__name__,
+            ((": " + "; ".join(str(arg) for arg in ex.args)) if ex.args is not None else ""),
             format_stack_trace(ex)
         )
     sys.stderr.write(message)
