@@ -63,7 +63,6 @@ object SimpleChart extends Command
         }
       )
     )
-    context.message("Dataset Cloned")
   }
 }
 
