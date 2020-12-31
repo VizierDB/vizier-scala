@@ -282,7 +282,7 @@ checkout := {
     if(!Files.exists(dir.resolve(".git"))){
       println(s"Checking out $name into $dir")
       if(!Files.exists(dir)){
-        val cmd = Seq("git", "clone", repo, dir.toString) ++ branch.toSeq.flatMap { Seq("-b", _) }
+        val cmd = Seq("git", "clone", repo) ++ branch.toSeq.flatMap { Seq("-b", _) } ++ Seq(dir.toString)
         new ProcessBuilder(cmd:_*)
               .start
               .waitFor
