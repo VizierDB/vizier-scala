@@ -24,13 +24,22 @@ import info.vizierdb.types.{ Identifier, ArtifactType }
 import org.mimirdb.api.request.QueryMimirRequest
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.response._
+import info.vizierdb.api.handler.Handler
+import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
-case class WorkflowSQLRequest(projectId: Identifier, branchId: Identifier, workflowId: Option[Identifier], query: String)
-  extends Request
+object WorkflowSQLHandler
+  extends Handler
   with LazyLogging
 {
-  def handle: Response = 
+  def handle(
+    pathParameters: Map[String, JsValue], 
+    request: HttpServletRequest 
+  ): Response =
   {
+    val projectId = pathParameters("projectId").as[Long]
+    val branchId = pathParameters("branchId").as[Long]
+    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
+    val query = request.getParameter("query")
     DB.readOnly { implicit session => 
       val workflow: Workflow = 
         (workflowId match {

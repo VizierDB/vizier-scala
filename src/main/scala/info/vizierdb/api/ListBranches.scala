@@ -19,15 +19,17 @@ import play.api.libs.json._
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.Project
-import org.mimirdb.api.Request
+import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
+import info.vizierdb.api.handler._
 
-case class ListBranchesRequest(projectId: Identifier)
-  extends Request
+object ListBranchesHandler
+  extends SimpleHandler
 {
-  def handle = 
+  def handle(pathParameters: Map[String, JsValue]): Response =
   {
+    val projectId = pathParameters("projectId").as[Long]
     DB.readOnly { implicit session => 
       Project.lookup(projectId)
         match { 

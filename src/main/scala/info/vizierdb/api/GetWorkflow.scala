@@ -19,15 +19,21 @@ import play.api.libs.json._
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow }
-import org.mimirdb.api.Request
+import org.mimirdb.api.Response
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
+import info.vizierdb.api.handler.SimpleHandler
 
-case class GetWorkflowRequest(projectId: Identifier, branchId: Identifier, workflowId: Option[Identifier])
-  extends Request
+object GetWorkflowHandler
+  extends SimpleHandler
 {
-  def handle = 
+  def handle(pathParameters: Map[String, JsValue]): Response =
   {
+    val projectId = pathParameters("projectId").as[Long]
+    val branchId = pathParameters("branchId").as[Long]
+    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
+
+    println(s"PROJECT: $projectId; BRANCH: $branchId; WORKFLOW: $workflowId")
     DB.readOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
         workflowId match {
