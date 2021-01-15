@@ -87,11 +87,8 @@ case class AppendModule(
   } 
 }
 
-object AppendModule extends HandlerMetadata
+object AppendModule
 {
   implicit val format: Format[AppendModule] = Json.format
-  
-  def summary = "Append a module to the end of the workflow"
-  def description = ""
 }
 

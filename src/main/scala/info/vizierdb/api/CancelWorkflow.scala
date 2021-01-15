@@ -25,11 +25,14 @@ import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response._
-import info.vizierdb.api.handler.SimpleHandler
+import info.vizierdb.api.handler._
+import info.vizierdb.api.metadata._
 
 object CancelWorkflowHandler
   extends SimpleHandler
 {
+  override val summary = "Cancel a running workflow"
+
   def handle(pathParameters: Map[String, JsValue]): Response =
   {
     val projectId = pathParameters("projectId").as[Long]

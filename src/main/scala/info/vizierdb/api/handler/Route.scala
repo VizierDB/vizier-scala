@@ -96,10 +96,12 @@ case class Route(
 
 object Route
 {
+  import scala.reflect.runtime.universe._
+  
   type Path = Either[(RequestMethod.T, Handler), (String, Route)]
 
   object implicits {
-    implicit def embedHandler(h: (RequestMethod.T, Handler)): Path = Left(h)
+    implicit def embedHandler[T <: Handler](h: (RequestMethod.T, T)): Path = Left(h)
     implicit def embedRoute(r: (String, Route)): Path = Right(r)
   }
 

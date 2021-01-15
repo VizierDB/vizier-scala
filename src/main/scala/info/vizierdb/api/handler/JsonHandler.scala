@@ -7,13 +7,19 @@ import info.vizierdb.api.response.VizierErrorResponse
 import info.vizierdb.util.StringUtils.ellipsize
 import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.util.JsonUtils.stringifyJsonParseErrors
+import info.vizierdb.util.StringUtils
+import scala.reflect.runtime.universe._
+import json.Json.{ schema => jsonSchemaOf }
+import json.{ Schema => JsonSchema }
 
-class JsonHandler[R <: Request](
-  implicit val format: Format[R]
+class JsonHandler[R <: Request]()(
+  implicit val format: Format[R],
+  implicit val requestTag: TypeTag[R]
 )
   extends Handler
   with LazyLogging
 {
+  val requestType = typeOf[R]
 
   def handle(
     pathParameters: Map[String, JsValue], 
@@ -54,10 +60,27 @@ class JsonHandler[R <: Request](
       case Right(response) => response
     }
   }
+
+  override def summary =
+    StringUtils.camelCaseToHuman(
+      requestType.toString
+                 .split("\\.")
+                 .last
+                 .replace("$", "")
+    )
+
+  override def requestBody = Some(JsonContent[R](Json.obj())())
 }
 
 object JsonHandler
 {
-  def apply[R <: Request](implicit format: Format[R]): JsonHandler[R] = 
-    new JsonHandler[R]
+  import scala.language.experimental.macros
+  import scala.reflect.macros.blackbox
+
+  def apply[R <: Request](
+    implicit 
+      tag: TypeTag[R],
+      format: Format[R]
+  ) =
+    new JsonHandler[R]()
 }

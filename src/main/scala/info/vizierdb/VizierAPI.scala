@@ -169,16 +169,16 @@ object VizierServlet
   extends HttpServlet 
   with LazyLogging
 {
-  val PROJECT  = "\\/projects\\/([0-9]+)(\\/.*|)".r
-  val BRANCH   = "\\/branches\\/([0-9]+)(\\/.*|)".r
-  val HEAD = "\\/head(\\/.*|)".r
-  val WORKFLOW = "\\/workflows\\/([0-9]+)(\\/.*|)".r
-  val MODULE = "\\/modules\\/([0-9]+)(\\/.*|)".r
-  val CHART = "\\/charts\\/([0-9]+)".r
-  val DATASET = "\\/datasets\\/([0-9]+)(\\/.*|)".r
-  val FILE = "\\/files\\/([0-9]+)(\\/.*|)".r
-  val TASK = "\\/tasks\\/(\\/.*|)".r
-  val ARTIFACT = "\\/artifacts/([0-9]+)(\\/.*|)".r
+  // val PROJECT  = "\\/projects\\/([0-9]+)(\\/.*|)".r
+  // val BRANCH   = "\\/branches\\/([0-9]+)(\\/.*|)".r
+  // val HEAD = "\\/head(\\/.*|)".r
+  // val WORKFLOW = "\\/workflows\\/([0-9]+)(\\/.*|)".r
+  // val MODULE = "\\/modules\\/([0-9]+)(\\/.*|)".r
+  // val CHART = "\\/charts\\/([0-9]+)".r
+  // val DATASET = "\\/datasets\\/([0-9]+)(\\/.*|)".r
+  // val FILE = "\\/files\\/([0-9]+)(\\/.*|)".r
+  // val TASK = "\\/tasks\\/(\\/.*|)".r
+  // val ARTIFACT = "\\/artifacts/([0-9]+)(\\/.*|)".r
 
   def handle(
     method: RequestMethod.T,
