@@ -11,7 +11,7 @@ import info.vizierdb.api.response.VizierErrorResponse
 case class Route(
   handlers: Map[RequestMethod.T, Handler],
   children: Map[String,Route],
-  fieldParser: Option[(String, String => JsValue, Route)],
+  fieldParser: Option[(String, FieldType.T, String => JsValue, Route)],
   tailField: Option[String]
 )
   extends Response
@@ -78,7 +78,7 @@ case class Route(
                           request
                         )}
               .orElse { fieldParser.map { 
-                case (name, parser, route) =>
+                case (name, _, parser, route) =>
                   logger.trace(s"Parsing field: ${pathComponents(idx)}")
                   route.handle(
                     pathComponents,
@@ -123,7 +123,7 @@ object Route
           (None, Some(fieldName))
         } else {
           val fieldParser = FieldType.parserFor(fieldType)
-          (Some(fieldName, fieldParser, route), None)
+          (Some(fieldName, fieldType, fieldParser, route), None)
         }
       }.getOrElse { (None, None) }
 
