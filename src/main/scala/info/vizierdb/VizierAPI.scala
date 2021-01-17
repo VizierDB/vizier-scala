@@ -311,11 +311,15 @@ object VizierServlet
             POST -> process(ReloadRequest) // clear caches
           )
 
-
         case "/projects/import" => 
-          ??? // import a project
+          respond(
+            POST -> ImportProject.handler // import a project
+          )
+
         case PROJECT(projectId, "/export") => 
-          ??? // export project
+          respond(
+            GET -> process(ExportProject(projectId = projectId.toLong)) // export project
+          )
 
         case PROJECT(projectId, "") => 
           respond(

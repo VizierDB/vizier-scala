@@ -17,6 +17,7 @@ package info.vizierdb.util
 import java.io.{InputStream, OutputStream, BufferedInputStream}
 import scala.collection.mutable.Buffer
 
+
 object Streams
 {
   def cat(source: InputStream, sink: OutputStream)
@@ -42,5 +43,11 @@ object Streams
     }
     buffer.toArray
   }
+
+  def closeAfter[T](c: InputStream)(op: InputStream => T): T =
+    { val ret = op(c); c.close(); ret }
+
+  def closeAfter[T](c: OutputStream)(op: OutputStream => T): T =
+    { val ret = op(c); c.close(); ret }
 }
 

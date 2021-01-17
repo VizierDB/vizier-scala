@@ -19,13 +19,21 @@ import org.mimirdb.api.Response
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.util.Streams
 
-case class FileResponse(file: File, name: String, mimeType: String) extends Response
+case class FileResponse(
+  file: File, 
+  name: String, 
+  mimeType: String, 
+  afterCompletedTrigger: () => Unit = {() => ()}
+) extends Response
 {
   def write(output: HttpServletResponse)
   {
     output.setHeader("Content-Disposition", "attachment; filename=\""+name+"\"")
     output.setContentType(mimeType)
-    Streams.cat(new FileInputStream(file), output.getOutputStream())
+    Streams.closeAfter(new FileInputStream(file)) { f => 
+      Streams.cat(f, output.getOutputStream())
+    }
+    afterCompletedTrigger()
   }
 }
 

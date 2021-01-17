@@ -47,6 +47,7 @@ class Module(
 )
   extends LazyLogging
 {
+  lazy val command = Commands.getOption(packageId, commandId)
   override def toString = 
     s"[$id] $packageId.$commandId($arguments)"
 
@@ -61,9 +62,17 @@ class Module(
     )
   }
 
+  def description = 
+    try { 
+      command.map { _.format(arguments) }
+             .getOrElse { s"UNKNOWN COMMAND $packageId.$commandId" }
+    } catch { 
+      case e: Exception => 
+        s"Error formatting command: [$e]"
+    }
+
   def describe(cell: Cell, projectId: Identifier, branchId: Identifier, workflowId: Identifier, artifacts: Seq[ArtifactRef])(implicit session:DBSession): JsObject = 
   {
-    val command = Commands.getOption(packageId, commandId)
     val timestamps:Map[String,String] = Map(
       "createdAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(cell.created)
     ) ++ cell.result.toSeq.flatMap {
@@ -89,14 +98,6 @@ class Module(
     val messages: Seq[Message] = 
       cell.resultId.map { Result.outputs(_) }.toSeq.flatten
 
-    val description = 
-      try { 
-        command.map { _.format(arguments) }
-               .getOrElse { s"UNKNOWN COMMAND $packageId.$commandId" }
-      } catch { 
-        case e: Exception => 
-          s"Error formatting command: [$e]"
-      }
 
     Json.obj(
       "id" -> id,

@@ -24,11 +24,11 @@ import info.vizierdb.types._
 import info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyDriver
 import info.vizierdb.catalog.{ Project, Schema, Cell }
 import org.mimirdb.data.LocalFSStagingProvider
-import java.io.File
+import java.io._
 import java.util.Properties
 import com.typesafe.scalalogging.LazyLogging
-import info.vizierdb.export.ImportProject
-import java.io.FileInputStream
+import info.vizierdb.export.{ ExportProject, ImportProject }
+import info.vizierdb.util.Streams
 
 object Vizier
   extends LazyLogging
@@ -55,7 +55,11 @@ object Vizier
     )
   }
 
-  def initMimir(db: String = "Mimir.db", stagingDirectory: String = ".") =
+  def initMimir(
+    db: String = "Mimir.db", 
+    stagingDirectory: String = ".", 
+    runServer: Boolean = true
+  ) =
   {
     config.setMimirConfig
     MimirAPI.sparkSession = InitSpark.local
@@ -66,7 +70,6 @@ object Vizier
       new LocalFSStagingProvider(config.basePath()),
       MimirAPI.sparkSession
     )
-    MimirAPI.runServer(MimirAPI.DEFAULT_API_PORT) // Starts the Mimir server **in the background**
     val geocoders = 
       Seq(
         config.googleAPIKey.map { k =>
@@ -80,6 +83,9 @@ object Vizier
       ).flatten
     if(!geocoders.isEmpty){ 
       org.mimirdb.lenses.Lenses.initGeocoding(geocoders, MimirAPI.catalog) 
+    }
+    if(runServer){
+      MimirAPI.runServer(MimirAPI.DEFAULT_API_PORT) // Starts the Mimir server **in the background**
     }
   }
 
@@ -111,19 +117,42 @@ object Vizier
     bringDatabaseToSaneState()
 
     println("Starting Mimir...")
-    initMimir()
+    initMimir(
+      runServer = 
+        !config.ingest.file.isSupplied
+        && !config.export.projectId.isSupplied
+    )
 
     if(config.ingest.file.isSupplied){
-      ImportProject(
-        new FileInputStream(config.ingest.file()),
-        execute = config.ingest.execute()
-      )
-      return
+      try {
+        Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
+          ImportProject(
+            _,
+            execute = config.ingest.execute()
+          )
+        }
+      } catch {
+        case e:VizierException => 
+          println(s"\nError: ${e.getMessage()}")
+      }
+    } else if (config.export.projectId.isSupplied){
+      try { 
+        Streams.closeAfter(new FileOutputStream(config.export.file())) { 
+          ExportProject(
+            config.export.projectId(),
+            _
+          )
+        }
+        println(s"\nExported project ${config.export.projectId()} to '${config.export.file()}'")
+      } catch {
+        case e:VizierException => 
+          println(s"\nError: ${e.getMessage()}")
+      }
+    } else {
+      println("Starting Server...")
+      VizierAPI.init()
+      println(s"... Server running at < ${VizierAPI.urls.ui} >")
+      VizierAPI.server.join()
     }
-
-    println("Starting Server...")
-    VizierAPI.init()
-    println(s"... Server running at < ${VizierAPI.urls.ui} >")
-    VizierAPI.server.join()
   }
 }

@@ -80,5 +80,20 @@ trait Command
       }.toMap
     )
   }
+  def encodeReactArguments(
+    arguments: JsObject
+  ): JsArray = 
+  {
+    JsArray(
+      parameters.flatMap { param => 
+        arguments.value.get(param.id).map { j => 
+          Json.obj(
+            "id" -> param.id,
+            "value" -> param.convertToReact(j)
+          )
+        }
+      }
+    )
+  }
 }
 

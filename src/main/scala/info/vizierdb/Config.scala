@@ -59,6 +59,16 @@ class Config(arguments: Seq[String])
     )
   }
   addSubcommand(ingest)
+  
+  object export extends Subcommand("export") {
+    val projectId = trailArg[Long]("project-id",
+      descr = "The identifier of the project to export"
+    )
+    val file = trailArg[File]("export", 
+      descr = "The file to export to"
+    )
+  }
+  addSubcommand(export)
 
 
   verify()

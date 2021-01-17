@@ -202,10 +202,11 @@ class MutableProject(
           ).toString.getBytes
         )
       }
-    Streams.cat(
-      new FileInputStream(file),
-      new FileOutputStream(artifact.file)
-    )
+    Streams.closeAfter(new FileInputStream(file)) { in => 
+      Streams.closeAfter(new FileOutputStream(artifact.file)) { out => 
+        Streams.cat(in, out)
+      }
+    }
     return artifact
   }
 

@@ -61,7 +61,10 @@ object FileArgument
   def apply(j: JsValue, decodeFileId: String => Identifier): FileArgument = 
   {
     FileArgument(
-      (j \ "fileid").asOpt[String].map { decodeFileId },
+      (j \ "fileid").asOpt[String]
+                    .orElse { (j \ "fileid").asOpt[Long]
+                                            .map { x:Long => x.toString } }
+                    .map { decodeFileId },
       (j \ "filename").asOpt[String],
       (j \ "file").asOpt[FileDescription],
       (j \ "url").asOpt[String]

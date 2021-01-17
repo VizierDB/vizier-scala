@@ -42,6 +42,8 @@ object types
         case "update" | "upd" => UPDATE
       }
     }
+
+    def encode(t: T) = t.toString().toLowerCase()
   }
 
   object ExecutionState extends Enumeration
