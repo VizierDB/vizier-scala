@@ -28,6 +28,8 @@ case class ExportedCommand(
   lazy val (sanitizedPackageId, sanitizedCommandId) = 
     (packageId, commandId) match {
       case ("python", "code") => ("script", "python")
+      case ("markdown", "code") => ("docs", "markdown")
+      case ("sampling", x) => ("sample", x)
       case x => x
     }
 

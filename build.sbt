@@ -1,8 +1,8 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "0.3-SNAPSHOT"
-val MIMIR_VERSION = "0.3"
-val CAVEATS_VERSION = "0.2.9"
+val VIZIER_VERSION = "0.3"
+val MIMIR_VERSION = "0.4"
+val CAVEATS_VERSION = "0.3.0"
 
 // Project and subprojects
 lazy val vizier = (project in file("."))
@@ -246,11 +246,22 @@ updateBootstrap := {
       (organization.value.split("\\.") :+ qualified_artifact_name :+ version.value)
     val repo_dir = pathComponents.foldLeft(maven_mimir) { _.resolve(_) }
     val target = repo_dir.resolve(s"$qualified_artifact_name-${version.value}.jar")
+    val targetPom = repo_dir.resolve(s"$qualified_artifact_name-${version.value}.pom")
 
+    
     if(Files.exists(target)){
-      val cmd = Seq("cp", file.toString, target.toString)
-      println(cmd.mkString(" "))
-      Process(cmd) .!!
+      {
+        val cmd = Seq("cp", file.toString, target.toString)
+        println(cmd.mkString(" "))
+        Process(cmd) .!!
+      }
+
+      {
+        val cmd = Seq("cp", file.toString.replace(".jar", ".pom"), targetPom.toString)
+        println(cmd.mkString(" "))
+        Process(cmd) .!!
+      }
+
     } else {
       println(s"$target does not exist")
     }

@@ -27,7 +27,7 @@ import info.vizierdb.catalog.{ Workflow, Cell, Result }
 object Scheduler
   extends LazyLogging
 {
-  val workers = new ForkJoinPool()
+  val workers = new ForkJoinPool(10)
   val runningWorkflows = scala.collection.mutable.Map[Identifier,WorkflowExecution]()
 
   /**
@@ -38,13 +38,17 @@ object Scheduler
   {
     logger.debug(s"Scheduling Workflow ${workflowId}")
     this.synchronized {
+      logger.trace(s"Acquired scheduler lock for ${workflowId}")
       if(runningWorkflows contains workflowId){
         logger.warn(s"Ignoring attempt to reschedule workflow ${workflowId}")
         return
       }
+      logger.trace(s"Allocating execution manager for ${workflowId}")
       val executor = new WorkflowExecution(workflowId)
       runningWorkflows.put(workflowId, executor)
+      logger.trace(s"Starting execution manager for ${workflowId}")
       workers.execute(executor)
+      logger.trace(s"Done scheduling ${workflowId}")
     }
   }
 
@@ -78,9 +82,8 @@ object Scheduler
               FROM cell WHERE state = ${ExecutionState.STALE.id}) stale_cells
         WHERE workflow.id = stale_cells.workflowid
         """
-        .map { _.int(1) }.list.apply()
-        .foreach { schedule(_) }
-    }
+    } .map { _.int(1) }.list.apply()
+      .foreach { schedule(_) }
   }
 
   /**
@@ -88,6 +91,7 @@ object Scheduler
    */
   def running(implicit session: DBSession): Seq[Workflow] =
   {
+    logger.debug("Getting running workflows")
     this.synchronized {
       runningWorkflows
         .filterNot { _._2.isDone() }
@@ -104,6 +108,7 @@ object Scheduler
    */
   def cleanup(workflowId: Identifier)
   {
+    logger.debug("Cleaning up workflows")
     this.synchronized {
       val executor = runningWorkflows.get(workflowId).getOrElse { return }
       if(executor.isDone()) { runningWorkflows.remove(workflowId) }
@@ -114,7 +119,11 @@ object Scheduler
    * Check to see if the specified workflow is still pending.  Aliased as Workflow.isPending
    */
   def isWorkflowPending(workflowId: Identifier): Boolean = 
-    { cleanup(workflowId); this.synchronized { runningWorkflows contains workflowId } }
+  { 
+    logger.debug("Checking for pending workflows")
+    cleanup(workflowId); 
+    this.synchronized { runningWorkflows contains workflowId } 
+  }
 
   /**
    * Block until the specified workflow completes.  The workflow must already be scheduled.
@@ -280,12 +289,18 @@ object Scheduler
 
     def exec(): Boolean = 
     {
-      if(aborted) {
-        logger.debug(s"Aborted processing of Workflow ${workflowId} before start")
-      }
-      logger.debug(s"Starting processing of Workflow ${workflowId}")
-      var cell: Option[Cell] = nextTarget
       try { 
+        logger.debug(s"In executor for Workflow ${workflowId}")
+        if(aborted) {
+          logger.debug(s"Aborted processing of Workflow ${workflowId} before start")
+        }
+        logger.debug("Recomputing Cell States")
+        DB autoCommit { implicit session => 
+          Provenance.updateCellStates(Workflow.get(workflowId).cells, Map.empty)
+        }
+        logger.debug(s"Starting processing of Workflow ${workflowId}")
+        var cell: Option[Cell] = nextTarget
+        logger.debug(s"First target for Workflow ${workflowId}: $cell")
         while( (!aborted) &&  (cell != None) ){
           processSynchronously(cell.get)
           cell = nextTarget

@@ -217,7 +217,7 @@ object ImportProject
               (exportedBranch.id, exportedWorkflow.id),
               updatedWorkflow
             )
-            logger.debug(s"Importing workflow ${exportedBranch.id}/${exportedWorkflow.id}] as ID ${updatedWorkflow.id}")
+            logger.debug(s"Importing workflow [${exportedBranch.id}/${exportedWorkflow.id}] as ID ${updatedWorkflow.id}")
 
             // next create the cells
             for( (exportedModuleRef, position) <- exportedWorkflow.modules.zipWithIndex) 

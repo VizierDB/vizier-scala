@@ -89,14 +89,16 @@ object Provenance
                                                     .getOrElse { true }) }
 
   def updateSuccessorState(cell: Cell, outputs: Map[String, Identifier])(implicit session: DBSession): Unit =
+    updateCellStates(cell.successors, outputs)
+
+  def updateCellStates(cells: Seq[Cell], outputsAtStart: Map[String, Identifier])(implicit session: DBSession): Unit =
   {
     // TODO: this update can be moved completely to the database as an UPDATE query
     //       ... but let's get it correct first.
-    var scope = outputs
+    var scope = outputsAtStart
     var hitFirstStaleCell = false
-    val successors = cell.successors
     
-    for(curr <- cell.successors){
+    for(curr <- cells){
       logger.trace(s"Updating execution state for $curr")
       curr.state match {
         case ExecutionState.STALE => {
@@ -113,11 +115,16 @@ object Provenance
             curr.updateState(ExecutionState.DONE)
           }
         }
-        case ExecutionState.ERROR | ExecutionState.DONE => {
-          throw new RuntimeException("Invalid state.  DONE or ERROR states should never follow a STALE cell")
+        case ExecutionState.DONE => () /* Skip DONE */
+        case ExecutionState.ERROR => {
+          if(hitFirstStaleCell){
+            throw new RuntimeException("Invalid state.  ERROR states should never follow a STALE cell")
+          } else { 
+            return
+          }
         }
-        scope = updateScope(curr, scope)
       }    
+      scope = updateScope(curr, scope)
     }
   }
 }

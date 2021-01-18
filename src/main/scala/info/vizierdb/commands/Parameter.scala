@@ -188,6 +188,7 @@ case class ColIdParameter(
   def doStringify(j: JsValue): String = j.toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
                                else if ((j == JsNull) && (!required)) { None }
+                               else if (j.equals(JsString("")) && (!required)) { None }
                                else { Some(s"Expected a number/column id for $name") }
 }
 

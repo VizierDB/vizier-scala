@@ -43,6 +43,7 @@ object Query extends Command
     logger.debug(s"$scope : $query")
 
     try { 
+      logger.trace("Creating view")
       val response = CreateViewRequest(
         input = scope.mapValues { _.nameInBackend }, 
         functions = None,
@@ -51,10 +52,12 @@ object Query extends Command
         properties = None
       ).handle
 
+      logger.trace("View created; Gathering dependencies")
       for(dep <- response.dependencies){
         context.inputs.put(dep, scope(dep).id)
       }
 
+      logger.trace("Rendering dataset summary")
       context.displayDataset(datasetName)
     } catch { 
       case e: org.mimirdb.api.FormattedError => 

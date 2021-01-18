@@ -29,6 +29,7 @@ import java.util.Properties
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.export.{ ExportProject, ImportProject }
 import info.vizierdb.util.Streams
+import org.mimirdb.util.ExperimentalOptions
 
 object Vizier
   extends LazyLogging
@@ -50,7 +51,7 @@ object Vizier
       settings = ConnectionPoolSettings(
         initialSize = 1,
         maxSize = 1,
-        connectionTimeoutMillis = 1000l
+        connectionTimeoutMillis = 5000l
       )
     )
   }
@@ -108,6 +109,8 @@ object Vizier
   def main(args: Array[String]) 
   {
     config = new Config(args)
+
+    ExperimentalOptions.enable(config.experimental())
 
     println("Setting Up Project Library...")
     if(!config.basePath().exists) { config.basePath().mkdir() }

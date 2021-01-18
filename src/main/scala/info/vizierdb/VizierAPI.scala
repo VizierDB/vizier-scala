@@ -45,11 +45,16 @@ import info.vizierdb.api._
 import java.net.URLConnection
 import info.vizierdb.util.Streams
 import scala.io.Source
+import java.net.InetSocketAddress
+import org.mimirdb.util.ExperimentalOptions
 
 object VizierAPI
 {
   var server: Server = null
-  var debug: Boolean = true
+  var debug: Boolean = Option(System.getenv("VIZIER_DEBUG"))
+                            .map { _ => true }
+                            .getOrElse { ExperimentalOptions.enabled("ACCEPT-ANY-CONNECTION") }
+  if(debug) { println("Warning: Vizier is listening to 0.0.0.0.  Anyone on your network can run code on your machine."); }
 
   val DEFAULT_PORT = 5000
   val NAME = "vizier"
@@ -72,7 +77,15 @@ object VizierAPI
     if(server != null){ 
       throw new RuntimeException("Can't have two Vizier servers running in one JVM")
     }
-    server = new Server(port)
+    server = 
+      if(VizierAPI.debug){
+        new Server(port)
+      } else {
+        new Server(InetSocketAddress.createUnresolved(
+          "localhost",
+          port
+        ))
+      }
 
     val context = new ServletContextHandler(ServletContextHandler.SESSIONS)
     context.setContextPath("/")
