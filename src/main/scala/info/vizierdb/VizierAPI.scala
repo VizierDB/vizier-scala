@@ -74,7 +74,7 @@ object VizierAPI
 
   lazy val WEB_UI_URL = getClass().getClassLoader().getResource("ui")
 
-  def init(host:String = DEFAULT_HOST, localPort:Int = DEFAULT_LOCAL_PORT, remotePort: Int = DEFAULT_PORT, path: File = Vizier.basePath)
+  def init(host:String = DEFAULT_HOST, localPort:Int = DEFAULT_LOCAL_PORT, remotePort: Int = DEFAULT_PORT, path: File = Vizier.config.basePath())
   {
     if(server != null){ 
       throw new RuntimeException("Can't have two Vizier servers running in one JVM")
