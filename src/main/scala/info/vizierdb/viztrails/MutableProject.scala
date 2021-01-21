@@ -1,3 +1,17 @@
+/* -- copyright-header:v1 --
+ * Copyright (C) 2017-2020 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.viztrails
 
 import play.api.libs.json._
@@ -120,7 +134,7 @@ class MutableProject(
 
   def script(script: String, language: String = "python") = 
   {
-    append("script", "python")("source" -> script)
+    append("script", language)("source" -> script)
     waitUntilReadyAndThrowOnError
   }
 
@@ -188,10 +202,11 @@ class MutableProject(
           ).toString.getBytes
         )
       }
-    Streams.cat(
-      new FileInputStream(file),
-      new FileOutputStream(artifact.file)
-    )
+    Streams.closeAfter(new FileInputStream(file)) { in => 
+      Streams.closeAfter(new FileOutputStream(artifact.file)) { out => 
+        Streams.cat(in, out)
+      }
+    }
     return artifact
   }
 
@@ -230,3 +245,4 @@ object MutableProject
     new MutableProject(DB.autoCommit { implicit s => Project.create(name).id })
   def apply(projectId: Identifier): MutableProject = new MutableProject(projectId)
 }
+

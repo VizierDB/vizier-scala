@@ -1,3 +1,17 @@
+/* -- copyright-header:v1 --
+ * Copyright (C) 2017-2020 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.catalog
 
 import scalikejdbc._
@@ -75,6 +89,7 @@ case class Message(
       "type" -> mimeType,
       "value" -> (mimeType match {
         case MIME.DATASET_VIEW => Json.parse(data).as[DatasetMessage].describe
+        case MIME.CHART_VIEW => Json.parse(data)
         case _ => JsString(new String(data))
       })
     )
@@ -85,3 +100,4 @@ object Message
   def apply(rs: WrappedResultSet): Message = autoConstruct(rs, (Message.syntax).resultName)
   override def columns = Schema.columns(table)
 }
+

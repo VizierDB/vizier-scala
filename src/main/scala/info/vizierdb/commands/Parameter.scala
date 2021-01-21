@@ -1,3 +1,17 @@
+/* -- copyright-header:v1 --
+ * Copyright (C) 2017-2020 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.commands
 
 import play.api.libs.json._
@@ -136,6 +150,7 @@ case class BooleanParameter(
   def datatype = "bool"
   def doStringify(j: JsValue): String = j.as[Boolean].toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsBoolean]){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a boolean for $name") }
   override def getDefault: JsValue = 
     default.map { JsBoolean(_) }.getOrElse { JsNull }
@@ -157,6 +172,7 @@ case class CodeParameter(
   def datatype = "code"
   def doStringify(j: JsValue): String = j.as[String].toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a string for $name") }
   override def describe = super.describe ++ Map("language" -> JsString(language))
 }
@@ -171,6 +187,8 @@ case class ColIdParameter(
   def datatype = "colid"
   def doStringify(j: JsValue): String = j.toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
+                               else if (j.equals(JsString("")) && (!required)) { None }
                                else { Some(s"Expected a number/column id for $name") }
 }
 
@@ -184,6 +202,7 @@ case class DatasetParameter(
   def datatype = "dataset"
   def doStringify(j: JsValue): String = j.toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a string/dataset id for $name") }
 }
 
@@ -198,6 +217,7 @@ case class DecimalParameter(
   def datatype = "decimal"
   def doStringify(j: JsValue): String = j.as[Double].toString
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a number for $name") }
   override def getDefault: JsValue = 
     default.map { JsNumber(_) }.getOrElse { JsNull }
@@ -214,7 +234,9 @@ case class FileParameter(
   def doStringify(j: JsValue): String = j.as[FileArgument].toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsObject]){ 
                                   j.as[FileArgument].validate.map { _+" for "+name }
-                               } else { Some(s"Expected an object for $name") }
+                               } 
+                               else if ((j == JsNull) && (!required)) { None }
+                               else { Some(s"Expected an object for $name") }
   def encode(v: Any): JsValue = 
     Json.toJson(v match {
       case s:String => FileArgument( url = Some(s) )
@@ -234,6 +256,7 @@ case class IntParameter(
   def datatype = "int"
   def doStringify(j: JsValue): String = j.as[Int].toString
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a number for $name") }
   override def getDefault: JsValue = 
     default.map { JsNumber(_) }.getOrElse { JsNull }
@@ -259,7 +282,8 @@ case class ListParameter(
     components.map { component => component -> record.get(component.id) }
 
   def doValidate(j: JsValue): Iterable[String] = 
-    if(!j.isInstanceOf[JsArray]){ return Some(s"Expected a list for $name") }
+    if ((j == JsNull) && (!required)) { return None }
+    else if(!j.isInstanceOf[JsArray]){ return Some(s"Expected a list for $name") }
     else { 
       j.as[Seq[JsValue]].flatMap { elem => 
         if(!elem.isInstanceOf[JsObject]) { 
@@ -354,7 +378,8 @@ case class RecordParameter(
     components.map { component => component -> record.get(component.id) }
 
   def doValidate(j: JsValue): Iterable[String] =
-    if(!j.isInstanceOf[JsObject]){ return Some(s"Expected an object for $name") }
+    if ((j == JsNull) && (!required)) { None }
+    else if(!j.isInstanceOf[JsObject]){ return Some(s"Expected an object for $name") }
     else {
       zipParameters(j.as[Map[String, JsValue]])
         .flatMap { case (component, v) => 
@@ -415,6 +440,7 @@ case class RowIdParameter(
   }
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber] || 
                                   j.isInstanceOf[JsString]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a number/rowid for $name") }
 }
 
@@ -428,6 +454,7 @@ case class ScalarParameter(
   def datatype = "scalar"
   def doStringify(j: JsValue): String = j.toString()
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a number for $name") }
 }
 
@@ -469,10 +496,11 @@ case class EnumerableParameter(
   values: Seq[EnumerableValue],
   default: Option[Int] = None,
   required: Boolean = true,
-  hidden: Boolean = false
+  hidden: Boolean = false,
+  aliases: Map[String,String] = Map.empty
 ) extends Parameter with StringEncoder
 {
-  lazy val possibilities = Set(values.map { _.value }:_*)
+  lazy val possibilities = Set(values.map { _.value }:_*) ++ aliases.keySet
   def datatype = "string"
   def doStringify(j: JsValue): String = j.as[String]
   def doValidate(j: JsValue) = 
@@ -482,6 +510,7 @@ case class EnumerableParameter(
         Some(s"Expected $name to be one of ${possibilities.mkString(", ")}, but got $j")
       }
     }
+    else if ((j == JsNull) && (default.isDefined || !required)) { None }
     else { Some(s"Expected a string/enumerable for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default.map { values(_).value })
@@ -492,6 +521,13 @@ case class EnumerableParameter(
       "value"     -> v.value
     )}
   ))
+  override def convertFromReact(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
+  {
+    super.convertFromReact(j, preprocess) match { 
+      case JsString(key) => JsString(aliases.getOrElse(key, key))
+      case x => x
+    }
+  }
 }
 
 case class StringParameter(
@@ -515,8 +551,9 @@ case class StringParameter(
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
                                else if(relaxed && (j.isInstanceOf[JsBoolean] 
                                                  || j.isInstanceOf[JsNumber])){ None }
-                               else if(!required && (j.equals(JsNull))){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a string for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default)
 }
+

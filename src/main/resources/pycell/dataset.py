@@ -1,19 +1,17 @@
-# Copyright (C) 2017-2020 New York University,
-#                         University at Buffalo,
+# -- copyright-header:v1 --
+# Copyright (C) 2017-2020 University at Buffalo,
+#                         New York University,
 #                         Illinois Institute of Technology.
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
 #     http://www.apache.org/licenses/LICENSE-2.0
-#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# -- copyright-header:end --
 """Classes to manipulate vizier datasets from within the Python workflow cell.
 """
 
@@ -121,7 +119,7 @@ class MutableDatasetRow(object):
     if caveats is not None:
       self.caveats = caveats
     else:
-      self.values = [False for col in values]
+      self.caveats = [False for col in values]
     self.row_caveat = row_caveat
 
   def __str__(self):
@@ -336,7 +334,11 @@ class DatasetClient(object):
                     ) -> DatasetColumn:
     """Add a new column to the dataset schema.
     """
-    column = DatasetColumn(name=name, data_type=data_type)
+    if len(self.columns) > 0:
+      idx = max(column.identifier for column in self.columns) + 1
+    else:
+      idx = 0
+    column = DatasetColumn(name=name, data_type=data_type, identifier=idx)
     self.columns = list(self.columns)
     if position is not None:
       self.columns.insert(position, column)
@@ -570,3 +572,4 @@ def collabel_2_index(label):
         else:
             return -1
     return num
+
