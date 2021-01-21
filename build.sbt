@@ -1,8 +1,8 @@
 scalaVersion := "2.12.10"
 
-val VIZIER_VERSION = "0.2-SNAPSHOT"
-val MIMIR_VERSION = "0.3-SNAPSHOT"
-val CAVEATS_VERSION = "0.2.9"
+val VIZIER_VERSION = "0.3-SNAPSHOT"
+val MIMIR_VERSION = "0.4"
+val CAVEATS_VERSION = "0.3.0"
 
 // Project and subprojects
 lazy val vizier = (project in file("."))
@@ -60,6 +60,10 @@ excludeDependencies ++= Seq(
   // Jetty shows up in infinite places with incompatible java servlet APIs
   // ExclusionRule( organization = "org.xerial"), 
   ExclusionRule( organization = "org.mortbay.jetty"), 
+)
+
+dependencyOverrides ++= Seq(
+  "javax.servlet"  % "javax.servlet-api"          % "3.1.0"
 )
 
 // Custom Dependencies

@@ -205,7 +205,7 @@ case class Workflow(
 
   def makeSummary(branch: Branch, actionModule: Option[Module]): JsObject =
     Json.obj(
-      "id"          -> id.toString,
+      "id"          -> JsString(id.toString),
       "createdAt"   -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(created),
       "action"      -> action.toString,
       "packageId"   -> actionModule.map { _.packageId },

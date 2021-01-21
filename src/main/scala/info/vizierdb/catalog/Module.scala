@@ -85,7 +85,7 @@ class Module(
       }
 
     Json.obj(
-      "id" -> id,
+      "id" -> JsString(id.toString()),
       "state" -> ExecutionState.translateToClassicVizier(cell.state),
       "command" -> Json.obj(
         "packageId" -> packageId,

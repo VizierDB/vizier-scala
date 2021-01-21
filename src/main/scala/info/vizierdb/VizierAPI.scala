@@ -37,6 +37,8 @@ object VizierAPI
   var server: Server = null
   var debug: Boolean = true
 
+  val DEFAULT_HOST = "demo.vizier.devel" // "localhost"
+  val DEFAULT_LOCAL_PORT = 9000 // 5000
   val DEFAULT_PORT = 5000
   val NAME = "vizier"
   val BACKEND = "SCALA"
@@ -53,12 +55,12 @@ object VizierAPI
 
   lazy val WEB_UI_URL = getClass().getClassLoader().getResource("ui")
 
-  def init(port: Int = DEFAULT_PORT, path: File = Vizier.basePath)
+  def init(host:String = DEFAULT_HOST, localPort:Int = DEFAULT_LOCAL_PORT, remotePort: Int = DEFAULT_PORT, path: File = Vizier.basePath)
   {
     if(server != null){ 
       throw new RuntimeException("Can't have two Vizier servers running in one JVM")
     }
-    server = new Server(port)
+    server = new Server(localPort)
 
     val context = new ServletContextHandler(ServletContextHandler.SESSIONS)
     context.setContextPath("/")
@@ -85,8 +87,8 @@ object VizierAPI
     }
 
     urls = new VizierURLs(
-      ui = new URL(s"http://localhost:$port/"),
-      base = new URL(s"http://localhost:$port/vizier-db/api/v1/"),
+      ui = new URL(s"http://$host:$remotePort/"),
+      base = new URL(s"http://$host:$remotePort/vizier-db/api/v1/"),
       api = None
     )
     server.start()

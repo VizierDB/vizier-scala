@@ -52,8 +52,8 @@ class DatasetColumn(object):
       varchar, real, and datetime (format yyyy-MM-dd hh:mm:ss:zzzz).
   """
   def __init__(self,
-               identifier: int,
-               name: str,
+               identifier: int = -1,
+               name: Optional[str] = None,
                data_type: str = DATATYPE_VARCHAR):
     """Initialize the column object.
 
@@ -548,7 +548,7 @@ class DatasetClient(object):
       ],
       "data": [row.values for row in rows],
       "prov": [row.identifier for row in rows],
-      "colTaint": [row.caveats for row in rows],
+      "colTaint": [row.caveats if hasattr(row,'caveats') else [] for row in rows],
       "rowTaint": [row.row_caveat for row in rows],
       "properties": self._properties
     }
