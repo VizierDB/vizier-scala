@@ -184,7 +184,7 @@ case class Branch(
   def describe(implicit session:DBSession): JsObject =
     JsObject(
       summarize.value ++ Map(
-        "workflows" -> JsArray(workflows.map { _.summarize })
+        "workflows" -> Json.toJson(workflows.map { _.summarize })
       )
     )
 

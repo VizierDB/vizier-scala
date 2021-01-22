@@ -37,7 +37,7 @@ case class GetWorkflowRequest(projectId: Identifier, branchId: Identifier, workf
             Branch.lookup(projectId, branchId).map { _.head }
         } 
       workflowMaybe match {
-        case Some(workflow) => RawJsonResponse(workflow.describe)
+        case Some(workflow) => RawJsonResponse(Json.toJson(workflow.describe))
         case None => NoSuchEntityResponse()
       }
     }

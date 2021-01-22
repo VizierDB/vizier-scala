@@ -57,7 +57,9 @@ case class DeleteModule(
 
     DB.readOnly { implicit s => 
       return RawJsonResponse(
-        workflow.describe
+        Json.toJson(
+          workflow.describe
+        )
       )
     }
   }

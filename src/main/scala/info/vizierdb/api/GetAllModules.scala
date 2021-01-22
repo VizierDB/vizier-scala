@@ -38,11 +38,13 @@ case class GetAllModulesRequest(projectId: Identifier, branchId: Identifier, wor
         } 
       workflowMaybe match {
         case Some(workflow) => RawJsonResponse(
-          Module.describeAll(
-            projectId = projectId,
-            branchId = branchId, 
-            workflowId = workflow.id,
-            workflow.cellsAndModulesInOrder
+          Json.toJson(
+            Module.describeAll(
+              projectId = projectId,
+              branchId = branchId, 
+              workflowId = workflow.id,
+              workflow.cellsAndModulesInOrder
+            )
           )
         )
         case None => NoSuchEntityResponse()

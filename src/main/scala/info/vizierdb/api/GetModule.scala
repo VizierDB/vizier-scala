@@ -46,12 +46,14 @@ case class GetModuleRequest(
         workflowMaybe.flatMap { _.cellByPosition(modulePosition) }
       cellMaybe match {
         case Some(cell) => RawJsonResponse(
-          cell.module.describe(
-            cell = cell, 
-            projectId = projectId, 
-            branchId = branchId, 
-            workflowId = workflowMaybe.get.id,
-            artifacts = Provenance.getRefScope(cell).values.toSeq
+          Json.toJson(
+            cell.module.describe(
+              cell = cell, 
+              projectId = projectId, 
+              branchId = branchId, 
+              workflowId = workflowMaybe.get.id,
+              artifacts = Provenance.getRefScope(cell).values.toSeq
+            )
           )
         )
         case None => NoSuchEntityResponse()

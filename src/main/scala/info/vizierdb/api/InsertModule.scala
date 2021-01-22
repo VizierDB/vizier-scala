@@ -76,7 +76,9 @@ case class InsertModule(
 
     DB.readOnly { implicit s => 
       RawJsonResponse(
-        workflow.describe
+        Json.toJson(
+          workflow.describe
+        )
       )
     }
   } 

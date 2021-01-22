@@ -1,6 +1,6 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "0.3"
+val VIZIER_VERSION = "0.4-SNAPSHOT"
 val MIMIR_VERSION = "0.4"
 val CAVEATS_VERSION = "0.3.0"
 
@@ -163,6 +163,12 @@ buildUI := {
           .waitFor
   }
   Files.move(source, target)
+
+  val env = 
+    Files.readString(Paths.get("upstream/ui/public/env.js"))
+         .replaceAll("http://localhost:5000", "")
+
+  Files.writeString(Paths.get("src/main/resources/ui/env.js"), env)
 }
 
 ///////////////////////////////////////////

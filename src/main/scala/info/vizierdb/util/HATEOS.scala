@@ -19,7 +19,9 @@ import java.net.URL
 
 object HATEOAS
 {
-  def apply(links: (String, URL)*): JsArray =
+  type T = JsArray
+
+  def apply(links: (String, URL)*): T =
     JsArray(build(links).map { v => JsObject(v.mapValues{ JsString(_) }) })
 
   def build(links: Seq[(String, URL)]): Seq[Map[String, String]] = 
@@ -27,8 +29,11 @@ object HATEOAS
          .map { case (rel, href) => Map("rel" -> rel, "href" -> href.toString) }
          .toSeq
 
-  def extend(base: JsValue, links: (String, URL)*): JsValue =
+  def extend(base: JsValue, links: (String, URL)*): T =
     JsArray(base.as[Seq[JsValue]] ++ build(links).map { Json.toJson(_) })
+
+  def merge(a: JsValue, b: JsValue): T =
+    JsArray(a.as[Seq[JsValue]] ++ b.as[Seq[JsValue]])
 
   val LINKS = "links"
 

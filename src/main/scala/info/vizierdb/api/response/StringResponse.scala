@@ -12,27 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.api
+package info.vizierdb.api.response
 
-import scalikejdbc.DB
 import play.api.libs.json._
-import org.mimirdb.api.Request
-import info.vizierdb.viztrails.Scheduler
-import info.vizierdb.api.response.RawJsonResponse
+import org.mimirdb.api.BytesResponse
+import javax.servlet.http.HttpServletResponse
 
-object ListTasks
-  extends Request
+case class StringResponse(
+  data: String, 
+  override val contentType: String = "text/plain",
+  status: Option[Int] = None,
+) extends BytesResponse
 {
-  def handle = 
-  {
-    DB.readOnly { implicit session => 
-      RawJsonResponse(
-        Json.toJson(
-          Scheduler.running
-                   .map { workflow => workflow.summarize }
-        )
-      )
-    }
-  } 
+  def getBytes = data.getBytes()
 }
 

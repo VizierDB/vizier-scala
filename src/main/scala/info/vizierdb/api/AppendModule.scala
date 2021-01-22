@@ -81,7 +81,9 @@ case class AppendModule(
 
     DB.readOnly { implicit s => 
       RawJsonResponse(
-        workflow.describe
+        Json.toJson(
+          workflow.describe
+        )
       )
     }
   } 

@@ -51,10 +51,7 @@ import org.mimirdb.util.ExperimentalOptions
 object VizierAPI
 {
   var server: Server = null
-  var debug: Boolean = Option(System.getenv("VIZIER_DEBUG"))
-                            .map { _ => true }
-                            .getOrElse { ExperimentalOptions.enabled("ACCEPT-ANY-CONNECTION") }
-  if(debug) { println("Warning: Vizier is listening to 0.0.0.0.  Anyone on your network can run code on your machine."); }
+  var debug: Boolean = Vizier.config.devel()
 
   val DEFAULT_PORT = 5000
   val NAME = "vizier"
@@ -72,7 +69,10 @@ object VizierAPI
 
   lazy val WEB_UI_URL = getClass().getClassLoader().getResource("ui")
 
-  def init(port: Int = DEFAULT_PORT, path: File = Vizier.config.basePath())
+  def init(
+    port: Int = Vizier.config.port(), 
+    publicURL: String = null,
+    path: File = Vizier.config.basePath())
   {
     if(server != null){ 
       throw new RuntimeException("Can't have two Vizier servers running in one JVM")
@@ -111,9 +111,14 @@ object VizierAPI
       context.addServlet(webUI, "/*")
     }
 
+    val actualPublicURL =
+      Option(publicURL)
+        .orElse { Vizier.config.publicURL.get }
+        .getOrElse { s"http://localhost:$port/" }
+
     urls = new VizierURLs(
-      ui = new URL(s"http://localhost:$port/"),
-      base = new URL(s"http://localhost:$port/vizier-db/api/v1/"),
+      ui = new URL(actualPublicURL),
+      base = new URL(s"${actualPublicURL}vizier-db/api/v1/"),
       api = None
     )
     server.start()
@@ -357,6 +362,14 @@ object VizierServlet
             DELETE -> process(DeleteBranch(projectId.toLong, branchId.toLong)) // delete the branch
             ,
             PUT -> processJson[UpdateBranch]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // update the branch properties
+          )
+        case PROJECT(projectId, BRANCH(branchId, HEAD("/graph"))) => 
+          respond(
+            GET -> process(VizualizeWorkflow(projectId.toLong, branchId.toLong, None)) // visualize the head workflow
+          )
+        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/graph"))) => 
+          respond(
+            GET -> process(VizualizeWorkflow(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // visualize the workflow
           )
         case PROJECT(projectId, BRANCH(branchId, HEAD("/cancel"))) => 
           respond(

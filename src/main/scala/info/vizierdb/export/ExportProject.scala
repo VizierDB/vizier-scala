@@ -50,6 +50,7 @@ object ExportProject
       val files: Seq[FileSummary] = (
         p.artifacts
           .filter { _.t == ArtifactType.FILE }
+          .filter { !_.file.isDirectory() }
           .map { artifact => 
             val f = artifact.file
             writeFile(s"fs/${artifact.id}", f)

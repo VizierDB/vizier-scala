@@ -32,6 +32,9 @@
   <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
 
+  <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />
+
   <!--+++++++++++++++++++++++  Import/Export  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.export.ImportProject$"             level="DEBUG" />
 
