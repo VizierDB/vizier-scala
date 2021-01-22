@@ -19,13 +19,15 @@ import play.api.libs.json._
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.Project
-import org.mimirdb.api.Request
+import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.api.response._
+import info.vizierdb.api.response.RawJsonResponse
+import info.vizierdb.api.handler.DeterministicHandler
 
-case class ListProjectsRequest()
-  extends Request
+object ListProjectsHandler
+  extends DeterministicHandler
 {
-  def handle = 
+  def handle =
   {
     RawJsonResponse(
       Json.obj(

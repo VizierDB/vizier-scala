@@ -15,18 +15,19 @@
 package info.vizierdb.api
 
 import scalikejdbc.DB
+import play.api.libs.json._
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import info.vizierdb.catalog.Project
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.api.handler._
 
-case class DeleteProject(
-  projectId: Identifier
-) extends Request
+object DeleteProjectHandler extends SimpleHandler
 {
-  def handle: Response =
+  def handle(pathParameters: Map[String, JsValue]): Response =
   {
+    val projectId = pathParameters("projectId").as[Long]
     DB.autoCommit { implicit s => 
       val p = 
         Project.lookup(projectId)

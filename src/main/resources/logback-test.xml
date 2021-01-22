@@ -16,6 +16,7 @@
   <logger name="info.vizierdb.VizierAPI$"                        level="DEBUG" />
   <logger name="info.vizierdb.VizierServlet$"                    level="DEBUG" />
   <logger name="info.vizierdb.VizierUIServlet$"                  level="TRACE" />
+  <logger name="info.vizierdb.api.handler.Route"                 level="TRACE" />
   <logger name="info.vizierdb.Config$"                           level="WARN" />
   <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="WARN" />
   <logger name="info.vizierdb.api.AppendModule"                  level="WARN" />

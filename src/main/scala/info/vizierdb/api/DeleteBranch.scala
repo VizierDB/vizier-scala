@@ -15,19 +15,21 @@
 package info.vizierdb.api
 
 import scalikejdbc.DB
+import play.api.libs.json._
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import info.vizierdb.catalog.{ Branch, Project }
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.api.handler._
 
-case class DeleteBranch(
-  projectId: Identifier,
-  branchId: Identifier
-) extends Request
+object DeleteBranchHandler
+  extends SimpleHandler
 {
-  def handle: Response =
+  def handle(pathParameters: Map[String, JsValue]): Response =
   {
+    val projectId = pathParameters("projectId").as[Long]
+    val branchId = pathParameters("branchId").as[Long]
     DB.readOnly { implicit s => 
       val p = 
         Project.lookup(projectId)

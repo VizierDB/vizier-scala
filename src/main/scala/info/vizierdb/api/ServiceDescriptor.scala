@@ -16,16 +16,18 @@ package info.vizierdb.api
 
 import java.time.format.DateTimeFormatter
 import play.api.libs.json._
-import org.mimirdb.api.{ Request, JsonResponse }
+import org.mimirdb.api.{ Request, JsonResponse, Response }
+import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.commands.Commands
 import info.vizierdb.api.response.RawJsonResponse
+import info.vizierdb.api.handler.DeterministicHandler
 
-case class ServiceDescriptorRequest()
-  extends Request
+object ServiceDescriptorHandler
+  extends DeterministicHandler
 {
-  def handle = 
+  def handle =
   {
     RawJsonResponse(
       Json.obj(

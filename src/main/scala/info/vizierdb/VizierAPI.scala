@@ -34,10 +34,10 @@ import javax.servlet.MultipartConfigElement
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.response._
+import info.vizierdb.api.handler._
 
 import org.mimirdb.api.{ Request, Response }
 import org.mimirdb.api.request.Query
-import org.mimirdb.util.JsonUtils.stringifyJsonParseErrors
 import java.net.{ URL, URI }
 import java.sql.Time
 import java.time.LocalDateTime
@@ -187,47 +187,36 @@ object VizierServlet
   extends HttpServlet 
   with LazyLogging
 {
-  val PROJECT  = "\\/projects\\/([0-9]+)(\\/.*|)".r
-  val BRANCH   = "\\/branches\\/([0-9]+)(\\/.*|)".r
-  val HEAD = "\\/head(\\/.*|)".r
-  val WORKFLOW = "\\/workflows\\/([0-9]+)(\\/.*|)".r
-  val MODULE = "\\/modules\\/([0-9]+)(\\/.*|)".r
-  val CHART = "\\/charts\\/([0-9]+)".r
-  val DATASET = "\\/datasets\\/([0-9]+)(\\/.*|)".r
-  val FILE = "\\/files\\/([0-9]+)(\\/.*|)".r
-  val TASK = "\\/tasks\\/(\\/.*|)".r
-  val ARTIFACT = "\\/artifacts/([0-9]+)(\\/.*|)".r
+  // val PROJECT  = "\\/projects\\/([0-9]+)(\\/.*|)".r
+  // val BRANCH   = "\\/branches\\/([0-9]+)(\\/.*|)".r
+  // val HEAD = "\\/head(\\/.*|)".r
+  // val WORKFLOW = "\\/workflows\\/([0-9]+)(\\/.*|)".r
+  // val MODULE = "\\/modules\\/([0-9]+)(\\/.*|)".r
+  // val CHART = "\\/charts\\/([0-9]+)".r
+  // val DATASET = "\\/datasets\\/([0-9]+)(\\/.*|)".r
+  // val FILE = "\\/files\\/([0-9]+)(\\/.*|)".r
+  // val TASK = "\\/tasks\\/(\\/.*|)".r
+  // val ARTIFACT = "\\/artifacts/([0-9]+)(\\/.*|)".r
 
-  object RequestMethod extends Enumeration
-  {
-    type T = Value
-    val GET,
-        PUT,
-        POST,
-        DELETE,
-        OPTIONS = Value
-  }
-  import RequestMethod.{ GET, PUT, POST, DELETE, OPTIONS }
-
-  def ellipsize(text: String, len: Int): String =
-        if(text.size > len){ text.substring(0, len-3)+"..." } else { text }
-
-  def fourOhFour(req: HttpServletRequest, output: HttpServletResponse)
-  {
-    logger.error(s"Vizier API ${req.getMethod} Not Handled: '${req.getPathInfo}' / '${req.getRequestURI}'")
-    VizierErrorResponse(
-      "NotFound",
-      s"Vizier API ${req.getMethod} Not Handled: ${req.getPathInfo}",
-      HttpServletResponse.SC_NOT_FOUND
-    ).write(output)
-  }
-
-  def process(handler: Request)
-             (request: HttpServletRequest, output: HttpServletResponse): Unit =
+  def handle(
+    method: RequestMethod.T,
+    request: HttpServletRequest, 
+    output: HttpServletResponse
+  ): Unit =
   {
     val response: Response = 
       try {
-        handler.handle
+        val path = request.getPathInfo
+        val startIdx = if(path.startsWith("/") || path.equals("")){ 1 } else { 0 }
+        val pathComponents = path.split("/")
+        logger.debug(s"API ${method} ${path} (${pathComponents.mkString("->")})")
+        routes.handle(
+          pathComponents, 
+          startIdx, 
+          method,
+          Map.empty,
+          request
+        )
       } catch {
         case e: Throwable => 
           logger.error(e.getMessage + "\n" + e.getStackTrace.map { _.toString }.mkString("\n"))
@@ -236,292 +225,168 @@ object VizierServlet
             e.getMessage()
           )
       }
-    logger.trace(s"${handler.getClass()} -> $response")
+    logger.trace(s"$response")
     response.write(output)
   }
 
-  def processJson[Q <: Request](
-    properties: (String,Identifier)*
-  )(
-    implicit format: Format[Q]
-  ): ((HttpServletRequest, HttpServletResponse) => Unit) = 
-  { 
-    ( req: HttpServletRequest,
-      output: HttpServletResponse) => {
-        val text = scala.io.Source.fromInputStream(req.getInputStream).mkString 
-        logger.debug(s"$text")
-        val parsed: Either[Request, Response] = 
-          try { 
-            var parsed = Json.parse(text)
-            if(!properties.isEmpty){
-              parsed = JsObject(
-                parsed.as[Map[String,JsValue]]
-                  ++ properties.toMap.mapValues { JsNumber(_) }
+  import RequestMethod.{ GET, PUT, POST, DELETE, OPTIONS }
+  import Route.implicits._
+
+  val routes: Route = 
+    Route(
+      GET -> ServiceDescriptorHandler,                    // service descriptor
+
+      ///////////// Project Routes //////////
+      "projects" -> Route(
+        GET  -> ListProjectsHandler,                      // list projects
+        POST -> JsonHandler[CreateProject],               // create a new project
+
+        // "import" -> ???
+        // "export" -> ???
+        ":int:projectId" -> Route(
+          GET -> GetProjectHandler,                       // export project
+          POST -> JsonHandler[UpdateProject],             // update the project properties
+          DELETE -> DeleteProjectHandler,                 // delete the project
+          PUT -> JsonHandler[UpdateProject],              // update the project properties
+
+      ///////////// Project/Branch Routes //////////
+          "branches" -> Route(
+            GET -> ListBranchesHandler,                   // list branches
+            POST -> JsonHandler[CreateBranch],            // create a branch
+
+            ":int:branchId" -> Route(
+              GET -> GetBranchHandler,                    // get the branch
+              DELETE -> DeleteBranchHandler,              // delete the branch
+              PUT -> JsonHandler[UpdateBranch],           // update the branch properties
+
+              "cancel" -> Route(
+                POST -> CancelWorkflowHandler             // cancel the head workflow
+              ),
+
+      ///////////// Project/Branch/Workflow Routes //////////
+              "workflows" -> Route(
+                ":int:workflowId" -> Route(
+                  GET -> GetWorkflowHandler,              // get the branch head workflow
+
+                  "cancel" -> Route(
+                    POST -> CancelWorkflowHandler         // cancel the specified workflow
+                  ),
+
+                  "sql" -> Route(
+                    GET -> WorkflowSQLHandler,            // sql query on the tail of the specified branch
+                  ),
+
+
+        ///////////// Project/Branch/Workflow/Modules Routes //////////
+                  "modules" -> Route(
+                    GET -> GetAllModulesHandler,          // get all modules from the branch head
+                    POST -> JsonHandler[AppendModule],    // append a module to the branch head
+                  
+                    ":int:modulePosition" -> Route(
+                      GET -> GetModuleHandler,            // get the specified module from the branch head
+                      POST -> JsonHandler[InsertModule],  // insert a module before the specified module
+                      DELETE -> DeleteModuleHandler,      // delete the specified module
+                      PUT -> JsonHandler[ReplaceModule],  // replace the specified module
+
+                      "charts" -> Route(
+                        ":int:artifactId" -> Route(
+                          GET -> GetArtifactHandler.Typed(ArtifactType.CHART)
+                        )
+                      )
+                    )
+                  )
+                ),
+              ),
+
+      ///////////// Project/Branch/Head Routes //////////
+              "head" -> Route(
+                GET -> GetWorkflowHandler,                // get the branch head workflow
+
+                "cancel" -> Route(
+                  POST -> CancelWorkflowHandler           // cancel the specified workflow
+                ),
+                "sql" -> Route(
+                  GET -> WorkflowSQLHandler,              // sql query on the tail of the specified branch
+                ),
+
+      ///////////// Project/Branch/Head/Modules Routes //////////
+                "modules" -> Route(
+                  GET -> GetAllModulesHandler,            // get all modules from the branch head
+                  POST -> JsonHandler[AppendModule],      // append a module to the branch head
+                
+                  ":int:modulePosition" -> Route(
+                    GET -> GetModuleHandler,              // get the specified module from the branch head
+                    POST -> JsonHandler[InsertModule],    // insert a module before the specified module
+                    DELETE -> DeleteModuleHandler,        // delete the specified module
+                    PUT -> JsonHandler[ReplaceModule],    // replace the specified module
+                  )
+                )
               )
-            }
-            Left(parsed.as[Q])
-          } catch {
-            case e@JsResultException(errors) => {
-              logger.error(e.getMessage + "\n" + e.getStackTrace.map(_.toString).mkString("\n"))
-              Right(VizierErrorResponse(
-                e.getClass().getCanonicalName(),
-                s"Error(s) parsing API request\n${ellipsize(text, 100)}\n"+stringifyJsonParseErrors(errors).mkString("\n")
-              ))
-            }
-            case e:Throwable => {
-              logger.error(e.getMessage + "\n" + e.getStackTrace.map(_.toString).mkString("\n"))
-              Right(VizierErrorResponse(
-                e.getClass().getCanonicalName(),
-                s"Error(s) parsing API request\n${ellipsize(text, 100)}\n"
-              ))
-            }
-          }
+            )
+          ),
 
-        parsed match {
-          case Left(request) => process(request)(req, output)
-          case Right(response) => response.write(output)
-        }
-      }
-  }
+      ///////////// Project/Datasets Routes //////////
+          "datasets" -> Route(
+            POST -> JsonHandler[CreateDataset],           // create a new dataset in the data store
+          
+            ":int:artifactId" -> Route(
+              GET -> GetArtifactHandler.Typed(ArtifactType.DATASET),
 
-  def handle(method: RequestMethod.T, req: HttpServletRequest, output: HttpServletResponse)
-  {
-    def respond(responses: (RequestMethod.T, ((HttpServletRequest, HttpServletResponse) => Unit))*) = 
-    {
-      logger.info(s"Vizier API $method: ${req.getPathInfo}")
-      if(VizierAPI.debug){
-        output.setHeader("Access-Control-Allow-Origin", "*")
-      }
-      method match { 
-        case OPTIONS => 
-          output.setHeader("Access-Control-Allow-Headers", Seq(
-            "content-type"
-          ).mkString(", "))
-          output.setHeader("Allow", responses.map { _._1.toString }.mkString(", "))
-          output.setHeader("Access-Control-Allow-Methods", responses.map { _._1.toString }.mkString(", "))
-        case _ => 
-          logger.trace(s"Possible Responses: ${responses.map { _._1 }.mkString(", ")}")
-          responses.find { _._1.equals(method) } match {
-            case None                 => fourOhFour(req, output)
-            case Some( (t, handler) ) => {
-              logger.trace(s"Selected $t -> $handler")
-              handler(req, output)
-            }
-          }
-      }
-    }
+              "annotations" -> Route(
+                GET -> GetArtifactHandler.Annotations,
+              ),
+              "descriptor" -> Route(
+                GET -> GetArtifactHandler.Summary,
+              ),
+              "csv" -> Route(
+                GET -> GetArtifactHandler.CSV,
+              ),
+            )
+          ),
 
-    try {
-      req.getPathInfo match {
-        case "/" => 
-          respond(
-            GET -> process(ServiceDescriptorRequest()) // service descriptor
-          )
-        case "/projects" => 
-          respond(
-            GET -> process(ListProjectsRequest()) // list projects
-            ,
-            POST -> processJson[CreateProject]() // create a new project
+      ///////////// Project/Artifacts Routes //////////
+          "artifacts" -> Route(
+            ":int:artifactId" -> Route(
+              GET -> GetArtifactHandler,
+
+              "annotations" -> Route(
+                GET -> GetArtifactHandler.Annotations,
+              ),
+              "descriptor" -> Route(
+                GET -> GetArtifactHandler.Summary,
+              ),
+              "csv" -> Route(
+                GET -> GetArtifactHandler.CSV,
+              ),
+            )
+          ),
+
+      ///////////// Project/Files Routes //////////
+          "files" -> Route(
+            POST -> CreateFileHandler,                    // create a new file in the data store
+
+            ":int:fileId" -> Route(
+              GET -> GetArtifactHandler.File,             // retrieve the specified file
+              ":tail:subpath" -> Route(
+                GET -> GetArtifactHandler.File,           // retrieve the specified file
+              )
+            )
           )
 
-        case "/reload" => 
-          respond(
-            POST -> process(ReloadRequest) // clear caches
-          )
+        )
+      ),
+      
+      ///////////// Misc Routes //////////
+      "tasks" -> Route(
+        GET -> ListTasksHandler
 
-        case "/projects/import" => 
-          respond(
-            POST -> ImportProject.handler // import a project
-          )
+        // ":int:taskId" -> ???
+      ),
 
-        case PROJECT(projectId, "/export") => 
-          respond(
-            GET -> process(ExportProject(projectId = projectId.toLong)) // export project
-          )
-
-        case PROJECT(projectId, "") => 
-          respond(
-            GET -> process(GetProjectRequest(projectId.toLong)) // export project
-            ,
-            POST -> processJson[UpdateProject]("projectId" -> projectId.toLong) // update the project properties
-            ,
-            DELETE -> process(DeleteProject(projectId.toLong)) // delete the project
-            ,
-            PUT -> processJson[UpdateProject]("projectId" -> projectId.toLong) // update the project properties
-          )
-        case PROJECT(projectId, "/branches") => 
-          respond(
-            GET -> process(ListBranchesRequest(projectId.toLong)) // export project
-            ,
-            POST -> processJson[CreateBranch]("projectId" -> projectId.toLong) // create a branch
-          )
-        case PROJECT(projectId, BRANCH(branchId, "")) => 
-          respond(
-            GET -> process(GetBranchRequest(projectId.toLong, branchId.toLong)) // get the branch
-            ,
-            DELETE -> process(DeleteBranch(projectId.toLong, branchId.toLong)) // delete the branch
-            ,
-            PUT -> processJson[UpdateBranch]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // update the branch properties
-          )
-        case PROJECT(projectId, BRANCH(branchId, HEAD("/graph"))) => 
-          respond(
-            GET -> process(VizualizeWorkflow(projectId.toLong, branchId.toLong, None)) // visualize the head workflow
-          )
-        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/graph"))) => 
-          respond(
-            GET -> process(VizualizeWorkflow(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // visualize the workflow
-          )
-        case PROJECT(projectId, BRANCH(branchId, HEAD("/cancel"))) => 
-          respond(
-            POST -> process(CancelWorkflow(projectId.toLong, branchId.toLong, None)) // cancel the head workflow
-          )
-        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/cancel"))) => 
-          respond(
-            POST -> process(CancelWorkflow(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // cancel the specified workflow
-          )
-        case PROJECT(projectId, BRANCH(branchId, "/head")) => 
-          respond(
-            GET -> process(GetWorkflowRequest(projectId.toLong, branchId.toLong, None)) // get the branch head workflow
-          )
-        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, ""))) => 
-          respond(
-            GET -> process(GetWorkflowRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // get the specified workflow
-          )
-        case PROJECT(projectId, BRANCH(branchId, HEAD("/modules"))) => 
-          respond(
-            GET -> process(GetAllModulesRequest(projectId.toLong, branchId.toLong, None)) // get the specified module from the branch head
-            ,
-            POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong) // append a module to the branch head
-          )
-        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/modules"))) => 
-          respond(
-            GET -> process(GetAllModulesRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong))) // get the specified module from the branch head
-            ,
-            POST -> processJson[AppendModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "workflowId" -> workflowId.toLong) // append a module to the branch head
-          )
-        case PROJECT(projectId, BRANCH(branchId, HEAD(MODULE(modulePosition, "")))) => 
-          respond(
-            GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, None, modulePosition.toInt)) // get the specified module from the branch head
-            ,
-            POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt) // insert a module before the specified module
-            ,
-            DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, modulePosition.toInt)) // delete the specified module
-            ,
-            PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt) // replace the specified module
-          )
-        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(modulePosition, "")))) => 
-          respond(
-            GET -> process(GetModuleRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), modulePosition.toInt))  // get the specified module
-            ,
-            POST -> processJson[InsertModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt, "workflowId" -> workflowId.toLong) // insert a module before the specified module
-            ,
-            DELETE -> process(DeleteModule(projectId.toLong, branchId.toLong, modulePosition.toInt, Some(workflowId.toLong))) // delete the specified module
-            ,
-            PUT -> processJson[ReplaceModule]("projectId" -> projectId.toLong, "branchId" -> branchId.toLong, "modulePosition" -> modulePosition.toInt, "workflowId" -> workflowId.toLong) // replace the specified module
-          )
-        case PROJECT(projectId, BRANCH(branchId, HEAD("/sql"))) => 
-          respond(
-            GET -> process(WorkflowSQLRequest(projectId.toLong, branchId.toLong, None, req.getParameter("query"))) // sql query on the tail of the specified branch
-          )
-        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, "/sql"))) => 
-          respond(
-            GET -> process(WorkflowSQLRequest(projectId.toLong, branchId.toLong, Some(workflowId.toLong), req.getParameter("query"))) // sql query on the tail of the specified branch/workflow
-          )
-        case PROJECT(projectId, "/datasets") => 
-          respond(
-            POST -> processJson[CreateDataset]("projectId" -> projectId.toLong) // create a new dataset in the data store
-          )
-        case PROJECT(projectId, DATASET(datasetId, "")) =>
-          respond(
-            GET -> process(GetArtifactRequest(
-              projectId.toLong, 
-              datasetId.toLong, 
-              expectedType = Some(ArtifactType.DATASET), 
-              offset = Option(req.getParameter("offset")).map { _.split(",")(0).toLong },
-              limit = Option(req.getParameter("limit")).map { _.toInt },
-              forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
-            )) // retrieve the specified dataset
-          )
-        case PROJECT(projectId, ARTIFACT(artifactId, "")) =>
-          respond(
-            GET -> process(GetArtifactRequest(
-              projectId.toLong, 
-              artifactId.toLong, 
-              offset = Option(req.getParameter("offset")).map { _.split(",")(0).toLong },
-              limit = Option(req.getParameter("limit")).map { _.toInt },
-              forceProfiler = Option(req.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
-            )) // retrieve the specified dataset
-          )
-        case PROJECT(projectId, ARTIFACT(datasetId, "/annotations")) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
-                              .Annotations(
-                                columnId = Option(req.getParameter("column")).map { _.toInt },
-                                rowId = Option(req.getParameter("row"))
-                              )) // retrieve the specified dataset with annotations
-          )
-        case PROJECT(projectId, DATASET(datasetId, "/annotations")) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong)
-                              .Annotations(
-                                columnId = Option(req.getParameter("column")).map { _.toInt },
-                                rowId = Option(req.getParameter("row"))
-                              )) // retrieve the specified dataset with annotations
-          )
-        case PROJECT(projectId, ARTIFACT(datasetId, "/descriptor")) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary) // retrieve the specified dataset's descriptor
-          )
-        case PROJECT(projectId, DATASET(datasetId, "/descriptor")) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).Summary) // retrieve the specified dataset's descriptor
-          )
-        case PROJECT(projectId, ARTIFACT(datasetId, "/csv")) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
-          )
-        case PROJECT(projectId, ARTIFACT(datasetId, "/csv")) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
-          )
-        case PROJECT(projectId, DATASET(datasetId, "/csv")) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, datasetId.toLong).CSV) // retrieve the specified dataset as a csv file
-          )
-        case PROJECT(projectId, BRANCH(branchId, WORKFLOW(workflowId, MODULE(modulePosition, CHART(chartId))))) => 
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, chartId.toLong, expectedType = Some(ArtifactType.CHART))) // get the specified module's chart
-          )
-        case PROJECT(projectId, "/files") => 
-          respond(
-            POST -> CreateFile.handler(projectId.toLong)// create a new file in the data store
-          )
-        case PROJECT(_, FILE(_, ".")) | PROJECT(_, FILE(_, "..")) =>
-          fourOhFour(req, output)
-        case PROJECT(projectId, FILE(fileId, "")) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File()) // retrieve the specified file
-          )
-        case PROJECT(projectId, FILE(fileId, subpath)) =>
-          respond(
-            GET -> process(GetArtifactRequest(projectId.toLong, fileId.toLong).File(Some(subpath.substring(1/* trim off leading '/'*/)))) // retrieve the specified file
-          )
-        case "/tasks" | TASK("") =>
-          respond(
-            GET -> process(ListTasks)
-          )
-        case TASK(taskId) =>
-          ??? // update the state of a running task
-        case _ => fourOhFour(req, output)
-      }
-    } catch {
-      // we should never hit this point... this indicates a bug
-      case e: Throwable => 
-        e.printStackTrace()
-    }
-  }
-
-
+      "reload" -> Route(
+        POST -> ReloadHandler // clear caches (deprecated)
+      )
+    )
 
   override def doGet(req: HttpServletRequest, output: HttpServletResponse) = 
     handle(GET, req, output)

@@ -25,16 +25,19 @@ import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response._
+import info.vizierdb.api.handler._
+import info.vizierdb.api.metadata._
 
-case class CancelWorkflow(
-  projectId: Identifier,
-  branchId: Identifier,
-  workflowId: Option[Identifier]
-)
-  extends Request
+object CancelWorkflowHandler
+  extends SimpleHandler
 {
-  def handle: Response = 
+  override val summary = "Cancel a running workflow"
+
+  def handle(pathParameters: Map[String, JsValue]): Response =
   {
+    val projectId = pathParameters("projectId").as[Long]
+    val branchId = pathParameters("branchId").as[Long]
+    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
     var workflow:Workflow =
       DB.readOnly { implicit s => 
         workflowId match { 
@@ -69,8 +72,8 @@ case class CancelWorkflow(
   } 
 }
 
-object CancelWorkflow
-{
-  implicit val format: Format[CancelWorkflow] = Json.format
-}
+// object CancelWorkflow
+// {
+//   implicit val format: Format[CancelWorkflow] = Json.format
+// }
 

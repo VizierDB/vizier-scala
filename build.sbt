@@ -87,6 +87,8 @@ libraryDependencies ++= Seq(
 
   // command-specific libraries
   // "org.clapper"                   %% "markwrap"                         % "1.2.0"
+  "com.github.andyglow"           %% "scala-jsonschema"                 % "0.7.1",
+  "com.github.andyglow"           %% "scala-jsonschema-play-json"       % "0.7.1",
 )
 
 ////// Publishing Metadata //////
