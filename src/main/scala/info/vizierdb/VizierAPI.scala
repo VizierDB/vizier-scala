@@ -56,7 +56,7 @@ object VizierAPI
                             .getOrElse { ExperimentalOptions.enabled("ACCEPT-ANY-CONNECTION") }
   if(debug) { println("Warning: Vizier is listening to 0.0.0.0.  Anyone on your network can run code on your machine."); }
 
-  val DEFAULT_HOST = "demo.vizier.devel" // "localhost"
+  val DEFAULT_HOST = "localhost"
   val DEFAULT_LOCAL_PORT = 9000 // 5000
   val DEFAULT_PORT = 5000
   val NAME = "vizier"
