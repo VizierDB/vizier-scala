@@ -72,6 +72,7 @@ object VizierAPI
   lazy val WEB_UI_URL = getClass().getClassLoader().getResource("ui")
 
   def init(
+    publicURL: String = null, 
     port: Int = DEFAULT_PORT, 
     path: File = Vizier.config.basePath()
   )
@@ -81,11 +82,11 @@ object VizierAPI
     }
     server = 
       if(VizierAPI.debug){
-        new Server(localPort)
+        new Server(port)
       } else {
         new Server(InetSocketAddress.createUnresolved(
           "localhost",
-          localPort
+          port
         ))
       }
 

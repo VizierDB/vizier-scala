@@ -15,7 +15,7 @@ object ModuleOutputDescription
 }
 
 case class ModuleDescription(
-  id: Identifier,
+  id: String,
   state: Int,
   command: CommandDescription,
   text: String,
