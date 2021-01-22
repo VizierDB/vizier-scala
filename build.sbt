@@ -62,6 +62,10 @@ excludeDependencies ++= Seq(
   ExclusionRule( organization = "org.mortbay.jetty"), 
 )
 
+dependencyOverrides ++= Seq(
+  "javax.servlet"  % "javax.servlet-api"          % "3.1.0"
+)
+
 // Custom Dependencies
 libraryDependencies ++= Seq(
   // Mimir

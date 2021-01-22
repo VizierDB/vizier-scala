@@ -105,7 +105,7 @@ class Module(
 
 
     ModuleDescription(
-      id = id,
+      id = id.toString,
       state = ExecutionState.translateToClassicVizier(cell.state),
       command = CommandDescription(
         packageId = packageId,
