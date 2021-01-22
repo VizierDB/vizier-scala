@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
-import info.vizierdb.api.metadata._
 
 object CancelWorkflowHandler
   extends SimpleHandler

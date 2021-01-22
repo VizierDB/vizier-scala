@@ -30,18 +30,26 @@ import java.io.FileOutputStream
 import info.vizierdb.util.Streams
 import org.eclipse.jetty.server.{ Request => JettyRequest }
 import info.vizierdb.api.response._
-import info.vizierdb.VizierServlet
 import java.io.FileInputStream
 import info.vizierdb.export.{ ImportProject => DoImport }
 import info.vizierdb.util.Streams.closeAfter
+import info.vizierdb.api.handler._
 
-case class ImportProject(
-  content: InputStream
-)
-  extends Request
+object ImportProject
+  extends Handler
 {
-  def handle: Response = 
+  def handle(
+    pathParameters: Map[String, JsValue], 
+    request: HttpServletRequest 
+  ): Response =
   {
+   val jettyRequest = request.asInstanceOf[JettyRequest]
+    val part = request.getPart("file")
+    if(part == null){
+      throw new IllegalArgumentException("No File Provided")
+    }
+    val content = part.getInputStream()
+
     val f = File.createTempFile("vizier-", "-import.tgz")
     Streams.closeAfter(new FileOutputStream(f)) {
       Streams.cat(content, _)
@@ -67,32 +75,5 @@ case class ImportProject(
       }
     } 
 
-  } 
-}
-
-object ImportProject
-{
-  def apply(request: JettyRequest): ImportProject =
-  {
-    val part = request.getPart("file")
-    if(part == null){
-      throw new IllegalArgumentException("No File Provided")
-    }
-    ImportProject(part.getInputStream())
-  }
-
-  /**
-   * Create a VizierServlet request handler for a CreateFile
-   *
-   * It's a little ugly, but we can't parse the request until we know which processor
-   * is going to be used.  This abstraction-violating sacrifice exists mainly to keep
-   * VizierAPI neat and tidy.
-   */
-
-  def handler: ((HttpServletRequest, HttpServletResponse) => Unit) =
-  {
-    (request: HttpServletRequest, output: HttpServletResponse) => 
-      VizierServlet.process(apply(request.asInstanceOf[JettyRequest]))(request, output)
-  }
-
+  }  
 }
