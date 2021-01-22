@@ -47,6 +47,12 @@ object CreateFileHandler
       throw new IllegalArgumentException("No File Provided")
     }
     val content = part.getInputStream()
+    handle(projectId, content)
+  }
+  def handle(
+    projectId: Identifier,
+    content: InputStream
+  ): Response = {
     DB.autoCommit { implicit s => 
       val project = 
         Project.lookup(projectId)
