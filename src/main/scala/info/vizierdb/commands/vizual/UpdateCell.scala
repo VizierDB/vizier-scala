@@ -31,8 +31,10 @@ object UpdateCell extends VizualCommand
   def script(arguments: Arguments, context: ExecutionContext) = 
   {
     val rowSelection = arguments.getOpt[String]("row") match {
+      case Some(row) if row.startsWith("=") 
+                     => vizual.RowsByConstraint(row.substring(1))
       case Some(row) => vizual.RowsById(Set(row))
-      case None => vizual.AllRows()
+      case None      => vizual.AllRows()
     }
     Seq(
       vizual.UpdateCell(

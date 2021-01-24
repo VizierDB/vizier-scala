@@ -27,6 +27,7 @@ import org.mimirdb.api.MimirAPI
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.Handler
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import info.vizierdb.VizierException
 
 object GetArtifactHandler
   extends Handler
@@ -146,8 +147,38 @@ object GetArtifactHandler
       val projectId = pathParameters("projectId").as[Long]
       val artifactId = pathParameters("artifactId").as[Long]
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match {
-        case Some(artifact) => 
-          ???
+        case Some(artifact) =>
+          val tempFile = java.io.File.createTempFile("artifact_"+artifactId, ".csv")
+          if(tempFile.exists()){
+            // spark will complain about overwriting the file if it already
+            // exists
+            tempFile.delete()
+          }
+          MimirAPI.catalog.get(artifact.nameInBackend)
+                  .coalesce(1)
+                  .write
+                    .option("header", true)
+                    .csv(tempFile.toString())
+
+          val csvFile = 
+            tempFile.listFiles
+                    .find { _.getName.endsWith(".csv") }
+                    .getOrElse { 
+                      throw new VizierException(
+                        "Error Exporting CSV file: No File produced"
+                      )
+                    }
+
+          FileResponse(
+            csvFile, 
+            "dataset_"+artifactId+".csv", 
+            "text/csv",
+            () => { 
+              tempFile.listFiles
+                      .map { _.delete() }
+              tempFile.delete() 
+            }
+          )
         case None => 
           return NoSuchEntityResponse() 
       }

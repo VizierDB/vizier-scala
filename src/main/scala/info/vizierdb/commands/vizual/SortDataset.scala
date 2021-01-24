@@ -32,7 +32,7 @@ object SortDataset extends VizualCommand
   def format(arguments: Arguments): String = 
     s"SORT DATASET ${arguments.get[String]("dataset")} BY ${arguments.getList("columns")
             .map { col => 
-              s"(${arguments.get[String]("columns_column")} ${arguments.get[String]("columns_order").toUpperCase})"
+              s"(${col.get[Int]("columns_column")} ${col.get[String]("columns_order").toUpperCase})"
             }.mkString(", ")}"
 
   def script(arguments: Arguments, context: ExecutionContext) = 
@@ -41,8 +41,8 @@ object SortDataset extends VizualCommand
         arguments.getList("columns")
                  .map { col => 
                   vizual.SortColumn(
-                    column = arguments.get[Int]("columns_column"),
-                    order = arguments.get[String]("columns_order")
+                    column = col.get[Int]("columns_column"),
+                    order = col.get[String]("columns_order")
                   )
                  }
       )

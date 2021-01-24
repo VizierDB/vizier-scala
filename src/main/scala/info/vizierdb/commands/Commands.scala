@@ -107,6 +107,7 @@ object Commands
     "renameColumn" -> info.vizierdb.commands.vizual.RenameColumn,
     "renameDataset"-> info.vizierdb.commands.vizual.RenameDataset,
     "updateCell"   -> info.vizierdb.commands.vizual.UpdateCell,
+    "sort"         -> info.vizierdb.commands.vizual.SortDataset,
     "script"       -> info.vizierdb.commands.vizual.Script,
   )
 

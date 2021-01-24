@@ -1,7 +1,7 @@
 scalaVersion := "2.12.12"
 
 val VIZIER_VERSION = "0.4-SNAPSHOT"
-val MIMIR_VERSION = "0.4"
+val MIMIR_VERSION = "0.4.1-SNAPSHOT"
 val CAVEATS_VERSION = "0.3.0"
 
 // Project and subprojects
@@ -431,7 +431,7 @@ routes := {
             val fields = fieldsPerComponent.flatten
             val (matcher, patternDef) = 
               if(fields.isEmpty){
-                ("\""+pathPattern.mkString("/")+"\"", None)
+                ("\""+path+"\"", None)
               } else {
                 (
                   "ROUTE_PATTERN_"+idx+"("+fields.map { _._1 }.mkString(", ")+")",
