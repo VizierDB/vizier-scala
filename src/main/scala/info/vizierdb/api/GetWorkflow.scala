@@ -33,7 +33,6 @@ object GetWorkflowHandler
     val branchId = pathParameters("branchId").as[Long]
     val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
 
-    println(s"PROJECT: $projectId; BRANCH: $branchId; WORKFLOW: $workflowId")
     DB.readOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
         workflowId match {

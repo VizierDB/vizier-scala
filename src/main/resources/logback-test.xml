@@ -22,6 +22,7 @@
   <logger name="info.vizierdb.api.AppendModule"                  level="WARN" />
   <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
   <logger name="info.vizierdb.viztrails.Scheduler$"              level="TRACE" />
+  <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.python.Python$"           level="WARN" />
