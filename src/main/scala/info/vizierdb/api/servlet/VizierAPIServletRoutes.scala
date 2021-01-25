@@ -49,18 +49,22 @@ trait VizierAPIServletRoutes extends HttpServlet {
   val ROUTE_PATTERN_34 = "/projects/([0-9]+)/branches/([0-9]+)/head/modules/([0-9]+)".r
   val ROUTE_PATTERN_35 = "/projects/([0-9]+)/branches/([0-9]+)/workflows/([0-9]+)/modules/([0-9]+)/charts/([0-9]+)".r
   val ROUTE_PATTERN_36 = "/projects/([0-9]+)/branches/([0-9]+)/head/modules/([0-9]+)/charts/([0-9]+)".r
-  val ROUTE_PATTERN_37 = "/projects/([0-9]+)/datasets/([0-9]+)".r
-  val ROUTE_PATTERN_38 = "/projects/([0-9]+)/datasets/([0-9]+)".r
-  val ROUTE_PATTERN_39 = "/projects/([0-9]+)/datasets/([0-9]+)/annotations".r
-  val ROUTE_PATTERN_40 = "/projects/([0-9]+)/datasets/([0-9]+)/descriptor".r
-  val ROUTE_PATTERN_41 = "/projects/([0-9]+)/datasets/([0-9]+)/csv".r
-  val ROUTE_PATTERN_42 = "/projects/([0-9]+)/artifacts/([0-9]+)".r
-  val ROUTE_PATTERN_43 = "/projects/([0-9]+)/artifacts/([0-9]+)/annotations".r
-  val ROUTE_PATTERN_44 = "/projects/([0-9]+)/artifacts/([0-9]+)/descriptor".r
-  val ROUTE_PATTERN_45 = "/projects/([0-9]+)/artifacts/([0-9]+)/csv".r
-  val ROUTE_PATTERN_46 = "/projects/([0-9]+)/files".r
-  val ROUTE_PATTERN_47 = "/projects/([0-9]+)/files/([0-9]+)".r
-  val ROUTE_PATTERN_48 = "/projects/([0-9]+)/files/([0-9]+)/(.+)".r
+  val ROUTE_PATTERN_37 = "/projects/([0-9]+)/branches/([0-9]+)/workflows/([0-9]+)/modules/([0-9]+)/freeze".r
+  val ROUTE_PATTERN_38 = "/projects/([0-9]+)/branches/([0-9]+)/head/modules/([0-9]+)/freeze".r
+  val ROUTE_PATTERN_39 = "/projects/([0-9]+)/branches/([0-9]+)/workflows/([0-9]+)/modules/([0-9]+)/thaw".r
+  val ROUTE_PATTERN_40 = "/projects/([0-9]+)/branches/([0-9]+)/head/modules/([0-9]+)/thaw".r
+  val ROUTE_PATTERN_41 = "/projects/([0-9]+)/datasets/([0-9]+)".r
+  val ROUTE_PATTERN_42 = "/projects/([0-9]+)/datasets/([0-9]+)".r
+  val ROUTE_PATTERN_43 = "/projects/([0-9]+)/datasets/([0-9]+)/annotations".r
+  val ROUTE_PATTERN_44 = "/projects/([0-9]+)/datasets/([0-9]+)/descriptor".r
+  val ROUTE_PATTERN_45 = "/projects/([0-9]+)/datasets/([0-9]+)/csv".r
+  val ROUTE_PATTERN_46 = "/projects/([0-9]+)/artifacts/([0-9]+)".r
+  val ROUTE_PATTERN_47 = "/projects/([0-9]+)/artifacts/([0-9]+)/annotations".r
+  val ROUTE_PATTERN_48 = "/projects/([0-9]+)/artifacts/([0-9]+)/descriptor".r
+  val ROUTE_PATTERN_49 = "/projects/([0-9]+)/artifacts/([0-9]+)/csv".r
+  val ROUTE_PATTERN_50 = "/projects/([0-9]+)/files".r
+  val ROUTE_PATTERN_51 = "/projects/([0-9]+)/files/([0-9]+)".r
+  val ROUTE_PATTERN_52 = "/projects/([0-9]+)/files/([0-9]+)/(.+)".r
 
  override def doPost(request: HttpServletRequest, output: HttpServletResponse) = 
   {
@@ -77,8 +81,12 @@ trait VizierAPIServletRoutes extends HttpServlet {
         case ROUTE_PATTERN_26(projectId, branchId) => JsonHandler[AppendModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), request)
         case ROUTE_PATTERN_29(projectId, branchId, workflowId, modulePosition) => JsonHandler[InsertModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), request)
         case ROUTE_PATTERN_30(projectId, branchId, modulePosition) => JsonHandler[InsertModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), request)
-        case ROUTE_PATTERN_37(projectId, artifactId) => JsonHandler[CreateDataset].handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
-        case ROUTE_PATTERN_46(projectId) => CreateFileHandler.handle(Map("projectId" -> JsNumber(projectId.toLong)), request)
+        case ROUTE_PATTERN_37(projectId, branchId, workflowId, modulePosition) => FreezeModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), request)
+        case ROUTE_PATTERN_38(projectId, branchId, modulePosition) => FreezeModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), request)
+        case ROUTE_PATTERN_39(projectId, branchId, workflowId, modulePosition) => ThawModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), request)
+        case ROUTE_PATTERN_40(projectId, branchId, modulePosition) => ThawModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), request)
+        case ROUTE_PATTERN_41(projectId, artifactId) => JsonHandler[CreateDataset].handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
+        case ROUTE_PATTERN_50(projectId) => CreateFileHandler.handle(Map("projectId" -> JsNumber(projectId.toLong)), request)
         case "/reload" => ReloadHandler.handle(Map(), request)
         case _ => fourOhFour(request)
       }
@@ -107,16 +115,16 @@ trait VizierAPIServletRoutes extends HttpServlet {
         case ROUTE_PATTERN_28(projectId, branchId, modulePosition) => GetModuleHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), request)
         case ROUTE_PATTERN_35(projectId, branchId, workflowId, modulePosition, artifactId) => GetArtifactHandler.Typed(ArtifactType.CHART).handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
         case ROUTE_PATTERN_36(projectId, branchId, modulePosition, artifactId) => GetArtifactHandler.Typed(ArtifactType.CHART).handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
-        case ROUTE_PATTERN_38(projectId, artifactId) => GetArtifactHandler.Typed(ArtifactType.DATASET).handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
-        case ROUTE_PATTERN_39(projectId, artifactId) => GetArtifactHandler.Annotations.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
-        case ROUTE_PATTERN_40(projectId, artifactId) => GetArtifactHandler.Summary.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
-        case ROUTE_PATTERN_41(projectId, artifactId) => GetArtifactHandler.CSV.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
-        case ROUTE_PATTERN_42(projectId, artifactId) => GetArtifactHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
+        case ROUTE_PATTERN_42(projectId, artifactId) => GetArtifactHandler.Typed(ArtifactType.DATASET).handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
         case ROUTE_PATTERN_43(projectId, artifactId) => GetArtifactHandler.Annotations.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
         case ROUTE_PATTERN_44(projectId, artifactId) => GetArtifactHandler.Summary.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
         case ROUTE_PATTERN_45(projectId, artifactId) => GetArtifactHandler.CSV.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
-        case ROUTE_PATTERN_47(projectId, fileId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong)), request)
-        case ROUTE_PATTERN_48(projectId, fileId, tail) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong), "tail" -> JsString(tail)), request)
+        case ROUTE_PATTERN_46(projectId, artifactId) => GetArtifactHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
+        case ROUTE_PATTERN_47(projectId, artifactId) => GetArtifactHandler.Annotations.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
+        case ROUTE_PATTERN_48(projectId, artifactId) => GetArtifactHandler.Summary.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
+        case ROUTE_PATTERN_49(projectId, artifactId) => GetArtifactHandler.CSV.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), request)
+        case ROUTE_PATTERN_51(projectId, fileId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong)), request)
+        case ROUTE_PATTERN_52(projectId, fileId, tail) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong), "tail" -> JsString(tail)), request)
         case "/tasks" => ListTasksHandler.handle(Map(), request)
         case _ => fourOhFour(request)
       }
@@ -153,41 +161,45 @@ trait VizierAPIServletRoutes extends HttpServlet {
   {
     processResponse(request, output) {
       request.getPathInfo match {
-        case ROUTE_PATTERN_44(projectId, artifactId) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_48(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_4(projectId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_19(projectId, branchId, workflowId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_16(projectId, branchId) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_39(projectId, branchId, workflowId, modulePosition) => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_27(projectId, branchId, workflowId, modulePosition) => CORSPreflightResponse("GET", "POST", "DELETE", "PUT")
         case "/tasks" => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_37(projectId, branchId, workflowId, modulePosition) => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_24(projectId, branchId) => CORSPreflightResponse("GET", "POST")
-        case ROUTE_PATTERN_48(projectId, fileId, tail) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_52(projectId, fileId, tail) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_40(projectId, branchId, modulePosition) => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_36(projectId, branchId, modulePosition, artifactId) => CORSPreflightResponse("GET")
         case "/reload" => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_15(projectId, branchId, workflowId) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_42(projectId, artifactId) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_46(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_18(projectId, branchId) => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_35(projectId, branchId, workflowId, modulePosition, artifactId) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_46(projectId) => CORSPreflightResponse("POST")
-        case ROUTE_PATTERN_40(projectId, artifactId) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_39(projectId, artifactId) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_50(projectId) => CORSPreflightResponse("POST")
+        case ROUTE_PATTERN_44(projectId, artifactId) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_43(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_23(projectId, branchId, workflowId) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_37(projectId, artifactId) => CORSPreflightResponse("POST", "GET")
+        case ROUTE_PATTERN_41(projectId, artifactId) => CORSPreflightResponse("POST", "GET")
         case ROUTE_PATTERN_5(projectId) => CORSPreflightResponse("GET", "POST", "DELETE", "PUT")
         case ROUTE_PATTERN_9(projectId) => CORSPreflightResponse("GET", "POST")
         case "/projects" => CORSPreflightResponse("GET", "POST")
         case ROUTE_PATTERN_20(projectId, branchId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_21(projectId, branchId, workflowId) => CORSPreflightResponse("GET", "POST")
+        case ROUTE_PATTERN_38(projectId, branchId, modulePosition) => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_11(projectId, branchId) => CORSPreflightResponse("GET", "DELETE", "PUT")
         case ROUTE_PATTERN_28(projectId, branchId, modulePosition) => CORSPreflightResponse("GET", "POST", "DELETE", "PUT")
         case "/projects/import" => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_22(projectId, branchId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_14(projectId, branchId) => CORSPreflightResponse("POST")
-        case ROUTE_PATTERN_43(projectId, artifactId) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_47(projectId, fileId) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_47(projectId, artifactId) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_51(projectId, fileId) => CORSPreflightResponse("GET")
         case "/" => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_17(projectId, branchId, workflowId) => CORSPreflightResponse("POST")
+        case ROUTE_PATTERN_49(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_45(projectId, artifactId) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_41(projectId, artifactId) => CORSPreflightResponse("GET")
         case _ => fourOhFour(request)
       }
     }

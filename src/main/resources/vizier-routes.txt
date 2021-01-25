@@ -35,6 +35,10 @@
 /projects/{projectId:int}/branches/{branchId:int}/head/modules/{modulePosition:int}                                               PUT     JsonHandler[ReplaceModule]
 /projects/{projectId:int}/branches/{branchId:int}/workflows/{workflowId:int}/modules/{modulePosition:int}/charts/{artifactId:int} GET     GetArtifactHandler.Typed(ArtifactType.CHART)
 /projects/{projectId:int}/branches/{branchId:int}/head/modules/{modulePosition:int}/charts/{artifactId:int}                       GET     GetArtifactHandler.Typed(ArtifactType.CHART)
+/projects/{projectId:int}/branches/{branchId:int}/workflows/{workflowId:int}/modules/{modulePosition:int}/freeze                  POST    FreezeModulesHandler
+/projects/{projectId:int}/branches/{branchId:int}/head/modules/{modulePosition:int}/freeze                                        POST    FreezeModulesHandler
+/projects/{projectId:int}/branches/{branchId:int}/workflows/{workflowId:int}/modules/{modulePosition:int}/thaw                    POST    ThawModulesHandler
+/projects/{projectId:int}/branches/{branchId:int}/head/modules/{modulePosition:int}/thaw                                          POST    ThawModulesHandler
 /projects/{projectId:int}/datasets/{artifactId:int}                                                                               POST    JsonHandler[CreateDataset]
 /projects/{projectId:int}/datasets/{artifactId:int}                                                                               GET     GetArtifactHandler.Typed(ArtifactType.DATASET)
 /projects/{projectId:int}/datasets/{artifactId:int}/annotations                                                                   GET     GetArtifactHandler.Annotations

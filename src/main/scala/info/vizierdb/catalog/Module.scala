@@ -135,10 +135,15 @@ class Module(
         stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
       ),
       links = HATEOAS(
-        HATEOAS.SELF           -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_INSERT  -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_DELETE  -> VizierAPI.urls.deleteWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_REPLACE -> VizierAPI.urls.replaceWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.SELF            -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_INSERT   -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_DELETE   -> VizierAPI.urls.deleteWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_REPLACE  -> VizierAPI.urls.replaceWorkflowModule(projectId, branchId, workflowId, cell.position),
+        (if(cell.state.equals(ExecutionState.FROZEN)) {
+          HATEOAS.MODULE_THAW   -> VizierAPI.urls.thawWorkflowModules(projectId, branchId, workflowId, cell.position)
+        } else {
+          HATEOAS.MODULE_FREEZE -> VizierAPI.urls.freezeWorkflowModules(projectId, branchId, workflowId, cell.position)
+        }),
       )
     )
   } 

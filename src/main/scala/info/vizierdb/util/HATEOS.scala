@@ -69,6 +69,8 @@ object HATEOAS
   val MODULE_DELETE = "module.delete"
   val MODULE_INSERT = "module.insert"
   val MODULE_REPLACE = "module.replace"
+  val MODULE_FREEZE = "module.freeze"
+  val MODULE_THAW = "module.thaw"
 
   // Projects
   val PROJECT_CREATE = "project.create"

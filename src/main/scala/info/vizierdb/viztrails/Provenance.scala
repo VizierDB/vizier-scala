@@ -116,6 +116,7 @@ object Provenance
           }
         }
         case ExecutionState.DONE => () /* Skip DONE */
+        case ExecutionState.FROZEN => () /* Skip FROZEN cells */
         case ExecutionState.ERROR => {
           if(hitFirstStaleCell){
             throw new RuntimeException("Invalid state.  ERROR states should never follow a STALE cell")

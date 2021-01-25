@@ -90,6 +90,14 @@ class VizierURLs(
     getBranchHeadModule(projectId, branchId, modulePosition)
   def replaceWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int) =
     getWorkflowModule(projectId, branchId, workflowId, modulePosition)
+  def freezeBranchHeadModules(projectId: Identifier, branchId: Identifier, modulePosition: Int) =
+    compose(getBranchHeadModule(projectId, branchId, modulePosition), "/freeze")
+  def freezeWorkflowModules(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int) =
+    compose(getWorkflowModule(projectId, branchId, workflowId, modulePosition), "/freeze")
+  def thawBranchHeadModules(projectId: Identifier, branchId: Identifier, modulePosition: Int) =
+    compose(getBranchHeadModule(projectId, branchId, modulePosition), "/thaw")
+  def thawWorkflowModules(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int) =
+    compose(getWorkflowModule(projectId, branchId, workflowId, modulePosition), "/thaw")
 
 
   def getDataset(
