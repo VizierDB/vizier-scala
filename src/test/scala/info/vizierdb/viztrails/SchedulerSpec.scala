@@ -128,5 +128,47 @@ class SchedulerSpec
       logs(3) must contain("🙋")
     }
   }
+
+  "work with frozen cells" >> 
+  {
+    val project = MutableProject("Frozen Cell Test")
+
+    project.append("dummy", "create")(
+      "dataset" -> "test",
+      "content" -> "🎆"
+    )
+
+    project.append("dummy", "consume")(
+      "datasets" -> Seq(
+        Map("dataset" -> "test")
+      )
+    )
+
+    project.waitUntilReadyAndThrowOnError
+    project.lastOutputString must beEqualTo("🎆")
+
+    project.freezeFrom(1)
+    project.waitUntilReadyAndThrowOnError
+    project.lastOutputString must beEqualTo("🎆")
+
+    project.insert(1, "dummy", "create")(
+      "dataset" -> "test",
+      "content" -> "👎"
+    )
+
+    project.insert(2, "dummy", "consume")(
+      "datasets" -> Seq(
+        Map("dataset" -> "test")
+      )
+    )
+
+    project.waitUntilReadyAndThrowOnError
+    project(2).get.map { _.dataString }.mkString must beEqualTo("👎")
+    project(3).get.map { _.dataString }.mkString must beEqualTo("🎆")
+
+    project.thawUpto(3)
+    project.waitUntilReadyAndThrowOnError
+    project(3).get.map { _.dataString }.mkString must beEqualTo("👎")
+  }
 }
 
