@@ -193,6 +193,7 @@ object Cell
         .set(c.state -> ExecutionState.ERROR)
         .where.ne(c.state, ExecutionState.ERROR)
           .and.ne(c.state, ExecutionState.DONE)
+          .and.ne(c.state, ExecutionState.FROZEN)
     }.update.apply()
   }
 

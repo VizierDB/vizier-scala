@@ -105,7 +105,7 @@ class Module(
 
 
     ModuleDescription(
-      id = id.toString,
+      id = s"${id}_${cell.resultId.getOrElse {"noresult"}}",
       state = ExecutionState.translateToClassicVizier(cell.state),
       command = CommandDescription(
         packageId = packageId,
