@@ -155,11 +155,11 @@ object Provenance
         case ExecutionState.FROZEN => {
           logger.debug("Already FROZEN")
         }
-        case ExecutionState.ERROR => {
+        case ExecutionState.ERROR | ExecutionState.CANCELLED => {
           if(hitFirstStaleCell){
-            throw new RuntimeException("Invalid state.  ERROR states should never follow a STALE cell")
+            throw new RuntimeException(s"Invalid state.  ${curr.state} states should never follow a STALE cell")
           } else { 
-            logger.debug("Already ERROR; Skipping rest of workflow")
+            logger.debug(s"Already ${curr.state}; Skipping rest of workflow")
             return
           }
         }
