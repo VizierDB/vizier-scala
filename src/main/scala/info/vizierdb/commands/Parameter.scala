@@ -88,6 +88,12 @@ object Parameter
               accum ++ Seq(currDescription) ++ components,
               nextIdx
             )
+          case l:RecordParameter => 
+            val (components, nextIdx) = doDescribe(l.components, idx+1, Some(l.id))
+            (
+              accum ++ Seq(currDescription) ++ components,
+              nextIdx
+            )
 
           case _ => (accum ++ Seq(currDescription), idx + 1)
         }
