@@ -28,9 +28,14 @@ object ShapeWatcher
   def lensParameters: Seq[Parameter] = Seq(
     StringParameter(id = "config", name = "Output", required = false, hidden = true, default = Some(""))
   )
+
+  def config(arguments: Arguments) = 
+      arguments.getOpt[String]("config")
+               .map { Json.parse(_) }
+               .getOrElse { JsNull }
   def lensFormat(arguments: Arguments): String = 
     s"WATCH FOR CHANGES"+(
-      Json.parse(arguments.get[String]("config")) match {
+      config(arguments) match {
         case JsNull => ""
         case x => 
           " EXPECTING ("+
@@ -42,8 +47,7 @@ object ShapeWatcher
     )
 
   def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue =
-    arguments.get[JsValue]("config") match {
-      case null => JsNull
+    config(arguments) match {
       case JsNull => JsNull
       case x => Json.parse(x.as[String])
     }
