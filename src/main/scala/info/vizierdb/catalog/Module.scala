@@ -26,6 +26,8 @@ import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.viztrails.Provenance
 
+import info.vizierdb.catalog.serialized._
+
 /**
  * One step in an arbitrary workflow.
  *
@@ -71,17 +73,20 @@ class Module(
         s"Error formatting command: [$e]"
     }
 
-  def describe(cell: Cell, projectId: Identifier, branchId: Identifier, workflowId: Identifier, artifacts: Seq[ArtifactRef])(implicit session:DBSession): JsObject = 
+  def describe(
+    cell: Cell, 
+    projectId: Identifier, 
+    branchId: Identifier, 
+    workflowId: Identifier, 
+    artifacts: Seq[ArtifactRef]
+  )(implicit session:DBSession): ModuleDescription = 
   {
-    val timestamps:Map[String,String] = Map(
-      "createdAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(cell.created)
-    ) ++ cell.result.toSeq.flatMap {
-      result => Seq(
-        "startedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(result.started)
-      ) ++ result.finished.map { finished =>
-        "finishedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(finished)
-      }
-    }.toMap
+    val result = cell.result
+    val timestamps = Timestamps(
+      createdAt = cell.created,
+      startedAt = result.map { _.started },
+      finishedAt = result.flatMap { _.finished }
+    )
 
     val artifactSummaries = 
                       artifacts
@@ -99,13 +104,13 @@ class Module(
       cell.resultId.map { Result.outputs(_) }.toSeq.flatten
 
 
-    Json.obj(
-      "id" -> id,
-      "state" -> ExecutionState.translateToClassicVizier(cell.state),
-      "command" -> Json.obj(
-        "packageId" -> packageId,
-        "commandId" -> commandId,
-        "arguments" -> JsArray(
+    ModuleDescription(
+      id = s"${id}_${cell.resultId.getOrElse {"noresult"}}",
+      state = ExecutionState.translateToClassicVizier(cell.state),
+      command = CommandDescription(
+        packageId = packageId,
+        commandId = commandId,
+        arguments = JsArray(
           command match { 
             case None => 
               arguments.value.map { case (arg, v) => Json.obj("id" -> arg, "value" -> v) }.toSeq
@@ -120,20 +125,25 @@ class Module(
           }
         )
       ),
-      "text" -> JsString(description),
-      "timestamps" -> timestamps,
-      "datasets"  -> datasets   .map { case (name, d) => d.summarize(name) },
-      "charts"    -> charts     .map { case (name, d) => d.summarize(name) },
-      "artifacts" -> dataobjects.map { case (name, d) => d.summarize(name) },
-      "outputs" -> Json.obj(
-        "stdout" -> messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
-        "stderr" -> messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
+      text = description,
+      timestamps = timestamps,
+      datasets  = datasets   .map { case (name, d) => d.summarize(name) },
+      charts    = charts     .map { case (name, d) => d.summarize(name) },
+      artifacts = dataobjects.map { case (name, d) => d.summarize(name) },
+      outputs = ModuleOutputDescription(
+        stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
+        stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
       ),
-      HATEOAS.LINKS -> HATEOAS(
-        HATEOAS.SELF           -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_INSERT  -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_DELETE  -> VizierAPI.urls.deleteWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_REPLACE -> VizierAPI.urls.replaceWorkflowModule(projectId, branchId, workflowId, cell.position),
+      links = HATEOAS(
+        HATEOAS.SELF            -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_INSERT   -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_DELETE   -> VizierAPI.urls.deleteWorkflowModule(projectId, branchId, workflowId, cell.position),
+        HATEOAS.MODULE_REPLACE  -> VizierAPI.urls.replaceWorkflowModule(projectId, branchId, workflowId, cell.position),
+        (if(cell.state.equals(ExecutionState.FROZEN)) {
+          HATEOAS.MODULE_THAW   -> VizierAPI.urls.thawWorkflowModules(projectId, branchId, workflowId, cell.position)
+        } else {
+          HATEOAS.MODULE_FREEZE -> VizierAPI.urls.freezeWorkflowModules(projectId, branchId, workflowId, cell.position)
+        }),
       )
     )
   } 
@@ -217,22 +227,20 @@ object Module
     branchId: Identifier, 
     workflowId: Identifier,
     cells: Seq[(Cell, Module)]
-  )(implicit session: DBSession): JsArray =
+  )(implicit session: DBSession): Seq[ModuleDescription] =
   { 
     var scope = Map[String,ArtifactRef]()
-    JsArray(
-      cells.sortBy { _._1.position }
-           .map { case (cell, module) => 
-             scope = Provenance.updateRefScope(cell, scope)
-             module.describe(
-               cell = cell, 
-               projectId = projectId,
-               branchId = branchId,
-               workflowId = workflowId,
-               artifacts = scope.values.toSeq
-             )
-           }
-    )
+    cells.sortBy { _._1.position }
+         .map { case (cell, module) => 
+           scope = Provenance.updateRefScope(cell, scope)
+           module.describe(
+             cell = cell, 
+             projectId = projectId,
+             branchId = branchId,
+             workflowId = workflowId,
+             artifacts = scope.values.toSeq
+           )
+         }
   }
 
 

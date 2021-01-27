@@ -22,6 +22,7 @@ import info.vizierdb.catalog.binders._
 import java.time.format.DateTimeFormatter
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
+import info.vizierdb.catalog.serialized._
 
 /**
  * One version of a workflow.  
@@ -167,7 +168,7 @@ case class Workflow(
      .list.apply()
   }
 
-  def describe(implicit session: DBSession): JsObject = 
+  def describe(implicit session: DBSession): WorkflowDescription = 
   {
     val branch = Branch.get(branchId)
     val cellsAndModules = cellsAndModulesInOrder
@@ -189,42 +190,64 @@ case class Workflow(
       else { curr._1.state }
     }
 
-    JsObject(
-      summary.value ++ Map(
-        HATEOAS.LINKS -> HATEOAS.extend(summary.value(HATEOAS.LINKS),
-          HATEOAS.WORKFLOW_CANCEL -> (
-            if(isRunning) { 
-              VizierAPI.urls.cancelWorkflow(branch.projectId, branchId, id) 
-            } else { null }
-          )
+    val TOC_HEADER = "(#+) *(.+)".r
+
+    val tableOfContents: Seq[TableOfContentsSection] = 
+      cellsAndModules.flatMap { case (cell, module) => 
+        if(module.packageId.equals("docs")){
+          cell.messages
+              .collect { 
+                case message if message.mimeType.equals(MIME.MARKDOWN) => 
+                  new String(message.data)
+                    .split("\n")
+                    .filter { _ startsWith "#" }
+                    .collect { 
+                      case TOC_HEADER(levelPrefix, title) => 
+                        (levelPrefix.length, title)
+                    }
+                    .headOption
+              }
+              .headOption.flatten
+              .map { case (level, title) => 
+                TableOfContentsSection(title, level, cell.position, module.id)
+              }
+        } else { None }
+      }
+
+    summary.toDescription(
+      state = ExecutionState.translateToClassicVizier(state),
+      modules = Module.describeAll(
+          projectId = branch.projectId,
+          branchId = branchId,
+          workflowId = id,
+          cells = cellsAndModules
         ),
-        "state" -> JsNumber(ExecutionState.translateToClassicVizier(state)),
-        "modules" -> 
-          Module.describeAll(
-            projectId = branch.projectId,
-            branchId = branchId,
-            workflowId = id,
-            cells = cellsAndModules
-          ),
-        "datasets" -> JsArray(datasets.map { d => d._1.summarize(name = d._2) }),
-        "dataobjects" -> JsArray(dataobjects.map { d => d._1.summarize(name = d._2) }),
-        "readOnly" -> JsBoolean(!branch.headId.equals(id))
-      )
+      datasets = datasets.map { d => d._1.summarize(name = d._2) },
+      dataobjects = dataobjects.map { d => d._1.summarize(name = d._2) },
+      readOnly = !branch.headId.equals(id),
+      tableOfContents = Some(tableOfContents),
+      newLinks = HATEOAS(
+        HATEOAS.WORKFLOW_CANCEL -> (
+          if(isRunning) { 
+            VizierAPI.urls.cancelWorkflow(branch.projectId, branchId, id) 
+          } else { null }
+        )
+      ),
     )
   }
-  def summarize(implicit session: DBSession): JsObject = 
+  def summarize(implicit session: DBSession): WorkflowSummary = 
   {
     makeSummary(Branch.get(branchId), actionModuleId.map { Module.get(_) })
   }
 
-  def makeSummary(branch: Branch, actionModule: Option[Module]): JsObject =
-    Json.obj(
-      "id"          -> id.toString,
-      "createdAt"   -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(created),
-      "action"      -> action.toString,
-      "packageId"   -> actionModule.map { _.packageId },
-      "commandId"   -> actionModule.map { _.commandId },
-      HATEOAS.LINKS -> HATEOAS(
+  def makeSummary(branch: Branch, actionModule: Option[Module]): WorkflowSummary =
+    WorkflowSummary(
+      id          = id.toString,
+      createdAt   = Timestamps.format(created),
+      action      = action.toString,
+      packageId   = actionModule.map { _.packageId },
+      commandId   = actionModule.map { _.commandId },
+      links       = HATEOAS(
         HATEOAS.SELF             -> VizierAPI.urls.getWorkflow(branch.projectId, branchId, id),
         HATEOAS.WORKFLOW_APPEND  -> VizierAPI.urls.appendWorkflow(branch.projectId, branchId, id),
         HATEOAS.WORKFLOW_BRANCH  -> VizierAPI.urls.getBranch(branch.projectId, branchId),

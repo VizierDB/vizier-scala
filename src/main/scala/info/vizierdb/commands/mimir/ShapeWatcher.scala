@@ -26,11 +26,17 @@ object ShapeWatcher
   def lens = Lenses.shapeWatcher
   def name: String = "Dataset Stabilizer"
   def lensParameters: Seq[Parameter] = Seq(
-    StringParameter(id = "config", name = "Output", required = false, hidden = true, default = Some(""))
+    StringParameter(id = "config", name = "Output", required = false, hidden = true, default = Some("")),
+    BooleanParameter(id = "recompute", name = "Rediscover Parameters", required = true, default = Some(true))
   )
+
+  def config(arguments: Arguments):JsValue = 
+      arguments.getOpt[String]("config")
+               .map { Json.parse(_) }
+               .getOrElse { JsNull }
   def lensFormat(arguments: Arguments): String = 
     s"WATCH FOR CHANGES"+(
-      Json.parse(arguments.get[String]("config")) match {
+      config(arguments) match {
         case JsNull => ""
         case x => 
           " EXPECTING ("+
@@ -42,12 +48,9 @@ object ShapeWatcher
     )
 
   def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue =
-    arguments.get[JsValue]("config") match {
-      case null => JsNull
-      case JsNull => JsNull
-      case x => Json.parse(x.as[String])
-    }
+    if(arguments.get[Boolean]("recompute")){ JsNull }
+    else { config(arguments) }
   def updateConfig(lensArgs: JsValue, schema: Seq[StructField], dataset: String): Map[String,JsValue] = 
-    Map( "config" -> JsString(lensArgs.toString()) )
+    Map( "config" -> JsString(lensArgs.toString()), "recompute" -> JsBoolean(false) )
 }
 

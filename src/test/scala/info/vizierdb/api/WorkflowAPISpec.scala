@@ -59,7 +59,7 @@ A,B,C
       )).handle
 
     project = response.data.as[JsObject].value("id").as[String].toLong
-    val descriptor = GetProjectRequest(project).handle 
+    val descriptor = GetProjectHandler.handle(Map("projectId" -> JsNumber(project)))
     descriptor match { 
       case NoSuchEntityResponse() => ko("Workflow project not created correctly")
       case RawJsonResponse(data, _) => 
@@ -69,10 +69,10 @@ A,B,C
   }
 
   "Create and load a file" >> {
-    val fileResponse = CreateFile(
+    val fileResponse = CreateFileHandler.handle(
                         project, 
                         new ByteArrayInputStream(FILE_DATA.getBytes)
-                      ).handle
+                      )
 
     var fileId = -1l
     fileResponse match {

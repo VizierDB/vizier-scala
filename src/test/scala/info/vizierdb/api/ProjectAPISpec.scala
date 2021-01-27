@@ -59,7 +59,7 @@ class ProjectAPISpec
 
     val id = createResponse.data.as[JsObject].value("id").as[String].toLong
 
-    val deleteResponse = DeleteProject(id).handle
+    val deleteResponse = DeleteProjectHandler.handle(Map("projectId" -> JsNumber(id)))
 
     DB.readOnly { implicit s => 
       Project.lookup(id) must beNone
@@ -68,7 +68,7 @@ class ProjectAPISpec
 
   "List Projects" >> {
     val response = 
-      ListProjectsRequest().handle
+      ListProjectsHandler.handle
 
     val projects = 
       response.data.as[Map[String, JsValue]]

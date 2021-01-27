@@ -1,7 +1,7 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "0.3"
-val MIMIR_VERSION = "0.4"
+val VIZIER_VERSION = "0.4"
+val MIMIR_VERSION = "0.4.1"
 val CAVEATS_VERSION = "0.3.0"
 
 // Project and subprojects
@@ -62,6 +62,10 @@ excludeDependencies ++= Seq(
   ExclusionRule( organization = "org.mortbay.jetty"), 
 )
 
+dependencyOverrides ++= Seq(
+  "javax.servlet"  % "javax.servlet-api"          % "3.1.0"
+)
+
 // Custom Dependencies
 libraryDependencies ++= Seq(
   // Mimir
@@ -87,6 +91,8 @@ libraryDependencies ++= Seq(
 
   // command-specific libraries
   // "org.clapper"                   %% "markwrap"                         % "1.2.0"
+  "com.github.andyglow"           %% "scala-jsonschema"                 % "0.7.1",
+  "com.github.andyglow"           %% "scala-jsonschema-play-json"       % "0.7.1",
 )
 
 ////// Publishing Metadata //////
@@ -147,6 +153,7 @@ lazy val buildUI = taskKey[Unit]("Build the UI")
 buildUI := {
   import java.lang.ProcessBuilder
   import java.nio.file.{ Files, Paths }
+  import collection.JavaConverters._
 
   val sourceDir = Paths.get("upstream/ui")
   val source = sourceDir.resolve("build")
@@ -163,6 +170,14 @@ buildUI := {
           .waitFor
   }
   Files.move(source, target)
+
+  val env = 
+    Files.readAllLines(Paths.get("upstream/ui/public/env.js"))
+         .asScala
+         .mkString("\n")
+         .replaceAll("http://localhost:5000", "")
+
+  Files.write(Paths.get("src/main/resources/ui/env.js"), env.getBytes)
 }
 
 ///////////////////////////////////////////
@@ -321,7 +336,7 @@ checkout := {
 }
 
 ///////////////////////////////////////////
-/////// Helpful command to get dependencies
+/////// Attach copyright information to all files
 ///////////////////////////////////////////
 lazy val fixCopyrights = taskKey[Unit]("Update copyright headers on files")
 fixCopyrights := {
@@ -378,4 +393,143 @@ fixCopyrights := {
    // .take(2)
    .foreach { injectHeaderIfNeeded(_, "# ", "", "# ") }
 
+}
+
+///////////////////////////////////////////
+/////// Render the routes
+///////////////////////////////////////////
+lazy val routes = taskKey[Unit]("Render routes table")
+routes := {
+  import scala.io.Source
+  import java.nio.file.{ Files, Paths }
+  
+  val PARAMETER = "\\{([^}:]+):([^}]+)\\}".r
+  
+  val parsed: Seq[(String, Option[String], String, String, String)] = 
+    Source.fromFile("src/main/resources/vizier-routes.txt")
+          .getLines
+          .map { _.split(" +") }
+          .zipWithIndex
+          .map { x => 
+            val idx = x._2
+            val path = x._1(0)
+            val pathComponents = path.split("/")
+            val httpVerb = x._1(1)
+            val handler = x._1(2)
+
+            val (pathPattern, fieldsPerComponent) =
+              pathComponents.map {
+                case PARAMETER(param, "int") => 
+                  ("([0-9]+)", Some((param, s"JsNumber(${param}.toLong)")))
+                case PARAMETER(param, "subpath") =>
+                  ("(.+)", Some((param, s"JsString(${param})")))
+                case p if p.startsWith("{") || p.contains("\"") => 
+                  throw new IllegalArgumentException(s"Invalid path parameter ${p} in ${x}")
+                case p => (p, None)
+              }.unzip
+
+            val fields = fieldsPerComponent.flatten
+            val (matcher, patternDef) = 
+              if(fields.isEmpty){
+                ("\""+path+"\"", None)
+              } else {
+                (
+                  "ROUTE_PATTERN_"+idx+"("+fields.map { _._1 }.mkString(", ")+")",
+                  Some("val ROUTE_PATTERN_"+idx+" = \""+pathPattern.mkString("/")+"\".r")
+                )
+              }
+
+            val fieldConstructor = { 
+                "Map("+
+                  fields.map { case (name, parser) => "\""+name+"\" -> "+parser }
+                        .mkString(", ")+
+                ")"
+              }
+
+            val handlerParameters = 
+              Seq(fieldConstructor, "request")
+
+            val invokeHandler = 
+              s"case $matcher => ${handler}.handle(${handlerParameters.mkString(", ")})"
+            
+            ( 
+              httpVerb,
+              patternDef,
+              invokeHandler,
+              matcher,
+              path
+            )
+          }
+          .toSeq
+
+  val patternDefs = parsed.flatMap { _._2 }.map { "  "+_ }.mkString("\n")
+
+  val handlers = 
+    parsed.groupBy { _._1 }
+          .map { case (verb, handlers) => 
+            val capsedVerb = verb.substring(0,1).toUpperCase()+verb.substring(1).toLowerCase()
+            (Seq(
+              s" override def do${capsedVerb}(request: HttpServletRequest, output: HttpServletResponse) = ",
+              "  {",
+              "    processResponse(request, output) {",
+              "      request.getPathInfo match {" ,
+            )++ handlers.map { "        "+_._3 }++Seq(
+              "        case _ => fourOhFour(request)",
+              "      }",
+              "    }",
+              "  }"
+            )).mkString("\n")
+          }
+          .mkString("\n\n")
+
+  val corsHandler:String = (
+      Seq(
+        "  override def doOptions(request: HttpServletRequest, output: HttpServletResponse) = ",
+        "  {",
+        "    processResponse(request, output) {",
+        "      request.getPathInfo match {" ,
+      )++(
+        parsed.groupBy { _._5 }
+              .map { case (_, baseHandlers) => 
+                s"        case ${baseHandlers.head._4} => CORSPreflightResponse("+baseHandlers.map { "\""+_._1+"\"" }.mkString(", ")+")"
+              }
+      )++Seq(
+        "        case _ => fourOhFour(request)",
+        "      }",
+        "    }",
+        "  }",
+      )
+    ).mkString("\n")
+
+  val routeFile = Seq(
+    "package info.vizierdb.api.servlet",
+    "",
+    "/* this file is AUTOGENERATED by `sbt routes` from `src/main/resources/vizier-routes.txt` */",
+    "/* DO NOT EDIT THIS FILE DIRECTLY */",
+    "",
+    "import play.api.libs.json._",
+    "import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}",
+    "import org.mimirdb.api.Response",
+    "import info.vizierdb.types._",
+    "import info.vizierdb.api._",
+    "import info.vizierdb.api.response.CORSPreflightResponse",
+    "import info.vizierdb.api.handler._",
+    "",
+    "trait VizierAPIServletRoutes extends HttpServlet {",
+    "",
+    "  def processResponse(request: HttpServletRequest, output: HttpServletResponse)(response: => Response): Unit",
+    "  def fourOhFour(request: HttpServletRequest): Response",
+    "",
+    patternDefs,
+    "",
+    handlers,
+    "",
+    corsHandler,
+    "}"
+  ).mkString("\n")
+
+  Files.write(
+    Paths.get("src/main/scala/info/vizierdb/api/servlet/VizierAPIServletRoutes.scala"), 
+    routeFile.getBytes()
+  )
 }

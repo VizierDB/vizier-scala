@@ -28,12 +28,12 @@ object RepairKey
     TemplateParameters.COLUMN,
   )
   def lensFormat(arguments: Arguments): String = 
-    s"REPAIR KEY COLUMN ${arguments.get[Int]("col")}"
+    s"REPAIR KEY COLUMN ${arguments.get[Int]("column")}"
   def updateConfig(lensArgs: JsValue, schema: Seq[StructField], dataset: String): Map[String,JsValue] = Map.empty
   def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue =
   {
     Json.obj(
-      "key" -> schema(arguments.get[Int]("col")).name
+      "key" -> schema(arguments.get[Int]("column")).name
     )
   }
 }

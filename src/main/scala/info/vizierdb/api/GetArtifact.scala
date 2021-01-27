@@ -25,27 +25,38 @@ import org.mimirdb.api.request.Explain
 import org.mimirdb.api.CaveatFormat._
 import org.mimirdb.api.MimirAPI
 import info.vizierdb.api.response._
+import info.vizierdb.api.handler.Handler
+import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import info.vizierdb.VizierException
 
-case class GetArtifactRequest(
-  projectId: Identifier, 
-  artifactId: Identifier, 
-  expectedType: Option[ArtifactType.T] = None, 
-  offset: Option[Long] = None, 
-  limit: Option[Int] = None, 
-  forceProfiler: Boolean = false
-)
-  extends Request
+object GetArtifactHandler
+  extends Handler
 {
-  def getArtifact(expecting: Option[ArtifactType.T] = expectedType): Option[Artifact] = 
+  def getArtifact(projectId: Long, artifactId: Long, expecting: Option[ArtifactType.T]): Option[Artifact] = 
       DB.readOnly { implicit session => 
         Artifact.lookup(artifactId, Some(projectId))
       }.filter { artifact => 
         expecting.isEmpty || expecting.get.equals(artifact.t)
       }
 
-  def handle: Response = 
+  def handle(
+    pathParameters: Map[String, JsValue], 
+    request: HttpServletRequest
+  ): Response = handle(pathParameters, request, None)
+
+
+  def handle(
+    pathParameters: Map[String, JsValue], 
+    request: HttpServletRequest, 
+    expecting: Option[ArtifactType.T]
+  ): Response =
   {
-    getArtifact() match {
+    val projectId = pathParameters("projectId").as[Long]
+    val artifactId = pathParameters("artifactId").as[Long]
+    val offset = Option(request.getParameter("offset")).map { _.split(",")(0).toLong }
+    val limit = Option(request.getParameter("limit")).map { _.toInt }
+    val forceProfiler = Option(request.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
+    getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
         return RawJsonResponse(
           artifact.describe(
@@ -59,11 +70,31 @@ case class GetArtifactRequest(
     }
   } 
 
-  case class Annotations(columnId: Option[Int] = None, rowId: Option[String] = None) extends Request
+  case class Typed(
+    expectedType: ArtifactType.T
+  ) extends Handler
   {
-    def handle: Response =
+    def handle(
+      pathParameters: Map[String,JsValue], 
+      request: HttpServletRequest
+    ): Response = 
     {
-      getArtifact(Some(ArtifactType.DATASET)) match { 
+      GetArtifactHandler.handle(pathParameters, request, Some(expectedType))
+    }
+  }
+
+  object Annotations extends Handler
+  {
+    def handle(
+      pathParameters: Map[String, JsValue], 
+      request: HttpServletRequest 
+    ): Response =
+    {
+      val projectId = pathParameters("projectId").as[Long]
+      val artifactId = pathParameters("artifactId").as[Long]
+      val columnId = Option(request.getParameter("column")).map { _.toInt }
+      val rowId = Option(request.getParameter("row"))
+      getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match { 
         case Some(artifact) => 
           return RawJsonResponse(
             Json.toJson(
@@ -86,11 +117,16 @@ case class GetArtifactRequest(
     }
   }
 
-  object Summary extends Request
+  object Summary extends Handler
   {
-    def handle: Response = 
+    def handle(
+      pathParameters: Map[String, JsValue], 
+      request: HttpServletRequest 
+    ): Response =
     {
-      getArtifact() match {
+      val projectId = pathParameters("projectId").as[Long]
+      val artifactId = pathParameters("artifactId").as[Long]
+      getArtifact(projectId, artifactId, None) match {
         case Some(artifact) => 
           return RawJsonResponse(
             artifact.summarize()
@@ -101,13 +137,48 @@ case class GetArtifactRequest(
     } 
   }
 
-  object CSV extends Request
+  object CSV extends Handler
   {
-    def handle: Response = 
+    def handle(
+      pathParameters: Map[String, JsValue], 
+      request: HttpServletRequest 
+    ): Response =
     {
-      getArtifact(Some(ArtifactType.DATASET)) match {
-        case Some(artifact) => 
-          ???
+      val projectId = pathParameters("projectId").as[Long]
+      val artifactId = pathParameters("artifactId").as[Long]
+      getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match {
+        case Some(artifact) =>
+          val tempFile = java.io.File.createTempFile("artifact_"+artifactId, ".csv")
+          if(tempFile.exists()){
+            // spark will complain about overwriting the file if it already
+            // exists
+            tempFile.delete()
+          }
+          MimirAPI.catalog.get(artifact.nameInBackend)
+                  .coalesce(1)
+                  .write
+                    .option("header", true)
+                    .csv(tempFile.toString())
+
+          val csvFile = 
+            tempFile.listFiles
+                    .find { _.getName.endsWith(".csv") }
+                    .getOrElse { 
+                      throw new VizierException(
+                        "Error Exporting CSV file: No File produced"
+                      )
+                    }
+
+          FileResponse(
+            csvFile, 
+            "dataset_"+artifactId+".csv", 
+            "text/csv",
+            () => { 
+              tempFile.listFiles
+                      .map { _.delete() }
+              tempFile.delete() 
+            }
+          )
         case None => 
           return NoSuchEntityResponse() 
       }
@@ -116,11 +187,25 @@ case class GetArtifactRequest(
 
 
   val SANE_FILE_CHARACTERS = "^([\\-_.,a-zA-Z0-9]*)$".r
-  case class File(subpath: Option[String] = None) extends Request
+  object File extends Handler
   {
-    def handle: Response =
+    def handle(
+      pathParameters: Map[String, JsValue], 
+      request: HttpServletRequest 
+    ): Response =
     {
-      getArtifact(Some(ArtifactType.FILE)) match {
+      val projectId = pathParameters("projectId").as[Long]
+      val artifactId = pathParameters("artifactId").as[Long]
+      val subpathElements = pathParameters.get("subpath").map { _.as[Seq[String]] }
+      val subpath = subpathElements.map { _.mkString("/") }
+      for(element <- subpathElements.toSeq.flatten) { 
+        element match {
+          case "." | ".." => 
+            throw new IllegalArgumentException(s"Invalid subpath $subpath")
+          case _ => ()
+        }
+      }
+      getArtifact(projectId, artifactId, Some(ArtifactType.FILE)) match {
         case Some(artifact) => 
         {
           var path = artifact.file

@@ -52,5 +52,6 @@ case class CreateProject(
 object CreateProject
 {
   implicit val format: Format[CreateProject] = Json.format
+  import com.github.andyglow.jsonschema.AsPlay._
 }
 

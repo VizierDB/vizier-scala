@@ -22,7 +22,12 @@ import info.vizierdb.types._
 
 object Filestore
 {
-  lazy val path = { val d = new File(Vizier.config.basePath(), "files"); if(!d.exists()){ d.mkdir() }; d }
+  lazy val path = { 
+    val d = new File(Vizier.config.basePath(), "files")
+    if(!d.exists()){ d.mkdir() }
+    println("File Path @ "+d)
+    d 
+  }
 
   def get(name: String) = new File(path, name)
   def projectDir(projectId: Identifier): File = 

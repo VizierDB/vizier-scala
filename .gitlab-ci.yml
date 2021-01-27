@@ -10,3 +10,5 @@ deploy:
     - master
   script:
     - sbt +publish
+    - sbt bootstrap
+    - cp bin/vizier /var/www/maven_repo/info/vizierdb/

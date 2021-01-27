@@ -35,7 +35,7 @@ case class ArtifactRef(
         select(a.t)
           .from(Artifact as a)
           .where.eq(a.id, aid)
-      }.map { _.get[ArtifactType.T](a.t) }.single.apply()
+      }.map { _.get[ArtifactType.T](1) }.single.apply()
     }
   }
 

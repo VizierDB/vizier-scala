@@ -82,11 +82,40 @@ object Provenance
     scope.filterNot { case (k, v) => deletions(k) } ++ insertions
   }
 
+  /**
+   * Check to see whether the provided cell needs re-execution if the following scope is provided
+   * @param    cell       The cell to check
+   * @param    scope      The artifact state prior to the cell's execution
+   * @return              true if the cell's prior execution can be applied directly without re-running the cell
+   */
   def checkForConflicts(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Boolean =
-    cell.resultId.isEmpty ||
-    cell.inputs.iterator.exists { i => (scope contains i.userFacingName) &&
-                                       (i.artifactId.map { scope(i.userFacingName) != _ }
-                                                    .getOrElse { true }) }
+  {
+    if(cell.resultId.isEmpty){
+      logger.trace("Cell has no result.  By default this is a conflict.")
+      return true
+    } else {
+      for(i <- cell.inputs.iterator){
+        logger.trace(s"Checking input ${i.userFacingName} -> ${i.artifactId} for conflicts")
+        if(i.artifactId.isEmpty){ 
+          logger.trace("Strangely, the input does not have an artifactId; assuming a conflict")
+          return true
+        }
+        if(scope contains i.userFacingName){
+          logger.trace("Scope has input")
+          if(i.artifactId.get.toLong == scope(i.userFacingName)){
+            logger.trace("Input matches prior execution; Trying next")
+          } else {
+            logger.trace("Input is a conflict")
+            return true
+          }
+        } else { 
+          logger.trace("Input deleted from scope: Conflict")
+          return true 
+        }
+      }
+      return false
+    }
+  }
 
   def updateSuccessorState(cell: Cell, outputs: Map[String, Identifier])(implicit session: DBSession): Unit =
     updateCellStates(cell.successors, outputs)
@@ -99,27 +128,38 @@ object Provenance
     var hitFirstStaleCell = false
     
     for(curr <- cells){
-      logger.trace(s"Updating execution state for $curr")
+      logger.debug(s"Updating execution state for $curr; $scope")
       curr.state match {
         case ExecutionState.STALE => {
+          logger.debug(s"Already STALE")
           hitFirstStaleCell = true
         }
         case ExecutionState.WAITING => {
           if(checkForConflicts(curr, scope)){ 
             // There is a conflict.  The cell now officially needs to be re-executed.
+            logger.debug(s"Conflict detected -> STALE")
             hitFirstStaleCell = true
             curr.updateState(ExecutionState.STALE)
           } else if(!hitFirstStaleCell) {
             // There is no conflict, and we haven't hit the first stale cell yet.  
             // Can safely re-use the prior cell execution results
+            logger.debug("No conflict -> DONE")
             curr.updateState(ExecutionState.DONE)
+          } else {
+            logger.debug("Already hit stale cell -> WAITING")
           }
         }
-        case ExecutionState.DONE => () /* Skip DONE */
-        case ExecutionState.ERROR => {
+        case ExecutionState.DONE => {
+          logger.debug("Already DONE")
+        }
+        case ExecutionState.FROZEN => {
+          logger.debug("Already FROZEN")
+        }
+        case ExecutionState.ERROR | ExecutionState.CANCELLED => {
           if(hitFirstStaleCell){
-            throw new RuntimeException("Invalid state.  ERROR states should never follow a STALE cell")
+            throw new RuntimeException(s"Invalid state.  ${curr.state} states should never follow a STALE cell")
           } else { 
+            logger.debug(s"Already ${curr.state}; Skipping rest of workflow")
             return
           }
         }

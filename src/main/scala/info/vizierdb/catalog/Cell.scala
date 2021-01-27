@@ -37,10 +37,10 @@ import info.vizierdb.VizierException
  * state adopts conforms the following state diagram
  * ```
  *
- * Clone Cell
- *          \
- *           v
- *     --- WAITING -----------> DONE
+ * Clone/Thaw Cell                    Freeze Cell
+ *          \                              |
+ *           v                             V
+ *     --- WAITING -----------> DONE     FROZEN
  *    /       |                  ^
  *   /        v                  |
  *   |     BLOCKED ---+-> ERROR  |
@@ -61,6 +61,9 @@ import info.vizierdb.VizierException
  * - ERROR: resultId is either None (a preceding cell triggered the error) or Some(result) with a
  *          result object describing the error
  * - DONE: resultId references the result of the execution
+ * - FROZEN: resultId references the [[Result]] from the previous execution, and
+ *           like the WAITING state may or may not be valid.  However, the user has
+ *           requested that the cell not be re-executed.
  *
  * In summary resultId should usually be ignored in all states except ERROR and DONE.
  */
@@ -190,6 +193,7 @@ object Cell
         .set(c.state -> ExecutionState.ERROR)
         .where.ne(c.state, ExecutionState.ERROR)
           .and.ne(c.state, ExecutionState.DONE)
+          .and.ne(c.state, ExecutionState.FROZEN)
     }.update.apply()
   }
 

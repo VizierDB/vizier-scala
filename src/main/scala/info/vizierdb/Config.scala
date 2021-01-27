@@ -38,19 +38,36 @@ class Config(arguments: Seq[String])
     descr = "Your Open Street Maps server (for Geocoding)",
     default = Option(defaults.getProperty("osm-server"))
   )
+  val basePath = opt[File]("database",
+    descr = "Path to the project database (e.g., vizier.db)",
+    default = Some(new File("vizier.db"))
+  )
+  val port = opt[Int]("port",
+    descr = "The port to run on (default: 5000)",
+    default = Option(defaults.getProperty("vizier-port"))
+                  .map { _.toInt }
+                  .orElse { Some(5000) }
+  )
   val pythonPath = opt[String]("python", 
     descr = "Path to python binary",
     default = 
       Option(defaults.getProperty("python"))
           .orElse { Some(info.vizierdb.commands.python.PythonProcess.PYTHON_COMMAND) }
   )
-  val basePath = opt[File]("project",
-    descr = "Path to the project (e.g., vizier.db)",
-    default = Some(new File("vizier.db"))
+  val publicURL = opt[String]("public-url",
+    descr = "The Public-Facing URL of Vizier (e.g., for use with proxies)",
+    default = Option(defaults.getProperty("vizier-public-url"))
   )
   val experimental = opt[List[String]]("X", 
     descr = "Enable an experimental option",
     default = Some(List[String]()))
+
+  val devel = opt[Boolean]("devel", 
+    descr = "Launch vizier in development mode (bind to all ports, permissive CORS headers)",
+    default = Option(defaults.getProperty("vizier-developer-mode"))
+                .map { _.toLowerCase.equals("true") }
+                .orElse { Some(false) }
+  )
 
   object ingest extends Subcommand("import", "ingest") {
     val execute = toggle("execute", default = Some(true))
@@ -58,6 +75,7 @@ class Config(arguments: Seq[String])
       descr = "The exported vizier file"
     )
   }
+
   addSubcommand(ingest)
   
   object export extends Subcommand("export") {

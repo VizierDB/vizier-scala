@@ -25,6 +25,7 @@ import info.vizierdb.catalog.binders._
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.viztrails.Provenance
 
 /**
  * One branch of the project
@@ -59,7 +60,11 @@ case class Branch(
       action = ActionType.INSERT,
       prevWorkflowId = headId,
       updatePosition = sqls"case when position >= $position then position + 1 else position end",
-      updateState = sqls"case when position >= $position then ${ExecutionState.WAITING.id} else state end",
+      updateState = sqls"""
+          case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id} 
+               when position >= $position then ${ExecutionState.WAITING.id} 
+               else state end
+      """,
       addModules = Seq(module.id -> position)
     )
   def delete(position: Int)(implicit session: DBSession): (Branch, Workflow) =
@@ -68,8 +73,13 @@ case class Branch(
       action = ActionType.DELETE,
       prevWorkflowId = headId,
       updatePosition = sqls"case when position > $position then position - 1 else position end",
-      updateState = sqls"case when position >= $position then ${ExecutionState.WAITING.id} else state end",
-      keepCells = sqls"position <> $position"
+      updateState = sqls"""
+          case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id} 
+               when position >= $position then ${ExecutionState.WAITING.id} 
+               else state end
+      """,
+      keepCells = sqls"position <> $position",
+      forceRecomputeState = true
     )
   def insert(position: Int, packageId: String, commandId: String)
             (args: (String, Any)*)
@@ -80,7 +90,11 @@ case class Branch(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
-      updateState = sqls"case when position >= $position then ${ExecutionState.WAITING.id} else state end",
+      updateState = sqls"""
+          case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id}
+               when position >= $position then ${ExecutionState.WAITING.id} 
+               else state end
+      """,
       keepCells = sqls"position <> $position",
       addModules = Seq(module.id -> position)
     )
@@ -88,6 +102,35 @@ case class Branch(
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
     update(position, Module.make(packageId, commandId)(args:_*))
+  def freezeFrom(position: Int)
+                (implicit session: DBSession): (Branch, Workflow) =
+  {
+    modify(
+      module = None,
+      action = ActionType.FREEZE,
+      prevWorkflowId = headId,
+      updateState = sqls"""
+          case when position >= $position then ${ExecutionState.FROZEN.id}
+               else state end
+      """
+    )
+  }
+  def thawUpto(position: Int)
+              (implicit session: DBSession): (Branch, Workflow) =
+  {
+    modify(
+      module = None,
+      action = ActionType.FREEZE,
+      prevWorkflowId = headId,
+      updateState = sqls"""
+          case when position <= $position 
+                  and state = ${ExecutionState.FROZEN.id}
+                    then ${ExecutionState.WAITING.id}
+               else state end
+      """,
+      forceRecomputeState = true
+    )
+  }
 
   private[vizierdb] def initWorkflow(
     prevId: Option[Identifier] = None,
@@ -126,7 +169,8 @@ case class Branch(
     updatePosition: SQLSyntax = sqls"position",
     updateState: SQLSyntax = sqls"state",
     keepCells: SQLSyntax = sqls"1=1",
-    addModules: Iterable[(Identifier, Int)] = Seq()
+    addModules: Iterable[(Identifier, Int)] = Seq(),
+    forceRecomputeState: Boolean = false
   )(implicit session: DBSession): (Branch, Workflow) = 
   {
     // Note: we're working with immutable objects here.  `branch` will be the 
@@ -162,6 +206,9 @@ case class Branch(
         created = ZonedDateTime.now()
       )
     }
+    if(forceRecomputeState){
+      Provenance.updateCellStates(workflow.cellsInOrder, Map.empty)
+    }
 
     return (branch, workflow)
   }
@@ -184,7 +231,7 @@ case class Branch(
   def describe(implicit session:DBSession): JsObject =
     JsObject(
       summarize.value ++ Map(
-        "workflows" -> JsArray(workflows.map { _.summarize })
+        "workflows" -> Json.toJson(workflows.map { _.summarize })
       )
     )
 

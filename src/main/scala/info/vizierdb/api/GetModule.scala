@@ -19,21 +19,21 @@ import play.api.libs.json._
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow, Cell }
-import org.mimirdb.api.Request
+import org.mimirdb.api.Response
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Provenance
+import info.vizierdb.api.handler.SimpleHandler
 
-case class GetModuleRequest(
-  projectId: Identifier, 
-  branchId: Identifier, 
-  workflowId: Option[Identifier], 
-  modulePosition: Int
-)
-  extends Request
+object GetModuleHandler
+  extends SimpleHandler
 {
-  def handle = 
+  def handle(pathParameters: Map[String, JsValue]): Response =
   {
+    val projectId = pathParameters("projectId").as[Long]
+    val branchId = pathParameters("branchId").as[Long]
+    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
+    val modulePosition = pathParameters("modulePosition").as[Int]
     DB.readOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
         workflowId match {
@@ -46,12 +46,14 @@ case class GetModuleRequest(
         workflowMaybe.flatMap { _.cellByPosition(modulePosition) }
       cellMaybe match {
         case Some(cell) => RawJsonResponse(
-          cell.module.describe(
-            cell = cell, 
-            projectId = projectId, 
-            branchId = branchId, 
-            workflowId = workflowMaybe.get.id,
-            artifacts = Provenance.getRefScope(cell).values.toSeq
+          Json.toJson(
+            cell.module.describe(
+              cell = cell, 
+              projectId = projectId, 
+              branchId = branchId, 
+              workflowId = workflowMaybe.get.id,
+              artifacts = Provenance.getRefScope(cell).values.toSeq
+            )
           )
         )
         case None => NoSuchEntityResponse()

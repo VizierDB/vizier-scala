@@ -19,15 +19,16 @@ import play.api.libs.json._
 import org.mimirdb.api.Request
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response.RawJsonResponse
+import info.vizierdb.api.handler.DeterministicHandler
 
-object ListTasks
-  extends Request
+object ListTasksHandler
+  extends DeterministicHandler
 {
   def handle = 
   {
     DB.readOnly { implicit session => 
       RawJsonResponse(
-        JsArray(
+        Json.toJson(
           Scheduler.running
                    .map { workflow => workflow.summarize }
         )

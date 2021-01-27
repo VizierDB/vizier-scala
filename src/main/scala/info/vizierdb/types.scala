@@ -30,7 +30,8 @@ object types
         APPEND,
         DELETE,
         INSERT,
-        UPDATE = Value
+        UPDATE,
+        FREEZE = Value
 
     def decode(str: String): T = 
     {
@@ -40,6 +41,7 @@ object types
         case "delete" | "del" => DELETE
         case "insert" | "ins" => INSERT
         case "update" | "upd" => UPDATE
+        case "freeze" | "frz" => FREEZE
       }
     }
 
@@ -61,6 +63,7 @@ object types
                                           needs to be recomputed */
     val CANCELLED = Value(6, "CANCELLED")  /* Execution of the cell or a cell preceding it was 
                                               cancelled (equivalent to ERROR) */
+    val FROZEN = Value(7, "FROZEN")
 
     def translateToClassicVizier(state: T): Int = 
     {
@@ -71,6 +74,7 @@ object types
         case BLOCKED => 0   // MODULE_PENDING
         case STALE => 1     // MODULE_RUNNING
         case CANCELLED => 2 // MODULE_CANCELLED
+        case FROZEN => 5    // MODULE_SUCCESS
       }
     }
 
@@ -83,6 +87,7 @@ object types
         case BLOCKED => true
         case STALE => true
         case CANCELLED => false
+        case FROZEN => false
       }
     }
   }

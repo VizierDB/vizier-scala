@@ -77,6 +77,26 @@ class MutableProject(
     Scheduler.schedule(ret._2.id)
     return ret
   }
+  def freezeFrom(position: Int): (Branch, Workflow) =
+  {
+    val (oldbranch, ret) = DB autoCommit { implicit s => 
+      val oldbranch = Project.activeBranchFor(projectId)
+      (oldbranch, oldbranch.freezeFrom(position)) 
+    }
+    Scheduler.abort(oldbranch.headId)
+    Scheduler.schedule(ret._2.id)
+    return ret
+  }
+  def thawUpto(position: Int): (Branch, Workflow) =
+  {
+    val (oldbranch, ret) = DB autoCommit { implicit s => 
+      val oldbranch = Project.activeBranchFor(projectId)
+      (oldbranch, oldbranch.thawUpto(position)) 
+    }
+    Scheduler.abort(oldbranch.headId)
+    Scheduler.schedule(ret._2.id)
+    return ret
+  }
 
   def waitUntilReady
   {
