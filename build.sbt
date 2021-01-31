@@ -1,6 +1,6 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "0.4"
+val VIZIER_VERSION = "0.5-SNAPSHOT"
 val MIMIR_VERSION = "0.4.1"
 val CAVEATS_VERSION = "0.3.0"
 
