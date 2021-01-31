@@ -211,12 +211,13 @@ bootstrap := {
 
   println("Coursier available.  Generating Repository List")
 
-  val resolverArgs = resolvers.value.map { 
+  val relevantResolvers:Seq[String] = resolvers.value.flatMap { 
     case r: MavenRepository => 
       if(!r.root.startsWith("file:")){
-        Seq("-r", r.root)
-      } else { Seq() }
+        Some(r.root)
+      } else { None }
   }
+  val resolverArgs:Seq[String] = relevantResolvers.flatMap { Seq("-r", _) }
 
   val (art, file) = packagedArtifact.in(Compile, packageBin).value
   val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+(-SNAPSHOT)?)$", "")
@@ -235,13 +236,35 @@ bootstrap := {
     "-f",
     "-o", vizier_bin,
     "-r", "central"
-  )++resolverArgs.flatten
+  )++resolverArgs
   println(cmd.mkString(" "))
 
   Process(cmd) ! logger match {
       case 0 => 
       case n => sys.error(s"Bootstrap failed")
   }
+
+  println("Building Coursier Manifest")
+
+  val manifest = (Seq(
+    "{",
+    "  \"vizier\": {",
+    "    \"mainClass\": \"info.vizierdb.Vizier\",",
+    "    \"repositories\": [",
+    "      \"central\": ",
+  )++relevantResolvers.map { r => 
+    ",     \""+r+"\""
+  }++Seq(
+    "    ],",
+    "    \"dependencies\": [",
+    "      \""+full_artifact_name+"\"",
+    "    ]",
+    "  }",
+    "}",
+  ))
+
+  Files.write(Paths.get("target/coursier.json"), manifest.mkString("\n").getBytes)
+
 }
 
 lazy val updateBootstrap = taskKey[Unit]("Update Local Bootstrap Jars")
