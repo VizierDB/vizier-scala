@@ -40,45 +40,49 @@ object WorkflowSQLHandler
     val branchId = pathParameters("branchId").as[Long]
     val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
     val query = request.getParameter("query")
-    DB.readOnly { implicit session => 
-      val workflow: Workflow = 
-        (workflowId match {
-          case Some(workflowIdActual) => 
-            Workflow.lookup(projectId, branchId, workflowIdActual)
-          case None => 
-            Branch.lookup(projectId, branchId).map { _.head }
-        }).getOrElse {
-          return NoSuchEntityResponse()
-        }
 
-      val artifacts: Seq[(String, ArtifactSummary)] = 
-        workflow.outputArtifacts
-                .map { a => a.userFacingName -> a.getSummary }
-                // if summary returns None, this is a delete
-                .flatMap { 
-                  case (_, None) => None
-                  case (name, Some(summary)) => Some(name -> summary) 
-                }
+    val (datasets, functions) = 
+      DB.readOnly { implicit session => 
+        val workflow: Workflow = 
+          (workflowId match {
+            case Some(workflowIdActual) => 
+              Workflow.lookup(projectId, branchId, workflowIdActual)
+            case None => 
+              Branch.lookup(projectId, branchId).map { _.head }
+          }).getOrElse {
+            return NoSuchEntityResponse()
+          }
 
-      val datasets = 
-        artifacts.filter { _._2.t.equals(ArtifactType.DATASET) }
-                 .toMap
-                 .mapValues { _.nameInBackend }
+        val artifacts: Seq[(String, ArtifactSummary)] = 
+          workflow.outputArtifacts
+                  .map { a => a.userFacingName -> a.getSummary }
+                  // if summary returns None, this is a delete
+                  .flatMap { 
+                    case (_, None) => None
+                    case (name, Some(summary)) => Some(name -> summary) 
+                  }
 
-      val functions = 
-        artifacts.filter { _._2.t.equals(ArtifactType.FUNCTION) } 
-                 .toMap
-                 .mapValues { _.nameInBackend }
+        val datasets = 
+          artifacts.filter { _._2.t.equals(ArtifactType.DATASET) }
+                   .toMap
+                   .mapValues { _.nameInBackend }
 
-      logger.trace(s"Query Tail: $query")
-      return QueryMimirRequest(
-        input = None,
-        views = Some(datasets),
-        query = query,
-        includeUncertainty = Some(true),
-        includeReasons = None
-      ).handle
-    }
+        val functions = 
+          artifacts.filter { _._2.t.equals(ArtifactType.FUNCTION) } 
+                   .toMap
+                   .mapValues { _.nameInBackend }
+
+        /* return */ (datasets, functions)
+      }
+
+    logger.trace(s"Query Tail: $query")
+    return QueryMimirRequest(
+      input = None,
+      views = Some(datasets),
+      query = query,
+      includeUncertainty = Some(true),
+      includeReasons = None
+    ).handle
   } 
 }
 
