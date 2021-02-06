@@ -66,10 +66,11 @@ object Commands
 
 
   register(packageId = "data", name = "Data", category = "data")(
-    "load"   -> info.vizierdb.commands.data.LoadDataset,
-    "unload" -> info.vizierdb.commands.data.UnloadDataset,
-    "clone"  -> info.vizierdb.commands.data.CloneDataset,
-    "empty"  -> info.vizierdb.commands.data.EmptyDataset, 
+    "load"       -> info.vizierdb.commands.data.LoadDataset,
+    "unload"     -> info.vizierdb.commands.data.UnloadDataset,
+    "clone"      -> info.vizierdb.commands.data.CloneDataset,
+    "empty"      -> info.vizierdb.commands.data.EmptyDataset, 
+    "checkpoint" -> info.vizierdb.commands.data.CheckpointDataset,
   )
 
   register(packageId = "plot", name = "Data Plotting", category = "plot")(

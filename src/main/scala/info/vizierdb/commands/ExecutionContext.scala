@@ -219,7 +219,7 @@ class ExecutionContext(
    * Allocate a new dataset object and register it as an output
    * 
    * @param   name            The user-facing name of the dataset
-   * @returns                 The newly allocated backend-facing name and its identifier
+   * @return                  The newly allocated backend-facing name and its identifier
    */
   def outputDataset(name: String): (String, Identifier) =
     { val ds = output(name, ArtifactType.DATASET, Array[Byte](), MIME.DATASET_VIEW); (ds.nameInBackend, ds.id) }
