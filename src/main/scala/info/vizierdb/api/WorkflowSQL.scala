@@ -16,6 +16,7 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
+import java.net.URLDecoder
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow, Artifact, ArtifactSummary }
@@ -39,7 +40,7 @@ object WorkflowSQLHandler
     val projectId = pathParameters("projectId").as[Long]
     val branchId = pathParameters("branchId").as[Long]
     val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
-    val query = request.getParameter("query")
+    val query = URLDecoder.decode(request.getParameter("query"), "UTF-8")
 
     val (datasets, functions) = 
       DB.readOnly { implicit session => 
