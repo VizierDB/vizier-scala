@@ -8,7 +8,7 @@ deploy:
   stage: deploy
   only: 
     - master
-    - 0.5
+    - "0.5"
   script:
     - sbt +publish
     - sbt bootstrap
