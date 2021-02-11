@@ -85,14 +85,22 @@ case class Message(
   def dataString: String = new String(data)
 
   def describe(implicit session: DBSession): JsObject = 
-    Json.obj(
-      "type" -> mimeType,
-      "value" -> (mimeType match {
-        case MIME.DATASET_VIEW => Json.parse(data).as[DatasetMessage].describe
-        case MIME.CHART_VIEW => Json.parse(data)
-        case _ => JsString(new String(data))
-      })
-    )
+    try { 
+      Json.obj(
+        "type" -> mimeType,
+        "value" -> (mimeType match {
+          case MIME.DATASET_VIEW => Json.parse(data).as[DatasetMessage].describe
+          case MIME.CHART_VIEW => Json.parse(data)
+          case _ => JsString(new String(data))
+        })
+      )
+    } catch {
+      case e: Throwable => 
+        Json.obj(
+          "type" -> MIME.TEXT,
+          "value" -> s"Error retrieving message: $e"
+        )
+    }
 }
 object Message 
   extends SQLSyntaxSupport[Message]

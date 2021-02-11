@@ -33,6 +33,9 @@ import org.mimirdb.api.request.SchemaForTableRequest
 import org.mimirdb.api.request.SchemaList
 import org.mimirdb.spark.{ Schema => SparkSchema }
 import info.vizierdb.util.StupidReactJsonMap
+import org.locationtech.jts.geom.Geometry
+import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
+import org.apache.spark.sql.types.StructField
 
 case class Artifact(
   id: Identifier,
@@ -352,7 +355,11 @@ object Artifact
                   "id" -> rowid,
                   "values" -> JsArray(
                     data.schema.zip(row)
-                        .map { case (col, v) => SparkPrimitive.encode(v, col.dataType) }
+                        .map { 
+                          case (StructField(_, GeometryUDT, _, _), v) => 
+                            JsString(s"[${v.asInstanceOf[Geometry].toString}]")
+                          case (col, v) => SparkPrimitive.encode(v, col.dataType) 
+                        }
                   ),
                   "rowAnnotationFlags" -> JsArray(attrCaveats.map { c => JsBoolean(!c) }),
                   "rowIsAnnotated"     -> rowCaveatted
