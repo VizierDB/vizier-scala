@@ -53,6 +53,7 @@ resolvers += Resolver.typesafeRepo("releases")
 resolvers += DefaultMavenRepository
 resolvers ++= Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
 resolvers += Resolver.mavenLocal
+resolvers += "Open Source Geospatial Foundation Repository" at "https://repo.osgeo.org/repository/release/"
 
 excludeDependencies ++= Seq(
   // Hadoop brings in more logging backends.  Kill it with fire.
