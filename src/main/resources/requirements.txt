@@ -4,3 +4,4 @@ matplotlib
 astor
 pyarrow
 pandas
+shapely

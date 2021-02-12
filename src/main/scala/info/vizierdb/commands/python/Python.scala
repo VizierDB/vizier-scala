@@ -23,7 +23,8 @@ import org.mimirdb.api.request.{
   CreateViewRequest, 
   LoadInlineRequest, 
   QueryTableRequest,
-  QueryDataFrameRequest
+  QueryDataFrameRequest,
+  DataContainer
 }
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.types.StructField
@@ -89,6 +90,7 @@ object Python extends Command
               python.send("dataset",
                 "data" -> Json.toJson(
                   artifact.getDataset(includeUncertainty = true)
+
                 ),
                 "artifactId" -> JsNumber(artifact.id)
               )

@@ -208,7 +208,10 @@ class DatasetClient(object):
         MutableDatasetRow(
           dataset=self,
           identifier=identifier,
-          values=values,
+          values=[
+            import_to_native_type(v, c.data_type)
+            for (v, c) in zip(values, self.columns)
+          ],
           caveats=caveats,
           row_caveat=row_caveat
         )
@@ -471,11 +474,11 @@ class DatasetClient(object):
     if map_provider == 'Google':
       import json
       from pycell.wrappers import GoogleMapClusterWrapper
-      html = GoogleMapClusterWrapper().do_output(json.dumps(addrpts), center_lat, center_lon, zoom, width, height) 
+      html = GoogleMapClusterWrapper().do_output(json.dumps(addrpts), center_lat, center_lon, zoom, width, height)
       self.client.show_html(html)
     elif map_provider == 'OSM':
       from pycell.wrappers import LeafletClusterWrapper
-      html = LeafletClusterWrapper().do_output(addrpts, center_lat, center_lon, zoom, width, height) 
+      html = LeafletClusterWrapper().do_output(addrpts, center_lat, center_lon, zoom, width, height)
       self.client.show_html(html)
     else:
       print("Unknown map provider: please specify: OSM or Google")
@@ -483,7 +486,7 @@ class DatasetClient(object):
   def show_d3_plot(self, chart_type, keys=list(), labels=list(), labels_inner=list(), value_cols=list(), key_col='KEY', width=600, height=400, title='', subtitle='', legend_title='Legend', x_cols=list(), y_cols=list(), date_cols=list(), open_cols=list(), high_cols=list(), low_cols=list(), close_cols=list(), volume_cols=list(), key=None):
     from pycell.wrappers import D3ChartWrapper
 
-    charttypes = ["table", "bar", "bar_stacked", "bar_horizontal", "bar_circular", "bar_cluster", "donut", 
+    charttypes = ["table", "bar", "bar_stacked", "bar_horizontal", "bar_circular", "bar_cluster", "donut",
                    "polar", "heat_rad", "heat_table", "punch", "bubble", "candle", "line", "radar", "rose"]
 
     if chart_type not in charttypes:
@@ -530,7 +533,7 @@ class DatasetClient(object):
       if key is not None:
         data = data[data.index(key)]
 
-      html = D3ChartWrapper().do_output(data=data, charttype=chart_type, width=str(width), height=str(height), 
+      html = D3ChartWrapper().do_output(data=data, charttype=chart_type, width=str(width), height=str(height),
           title=title, subtitle=subtitle, legendtitle=legend_title)
       self.client.show_html(html)
 
@@ -548,9 +551,15 @@ class DatasetClient(object):
           "type": col.data_type
         } for col in self.columns
       ],
-      "data": [row.values for row in rows],
+      "data": [
+        [
+          export_from_native_type(v, c)
+          for (v, c) in row.values
+        ]
+        for row in rows
+      ],
       "prov": [row.identifier for row in rows],
-      "colTaint": [row.caveats if hasattr(row,'caveats') else [] for row in rows],
+      "colTaint": [row.caveats if hasattr(row, 'caveats') else [] for row in rows],
       "rowTaint": [row.row_caveat for row in rows],
       "properties": self._properties
     }
@@ -573,3 +582,17 @@ def collabel_2_index(label):
             return -1
     return num
 
+
+def import_to_native_type(value: Any, data_type: str) -> Any:
+  from shapely import wkt
+  if data_type == "geometry":
+    return wkt.loads(value)
+  else:
+    return value
+
+
+def export_from_native_type(value: Any, data_type: str) -> Any:
+  if data_type == "geometry":
+    return value.wkt
+  else:
+    return value

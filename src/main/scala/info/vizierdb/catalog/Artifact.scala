@@ -356,8 +356,6 @@ object Artifact
                   "values" -> JsArray(
                     data.schema.zip(row)
                         .map { 
-                          case (StructField(_, GeometryUDT, _, _), v) => 
-                            JsString(s"[${v.asInstanceOf[Geometry].toString}]")
                           case (col, v) => SparkPrimitive.encode(v, col.dataType) 
                         }
                   ),

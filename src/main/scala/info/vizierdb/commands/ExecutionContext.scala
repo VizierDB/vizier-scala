@@ -284,6 +284,7 @@ class ExecutionContext(
   def displayDataset(name: String, offset: Long = 0l, limit: Int = VizierAPI.DEFAULT_DISPLAY_ROWS) = 
   {
     val dataset = artifact(name).get
+
     val data =  dataset.getDataset(
                   offset = Some(offset),
                   limit  = Some(limit),
