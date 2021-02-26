@@ -110,6 +110,11 @@ object Vizier
   {
     config = new Config(args)
 
+    if(config.help()){
+      config.printHelp()
+      return
+    }
+
     ExperimentalOptions.enable(config.experimental())
 
     println("Setting Up Project Library...")
