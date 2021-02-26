@@ -3,8 +3,10 @@ package info.vizierdb.api.servlet
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.util.Streams
-import java.io.File
+import java.io.{ File, InputStream }
 import java.net.URLConnection
+import info.vizierdb.VizierAPI
+import java.io.StringBufferInputStream
 
 object VizierUIServlet
   extends HttpServlet
@@ -24,14 +26,15 @@ object VizierUIServlet
       if(components.isEmpty) {
         components = Array("")
       }
-      // Redirect meta-URLs to the standard react index page.
+      // Respond to meta-URLs to the standard react index page.
       if(components(0).equals("projects")) {
         components = Array("")
       }
-      // Redirect empty paths to the relevant index
+      // Respond to empty paths with the relevant index
       if(components.last.equals("")){
         components.update(components.size - 1, "index.html")
       } 
+
       // Strip out directory cheats
       components = components.filterNot { _.startsWith(".") }
       // Static files are stored in resources/ui
@@ -40,10 +43,16 @@ object VizierUIServlet
       val resourcePath = components.mkString("/")
 
       logger.debug(s"STATIC GET: $resourcePath")
+      println(resourcePath)
 
-      val data = getClass()
-                    .getClassLoader()
-                    .getResourceAsStream(components.mkString("/"))
+      val data: InputStream = 
+        components match { 
+          case Array("ui", "env.js") => overrideEnvJs()
+          case _ => 
+            getClass()
+              .getClassLoader()
+              .getResourceAsStream(components.mkString("/"))
+        }
       if(data == null){
         output.setStatus(HttpServletResponse.SC_NOT_FOUND)
         output.getOutputStream().println("NOT FOUND")
@@ -60,4 +69,18 @@ object VizierUIServlet
         e.printStackTrace()
     }
   }
+
+  def overrideEnvJs(): InputStream = 
+    new StringBufferInputStream(
+      s"""window.env = {
+         |  API_URL: '${VizierAPI.urls.base}',
+         |  API_BASIC_AUTH: false,
+         |  APP_TITLE: 'Vizier',
+         |  ANALYTICS_URL: '',
+         |  ANALYTICS_SITE_ID: '',
+         |  API_ADV_AUTH: true,
+         |  PUBLIC_URL: '${VizierAPI.urls.ui}'
+         |};
+         |""".stripMargin
+    )
 }
