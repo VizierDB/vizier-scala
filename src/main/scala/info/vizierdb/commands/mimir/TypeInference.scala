@@ -28,18 +28,48 @@ object TypeInference
   def lens = Lenses.typeInference
   def name: String = "Assign Datatypes"
   def lensParameters: Seq[Parameter] = Seq(
-    // TemplateParameters.SCHEMA
+    ListParameter(name = "Schema (leave blank to guess)", id = "schema", required = false, components = Seq(
+      ColIdParameter(name = "Column Name", id = "schema_column", required = false),
+      TemplateParameters.DATATYPE
+    )),
   )
   def lensFormat(arguments: Arguments): String = 
-    "CAST TYPES"
-    // s"CAST TYPES TO (${arguments.getList("schema").map { col => 
-    //   s"${col.get[String]("schema_column")} ${col.get[String]("schema_datatype")}"
-    // }.mkString(", ")})"
+    // "CAST TYPES"
+    s"CAST TYPES TO (${arguments.getList("schema").map { col => 
+      s"${col.get[Int]("schema_column")} ${col.get[String]("schema_datatype")}"
+    }.mkString(", ")})"
 
 
   def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue =
-    JsObject(Map[String,JsValue]())
+  {
+    JsObject(
+      arguments.getList("schema")
+               .filter { _.get[Int]("schema_column") >= 0 }
+               .map { col =>
+                 schema(col.get[Int]("schema_column")).name -> 
+                   JsString(col.get[String]("schema_datatype"))
+               }
+               .toMap
+    )
+  }
   def updateConfig(lensArgs: JsValue, schema: Seq[StructField], dataset: String): Map[String,JsValue] =
-    Map.empty
+  {
+    val trained = lensArgs.as[Map[String, String]]
+                          .mapValues { 
+                            case "integer" => "int"
+                            case x => x
+                          }
+    Map(
+      "schema" -> 
+        JsArray(
+          schema.zipWithIndex.map { case (col, idx) =>
+            Json.obj(
+              "schema_column" -> idx,
+              "schema_datatype" -> trained(col.name)
+            )
+          }
+        )
+    )
+  }  
 }
 

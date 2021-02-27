@@ -43,7 +43,6 @@ object VizierUIServlet
       val resourcePath = components.mkString("/")
 
       logger.debug(s"STATIC GET: $resourcePath")
-      println(resourcePath)
 
       val data: InputStream = 
         components match { 
