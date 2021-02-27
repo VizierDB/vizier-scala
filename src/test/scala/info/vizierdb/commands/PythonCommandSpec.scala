@@ -22,6 +22,7 @@ import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.commands.python.PythonProcess
 
 class PythonCommandSpec
   extends Specification
@@ -32,6 +33,26 @@ class PythonCommandSpec
   lazy val project = MutableProject("Data Project")
   sequential
 
+
+  "have an up-to-date requirements.txt" >> 
+  {
+    val test =
+      PythonProcess.REQUIRED_PACKAGES
+                   .map { _._2 }
+                   .toSet
+                   .toSeq
+    val requirements =
+      scala.io.Source.fromInputStream(
+        getClass()
+          .getClassLoader()
+          .getResource("requirements.txt")
+          .openStream()
+      ).getLines()
+       .toSet
+       .toSeq
+
+    test must containTheSameElementsAs(requirements)
+  }
 
   "run simple python scripts" >> 
   {

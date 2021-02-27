@@ -139,6 +139,23 @@ object PythonProcess
     }
   }
 
+  /**
+   * Packages required to use python cells.
+   * 
+   * The format is: 
+   * module_to_test_package_existence -> pypi_package_name
+   */
+  def REQUIRED_PACKAGES = Seq[(String, String)](
+    "numpy"      -> "numpy",
+    "bokeh"      -> "bokeh",
+    "matplotlib" -> "matplotlib",
+    "astor"      -> "astor",
+    "pyarrow"    -> "pyarrow",
+    "pandas"     -> "pandas",
+    "shapely"    -> "shapely",
+    "pyspark"    -> "pyspark",
+  )
+
   def checkPython()
   {
     // no sense checking a non-existent python install
@@ -151,16 +168,10 @@ object PythonProcess
         |  except:
         |    print(lib + "\n")
         |""".stripMargin
-    val tests = Seq(
-      "numpy" -> "numpy",
-      "bokeh" -> "bokeh",
-      "matplotlib" -> "matplotlib",
-      "astor" -> "astor",
-      "pyarrow" -> "pyarrow",
-      "pandas" -> "pandas",
-      "shapely" -> "shapely",
-      "pyspark" -> "pyspark",
-    ).map { case (mod, lib) => "testImport(\""+mod+"\",\""+lib+"\")" }
+    val tests =
+      REQUIRED_PACKAGES.map { 
+        case (mod, lib) => "testImport(\""+mod+"\",\""+lib+"\")" 
+      }
 
     try {
       val ret = 
