@@ -553,8 +553,8 @@ class DatasetClient(object):
       ],
       "data": [
         [
-          export_from_native_type(v, c)
-          for (v, c) in row.values
+          export_from_native_type(v, c.data_type)
+          for (v, c) in zip(row.values, self.columns)
         ]
         for row in rows
       ],

@@ -30,6 +30,8 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.export.{ ExportProject, ImportProject }
 import info.vizierdb.util.Streams
 import org.mimirdb.util.ExperimentalOptions
+import info.vizierdb.commands.python.PythonProcess
+import py4j.reflection.PythonProxyHandler
 
 object Vizier
   extends LazyLogging
@@ -110,20 +112,35 @@ object Vizier
   {
     config = new Config(args)
 
+    // Enable relevant experimental options
+    ExperimentalOptions.enable(config.experimental())
+
+    // Handle the case where we were asked to print a help banner
     if(config.help()){
       config.printHelp()
       return
     }
 
-    ExperimentalOptions.enable(config.experimental())
+    // Override the default python version (or automatically pick one)
+    if(config.pythonPath.isSupplied){
+      PythonProcess.PYTHON_COMMAND = config.pythonPath()
+    } else {
+      PythonProcess.discoverPython()
+    }
 
-    println("Setting Up Project Library...")
+    // Check for non-mandatory dependencies
+    println("Checking for dependencies...")
+    PythonProcess.checkPython()
+
+    // Set up the Vizier directory and database
+    println("Setting up project library...")
     if(!config.basePath().exists) { config.basePath().mkdir() }
     initSQLite()
     Schema.initialize()
     initORMLogging()
     bringDatabaseToSaneState()
 
+    // Set up Mimir
     println("Starting Mimir...")
     initMimir(
       runServer = 
@@ -131,6 +148,8 @@ object Vizier
         && !config.export.projectId.isSupplied
     )
 
+    //////////////// HANDLE SPECIAL COMMANDS //////////////////
+    // Ingest
     if(config.ingest.file.isSupplied){
       try {
         Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
@@ -143,6 +162,8 @@ object Vizier
         case e:VizierException => 
           println(s"\nError: ${e.getMessage()}")
       }
+
+    // Export
     } else if (config.export.projectId.isSupplied){
       try { 
         Streams.closeAfter(new FileOutputStream(config.export.file())) { 
@@ -156,8 +177,10 @@ object Vizier
         case e:VizierException => 
           println(s"\nError: ${e.getMessage()}")
       }
+
+    //////////////// SPIN UP THE SERVER //////////////////
     } else {
-      println("Starting Server...")
+      println("Starting server...")
       VizierAPI.init()
       println(s"... Server running at < ${VizierAPI.urls.ui} >")
       VizierAPI.server.join()
