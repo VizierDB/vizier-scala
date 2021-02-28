@@ -506,7 +506,7 @@ case class EnumerableParameter(
   aliases: Map[String,String] = Map.empty
 ) extends Parameter with StringEncoder
 {
-  lazy val possibilities = Set(values.map { _.value }:_*) ++ aliases.keySet
+  lazy val possibilities = Set(values.map { _.value }:_*) ++ aliases.keySet + "binary"
   def datatype = "string"
   def doStringify(j: JsValue): String = j.as[String]
   def doValidate(j: JsValue) = 

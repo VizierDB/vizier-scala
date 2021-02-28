@@ -38,7 +38,8 @@ object UnloadDataset extends Command
       "JDBC Source"  -> "jdbc", 
       "Text"         -> "text", 
       "Parquet"      -> "parquet", 
-      "ORC"          -> "orc"
+      "ORC"          -> "orc",
+      "Binary File"  -> "binaryFile"
     ), default = Some(0)),
     ListParameter(id = "unloadOptions", name = "Unload Options", components = Seq(
       StringParameter(id = "unloadOptionKey", name = "Option Key"),

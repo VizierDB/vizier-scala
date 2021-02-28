@@ -43,6 +43,7 @@ object LoadDataset
       "Text"         -> "text",
       "Parquet"      -> "parquet",
       "ORC"          -> "orc",
+      "Binary File"  -> "binaryFile"
     ), default = Some(0)),
     TemplateParameters.SCHEMA,
     BooleanParameter(name = "Guess Types", id = "loadInferTypes", default = Some(false)),

@@ -55,7 +55,7 @@ object VizierAPI
   var server: Server = null
   lazy val debug: Boolean = Vizier.config.devel()
 
-  val DEFAULT_PORT = 5000
+  val DEFAULT_PORT = 9000
   val NAME = "vizier"
   val BACKEND = "SCALA"
   val SERVICE_NAME = s"MIMIR ($BACKEND)"
@@ -85,7 +85,7 @@ object VizierAPI
         new Server(port)
       } else {
         new Server(InetSocketAddress.createUnresolved(
-          "localhost",
+          "0.0.0.0",
           port
         ))
       }

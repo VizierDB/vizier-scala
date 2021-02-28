@@ -40,16 +40,25 @@ object ImportProject
 {
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest 
+    request: HttpServletRequest,
+  ): Response = handle(pathParameters, request, None)
+  def handle(
+    pathParameters: Map[String, JsValue], 
+    request: HttpServletRequest,
+    inputStream: Option[InputStream]
   ): Response =
   {
-   val jettyRequest = request.asInstanceOf[JettyRequest]
-    val part = request.getPart("file")
-    if(part == null){
-      throw new IllegalArgumentException("No File Provided")
-    }
-    val content = part.getInputStream()
-
+   val content = inputStream match {
+     case None => {
+        val jettyRequest = request.asInstanceOf[JettyRequest]
+        val part = request.getPart("file")
+        if(part == null){
+          throw new IllegalArgumentException("No File Provided")
+        }
+        part.getInputStream()
+     }
+     case Some(is) => is
+   }
     val f = File.createTempFile("vizier-", "-import.tgz")
     Streams.closeAfter(new FileOutputStream(f)) {
       Streams.cat(content, _)
