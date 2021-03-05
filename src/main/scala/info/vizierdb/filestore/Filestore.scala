@@ -25,7 +25,6 @@ object Filestore
   lazy val path = { 
     val d = new File(Vizier.config.basePath(), "files")
     if(!d.exists()){ d.mkdir() }
-    println("File Path @ "+d)
     d 
   }
 

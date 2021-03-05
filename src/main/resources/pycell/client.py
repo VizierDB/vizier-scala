@@ -19,10 +19,11 @@ import ast
 import astor  # type: ignore[import]
 import inspect
 import pandas
+import numpy
 import os
 import re
 from datetime import datetime
-from pycell.dataset import DatasetClient
+from pycell.dataset import DatasetClient, export_from_native_type
 from pycell.plugins import vizier_bokeh_render, vizier_matplotlib_render
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
 from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
@@ -132,7 +133,7 @@ class VizierDBClient(object):
 
   def get_artifact_proxies(self) -> Dict[str, ArtifactProxy]:
     return {
-      self.artifacts[artifact].name: 
+      self.artifacts[artifact].name:
         ArtifactProxy(client=self, artifact_name=self.artifacts[artifact].name)
       for artifact in self.artifacts
       if self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_FUNCTION
@@ -242,9 +243,10 @@ class VizierDBClient(object):
     dataset.identifier = response["artifactId"]
     dataset.name_in_backend = response["artifactId"]
     self.datasets[name] = dataset
-    self.artifacts[name] = Artifact(name,
-                                    ARTIFACT_TYPE_DATASET,
-                                    MIME_TYPE_DATASET
+    self.artifacts[name] = Artifact(name=name,
+                                    artifact_type=ARTIFACT_TYPE_DATASET,
+                                    mime_type=MIME_TYPE_DATASET,
+                                    artifact_id=response["artifactId"]
                                     )
 
   def drop_dataset(self, name: str) -> None:
@@ -438,6 +440,30 @@ class VizierDBClient(object):
     table = pa.Table.from_batches(ordered_batches)
     return table.to_pandas()
 
+  def save_data_frame(self, name: str, df: pandas.DataFrame) -> None:
+    # go through parquet
+    response = self.vizier_request("create_file",
+      name=name,
+      has_response=True,
+      mime="application/parquet",
+      properties={
+        "filename": name
+      }
+    )
+    df.to_parquet(path=response["path"])
+    response = self.vizier_request("create_dataset",
+      has_response=True,
+      file=response["artifactId"],
+      name=name
+    )
+    if name in self.datasets:
+      del self.datasets[name]
+    self.artifacts[name] = Artifact(name=name,
+                                    artifact_type=ARTIFACT_TYPE_DATASET,
+                                    mime_type=MIME_TYPE_DATASET,
+                                    artifact_id=response["artifactId"]
+                                    )
+
   def dataset_from_s3(self,
                       bucket: str,
                       folder: str,
@@ -572,4 +598,3 @@ def is_valid_name(name: str) -> bool:
     elif c not in ['_', '-', ' ']:
       return False
   return (allnums > 0)
-

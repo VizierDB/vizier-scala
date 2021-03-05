@@ -14,6 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.python
 
+import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
@@ -22,6 +23,7 @@ import info.vizierdb.filestore.Filestore
 import org.mimirdb.api.request.{ 
   CreateViewRequest, 
   LoadInlineRequest, 
+  LoadRequest, 
   QueryTableRequest,
   QueryDataFrameRequest,
   DataContainer
@@ -31,6 +33,8 @@ import org.apache.spark.sql.types.StructField
 import org.mimirdb.spark.SparkPrimitive
 import org.mimirdb.spark.Schema.fieldFormat
 import info.vizierdb.catalog.Artifact
+import info.vizierdb.catalog.ArtifactRef
+import info.vizierdb.catalog.ArtifactSummary
 
 object Python extends Command
   with LazyLogging
@@ -128,6 +132,38 @@ object Python extends Command
                 "artifactId" -> JsNumber(id)
               )
             }
+          case "create_dataset" => 
+            {
+              val fileId = (event \ "file").as[String].toLong
+              val filePath = Filestore.get(context.projectId, fileId).toString
+              val (nameInBackend, id) = 
+                context.outputDataset( (event\"name").as[String] )
+
+
+              val result = LoadRequest(
+                file = filePath,
+                format = "parquet",
+                inferTypes = false,
+                detectHeaders = false,
+                humanReadableName = Some( (event \ "name").as[String] ),
+                backendOption = Seq(),
+                dependencies = 
+                  Some(
+                    DB.readOnly { implicit s => 
+                      Artifact.lookupSummaries(
+                        context.inputs.values.toSeq
+                      )
+                    }.map { _.nameInBackend }
+                  ),
+                resultName = Some(nameInBackend),
+                properties = None,
+                proposedSchema = None
+              ).handle
+
+              python.send("datasetId",
+                "artifactId" -> JsNumber(id)
+              )
+            }
           case "save_artifact" =>
             {
               val artifact = context.output(
@@ -169,6 +205,22 @@ object Python extends Command
                   "secret" -> JsString(response.secret)
                 )
               }
+            }
+          case "create_file" =>
+            {
+              val file:Artifact = context.outputFile(
+                (event \ "name").as[String],
+                (event \ "mime").asOpt[String].getOrElse { "application/octet-stream" },
+                JsObject(
+                  (event \ "properties").asOpt[Map[String,JsValue]]
+                                        .getOrElse { Map.empty }
+                )
+              )
+              python.send("file_artifact",
+                "artifactId" -> JsString(file.id.toString),
+                "path" -> JsString(file.file.toString())
+              )
+
             }
           case x =>
             // stdinWriter.close()

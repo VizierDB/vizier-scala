@@ -23,6 +23,8 @@ import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.viztrails.MutableProject
 import info.vizierdb.commands.python.PythonProcess
+import org.apache.spark.sql.types._
+import org.mimirdb.api.MimirAPI
 
 class PythonCommandSpec
   extends Specification
@@ -146,6 +148,45 @@ df = vizierdb.get_data_frame("q")
 print(df['A'].sum())
 """)
     project.lastOutputString must beEqualTo("12\n")
+  }
+
+  "Export Pandas" >>
+  {
+    project.script("""
+      |import pandas as pd
+      |dfa = pd.DataFrame.from_records([
+      |    {"a": x, "c": str(x)}
+      |    for x in range(0, 10)
+      |])
+      |dfb = pd.DataFrame.from_records([
+      |    {"b": x}
+      |    for x in range(0, 10000)
+      |])
+      |vizierdb.save_data_frame("little_data", dfa)
+      |vizierdb.save_data_frame("big_data", dfb)
+    """.stripMargin)
+    
+    {
+      val art = project.artifact("little_data")
+      art.t must beEqualTo(ArtifactType.DATASET)
+      val ds = art.getDataset()
+      ds.schema must containTheSameElementsAs(Seq(
+        StructField("a", LongType),
+        StructField("c", StringType)
+      ))
+      ds.data
+        .map { _(0) } must containTheSameElementsAs(
+          (0 until 10).toSeq
+        )
+    }
+    
+    {
+      val art = project.artifact("big_data")
+      val df = MimirAPI.catalog.get(art.nameInBackend)
+      df.columns.toSeq must containTheSameElementsAs(Seq("b"))
+      df.count() must beEqualTo(10000)
+      df.distinct().count() must beEqualTo(10000)
+    }
   }
 
 }
