@@ -1,7 +1,6 @@
 package info.vizierdb.api.handler
 
 import play.api.libs.json._
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.api.response.VizierErrorResponse
 import info.vizierdb.util.StringUtils.ellipsize
@@ -23,7 +22,7 @@ class JsonHandler[R <: Request]()(
 
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest 
+    request: ClientConnection 
   ): Response = {
     val text = scala.io.Source.fromInputStream(request.getInputStream).mkString 
     // logger.debug(s"$text")

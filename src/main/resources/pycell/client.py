@@ -19,11 +19,10 @@ import ast
 import astor  # type: ignore[import]
 import inspect
 import pandas
-import numpy
 import os
 import re
 from datetime import datetime
-from pycell.dataset import DatasetClient, export_from_native_type
+from pycell.dataset import DatasetClient
 from pycell.plugins import vizier_bokeh_render, vizier_matplotlib_render
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
 from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
@@ -441,6 +440,7 @@ class VizierDBClient(object):
     return table.to_pandas()
 
   def save_data_frame(self, name: str, df: pandas.DataFrame) -> None:
+    name = name.lower()
     # go through parquet
     response = self.vizier_request("create_file",
       name=name,
@@ -463,6 +463,7 @@ class VizierDBClient(object):
                                     mime_type=MIME_TYPE_DATASET,
                                     artifact_id=response["artifactId"]
                                     )
+    return None
 
   def dataset_from_s3(self,
                       bucket: str,

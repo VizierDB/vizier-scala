@@ -439,7 +439,8 @@ routes := {
             val path = x._1(0)
             val pathComponents = path.split("/")
             val httpVerb = x._1(1)
-            val handler = x._1(2)
+            val group = x._1(2)
+            val handler = x._1(3)
 
             val (pathPattern, fieldsPerComponent) =
               pathComponents.map {
@@ -471,7 +472,7 @@ routes := {
               }
 
             val handlerParameters = 
-              Seq(fieldConstructor, "request")
+              Seq(fieldConstructor, "connection")
 
             val invokeHandler = 
               s"case $matcher => ${handler}.handle(${handlerParameters.mkString(", ")})"
@@ -493,9 +494,10 @@ routes := {
           .map { case (verb, handlers) => 
             val capsedVerb = verb.substring(0,1).toUpperCase()+verb.substring(1).toLowerCase()
             (Seq(
-              s" override def do${capsedVerb}(request: HttpServletRequest, output: HttpServletResponse) = ",
+              s" override def do${capsedVerb}(request: HttpServletRequest, response: HttpServletResponse) = ",
               "  {",
-              "    processResponse(request, output) {",
+              "    val connection = new JettyClientConnection(request, response)",
+              "    processResponse(request, response) {",
               "      request.getPathInfo match {" ,
             )++ handlers.map { "        "+_._3 }++Seq(
               "        case _ => fourOhFour(request)",
@@ -508,9 +510,10 @@ routes := {
 
   val corsHandler:String = (
       Seq(
-        "  override def doOptions(request: HttpServletRequest, output: HttpServletResponse) = ",
+        "  override def doOptions(request: HttpServletRequest, response: HttpServletResponse) = ",
         "  {",
-        "    processResponse(request, output) {",
+        "    val connection = new JettyClientConnection(request, response)",
+        "    processResponse(request, response) {",
         "      request.getPathInfo match {" ,
       )++(
         parsed.groupBy { _._5 }
@@ -542,7 +545,7 @@ routes := {
     "trait VizierAPIServletRoutes extends HttpServlet {",
     "",
     "  def processResponse(request: HttpServletRequest, output: HttpServletResponse)(response: => Response): Unit",
-    "  def fourOhFour(request: HttpServletRequest): Response",
+    "  def fourOhFour(response: HttpServletRequest): Response",
     "",
     patternDefs,
     "",

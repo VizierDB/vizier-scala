@@ -10,6 +10,6 @@ abstract class SimpleHandler extends Handler
 
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest 
+    connection: ClientConnection 
   ): Response = handle(pathParameters)
 }

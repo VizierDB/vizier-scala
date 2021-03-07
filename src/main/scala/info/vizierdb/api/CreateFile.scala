@@ -24,29 +24,22 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types._
 import info.vizierdb.artifacts.{ DatasetColumn, DatasetRow, DatasetAnnotation }
 import org.mimirdb.api.request.LoadInlineRequest
-import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
 import info.vizierdb.filestore.Filestore
 import java.io.FileOutputStream
 import info.vizierdb.util.Streams
-import org.eclipse.jetty.server.{ Request => JettyRequest }
 import info.vizierdb.api.response._
-import info.vizierdb.api.handler.Handler
+import info.vizierdb.api.handler.{ Handler, ClientConnection }
 
 object CreateFileHandler
   extends Handler
 {
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest 
+    connection: ClientConnection 
   ): Response =
   {
     val projectId = pathParameters("projectId").as[Long]
-    val jettyRequest = request.asInstanceOf[JettyRequest]
-    val part = request.getPart("file")
-    if(part == null){
-      throw new IllegalArgumentException("No File Provided")
-    }
-    val content = part.getInputStream()
+    val content = connection.getPartInputStream("file")
     handle(projectId, content)
   }
   def handle(

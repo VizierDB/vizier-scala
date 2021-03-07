@@ -34,21 +34,17 @@ import java.io.FileInputStream
 import info.vizierdb.export.{ ImportProject => DoImport }
 import info.vizierdb.util.Streams.closeAfter
 import info.vizierdb.api.handler._
+import info.vizierdb.api.handler.ClientConnection
 
 object ImportProject
   extends Handler
 {
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest 
+    request: ClientConnection 
   ): Response =
   {
-   val jettyRequest = request.asInstanceOf[JettyRequest]
-    val part = request.getPart("file")
-    if(part == null){
-      throw new IllegalArgumentException("No File Provided")
-    }
-    val content = part.getInputStream()
+    val content = request.getPartInputStream("file")
 
     val f = File.createTempFile("vizier-", "-import.tgz")
     Streams.closeAfter(new FileOutputStream(f)) {
