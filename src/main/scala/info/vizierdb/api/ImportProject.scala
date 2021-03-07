@@ -39,12 +39,13 @@ import info.vizierdb.api.handler.ClientConnection
 object ImportProject
   extends Handler
 {
+  override def filePart = Some("file")
   def handle(
     pathParameters: Map[String, JsValue], 
     request: ClientConnection 
   ): Response =
   {
-    val content = request.getPartInputStream("file")
+    val (content, _) = request.getPart("file")
 
     val f = File.createTempFile("vizier-", "-import.tgz")
     Streams.closeAfter(new FileOutputStream(f)) {

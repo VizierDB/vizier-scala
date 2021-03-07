@@ -4,24 +4,25 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import java.io.InputStream
 
 abstract class ClientConnection {
-  def getPathInfo: String
   def getInputStream: InputStream
-  def getPartInputStream(part: String): InputStream
+  def getPart(part: String): (InputStream, String)
   def getParameter(name: String): String
 }
 
 class JettyClientConnection(request: HttpServletRequest, response: HttpServletResponse)
   extends ClientConnection
 {
-  def getPathInfo: String = request.getPathInfo
   def getInputStream: InputStream = request.getInputStream()
-  def getPartInputStream(part: String): InputStream = 
+  def getPart(part: String): (InputStream, String) = 
   {
-    Option(request.getPart(part))
-      .getOrElse {
-        throw new IllegalArgumentException(s"Parameter '$part' not provided")
-      }
-      .getInputStream()
+    val segment = request.getPart(part)
+    if(segment == null){
+      throw new IllegalArgumentException(s"Parameter '$part' not provided")
+    }
+    return (
+      segment.getInputStream(),
+      segment.getSubmittedFileName()
+    )
   }
   def getParameter(name: String): String = 
     request.getParameter(name)

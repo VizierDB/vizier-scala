@@ -19,7 +19,7 @@ abstract class Handler
   def details = ""
   def responses: Buffer[HandlerResponse] = Buffer.empty
   def requestBody: Option[Content] = None
-
+  def filePart: Option[String] = None
 
   def handle(
     pathParameters: Map[String, JsValue], 

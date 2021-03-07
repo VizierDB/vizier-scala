@@ -33,18 +33,20 @@ import info.vizierdb.api.handler.{ Handler, ClientConnection }
 object CreateFileHandler
   extends Handler
 {
+  override def filePart = Some("file")
   def handle(
     pathParameters: Map[String, JsValue], 
     connection: ClientConnection 
   ): Response =
   {
     val projectId = pathParameters("projectId").as[Long]
-    val content = connection.getPartInputStream("file")
-    handle(projectId, content)
+    val (content, filename) = connection.getPart("file")
+    handle(projectId, content, filename)
   }
   def handle(
     projectId: Identifier,
-    content: InputStream
+    content: InputStream,
+    filename: String
   ): Response = {
     DB.autoCommit { implicit s => 
       val project = 
@@ -57,7 +59,9 @@ object CreateFileHandler
         project.id, 
         ArtifactType.FILE,
         "application/octet-stream",
-        Array[Byte]()
+        Json.obj(
+          "filename" -> filename
+        ).toString.getBytes
       )
 
       val file: File = Filestore.get(project.id, artifact.id)
