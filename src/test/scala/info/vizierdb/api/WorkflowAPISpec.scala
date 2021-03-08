@@ -71,7 +71,8 @@ A,B,C
   "Create and load a file" >> {
     val fileResponse = CreateFileHandler.handle(
                         project, 
-                        new ByteArrayInputStream(FILE_DATA.getBytes)
+                        new ByteArrayInputStream(FILE_DATA.getBytes),
+                        "test file"
                       )
 
     var fileId = -1l
