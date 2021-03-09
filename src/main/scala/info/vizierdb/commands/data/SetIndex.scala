@@ -12,29 +12,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.commands.vizual
+package info.vizierdb.commands.data
 
+import play.api.libs.json.JsValue
+import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
+import org.mimirdb.api.{ Tuple => MimirTuple }
+import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
+import info.vizierdb.filestore.Filestore
+import java.io.File
+import info.vizierdb.types.ArtifactType
+import info.vizierdb.VizierException
+import org.mimirdb.api.request.MaterializeRequest
 
-object DropDataset extends Command
+object SetIndex extends Command
 {
-  def name: String = "Drop Dataset"
+  def name: String = "Set Index Column"
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = "dataset", name = "Dataset"),
+    ColIdParameter(id = "column", name = "Column")
   )
   def format(arguments: Arguments): String = 
-    s"DROP DATASET ${arguments.get[String]("dataset")}"
+    s"SET INDEX FOR ${arguments.get[String]("dataset")} TO COLUMN ${arguments.get[Int]("column")}"
   def title(arguments: Arguments): String = 
-    s"Drop  ${arguments.get[String]("dataset")}"
+    s"${arguments.get[String]("dataset")}.INDEX = ${arguments.get[Int]("column")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
-    context.delete(datasetName)
+    val artifact = context.artifact(datasetName)
+                          .getOrElse{ 
+                            context.error(s"Dataset $datasetName does not exist"); return
+                          }
+
+    ???
+
+
   }
   def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq.empty,
-      Seq(arguments.get[String]("dataset")) 
-    ) )
+    Some( (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("dataset"))) )
 }
 

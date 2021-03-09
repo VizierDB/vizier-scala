@@ -54,6 +54,8 @@ object SimpleChart extends Command
   )
   def format(arguments: Arguments): String = 
     s"CREATE ${arguments.getRecord("chart").get[String]("chartType")} ${arguments.pretty("name")} FOR ${arguments.pretty("dataset")}"
+  def title(arguments: Arguments): String = 
+    s"${arguments.getRecord("chart").get[String]("chartType")} of ${arguments.pretty("dataset")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -78,5 +80,10 @@ object SimpleChart extends Command
       )
     )
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("dataset")), 
+           Seq.empty) )
+
 }
 

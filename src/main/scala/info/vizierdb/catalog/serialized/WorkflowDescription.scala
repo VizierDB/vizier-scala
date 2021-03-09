@@ -19,7 +19,7 @@ case class WorkflowSummary(
     datasets: Seq[JsObject],
     dataobjects: Seq[JsObject],
     readOnly: Boolean,
-    tableOfContents: Option[Seq[TableOfContentsSection]],
+    tableOfContents: Option[Seq[TableOfContentsEntry]],
     newLinks: HATEOAS.T
   ): WorkflowDescription =
     WorkflowDescription(
@@ -54,7 +54,7 @@ case class WorkflowDescription(
   datasets: Seq[JsObject],
   dataobjects: Seq[JsObject],
   readOnly: Boolean,
-  tableOfContents: Option[Seq[TableOfContentsSection]],
+  tableOfContents: Option[Seq[TableOfContentsEntry]],
   links: HATEOAS.T
 )
 

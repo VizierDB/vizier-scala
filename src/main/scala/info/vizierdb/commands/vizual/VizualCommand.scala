@@ -31,6 +31,9 @@ trait VizualCommand
     DatasetParameter(id = "dataset", name = "Dataset")
   ) ++ vizualParameters
 
+  def title(arguments: Arguments): String =
+    s"Vizual ${getClass().getSimpleName()} on ${arguments.pretty("dataset")}"
+
 
   def process(arguments: Arguments, context: ExecutionContext)
   {
@@ -58,6 +61,11 @@ trait VizualCommand
 
     context.message(s"Updated $datasetName")
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("dataset")), 
+           Seq(arguments.get[String]("dataset"))) )
+
 
 }
 

@@ -42,6 +42,10 @@ object ManualStratifiedSample extends Command
     (if(arguments.contains("output_dataset")) {
       s" AS ${arguments.pretty("output_dataset")}"
     } else { "" })
+  def title(arguments: Arguments): String = 
+    arguments.getOpt[String]("output_dataset")
+             .map { output => s"Sample from ${arguments.pretty("input_dataset")} into $output" }
+             .getOrElse { s"Sample from ${arguments.pretty("input_dataset")}" }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val inputName = arguments.get[String]("input_dataset")
@@ -72,5 +76,10 @@ object ManualStratifiedSample extends Command
 
     context.message("Sample created")
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("input_dataset")), 
+           Seq(arguments.getOpt[String]("output_dataset")
+                        .getOrElse { arguments.get[String]("input_dataset") })) )
 }
 

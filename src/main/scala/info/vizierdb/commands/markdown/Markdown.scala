@@ -28,9 +28,16 @@ object Markdown extends Command
   )
   def format(arguments: Arguments): String = 
     s"MARKDOWN"
+  def title(arguments: Arguments): String = 
+    s"MARKDOWN"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     context.message(MIME.MARKDOWN, arguments.get[String]("source"))
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq.empty, 
+           Seq.empty) )
+
 }
 

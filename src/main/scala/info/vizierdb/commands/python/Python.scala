@@ -46,6 +46,8 @@ object Python extends Command
   )
   def format(arguments: Arguments): String = 
     arguments.pretty("source")
+  def title(arguments: Arguments): String =
+    "Python Script"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     logger.debug("Initializing...")
@@ -82,11 +84,13 @@ object Python extends Command
             (event\"stream").as[String] match {  
               case "stdout" => 
                 context.message( 
-                  content = (event\"content").as[String],
+                  // each message object already gets a free newline, so trim here
+                  content = (event\"content").as[String].trim(),
                   mimeType = (event\"mimeType").getOrElse { JsString(MIME.TEXT) }
                                               .as[String]
                 )
-              case "stderr" => context.error( (event\"content").as[String] )
+              // each message object already gets a free newline, so trim here
+              case "stderr" => context.error( (event\"content").as[String].trim() )
               case x => context.error(s"Received message on unknown stream '$x'")
             }
           case "get_dataset" => 
@@ -244,5 +248,7 @@ object Python extends Command
     // io.cleanup()
     logger.debug("Done")
   }
+
+  def predictProvenance(arguments: Arguments) = None
 }
 

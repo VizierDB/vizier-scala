@@ -341,13 +341,20 @@ class VizierDBClient(object):
       elif issubclass(type(value), MatplotlibAxes):
         value = vizier_matplotlib_render(value.get_figure())
         mime_type = OUTPUT_HTML
+      elif issubclass(type(value), list):
+        for i in value:
+          self.show(i, force_to_string=force_to_string)
+        # After a recursive show, don't need to output anything
+        # here, so just return
+        return
       else:
         repr_html = getattr(value, "_repr_html_", None)
         if repr_html is not None:
           value = str(repr_html())
           mime_type = OUTPUT_HTML
         else:
-          raise ValueError("Don't know how to show {}.\nTry show(value, force_to_string = True)".format(value))
+          value = str(value)
+          mime_type = OUTPUT_TEXT
     else:
       value = str(value)
 

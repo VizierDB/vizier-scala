@@ -55,6 +55,8 @@ object LoadDataset
   )
   def format(arguments: Arguments): String = 
     s"LOAD DATASET ${arguments.pretty("name")} AS ${arguments.pretty("loadFormat")} FROM ${arguments.pretty("file")}"
+  def title(arguments: Arguments): String = 
+    s"Load ${arguments.pretty("name")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("name").toLowerCase()
@@ -106,5 +108,11 @@ object LoadDataset
 
     context.displayDataset(datasetName)
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (
+      Seq.empty,
+      Seq(arguments.get[String]("name"))
+    ) )
 }
 

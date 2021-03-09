@@ -3,14 +3,14 @@ package info.vizierdb.catalog.serialized
 import play.api.libs.json._
 import info.vizierdb.types._
 
-case class TableOfContentsSection(
+case class TableOfContentsEntry(
   title: String,
-  titleLevel: Int,
+  titleLevel: Option[Int],
   linkToIdx: Identifier,
   moduleId: Identifier
 )
 
-object TableOfContentsSection
+object TableOfContentsEntry
 {
-  implicit val format: Format[TableOfContentsSection] = Json.format
+  implicit val format: Format[TableOfContentsEntry] = Json.format
 }

@@ -46,6 +46,8 @@ object GeoPlot extends Command
   )
   def format(arguments: Arguments): String = 
     s"CREATE GEOPLOT ${arguments.pretty("dataset")}.${arguments.pretty("shape_column")} COLOR BY ${arguments.pretty("weight_column")}"
+  def title(arguments: Arguments): String = 
+    s"Geoplot of ${arguments.pretty("dataset")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -115,4 +117,9 @@ object GeoPlot extends Command
       <img src="data:image/png;base64,${Base64.getEncoder.encodeToString(imageBuffer.toByteArray)}">
     """)
   }
+
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("dataset")), 
+           Seq.empty) )
 }

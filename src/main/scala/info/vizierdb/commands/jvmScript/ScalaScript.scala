@@ -69,6 +69,8 @@ object ScalaScript extends Command
   )
   def format(arguments: Arguments): String = 
     arguments.pretty("source")
+  def title(arguments: Arguments): String = 
+    "Scala Code"
 
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
@@ -79,6 +81,8 @@ object ScalaScript extends Command
         context.error(e.getMessage()) // sadly no line numbers here
     }
   }
+
+  def predictProvenance(arguments: Arguments) = None
 
 
 }

@@ -32,7 +32,9 @@ object CheckpointDataset extends Command
     DatasetParameter(id = "dataset", name = "Dataset"),
   )
   def format(arguments: Arguments): String = 
-    s"CHECKPOINT DATASET ${arguments.get[String]("dataset")}"
+    s"CHECKPOINT ${arguments.get[String]("dataset")}"
+  def title(arguments: Arguments): String = 
+    format(arguments)
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -49,6 +51,6 @@ object CheckpointDataset extends Command
     context.message("Dataset Checkpointed")
   }
   def predictProvenance(arguments: Arguments) = 
-    (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name")))
+    Some( (Seq(arguments.get[String]("dataset")), Seq.empty) )
 }
 

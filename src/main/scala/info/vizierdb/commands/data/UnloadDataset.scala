@@ -47,6 +47,8 @@ object UnloadDataset extends Command
   )
   def format(arguments: Arguments): String = 
     s"UNLOAD ${arguments.pretty("dataset")} TO ${arguments.pretty("unloadFormat")}"
+  def title(arguments: Arguments): String = 
+    s"Unload ${arguments.pretty("dataset")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -108,5 +110,11 @@ object UnloadDataset extends Command
     }
 
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (
+      Seq(arguments.get[String]("dataset")),
+      Seq("file_export")
+    ) )
 }
 

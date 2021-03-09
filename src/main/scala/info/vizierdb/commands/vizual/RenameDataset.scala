@@ -24,7 +24,10 @@ object RenameDataset extends Command
     StringParameter(id = "name", name = "New Dataset Name")
   )
   def format(arguments: Arguments): String = 
-    s"RENAME DATASET ${arguments.get[String]("dataset")} TO ${arguments.get[String]("name")}"
+    s"RENAME ${arguments.get[String]("dataset")} TO ${arguments.get[String]("name")}"
+  def title(arguments: Arguments): String =
+    format(arguments)
+
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val oldName = arguments.get[String]("dataset")
@@ -33,5 +36,11 @@ object RenameDataset extends Command
     context.output(newName, ds)
     context.delete(oldName)
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("dataset")), 
+           Seq(arguments.get[String]("dataset"), arguments.get[String]("name"))) )
+
+
 }
 

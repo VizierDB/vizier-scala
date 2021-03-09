@@ -192,7 +192,7 @@ case class Workflow(
 
     val TOC_HEADER = "(#+) *(.+)".r
 
-    val tableOfContents: Seq[TableOfContentsSection] = 
+    val tableOfContents: Seq[TableOfContentsEntry] = 
       cellsAndModules.flatMap { case (cell, module) => 
         if(module.packageId.equals("docs")){
           cell.messages
@@ -209,9 +209,22 @@ case class Workflow(
               }
               .headOption.flatten
               .map { case (level, title) => 
-                TableOfContentsSection(title, level, cell.position, module.id)
+                TableOfContentsEntry(title, Some(level), cell.position, module.id)
               }
-        } else { None }
+        } else {
+          val blurb: String =  
+            module.command
+                  .map { _.title(module.arguments) }
+                  .getOrElse { s"${module.packageId}.${module.commandId}" }
+          Seq(
+            TableOfContentsEntry(
+              blurb,
+              None,
+              cell.position,
+              module.id
+            )
+          )
+        }
       }
 
     summary.toDescription(

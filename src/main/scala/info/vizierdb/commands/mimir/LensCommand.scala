@@ -37,6 +37,8 @@ trait LensCommand
 
   def format(arguments: Arguments): String =
     s"CREATE LENS ON ${arguments.get[String]("dataset")} ${lensFormat(arguments)}"
+  def title(arguments: Arguments): String =
+    s"$lens on ${arguments.pretty("dataset")}"
 
   def process(arguments: Arguments, context: ExecutionContext)
   {
@@ -74,5 +76,10 @@ trait LensCommand
 
     context.message(s"Created $name Lens on $datasetName")
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("dataset")), 
+           Seq(arguments.get[String]("dataset"))) )
+
 }
 

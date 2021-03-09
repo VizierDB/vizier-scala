@@ -32,7 +32,8 @@ object CloneDataset extends Command
     StringParameter(id = "name", name = "Name of Copy")
   )
   def format(arguments: Arguments): String = 
-    s"CLONE DATASET ${arguments.get[String]("dataset")} TO ${arguments.pretty("name")}"
+    s"CLONE ${arguments.get[String]("dataset")} TO ${arguments.pretty("name")}"
+  def title(arguments: Arguments): String = format(arguments)
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -45,6 +46,6 @@ object CloneDataset extends Command
     context.message("Dataset Cloned")
   }
   def predictProvenance(arguments: Arguments) = 
-    (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name")))
+    Some( (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name"))) )
 }
 
