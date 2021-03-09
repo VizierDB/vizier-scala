@@ -5,6 +5,8 @@ import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.api.Response
 import info.vizierdb.api.response.VizierErrorResponse
 import info.vizierdb.VizierAPI
+import play.api.libs.json.JsResultException
+import info.vizierdb.util.JsonUtils
 
 object VizierAPIServlet
   extends HttpServlet 
@@ -29,6 +31,12 @@ object VizierAPIServlet
         logger.debug(s"API ${request.getMethod} ${request.getPathInfo}})")
         baseResponse
       } catch {
+        case e: JsResultException => 
+          logger.error(e.getMessage + "\n" + e.getStackTrace.map { _.toString }.mkString("\n"))
+          VizierErrorResponse(
+            e.getClass.getCanonicalName(),
+            "Json Errors: "+JsonUtils.prettyJsonParseError(e).mkString(", ")
+          )
         case e: Throwable => 
           logger.error(e.getMessage + "\n" + e.getStackTrace.map { _.toString }.mkString("\n"))
           VizierErrorResponse(
