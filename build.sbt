@@ -143,9 +143,9 @@ pomPostProcess := { (node:XNode) =>
 // your own local ivy cache
 
 publishMavenStyle := true
-publishTo := Some(MavenCache("local-maven",  file("/var/www/maven_repo/")))
+// publishTo := Some(MavenCache("local-maven",  file("/var/www/maven_repo/")))
 
-// publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
+ publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
 ///////////////////////////////////////////
 /////// Build and update the UI
