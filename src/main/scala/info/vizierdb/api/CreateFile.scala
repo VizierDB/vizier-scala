@@ -42,7 +42,7 @@ object CreateFileHandler
   {
     val projectId = pathParameters("projectId").as[Long]
     val jettyRequest = request.asInstanceOf[JettyRequest]
-    val part = request.getPart("file")
+    val part = jettyRequest.getPart("file")
     if(part == null){
       throw new IllegalArgumentException("No File Provided")
     }
