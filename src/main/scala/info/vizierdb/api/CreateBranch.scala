@@ -63,7 +63,7 @@ case class CreateBranch(
                )
       RawJsonResponse(
         branch.summarize,
-        status = Some(HttpServletResponse.SC_CREATED)
+        status = HttpServletResponse.SC_CREATED
       )
     }
   } 

@@ -47,7 +47,7 @@ object ExportProject
     FileResponse(
       file = tempFile, 
       name = projectName+".vizier", 
-      mimeType = "application/octet-stream",
+      contentType = "application/octet-stream",
       afterCompletedTrigger = { () => tempFile.delete() }
     )
   }

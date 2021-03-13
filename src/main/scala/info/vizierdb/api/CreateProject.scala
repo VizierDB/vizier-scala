@@ -44,7 +44,7 @@ case class CreateProject(
       }
     RawJsonResponse(
       project.summarize,
-      status = Some(HttpServletResponse.SC_CREATED)
+      status = HttpServletResponse.SC_CREATED
     )
   } 
 }

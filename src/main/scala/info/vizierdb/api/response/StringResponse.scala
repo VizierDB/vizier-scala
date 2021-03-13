@@ -21,7 +21,7 @@ import javax.servlet.http.HttpServletResponse
 case class StringResponse(
   data: String, 
   override val contentType: String = "text/plain",
-  status: Option[Int] = None,
+  override val status: Int = HttpServletResponse.SC_OK
 ) extends BytesResponse
 {
   def getBytes = data.getBytes()

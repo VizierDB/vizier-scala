@@ -217,7 +217,7 @@ object GetArtifactHandler
           }
           return FileResponse(
             file = path, 
-            mimeType = artifact.mimeType, 
+            contentType = artifact.mimeType, 
             name = artifact.jsonData
                            .as[Map[String, JsValue]]
                            .get("filename")

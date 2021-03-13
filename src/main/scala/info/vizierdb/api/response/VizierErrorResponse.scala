@@ -24,15 +24,8 @@ case class VizierErrorResponse (
             /* throwable message */
                   message: String,
             /* error code */
-                  status: Int = HttpServletResponse.SC_BAD_REQUEST
+                  override val status: Int = HttpServletResponse.SC_BAD_REQUEST
 ) extends JsonResponse[VizierErrorResponse]
-{
-  override def write(output: HttpServletResponse)
-  { 
-    output.setStatus(status)
-    super.write(output)
-  }
-}
 
 object VizierErrorResponse {
   implicit val format: Format[VizierErrorResponse] = Json.format

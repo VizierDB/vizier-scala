@@ -16,12 +16,14 @@ package info.vizierdb.api.response
 
 import org.mimirdb.api.Response
 import javax.servlet.http.HttpServletResponse
+import java.io.OutputStream
 
 case class NoContentResponse() extends Response
 {
-  def write(output: HttpServletResponse)
-  {
-    output.setStatus(HttpServletResponse.SC_NO_CONTENT)
-  }
+  val headers = Seq.empty
+  val status = HttpServletResponse.SC_NO_CONTENT
+  def write(output: OutputStream): Unit = {}
+  val contentType: String = "text/plain"
+  val contentLength: Option[Int] = Some(0)
 }
 

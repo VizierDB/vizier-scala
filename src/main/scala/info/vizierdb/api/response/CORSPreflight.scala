@@ -16,19 +16,23 @@ package info.vizierdb.api.response
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import org.mimirdb.api.Response
+import java.io.OutputStream
 
 case class CORSPreflightResponse(methodStrings: String*)
   extends Response
 {
   val methods = methodStrings.mkString(",")
+  val headers = Seq(
+    "Access-Control-Allow-Headers" -> Seq(
+                                        "content-type"
+                                      ).mkString(", "),
+    "Allow"                        -> methods,
+    "Access-Control-Allow-Methods" -> methods,
+  )
 
-  def write(output: HttpServletResponse) =
-  {
-    output.setHeader("Access-Control-Allow-Headers", Seq(
-      "content-type"
-    ).mkString(", "))
-    output.setHeader("Allow", methods)
-    output.setHeader("Access-Control-Allow-Methods", methods)
-  }
+  def write(os: OutputStream) = {}
+  val contentLength: Option[Int] = None
+  val contentType: String = "text/plain"
+  val status = HttpServletResponse.SC_OK
 }
 

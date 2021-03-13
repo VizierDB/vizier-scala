@@ -20,15 +20,8 @@ import javax.servlet.http.HttpServletResponse
 
 case class RawJsonResponse(
   data: JsValue, 
-  status: Option[Int] = None
+  override val status: Int = HttpServletResponse.SC_OK
 ) extends JsonResponse[RawJsonResponse]
-{
-  override def write(output: HttpServletResponse)
-  {
-    status.foreach { output.setStatus(_) }
-    super.write(output)
-  }
-}
 
 object RawJsonResponse
 {

@@ -42,12 +42,15 @@ object DummyPrint extends Command with LazyLogging
   )
   def format(arguments: Arguments): String = 
     s"PRINT ${arguments.pretty("value")}"
+  def title(arguments: Arguments): String = 
+    format(arguments)
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val v = arguments.get[String]("value")
     logger.debug(s"Printing: $v")
     context.message(v)
   }
+  def predictProvenance(arguments: Arguments) = None
 }
 
 object DummyCreate extends Command with LazyLogging
@@ -59,6 +62,8 @@ object DummyCreate extends Command with LazyLogging
   )
   def format(arguments: Arguments): String = 
     s"CREATE DUMMY ${arguments.pretty("dataset")}"
+  def title(arguments: Arguments): String = 
+    format(arguments)
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val dataset = arguments.get[String]("dataset") 
@@ -66,6 +71,7 @@ object DummyCreate extends Command with LazyLogging
     logger.debug(s"Creating: $dataset -> ${artifact.id}")
     context.message(s"Created artifact $dataset -> ${artifact.id} ")
   }
+  def predictProvenance(arguments: Arguments) = None
 }
 
 object DummyConsume extends Command with LazyLogging
@@ -78,6 +84,8 @@ object DummyConsume extends Command with LazyLogging
   )
   def format(arguments: Arguments): String = 
     s"CONSUME DUMMY ${arguments.pretty("datasets")}"
+  def title(arguments: Arguments): String = 
+    format(arguments)
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasets = arguments.get[Seq[Map[String, JsValue]]]("datasets")
@@ -87,5 +95,6 @@ object DummyConsume extends Command with LazyLogging
       datasets.map { context.artifact(_).get.string }  
     context.message(results.mkString)
   }
+  def predictProvenance(arguments: Arguments) = None
 }
 

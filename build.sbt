@@ -1,7 +1,7 @@
 scalaVersion := "2.12.12"
 
 val VIZIER_VERSION = "0.6-SNAPSHOT"
-val MIMIR_VERSION = "0.5.0-SNAPSHOT"
+val MIMIR_VERSION = "0.6.0-SNAPSHOT"
 val CAVEATS_VERSION = "0.3.1"
 
 // Project and subprojects
@@ -179,6 +179,7 @@ buildUI := {
          .replaceAll("http://localhost:5000", "")
 
   Files.write(Paths.get("src/main/resources/ui/env.js"), env.getBytes)
+  Files.copy(target.resolve("vizier.svg"), target.resolve("favicon.svg"))
 }
 
 ///////////////////////////////////////////

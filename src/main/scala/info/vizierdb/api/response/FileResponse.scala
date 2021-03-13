@@ -22,16 +22,20 @@ import info.vizierdb.util.Streams
 case class FileResponse(
   file: File, 
   name: String, 
-  mimeType: String, 
+  contentType: String, 
   afterCompletedTrigger: () => Unit = {() => ()}
 ) extends Response
 {
-  def write(output: HttpServletResponse)
+  val status = HttpServletResponse.SC_OK
+  val headers = Seq(
+    "Content-Disposition" -> ("attachment; filename=\""+name+"\"")
+  )
+  def contentLength: Option[Int] = Some(file.length().toInt)
+
+  def write(os: OutputStream)
   {
-    output.setHeader("Content-Disposition", "attachment; filename=\""+name+"\"")
-    output.setContentType(mimeType)
     Streams.closeAfter(new FileInputStream(file)) { f => 
-      Streams.cat(f, output.getOutputStream())
+      Streams.cat(f, os)
     }
     afterCompletedTrigger()
   }
