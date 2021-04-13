@@ -171,6 +171,8 @@ case class Artifact(
       case _ => ()
     }
   }
+
+  def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
 }
 
 case class ArtifactSummary(
@@ -209,6 +211,7 @@ case class ArtifactSummary(
   }
   def file = Filestore.get(projectId, id)
   def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
+  def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
 
   def getSchema(profile: Boolean = false): SchemaList =
     SchemaForTableRequest(
@@ -284,6 +287,16 @@ object Artifact
      .list.apply()
   }
 
+  def urlForArtifact(artifactId: Identifier, projectId: Identifier, t: ArtifactType.T): URL =
+    t match {
+      case ArtifactType.DATASET => 
+        VizierAPI.urls.getDataset(projectId, artifactId)
+      case ArtifactType.CHART => 
+        VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
+      case _ => 
+        VizierAPI.urls.getArtifact(projectId, artifactId)
+    }
+
   def summarize(
     artifactId: Identifier, 
     projectId: Identifier, 
@@ -302,14 +315,7 @@ object Artifact
       "name" -> JsString(name.getOrElse(artifactId.toString)),
       HATEOAS.LINKS -> HATEOAS((
         Seq(
-          HATEOAS.SELF -> (t match {
-            case ArtifactType.DATASET => 
-              VizierAPI.urls.getDataset(projectId, artifactId)
-            case ArtifactType.CHART => 
-              VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
-            case _ => 
-              VizierAPI.urls.getArtifact(projectId, artifactId)
-          })
+          HATEOAS.SELF -> urlForArtifact(artifactId, projectId, t)
         ) ++ (t match {
           case ArtifactType.DATASET => Seq(
             HATEOAS.DATASET_FETCH_ALL -> VizierAPI.urls.getDataset(projectId, artifactId, limit = Some(-1)),

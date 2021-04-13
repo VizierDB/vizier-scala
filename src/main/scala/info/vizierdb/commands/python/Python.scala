@@ -222,7 +222,8 @@ object Python extends Command
               )
               python.send("file_artifact",
                 "artifactId" -> JsString(file.id.toString),
-                "path" -> JsString(file.file.toString())
+                "path" -> JsString(file.file.toString),
+                "url" -> JsString(file.url.toString)
               )
 
             }

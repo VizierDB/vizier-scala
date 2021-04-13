@@ -24,6 +24,7 @@ import re
 from datetime import datetime
 from pycell.dataset import DatasetClient
 from pycell.plugins import vizier_bokeh_render, vizier_matplotlib_render
+from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
 from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
 from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
@@ -295,6 +296,18 @@ class VizierDBClient(object):
     if name in self.py_objects:
       self.py_objects[new_name] = self.py_objects[name]
       del self.py_objects[name]
+
+  def create_file(self,
+                  name: str,
+                  filename: Optional[str] = None,
+                  mime_type: str = "text/plain"
+                 ) -> FileClient:
+    return FileClient(
+        client=self,
+        name=name,
+        filename=filename,
+        mime_type=mime_type
+      )
 
   def pycell_open(self,
                   file: str,
