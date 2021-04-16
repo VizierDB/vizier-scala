@@ -311,7 +311,7 @@ object Artifact
       "key" -> JsNumber(artifactId),
       "id" -> JsNumber(artifactId),
       "objType" -> JsString(mimeType), 
-      "category" -> JsString(t.toString),
+      "category" -> JsString(t.toString.toLowerCase()),
       "name" -> JsString(name.getOrElse(artifactId.toString)),
       HATEOAS.LINKS -> HATEOAS((
         Seq(

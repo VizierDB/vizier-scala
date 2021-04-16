@@ -77,4 +77,4 @@ SCALA_LICENSE = [
 ]
 
 for path in glob("./**/*.scala", recursive=True):
-  fix_license_if_needed(path, SCALA_LICENSE, skip_check=True)
+  fix_license_if_needed(path, SCALA_LICENSE)

@@ -17,6 +17,7 @@ package info.vizierdb.commands
 import play.api.libs.json._
 import info.vizierdb.VizierException
 import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.types.ArtifactType
 
 sealed trait Parameter
 {
@@ -210,6 +211,23 @@ case class DatasetParameter(
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
                                else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a string/dataset id for $name") }
+}
+
+case class ArtifactParameter(
+  id: String,
+  name: String,
+  artifactType: ArtifactType.T, 
+  required: Boolean = true, 
+  hidden: Boolean = false
+) extends Parameter with StringEncoder
+{
+  def datatype = "artifact"
+  def doStringify(j: JsValue): String = j.toString()
+  def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
+                               else if ((j == JsNull) && (!required)) { None }
+                               else { Some(s"Expected a string/dataset id for $name") }
+  override def describe = 
+    super.describe ++ Map("artifactType" -> JsString(artifactType.toString.toLowerCase()))
 }
 
 case class DecimalParameter(

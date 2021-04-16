@@ -53,7 +53,6 @@ import org.mimirdb.util.ExperimentalOptions
 object VizierAPI
 {
   var server: Server = null
-  lazy val debug: Boolean = Vizier.config.devel()
 
   val DEFAULT_PORT = 5000
   val NAME = "vizier"
@@ -79,7 +78,7 @@ object VizierAPI
     port: Int = DEFAULT_PORT, 
     path: File = Vizier.config.basePath(),
     bindToLocalhost: Boolean = 
-      !(debug || Vizier.config.connectFromAnyHost())
+      !(Vizier.config.devel() || Vizier.config.connectFromAnyHost())
   )
   {
     if(server != null){ 

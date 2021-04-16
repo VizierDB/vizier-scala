@@ -18,6 +18,7 @@ import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import org.specs2.specification.AfterAll
 import play.api.libs.json._
+import java.io.File
 
 import scalikejdbc._
 
@@ -79,6 +80,34 @@ class DataCommandsSpec
     project.waitUntilReady
 
     ok
+  }
+
+  "unload files" >> {
+    val project = MutableProject("File Project")
+
+    project.script("""
+      |with vizierdb.create_file("test.csv") as f:
+      |  f.write("1,2\n")
+      |  f.write("3,4\n")
+      """.stripMargin)
+
+    project.waitUntilReady
+    project.artifactRefs.map { _.userFacingName } must contain("test.csv")
+
+    val f = File.createTempFile("test", ".csv")
+    if(f.exists){
+      f.delete
+    }
+    f.exists must beFalse
+    f.deleteOnExit
+    project.append("data", "unloadFile")(
+      "file" -> "test.csv",
+      "path" -> f.toString
+    )
+    project.waitUntilReady
+    f.exists must beTrue
+
+
   }
 }
 

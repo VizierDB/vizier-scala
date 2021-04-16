@@ -18,7 +18,7 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.api.Response
 import info.vizierdb.api.response.VizierErrorResponse
-import info.vizierdb.VizierAPI
+import info.vizierdb.{ Vizier, VizierAPI }
 import play.api.libs.json.JsResultException
 import info.vizierdb.util.JsonUtils
 
@@ -59,7 +59,7 @@ object VizierAPIServlet
           )
       }
     logger.trace(s"$response")
-    if(VizierAPI.debug){
+    if(Vizier.config.devel() || Vizier.config.connectFromAnyHost()){
       output.setHeader("Access-Control-Allow-Origin", "*")
     }
     response.write(output)

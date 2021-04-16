@@ -100,7 +100,7 @@ class MutableProject(
 
   def waitUntilReady
   {
-    Scheduler.joinWorkflow(head.id)
+    Scheduler.joinWorkflow(head.id, failIfNotRunning = false)
   }
 
   def waitUntilReadyAndThrowOnError

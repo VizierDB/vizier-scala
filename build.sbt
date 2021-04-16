@@ -147,40 +147,6 @@ publishTo := Some(MavenCache("local-maven",  file("/var/www/maven_repo/")))
 
 // publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
-///////////////////////////////////////////
-/////// Build and update the UI
-///////////////////////////////////////////
-lazy val buildUI = taskKey[Unit]("Build the UI")
-buildUI := {
-  import java.lang.ProcessBuilder
-  import java.nio.file.{ Files, Paths }
-  import collection.JavaConverters._
-
-  val sourceDir = Paths.get("upstream/ui")
-  val source = sourceDir.resolve("build")
-  val target = Paths.get("src/main/resources/ui")
-
-  new ProcessBuilder("yarn", "build")
-        .directory(sourceDir.toFile)
-        .start
-        .waitFor
-  
-  if(Files.exists(target)){
-    new ProcessBuilder("rm", "-r", target.toString)
-          .start
-          .waitFor
-  }
-  Files.move(source, target)
-
-  val env = 
-    Files.readAllLines(Paths.get("upstream/ui/public/env.js"))
-         .asScala
-         .mkString("\n")
-         .replaceAll("http://localhost:5000", "")
-
-  Files.write(Paths.get("src/main/resources/ui/env.js"), env.getBytes)
-  Files.copy(target.resolve("vizier.svg"), target.resolve("favicon.svg"))
-}
 
 ///////////////////////////////////////////
 /////// Build a release

@@ -71,6 +71,7 @@ object Commands
     "clone"      -> info.vizierdb.commands.data.CloneDataset,
     "empty"      -> info.vizierdb.commands.data.EmptyDataset, 
     "checkpoint" -> info.vizierdb.commands.data.CheckpointDataset,
+    "unloadFile" -> info.vizierdb.commands.data.UnloadFile,
   )
 
   register(packageId = "plot", name = "Data Plotting", category = "plot")(
