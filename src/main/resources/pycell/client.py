@@ -1,5 +1,5 @@
-# -- copyright-header:v1 --
-# Copyright (C) 2017-2020 University at Buffalo,
+# -- copyright-header:v2 --
+# Copyright (C) 2017-2021 University at Buffalo,
 #                         New York University,
 #                         Illinois Institute of Technology.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -619,3 +619,4 @@ def is_valid_name(name: str) -> bool:
     elif c not in ['_', '-', ' ']:
       return False
   return (allnums > 0)
+

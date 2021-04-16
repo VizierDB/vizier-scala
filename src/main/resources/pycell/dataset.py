@@ -1,5 +1,5 @@
-# -- copyright-header:v1 --
-# Copyright (C) 2017-2020 University at Buffalo,
+# -- copyright-header:v2 --
+# Copyright (C) 2017-2021 University at Buffalo,
 #                         New York University,
 #                         Illinois Institute of Technology.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -596,3 +596,4 @@ def export_from_native_type(value: Any, data_type: str) -> Any:
     return value.wkt
   else:
     return value
+

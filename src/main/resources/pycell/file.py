@@ -1,5 +1,5 @@
-# -- copyright-header:v1 --
-# Copyright (C) 2017-2020 University at Buffalo,
+# -- copyright-header:v2 --
+# Copyright (C) 2017-2021 University at Buffalo,
 #                         New York University,
 #                         Illinois Institute of Technology.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,3 +62,4 @@ class FileClient(object):
 
   def _repr_html_(self) -> str:
     return "<a href='{}'>{}</a>".format(self.url, self.filename)
+
