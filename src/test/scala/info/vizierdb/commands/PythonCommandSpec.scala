@@ -61,7 +61,7 @@ class PythonCommandSpec
     project.script("""
 print("Hello Wookie")
 """)
-    project.lastOutputString must beEqualTo("Hello Wookie\n")
+    project.lastOutputString must beEqualTo("Hello Wookie")
   }
 
   "share python functions" >>
@@ -72,17 +72,17 @@ def foo(bar):
 foo("x")
 vizierdb.export_module(foo)
 """)
-    project.lastOutputString must beEqualTo("YY: x\n")
+    project.lastOutputString must beEqualTo("YY: x")
 
     project.script("""
 vizierdb["foo"]("z")
 """)
-    project.lastOutputString must beEqualTo("YY: z\n")
+    project.lastOutputString must beEqualTo("YY: z")
 
     project.script("""
 foo("w")
 """)
-    project.lastOutputString must beEqualTo("YY: w\n")
+    project.lastOutputString must beEqualTo("YY: w")
   }
 
 
@@ -118,7 +118,7 @@ ds.save("Q")
 
     project.script("ds = vizierdb[\"Q\"];print(ds)")
 
-    project.lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)\n")
+    project.lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)")
 
     project.artifactRefs.map { _.userFacingName } must contain("test_r")
     project.script("""
@@ -147,7 +147,7 @@ show(vizierdb["q"])
 df = vizierdb.get_data_frame("q")
 print(df['A'].sum())
 """)
-    project.lastOutputString must beEqualTo("12\n")
+    project.lastOutputString must beEqualTo("12")
   }
 
   "Export Pandas" >>

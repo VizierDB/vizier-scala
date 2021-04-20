@@ -185,7 +185,7 @@ class MutableProject(
     }
   }
   def lastOutputString =
-    lastOutput.map { _.dataString }.mkString
+    lastOutput.map { _.dataString }.mkString("\n")
 
   def artifactRefs: Seq[ArtifactRef] = 
   {
