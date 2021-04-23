@@ -84,6 +84,12 @@ class Config(arguments: Seq[String])
     noshort = true
   )
 
+  val serverMode = opt[Boolean]("server",
+    descr = "Disable features that assume Vizier is running under the account of the user interacting with it",
+    default = Option(false),
+    noshort = true
+  )
+
   object ingest extends Subcommand("import", "ingest") {
     val execute = toggle("execute", default = Some(true))
     val file = trailArg[File]("export", 

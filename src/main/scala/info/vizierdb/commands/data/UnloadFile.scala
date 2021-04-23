@@ -15,10 +15,12 @@
 package info.vizierdb.commands.data
 
 import info.vizierdb.commands._
+import info.vizierdb.Vizier
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
 import java.net.URL
 import java.nio.file.{ Files, Paths }
+
 
 object UnloadFile extends Command
   with LazyLogging
@@ -49,7 +51,10 @@ object UnloadFile extends Command
               } else { new URL(path) }
 
     url.getProtocol() match {
-      case "file" => {
+      case "file" if Vizier.config.serverMode() => {
+        throw new RuntimeException("Writing to the local file system is disabled in server mode")
+      }
+      case "file"  => {
         val source = fileArtifact.file.toPath()
         val destination = Paths.get(url.getPath)
         Files.copy(source, destination)
