@@ -1,7 +1,7 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "1.0.1"
-val MIMIR_VERSION = "1.0.0"
+val VIZIER_VERSION = "1.1.0-SNAPSHOT"
+val MIMIR_VERSION = "1.1.0-SNAPSHOT"
 val CAVEATS_VERSION = "0.3.1"
 
 // Project and subprojects

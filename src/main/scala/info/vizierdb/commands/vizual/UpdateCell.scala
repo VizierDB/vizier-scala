@@ -23,7 +23,8 @@ object UpdateCell extends VizualCommand
   def vizualParameters: Seq[Parameter] = Seq(
     ColIdParameter(id = "column", name = "Column"),
     StringParameter(id = "row", name = "Row (optional)", required = false, relaxed = true),
-    StringParameter(id = "value", name = "Value", required = false)
+    StringParameter(id = "value", name = "Value", required = false),
+    StringParameter(id = "comment", name = "Comment (optional)", required = false)
   )
   def format(arguments: Arguments): String = 
     s"UPDATE ${arguments.get[String]("dataset")}[${arguments.pretty("column")}${arguments.getOpt[String]("row").map { ":"+_ }.getOrElse{""}}] UPDATE ${arguments.pretty("value")}"
@@ -40,7 +41,8 @@ object UpdateCell extends VizualCommand
       vizual.UpdateCell(
         column = arguments.get[Int]("column"),
         row = Some(rowSelection),
-        value = Some(arguments.get[String]("value"))
+        value = Some(arguments.get[String]("value")),
+        comment = arguments.getOpt[String]("comment")
       )
     )
   }
