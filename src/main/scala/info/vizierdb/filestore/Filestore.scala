@@ -22,26 +22,39 @@ import info.vizierdb.types._
 
 object Filestore
 {
-  lazy val path = { 
-    val d = new File(Vizier.config.basePath(), "files")
-    if(!d.exists()){ d.mkdir() }
-    d 
+  val FILE_DIR = "files"
+
+  lazy val (absolutePath, relativePath) =
+  {
+    val r = new File(FILE_DIR)
+    val a = new File(Vizier.config.basePath(), FILE_DIR)
+    if(!a.exists()){ a.mkdir() }
+    (a, r)
   }
 
-  def get(name: String) = new File(path, name)
-  def projectDir(projectId: Identifier): File = 
+  def ensureDir(f: File): File = 
   {
-    val dir = get(s"proj_$projectId")
-    if(!dir.exists){ dir.mkdir() }
-    return dir
+    if(!f.exists()){ f.mkdir() }
+    return f
   }
-  def get(projectId: Identifier, artifactId: Identifier): File =
-    new File(
-      projectDir(projectId = projectId),
-      s"artifact_${Artifact.nameInBackend(ArtifactType.FILE, artifactId)}"
-    )
+
+  def getAbsolute(name: String) = new File(absolutePath, name)
+  def getRelative(name: String) = new File(relativePath, name)
+  
+  def projectDirName(projectId: Identifier): String = s"proj_$projectId"
+  def artifactFileName(artifactId: Identifier): String = s"artifact_${Artifact.nameInBackend(ArtifactType.FILE, artifactId)}"
+
+  def absoluteProjectDir(projectId: Identifier): File = 
+    ensureDir(new File(absolutePath, projectDirName(projectId)))
+  def relativeProjectDir(projectId: Identifier): File = 
+    ensureDir(new File(relativePath, projectDirName(projectId)))
+
+  def getAbsolute(projectId: Identifier, artifactId: Identifier): File =
+    new File(absoluteProjectDir(projectId), artifactFileName(artifactId))
+  def getRelative(projectId: Identifier, artifactId: Identifier): File =
+    new File(relativeProjectDir(projectId), artifactFileName(artifactId))
 
   def remove(projectId: Identifier, artifactId: Identifier) =
-    get(projectId, artifactId).delete()
+    getAbsolute(projectId, artifactId).delete()
 }
 

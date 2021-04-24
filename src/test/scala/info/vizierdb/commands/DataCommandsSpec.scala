@@ -38,7 +38,7 @@ class DataCommandsSpec
     val project = MutableProject("Data Project")
 
     project.append("data", "load")(
-      "file" -> "test_data/r.csv",
+      "file" -> FileArgument.fromUrl("test_data/r.csv"),
       "name" -> "test_r",
       "loadFormat" -> "csv",
       "loadInferTypes" -> true,

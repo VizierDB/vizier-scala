@@ -113,7 +113,7 @@ object Python extends Command
           case "get_file" => 
             withArtifact { artifact => 
               python.send("file",
-                "path" -> JsString(artifact.file.toString),
+                "path" -> JsString(artifact.absoluteFile.toString),
                 "artifactId" -> JsNumber(artifact.id)
               )
             }
@@ -139,7 +139,7 @@ object Python extends Command
           case "create_dataset" => 
             {
               val fileId = (event \ "file").as[String].toLong
-              val filePath = Filestore.get(context.projectId, fileId).toString
+              val filePath = Filestore.getRelative(context.projectId, fileId).toString
               val (nameInBackend, id) = 
                 context.outputDataset( (event\"name").as[String] )
 
@@ -161,7 +161,8 @@ object Python extends Command
                   ),
                 resultName = Some(nameInBackend),
                 properties = None,
-                proposedSchema = None
+                proposedSchema = None,
+                urlIsRelativeToDataDir = Some(true)
               ).handle
 
               python.send("datasetId",
@@ -222,7 +223,7 @@ object Python extends Command
               )
               python.send("file_artifact",
                 "artifactId" -> JsString(file.id.toString),
-                "path" -> JsString(file.file.toString),
+                "path" -> JsString(file.absoluteFile.toString),
                 "url" -> JsString(file.url.toString)
               )
 

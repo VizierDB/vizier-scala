@@ -55,7 +55,7 @@ object UnloadFile extends Command
         throw new RuntimeException("Writing to the local file system is disabled in server mode")
       }
       case "file"  => {
-        val source = fileArtifact.file.toPath()
+        val source = fileArtifact.absoluteFile.toPath()
         val destination = Paths.get(url.getPath)
         Files.copy(source, destination)
         context.message(s"Copied $fileName (id = ${fileArtifact.id}) to $destination")

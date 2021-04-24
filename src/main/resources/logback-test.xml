@@ -33,6 +33,7 @@
   <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
   <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
+  <logger name="info.vizierdb.commands.data.LoadDataset$"        level="WARN" />
 
   <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />

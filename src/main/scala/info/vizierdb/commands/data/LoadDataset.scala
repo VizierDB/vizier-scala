@@ -78,9 +78,15 @@ object LoadDataset
           )
         })
       }
+    
+    val (path, relative) = file.getPath(context.projectId)
+
+    logger.debug(s"Source: $file")
+    logger.debug(s"${if(relative){"RELATIVE"}else{"ABSOLUTE"}} PATH: $path")
+
 
     val result = LoadRequest(
-      file = file.getPath(context.projectId),
+      file = path,
       format = arguments.get[String]("loadFormat"),
       inferTypes = arguments.get[Boolean]("loadInferTypes"),
       detectHeaders = arguments.get[Boolean]("loadDetectHeaders"),
@@ -91,7 +97,8 @@ object LoadDataset
       dependencies = None,
       resultName = Some(dsName),
       properties = None,
-      proposedSchema = proposedSchema
+      proposedSchema = proposedSchema,
+      urlIsRelativeToDataDir = Some(relative)
     ).handle
 
     /** 

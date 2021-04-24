@@ -151,7 +151,7 @@ object ImportProject
                 name = Some(file.name),
                 mimetype = Some(file.mimetype.getOrElse { MIME.TEXT })
               )
-            logger.info(s"Imported file ${file.id} as ${fileArtifact.file} (${file.name})")
+            logger.info(s"Imported file ${file.id} as ${fileArtifact.absoluteFile} (${file.name})")
             file.id -> fileArtifact
           }
           .toMap

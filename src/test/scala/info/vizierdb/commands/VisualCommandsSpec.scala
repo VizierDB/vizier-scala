@@ -48,7 +48,7 @@ class VizualCommandSpec
       (
         InsertColumn(Some(2), "C")
         +: rowids.zipWithIndex.map { case (rowid, idx) => 
-          UpdateCell(2, Some(RowsById(Set(rowid))), Some(s"Row ${idx+1}"))
+          UpdateCell(2, Some(RowsById(Set(rowid))), Some(s"Row ${idx+1}"), None)
         }
       ):_*
     )

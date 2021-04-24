@@ -60,7 +60,7 @@ object Vizier
 
   def initMimir(
     db: String = "Mimir.db", 
-    stagingDirectory: String = ".", 
+    stagingDirectory: String = "staging", 
     runServer: Boolean = true
   ) =
   {
@@ -70,7 +70,10 @@ object Vizier
     MimirAPI.metadata = new MimirJDBC("sqlite", new File(config.basePath(), db).toString)
     MimirAPI.catalog = new MimirCatalog(
       MimirAPI.metadata,
-      new LocalFSStagingProvider(config.basePath()),
+      new LocalFSStagingProvider(
+        basePath = stagingDirectory, 
+        basePathIsRelativeToDataDir = true
+      ),
       MimirAPI.sparkSession
     )
     val geocoders = 

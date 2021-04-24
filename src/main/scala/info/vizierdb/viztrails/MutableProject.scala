@@ -223,7 +223,7 @@ class MutableProject(
         )
       }
     Streams.closeAfter(new FileInputStream(file)) { in => 
-      Streams.closeAfter(new FileOutputStream(artifact.file)) { out => 
+      Streams.closeAfter(new FileOutputStream(artifact.absoluteFile)) { out => 
         Streams.cat(in, out)
       }
     }

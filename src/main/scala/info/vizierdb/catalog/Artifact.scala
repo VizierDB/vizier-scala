@@ -48,7 +48,9 @@ case class Artifact(
 {
   def string = new String(data)
   def nameInBackend = Artifact.nameInBackend(t, id)
-  def file: File = Filestore.get(projectId, id)
+  def absoluteFile: File = Filestore.getAbsolute(projectId, id)
+  def relativeFile: File = Filestore.getRelative(projectId, id)
+  def file = absoluteFile
   def summarize(name: String = null) = 
   {
     val extras:Map[String,JsValue] = t match {
@@ -209,7 +211,9 @@ case class ArtifactSummary(
     }
     Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
   }
-  def file = Filestore.get(projectId, id)
+  def absoluteFile: File = Filestore.getAbsolute(projectId, id)
+  def relativeFile: File = Filestore.getRelative(projectId, id)
+  def file = absoluteFile
   def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
   def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
 
