@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -100,7 +100,7 @@ class MutableProject(
 
   def waitUntilReady
   {
-    Scheduler.joinWorkflow(head.id)
+    Scheduler.joinWorkflow(head.id, failIfNotRunning = false)
   }
 
   def waitUntilReadyAndThrowOnError
@@ -185,7 +185,7 @@ class MutableProject(
     }
   }
   def lastOutputString =
-    lastOutput.map { _.dataString }.mkString
+    lastOutput.map { _.dataString }.mkString("\n")
 
   def artifactRefs: Seq[ArtifactRef] = 
   {
@@ -223,7 +223,7 @@ class MutableProject(
         )
       }
     Streams.closeAfter(new FileInputStream(file)) { in => 
-      Streams.closeAfter(new FileOutputStream(artifact.file)) { out => 
+      Streams.closeAfter(new FileOutputStream(artifact.absoluteFile)) { out => 
         Streams.cat(in, out)
       }
     }

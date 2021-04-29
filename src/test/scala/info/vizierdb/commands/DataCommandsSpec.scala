@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@ import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import org.specs2.specification.AfterAll
 import play.api.libs.json._
+import java.io.File
 
 import scalikejdbc._
 
@@ -37,7 +38,7 @@ class DataCommandsSpec
     val project = MutableProject("Data Project")
 
     project.append("data", "load")(
-      "file" -> "test_data/r.csv",
+      "file" -> FileArgument.fromUrl("test_data/r.csv"),
       "name" -> "test_r",
       "loadFormat" -> "csv",
       "loadInferTypes" -> true,
@@ -79,6 +80,34 @@ class DataCommandsSpec
     project.waitUntilReady
 
     ok
+  }
+
+  "unload files" >> {
+    val project = MutableProject("File Project")
+
+    project.script("""
+      |with vizierdb.create_file("test.csv") as f:
+      |  f.write("1,2\n")
+      |  f.write("3,4\n")
+      """.stripMargin)
+
+    project.waitUntilReady
+    project.artifactRefs.map { _.userFacingName } must contain("test.csv")
+
+    val f = File.createTempFile("test", ".csv")
+    if(f.exists){
+      f.delete
+    }
+    f.exists must beFalse
+    f.deleteOnExit
+    project.append("data", "unloadFile")(
+      "file" -> "test.csv",
+      "path" -> f.toString
+    )
+    project.waitUntilReady
+    f.exists must beTrue
+
+
   }
 }
 

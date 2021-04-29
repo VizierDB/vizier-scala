@@ -1,3 +1,17 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.export
 
 import scalikejdbc._
@@ -50,16 +64,21 @@ object ExportProject
       val files: Seq[FileSummary] = (
         p.artifacts
           .filter { _.t == ArtifactType.FILE }
-          .filter { !_.file.isDirectory() }
+          .filter { !_.absoluteFile.isDirectory() }
           .map { artifact => 
-            val f = artifact.file
+            val f = artifact.absoluteFile
             writeFile(s"fs/${artifact.id}", f)
 
             FileSummary(
               id = artifact.id.toString,
-              name = (Json.parse(artifact.data) \ "filename")
+              name = try {
+                (Json.parse(artifact.data) \ "filename")
                           .asOpt[String]
-                          .getOrElse { s"file_${artifact.id}" },
+                          .getOrElse { s"file_${artifact.id}" }
+              } catch {
+                case e: Throwable => 
+                  s"file_${artifact.id}"
+              },
               mimetype = Some(artifact.mimeType)
             )
           }
@@ -156,9 +175,9 @@ object ExportProject
             assert(modules contains module.toLong, s"Module $module in workflow ${workflow.id} did not get properly exported")
 
           }
-          for(module <- workflow.actionModule){
-            assert(modules contains module.toLong, s"Action module $module for workflow ${workflow.id} did not get properly exported")
-          }
+          // for(module <- workflow.actionModule){
+          //   assert(modules contains module.toLong, s"Action module $module for workflow ${workflow.id} did not get properly exported")
+          // }
         }
       }
 
@@ -182,3 +201,4 @@ object ExportProject
   }
 
 }
+

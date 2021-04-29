@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,6 +48,8 @@ object UnloadDataset extends Command
   )
   def format(arguments: Arguments): String = 
     s"UNLOAD ${arguments.pretty("dataset")} TO ${arguments.pretty("unloadFormat")}"
+  def title(arguments: Arguments): String = 
+    s"Unload ${arguments.pretty("dataset")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -81,7 +83,7 @@ object UnloadDataset extends Command
 
     val response: UnloadResponse = UnloadRequest(
       input = dataset,
-      file = artifactIfNeeded.map { _.file.toString }
+      file = artifactIfNeeded.map { _.absoluteFile.toString }
                              .getOrElse { "unknown_file" },
       format = format,
       backendOption = 
@@ -109,5 +111,11 @@ object UnloadDataset extends Command
     }
 
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (
+      Seq(arguments.get[String]("dataset")),
+      Seq("file_export")
+    ) )
 }
 

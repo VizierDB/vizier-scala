@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,24 +19,27 @@ object TemplateParameters
   val COLUMN = 
     ColIdParameter(id = "column", name = "Column")
 
+  val DATATYPE = 
+    EnumerableParameter(name = "Data Type", id = "schema_datatype", required = false, values = EnumerableValue.withNames(
+      "String"                 -> "string",
+      "Real"                   -> "real",
+      "Float"                  -> "float",
+      "Double Precision Float" -> "double",
+      "Bool"                   -> "boolean",
+      "16-bit Integer"         -> "short",
+      "32-bit Integer"         -> "int",
+      "64-bit Integer"         -> "long",
+      "1 Byte"                 -> "byte",
+      "Date"                   -> "date",
+      "Date+Time"              -> "timestamp",
+    ), default = Some(0), aliases = Map(
+      "integer" -> "int",
+    ))
+
   val SCHEMA = 
     ListParameter(name = "Schema (leave blank to guess)", id = "schema", required = false, components = Seq(
       StringParameter(name = "Column Name", id = "schema_column", required = false),
-      EnumerableParameter(name = "Data Type", id = "schema_datatype", required = false, values = EnumerableValue.withNames(
-        "String"                 -> "string",
-        "Real"                   -> "real",
-        "Float"                  -> "float",
-        "Double Precision Float" -> "double",
-        "Bool"                   -> "boolean",
-        "16-bit Integer"         -> "short",
-        "32-bit Integer"         -> "int",
-        "64-bit Integer"         -> "long",
-        "1 Byte"                 -> "byte",
-        "Date"                   -> "date",
-        "Date+Time"              -> "timestamp",
-      ), default = Some(0), aliases = Map(
-        "integer" -> "int",
-      ))
+      DATATYPE
     )),
 
 }

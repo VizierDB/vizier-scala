@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.python
 
+import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
@@ -22,6 +23,7 @@ import info.vizierdb.filestore.Filestore
 import org.mimirdb.api.request.{ 
   CreateViewRequest, 
   LoadInlineRequest, 
+  LoadRequest, 
   QueryTableRequest,
   QueryDataFrameRequest,
   DataContainer
@@ -31,6 +33,8 @@ import org.apache.spark.sql.types.StructField
 import org.mimirdb.spark.SparkPrimitive
 import org.mimirdb.spark.Schema.fieldFormat
 import info.vizierdb.catalog.Artifact
+import info.vizierdb.catalog.ArtifactRef
+import info.vizierdb.catalog.ArtifactSummary
 
 object Python extends Command
   with LazyLogging
@@ -42,6 +46,8 @@ object Python extends Command
   )
   def format(arguments: Arguments): String = 
     arguments.pretty("source")
+  def title(arguments: Arguments): String =
+    "Python Script"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     logger.debug("Initializing...")
@@ -78,11 +84,13 @@ object Python extends Command
             (event\"stream").as[String] match {  
               case "stdout" => 
                 context.message( 
-                  content = (event\"content").as[String],
+                  // each message object already gets a free newline, so trim here
+                  content = (event\"content").as[String].trim(),
                   mimeType = (event\"mimeType").getOrElse { JsString(MIME.TEXT) }
                                               .as[String]
                 )
-              case "stderr" => context.error( (event\"content").as[String] )
+              // each message object already gets a free newline, so trim here
+              case "stderr" => context.error( (event\"content").as[String].trim() )
               case x => context.error(s"Received message on unknown stream '$x'")
             }
           case "get_dataset" => 
@@ -105,7 +113,7 @@ object Python extends Command
           case "get_file" => 
             withArtifact { artifact => 
               python.send("file",
-                "path" -> JsString(artifact.file.toString),
+                "path" -> JsString(artifact.absoluteFile.toString),
                 "artifactId" -> JsNumber(artifact.id)
               )
             }
@@ -122,6 +130,39 @@ object Python extends Command
                 resultName = Some(nameInBackend),
                 properties = Some( (ds\"properties").as[Map[String,JsValue]] ),
                 humanReadableName = Some( (event\"name").as[String] )
+              ).handle
+
+              python.send("datasetId",
+                "artifactId" -> JsNumber(id)
+              )
+            }
+          case "create_dataset" => 
+            {
+              val fileId = (event \ "file").as[String].toLong
+              val filePath = Filestore.getRelative(context.projectId, fileId).toString
+              val (nameInBackend, id) = 
+                context.outputDataset( (event\"name").as[String] )
+
+
+              val result = LoadRequest(
+                file = filePath,
+                format = "parquet",
+                inferTypes = false,
+                detectHeaders = false,
+                humanReadableName = Some( (event \ "name").as[String] ),
+                backendOption = Seq(),
+                dependencies = 
+                  Some(
+                    DB.readOnly { implicit s => 
+                      Artifact.lookupSummaries(
+                        context.inputs.values.toSeq
+                      )
+                    }.map { _.nameInBackend }
+                  ),
+                resultName = Some(nameInBackend),
+                properties = None,
+                proposedSchema = None,
+                urlIsRelativeToDataDir = Some(true)
               ).handle
 
               python.send("datasetId",
@@ -170,6 +211,23 @@ object Python extends Command
                 )
               }
             }
+          case "create_file" =>
+            {
+              val file:Artifact = context.outputFile(
+                (event \ "name").as[String],
+                (event \ "mime").asOpt[String].getOrElse { "application/octet-stream" },
+                JsObject(
+                  (event \ "properties").asOpt[Map[String,JsValue]]
+                                        .getOrElse { Map.empty }
+                )
+              )
+              python.send("file_artifact",
+                "artifactId" -> JsString(file.id.toString),
+                "path" -> JsString(file.absoluteFile.toString),
+                "url" -> JsString(file.url.toString)
+              )
+
+            }
           case x =>
             // stdinWriter.close()
             context.error(s"Received unknown event '$x': $event")
@@ -192,5 +250,7 @@ object Python extends Command
     // io.cleanup()
     logger.debug("Done")
   }
+
+  def predictProvenance(arguments: Arguments) = None
 }
 

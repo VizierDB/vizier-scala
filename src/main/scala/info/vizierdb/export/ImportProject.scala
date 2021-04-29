@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -151,7 +151,7 @@ object ImportProject
                 name = Some(file.name),
                 mimetype = Some(file.mimetype.getOrElse { MIME.TEXT })
               )
-            logger.info(s"Imported file ${file.id} as ${fileArtifact.file} (${file.name})")
+            logger.info(s"Imported file ${file.id} as ${fileArtifact.absoluteFile} (${file.name})")
             file.id -> fileArtifact
           }
           .toMap

@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +37,8 @@ trait LensCommand
 
   def format(arguments: Arguments): String =
     s"CREATE LENS ON ${arguments.get[String]("dataset")} ${lensFormat(arguments)}"
+  def title(arguments: Arguments): String =
+    s"$lens on ${arguments.pretty("dataset")}"
 
   def process(arguments: Arguments, context: ExecutionContext)
   {
@@ -74,5 +76,10 @@ trait LensCommand
 
     context.message(s"Created $name Lens on $datasetName")
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("dataset")), 
+           Seq(arguments.get[String]("dataset"))) )
+
 }
 

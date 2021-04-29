@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,7 +78,8 @@ object Script extends VizualCommand
       vizual.UpdateCell(
         column = args.get[Int]("column"),
         row = Some(rowSelection),
-        value = Some(args.get[String]("name"))
+        value = Some(args.get[String]("name")),
+        comment = args.getOpt[String]("comment")
       )
     }),
   )
@@ -92,7 +93,8 @@ object Script extends VizualCommand
       ColIdParameter(id = "column", name = "Column", required = false),
       RowIdParameter(id = "row", name = "Row", required = false),
       IntParameter(id = "position", name = "Position", required = false),
-      StringParameter(id = "name", name = "Name/Value", required = false)
+      StringParameter(id = "name", name = "Name/Value", required = false),
+      StringParameter(id = "comment", name = "Comment", required = false),
     ))
   )
   def format(arguments: Arguments): String = 
@@ -121,11 +123,11 @@ object Script extends VizualCommand
         Map("command" -> "rename_column", "column" -> column, "name" -> name)
       case vizual.Sort(Seq(vizual.SortColumn(column, asc))) => 
         Map("command" -> "sort", "column" -> column)
-      case vizual.UpdateCell(column, Some(vizual.RowsById(rows)), value) if (rows.size == 1) => 
-        Map("command" -> "update", "column" -> column, "row" -> rows.head.toLong, "name" -> value)
-      case vizual.UpdateCell(column, (Some(vizual.AllRows()) | None), value) => 
-        Map("command" -> "update", "column" -> column, "name" -> value)
-      case vizual.UpdateCell(column, _, value) => 
+      case vizual.UpdateCell(column, Some(vizual.RowsById(rows)), value, comment) if (rows.size == 1) => 
+        Map("command" -> "update", "column" -> column, "row" -> rows.head.toLong, "name" -> value, "comment" -> comment)
+      case vizual.UpdateCell(column, (Some(vizual.AllRows()) | None), value, comment) => 
+        Map("command" -> "update", "column" -> column, "name" -> value, "comment" -> comment)
+      case vizual.UpdateCell(column, _, value, comment) => 
         throw new VizierException(s"Unsupported in scripts (for now): update cell on multiple rows")
       case vizual.Sort(Seq(order)) => 
         throw new VizierException(s"Unsupported in scripts (for now): sort with multiple columns or descending order")

@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,9 @@ import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.commands.python.PythonProcess
+import org.apache.spark.sql.types._
+import org.mimirdb.api.MimirAPI
 
 class PythonCommandSpec
   extends Specification
@@ -33,12 +36,32 @@ class PythonCommandSpec
   sequential
 
 
+  "have an up-to-date requirements.txt" >> 
+  {
+    val test =
+      PythonProcess.REQUIRED_PACKAGES
+                   .map { _._2 }
+                   .toSet
+                   .toSeq
+    val requirements =
+      scala.io.Source.fromInputStream(
+        getClass()
+          .getClassLoader()
+          .getResource("requirements.txt")
+          .openStream()
+      ).getLines()
+       .toSet
+       .toSeq
+
+    test must containTheSameElementsAs(requirements)
+  }
+
   "run simple python scripts" >> 
   {
     project.script("""
 print("Hello Wookie")
 """)
-    project.lastOutputString must beEqualTo("Hello Wookie\n")
+    project.lastOutputString must beEqualTo("Hello Wookie")
   }
 
   "share python functions" >>
@@ -49,17 +72,17 @@ def foo(bar):
 foo("x")
 vizierdb.export_module(foo)
 """)
-    project.lastOutputString must beEqualTo("YY: x\n")
+    project.lastOutputString must beEqualTo("YY: x")
 
     project.script("""
 vizierdb["foo"]("z")
 """)
-    project.lastOutputString must beEqualTo("YY: z\n")
+    project.lastOutputString must beEqualTo("YY: z")
 
     project.script("""
 foo("w")
 """)
-    project.lastOutputString must beEqualTo("YY: w\n")
+    project.lastOutputString must beEqualTo("YY: w")
   }
 
 
@@ -95,7 +118,7 @@ ds.save("Q")
 
     project.script("ds = vizierdb[\"Q\"];print(ds)")
 
-    project.lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)\n")
+    project.lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)")
 
     project.artifactRefs.map { _.userFacingName } must contain("test_r")
     project.script("""
@@ -124,7 +147,46 @@ show(vizierdb["q"])
 df = vizierdb.get_data_frame("q")
 print(df['A'].sum())
 """)
-    project.lastOutputString must beEqualTo("12\n")
+    project.lastOutputString must beEqualTo("12")
+  }
+
+  "Export Pandas" >>
+  {
+    project.script("""
+      |import pandas as pd
+      |dfa = pd.DataFrame.from_records([
+      |    {"a": x, "c": str(x)}
+      |    for x in range(0, 10)
+      |])
+      |dfb = pd.DataFrame.from_records([
+      |    {"b": x}
+      |    for x in range(0, 10000)
+      |])
+      |vizierdb.save_data_frame("little_data", dfa)
+      |vizierdb.save_data_frame("big_data", dfb)
+    """.stripMargin)
+    
+    {
+      val art = project.artifact("little_data")
+      art.t must beEqualTo(ArtifactType.DATASET)
+      val ds = art.getDataset()
+      ds.schema must containTheSameElementsAs(Seq(
+        StructField("a", LongType),
+        StructField("c", StringType)
+      ))
+      ds.data
+        .map { _(0) } must containTheSameElementsAs(
+          (0 until 10).toSeq
+        )
+    }
+    
+    {
+      val art = project.artifact("big_data")
+      val df = MimirAPI.catalog.get(art.nameInBackend)
+      df.columns.toSeq must containTheSameElementsAs(Seq("b"))
+      df.count() must beEqualTo(10000)
+      df.distinct().count() must beEqualTo(10000)
+    }
   }
 
 }

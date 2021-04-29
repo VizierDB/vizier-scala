@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,9 @@ object CheckpointDataset extends Command
     DatasetParameter(id = "dataset", name = "Dataset"),
   )
   def format(arguments: Arguments): String = 
-    s"CHECKPOINT DATASET ${arguments.get[String]("dataset")}"
+    s"CHECKPOINT ${arguments.get[String]("dataset")}"
+  def title(arguments: Arguments): String = 
+    format(arguments)
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -49,6 +51,6 @@ object CheckpointDataset extends Command
     context.message("Dataset Checkpointed")
   }
   def predictProvenance(arguments: Arguments) = 
-    (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name")))
+    Some( (Seq(arguments.get[String]("dataset")), Seq.empty) )
 }
 

@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,10 +24,17 @@ object DropDataset extends Command
   )
   def format(arguments: Arguments): String = 
     s"DROP DATASET ${arguments.get[String]("dataset")}"
+  def title(arguments: Arguments): String = 
+    s"Drop  ${arguments.get[String]("dataset")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
     context.delete(datasetName)
   }
+  def predictProvenance(arguments: Arguments) = 
+    Some( (
+      Seq.empty,
+      Seq(arguments.get[String]("dataset")) 
+    ) )
 }
 

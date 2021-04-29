@@ -1,5 +1,5 @@
-# -- copyright-header:v1 --
-# Copyright (C) 2017-2020 University at Buffalo,
+# -- copyright-header:v2 --
+# Copyright (C) 2017-2021 University at Buffalo,
 #                         New York University,
 #                         Illinois Institute of Technology.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -553,8 +553,8 @@ class DatasetClient(object):
       ],
       "data": [
         [
-          export_from_native_type(v, self.columns[cidx].data_type)
-          for (cidx, v) in enumerate(row.values)
+          export_from_native_type(v, c.data_type)
+          for (v, c) in zip(row.values, self.columns)
         ]
         for row in rows
       ],
@@ -596,3 +596,4 @@ def export_from_native_type(value: Any, data_type: str) -> Any:
     return value.wkt
   else:
     return value
+

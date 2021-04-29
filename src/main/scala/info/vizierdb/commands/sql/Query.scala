@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,10 +22,15 @@ import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import org.mimirdb.api.request.CreateViewRequest
 import com.typesafe.scalalogging.LazyLogging
+import org.mimirdb.spark.InjectedSparkSQL
+import org.mimirdb.api.MimirAPI
 
 object Query extends Command
   with LazyLogging
 {
+
+  val TEMPORARY_DATASET = "temporary_dataset"
+
   def name: String = "SQL Query"
   def parameters: Seq[Parameter] = Seq(
     CodeParameter(id = "source", language = "sql", name = "SQL Code"),
@@ -33,10 +38,14 @@ object Query extends Command
   )
   def format(arguments: Arguments): String = 
     s"${arguments.pretty("source")} TO ${arguments.pretty("output_dataset")}"
+  def title(arguments: Arguments): String =
+    arguments.getOpt[String]("output_dataset")
+             .map { "SELECT into " + _ }
+             .getOrElse { "SQL Query" }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val scope = context.allDatasets
-    val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { "temporary_dataset" }
+    val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
     val (dsName, dsId) = context.outputDataset(datasetName)
     val query = arguments.get[String]("source")
 
@@ -63,7 +72,22 @@ object Query extends Command
       case e: org.mimirdb.api.FormattedError => 
         context.error(e.response.errorMessage)
     }
-
   }
+
+  lazy val parser = InjectedSparkSQL(MimirAPI.sparkSession)
+
+  def computeDependencies(sql: String): Seq[String] =
+  {
+    val (views, functions) = parser.getDependencies(sql)
+    return views.toSeq
+  }
+
+  def predictProvenance(arguments: Arguments) =
+    Some( (
+      computeDependencies(arguments.get[String]("source")),
+      Seq(
+        arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
+      )
+    ) )
 }
 

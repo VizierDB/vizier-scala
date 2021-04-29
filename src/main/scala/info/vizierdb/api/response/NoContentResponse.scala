@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +16,14 @@ package info.vizierdb.api.response
 
 import org.mimirdb.api.Response
 import javax.servlet.http.HttpServletResponse
+import java.io.OutputStream
 
 case class NoContentResponse() extends Response
 {
-  def write(output: HttpServletResponse)
-  {
-    output.setStatus(HttpServletResponse.SC_NO_CONTENT)
-  }
+  val headers = Seq.empty
+  val status = HttpServletResponse.SC_NO_CONTENT
+  def write(output: OutputStream): Unit = {}
+  val contentType: String = "text/plain"
+  val contentLength: Option[Int] = Some(0)
 }
 

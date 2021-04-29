@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,16 +22,20 @@ import info.vizierdb.util.Streams
 case class FileResponse(
   file: File, 
   name: String, 
-  mimeType: String, 
+  contentType: String, 
   afterCompletedTrigger: () => Unit = {() => ()}
 ) extends Response
 {
-  def write(output: HttpServletResponse)
+  val status = HttpServletResponse.SC_OK
+  val headers = Seq(
+    "Content-Disposition" -> ("attachment; filename=\""+name+"\"")
+  )
+  def contentLength: Option[Int] = Some(file.length().toInt)
+
+  def write(os: OutputStream)
   {
-    output.setHeader("Content-Disposition", "attachment; filename=\""+name+"\"")
-    output.setContentType(mimeType)
     Streams.closeAfter(new FileInputStream(file)) { f => 
-      Streams.cat(f, output.getOutputStream())
+      Streams.cat(f, os)
     }
     afterCompletedTrigger()
   }

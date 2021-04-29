@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,8 @@ object CloneDataset extends Command
     StringParameter(id = "name", name = "Name of Copy")
   )
   def format(arguments: Arguments): String = 
-    s"CLONE DATASET ${arguments.get[String]("dataset")} TO ${arguments.pretty("name")}"
+    s"CLONE ${arguments.get[String]("dataset")} TO ${arguments.pretty("name")}"
+  def title(arguments: Arguments): String = format(arguments)
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -45,6 +46,6 @@ object CloneDataset extends Command
     context.message("Dataset Cloned")
   }
   def predictProvenance(arguments: Arguments) = 
-    (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name")))
+    Some( (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name"))) )
 }
 

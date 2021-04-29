@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,15 +20,8 @@ import javax.servlet.http.HttpServletResponse
 
 case class RawJsonResponse(
   data: JsValue, 
-  status: Option[Int] = None
+  override val status: Int = HttpServletResponse.SC_OK
 ) extends JsonResponse[RawJsonResponse]
-{
-  override def write(output: HttpServletResponse)
-  {
-    status.foreach { output.setStatus(_) }
-    super.write(output)
-  }
-}
 
 object RawJsonResponse
 {

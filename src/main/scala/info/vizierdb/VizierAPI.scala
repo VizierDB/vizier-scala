@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,7 +53,6 @@ import org.mimirdb.util.ExperimentalOptions
 object VizierAPI
 {
   var server: Server = null
-  lazy val debug: Boolean = Vizier.config.devel()
 
   val DEFAULT_PORT = 9000
   val NAME = "vizier"
@@ -71,23 +70,28 @@ object VizierAPI
 
   lazy val WEB_UI_URL = getClass().getClassLoader().getResource("ui")
 
+  /**
+   * 
+   */
   def init(
     publicURL: String = null, 
     port: Int = DEFAULT_PORT, 
-    path: File = Vizier.config.basePath()
+    path: File = Vizier.config.basePath(),
+    bindToLocalhost: Boolean = 
+      !(Vizier.config.devel() || Vizier.config.connectFromAnyHost())
   )
   {
     if(server != null){ 
       throw new RuntimeException("Can't have two Vizier servers running in one JVM")
     }
     server = 
-      if(VizierAPI.debug){
-        new Server(port)
-      } else {
+      if(bindToLocalhost){
         new Server(InetSocketAddress.createUnresolved(
           "0.0.0.0",
           port
         ))
+      } else {
+        new Server(port)
       }
 
     val context = new ServletContextHandler(ServletContextHandler.SESSIONS)
@@ -129,3 +133,4 @@ object VizierAPI
     started = LocalDateTime.now()
   }
 }
+

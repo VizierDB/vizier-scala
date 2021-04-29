@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,8 +25,7 @@ import org.mimirdb.api.request.Explain
 import org.mimirdb.api.CaveatFormat._
 import org.mimirdb.api.MimirAPI
 import info.vizierdb.api.response._
-import info.vizierdb.api.handler.Handler
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.VizierException
 
 object GetArtifactHandler
@@ -41,21 +40,21 @@ object GetArtifactHandler
 
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest
-  ): Response = handle(pathParameters, request, None)
+    connection: ClientConnection
+  ): Response = handle(pathParameters, connection, None)
 
 
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest, 
+    connection: ClientConnection, 
     expecting: Option[ArtifactType.T]
   ): Response =
   {
     val projectId = pathParameters("projectId").as[Long]
     val artifactId = pathParameters("artifactId").as[Long]
-    val offset = Option(request.getParameter("offset")).map { _.split(",")(0).toLong }
-    val limit = Option(request.getParameter("limit")).map { _.toInt }
-    val forceProfiler = Option(request.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
+    val offset = Option(connection.getParameter("offset")).map { _.split(",")(0).toLong }
+    val limit = Option(connection.getParameter("limit")).map { _.toInt }
+    val forceProfiler = Option(connection.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
         return RawJsonResponse(
@@ -76,10 +75,10 @@ object GetArtifactHandler
   {
     def handle(
       pathParameters: Map[String,JsValue], 
-      request: HttpServletRequest
+      connection: ClientConnection
     ): Response = 
     {
-      GetArtifactHandler.handle(pathParameters, request, Some(expectedType))
+      GetArtifactHandler.handle(pathParameters, connection, Some(expectedType))
     }
   }
 
@@ -87,13 +86,13 @@ object GetArtifactHandler
   {
     def handle(
       pathParameters: Map[String, JsValue], 
-      request: HttpServletRequest 
+      connection: ClientConnection 
     ): Response =
     {
       val projectId = pathParameters("projectId").as[Long]
       val artifactId = pathParameters("artifactId").as[Long]
-      val columnId = Option(request.getParameter("column")).map { _.toInt }
-      val rowId = Option(request.getParameter("row"))
+      val columnId = Option(connection.getParameter("column")).map { _.toInt }
+      val rowId = Option(connection.getParameter("row"))
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match { 
         case Some(artifact) => 
           return RawJsonResponse(
@@ -121,7 +120,7 @@ object GetArtifactHandler
   {
     def handle(
       pathParameters: Map[String, JsValue], 
-      request: HttpServletRequest 
+      connection: ClientConnection 
     ): Response =
     {
       val projectId = pathParameters("projectId").as[Long]
@@ -141,7 +140,7 @@ object GetArtifactHandler
   {
     def handle(
       pathParameters: Map[String, JsValue], 
-      request: HttpServletRequest 
+      connection: ClientConnection 
     ): Response =
     {
       val projectId = pathParameters("projectId").as[Long]
@@ -191,7 +190,7 @@ object GetArtifactHandler
   {
     def handle(
       pathParameters: Map[String, JsValue], 
-      request: HttpServletRequest 
+      connection: ClientConnection 
     ): Response =
     {
       val projectId = pathParameters("projectId").as[Long]
@@ -208,7 +207,7 @@ object GetArtifactHandler
       getArtifact(projectId, artifactId, Some(ArtifactType.FILE)) match {
         case Some(artifact) => 
         {
-          var path = artifact.file
+          var path = artifact.absoluteFile
           subpath match {
             case None => ()
             case Some(SANE_FILE_CHARACTERS(saneSubpath)) =>
@@ -218,7 +217,7 @@ object GetArtifactHandler
           }
           return FileResponse(
             file = path, 
-            mimeType = artifact.mimeType, 
+            contentType = artifact.mimeType, 
             name = artifact.jsonData
                            .as[Map[String, JsValue]]
                            .get("filename")

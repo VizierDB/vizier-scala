@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,7 +71,8 @@ A,B,C
   "Create and load a file" >> {
     val fileResponse = CreateFileHandler.handle(
                         project, 
-                        new ByteArrayInputStream(FILE_DATA.getBytes)
+                        new ByteArrayInputStream(FILE_DATA.getBytes),
+                        "test file"
                       )
 
     var fileId = -1l

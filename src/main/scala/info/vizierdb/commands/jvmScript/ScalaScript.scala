@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,6 +69,8 @@ object ScalaScript extends Command
   )
   def format(arguments: Arguments): String = 
     arguments.pretty("source")
+  def title(arguments: Arguments): String = 
+    "Scala Code"
 
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
@@ -80,5 +82,8 @@ object ScalaScript extends Command
     }
   }
 
+  def predictProvenance(arguments: Arguments) = None
+
 
 }
+

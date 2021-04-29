@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,6 +56,8 @@ object LoadDataset
   )
   def format(arguments: Arguments): String = 
     s"LOAD DATASET ${arguments.pretty("name")} AS ${arguments.pretty("loadFormat")} FROM ${arguments.pretty("file")}"
+  def title(arguments: Arguments): String = 
+    s"Load ${arguments.pretty("name")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("name").toLowerCase()
@@ -77,9 +79,15 @@ object LoadDataset
           )
         })
       }
+    
+    val (path, relative) = file.getPath(context.projectId)
+
+    logger.debug(s"Source: $file")
+    logger.debug(s"${if(relative){"RELATIVE"}else{"ABSOLUTE"}} PATH: $path")
+
 
     val result = LoadRequest(
-      file = file.getPath(context.projectId),
+      file = path,
       format = arguments.get[String]("loadFormat"),
       inferTypes = arguments.get[Boolean]("loadInferTypes"),
       detectHeaders = arguments.get[Boolean]("loadDetectHeaders"),
@@ -90,7 +98,8 @@ object LoadDataset
       dependencies = None,
       resultName = Some(dsName),
       properties = None,
-      proposedSchema = proposedSchema
+      proposedSchema = proposedSchema,
+      urlIsRelativeToDataDir = Some(relative)
     ).handle
 
     /** 
@@ -107,5 +116,11 @@ object LoadDataset
 
     context.displayDataset(datasetName)
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (
+      Seq.empty,
+      Seq(arguments.get[String]("name"))
+    ) )
 }
 

@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,20 +24,19 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types._
 import info.vizierdb.artifacts.{ DatasetColumn, DatasetRow, DatasetAnnotation }
 import org.mimirdb.api.request.LoadInlineRequest
-import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
 import info.vizierdb.filestore.Filestore
 import java.io.FileOutputStream
 import info.vizierdb.util.Streams
-import org.eclipse.jetty.server.{ Request => JettyRequest }
 import info.vizierdb.api.response._
-import info.vizierdb.api.handler.Handler
+import info.vizierdb.api.handler.{ Handler, ClientConnection }
 
 object CreateFileHandler
   extends Handler
 {
+  override def filePart = Some("file")
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest 
+    connection: ClientConnection 
   ): Response =
   {
     val projectId = pathParameters("projectId").as[Long]
@@ -51,7 +50,8 @@ object CreateFileHandler
   }
   def handle(
     projectId: Identifier,
-    content: InputStream
+    content: InputStream,
+    filename: String
   ): Response = {
     DB.autoCommit { implicit s => 
       val project = 
@@ -64,10 +64,12 @@ object CreateFileHandler
         project.id, 
         ArtifactType.FILE,
         "application/octet-stream",
-        Array[Byte]()
+        Json.obj(
+          "filename" -> filename
+        ).toString.getBytes
       )
 
-      val file: File = Filestore.get(project.id, artifact.id)
+      val file: File = Filestore.getAbsolute(project.id, artifact.id)
 
       Streams.cat(content, new FileOutputStream(file))
 
@@ -78,3 +80,4 @@ object CreateFileHandler
   } 
 
 }
+

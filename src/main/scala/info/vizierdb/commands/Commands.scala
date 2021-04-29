@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,6 +71,7 @@ object Commands
     "clone"      -> info.vizierdb.commands.data.CloneDataset,
     "empty"      -> info.vizierdb.commands.data.EmptyDataset, 
     "checkpoint" -> info.vizierdb.commands.data.CheckpointDataset,
+    "unloadFile" -> info.vizierdb.commands.data.UnloadFile,
   )
 
   register(packageId = "plot", name = "Data Plotting", category = "plot")(
@@ -109,7 +110,7 @@ object Commands
     "renameColumn" -> info.vizierdb.commands.vizual.RenameColumn,
     "renameDataset"-> info.vizierdb.commands.vizual.RenameDataset,
     "updateCell"   -> info.vizierdb.commands.vizual.UpdateCell,
-    "sort"         -> info.vizierdb.commands.vizual.SortDataset,
+    "sortDataset"  -> info.vizierdb.commands.vizual.SortDataset,
     "script"       -> info.vizierdb.commands.vizual.Script,
   )
 

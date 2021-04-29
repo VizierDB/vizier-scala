@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,15 +24,8 @@ case class VizierErrorResponse (
             /* throwable message */
                   message: String,
             /* error code */
-                  status: Int = HttpServletResponse.SC_BAD_REQUEST
+                  override val status: Int = HttpServletResponse.SC_BAD_REQUEST
 ) extends JsonResponse[VizierErrorResponse]
-{
-  override def write(output: HttpServletResponse)
-  { 
-    output.setStatus(status)
-    super.write(output)
-  }
-}
 
 object VizierErrorResponse {
   implicit val format: Format[VizierErrorResponse] = Json.format

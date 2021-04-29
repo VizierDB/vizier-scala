@@ -5,3 +5,4 @@ astor
 pyarrow
 pandas
 shapely
+pyspark

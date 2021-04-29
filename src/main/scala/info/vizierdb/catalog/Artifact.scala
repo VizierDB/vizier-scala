@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +48,9 @@ case class Artifact(
 {
   def string = new String(data)
   def nameInBackend = Artifact.nameInBackend(t, id)
-  def file: File = Filestore.get(projectId, id)
+  def absoluteFile: File = Filestore.getAbsolute(projectId, id)
+  def relativeFile: File = Filestore.getRelative(projectId, id)
+  def file = absoluteFile
   def summarize(name: String = null) = 
   {
     val extras:Map[String,JsValue] = t match {
@@ -171,6 +173,8 @@ case class Artifact(
       case _ => ()
     }
   }
+
+  def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
 }
 
 case class ArtifactSummary(
@@ -207,8 +211,11 @@ case class ArtifactSummary(
     }
     Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
   }
-  def file = Filestore.get(projectId, id)
+  def absoluteFile: File = Filestore.getAbsolute(projectId, id)
+  def relativeFile: File = Filestore.getRelative(projectId, id)
+  def file = absoluteFile
   def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
+  def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
 
   def getSchema(profile: Boolean = false): SchemaList =
     SchemaForTableRequest(
@@ -284,6 +291,16 @@ object Artifact
      .list.apply()
   }
 
+  def urlForArtifact(artifactId: Identifier, projectId: Identifier, t: ArtifactType.T): URL =
+    t match {
+      case ArtifactType.DATASET => 
+        VizierAPI.urls.getDataset(projectId, artifactId)
+      case ArtifactType.CHART => 
+        VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
+      case _ => 
+        VizierAPI.urls.getArtifact(projectId, artifactId)
+    }
+
   def summarize(
     artifactId: Identifier, 
     projectId: Identifier, 
@@ -298,18 +315,11 @@ object Artifact
       "key" -> JsNumber(artifactId),
       "id" -> JsNumber(artifactId),
       "objType" -> JsString(mimeType), 
-      "category" -> JsString(t.toString),
+      "category" -> JsString(t.toString.toLowerCase()),
       "name" -> JsString(name.getOrElse(artifactId.toString)),
       HATEOAS.LINKS -> HATEOAS((
         Seq(
-          HATEOAS.SELF -> (t match {
-            case ArtifactType.DATASET => 
-              VizierAPI.urls.getDataset(projectId, artifactId)
-            case ArtifactType.CHART => 
-              VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
-            case _ => 
-              VizierAPI.urls.getArtifact(projectId, artifactId)
-          })
+          HATEOAS.SELF -> urlForArtifact(artifactId, projectId, t)
         ) ++ (t match {
           case ArtifactType.DATASET => Seq(
             HATEOAS.DATASET_FETCH_ALL -> VizierAPI.urls.getDataset(projectId, artifactId, limit = Some(-1)),

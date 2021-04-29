@@ -1,7 +1,7 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "0.6-SNAPSHOT"
-val MIMIR_VERSION = "0.5.0-SNAPSHOT"
+val VIZIER_VERSION = "1.1.0-SNAPSHOT"
+val MIMIR_VERSION = "1.1.0-SNAPSHOT"
 val CAVEATS_VERSION = "0.3.1"
 
 // Project and subprojects
@@ -147,39 +147,6 @@ publishMavenStyle := true
 
  publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
-///////////////////////////////////////////
-/////// Build and update the UI
-///////////////////////////////////////////
-lazy val buildUI = taskKey[Unit]("Build the UI")
-buildUI := {
-  import java.lang.ProcessBuilder
-  import java.nio.file.{ Files, Paths }
-  import collection.JavaConverters._
-
-  val sourceDir = Paths.get("upstream/ui")
-  val source = sourceDir.resolve("build")
-  val target = Paths.get("src/main/resources/ui")
-
-  new ProcessBuilder("yarn", "build")
-        .directory(sourceDir.toFile)
-        .start
-        .waitFor
-  
-  if(Files.exists(target)){
-    new ProcessBuilder("rm", "-r", target.toString)
-          .start
-          .waitFor
-  }
-  Files.move(source, target)
-
-  val env = 
-    Files.readAllLines(Paths.get("upstream/ui/public/env.js"))
-         .asScala
-         .mkString("\n")
-         .replaceAll("http://localhost:5000", "")
-
-  Files.write(Paths.get("src/main/resources/ui/env.js"), env.getBytes)
-}
 
 ///////////////////////////////////////////
 /////// Build a release
@@ -360,66 +327,6 @@ checkout := {
 }
 
 ///////////////////////////////////////////
-/////// Attach copyright information to all files
-///////////////////////////////////////////
-lazy val fixCopyrights = taskKey[Unit]("Update copyright headers on files")
-fixCopyrights := {
-  import java.nio.file.{ Files, Path }
-  import scala.io.Source
-  import sbt.nio.file.FileTreeView
-  import sbt.io.RegularFileFilter
-  import java.io.{ BufferedWriter, FileWriter, OutputStreamWriter }
-  val licenseLines = Source.fromFile("LICENSE.txt").getLines.toSeq
-  val firstLine = "-- copyright-header:v1 --"
-  val lastLine  = "-- copyright-header:end --"
-  def license(start: String = "", end: String = "", line: String = "") = 
-    (start+firstLine) +: (licenseLines :+ (lastLine+end)).map { line+_ }
-
-  // val scalaFiles = Glob("src") / **
-  // println(FileTreeView.default.list(scalaFiles).toSeq)
-
-  def injectHeaderIfNeeded(file: Path, start: String, end: String, line: String) =
-  {
-    val lines = Source.fromFile(file.toString).getLines.toIndexedSeq
-    if(!lines.head.equals(start+firstLine)){
-      println(s"Fixing $file")
-      val tempFile = file.resolveSibling(file.getFileName()+".tmp")
-      val writer = Files.newBufferedWriter(tempFile)
-      // val writer = new OutputStreamWriter(System.out)
-      val linesPlusBlankEnd = 
-      if(!lines.reverse.head.equals("")) { lines :+ "" } 
-        else {lines}
-
-      for(line <- (license(start, end, line) ++ linesPlusBlankEnd)){
-        // println(s"Writing: $line")
-        writer.write((line+"\n"))
-      }
-      writer.flush()
-      writer.close()
-      Files.delete(file)
-      Files.move(tempFile, file)
-    } else { 
-      // println(s"No need to fix $file")
-    }
-  }
-
-  fileTreeView.value.list(
-    Glob(s"${baseDirectory.value}/src/**"), 
-    RegularFileFilter.toNio && "**/*.scala"
-  ).map { _._1 }
-   // .take(1)
-   .foreach { injectHeaderIfNeeded(_, "/* ", " */", " * ") }
-
-  fileTreeView.value.list(
-    Glob(s"${baseDirectory.value}/src/**"), 
-    RegularFileFilter.toNio && "**/*.py"
-  ).map { _._1 }
-   // .take(2)
-   .foreach { injectHeaderIfNeeded(_, "# ", "", "# ") }
-
-}
-
-///////////////////////////////////////////
 /////// Render the routes
 ///////////////////////////////////////////
 lazy val routes = taskKey[Unit]("Render routes table")
@@ -439,7 +346,8 @@ routes := {
             val path = x._1(0)
             val pathComponents = path.split("/")
             val httpVerb = x._1(1)
-            val handler = x._1(2)
+            val group = x._1(2)
+            val handler = x._1(3)
 
             val (pathPattern, fieldsPerComponent) =
               pathComponents.map {
@@ -471,7 +379,7 @@ routes := {
               }
 
             val handlerParameters = 
-              Seq(fieldConstructor, "request")
+              Seq(fieldConstructor, "connection")
 
             val invokeHandler = 
               s"case $matcher => ${handler}.handle(${handlerParameters.mkString(", ")})"
@@ -493,9 +401,10 @@ routes := {
           .map { case (verb, handlers) => 
             val capsedVerb = verb.substring(0,1).toUpperCase()+verb.substring(1).toLowerCase()
             (Seq(
-              s" override def do${capsedVerb}(request: HttpServletRequest, output: HttpServletResponse) = ",
+              s" override def do${capsedVerb}(request: HttpServletRequest, response: HttpServletResponse) = ",
               "  {",
-              "    processResponse(request, output) {",
+              "    val connection = new JettyClientConnection(request, response)",
+              "    processResponse(request, response) {",
               "      request.getPathInfo match {" ,
             )++ handlers.map { "        "+_._3 }++Seq(
               "        case _ => fourOhFour(request)",
@@ -508,9 +417,10 @@ routes := {
 
   val corsHandler:String = (
       Seq(
-        "  override def doOptions(request: HttpServletRequest, output: HttpServletResponse) = ",
+        "  override def doOptions(request: HttpServletRequest, response: HttpServletResponse) = ",
         "  {",
-        "    processResponse(request, output) {",
+        "    val connection = new JettyClientConnection(request, response)",
+        "    processResponse(request, response) {",
         "      request.getPathInfo match {" ,
       )++(
         parsed.groupBy { _._5 }
@@ -542,7 +452,7 @@ routes := {
     "trait VizierAPIServletRoutes extends HttpServlet {",
     "",
     "  def processResponse(request: HttpServletRequest, output: HttpServletResponse)(response: => Response): Unit",
-    "  def fourOhFour(request: HttpServletRequest): Response",
+    "  def fourOhFour(response: HttpServletRequest): Response",
     "",
     patternDefs,
     "",

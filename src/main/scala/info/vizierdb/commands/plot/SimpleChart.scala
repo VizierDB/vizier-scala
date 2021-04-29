@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,6 +54,8 @@ object SimpleChart extends Command
   )
   def format(arguments: Arguments): String = 
     s"CREATE ${arguments.getRecord("chart").get[String]("chartType")} ${arguments.pretty("name")} FOR ${arguments.pretty("dataset")}"
+  def title(arguments: Arguments): String = 
+    s"${arguments.getRecord("chart").get[String]("chartType")} of ${arguments.pretty("dataset")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
@@ -78,5 +80,10 @@ object SimpleChart extends Command
       )
     )
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("dataset")), 
+           Seq.empty) )
+
 }
 

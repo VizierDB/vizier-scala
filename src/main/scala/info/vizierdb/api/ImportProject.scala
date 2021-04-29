@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,6 @@ import info.vizierdb.types._
 import info.vizierdb.artifacts.{ DatasetColumn, DatasetRow, DatasetAnnotation }
 import org.mimirdb.api.request.LoadInlineRequest
 import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
-import info.vizierdb.filestore.Filestore
 import java.io.FileOutputStream
 import info.vizierdb.util.Streams
 import org.eclipse.jetty.server.{ Request => JettyRequest }
@@ -34,10 +33,12 @@ import java.io.FileInputStream
 import info.vizierdb.export.{ ImportProject => DoImport }
 import info.vizierdb.util.Streams.closeAfter
 import info.vizierdb.api.handler._
+import info.vizierdb.api.handler.ClientConnection
 
 object ImportProject
   extends Handler
 {
+  override def filePart = Some("file")
   def handle(
     pathParameters: Map[String, JsValue], 
     request: HttpServletRequest,
@@ -86,3 +87,4 @@ object ImportProject
 
   }  
 }
+

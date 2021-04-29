@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -130,15 +130,22 @@ object Scheduler
    *
    * In general, this method should only be used for testing.  
    */
-  def joinWorkflow(workflowId: Identifier)
+  def joinWorkflow(workflowId: Identifier, failIfNotRunning: Boolean = true)
   {
     logger.debug(s"Trying to join with Workflow ${workflowId}")
-    val executor = this.synchronized { 
-      runningWorkflows.get(workflowId).getOrElse { 
-        throw new RuntimeException(s"Workflow $workflowId is not running or has already been cleaned up") }
+    val executorMaybe:Option[WorkflowExecution] = this.synchronized { 
+      runningWorkflows.get(workflowId)
     }
-    executor.join() 
-    cleanup(workflowId)
+
+    executorMaybe match {
+      case None => 
+        if(failIfNotRunning){
+          throw new RuntimeException(s"Workflow $workflowId is not running or has already been cleaned up")
+        }
+      case Some(executor) =>
+        executor.join() 
+        cleanup(workflowId)
+      }
   }
 
   /**

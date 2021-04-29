@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,6 +42,10 @@ object ManualStratifiedSample extends Command
     (if(arguments.contains("output_dataset")) {
       s" AS ${arguments.pretty("output_dataset")}"
     } else { "" })
+  def title(arguments: Arguments): String = 
+    arguments.getOpt[String]("output_dataset")
+             .map { output => s"Sample from ${arguments.pretty("input_dataset")} into $output" }
+             .getOrElse { s"Sample from ${arguments.pretty("input_dataset")}" }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val inputName = arguments.get[String]("input_dataset")
@@ -72,5 +76,10 @@ object ManualStratifiedSample extends Command
 
     context.message("Sample created")
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("input_dataset")), 
+           Seq(arguments.getOpt[String]("output_dataset")
+                        .getOrElse { arguments.get[String]("input_dataset") })) )
 }
 

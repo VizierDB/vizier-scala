@@ -1,5 +1,5 @@
-# -- copyright-header:v1 --
-# Copyright (C) 2017-2020 University at Buffalo,
+# -- copyright-header:v2 --
+# Copyright (C) 2017-2021 University at Buffalo,
 #                         New York University,
 #                         Illinois Institute of Technology.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,7 @@ import re
 from datetime import datetime
 from pycell.dataset import DatasetClient
 from pycell.plugins import vizier_bokeh_render, vizier_matplotlib_render
+from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
 from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
 from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
@@ -132,7 +133,7 @@ class VizierDBClient(object):
 
   def get_artifact_proxies(self) -> Dict[str, ArtifactProxy]:
     return {
-      self.artifacts[artifact].name: 
+      self.artifacts[artifact].name:
         ArtifactProxy(client=self, artifact_name=self.artifacts[artifact].name)
       for artifact in self.artifacts
       if self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_FUNCTION
@@ -242,9 +243,10 @@ class VizierDBClient(object):
     dataset.identifier = response["artifactId"]
     dataset.name_in_backend = response["artifactId"]
     self.datasets[name] = dataset
-    self.artifacts[name] = Artifact(name,
-                                    ARTIFACT_TYPE_DATASET,
-                                    MIME_TYPE_DATASET
+    self.artifacts[name] = Artifact(name=name,
+                                    artifact_type=ARTIFACT_TYPE_DATASET,
+                                    mime_type=MIME_TYPE_DATASET,
+                                    artifact_id=response["artifactId"]
                                     )
 
   def drop_dataset(self, name: str) -> None:
@@ -295,6 +297,18 @@ class VizierDBClient(object):
       self.py_objects[new_name] = self.py_objects[name]
       del self.py_objects[name]
 
+  def create_file(self,
+                  name: str,
+                  filename: Optional[str] = None,
+                  mime_type: str = "text/plain"
+                 ) -> FileClient:
+    return FileClient(
+        client=self,
+        name=name,
+        filename=filename,
+        mime_type=mime_type
+      )
+
   def pycell_open(self,
                   file: str,
                   mode: str = 'r',
@@ -340,13 +354,20 @@ class VizierDBClient(object):
       elif issubclass(type(value), MatplotlibAxes):
         value = vizier_matplotlib_render(value.get_figure())
         mime_type = OUTPUT_HTML
+      elif issubclass(type(value), list):
+        for i in value:
+          self.show(i, force_to_string=force_to_string)
+        # After a recursive show, don't need to output anything
+        # here, so just return
+        return
       else:
         repr_html = getattr(value, "_repr_html_", None)
         if repr_html is not None:
           value = str(repr_html())
           mime_type = OUTPUT_HTML
         else:
-          raise ValueError("Don't know how to show {}.\nTry show(value, force_to_string = True)".format(value))
+          value = str(value)
+          mime_type = OUTPUT_TEXT
     else:
       value = str(value)
 
@@ -437,6 +458,32 @@ class VizierDBClient(object):
     ordered_batches = [batches[i] for i in batch_order]
     table = pa.Table.from_batches(ordered_batches)
     return table.to_pandas()
+
+  def save_data_frame(self, name: str, df: pandas.DataFrame) -> None:
+    name = name.lower()
+    # go through parquet
+    response = self.vizier_request("create_file",
+      name=name,
+      has_response=True,
+      mime="application/parquet",
+      properties={
+        "filename": name
+      }
+    )
+    df.to_parquet(path=response["path"])
+    response = self.vizier_request("create_dataset",
+      has_response=True,
+      file=response["artifactId"],
+      name=name
+    )
+    if name in self.datasets:
+      del self.datasets[name]
+    self.artifacts[name] = Artifact(name=name,
+                                    artifact_type=ARTIFACT_TYPE_DATASET,
+                                    mime_type=MIME_TYPE_DATASET,
+                                    artifact_id=response["artifactId"]
+                                    )
+    return None
 
   def dataset_from_s3(self,
                       bucket: str,

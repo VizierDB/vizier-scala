@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -192,7 +192,7 @@ case class Workflow(
 
     val TOC_HEADER = "(#+) *(.+)".r
 
-    val tableOfContents: Seq[TableOfContentsSection] = 
+    val tableOfContents: Seq[TableOfContentsEntry] = 
       cellsAndModules.flatMap { case (cell, module) => 
         if(module.packageId.equals("docs")){
           cell.messages
@@ -209,9 +209,22 @@ case class Workflow(
               }
               .headOption.flatten
               .map { case (level, title) => 
-                TableOfContentsSection(title, level, cell.position, module.id)
+                TableOfContentsEntry(title, Some(level), cell.position, module.id)
               }
-        } else { None }
+        } else {
+          val blurb: String =  
+            module.command
+                  .map { _.title(module.arguments) }
+                  .getOrElse { s"${module.packageId}.${module.commandId}" }
+          Seq(
+            TableOfContentsEntry(
+              blurb,
+              None,
+              cell.position,
+              module.id
+            )
+          )
+        }
       }
 
     summary.toDescription(

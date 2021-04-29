@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,8 @@ object EmptyDataset extends Command
   )
   def format(arguments: Arguments): String = 
     s"CREATE EMPTY DATASET ${arguments.pretty("name")}"
+  def title(arguments: Arguments): String = 
+    s"Initialize ${arguments.pretty("name")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val (dsName, dsId) = context.outputDataset(arguments.get[String]("name"))
@@ -46,5 +48,10 @@ object EmptyDataset extends Command
     ).handle
     context.message("Empty Dataset Created")
   }
+  def predictProvenance(arguments: Arguments) = 
+    Some( (
+      Seq.empty,
+      Seq(arguments.get[String]("name"))
+    ) )
 }
 

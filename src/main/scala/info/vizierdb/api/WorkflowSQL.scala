@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,8 +25,7 @@ import info.vizierdb.types.{ Identifier, ArtifactType }
 import org.mimirdb.api.request.QueryMimirRequest
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.response._
-import info.vizierdb.api.handler.Handler
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import info.vizierdb.api.handler.{ Handler, ClientConnection }
 
 object WorkflowSQLHandler
   extends Handler
@@ -34,13 +33,13 @@ object WorkflowSQLHandler
 {
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest 
+    connection: ClientConnection 
   ): Response =
   {
     val projectId = pathParameters("projectId").as[Long]
     val branchId = pathParameters("branchId").as[Long]
     val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
-    val query = URLDecoder.decode(request.getParameter("query"), "UTF-8")
+    val query = URLDecoder.decode(connection.getParameter("query"), "UTF-8")
 
     val (datasets, functions) = 
       DB.readOnly { implicit session => 

@@ -1,5 +1,5 @@
-/* -- copyright-header:v1 --
- * Copyright (C) 2017-2020 University at Buffalo,
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
  *                         New York University,
  *                         Illinois Institute of Technology.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,6 +31,9 @@ trait VizualCommand
     DatasetParameter(id = "dataset", name = "Dataset")
   ) ++ vizualParameters
 
+  def title(arguments: Arguments): String =
+    s"Vizual ${getClass().getSimpleName()} on ${arguments.pretty("dataset")}"
+
 
   def process(arguments: Arguments, context: ExecutionContext)
   {
@@ -58,6 +61,11 @@ trait VizualCommand
 
     context.message(s"Updated $datasetName")
   }
+
+  def predictProvenance(arguments: Arguments) = 
+    Some( (Seq(arguments.get[String]("dataset")), 
+           Seq(arguments.get[String]("dataset"))) )
+
 
 }
 
