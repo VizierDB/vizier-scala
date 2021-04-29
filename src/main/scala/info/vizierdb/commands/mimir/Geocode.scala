@@ -32,6 +32,7 @@ object Geocode
   val PARA_STATE              = "state"
   val PARA_GEOCODER           = "geocoder"
   val PARA_CACHE_CODE         = "cacheCode"
+  val PARA_RESET_CACHE        = "resetCache"
 
   def lensParameters: Seq[Parameter] = Seq(
     ColIdParameter(id = PARA_HOUSE_NUMBER, name = "House Nr."),
@@ -44,7 +45,8 @@ object Geocode
       ),
       default = Some(1)
     ),
-    StringParameter(id = PARA_CACHE_CODE, name = "Cache Code", required = false, hidden = true)
+    StringParameter(id = PARA_CACHE_CODE, name = "Cache Code", required = false, hidden = true),
+    BooleanParameter(id = PARA_RESET_CACHE, name = "Reset Cache", required = false, default = Some(false))
   )
   def lensFormat(arguments: Arguments): String = 
     s"GEOCODE WITH ${arguments.get[String](PARA_GEOCODER)}"
@@ -60,7 +62,8 @@ object Geocode
         geocoder     = Some(arguments.get[String](PARA_GEOCODER)),
         latitudeColumn = None,
         longitudeColumn = None,
-        cacheCode = arguments.getOpt[String](PARA_CACHE_CODE)
+        cacheCode = if(arguments.getOpt[Boolean](PARA_RESET_CACHE).getOrElse(false)){ None }
+                    else { arguments.getOpt[String](PARA_CACHE_CODE) }
       )
     )
   }
@@ -68,6 +71,6 @@ object Geocode
     lensArgs.as[GeocoderConfig]
             .cacheCode
             .map { code => PARA_CACHE_CODE -> JsString(code) }
-            .toMap
+            .toMap ++ Map( PARA_RESET_CACHE -> JsBoolean(false) )
 }
 
