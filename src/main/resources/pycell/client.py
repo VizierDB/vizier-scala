@@ -22,7 +22,7 @@ import pandas
 import os
 import re
 from datetime import datetime
-from pycell.dataset import DatasetClient
+from pycell.dataset import DatasetClient, import_to_native_type
 from pycell.plugins import vizier_bokeh_render, vizier_matplotlib_render
 from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
@@ -33,6 +33,7 @@ ARTIFACT_TYPE_DATASET  = "Dataset"
 MIME_TYPE_DATASET      = "dataset/view"
 ARTIFACT_TYPE_FUNCTION = "Function"
 MIME_TYPE_PYTHON       = "application/python"
+ARTIFACT_TYPE_PARAMETER = "Parameter"
 
 OUTPUT_TEXT    = "text/plain"
 OUTPUT_HTML    = "text/html"
@@ -63,6 +64,10 @@ class ArtifactProxy(object):
     if self.__artifact is None:
       self.__artifact = self.__client[self.__artifact_name]
 
+  def __getitem__(self, key: Any) -> Any:
+    self.load_if_needed()
+    return self.__artifact.__getitem__(key)
+
   def __getattr__(self, name):
     self.load_if_needed()
     return self.__artifact.__getattribute__(name)
@@ -77,6 +82,15 @@ class ArtifactProxy(object):
   def __call__(self, *args, **kwargs):
     self.load_if_needed()
     return self.__artifact.__call__(*args, **kwargs)
+
+  def __repr__(self):
+    self.load_if_needed()
+    return self.__artifact.__repr__()
+
+  @property
+  def get(self):
+    self.load_if_needed()
+    return self.__artifact
 
   @property
   def __class__(self):
@@ -110,6 +124,8 @@ class VizierDBClient(object):
       return self.get_dataset(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_FUNCTION:
       return self.get_module(key)
+    elif artifact.artifact_type == ARTIFACT_TYPE_PARAMETER:
+      return self.get_parameter(key)
     else:
       raise ValueError("Unsupported artifact \'{}\' ({} [{}])".format(
                 key,
@@ -136,22 +152,45 @@ class VizierDBClient(object):
       self.artifacts[artifact].name:
         ArtifactProxy(client=self, artifact_name=self.artifacts[artifact].name)
       for artifact in self.artifacts
-      if self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_FUNCTION
+      if (
+        self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_FUNCTION
+      )  # or (
+         # self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_PARAMETER
+         # )
     }
+
+  def get_parameter(self, name: str) -> Any:
+    name = name.lower()
+    if name not in self.artifacts:
+      raise ValueError("unknown parameter \'{}\'".format(name))
+    if self.artifacts[name].artifact_type != ARTIFACT_TYPE_PARAMETER:
+      raise ValueError("\'{}\' is not a parameter".format(name))
+    if name in self.py_objects:
+      return self.py_objects[name]
+    response = self.vizier_request(
+        event="get_parameter",
+        name=name,
+        has_response=True
+      )
+    return import_to_native_type(
+      response["data"]["value"],
+      response["data"]["dataType"]
+    )
 
   def get_module(self, name: str) -> Any:
     name = name.lower()
-    if name in self.py_objects:
-      return self.py_objects[name]
     if name not in self.artifacts:
       raise ValueError("unknown module \'{}\'".format(name))
     if self.artifacts[name].artifact_type != ARTIFACT_TYPE_FUNCTION:
       raise ValueError("\'{}\' is not a module".format(name))
+    if name in self.py_objects:
+      return self.py_objects[name]
     response = self.vizier_request(
         event="get_blob",
         name=name,
         has_response=True
       )
+    return response["data"]
 
     def output_exported(x):
       self.py_objects[name] = x

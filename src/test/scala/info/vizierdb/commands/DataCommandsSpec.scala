@@ -106,8 +106,26 @@ class DataCommandsSpec
     )
     project.waitUntilReady
     f.exists must beTrue
+  }
 
+  "manage parameters" >> {
+    val project = MutableProject("Parameter Project")
+    
+    project.setParameters(
+      "foo" -> "floop",
+      "bar" -> 23.7,
+      "baz" -> 999
+    )
 
+    project.script("""
+      |print(vizierdb["foo"])
+      |print(vizierdb["bar"])
+      |print(vizierdb["baz"])
+    """.stripMargin)
+
+    project.waitUntilReady
+
+    project.lastOutput.map { _.dataString } must contain(exactly("floop", "23.7", "999"))
   }
 }
 

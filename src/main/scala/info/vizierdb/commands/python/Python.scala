@@ -106,7 +106,14 @@ object Python extends Command
           case "get_blob" => 
             withArtifact { artifact => 
               python.send("blob",
-                "data" -> JsString(new String(artifact.data)),
+                "data" -> JsString(artifact.string),
+                "artifactId" -> JsNumber(artifact.id)
+              )
+            }
+          case "get_parameter" => 
+            withArtifact { artifact => 
+              python.send("parameter",
+                "data" -> artifact.json,
                 "artifactId" -> JsNumber(artifact.id)
               )
             }

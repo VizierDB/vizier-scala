@@ -28,8 +28,9 @@ import java.io.FileOutputStream
 import info.vizierdb.VizierException
 import org.mimirdb.vizual.{ Command => VizualCommand }
 import info.vizierdb.commands.vizual.{ Script => VizualScript }
-import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types._
 import org.mimirdb.spark.{ Schema => SparkSchema }
+import info.vizierdb.commands.data.DeclareParameters
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -174,6 +175,25 @@ class MutableProject(
       "output_dataset" -> Option(scriptTarget._2)
     )
     waitUntilReadyAndThrowOnError
+  }
+  def setParameters(params: (String, Any)*)
+  {
+    append("data", "parameters")(
+      DeclareParameters.PARAM_LIST -> 
+        params.map { case (k, v) => 
+          val (t, s) = v match {
+            case s: String     => StringType -> s
+            case i: Integer    => IntegerType -> i.toString
+            case f: Float      => FloatType -> f.toString
+            case d: Double     => DoubleType -> d.toString
+          }
+          Map(
+            DeclareParameters.PARAM_NAME -> k,
+            DeclareParameters.PARAM_VALUE -> s,
+            DeclareParameters.PARAM_TYPE -> SparkSchema.encodeType(t)
+          )
+        }
+    )
   }
 
 
