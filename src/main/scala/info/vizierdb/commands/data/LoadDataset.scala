@@ -14,6 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
+import scalikejdbc._
 import play.api.libs.json.JsValue
 import info.vizierdb.commands._
 import org.mimirdb.api.request.LoadRequest
@@ -28,11 +29,22 @@ object LoadDataset
   extends Command
   with LazyLogging
 {
+
+  val PARAM_FILE = "file"
+  val PARAM_NAME = "name"
+  val PARAM_FORMAT = "loadFormat"
+  val PARAM_GUESS_TYPES = "loadInferTypes"
+  val PARAM_HEADERS = "loadDetectHeaders"
+  val PARAM_ANNOTATE_ERRORS = "loadDataSourceErrors"
+  val PARAM_OPTIONS = "loadOptions"
+  val PARAM_OPTION_KEY = "loadOptionKey"
+  val PARAM_OPTION_VALUE = "loadOptionValue"
+
   def name: String = "Load Dataset"
   def parameters = Seq[Parameter](
-    FileParameter(name = "Source File", id = "file"),
-    StringParameter(name = "Dataset Name", id = "name"),
-    EnumerableParameter(name = "Load Format", id = "loadFormat", values = EnumerableValue.withNames(
+    FileParameter(name = "Source File", id = PARAM_FILE),
+    StringParameter(name = "Dataset Name", id = PARAM_NAME),
+    EnumerableParameter(name = "Load Format", id = PARAM_FORMAT, values = EnumerableValue.withNames(
       "CSV"          -> "csv",
       "JSON"         -> "json",
       "PDF"          -> "mimir.exec.spark.datasource.pdf",
@@ -45,26 +57,26 @@ object LoadDataset
       "ORC"          -> "orc",
     ), default = Some(0)),
     TemplateParameters.SCHEMA,
-    BooleanParameter(name = "Guess Types", id = "loadInferTypes", default = Some(false)),
-    BooleanParameter(name = "File Has Headers", id = "loadDetectHeaders", default = Some(false)),
-    BooleanParameter(name = "Annotate Load Errors", id = "loadDataSourceErrors", default = Some(false)),
-    ListParameter(name = "Load Options", id = "loadOptions", required = false, components = Seq(
-      StringParameter(name = "Option Key", id  = "loadOptionKey"),
-      StringParameter(name = "Option Value", id  = "loadOptionValue"),
+    BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(false)),
+    BooleanParameter(name = "File Has Headers", id = PARAM_HEADERS, default = Some(false)),
+    BooleanParameter(name = "Annotate Load Errors", id = PARAM_ANNOTATE_ERRORS, default = Some(false)),
+    ListParameter(name = "Load Options", id = PARAM_OPTIONS, required = false, components = Seq(
+      StringParameter(name = "Option Key", id  = PARAM_OPTION_KEY),
+      StringParameter(name = "Option Value", id  = PARAM_OPTION_VALUE),
     ))
   )
   def format(arguments: Arguments): String = 
-    s"LOAD DATASET ${arguments.pretty("name")} AS ${arguments.pretty("loadFormat")} FROM ${arguments.pretty("file")}"
+    s"LOAD DATASET ${arguments.pretty(PARAM_NAME)} AS ${arguments.pretty(PARAM_FORMAT)} FROM ${arguments.pretty(PARAM_FILE)}"
   def title(arguments: Arguments): String = 
-    s"Load ${arguments.pretty("name")}"
+    s"Load ${arguments.pretty(PARAM_NAME)}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    val datasetName = arguments.get[String]("name").toLowerCase()
+    val datasetName = arguments.get[String](PARAM_NAME).toLowerCase()
     if(context.artifactExists(datasetName))
     {
       throw new VizierException("Dataset $name already exists.")
     }
-    val file = arguments.get[FileArgument]("file")
+    val file = arguments.get[FileArgument](PARAM_FILE)
     val (dsName, dsId) = context.outputDataset(datasetName)
     logger.trace(arguments.yaml())
 
@@ -87,13 +99,13 @@ object LoadDataset
 
     val result = LoadRequest(
       file = path,
-      format = arguments.get[String]("loadFormat"),
-      inferTypes = arguments.get[Boolean]("loadInferTypes"),
-      detectHeaders = arguments.get[Boolean]("loadDetectHeaders"),
+      format = arguments.get[String](PARAM_FORMAT),
+      inferTypes = arguments.get[Boolean](PARAM_GUESS_TYPES),
+      detectHeaders = arguments.get[Boolean](PARAM_HEADERS),
       humanReadableName = Some(file.filename.getOrElse { datasetName }),
-      backendOption = arguments.getList("loadOptions")
-                               .map { option => MimirTuple(option.get[String]("loadOptionKey"),
-                                                           option.get[String]("loadOptionValue")) },
+      backendOption = arguments.getList(PARAM_OPTIONS)
+                               .map { option => MimirTuple(option.get[String](PARAM_OPTION_KEY),
+                                                           option.get[String](PARAM_OPTION_VALUE)) },
       dependencies = None,
       resultName = Some(dsName),
       properties = None,
@@ -105,6 +117,7 @@ object LoadDataset
      * Replace the proposed schema with the inferred/actual schema
      */
     context.updateArguments(
+      PARAM_FILE -> DB.readOnly { implicit s:DBSession => file.withGuessedFilename(Some(context.projectId)) },
       "schema" -> result.schema.map { field =>
         Map(
           "schema_column" -> field.name,

@@ -15,8 +15,11 @@
 package info.vizierdb.commands
 
 import play.api.libs.json._
+import scalikejdbc._
 import info.vizierdb.types.Identifier
 import info.vizierdb.filestore.Filestore
+import java.net.URL
+import info.vizierdb.catalog.Artifact
 
 case class FileDescription(
   preview: Option[String]
@@ -60,6 +63,23 @@ case class FileArgument(
        }.getOrElse { 
          throw new IllegalArgumentException("Need at least one of fileid or url")
        }
+
+  def guessFilename(projectId: Option[Identifier] = None)(implicit session:DBSession) =
+    filename.getOrElse {
+      url.map { new URL(_).getFile().split("/").last }
+         .orElse { 
+            fileid.flatMap { fileId =>
+              val properties = Artifact.get(fileId, projectId).json
+              (properties \ "filename").asOpt[String]
+            } 
+          }
+         .getOrElse { "<unknown filename>" }
+    }
+
+  def withGuessedFilename(projectId: Option[Identifier] = None)(implicit session:DBSession) = 
+    if(filename.isDefined){ this }
+    else { copy(filename = Some(guessFilename(projectId))) }
+
   override def toString: String =
   {
     val name = 
