@@ -190,7 +190,6 @@ class VizierDBClient(object):
         name=name,
         has_response=True
       )
-    return response["data"]
 
     def output_exported(x):
       self.py_objects[name] = x

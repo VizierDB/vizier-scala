@@ -66,7 +66,7 @@ case class FileArgument(
 
   def guessFilename(projectId: Option[Identifier] = None)(implicit session:DBSession) =
     filename.getOrElse {
-      url.map { new URL(_).getFile().split("/").last }
+      url.map { _.split("/").last }
          .orElse { 
             fileid.flatMap { fileId =>
               val properties = Artifact.get(fileId, projectId).json
