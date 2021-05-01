@@ -64,7 +64,8 @@ object Python extends Command
             "artifactId" -> artifact.id
           )
         }),
-      "projectId" -> JsNumber(context.projectId)
+      "projectId" -> JsNumber(context.projectId), 
+      "cellId" -> JsString(context.executionIdentifier)
     )
 
     val ret = python.monitor { event => 

@@ -414,6 +414,14 @@ class ExecutionContext(
     }
   }
 
+  /**
+   * Get a unique string for this execution
+   */
+  def executionIdentifier: String =
+  {
+    s"${module.id}_${cell.position}${cell.resultId.map { "_"+_ }.getOrElse("")}"
+  }
+
   override def toString: String =
     {
       s"SCOPE: { ${scope.map { case (ds, art) => ds+" -> "+art.id }.mkString(", ")} }"

@@ -35,6 +35,7 @@ try:
     script = None
     artifacts = {}
     project_id = None
+    cell_id = None
     while script is None:
         cmd = sys.stdin.readline()
         cmd = json.loads(cmd)
@@ -42,6 +43,7 @@ try:
             script = cmd["script"]
             artifacts = cmd["artifacts"]
             project_id = cmd["projectId"]
+            cell_id = cmd["cellId"]
         else:
             print("Unknown event type '{}'".format(cmd["event"]))
 
@@ -57,7 +59,8 @@ try:
             },
             source=script,
             project_id=project_id,
-            raw_output=raw_output
+            raw_output=raw_output,
+            cell_id=cell_id
         )
 
     python_cell_preload(client)

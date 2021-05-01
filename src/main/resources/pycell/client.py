@@ -23,7 +23,7 @@ import os
 import re
 from datetime import datetime
 from pycell.dataset import DatasetClient, import_to_native_type
-from pycell.plugins import vizier_bokeh_render, vizier_matplotlib_render
+from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
 from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
 from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
@@ -35,9 +35,10 @@ ARTIFACT_TYPE_FUNCTION = "Function"
 MIME_TYPE_PYTHON       = "application/python"
 ARTIFACT_TYPE_PARAMETER = "Parameter"
 
-OUTPUT_TEXT    = "text/plain"
-OUTPUT_HTML    = "text/html"
-OUTPUT_DATASET = "dataset/view"
+OUTPUT_TEXT       = "text/plain"
+OUTPUT_HTML       = "text/html"
+OUTPUT_JAVASCRIPT = "text/javascript"
+OUTPUT_DATASET    = "dataset/view"
 
 
 class Artifact(object):
@@ -106,11 +107,13 @@ class VizierDBClient(object):
                artifacts: Dict[str, Artifact],
                source: str,
                raw_output: IO,
-               project_id: str
+               project_id: str,
+               cell_id: str
                ):
     self.artifacts = artifacts
     self.source = source
     self.project_id = project_id
+    self.cell_id = cell_id
     self.raw_output = raw_output
     self.datasets = {}
     self.py_objects = {}
@@ -384,8 +387,9 @@ class VizierDBClient(object):
         })
         mime_type = OUTPUT_DATASET
       elif issubclass(type(value), BokehLayout):
-        value = vizier_bokeh_render(value)
-        mime_type = OUTPUT_HTML
+        # redirect via bokeh plugin
+        vizier_bokeh_show(value, None, None)
+        return
       elif issubclass(type(value), MatplotlibFigure):
         value = vizier_matplotlib_render(value)
         mime_type = OUTPUT_HTML
@@ -416,8 +420,20 @@ class VizierDBClient(object):
       has_response=False
     )
 
-  def show_html(self, value):
+  def show_html(self, value: str) -> None:
     self.show(value, mime_type=OUTPUT_HTML)
+
+  def show_javascript(
+      self,
+      code: str,
+      html: str = "",
+      dependencies: List[str] = []
+    ) -> None:
+    self.show(json.dumps({
+        "code": code,
+        "html": html,
+        "js_deps": dependencies
+      }), mime_type=OUTPUT_JAVASCRIPT)
 
   def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
     if name_override is not None:
