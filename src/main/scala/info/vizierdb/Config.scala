@@ -109,6 +109,10 @@ class Config(arguments: Seq[String])
   }
   addSubcommand(export)
 
+  object doctor extends Subcommand("doctor") {
+
+  }
+  addSubcommand(doctor)
 
   verify()
 
