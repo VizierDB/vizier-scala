@@ -75,6 +75,10 @@ object Commands
     "parameters" -> info.vizierdb.commands.data.DeclareParameters,
   )
 
+  register(packageId = "transform", name = "Transformation", category = "data")(
+    "aggregate"  -> info.vizierdb.commands.transform.AggregateDataset,
+  )
+
   register(packageId = "plot", name = "Data Plotting", category = "plot")(
     "chart"  -> info.vizierdb.commands.plot.SimpleChart,
     "geo"    -> info.vizierdb.commands.plot.GeoPlot,
