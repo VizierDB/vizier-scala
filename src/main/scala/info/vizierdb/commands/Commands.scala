@@ -77,6 +77,7 @@ object Commands
 
   register(packageId = "transform", name = "Transformation", category = "data")(
     "aggregate"  -> info.vizierdb.commands.transform.AggregateDataset,
+    "filter"     -> info.vizierdb.commands.transform.FilterDataset,
   )
 
   register(packageId = "plot", name = "Data Plotting", category = "plot")(

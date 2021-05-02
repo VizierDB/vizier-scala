@@ -1,13 +1,12 @@
 package info.vizierdb.commands.transform
 
 import info.vizierdb.commands._
-import shapeless.ops.function
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
-import org.mimirdb.api.request.CreateViewRequest
+import info.vizierdb.catalog.Artifact
 
 object AggregateDataset 
-  extends Command
+  extends SQLTemplateCommand
   with LazyLogging
 {
   val PARAM_DATASET = "dataset"
@@ -16,12 +15,9 @@ object AggregateDataset
   val PARAM_COLUMN = "column"
   val PARAM_AGG_FN = "agg_fn"
   val PARAM_OUTPUT_COLUMN = "output_col"
-  val PARAM_OUTPUT_DATASET = "output_dataset"
-
-  val DEFAULT_DS_NAME = "temporary_aggregate"
 
   def name = "Aggregate Dataset"
-  def parameters = Seq[Parameter](
+  def templateParameters = Seq[Parameter](
     DatasetParameter(id = PARAM_DATASET, name = "Input Dataset"),
     ListParameter(id = PARAM_GROUPBY, name = "Group By", required = false, components = Seq(
       ColIdParameter(id = PARAM_COLUMN, name = "Column", required = true)
@@ -37,7 +33,6 @@ object AggregateDataset
       )),
       StringParameter(id = PARAM_OUTPUT_COLUMN, name = "Output Name", required = false, default = Some(""))
     )),
-    StringParameter(id = PARAM_OUTPUT_DATASET, name = "Output Dataset", required = false)
   )
 
   def format(arguments: Arguments): String = 
@@ -69,10 +64,10 @@ object AggregateDataset
 
   def title(arguments: Arguments): String =
   {
-    s"Aggregate ${arguments.pretty(PARAM_DATASET)}"
+    s"Aggregate ${arguments.get[String](PARAM_DATASET)}"
   }
 
-  def process(arguments: Arguments, context: ExecutionContext)
+  def query(arguments: Arguments, context: ExecutionContext): (Map[String, Artifact], String) =
   {
     val datasetName = arguments.get[String](PARAM_DATASET)
     val dataset = context.artifact(datasetName) 
@@ -103,28 +98,8 @@ object AggregateDataset
 
     val query = s"SELECT ${(gbCols++aggFns).mkString(",")} FROM __input__dataset__"+
                 (if(gbCols.isEmpty) { "" } else { " GROUP BY "+gbCols.mkString(",")})+";"
-
-    val outputDatasetName = arguments.getOpt[String](PARAM_OUTPUT_DATASET)
-                                     .getOrElse { DEFAULT_DS_NAME }
-    val (dsName, dsId) = context.outputDataset(datasetName)
-    logger.debug(s"$query")
-
-    try { 
-      logger.trace("Creating view")
-      val response = CreateViewRequest(
-        input = Map("__input__dataset__" -> dataset.nameInBackend), 
-        functions = None,
-        query = query, 
-        resultName = Some(dsName),
-        properties = None
-      ).handle
-
-      logger.trace("Rendering dataset summary")
-      context.displayDataset(datasetName)
-    } catch { 
-      case e: org.mimirdb.api.FormattedError => 
-        context.error(e.response.errorMessage)
-    }
+    val deps = Map("__input__dataset__" -> dataset)
+    return (deps, query)
   }
 
   def predictProvenance(arguments: Arguments): Option[(Seq[String], Seq[String])] = 
