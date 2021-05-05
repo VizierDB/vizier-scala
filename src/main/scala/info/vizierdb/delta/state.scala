@@ -1,6 +1,8 @@
 package info.vizierdb.delta
 
+import scalikejdbc.DBSession
 import info.vizierdb.types._
+import info.vizierdb.catalog.serialized.ModuleDescription
 
 case class CellState(
   moduleId: Identifier,
@@ -8,6 +10,25 @@ case class CellState(
   state: ExecutionState.T, 
   messageCount: Int
 )
+{
+  def moduleDescription(workflowId: Identifier, branchId: Identifier)(implicit session: DBSession): ModuleDescription = 
+  {
+
+    ???
+
+    // Module.get(moduleId)
+    //       .describe(
+    //         cell = Cell(
+    //           // WorkflowID and Position are not needed to describe the module
+    //           workflowId = -1,
+    //           position = -1,
+
+    //           // 
+    //           moduleId = 
+    //         )
+    //       )
+  }
+}
 
 case class WorkflowState(
   branchId: Identifier,
