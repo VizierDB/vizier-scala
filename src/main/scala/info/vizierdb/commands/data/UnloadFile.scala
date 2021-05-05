@@ -20,18 +20,21 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
 import java.net.URL
 import java.nio.file.{ Files, Paths }
+import org.mimirdb.api.FormattedError
 
 
 object UnloadFile extends Command
   with LazyLogging
 {
-  val FILE = "file"
-  val PATH = "path"
+  val FILE      = "file"
+  val PATH      = "path"
+  val OVERWRITE = "overwrite"
 
   def name: String = "Unload File"
   def parameters: Seq[Parameter] = Seq(
     ArtifactParameter(id = FILE, name = "File", artifactType = ArtifactType.FILE),
     StringParameter(id = PATH, name = "Path"),
+    BooleanParameter(id = OVERWRITE, name = "Overwrite Existing", required = false, default = Some(false))
   )
   def format(arguments: Arguments): String = 
     s"UNLOAD ${arguments.pretty(FILE)} TO ${arguments.pretty(PATH)}"
@@ -52,16 +55,25 @@ object UnloadFile extends Command
 
     url.getProtocol() match {
       case "file" if Vizier.config.serverMode() => {
-        throw new RuntimeException("Writing to the local file system is disabled in server mode")
+        context.error("Writing to the local file system is disabled in server mode")
+        return
       }
       case "file"  => {
-        val source = fileArtifact.absoluteFile.toPath()
+        val source = fileArtifact.absoluteFile.toPath
         val destination = Paths.get(url.getPath)
+        if(destination.toFile.exists){
+          if(!arguments.getOpt[Boolean](OVERWRITE).getOrElse(false)){
+            context.error(s"The file $url already exists.  Check 'Overwrite Existing' if you want to replace it")
+            return
+          } 
+          destination.toFile.delete()
+        }
         Files.copy(source, destination)
         context.message(s"Copied $fileName (id = ${fileArtifact.id}) to $destination")
       }
       case _ => {
-        throw new RuntimeException(s"Invalid protocol: ${url.getProtocol()}")
+        context.error(s"Invalid protocol: ${url.getProtocol()}")
+        return
       }
     }
   }
