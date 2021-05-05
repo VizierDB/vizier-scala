@@ -31,6 +31,8 @@ import info.vizierdb.commands.vizual.{ Script => VizualScript }
 import org.apache.spark.sql.types._
 import org.mimirdb.spark.{ Schema => SparkSchema }
 import info.vizierdb.commands.data.DeclareParameters
+import info.vizierdb.delta.WorkflowState
+import info.vizierdb.delta.ComputeDelta
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -136,7 +138,8 @@ class MutableProject(
     name: String, 
     format: String="csv", 
     inferTypes: Boolean = true,
-    schema: Seq[(String, DataType)] = Seq.empty
+    schema: Seq[(String, DataType)] = Seq.empty,
+    waitForResult: Boolean = true
   ){
     append("data", "load")(
       "file" -> file,
@@ -150,13 +153,17 @@ class MutableProject(
           "schema_type" -> SparkSchema.encodeType(dataType)
         )}
     )
-    waitUntilReadyAndThrowOnError
+    if(waitForResult) { waitUntilReadyAndThrowOnError }
   }
 
-  def script(script: String, language: String = "python") = 
+  def script(
+    script: String, 
+    language: String = "python", 
+    waitForResult: Boolean = true
+  ) = 
   {
     append("script", language)("source" -> script)
-    waitUntilReadyAndThrowOnError
+    if(waitForResult) { waitUntilReadyAndThrowOnError }
   }
 
   def vizual(dataset: String, script: VizualCommand*) =
@@ -276,7 +283,11 @@ class MutableProject(
     }
   }
 
-
+  def snapshot: WorkflowState =
+  {
+    val b = branch
+    DB.readOnly { implicit s => ComputeDelta.getState(b) }
+  }
 }
 
 object MutableProject

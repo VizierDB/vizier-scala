@@ -14,3 +14,20 @@ case class WorkflowState(
   workflowId: Identifier,
   cells: Seq[CellState],
 )
+{
+  def applyDelta(delta: WorkflowDelta): WorkflowState = 
+    delta match {
+      case InsertCell(cell, position) => copy(cells = 
+        cells.patch(position, Seq(cell), 0)
+      )
+      case UpdateCell(cell, position) => copy(cells = 
+        cells.patch(position, Seq(cell), 1)
+      )
+      case DeleteCell(position) => copy(cells = 
+        cells.patch(position, Seq(), 1)
+      )
+    }
+
+  def withWorkflowId(newWorkflowId: Identifier): WorkflowState = 
+    copy(workflowId = newWorkflowId)
+}

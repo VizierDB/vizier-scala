@@ -5,6 +5,6 @@ import info.vizierdb.catalog.serialized._
 
 sealed trait WorkflowDelta
 
-case class InsertModule(module: CellState, position: Int) extends WorkflowDelta
-case class UpdateModule(module: CellState, position: Int) extends WorkflowDelta
-case class DeleteModule(position: Int) extends WorkflowDelta
+case class InsertCell(cell: CellState, position: Int) extends WorkflowDelta
+case class UpdateCell(cell: CellState, position: Int) extends WorkflowDelta
+case class DeleteCell(position: Int) extends WorkflowDelta

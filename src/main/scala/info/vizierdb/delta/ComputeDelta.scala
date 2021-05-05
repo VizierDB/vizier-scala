@@ -9,12 +9,6 @@ import info.vizierdb.catalog.serialized.ModuleDescription
 object ComputeDelta
 {
 
-  object DeltaType extends Enumeration
-  {
-    type T = Value
-    val INSERT, DELETE, UPDATE = Value
-  }
-
   /**
    * Compute a sequence of deltas to bring a system at the specified workflow state
    * up to the current head of the same branch.
@@ -60,16 +54,6 @@ object ComputeDelta
       endModules
     )
   }
-
-
-
-  def cellHasUpdates(start: CellState, end: CellState): Boolean = 
-  (
-    (start.moduleId != end.moduleId)
-      || (  start.state != end.state)
-      || (! start.resultId.equals(end.resultId) )
-      || (  start.messageCount != end.messageCount )
-  )
 
   /**
    * Render the deltas needed to go from from start to end
@@ -118,7 +102,7 @@ object ComputeDelta
       // modules on the RHS.
       if(lhs.size == 0){
         for( (cell, _) <- rhs){
-          buffer.append(InsertModule(cell, workflowSize))
+          buffer.append(InsertCell(cell, workflowSize))
           workflowSize += 1
         }
         return buffer.toSeq
@@ -128,7 +112,7 @@ object ComputeDelta
       // modules on the LHS
       if(rhs.size == 0){
         for( _ <- lhs) {
-          buffer.append(DeleteModule(workflowSize))
+          buffer.append(DeleteCell(workflowSize))
         }
         return buffer.toSeq
       } else
@@ -136,7 +120,7 @@ object ComputeDelta
       // If the RHS head is entirely new, or got moved from earlier in the list, 
       // then we should insert it here.
       if(rhs.head._2.isEmpty || rhs.head._2.get < lastRhsIdx){
-        buffer.append(InsertModule(rhs.head._1, workflowSize))
+        buffer.append(InsertCell(rhs.head._1, workflowSize))
         // no need to update the lastRhsIdx here.
         rhs = rhs.tail
         workflowSize += 1
@@ -145,8 +129,10 @@ object ComputeDelta
       // If the LHS and RHS are the same module, then check to see if there are
       // any minor deltas to apply.
       if(lhs.head._2 == rhs.head._2.get){
-        if(cellHasUpdates(lhs.head._1, rhs.head._1)){
-          buffer.append(UpdateModule(rhs.head._1, workflowSize))
+        // Do this coarsely for now.  If there's *any* change to the cell state, 
+        // send over a fresh copy.
+        if(! lhs.head._1.equals(rhs.head._1) ){
+          buffer.append(UpdateCell(rhs.head._1, workflowSize))
         }
         lhs = lhs.tail
         lastRhsIdx = rhs.head._2.get
@@ -158,7 +144,7 @@ object ComputeDelta
       // then delete it (if it got moved later in the list, then delete here)
       // and insert later.
       if(lhs.head._2 < rhs.head._2.get){
-        buffer.append(DeleteModule(workflowSize))
+        buffer.append(DeleteCell(workflowSize))
       } else 
       /////////////// Recursive Case 4 ///////////////
       // If the next RHS module occurs sequentially before the next LHS module,
