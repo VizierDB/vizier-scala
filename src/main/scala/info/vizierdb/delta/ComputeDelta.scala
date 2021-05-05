@@ -64,11 +64,12 @@ object ComputeDelta
 
 
   def cellHasUpdates(start: CellState, end: CellState): Boolean = 
+  (
     (start.moduleId != end.moduleId)
       || (  start.state != end.state)
       || (! start.resultId.equals(end.resultId) )
-      || (! start.resultId.equals(end.resultId) )
-      || (! start.messageCount != end.messageCount )
+      || (  start.messageCount != end.messageCount )
+  )
 
   /**
    * Render the deltas needed to go from from start to end
@@ -111,15 +112,13 @@ object ComputeDelta
     var buffer = Buffer[WorkflowDelta]()
     var workflowSize = 0
 
-    def describe
-
     for(i <- 0 until lhs.size + rhs.size + 1){
       /////////////// Base Case 1 ///////////////
       // If there are no more modules on the LHS, then insert all the remaining 
       // modules on the RHS.
       if(lhs.size == 0){
         for( (cell, _) <- rhs){
-          buffer.append(InsertModule(describe(cell), workflowSize))
+          buffer.append(InsertModule(cell, workflowSize))
           workflowSize += 1
         }
         return buffer.toSeq
@@ -137,7 +136,7 @@ object ComputeDelta
       // If the RHS head is entirely new, or got moved from earlier in the list, 
       // then we should insert it here.
       if(rhs.head._2.isEmpty || rhs.head._2.get < lastRhsIdx){
-        buffer.append(InsertModule(describe(rhs.head._1), workflowSize))
+        buffer.append(InsertModule(rhs.head._1, workflowSize))
         // no need to update the lastRhsIdx here.
         rhs = rhs.tail
         workflowSize += 1
@@ -146,7 +145,9 @@ object ComputeDelta
       // If the LHS and RHS are the same module, then check to see if there are
       // any minor deltas to apply.
       if(lhs.head._2 == rhs.head._2.get){
-        buffer.append(checkForCellUpdates(lhs.head._1, rhs.head._1):_*)
+        if(cellHasUpdates(lhs.head._1, rhs.head._1)){
+          buffer.append(UpdateModule(rhs.head._1, workflowSize))
+        }
         lhs = lhs.tail
         lastRhsIdx = rhs.head._2.get
         rhs = rhs.tail
