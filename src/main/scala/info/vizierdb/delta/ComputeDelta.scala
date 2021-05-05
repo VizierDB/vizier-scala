@@ -8,6 +8,13 @@ import info.vizierdb.catalog.serialized.ModuleDescription
 
 object ComputeDelta
 {
+
+  object DeltaType extends Enumeration
+  {
+    type T = Value
+    val INSERT, DELETE, UPDATE = Value
+  }
+
   /**
    * Compute a sequence of deltas to bring a system at the specified workflow state
    * up to the current head of the same branch.
@@ -54,6 +61,48 @@ object ComputeDelta
     )
   }
 
+
+
+  def cellHasUpdates(start: CellState, end: CellState): Boolean = 
+    (start.moduleId != end.moduleId)
+      || (  start.state != end.state)
+      || (! start.resultId.equals(end.resultId) )
+      || (! start.resultId.equals(end.resultId) )
+      || (! start.messageCount != end.messageCount )
+
+  /**
+   * Render the deltas needed to go from from start to end
+   * @param   start        The start [WorkflowDescription].cells.zipWithIndex
+   * @param   end          The end [WorkflowDescription]'s .cells, paired with 
+   *                       the index of the corresponding start cell (if one
+   *                       exists)
+   * @return               The sequence of deltas requried to transform start to
+   *                       end
+   *
+   * Both start and end should be unsorted (i.e., in the same order in which 
+   * they appear in the [WorkflowDescription]).  
+   * 
+   * Deltas are rendered using a rough analog of an outer sort-merge join.  
+   * The easiest way to convey this is through a tail-recursive description:
+   * ---- Base Cases ----
+   *  - Case 1: end.isEmpty -> Every remaining element of start is a cell that
+   *                           got deleted.
+   *  - Case 2: start.isEmpty -> Every remaining element of end is a cell that
+   *                           got inserted.
+   * ---- Recursive Cases ----
+   *  - Case 1: end.head does not correspond to a cell in start -> It needs
+   *                           to be inserted
+   *  - Case 1.b: end.head is out of sorted order w.r.t. the corresponding start
+   *                           cell's position -> Treat it as an insert+delete
+   *  - Case 2: end.head corresponds to start.head -> Check if the cell got 
+   *                           updated, but otherwise, no insert/delete needs to
+   *                           happen.
+   *  - Case 3: end.head corresponds to a cell that comes *after* start.head ->
+   *                           start.head got deleted.
+   *  - It should never be the case that end.head comes *before* the next 
+   *    start.head, since start.head should have every integer represented in 
+   *    order.
+   */
   def merge(start: Seq[(CellState, Int)], end: Seq[(CellState, Option[Int])]): Seq[WorkflowDelta] =
   {
     var lhs = start
@@ -61,6 +110,9 @@ object ComputeDelta
     var lastRhsIdx = -1
     var buffer = Buffer[WorkflowDelta]()
     var workflowSize = 0
+
+    def describe
+
     for(i <- 0 until lhs.size + rhs.size + 1){
       /////////////// Base Case 1 ///////////////
       // If there are no more modules on the LHS, then insert all the remaining 
@@ -117,13 +169,6 @@ object ComputeDelta
     }
     throw new RuntimeException("Merge entered into an infinite loop")
   }
-
-  def checkForCellUpdates(start: CellState, end: CellState): Seq[WorkflowDelta] = 
-    ???
-
-  def describe(cell: CellState): ModuleDescription =
-    ???
-
 
   /**
    * Search the provenance of a particular module for one of several specific modules.
