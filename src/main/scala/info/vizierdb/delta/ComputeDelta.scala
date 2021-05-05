@@ -1,0 +1,176 @@
+package info.vizierdb.delta
+
+import scalikejdbc._
+import scala.collection.mutable.Buffer
+import info.vizierdb.catalog._
+import info.vizierdb.types._
+import info.vizierdb.catalog.serialized.ModuleDescription
+
+object ComputeDelta
+{
+  /**
+   * Compute a sequence of deltas to bring a system at the specified workflow state
+   * up to the current head of the same branch.
+   *
+   * @param   start           The [WorkflowState] to compute deltas for.
+   * @returns                 The series of [WorkflowDelta]s needed to bring the
+   *                          start state up to the branch head.
+   */
+  def apply(start: WorkflowState): Seq[WorkflowDelta] =
+    apply(start, DB.readOnly { implicit s => getState(start.branchId) })
+
+  /**
+   * Compute a sequence of deltas to bring a system at the specified start state
+   * to the specified end state.
+   *
+   * @param  start            The *current* [WorkflowState].
+   * @param  end              The desired end-state.  
+   * @returns                 A series of [WorkflowDelta]s that will bring the start
+   *                          state up to the specified end state.
+   *
+   * This function assumes that both the start and end states belong to the same
+   * branch.  Technically nothing should go wrong if this assumption doesn't hold,
+   * but you'll end up just getting a series of deltas that inserts every cell in 
+   * the new workflow and deleting every cell in the old one.
+   */
+  def apply(start: WorkflowState, end: WorkflowState): Seq[WorkflowDelta] =
+  {
+    val startModules = 
+      start.cells
+           .map { _.moduleId  }
+           .zipWithIndex
+           .toMap
+    val endModules = 
+      end.cells
+         .map { m => 
+           val endModuleId = traceModule(m.moduleId, startModules.keySet) 
+           val endModuleIndex = endModuleId.map { startModules(_) }
+           (m, endModuleIndex)
+         }
+
+    merge(
+      start.cells.zipWithIndex,
+      endModules
+    )
+  }
+
+  def merge(start: Seq[(CellState, Int)], end: Seq[(CellState, Option[Int])]): Seq[WorkflowDelta] =
+  {
+    var lhs = start
+    var rhs = end
+    var lastRhsIdx = -1
+    var buffer = Buffer[WorkflowDelta]()
+    var workflowSize = 0
+    for(i <- 0 until lhs.size + rhs.size + 1){
+      /////////////// Base Case 1 ///////////////
+      // If there are no more modules on the LHS, then insert all the remaining 
+      // modules on the RHS.
+      if(lhs.size == 0){
+        for( (cell, _) <- rhs){
+          buffer.append(InsertModule(describe(cell), workflowSize))
+          workflowSize += 1
+        }
+        return buffer.toSeq
+      } else
+      /////////////// Base Case 2 ///////////////
+      // If there are no more modules on the RHS, then delete all the remaining
+      // modules on the LHS
+      if(rhs.size == 0){
+        for( _ <- lhs) {
+          buffer.append(DeleteModule(workflowSize))
+        }
+        return buffer.toSeq
+      } else
+      /////////////// Recursive Case 1 ///////////////
+      // If the RHS head is entirely new, or got moved from earlier in the list, 
+      // then we should insert it here.
+      if(rhs.head._2.isEmpty || rhs.head._2.get < lastRhsIdx){
+        buffer.append(InsertModule(describe(rhs.head._1), workflowSize))
+        // no need to update the lastRhsIdx here.
+        rhs = rhs.tail
+        workflowSize += 1
+      } else
+      /////////////// Recursive Case 2 ///////////////
+      // If the LHS and RHS are the same module, then check to see if there are
+      // any minor deltas to apply.
+      if(lhs.head._2 == rhs.head._2.get){
+        buffer.append(checkForCellUpdates(lhs.head._1, rhs.head._1):_*)
+        lhs = lhs.tail
+        lastRhsIdx = rhs.head._2.get
+        rhs = rhs.tail
+        workflowSize += 1
+      } else
+      /////////////// Recursive Case 3 ///////////////
+      // If the next LHS module occurs sequentially before the next RHS module, 
+      // then delete it (if it got moved later in the list, then delete here)
+      // and insert later.
+      if(lhs.head._2 < rhs.head._2.get){
+        buffer.append(DeleteModule(workflowSize))
+      } else 
+      /////////////// Recursive Case 4 ///////////////
+      // If the next RHS module occurs sequentially before the next LHS module,
+      // then this is a problem (since all of the lhs modules should be sorted)
+      {
+        assert(false, "Should not be here")
+      }
+
+    }
+    throw new RuntimeException("Merge entered into an infinite loop")
+  }
+
+  def checkForCellUpdates(start: CellState, end: CellState): Seq[WorkflowDelta] = 
+    ???
+
+  def describe(cell: CellState): ModuleDescription =
+    ???
+
+
+  /**
+   * Search the provenance of a particular module for one of several specific modules.
+   * 
+   * @param  target          The identifier of the module who's provenance we're searching
+   * @param  searchFor       A set of module identifiers to search for.
+   * @return                 The first element of searchFor encountered in the provenance or
+   *                         None if none of them appear.
+   */
+  def traceModule[T](target: Identifier, searchFor: Set[Identifier]): Option[Identifier] =
+  {
+    var current = target
+    DB.readOnly { implicit s => 
+      while(!searchFor(current)){
+        Module.get(target).revisionOfId match {
+          case None         => return None
+          case Some(module) => current = module
+        }
+      }
+    }
+    return Some(current)
+  }
+
+  /**
+   * Compute the WorkflowState object for the head of the specified branch
+   */
+  def getState(branchId: Identifier)(implicit session: DBSession): WorkflowState = 
+    getState(Branch.get(branchId))
+  
+  /**
+   * Compute the WorkflowState object for the head of the specified branch
+   */
+  def getState(branch: Branch)(implicit session: DBSession): WorkflowState = 
+  {
+    val head = branch.head
+    val cellsAndModules = head.cellsAndModulesInOrder
+    WorkflowState(
+      branchId = branch.id,
+      workflowId = head.id,
+      cells = cellsAndModules.map { case (cell, module) =>
+        CellState(
+          moduleId = module.id,
+          resultId = cell.resultId,
+          state = cell.state,
+          messageCount = cell.messages.size
+        )
+      }
+    )
+  }
+}
