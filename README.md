@@ -1,4 +1,4 @@
-# vizier-scala
+# Vizier
 ### The world's first kernel-free notebook.
 
 Vizier is an interactive, reactive **workbook**: A workflow system with a notebook-style interface.  
