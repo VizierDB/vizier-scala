@@ -17,7 +17,7 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 
 ### More Info
 
-* [Project Website](https://vizierdb.info)
+* [Project Website (w/ screenshots)](https://vizierdb.info)
 * [User Documentation](https://github.com/VizierDB/vizier-scala/wiki)
 * [Developer Documentation](https://github.com/VizierDB/vizier-scala/blob/master/docs/DEVELOPER.md)
 
