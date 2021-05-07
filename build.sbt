@@ -89,6 +89,7 @@ libraryDependencies ++= Seq(
 
   // jetty
   "javax.servlet"                 %   "javax.servlet-api"               % "3.1.0",
+  "org.eclipse.jetty.websocket"   %   "websocket-server"                % "9.4.10.v20180503",
 
   // command-specific libraries
   // "org.clapper"                   %% "markwrap"                         % "1.2.0"
