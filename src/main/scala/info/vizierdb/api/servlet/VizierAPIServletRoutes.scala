@@ -144,7 +144,7 @@ trait VizierAPIServletRoutes extends HttpServlet {
         case ROUTE_PATTERN_50(projectId, artifactId) => GetArtifactHandler.CSV.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
         case ROUTE_PATTERN_51(projectId, artifactId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
         case ROUTE_PATTERN_53(projectId, fileId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong)), connection)
-        case ROUTE_PATTERN_54(projectId, fileId, tail) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong), "tail" -> JsString(tail)), connection)
+        case ROUTE_PATTERN_54(projectId, fileId, tail) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(fileId.toLong), "subpath" -> JsString(tail)), connection)
         case "/tasks" => ListTasksHandler.handle(Map(), connection)
         case _ => fourOhFour(request)
       }

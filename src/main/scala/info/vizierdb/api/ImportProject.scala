@@ -41,25 +41,11 @@ object ImportProject
   override def filePart = Some("file")
   def handle(
     pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest,
-  ): Response = handle(pathParameters, request, None)
-  def handle(
-    pathParameters: Map[String, JsValue], 
-    request: HttpServletRequest,
-    inputStream: Option[InputStream]
+    request: ClientConnection 
   ): Response =
   {
-   val content = inputStream match {
-     case None => {
-        val jettyRequest = request.asInstanceOf[JettyRequest]
-        val part = jettyRequest.getPart("file")
-        if(part == null){
-          throw new IllegalArgumentException("No File Provided")
-        }
-        part.getInputStream()
-     }
-     case Some(is) => is
-   }
+    val (content, _) = request.getPart("file")
+
     val f = File.createTempFile("vizier-", "-import.tgz")
     Streams.closeAfter(new FileOutputStream(f)) {
       Streams.cat(content, _)

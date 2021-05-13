@@ -195,7 +195,7 @@ object GetArtifactHandler
     {
       val projectId = pathParameters("projectId").as[Long]
       val artifactId = pathParameters("artifactId").as[Long]
-      val subpathElements = pathParameters.get("subpath").map { _.as[Seq[String]] }
+      val subpathElements = pathParameters.get("subpath").map { sp => Seq(sp.as[String]) }
       val subpath = subpathElements.map { _.mkString("/") }
       for(element <- subpathElements.toSeq.flatten) { 
         element match {

@@ -293,8 +293,8 @@ object Scheduler
       //                   case (Some(x), _) => Some(x)
       //                 }
       // }
-
-    def exec(): Boolean = 
+    var execEC = 0
+    def exec(): Boolean = synchronized 
     {
       try { 
         logger.debug(s"In executor for Workflow ${workflowId}")
@@ -316,6 +316,10 @@ object Scheduler
         case e: Exception => 
           logger.error(s"Error processing: $e")
           e.printStackTrace()
+          execEC = execEC + 1
+          if(execEC < 10){
+            exec()
+          }
       }
       logger.debug(s"Done processing Workflow ${workflowId}")
       return true

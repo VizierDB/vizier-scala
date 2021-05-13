@@ -451,19 +451,20 @@ class DatasetClient(object):
     lats = []
     lons = []
     for row in self.rows:
-      lon, lat = float(row.get_value(lon_col)), float(row.get_value(lat_col))
-      lats.append(lat)
-      lons.append(lon)
-      if map_provider == 'Google':
-        addrpts.append({"lat": str(lat), "lng": str(lon)})
-      elif map_provider == 'OSM':
-        label = ''
-        if label_col is not None:
-          label = str(row.get_value(label_col))
-        rowstr = '[' + str(lat) + ', ' + \
-                       str(lon) + ', \'' + \
-                       label + '\']'
-        addrpts.append(rowstr)
+      if not row.get_value(lon_col) is None:
+        lon, lat = float(row.get_value(lon_col)), float(row.get_value(lat_col))
+        lats.append(lat)
+        lons.append(lon)
+        if map_provider == 'Google':
+          addrpts.append({"lat": str(lat), "lng": str(lon)})
+        elif map_provider == 'OSM':
+          label = ''
+          if label_col is not None:
+            label = str(row.get_value(label_col))
+          rowstr = '[' + str(lat) + ', ' + \
+                         str(lon) + ', \'' + \
+                         label + '\']'
+          addrpts.append(rowstr)
 
     if center_lat is None:
       center_lat = np.mean(lats)

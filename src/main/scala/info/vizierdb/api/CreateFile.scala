@@ -40,13 +40,8 @@ object CreateFileHandler
   ): Response =
   {
     val projectId = pathParameters("projectId").as[Long]
-    val jettyRequest = request.asInstanceOf[JettyRequest]
-    val part = jettyRequest.getPart("file")
-    if(part == null){
-      throw new IllegalArgumentException("No File Provided")
-    }
-    val content = part.getInputStream()
-    handle(projectId, content)
+    val (content, filename) = connection.getPart("file")
+    handle(projectId, content, filename)
   }
   def handle(
     projectId: Identifier,

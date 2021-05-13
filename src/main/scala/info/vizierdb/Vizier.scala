@@ -53,7 +53,7 @@ object Vizier
       settings = ConnectionPoolSettings(
         initialSize = 1,
         maxSize = 1,
-        connectionTimeoutMillis = 5000l
+        connectionTimeoutMillis = 30000l
       )
     )
   }
