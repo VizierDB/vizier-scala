@@ -373,6 +373,9 @@ case class Workflow(
         .where.eq(c.workflowId, id)
     }.update.apply()
   }
+
+  def actionModule(implicit session: DBSession): Option[Module] =
+    actionModuleId.map { Module.get(_) }
 }
 object Workflow 
   extends SQLSyntaxSupport[Workflow]

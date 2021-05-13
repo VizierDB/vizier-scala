@@ -36,6 +36,7 @@ import info.vizierdb.util.StupidReactJsonMap
 import org.locationtech.jts.geom.Geometry
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.types.StructField
+import info.vizierdb.catalog.serialized.ParameterArtifact
 
 case class Artifact(
   id: Identifier,
@@ -51,6 +52,8 @@ case class Artifact(
   def absoluteFile: File = Filestore.getAbsolute(projectId, id)
   def relativeFile: File = Filestore.getRelative(projectId, id)
   def file = absoluteFile
+  def parameter = json.as[ParameterArtifact]
+  def json = Json.parse(string)
   def summarize(name: String = null) = 
   {
     val extras:Map[String,JsValue] = t match {

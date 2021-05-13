@@ -27,6 +27,8 @@ import org.mimirdb.api.request.MaterializeRequest
 
 object SetIndex extends Command
 {
+  /** WORK IN PROGRESS: NOT INSTALLED YET **/
+
   def name: String = "Set Index Column"
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = "dataset", name = "Dataset"),

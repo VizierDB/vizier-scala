@@ -227,6 +227,8 @@ case class Branch(
         .where.eq(w.branchId, id)  
     }.map { Workflow(_) }.list.apply()
 
+  def createdFromWorkflow(implicit session:DBSession): Option[Workflow] = 
+    createdFromWorkflowId.map { Workflow.get(_) }
 
   def describe(implicit session:DBSession): JsObject =
     JsObject(

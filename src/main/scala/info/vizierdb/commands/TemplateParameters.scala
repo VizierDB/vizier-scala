@@ -19,8 +19,10 @@ object TemplateParameters
   val COLUMN = 
     ColIdParameter(id = "column", name = "Column")
 
-  val DATATYPE = 
-    EnumerableParameter(name = "Data Type", id = "schema_datatype", required = false, values = EnumerableValue.withNames(
+  val DATATYPE: EnumerableParameter = DATATYPE()
+
+  def DATATYPE(id:String = "schema_datatype") =
+    EnumerableParameter(name = "Data Type", id = id, required = false, values = EnumerableValue.withNames(
       "String"                 -> "string",
       "Real"                   -> "real",
       "Float"                  -> "float",

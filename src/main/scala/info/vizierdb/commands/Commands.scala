@@ -72,6 +72,12 @@ object Commands
     "empty"      -> info.vizierdb.commands.data.EmptyDataset, 
     "checkpoint" -> info.vizierdb.commands.data.CheckpointDataset,
     "unloadFile" -> info.vizierdb.commands.data.UnloadFile,
+    "parameters" -> info.vizierdb.commands.data.DeclareParameters,
+  )
+
+  register(packageId = "transform", name = "Transformation", category = "data")(
+    "aggregate"  -> info.vizierdb.commands.transform.AggregateDataset,
+    "filter"     -> info.vizierdb.commands.transform.FilterDataset,
   )
 
   register(packageId = "plot", name = "Data Plotting", category = "plot")(

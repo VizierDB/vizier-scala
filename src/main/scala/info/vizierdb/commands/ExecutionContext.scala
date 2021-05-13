@@ -30,7 +30,8 @@ import info.vizierdb.catalog.DatasetMessage
 import info.vizierdb.catalog.ArtifactSummary
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.{ StructField, DataType }
+import info.vizierdb.catalog.serialized.ParameterArtifact
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -135,6 +136,38 @@ class ExecutionContext(
       // block
       ).toIndexedSeq.toMap
     }
+  }
+
+  /**
+   * Get a parameter artifact defined in an earlier cell
+   * 
+   * @param   name         The name of the artifact
+   *
+   * Parameters should be valid spark data values of the type provided.
+   */
+  def parameter(name: String): Option[ParameterArtifact] =
+  {
+    artifact(name)
+      .filter { _.t == ArtifactType.PARAMETER }
+      .map { _.parameter }
+  }
+
+  /**
+   * Set a parameter artifact for use in later cells
+   * 
+   * @param   name         The name of the artifact
+   * @param   value        The value of the artifact
+   * @param   dataType     The data type of the artifact
+   * 
+   * Parameters should be valid spark data values of the type provided.
+   */
+  def setParameter(name: String, value: Any, dataType: DataType)
+  {
+    output(
+      name, 
+      ArtifactType.PARAMETER, 
+      Json.toJson(ParameterArtifact(value, dataType)).toString.getBytes
+    )
   }
 
   /**
@@ -379,6 +412,14 @@ class ExecutionContext(
     DB.autoCommit { implicit s => 
       cell.replaceArguments(newArgs)
     }
+  }
+
+  /**
+   * Get a unique string for this execution
+   */
+  def executionIdentifier: String =
+  {
+    s"${module.id}_${cell.position}${cell.resultId.map { "_"+_ }.getOrElse("")}"
   }
 
   override def toString: String =

@@ -89,6 +89,7 @@ libraryDependencies ++= Seq(
 
   // jetty
   "javax.servlet"                 %   "javax.servlet-api"               % "3.1.0",
+  "org.eclipse.jetty.websocket"   %   "websocket-server"                % "9.4.10.v20180503",
 
   // command-specific libraries
   // "org.clapper"                   %% "markwrap"                         % "1.2.0"
@@ -291,9 +292,9 @@ checkout := {
     Files.createDirectory(upstream)
   }
   Seq(
-    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"      , "ui"     , Some("scala")), 
-    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"     , "mimir"  , None),
-    ("Caveats"  , "git@github.com:UBOdin/mimir-caveatgs.git", "caveats", None),
+    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"     , "ui"     , Some("scala")), 
+    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"    , "mimir"  , None),
+    ("Caveats"  , "git@github.com:UBOdin/mimir-caveats.git", "caveats", None),
   ).foreach { case (name, repo, stub, branch) => 
     val dir = upstream.resolve(stub)
     if(!Files.exists(dir.resolve(".git"))){

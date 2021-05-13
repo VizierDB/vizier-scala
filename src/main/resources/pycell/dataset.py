@@ -585,8 +585,8 @@ def collabel_2_index(label):
 
 
 def import_to_native_type(value: Any, data_type: str) -> Any:
-  from shapely import wkt
   if data_type == "geometry":
+    from shapely import wkt
     return wkt.loads(value)
   else:
     return value
