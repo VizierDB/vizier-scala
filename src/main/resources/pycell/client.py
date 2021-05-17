@@ -630,7 +630,7 @@ class Analyzer(ast.NodeVisitor):
   def visit_Assign(self, node):
     self.context.append(('assignment', set()))
     target = node.targets[0]
-    if target.id == self.name:
+    if isinstance(target, ast.Name) and target.id == self.name:
       self.source = astor.to_source(node.value)
       self.generic_visit(target)
     self.context.pop()
