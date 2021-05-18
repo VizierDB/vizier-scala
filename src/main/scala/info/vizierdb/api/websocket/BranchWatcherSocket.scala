@@ -81,6 +81,5 @@ class BranchWatcherSocket
 object BranchWatcherSocket
 {
   val KEY_OPERATION = "operation"
-
   val OP_SUBSCRIBE = "subscribe"
 }
