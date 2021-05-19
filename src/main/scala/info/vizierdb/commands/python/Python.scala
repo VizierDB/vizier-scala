@@ -122,7 +122,9 @@ object Python extends Command
             withArtifact { artifact => 
               python.send("file",
                 "path" -> JsString(artifact.absoluteFile.toString),
-                "artifactId" -> JsNumber(artifact.id)
+                "artifactId" -> JsNumber(artifact.id),
+                "url" -> JsString(artifact.url.toString),
+                "properties" -> artifact.json
               )
             }
           case "save_dataset" =>

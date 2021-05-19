@@ -21,6 +21,7 @@ import inspect
 import pandas
 import os
 import re
+import shutil
 from datetime import datetime
 from pycell.dataset import DatasetClient, import_to_native_type
 from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
@@ -29,11 +30,12 @@ from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import
 from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
 from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
 
-ARTIFACT_TYPE_DATASET  = "Dataset"
-MIME_TYPE_DATASET      = "dataset/view"
-ARTIFACT_TYPE_FUNCTION = "Function"
-MIME_TYPE_PYTHON       = "application/python"
+ARTIFACT_TYPE_DATASET   = "Dataset"
+MIME_TYPE_DATASET       = "dataset/view"
+ARTIFACT_TYPE_FUNCTION  = "Function"
+MIME_TYPE_PYTHON        = "application/python"
 ARTIFACT_TYPE_PARAMETER = "Parameter"
+ARTIFACT_TYPE_FILE      = "File"
 
 OUTPUT_TEXT       = "text/plain"
 OUTPUT_HTML       = "text/html"
@@ -51,6 +53,7 @@ class Artifact(object):
     self.name = name
     self.artifact_type = artifact_type
     self.artifact_id = artifact_id
+    self.mime_type = mime_type
 
 
 class ArtifactProxy(object):
@@ -129,6 +132,8 @@ class VizierDBClient(object):
       return self.get_module(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_PARAMETER:
       return self.get_parameter(key)
+    elif artifact.artifact_type == ARTIFACT_TYPE_FILE:
+      return self.get_file(key)
     else:
       raise ValueError("Unsupported artifact \'{}\' ({} [{}])".format(
                 key,
@@ -341,14 +346,58 @@ class VizierDBClient(object):
   def create_file(self,
                   name: str,
                   filename: Optional[str] = None,
-                  mime_type: str = "text/plain"
+                  mime_type: str = "text/plain",
+                  binary_mode: bool = False
                  ) -> FileClient:
     return FileClient(
         client=self,
         name=name,
         filename=filename,
-        mime_type=mime_type
+        mime_type=mime_type,
+        open_mode="w" + ("b" if binary_mode else "t")
       )
+
+  def import_file(self,
+                  path: str,
+                  name: Optional[str] = None,
+                  filename: Optional[str] = None,
+                  mime_type: str = "text/plain",
+                  buffer_size: int = (10 * 1024)
+                 ) -> None:
+    if filename is None:
+      filename = os.path.basename(path)
+    if name is None:
+      name = filename
+    path = os.path.expanduser(path)
+    with open(path, "rb") as src:
+      with self.create_file(name=name, filename=filename, mime_type=mime_type, binary_mode=True) as dst:
+        buffer = src.read(buffer_size)
+        while len(buffer) > 0:
+          dst.write(buffer)
+          buffer = src.read(buffer_size)
+
+  def get_file(self, name: str, binary_mode: bool = False) -> FileClient:
+    name = name.lower()
+    if name not in self.artifacts:
+      raise ValueError("unknown file \'{}\'".format(name))
+    artifact = self.artifacts[name]
+    if artifact.artifact_type != ARTIFACT_TYPE_FILE:
+      raise ValueError("\'{}\' is not a file".format(name))
+
+    response = self.vizier_request(
+        event="get_file",
+        name=name,
+        has_response=True
+      )
+
+    return FileClient(
+      client=self,
+      name=name,
+      mime_type=artifact.mime_type,
+      filename=response["properties"].get("filename", "unknown_file"),
+      metadata=response,
+      open_mode="r" + ("b" if binary_mode else "t")
+    )
 
   def pycell_open(self,
                   file: str,
