@@ -29,10 +29,11 @@ trait SQLTemplateCommand
     arguments: Arguments, 
     context: ExecutionContext
   ) {
+    // Query has to come before we allocate the output dataset name
+    val (deps, sql)  = query(arguments, context)
     val outputDatasetName = arguments.getOpt[String](PARAM_OUTPUT_DATASET)
                                      .getOrElse { DEFAULT_DS_NAME }
     val (dsName, dsId) = context.outputDataset(outputDatasetName)
-    val (deps, sql)  = query(arguments, context)
     logger.debug(s"$sql")
 
     try { 
