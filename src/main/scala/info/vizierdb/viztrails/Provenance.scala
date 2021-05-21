@@ -29,11 +29,15 @@ object Provenance
 
   def getSummaryScope(cell: Cell)(implicit session: DBSession): Map[String, ArtifactSummary] =
   {
-    val refs = getRefScope(cell).mapValues { _.artifactId.get }
-    val summaries = Artifact.lookupSummaries(refs.values.toSeq)
+    val refs = getRefScope(cell)
+    refScopeToSummaryScope(refs)
+  }
+  def refScopeToSummaryScope(refs: Map[String, ArtifactRef])(implicit session: DBSession): Map[String, ArtifactSummary] =
+  {
+    val summaries = Artifact.lookupSummaries(refs.values.map { _.artifactId.get }.toSeq)
                             .map { a => a.id -> a }
                             .toMap
-    refs.mapValues { summaries(_) }
+    refs.mapValues { ref => summaries(ref.artifactId.get) }
   }
 
   def getRefScope(cell: Cell)(implicit session: DBSession): Map[String, ArtifactRef] = 

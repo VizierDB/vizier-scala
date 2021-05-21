@@ -23,6 +23,7 @@ import info.vizierdb.types._
 import info.vizierdb.commands._
 import info.vizierdb.catalog.binders._
 import info.vizierdb.catalog.{ Workflow, Cell, Result }
+import info.vizierdb.delta.DeltaBus
 
 object Scheduler
   extends LazyLogging
@@ -147,7 +148,6 @@ object Scheduler
         cleanup(workflowId)
       }
   }
-
   /**
    * Register an error result for the provided cell
    *
@@ -155,28 +155,19 @@ object Scheduler
    * @argument  message   The error messages
    * @return              The Result object for the cell
    */
-  private def errorResult(cell: Cell, message: String)(implicit session: DBSession): Result = 
-    errorResult(cell, Seq(MIME.TEXT -> message.getBytes))
-  /**
-   * Register an error result for the provided cell
-   *
-   * @argument  cell      The cell to register an error for
-   * @argument  message   The error messages
-   * @return              The Result object for the cell
-   */
-  private def errorResult(cell: Cell, messages: Seq[(String, Array[Byte])])(implicit session: DBSession): Result = 
+  private def errorResult(cell: Cell)(implicit session: DBSession): Result = 
   {
     val result = cell.finish(ExecutionState.ERROR)._2
     val position = cell.position
-    val workflowId = cell.workflowId
-    for((mimeType, message) <- messages){
-      result.addMessage(mimeType, message, StreamType.STDERR)
+    val workflow = cell.workflow
+    for(cell <- workflow.cellsWhere(sqls"""position >= ${cell.position}""")) {
+      DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.ERROR)
     }
     withSQL {
       val c = Cell.column
       update(Cell)
         .set(c.state -> ExecutionState.ERROR, c.resultId -> None)
-        .where.eq(c.workflowId, cell.workflowId)
+        .where.eq(c.workflowId, workflow.id)
           .and.gt(c.position, cell.position)
     }.update.apply()
     return result
@@ -190,18 +181,33 @@ object Scheduler
    */
   private def normalResult(cell: Cell, context: ExecutionContext)(implicit session: DBSession): Result = 
   {
-    if(context.isError){ return errorResult(cell, context.errorMessages) }
+    if(context.isError){ return errorResult(cell) }
     val result = cell.finish(ExecutionState.DONE)._2
+    val workflow = cell.workflow
 
     for((userFacingName, identifier) <- context.inputs) {
       result.addInput( userFacingName, identifier )
     }
     for((userFacingName, artifact) <- context.outputs) {
       result.addOutput( userFacingName, artifact.map { _.id } )
+      artifact match {
+        case None => 
+          DeltaBus.notifyDeleteArtifact(
+            workflow = workflow,
+            position = cell.position,
+            name = userFacingName
+          )
+        case Some(actualArtifact) => 
+          DeltaBus.notifyOutputArtifact(
+            workflow = workflow, 
+            position = cell.position, 
+            name = userFacingName, 
+            artifactId   = actualArtifact.id, 
+            artifactType = actualArtifact.t
+          )
+      }
     }
-    for((mimeType, data) <- context.messages) {
-      result.addMessage( mimeType, data )
-    }
+    DeltaBus.notifyStateChange(cell.workflow, cell.position, ExecutionState.DONE)
 
     Provenance.updateSuccessorState(cell, 
       Provenance.updateScope(
@@ -209,6 +215,13 @@ object Scheduler
         context.scope.mapValues { _.id }
       )
     )
+    for(cell <- workflow.cellsWhere(sqls"position > ${cell.position}")){
+      DeltaBus.notifyStateChange(
+        workflow = workflow,
+        position = cell.position,
+        newState = cell.state
+      )
+    }
     return result
   }
 
@@ -224,19 +237,63 @@ object Scheduler
     val (command, arguments, context, startedCell) =
       DB autoCommit { implicit session =>
         val module = cell.module
+        val (startedCell, result) = cell.start
+        val refs = Provenance.getRefScope(startedCell)
+        val scope = Provenance.refScopeToSummaryScope(refs)
+        val workflow = startedCell.workflow
+        val context = new ExecutionContext(
+                            startedCell.projectId, 
+                            scope, 
+                            startedCell.workflow, 
+                            startedCell, 
+                            module, 
+                            { (mimeType, data) => 
+                                DB.autoCommit { implicit s =>
+                                  result.addMessage( 
+                                    mimeType = mimeType, 
+                                    data = data 
+                                  )(s)
+                                  DeltaBus.notifyMessage(
+                                    workflow = workflow, 
+                                    position = cell.position, 
+                                    mimeType = mimeType, 
+                                    data = data,
+                                    stream = StreamType.STDOUT
+                                  )(s)
+                                }
+                            },
+                            { message =>
+                                DB.autoCommit { implicit s =>
+                                  result.addMessage( 
+                                    message = message,
+                                    stream = StreamType.STDERR
+                                  )(s)
+                                  DeltaBus.notifyMessage(
+                                    workflow = workflow, 
+                                    position = cell.position, 
+                                    mimeType = "text/plain", 
+                                    data = message.getBytes,
+                                    stream = StreamType.STDERR
+                                  )(s)
+                                }
+                            }
+                          )
         val command = 
           Commands.getOption(module.packageId, module.commandId)
-                  .getOrElse { return errorResult(cell, s"Command ${module.packageId}.${module.commandId} does not exist"); }
-        val scope = Provenance.getSummaryScope(cell)
-        val context = new ExecutionContext(cell.projectId, scope, cell, module)
+                  .getOrElse { 
+                    context.error(s"Command ${module.packageId}.${module.commandId} does not exist")
+                    return errorResult(startedCell)
+                  }
         val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
         val argumentErrors = arguments.validate
-        val (startedCell, result) = cell.start
         if(!argumentErrors.isEmpty){
           val msg = "Error in module arguments:\n"+argumentErrors.mkString("\n")
           logger.warn(msg)
-          errorResult(startedCell, msg)
+          context.error(msg)
+          return errorResult(startedCell)
         }
+        DeltaBus.notifyStateChange(workflow, startedCell.position, startedCell.state)
+        DeltaBus.notifyAdvanceResultId(workflow, startedCell.position, startedCell.resultId.get)
         /* return */ (command, arguments, context, startedCell)
       }
     logger.trace(s"About to Process [${command.name}]($arguments) <- ($context)")
@@ -246,8 +303,9 @@ object Scheduler
     } catch {
       case e:Exception => {
         e.printStackTrace()
+        context.error(s"An internal error occurred: ${e.getMessage()}")
         return DB autoCommit { implicit session => 
-          errorResult(startedCell, s"An internal error occurred: ${e.getMessage()}")
+          errorResult(startedCell)
         }
       }
     }

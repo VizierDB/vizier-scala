@@ -5,6 +5,7 @@ import scala.collection.mutable.Buffer
 import info.vizierdb.catalog._
 import info.vizierdb.types._
 import info.vizierdb.catalog.serialized.ModuleDescription
+import info.vizierdb.viztrails.Provenance
 
 object ComputeDelta
 {
@@ -14,11 +15,13 @@ object ComputeDelta
    * up to the current head of the same branch.
    *
    * @param   start           The [WorkflowState] to compute deltas for.
-   * @returns                 The series of [WorkflowDelta]s needed to bring the
+   * @return                  The series of [WorkflowDelta]s needed to bring the
    *                          start state up to the branch head.
    */
   def apply(start: WorkflowState): Seq[WorkflowDelta] =
-    apply(start, DB.readOnly { implicit s => getState(start.branchId) })
+    DB.readOnly { implicit s => 
+      apply(start, getState(start.branchId), Branch.get(start.branchId).head)
+    }
 
   /**
    * Compute a sequence of deltas to bring a system at the specified start state
@@ -26,7 +29,8 @@ object ComputeDelta
    *
    * @param  start            The *current* [WorkflowState].
    * @param  end              The desired end-state.  
-   * @returns                 A series of [WorkflowDelta]s that will bring the start
+   * @param  workflow         The workflow corresponding to `end`
+   * @return                  A series of [WorkflowDelta]s that will bring the start
    *                          state up to the specified end state.
    *
    * This function assumes that both the start and end states belong to the same
@@ -34,24 +38,29 @@ object ComputeDelta
    * but you'll end up just getting a series of deltas that inserts every cell in 
    * the new workflow and deleting every cell in the old one.
    */
-  def apply(start: WorkflowState, end: WorkflowState): Seq[WorkflowDelta] =
+  def apply(
+    start: WorkflowState, 
+    end: WorkflowState, 
+    workflow: Workflow
+  )(implicit session: DBSession): Seq[WorkflowDelta] =
   {
     val startModules = 
       start.cells
-           .map { _.moduleId  }
+           .map { _.moduleId.toLong  }
            .zipWithIndex
            .toMap
     val endModules = 
       end.cells
          .map { m => 
-           val endModuleId = traceModule(m.moduleId, startModules.keySet) 
+           val endModuleId = traceModule(m.moduleId.toLong, startModules.keySet) 
            val endModuleIndex = endModuleId.map { startModules(_) }
            (m, endModuleIndex)
          }
 
     merge(
       start.cells.zipWithIndex,
-      endModules
+      endModules,
+      workflow
     )
   }
 
@@ -61,6 +70,7 @@ object ComputeDelta
    * @param   end          The end [WorkflowDescription]'s .cells, paired with 
    *                       the index of the corresponding start cell (if one
    *                       exists)
+   * @param   workflow     The [Workflow] corresponding to `end`
    * @return               The sequence of deltas requried to transform start to
    *                       end
    *
@@ -88,7 +98,11 @@ object ComputeDelta
    *    start.head, since start.head should have every integer represented in 
    *    order.
    */
-  def merge(start: Seq[(CellState, Int)], end: Seq[(CellState, Option[Int])]): Seq[WorkflowDelta] =
+  def merge(
+    start: Seq[(CellState, Int)], 
+    end: Seq[(CellState, Option[Int])],
+    workflow: Workflow
+  )(implicit session: DBSession): Seq[WorkflowDelta] =
   {
     var lhs = start
     var rhs = end
@@ -96,13 +110,25 @@ object ComputeDelta
     var buffer = Buffer[WorkflowDelta]()
     var workflowSize = 0
 
+    def describe(position: Int): ModuleDescription = 
+    {
+      val cell = workflow.cellByPosition(position).get
+      cell.module.describe(
+        cell,
+        workflow.projectId,
+        workflow.branchId,
+        workflow.id,
+        Provenance.getRefScope(cell).values.toSeq
+      )
+    }
+
     for(i <- 0 until lhs.size + rhs.size + 1){
       /////////////// Base Case 1 ///////////////
       // If there are no more modules on the LHS, then insert all the remaining 
       // modules on the RHS.
       if(lhs.size == 0){
-        for( (cell, _) <- rhs){
-          buffer.append(InsertCell(cell, workflowSize))
+        for( (_, _) <- rhs){
+          buffer.append(InsertCell(describe(workflowSize), workflowSize))
           workflowSize += 1
         }
         return buffer.toSeq
@@ -120,7 +146,7 @@ object ComputeDelta
       // If the RHS head is entirely new, or got moved from earlier in the list, 
       // then we should insert it here.
       if(rhs.head._2.isEmpty || rhs.head._2.get < lastRhsIdx){
-        buffer.append(InsertCell(rhs.head._1, workflowSize))
+        buffer.append(InsertCell(describe(workflowSize), workflowSize))
         // no need to update the lastRhsIdx here.
         rhs = rhs.tail
         workflowSize += 1
@@ -132,7 +158,7 @@ object ComputeDelta
         // Do this coarsely for now.  If there's *any* change to the cell state, 
         // send over a fresh copy.
         if(! lhs.head._1.equals(rhs.head._1) ){
-          buffer.append(UpdateCell(rhs.head._1, workflowSize))
+          buffer.append(UpdateCell(describe(workflowSize), workflowSize))
         }
         lhs = lhs.tail
         lastRhsIdx = rhs.head._2.get
@@ -197,8 +223,8 @@ object ComputeDelta
       workflowId = head.id,
       cells = cellsAndModules.map { case (cell, module) =>
         CellState(
-          moduleId = module.id,
-          resultId = cell.resultId,
+          moduleId = module.id.toString,
+          resultId = cell.resultId.map { _.toString },
           state = cell.state,
           messageCount = cell.messages.size
         )

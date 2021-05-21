@@ -14,6 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb
 
+import play.api.libs.json._
 import org.apache.spark.sql.execution.columnar.STRING
 
 object types 
@@ -52,18 +53,20 @@ object types
   {
     type T = Value
 
-    val DONE   = Value(1, "DONE")    /* The referenced execution is correct and up-to-date */
-    val ERROR   = Value(2, "ERROR")    /* The cell or a cell preceding it is affected by a notebook 
-                                          error */
-    val WAITING = Value(3, "WAITING")  /* The referenced execution follows a stale cell and *may* be 
-                                          out-of-date, depending on the outcome of the stale cell  */
-    val BLOCKED = Value(4, "BLOCKED")  /* The referenced execution is incorrect for this workflow and 
-                                          needs to be recomputed, but is blocked on another one */
-    val STALE   = Value(5, "STALE")    /* The referenced execution is incorrect for this workflow and 
-                                          needs to be recomputed */
-    val CANCELLED = Value(6, "CANCELLED")  /* Execution of the cell or a cell preceding it was 
-                                              cancelled (equivalent to ERROR) */
-    val FROZEN = Value(7, "FROZEN")
+    val DONE      = Value(1, "DONE")     /* The referenced execution is correct and up-to-date */
+    val ERROR     = Value(2, "ERROR")    /* The cell or a cell preceding it is affected by a notebook 
+                                            error */
+    val WAITING   = Value(3, "WAITING")  /* The referenced execution follows a stale cell and *may* be 
+                                            out-of-date, depending on the outcome of the stale cell  */
+    val BLOCKED   = Value(4, "BLOCKED")  /* The referenced execution is incorrect for this workflow and 
+                                            needs to be recomputed, but is blocked on another one */
+    val STALE     = Value(5, "STALE")    /* The referenced execution is incorrect for this workflow and 
+                                            needs to be recomputed */
+    val CANCELLED = Value(6, "CANCELLED")/* Execution of the cell or a cell preceding it was 
+                                            cancelled (equivalent to ERROR) */
+    val FROZEN    = Value(7, "FROZEN")   /* The cell has temporarily been removed from the workflow */
+    val RUNNING   = Value(8, "RUNNING")  /* The referenced execution is incorrect for this workflow and 
+                                            is currently being recomputed */
 
     def translateToClassicVizier(state: T): Int = 
     {
@@ -73,6 +76,7 @@ object types
         case WAITING => 0   // MODULE_PENDING
         case BLOCKED => 0   // MODULE_PENDING
         case STALE => 1     // MODULE_RUNNING
+        case RUNNING => 1   // MODULE_RUNNING
         case CANCELLED => 2 // MODULE_CANCELLED
         case FROZEN => 5    // MODULE_SUCCESS
       }
@@ -86,10 +90,21 @@ object types
         case WAITING => true
         case BLOCKED => true
         case STALE => true
+        case RUNNING => true
         case CANCELLED => false
         case FROZEN => false
       }
     }
+    implicit val format = Format[T](
+      new Reads[T]{
+        def reads(j: JsValue): JsResult[T] = 
+          JsSuccess(apply(j.as[Int]))
+      },
+      new Writes[T]{
+        def writes(s: T): JsValue =
+          JsNumber(s.id)
+      }
+    )
   }
 
   object ArtifactType extends Enumeration
@@ -102,6 +117,17 @@ object types
     val FILE      = Value(4, "File")
     val CHART     = Value(5, "Chart")
     val PARAMETER = Value(6, "Parameter")
+
+    implicit val format = Format[T](
+      new Reads[T]{
+        def reads(j: JsValue): JsResult[T] =
+          JsSuccess(apply(j.as[Int]))
+      },
+      new Writes[T]{
+        def writes(s: T): JsValue =
+          JsNumber(s.id)
+      }
+    )
   }
 
   object StreamType extends Enumeration
@@ -110,6 +136,17 @@ object types
 
     val STDOUT = Value(1, "stdout")
     val STDERR = Value(2, "stderr")
+
+    implicit val format = Format[T](
+      new Reads[T]{
+        def reads(j: JsValue): JsResult[T] =
+          JsSuccess(apply(j.as[Int]))
+      },
+      new Writes[T]{
+        def writes(s: T): JsValue =
+          JsNumber(s.id)
+      }
+    )
   }
 
   object MIME

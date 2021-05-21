@@ -107,6 +107,7 @@ class Module(
     ModuleDescription(
       id = s"${id}_${cell.resultId.getOrElse {"noresult"}}",
       state = ExecutionState.translateToClassicVizier(cell.state),
+      statev2 = cell.state,
       command = CommandDescription(
         packageId = packageId,
         commandId = commandId,
@@ -134,6 +135,7 @@ class Module(
         stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
         stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
       ),
+      resultId = cell.resultId.map { _.toString },
       links = HATEOAS(
         HATEOAS.SELF            -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
         HATEOAS.MODULE_INSERT   -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),

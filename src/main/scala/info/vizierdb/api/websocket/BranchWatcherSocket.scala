@@ -7,29 +7,37 @@ import org.eclipse.jetty.websocket.api.annotations.{
   OnWebSocketMessage,
   WebSocket,
 }
+import org.eclipse.jetty.websocket.servlet.{
+  WebSocketCreator, 
+  ServletUpgradeRequest, 
+  ServletUpgradeResponse,
+  WebSocketServlet,
+  WebSocketServletFactory
+}
 import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.types._
 import info.vizierdb.catalog._
 import info.vizierdb.delta.{ DeltaBus, WorkflowDelta }
 import com.typesafe.scalalogging.LazyLogging
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet
 
 // https://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/jetty-websocket/websocket-server/src/test/java/org/eclipse/jetty/websocket/server/examples/echo/ExampleEchoServer.java
 
 case class SubscribeRequest(
-  branchId: Identifier
+  projectId: String,
+  branchId: String
 )
 
 object SubscribeRequest {
   implicit val format: Format[SubscribeRequest] = Json.format
 }
 
-
-
 @WebSocket
 class BranchWatcherSocket
   extends LazyLogging
 {
+  logger.trace("Websocket allocated")
   var session: Session = null
   var subscription: DeltaBus.Subscription = null
   var branchId: Identifier = -1
@@ -38,11 +46,13 @@ class BranchWatcherSocket
   @OnWebSocketConnect
   def onOpen(session: Session) 
   { 
+    logger.debug(s"Websocket opened: $session")
     this.session = session 
   }
   @OnWebSocketClose
   def onClose(closeCode: Int, message: String) 
   {
+    logger.debug(s"Websocket closed with code $closeCode: $message")
     if(subscription != null){
       DeltaBus.unsubscribe(subscription)
     }
@@ -50,6 +60,7 @@ class BranchWatcherSocket
   @OnWebSocketMessage
   def onText(data: String)
   {
+    logger.trace(s"Websocket received ${data.length()} bytes: ${data.take(20)}")
     val message = Json.parse(data)
     (message \ BranchWatcherSocket.KEY_OPERATION).asOpt[String]
        .getOrElse { 
@@ -61,18 +72,21 @@ class BranchWatcherSocket
             logger.warn(s"Websocket ($client) overriding existing subscription")
             DeltaBus.unsubscribe(subscription)
           }
-          branchId = request.branchId
-          subscription = DeltaBus.subscribe(request.branchId, this.notify, s"Websocket $client")
+          branchId = request.branchId.toLong
+          subscription = DeltaBus.subscribe(branchId, this.notify, s"Websocket $client")
+          val workflow = DB.readOnly { implicit s => 
+                              Branch.get(branchId)
+                                    .head
+                                    .describe }
+          session.getRemote()
+                 .sendString(Json.toJson(workflow).toString)
     }
   }
 
   def notify(delta: WorkflowDelta)
   {
     session.getRemote().sendString(
-      Json.toJson(DB.readOnly { implicit s => 
-        val branch = Branch.get(branchId)
-        delta.serialize(workflowId = branch.headId, branchId = branch.id) 
-      }).toString, 
+      Json.toJson(delta).toString, 
       null
     )
   }
@@ -82,4 +96,26 @@ object BranchWatcherSocket
 {
   val KEY_OPERATION = "operation"
   val OP_SUBSCRIBE = "subscribe"
+
+  object Creator extends WebSocketCreator
+  {
+    override def createWebSocket(
+      request: ServletUpgradeRequest, 
+      response: ServletUpgradeResponse
+    ): Object = 
+    {
+
+      new BranchWatcherSocket()
+    }
+  }
+
+  object Servlet extends WebSocketServlet {
+    def configure(factory: WebSocketServletFactory)
+    {
+      factory.getPolicy().setIdleTimeout(100000)
+      factory.setCreator(Creator)
+    }
+
+  }
 }
+

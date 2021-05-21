@@ -84,6 +84,7 @@ object Python extends Command
           case "message" => 
             (event\"stream").as[String] match {  
               case "stdout" => 
+                logger.trace(s"Python STDOUT: ${event\ "content"}")
                 context.message( 
                   // each message object already gets a free newline, so trim here
                   content = (event\"content").as[String].trim(),

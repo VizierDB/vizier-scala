@@ -19,8 +19,8 @@ import info.vizierdb.util.HATEOAS
 import info.vizierdb.types._
 
 case class ModuleOutputDescription(
-  stderr: Seq[JsValue],
-  stdout: Seq[JsValue]
+  stderr: Seq[MessageDescription],
+  stdout: Seq[MessageDescription]
 )
 
 object ModuleOutputDescription
@@ -31,6 +31,7 @@ object ModuleOutputDescription
 case class ModuleDescription(
   id: String,
   state: Int,
+  statev2: ExecutionState.T,
   command: CommandDescription,
   text: String,
   timestamps: Timestamps,
@@ -38,6 +39,7 @@ case class ModuleDescription(
   charts: Seq[JsObject],
   artifacts: Seq[JsObject],
   outputs: ModuleOutputDescription,
+  resultId: Option[String],
   links: HATEOAS.T
 )
 

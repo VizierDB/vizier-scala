@@ -26,6 +26,7 @@ import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.viztrails.Provenance
+import info.vizierdb.delta.DeltaBus
 
 /**
  * One branch of the project
@@ -44,18 +45,23 @@ case class Branch(
 {
   def head(implicit session: DBSession): Workflow = Workflow.get(headId)
   def append(module: Module)(implicit session: DBSession): (Branch, Workflow) = 
-    modify(
+  {
+    val ret = modify(
       module = Some(module),
       action = ActionType.APPEND,
       prevWorkflowId = headId,
       addModules = Seq(module.id -> Workflow.getLength(headId))
     )
+    DeltaBus.notifyCellAppend(ret._2)
+    return ret
+  }
   def append(packageId: String, commandId: String)
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
     append(Module.make(packageId, commandId)(args:_*))
   def insert(position: Int, module: Module)(implicit session: DBSession): (Branch, Workflow) =
-    modify(
+  {
+    val ret = modify(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
@@ -67,8 +73,15 @@ case class Branch(
       """,
       addModules = Seq(module.id -> position)
     )
+    DeltaBus.notifyCellInserts(ret._2){ (cell, _) => cell.position == position }
+    for(cell <- ret._2.cellsWhere(sqls"position > ${position}")){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
+  }
   def delete(position: Int)(implicit session: DBSession): (Branch, Workflow) =
-    modify(
+  {
+    val ret = modify(
       module = None,
       action = ActionType.DELETE,
       prevWorkflowId = headId,
@@ -81,12 +94,19 @@ case class Branch(
       keepCells = sqls"position <> $position",
       forceRecomputeState = true
     )
+    DeltaBus.notifyCellDelete(ret._2, position)
+    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
+  }
   def insert(position: Int, packageId: String, commandId: String)
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
     insert(position, Module.make(packageId, commandId)(args:_*))
   def update(position: Int, module: Module)(implicit session: DBSession): (Branch, Workflow) = 
-    modify(
+  {
+    val ret = modify(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
@@ -98,6 +118,12 @@ case class Branch(
       keepCells = sqls"position <> $position",
       addModules = Seq(module.id -> position)
     )
+    DeltaBus.notifyCellUpdates(ret._2) { (cell, _) => cell.position == position }
+    for(cell <- ret._2.cellsWhere(sqls"position > ${position}")){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
+  }
   def update(position: Int, packageId: String, commandId: String)
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
@@ -105,7 +131,7 @@ case class Branch(
   def freezeFrom(position: Int)
                 (implicit session: DBSession): (Branch, Workflow) =
   {
-    modify(
+    val ret = modify(
       module = None,
       action = ActionType.FREEZE,
       prevWorkflowId = headId,
@@ -114,22 +140,30 @@ case class Branch(
                else state end
       """
     )
+    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
   }
   def thawUpto(position: Int)
               (implicit session: DBSession): (Branch, Workflow) =
   {
-    modify(
+    val ret = modify(
       module = None,
       action = ActionType.FREEZE,
       prevWorkflowId = headId,
       updateState = sqls"""
           case when position <= $position 
-                  and state = ${ExecutionState.FROZEN.id}
+                      and state = ${ExecutionState.FROZEN.id}
                     then ${ExecutionState.WAITING.id}
                else state end
       """,
-      forceRecomputeState = true
+      forceRecomputeState = true,
     )
+    for(cell <- ret._2.cellsWhere(sqls"position <= ${position}")){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
   }
 
   private[vizierdb] def initWorkflow(

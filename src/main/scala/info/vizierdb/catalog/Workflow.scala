@@ -23,6 +23,8 @@ import java.time.format.DateTimeFormatter
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.serialized._
+import info.vizierdb.delta.{ UpdateCell, DeltaBus }
+import info.vizierdb.viztrails.Provenance
 
 /**
  * One version of a workflow.  
@@ -40,6 +42,9 @@ case class Workflow(
   aborted: Boolean
 )
 {
+  def projectId(implicit session: DBSession) = 
+    Branch.get(branchId).projectId
+
   def cells(implicit session: DBSession): Seq[Cell] = 
     withSQL {
       val c = Cell.syntax
@@ -76,6 +81,14 @@ case class Workflow(
           .and.eq(m.id, c.moduleId)
         .orderBy(c.position)
     }.map { Module(_) }.list.apply()
+  def cellsWhere(condition: SQLSyntax)(implicit session: DBSession): Seq[Cell] =
+    withSQL {
+      val c = Cell.syntax
+      select
+        .from(Cell as c)
+        .where.eq(c.workflowId, id)
+          .and(Some(condition))
+    }.map { Cell(_) }.list.apply()
   def cellsAndModulesInOrder(implicit session: DBSession): Seq[(Cell, Module)] =
     withSQL {
       val c = Cell.syntax
@@ -118,6 +131,13 @@ case class Workflow(
         .set(w.aborted -> 1)
         .where.eq(w.id, id)
     }.update.apply()
+    for(cell <- cellsWhere(sqls"state <> ${ExecutionState.DONE.id}")){
+      DeltaBus.notifyStateChange(
+        this, 
+        cell.position, 
+        ExecutionState.CANCELLED
+      )
+    }
     withSQL {
       val c = Cell.column
       update(Cell)
