@@ -29,11 +29,15 @@ from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
 from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
 from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
+import pickle
+import base64
 
 ARTIFACT_TYPE_DATASET   = "Dataset"
 MIME_TYPE_DATASET       = "dataset/view"
 ARTIFACT_TYPE_FUNCTION  = "Function"
 MIME_TYPE_PYTHON        = "application/python"
+ARTIFACT_TYPE_BLOB      = "Blob"
+MIME_TYPE_PICKLE        = "application/pickle"
 ARTIFACT_TYPE_PARAMETER = "Parameter"
 ARTIFACT_TYPE_FILE      = "File"
 
@@ -134,6 +138,13 @@ class VizierDBClient(object):
       return self.get_parameter(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_FILE:
       return self.get_file(key)
+    elif artifact.artifact_type == ARTIFACT_TYPE_BLOB:
+      if artifact.mime_type == MIME_TYPE_PICKLE:
+        return self.get_pickle(key)
+      else:
+        raise ValueError("Unsupported format {} for blob artifact \'{}\'".format(
+                            artifact.mime_type, 
+                            key))
     else:
       raise ValueError("Unsupported artifact \'{}\' ({} [{}])".format(
                 key,
@@ -397,6 +408,47 @@ class VizierDBClient(object):
       filename=response["properties"].get("filename", "unknown_file"),
       metadata=response,
       open_mode="r" + ("b" if binary_mode else "t")
+    )
+
+  def get_pickle(self, key: str) -> Any:
+    key = key.lower()
+    if key not in self.artifacts:
+      raise ValueError("unknown pickle \'{}\'".format(key))
+    artifact = self.artifacts[key]
+    if (artifact.artifact_type != ARTIFACT_TYPE_BLOB 
+        or artifact.mime_type != MIME_TYPE_PICKLE):
+      raise ValueError("\'{}\' is not a pickle".format(key))
+
+    response = self.vizier_request(
+        event="get_blob",
+        name=key,
+        has_response=True
+      )
+
+    data = response["data"].encode()
+    data = base64.decodebytes(data)
+    return pickle.loads(data)
+
+  def export_pickle(self, key: str, value: Any) -> None:
+    if key in self.artifacts:
+      raise ValueError("An artifact named {} already exists".format(key))
+
+    exported = pickle.dumps(value)
+    exported = base64.encodebytes(exported).decode()
+
+    response = self.vizier_request("save_artifact",
+        name=key,
+        data=exported,
+        mimeType=MIME_TYPE_PICKLE,
+        artifactType=ARTIFACT_TYPE_BLOB,
+        has_response=True
+      )
+
+    self.artifacts[key] = Artifact(
+      name=key,
+      artifact_type=ARTIFACT_TYPE_BLOB,
+      mime_type=MIME_TYPE_PICKLE,
+      artifact_id=response["artifactId"]
     )
 
   def pycell_open(self,
