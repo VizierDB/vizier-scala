@@ -559,8 +559,11 @@ class VizierDBClient(object):
     batches = results[:-1]
     batch_order = results[-1]
     ordered_batches = [batches[i] for i in batch_order]
-    table = pa.Table.from_batches(ordered_batches)
-    return table.to_pandas()
+    if len(ordered_batches) > 0:
+      table = pa.Table.from_batches(ordered_batches)
+      return table.to_pandas()
+    else:
+      raise Exception("Error loading dataframe '{}'.  It has no content.".format(name))
 
   def save_data_frame(self, name: str, df: pandas.DataFrame) -> None:
     name = name.lower()
