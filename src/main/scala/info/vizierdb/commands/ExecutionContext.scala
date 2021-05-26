@@ -312,6 +312,7 @@ class ExecutionContext(
   def message(mimeType: String, content: Array[Byte])
   {
     logger.trace(s"APPEND[$mimeType]: $content")
+    stdout(mimeType, content)
   }
 
   /**
