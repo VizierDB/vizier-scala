@@ -36,6 +36,9 @@
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
   <logger name="info.vizierdb.commands.data.LoadDataset$"        level="WARN" />
 
+  <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
+  <logger name="org.mimirdb.spark.PythonUDFBuilder"              level="WARN" />
+
   <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />
 

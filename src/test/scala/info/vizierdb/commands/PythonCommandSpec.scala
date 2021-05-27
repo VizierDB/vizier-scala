@@ -214,5 +214,19 @@ print(df['A'].sum())
     project.lastOutputString must beEqualTo("23")
   }
 
+  "Export functions to SQL" >>
+  {
+    project.script("""
+      |def addOne(x):
+      |  return x + 1
+      |vizierdb.export_module(addOne)
+    """.stripMargin)
+    project.sql("SELECT addOne(2)" -> "functionTest")
+    project.waitUntilReadyAndThrowOnError
+    project.artifact("functionTest")
+           .getDataset()
+           .data(0)(0) must beEqualTo("3")
+  }
+
 }
 

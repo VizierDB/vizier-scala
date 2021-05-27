@@ -33,6 +33,7 @@ import org.mimirdb.util.ExperimentalOptions
 import info.vizierdb.commands.python.PythonProcess
 import py4j.reflection.PythonProxyHandler
 import info.vizierdb.catalog.Doctor
+import info.vizierdb.commands.python.SparkPythonUDFRelay
 
 object Vizier
   extends LazyLogging
@@ -77,6 +78,8 @@ object Vizier
       ),
       MimirAPI.sparkSession
     )
+    MimirAPI.blobs = info.vizierdb.commands.python.SparkPythonUDFRelay
+    MimirAPI.pythonUDF = info.vizierdb.commands.python.PythonProcess.udfBuilder
     val geocoders = 
       Seq(
         config.googleAPIKey.map { k =>
