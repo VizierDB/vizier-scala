@@ -12,40 +12,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.catalog.serialized
+ package info.vizierdb.commands
 
 import play.api.libs.json._
-import info.vizierdb.util.HATEOAS
-import info.vizierdb.types._
 
-case class ModuleOutputDescription(
-  stderr: Seq[MessageDescription],
-  stdout: Seq[MessageDescription]
-)
+import org.specs2.mutable.Specification
+import org.specs2.specification.BeforeAll
 
-object ModuleOutputDescription
+import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.test.SharedTestResources
+
+class PlotCommandSpec
+  extends Specification
+  with BeforeAll
 {
-  implicit val format: Format[ModuleOutputDescription] = Json.format
+  def beforeAll = SharedTestResources.init
+  
+
+  "Plot Nulls" >> {
+    val project = MutableProject("Plot commands")
+    project.load("test_data/r.csv", "r")
+    project.append("plot", "chart")(
+      "dataset" -> "r",
+      "series" -> Seq(Map(
+        "series_column" -> 2, 
+      )),
+      "xaxis" -> Map(
+        "xaxis_column" -> 1
+      ),
+      "chart" -> Map()
+    )
+    project.waitUntilReadyAndThrowOnError
+    ok
+  }
 }
-
-case class ModuleDescription(
-  id: String,
-  moduleId: Identifier,
-  state: Int,
-  statev2: ExecutionState.T,
-  command: CommandDescription,
-  text: String,
-  timestamps: Timestamps,
-  datasets: Seq[JsObject],
-  charts: Seq[JsObject],
-  artifacts: Seq[JsObject],
-  outputs: ModuleOutputDescription,
-  resultId: Option[String],
-  links: HATEOAS.T
-)
-
-object ModuleDescription
-{
-  implicit val format: Format[ModuleDescription] = Json.format
-}
-

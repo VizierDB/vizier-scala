@@ -68,6 +68,8 @@ case class Branch(
       updatePosition = sqls"case when position >= $position then position + 1 else position end",
       updateState = sqls"""
           case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id} 
+               when position >= $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
+               when position >= $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
                when position >= $position then ${ExecutionState.WAITING.id} 
                else state end
       """,
@@ -88,6 +90,8 @@ case class Branch(
       updatePosition = sqls"case when position > $position then position - 1 else position end",
       updateState = sqls"""
           case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id} 
+               when position >= $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
+               when position >= $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
                when position >= $position then ${ExecutionState.WAITING.id} 
                else state end
       """,
@@ -112,6 +116,8 @@ case class Branch(
       prevWorkflowId = headId,
       updateState = sqls"""
           case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id}
+               when position >= $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
+               when position >= $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
                when position >= $position then ${ExecutionState.WAITING.id} 
                else state end
       """,
@@ -128,6 +134,46 @@ case class Branch(
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
     update(position, Module.make(packageId, commandId)(args:_*))
+  def freezeOne(position: Int)(implicit session: DBSession): (Branch, Workflow) =
+  {
+    val ret = modify(
+      module = None,
+      action = ActionType.DELETE,
+      prevWorkflowId = headId,
+      updateState = sqls"""
+        case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id}
+             when position = $position then ${ExecutionState.FROZEN.id}
+             when position > $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
+             when position > $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
+             when position > $position then ${ExecutionState.WAITING.id}
+             else state end
+      """
+    )
+    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
+  }
+  def thawOne(position: Int)(implicit session: DBSession): (Branch, Workflow) =
+  {
+    val ret = modify(
+      module = None,
+      action = ActionType.DELETE,
+      prevWorkflowId = headId,
+      updateState = sqls"""
+        case when position = $position then ${ExecutionState.STALE.id}
+             when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id}
+             when position > $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
+             when position > $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
+             when position > $position then ${ExecutionState.WAITING.id}
+             else state end
+      """
+    )
+    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
+  }
   def freezeFrom(position: Int)
                 (implicit session: DBSession): (Branch, Workflow) =
   {

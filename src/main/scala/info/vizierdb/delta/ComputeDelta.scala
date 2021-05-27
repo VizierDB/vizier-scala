@@ -191,15 +191,14 @@ object ComputeDelta
    * @return                 The first element of searchFor encountered in the provenance or
    *                         None if none of them appear.
    */
-  def traceModule[T](target: Identifier, searchFor: Set[Identifier]): Option[Identifier] =
+  def traceModule[T](target: Identifier, searchFor: Set[Identifier])
+                    (implicit session: DBSession): Option[Identifier] =
   {
     var current = target
-    DB.readOnly { implicit s => 
-      while(!searchFor(current)){
-        Module.get(target).revisionOfId match {
-          case None         => return None
-          case Some(module) => current = module
-        }
+    while(!searchFor(current)){
+      Module.get(target).revisionOfId match {
+        case None         => return None
+        case Some(module) => current = module
       }
     }
     return Some(current)

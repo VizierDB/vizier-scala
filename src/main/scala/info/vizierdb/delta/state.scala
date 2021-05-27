@@ -14,7 +14,7 @@ object CellState
 {
   def apply(description: ModuleDescription): CellState =
     CellState(
-      description.id,
+      description.moduleId.toString,
       description.resultId,
       description.statev2,
       description.outputs.stdout.size + description.outputs.stderr.size

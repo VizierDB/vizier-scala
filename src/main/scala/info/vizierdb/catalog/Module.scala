@@ -105,7 +105,8 @@ class Module(
 
 
     ModuleDescription(
-      id = s"${id}_${cell.resultId.getOrElse {"noresult"}}",
+      id = cell.moduleDescriptor,
+      moduleId = id,
       state = ExecutionState.translateToClassicVizier(cell.state),
       statev2 = cell.state,
       command = CommandDescription(
@@ -145,6 +146,11 @@ class Module(
           HATEOAS.MODULE_THAW   -> VizierAPI.urls.thawWorkflowModules(projectId, branchId, workflowId, cell.position)
         } else {
           HATEOAS.MODULE_FREEZE -> VizierAPI.urls.freezeWorkflowModules(projectId, branchId, workflowId, cell.position)
+        }),
+        (if(cell.state.equals(ExecutionState.FROZEN)) {
+          HATEOAS.MODULE_THAW_ONE   -> VizierAPI.urls.thawOneWorkflowModule(projectId, branchId, workflowId, cell.position)
+        } else {
+          HATEOAS.MODULE_FREEZE_ONE -> VizierAPI.urls.freezeOneWorkflowModule(projectId, branchId, workflowId, cell.position)
         }),
       )
     )

@@ -32,7 +32,10 @@ object FreezeModulesHandler
   extends SimpleHandler
   with LazyLogging
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def handle(pathParameters: Map[String, JsValue]): Response = 
+    handle(pathParameters = pathParameters, onlyFreezeOne = false)
+
+  def handle(pathParameters: Map[String, JsValue], onlyFreezeOne: Boolean): Response =
   {
     val projectId = pathParameters("projectId").as[Long]
     val branchId = pathParameters("branchId").as[Long]
@@ -54,7 +57,12 @@ object FreezeModulesHandler
         }
 
         logger.debug(s"Freezing workflow from position $position")
-        /* return */ branch.freezeFrom(position)._2
+
+        if(onlyFreezeOne){
+          /* return */ branch.freezeOne(position)._2
+        } else {
+          /* return */ branch.freezeFrom(position)._2
+        }
 
       }
 
@@ -72,5 +80,13 @@ object FreezeModulesHandler
       )
     }
   } 
+
+  object FreezeOne
+    extends SimpleHandler
+    with LazyLogging
+  {
+    def handle(pathParameters: Map[String,JsValue]): Response = 
+      FreezeModulesHandler.handle(pathParameters = pathParameters, onlyFreezeOne = true)
+  }
 }
 

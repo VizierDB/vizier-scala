@@ -33,6 +33,8 @@ object ThawModulesHandler
   with LazyLogging
 {
   def handle(pathParameters: Map[String, JsValue]): Response =
+    handle(pathParameters = pathParameters, onlyThawOne = false)
+  def handle(pathParameters: Map[String, JsValue], onlyThawOne: Boolean): Response =
   {
     val projectId = pathParameters("projectId").as[Long]
     val branchId = pathParameters("branchId").as[Long]
@@ -53,8 +55,11 @@ object ThawModulesHandler
           }
         }
 
-        logger.debug(s"Freezing workflow from position $position")
-        /* return */ branch.thawUpto(position)._2
+        if(onlyThawOne){
+          /* return */ branch.thawOne(position)._2
+        } else {
+          /* return */ branch.thawUpto(position)._2
+        }
 
       }
 
@@ -72,5 +77,13 @@ object ThawModulesHandler
       )
     }
   } 
+
+  object ThawOne
+    extends SimpleHandler
+    with LazyLogging
+  {
+    def handle(pathParameters: Map[String,JsValue]): Response = 
+      ThawModulesHandler.handle(pathParameters = pathParameters, onlyThawOne = true)
+  }
 }
 

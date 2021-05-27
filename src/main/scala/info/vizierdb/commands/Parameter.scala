@@ -42,7 +42,7 @@ sealed trait Parameter
    */
   def validate(j: JsValue): Iterable[String] =
     if(j.equals(JsNull)) {
-      if(required) { Some(s"Missing parameter for $name") }
+      if(required) { Some(s"Missing parameter for parameter $name") }
       else { None }
     } else { doValidate(j: JsValue) }
   def doValidate(j: JsValue): Iterable[String]
@@ -390,7 +390,7 @@ case class RecordParameter(
   components: Seq[Parameter],
   required: Boolean = true,
   hidden: Boolean = false
-) extends Parameter with StringEncoder
+) extends Parameter
 {
   def datatype = "record"
   def doStringify(j: JsValue): String = 
@@ -423,6 +423,20 @@ case class RecordParameter(
       }
     )
   }
+  def encode(v: Any): JsValue = 
+    v match { 
+      case fields:Map[_,_] => 
+        JsObject( 
+          zipParameters(fields.asInstanceOf[Map[String,Any]])
+            .map { case (component, subV) =>
+              component.id -> 
+                subV.map { component.encode(_) }
+                    .getOrElse { component.getDefault }
+            }.toMap
+        )
+
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Map)")
+    }
   override def convertFromReact(
     j: JsValue,
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }

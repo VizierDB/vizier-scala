@@ -80,6 +80,8 @@ case class Cell(
   def module(implicit session: DBSession) = Module.get(moduleId)
   def workflow(implicit session: DBSession) = Workflow.get(workflowId)
   def result(implicit session: DBSession) = resultId.map { Result.get(_) }
+  def moduleDescriptor: String =
+    s"${moduleId}_${resultId.getOrElse {"noresult"}}"
 
   def inputs(implicit session: DBSession): Seq[ArtifactRef] = 
     withSQL { 
