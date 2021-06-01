@@ -41,7 +41,10 @@ def strip_old_licenses(lines):
       del(lines[i])
 
 
-def fix_license_if_needed(path, license, skip_check=False):
+def fix_license_if_needed(path: str, license, skip_check=False):
+  # skip upstream repositories
+  if path.startswith("./upstream"):
+    return
   with open(path) as f:
     lines = f.readlines()
   if len(lines) > 0:
