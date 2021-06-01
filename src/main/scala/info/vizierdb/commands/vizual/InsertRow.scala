@@ -30,6 +30,7 @@ object InsertRow extends VizualCommand
     Seq(
       vizual.InsertRow(
         position = arguments.get[Int]("position"),
+        None
       )
     )
 }

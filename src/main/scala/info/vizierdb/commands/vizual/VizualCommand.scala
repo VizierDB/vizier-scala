@@ -24,20 +24,22 @@ trait VizualCommand
   with LazyLogging
 {
 
+  val PARA_DATASET = "dataset"
+
   def vizualParameters: Seq[Parameter]
   def script(arguments: Arguments, context: ExecutionContext): Seq[vizual.Command]
 
   def parameters: Seq[Parameter] = Seq(
-    DatasetParameter(id = "dataset", name = "Dataset")
+    DatasetParameter(id = PARA_DATASET, name = "Dataset")
   ) ++ vizualParameters
 
   def title(arguments: Arguments): String =
-    s"Vizual ${getClass().getSimpleName()} on ${arguments.pretty("dataset")}"
+    s"Vizual ${getClass().getSimpleName()} on ${arguments.pretty(PARA_DATASET)}"
 
 
   def process(arguments: Arguments, context: ExecutionContext)
   {
-    val datasetName = arguments.get[String]("dataset")
+    val datasetName = arguments.get[String](PARA_DATASET)
 
     logger.debug(s"${this.getClass().getName()}($arguments) <- $datasetName")
 
@@ -63,8 +65,8 @@ trait VizualCommand
   }
 
   def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), 
-           Seq(arguments.get[String]("dataset"))) )
+    Some( (Seq(arguments.get[String](PARA_DATASET)), 
+           Seq(arguments.get[String](PARA_DATASET))) )
 
 
 }

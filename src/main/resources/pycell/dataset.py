@@ -15,7 +15,7 @@
 """Classes to manipulate vizier datasets from within the Python workflow cell.
 """
 
-from typing import TYPE_CHECKING, Optional, Dict, Any, List, cast
+from typing import TYPE_CHECKING, Optional, Union, Dict, Any, List, cast
 if TYPE_CHECKING:
     from pycell.client import VizierDBClient
 
@@ -32,6 +32,18 @@ DATATYPE_SHORT = 'short'
 DATATYPE_LONG = 'long'
 DATATYPE_REAL = 'real'
 DATATYPE_VARCHAR = 'varchar'
+
+
+VIZUAL_DELETE_COLUMN  = "deletecolumn"
+VIZUAL_DELETE_ROW     = "deleterow"
+VIZUAL_INSERT_COLUMN  = "insertcolumn"
+VIZUAL_INSERT_ROW     = "insertrow"
+VIZUAL_MOVE_COLUMN    = "movecolumn"
+VIZUAL_MOVE_ROW       = "moverow"
+VIZUAL_FILTER_COLUMNS = "projection"
+VIZUAL_RENAME_COLUMN  = "renamecolumn"
+VIZUAL_UPDATE_CELL    = "updatecell"
+VIZUAL_SORT           = "sort"
 
 
 class DatasetColumn(object):
@@ -145,7 +157,7 @@ class MutableDatasetRow(object):
   def __setitem__(self, key, value):
     return self.set_value(key, value)
 
-  def get_value(self, column):
+  def get_value(self, column: Union[int, str]) -> Any:
     """Get the row value for the given column.
 
     Parameters
@@ -160,7 +172,7 @@ class MutableDatasetRow(object):
     col_index = self.dataset.column_index(column)
     return self.values[col_index]
 
-  def set_value(self, column, value):
+  def set_value(self, column: Union[int, str], value: Any, comment: Optional[str] = None):
     """Set the row value for the given column.
 
     Parameters
@@ -175,6 +187,12 @@ class MutableDatasetRow(object):
     """
     col_index = self.dataset.column_index(column)
     self.values[col_index] = value
+    self.dataset.add_delta(
+      id=VIZUAL_UPDATE_CELL,
+      column=col_index,
+      row=self.identifier,
+      comment=comment
+    )
 
 
 class DatasetClient(object):
@@ -244,6 +262,9 @@ class DatasetClient(object):
       len(self.rows)
     )
 
+  def add_delta(self, id: str, **varargs) -> None:
+    self.history.append({"id": id, **varargs})
+
   def save(self, name: Optional[str] = None, use_deltas: bool = True):
     if self.client is None:
       raise ValueError("Client field unset.  Use `vizierdb.create_dataset()` or `vizierdb.update_dataset()` instead.")
@@ -269,7 +290,7 @@ class DatasetClient(object):
     """
     return self._properties
 
-  def column_index(self, column_id):
+  def column_index(self, column_id: Union[int, str]) -> int:
     """Get position of a given column in the dataset schema. The given
     column identifier could either be of type int (i.e., the index position
     of the column), or a string (either the column name or column label).
@@ -292,31 +313,34 @@ class DatasetClient(object):
       # multiple matches are detected column_id will be interpreted as a
       # column label
       name_index = -1
-    for i in range(len(self.columns)):
-      col_name = self.columns[i].name
-      if col_name.lower() == column_id.lower():
-        if name_index == -1:
-          name_index = i
-        else:
-          # Multiple columns with the same name exist. Signal that
-          # no unique column was found by setting name_index to -1.
-          name_index = -2
-          break
-    if name_index < 0:
-      # Check whether column_id is a column label that is within the
-      # range of the dataset schema
-      label_index = collabel_2_index(column_id)
-      if label_index > 0:
-        if label_index <= len(self.columns):
-          name_index = label_index - 1
-    # Return index of column with matching name or label if there exists
-    # a unique solution. Otherwise raise exception.
-    if name_index >= 0:
-      return name_index
-    elif name_index == -1:
-      raise ValueError('unknown column \'' + str(column_id) + '\'')
+      for i in range(len(self.columns)):
+        col_name = self.columns[i].name
+        if col_name is not None:
+          if col_name.lower() == column_id.lower():
+            if name_index == -1:
+              name_index = i
+            else:
+              # Multiple columns with the same name exist. Signal that
+              # no unique column was found by setting name_index to -1.
+              name_index = -2
+              break
+      if name_index < 0:
+        # Check whether column_id is a column label that is within the
+        # range of the dataset schema
+        label_index = collabel_2_index(column_id)
+        if label_index > 0:
+          if label_index <= len(self.columns):
+            name_index = label_index - 1
+      # Return index of column with matching name or label if there exists
+      # a unique solution. Otherwise raise exception.
+      if name_index >= 0:
+        return name_index
+      elif name_index == -1:
+        raise ValueError('unknown column \'' + str(column_id) + '\'')
+      else:
+        raise ValueError('not a unique column name \'' + str(column_id) + '\'')
     else:
-      raise ValueError('not a unique column name \'' + str(column_id) + '\'')
+      raise ValueError('not a valid column index: ' + str(column_id))
 
   def delete_column(self, name: Any) -> None:
     """Delete column from the dataset.
@@ -332,6 +356,7 @@ class DatasetClient(object):
     for row in ds_rows:
       del row.values[col_index]
       del row.caveats[col_index]
+    self.add_delta(id=VIZUAL_DELETE_COLUMN, column=col_index)
 
   def get_column(self, name: Any) -> Optional[DatasetColumn]:
     """Get the fist column in the dataset schema that matches the given
@@ -367,6 +392,12 @@ class DatasetClient(object):
       for row in self.rows:
         row.values.append(None)
         row.caveats.append(False)
+    self.add_delta(
+      id=VIZUAL_INSERT_COLUMN, 
+      name=name,
+      position=position, 
+      dataType=data_type,
+    )
     return column
 
   def insert_row(self,
@@ -397,6 +428,17 @@ class DatasetClient(object):
       self.rows.insert(position, row)
     else:
       self.rows.append(row)
+    encoded_values: Optional[List[Any]] = None
+    if values is not None:
+      encoded_values = [
+        export_from_native_type(value, col.data_type)
+        for value, col in zip(values, self.columns)
+      ]
+    self.add_delta(
+      id=VIZUAL_INSERT_ROW,
+      position=position,
+      values=encoded_values
+    )
     return row
 
   def get_cell(self, column: Any, row: int) -> Any:
@@ -408,7 +450,7 @@ class DatasetClient(object):
       raise ValueError('unknown row \'' + str(row) + '\'')
     return self.rows[row].get_value(column)
 
-  def move_column(self, name, position):
+  def move_column(self, name: str, position: int) -> None:
     """Move a column within a given dataset.
 
     Raises ValueError if no dataset with given identifier exists or if the
@@ -426,6 +468,11 @@ class DatasetClient(object):
       for row in self.rows:
         row.values.insert(position, row.values.pop(source_idx))
         row.caveats.insert(position, row.caveats.pop(source_idx))
+      self.add_delta(
+        id=VIZUAL_MOVE_COLUMN,
+        column=source_idx,
+        position=position
+      )
 
   @property
   def rows(self):

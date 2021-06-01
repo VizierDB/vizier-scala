@@ -16,8 +16,10 @@ package info.vizierdb.commands.vizual
 
 import info.vizierdb.commands._
 import org.mimirdb.vizual
-import org.apache.spark.sql.types.StructType
+import org.mimirdb.spark.Schema
+import org.apache.spark.sql.types.{ StructType, StringType } 
 import info.vizierdb.VizierException
+import org.mimirdb.spark.SparkPrimitive
 
 object Script extends VizualCommand
 {
@@ -33,13 +35,16 @@ object Script extends VizualCommand
     ("Insert Column", "insert_column", { args => 
       vizual.InsertColumn(
         position = args.getOpt[Int]("position"),
-        name = args.get[String]("name")
+        name = args.get[String]("name"),
+        dataType = args.getOpt[String]("dataType").map { Schema.decodeType(_) }
       )
     }),
 
     ("Insert Row", "insert_row", { args => 
+      // val values = args.getRecord("values")
       vizual.InsertRow(
-        position = args.get[Int]("position")
+        position = args.get[Int]("position"),
+        values = None
       )
     }),
 
@@ -111,10 +116,10 @@ object Script extends VizualCommand
         Map("command" -> "delete_column", "column" -> column)
       case vizual.DeleteRow(row) => 
         Map("command" -> "delete_row", "row" -> row)
-      case vizual.InsertColumn(position, name) => 
-        Map("command" -> "insert_column", "position" -> position, "name" -> name)
-      case vizual.InsertRow(position) => 
-        Map("command" -> "insert_row", "position" -> position)
+      case vizual.InsertColumn(position, name, dataType) => 
+        Map("command" -> "insert_column", "position" -> position, "name" -> name, "dataType" -> Schema.encodeType(dataType.getOrElse { StringType }))
+      case vizual.InsertRow(position, values) => 
+        Map("command" -> "insert_row", "position" -> position, "values" -> None) 
       case vizual.MoveColumn(column, position) => 
         Map("command" -> "move_column", "column" -> column, "position" -> position)
       case vizual.MoveRow(row, position) => 
