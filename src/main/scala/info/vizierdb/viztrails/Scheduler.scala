@@ -24,6 +24,7 @@ import info.vizierdb.commands._
 import info.vizierdb.catalog.binders._
 import info.vizierdb.catalog.{ Workflow, Cell, Result }
 import info.vizierdb.delta.DeltaBus
+import org.mimirdb.util.UnsupportedFeature
 
 object Scheduler
   extends LazyLogging

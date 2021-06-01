@@ -35,6 +35,7 @@ import org.mimirdb.spark.Schema.fieldFormat
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.catalog.ArtifactRef
 import info.vizierdb.catalog.ArtifactSummary
+import org.mimirdb.util.UnsupportedFeature
 
 object Python extends Command
   with LazyLogging
@@ -247,8 +248,13 @@ object Python extends Command
       } catch {
         case e: Exception => 
           {
-            e.printStackTrace()
-            context.error(s"INTERNAL ERROR: $e")
+            e match {
+              case m:UnsupportedFeature => 
+                context.error(m.getMessage())
+              case _ => 
+                e.printStackTrace()
+                context.error(s"INTERNAL ERROR: $e")
+            }
             python.kill()
           }
       }
