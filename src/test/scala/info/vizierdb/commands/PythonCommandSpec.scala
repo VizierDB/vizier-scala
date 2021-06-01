@@ -25,6 +25,7 @@ import info.vizierdb.viztrails.MutableProject
 import info.vizierdb.commands.python.PythonProcess
 import org.apache.spark.sql.types._
 import org.mimirdb.api.MimirAPI
+import org.mimirdb.util.FeatureSupported
 
 class PythonCommandSpec
   extends Specification
@@ -143,7 +144,9 @@ show(vizierdb["q"])
 
   "Arrow DataFrames" >>
   {
-    skipped("Pyarrow 4.0.0 doesn't seem to be compatible with us.  Suppressing until I have internet again. [OK, 2021-05-26]")
+    if(FeatureSupported.majorVersion >= 9){
+      skipped("Java 9+ doesn't seem to like pyarrow. See: https://github.com/VizierDB/vizier-scala/issues/92")
+    }
     project.script("""
 df = vizierdb.get_data_frame("q")
 print(df['A'].sum())
