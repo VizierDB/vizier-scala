@@ -18,10 +18,9 @@ import sys
 import ast
 import astor  # type: ignore[import]
 import inspect
-import pandas
+import pandas  # type: ignore[import]
 import os
 import re
-import shutil
 from datetime import datetime
 from pycell.dataset import DatasetClient, import_to_native_type
 from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
@@ -74,6 +73,7 @@ class ArtifactProxy(object):
 
   def __getitem__(self, key: Any) -> Any:
     self.load_if_needed()
+    assert(self.__artifact is not None)
     return self.__artifact.__getitem__(key)
 
   def __getattr__(self, name):
@@ -100,7 +100,7 @@ class ArtifactProxy(object):
     self.load_if_needed()
     return self.__artifact
 
-  @property
+  @property  # type: ignore[misc]
   def __class__(self):
     self.load_if_needed()
     return self.__artifact.__class__
@@ -122,8 +122,8 @@ class VizierDBClient(object):
     self.project_id = project_id
     self.cell_id = cell_id
     self.raw_output = raw_output
-    self.datasets = {}
-    self.py_objects = {}
+    self.datasets: Dict[str, DatasetClient] = {}
+    self.py_objects: Dict[str, Any] = {}
 
   def __getitem__(self, key: str) -> Any:
     key = key.lower()
@@ -165,6 +165,8 @@ class VizierDBClient(object):
     if has_response:
       response = sys.stdin.readline()
       return json.loads(response)
+    else:
+      return None
 
   def get_artifact_proxies(self) -> Dict[str, ArtifactProxy]:
     return {
@@ -191,6 +193,7 @@ class VizierDBClient(object):
         name=name,
         has_response=True
       )
+    assert(response is not None)
     return import_to_native_type(
       response["data"]["value"],
       response["data"]["dataType"]
@@ -209,6 +212,7 @@ class VizierDBClient(object):
         name=name,
         has_response=True
       )
+    assert(response is not None)
 
     def output_exported(x):
       self.py_objects[name] = x
@@ -245,6 +249,7 @@ class VizierDBClient(object):
       has_response=True,
       name=name
     )
+    assert(response is not None)
     assert(response["event"] == "dataset")
     ds = DatasetClient(
       client=self,
@@ -258,7 +263,8 @@ class VizierDBClient(object):
   def create_dataset(self,
                      name: str,
                      dataset: DatasetClient,
-                     backend_options: List[Tuple[str, str]] = []
+                     backend_options: List[Tuple[str, str]] = [],
+                     use_deltas: bool = True
                      ) -> None:
     """Save a new dataset in Vizier with given name.
 
@@ -272,8 +278,8 @@ class VizierDBClient(object):
       has_response=True,
       dataset=dataset.to_json()
     )
+    assert(response is not None)
     dataset.identifier = response["artifactId"]
-    dataset.name_in_backend = response["artifactId"]
     self.datasets[name] = dataset
     self.artifacts[name] = Artifact(name=name,
                                     artifact_type=ARTIFACT_TYPE_DATASET,
@@ -283,7 +289,8 @@ class VizierDBClient(object):
 
   def update_dataset(self,
                      name: str,
-                     dataset: DatasetClient
+                     dataset: DatasetClient,
+                     use_deltas: bool = True
                      ) -> DatasetClient:
     """Update a given dataset.
 
@@ -297,14 +304,15 @@ class VizierDBClient(object):
       has_response=True,
       dataset=dataset.to_json
     )
+    assert(response is not None)
     dataset.identifier = response["artifactId"]
-    dataset.name_in_backend = response["artifactId"]
     self.datasets[name] = dataset
     self.artifacts[name] = Artifact(name=name,
                                     artifact_type=ARTIFACT_TYPE_DATASET,
                                     mime_type=MIME_TYPE_DATASET,
                                     artifact_id=response["artifactId"]
                                     )
+    return dataset
 
   def drop_dataset(self, name: str) -> None:
     """Remove the dataset with the given name.
@@ -400,6 +408,7 @@ class VizierDBClient(object):
         name=name,
         has_response=True
       )
+    assert(response is not None)
 
     return FileClient(
       client=self,
@@ -415,8 +424,8 @@ class VizierDBClient(object):
     if key not in self.artifacts:
       raise ValueError("unknown pickle \'{}\'".format(key))
     artifact = self.artifacts[key]
-    if (artifact.artifact_type != ARTIFACT_TYPE_BLOB 
-        or artifact.mime_type != MIME_TYPE_PICKLE):
+    if ((artifact.artifact_type != ARTIFACT_TYPE_BLOB) 
+        or (artifact.mime_type != MIME_TYPE_PICKLE)):  # noqa: E129, W503
       raise ValueError("\'{}\' is not a pickle".format(key))
 
     response = self.vizier_request(
@@ -424,6 +433,7 @@ class VizierDBClient(object):
         name=key,
         has_response=True
       )
+    assert(response is not None)
 
     data = response["data"].encode()
     data = base64.decodebytes(data)
@@ -434,15 +444,16 @@ class VizierDBClient(object):
       raise ValueError("An artifact named {} already exists".format(key))
 
     exported = pickle.dumps(value)
-    exported = base64.encodebytes(exported).decode()
+    encoded = base64.encodebytes(exported).decode()
 
     response = self.vizier_request("save_artifact",
         name=key,
-        data=exported,
+        data=encoded,
         mimeType=MIME_TYPE_PICKLE,
         artifactType=ARTIFACT_TYPE_BLOB,
         has_response=True
       )
+    assert(response is not None)
 
     self.artifacts[key] = Artifact(
       name=key,
@@ -458,7 +469,7 @@ class VizierDBClient(object):
                   encoding: Optional[str] = None,
                   errors: Any = None,
                   newline: Optional[str] = None,
-                  closefd: Optional[bool] = True,
+                  closefd: bool = True,
                   opener: Optional[Any] = None
                   ) -> IO:
     print("***File access may not be reproducible because filesystem resources are transient***")
@@ -578,6 +589,7 @@ class VizierDBClient(object):
         artifactType=ARTIFACT_TYPE_FUNCTION,
         has_response=True
       )
+    assert(response is not None)
 
     self.artifacts[exp_name] = Artifact(
       name=exp_name,
@@ -607,6 +619,7 @@ class VizierDBClient(object):
       includeUncertainty=True,
       has_response=True
     )
+    assert(response is not None)
     results = list(_load_from_socket((response['port'], response['secret']), ArrowCollectSerializer()))
     batches = results[:-1]
     batch_order = results[-1]
@@ -628,12 +641,14 @@ class VizierDBClient(object):
         "filename": name
       }
     )
+    assert(response is not None)
     df.to_parquet(path=response["path"])
     response = self.vizier_request("create_dataset",
       has_response=True,
       file=response["artifactId"],
       name=name
     )
+    assert(response is not None)
     if name in self.datasets:
       del self.datasets[name]
     self.artifacts[name] = Artifact(name=name,
@@ -698,7 +713,7 @@ class VizierDBClient(object):
 
           # Make sure the record is in the right order
           row = [
-            entry.get(col.name, None)
+            entry.get(col.name, None) if col.name is not None else None
             for col in ds.columns
           ]
 
@@ -712,6 +727,7 @@ class VizierDBClient(object):
     except ResponseError:
       return None
       pass
+    return None
 
 
 class Analyzer(ast.NodeVisitor):
@@ -777,4 +793,3 @@ def is_valid_name(name: str) -> bool:
     elif c not in ['_', '-', ' ']:
       return False
   return (allnums > 0)
-

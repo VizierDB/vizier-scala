@@ -17,10 +17,9 @@
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from pycell.base import VizierDBClient
+    from pycell.client import VizierDBClient
 
 import json
-import re
 import io
 from bokeh.resources import Resources  # type: ignore[import]
 from bokeh.io import output_notebook  # type: ignore[import]

@@ -39,6 +39,7 @@ class FileClient(object):
                                         "filename": self.filename
                                        },
                                       )
+    assert(metadata is not None)
     self.identifier = metadata["artifactId"]
     self.file_path = metadata["path"]
     self.meta_url = metadata["url"]
@@ -64,4 +65,3 @@ class FileClient(object):
 
   def _repr_html_(self) -> str:
     return "<a href='{}'>{}</a>".format(self.url, self.filename)
-

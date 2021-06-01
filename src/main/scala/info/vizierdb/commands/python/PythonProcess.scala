@@ -153,7 +153,7 @@ object PythonProcess
     "bokeh"      -> "bokeh",
     "matplotlib" -> "matplotlib",
     "astor"      -> "astor",
-    "pyarrow"    -> "pyarrow",
+    "pyarrow"    -> "pyarrow<4.0.0",
     "pandas"     -> "pandas",
     "shapely"    -> "shapely",
     "pyspark"    -> "pyspark",
@@ -184,7 +184,10 @@ object PythonProcess
       if(ret.length() > 0){
         System.err.println("\nYour installed python is missing dependencies. Python cells may not work properly.")
         System.err.println("\nThe following command will install required dependencies.")
-        System.err.println(s"  ${PythonProcess.PYTHON_COMMAND} -m pip install ${ret.replaceAll("\n", " ")}")
+        val deps = ret.split("\n")
+                      .map { "'"+_+"'" }
+                      .mkString(" ")
+        System.err.println(s"  ${PythonProcess.PYTHON_COMMAND} -m pip install $deps")
       }
     } catch {
       case e:Throwable => 

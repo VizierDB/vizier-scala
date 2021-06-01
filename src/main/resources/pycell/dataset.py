@@ -15,7 +15,7 @@
 """Classes to manipulate vizier datasets from within the Python workflow cell.
 """
 
-from typing import TYPE_CHECKING, Optional, Dict, Any, List
+from typing import TYPE_CHECKING, Optional, Dict, Any, List, cast
 if TYPE_CHECKING:
     from pycell.client import VizierDBClient
 
@@ -78,7 +78,10 @@ class DatasetColumn(object):
     -------
     string
     """
-    name = self.name
+    if self.name is not None:
+      name = self.name
+    else:
+      name = "unnamed_dataset"
     if self.data_type is not None:
       name += '(' + str(self.data_type) + ')'
     return name
@@ -191,6 +194,7 @@ class DatasetClient(object):
     """
     self.client = client
     self.existing_name = existing_name
+    self.history: List[Dict[str, Any]] = []
 
     if dataset is not None:
       self.columns = [
@@ -202,7 +206,7 @@ class DatasetClient(object):
         for (idx, column) in enumerate(dataset["schema"])
       ]
       assert(identifier is not None)
-      self.identifier = identifier
+      self.identifier: Optional[str] = identifier
       self._properties = dataset["properties"]
       self._rows = [
         MutableDatasetRow(
@@ -222,7 +226,6 @@ class DatasetClient(object):
           dataset["rowTaint"]
         )
       ]
-      self.identifier: Optional[str] = identifier
     else:
       self.identifier = None
       self.columns = list()
@@ -241,15 +244,24 @@ class DatasetClient(object):
       len(self.rows)
     )
 
-  def save(self, name: Optional[str] = None):
+  def save(self, name: Optional[str] = None, use_deltas: bool = True):
     if self.client is None:
-      raise "Client field unset.  Use `vizierdb.create_dataset()` or `vizierdb.update_dataset()` instead."
+      raise ValueError("Client field unset.  Use `vizierdb.create_dataset()` or `vizierdb.update_dataset()` instead.")
     if name is None and self.existing_name is None:
-      raise "This is a new dataset.  Use `ds.save(name = ...)` to specify a name."
+      raise ValueError("This is a new dataset.  Use `ds.save(name = ...)` to specify a name.")
     if name is None:
-      self.client.update_dataset(name=self.existing_name, dataset=self)
+      assert(self.existing_name is not None)
+      self.client.update_dataset(
+        name=self.existing_name, 
+        dataset=self, 
+        use_deltas=use_deltas
+      )
     else:
-      self.client.create_dataset(name=name, dataset=self)
+      self.client.create_dataset(
+        name=name, 
+        dataset=self,
+        use_deltas=use_deltas
+      )
 
   @property
   def properties(self):
@@ -321,7 +333,7 @@ class DatasetClient(object):
       del row.values[col_index]
       del row.caveats[col_index]
 
-  def get_column(self, name: Any) -> DatasetColumn:
+  def get_column(self, name: Any) -> Optional[DatasetColumn]:
     """Get the fist column in the dataset schema that matches the given
     name. If no column matches the given name None is returned.
     """
@@ -425,7 +437,10 @@ class DatasetClient(object):
     """Convert the dataset to a bokeh ColumnDataSource
     """
     if columns is None:
-      columns = self.columns
+      columns = [
+        col.name if col.name is not None else "column_{}".format(col.identifier)
+        for col in self.columns
+      ]
     return ColumnDataSource({
       column.name:
         [row.get_value(
@@ -447,7 +462,7 @@ class DatasetClient(object):
                ) -> None:
     import numpy as np  # type: ignore[import]
     width = "100%"
-    addrpts = list()
+    addrpts: List[Any] = list()
     lats = []
     lons = []
     for row in self.rows:
@@ -466,10 +481,10 @@ class DatasetClient(object):
         addrpts.append(rowstr)
 
     if center_lat is None:
-      center_lat = np.mean(lats)
+      center_lat = cast(float, np.mean(lats))
 
     if center_lon is None:
-      center_lon = np.mean(lons)
+      center_lon = cast(float, np.mean(lons))
 
     if map_provider == 'Google':
       import json
@@ -585,7 +600,7 @@ def collabel_2_index(label):
 
 def import_to_native_type(value: Any, data_type: str) -> Any:
   if data_type == "geometry":
-    from shapely import wkt
+    from shapely import wkt  # type: ignore[import]
     return wkt.loads(value)
   else:
     return value
@@ -596,4 +611,3 @@ def export_from_native_type(value: Any, data_type: str) -> Any:
     return value.wkt
   else:
     return value
-
