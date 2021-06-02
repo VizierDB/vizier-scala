@@ -273,11 +273,20 @@ class VizierDBClient(object):
     name = name.lower()
     if name in self.artifacts:
       raise ValueError('dataset \'{}\' already exists'.format(name))
-    response = self.vizier_request("save_dataset",
-      name=name,
-      has_response=True,
-      dataset=dataset.to_json()
-    )
+    if use_deltas:
+      response = self.vizier_request("vizual_script",
+        output=name,
+        name=dataset.existing_name,
+        identifier=dataset.identifier,
+        has_response=True,
+        script=dataset.history
+      )
+    else:
+      response = self.vizier_request("save_dataset",
+        name=name,
+        has_response=True,
+        dataset=dataset.to_json()
+      )
     assert(response is not None)
     dataset.identifier = response["artifactId"]
     self.datasets[name] = dataset
@@ -298,12 +307,21 @@ class VizierDBClient(object):
     """
     name = name.lower()
     if name not in self.artifacts:
-      raise ValueError('dataset \'{}\' already exists'.format(name))
-    response = self.vizier_request("save_dataset",
-      name=name,
-      has_response=True,
-      dataset=dataset.to_json
-    )
+      raise ValueError('dataset \'{}\' doesn\'t already exist'.format(name))
+    if use_deltas:
+      response = self.vizier_request("vizual_script",
+        output=name,
+        name=dataset.existing_name,
+        identifier=dataset.identifier,
+        has_response=True,
+        script=dataset.history
+      )
+    else:
+      response = self.vizier_request("save_dataset",
+        name=name,
+        has_response=True,
+        dataset=dataset.to_json()
+      )
     assert(response is not None)
     dataset.identifier = response["artifactId"]
     self.datasets[name] = dataset

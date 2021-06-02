@@ -36,6 +36,8 @@ import info.vizierdb.catalog.Artifact
 import info.vizierdb.catalog.ArtifactRef
 import info.vizierdb.catalog.ArtifactSummary
 import org.mimirdb.util.UnsupportedFeature
+import org.mimirdb.vizual.{ Command => VizualCommand }
+import org.mimirdb.api.request.VizualRequest
 
 object Python extends Command
   with LazyLogging
@@ -75,7 +77,7 @@ object Python extends Command
         context.artifact( (event\"name").as[String] ) match {
           case None => 
             val name = (event\"name").as[String]
-            context.error("No such artifact '$name'")
+            context.error(s"No such artifact '$name'")
             python.kill()
           case Some(artifact) => 
             handler(artifact)
@@ -142,6 +144,29 @@ object Python extends Command
                 resultName = Some(nameInBackend),
                 properties = Some( (ds\"properties").as[Map[String,JsValue]] ),
                 humanReadableName = Some( (event\"name").as[String] )
+              ).handle
+
+              python.send("datasetId",
+                "artifactId" -> JsNumber(id)
+              )
+            }
+          case "vizual_script" => 
+            withArtifact { existingDs => 
+
+              val output = (event\"output").as[String]
+              val (nameInBackend, id) = 
+                context.outputDataset( output )
+              logger.trace(s"Visual being used to create dataset: $output (artifact $id)")
+
+              assert(
+                (event\"identifier").as[Long] == existingDs.id,
+                s"Vizual script for ${output} with out-of-sync identifier (Python has ${(event\"identifier")}; Spark has ${existingDs.id})"
+              )
+              val response = VizualRequest(
+                input = existingDs.nameInBackend,
+                script = (event\"script").as[Seq[VizualCommand]],
+                resultName = Some(nameInBackend),
+                compile = None
               ).handle
 
               python.send("datasetId",

@@ -14,6 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.vizual
 
+import play.api.libs.json._
 import info.vizierdb.commands._
 import org.mimirdb.vizual
 
@@ -41,7 +42,7 @@ object UpdateCell extends VizualCommand
       vizual.UpdateCell(
         column = arguments.get[Int]("column"),
         row = Some(rowSelection),
-        value = Some(arguments.get[String]("value")),
+        value = Some(JsString(arguments.get[String]("value"))),
         comment = arguments.getOpt[String]("comment")
       )
     )

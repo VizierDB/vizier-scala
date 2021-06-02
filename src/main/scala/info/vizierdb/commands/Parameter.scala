@@ -108,6 +108,7 @@ trait StringEncoder
   def name: String
   def encode(v: Any): JsValue = 
     v match {
+      case j:JsValue => j
       case x:String => JsString(x)
       case None => JsNull
       case Some(x) => encode(x)
@@ -120,6 +121,7 @@ trait IntegerEncoder
   def name: String
   def encode(v: Any): JsValue = 
     v match {
+      case j:JsValue => j
       case x:Int => JsNumber(x)
       case x:Integer => JsNumber(x:Int)
       case x:Long => JsNumber(x)
@@ -134,6 +136,7 @@ trait FloatEncoder
   def name: String
   def encode(v: Any): JsValue = 
     v match {
+      case j:JsValue => j
       case x:Int => JsNumber(x)
       case x:Integer => JsNumber(x:Int)
       case x:Long => JsNumber(x)
@@ -163,6 +166,7 @@ case class BooleanParameter(
     default.map { JsBoolean(_) }.getOrElse { JsNull }
   def encode(v: Any): JsValue = 
     v match {
+      case j:JsValue => j
       case x:Boolean => JsBoolean(x)
       case _ => throw new VizierException("Invalid Parameter to $name (expected Boolean)")
     }

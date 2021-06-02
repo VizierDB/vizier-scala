@@ -15,6 +15,7 @@
 package info.vizierdb.commands
 
 import scalikejdbc.DB
+import play.api.libs.json._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 
@@ -46,9 +47,9 @@ class VizualCommandSpec
 
     project.vizual("R", 
       (
-        InsertColumn(Some(2), "C")
+        InsertColumn(Some(2), "C", None)
         +: rowids.zipWithIndex.map { case (rowid, idx) => 
-          UpdateCell(2, Some(RowsById(Set(rowid))), Some(s"Row ${idx+1}"), None)
+          UpdateCell(2, Some(RowsById(Set(rowid))), Some(JsString(s"Row ${idx+1}")), None)
         }
       ):_*
     )

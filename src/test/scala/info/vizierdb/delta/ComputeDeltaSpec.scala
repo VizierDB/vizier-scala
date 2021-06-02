@@ -38,7 +38,7 @@ class ComputeDeltaSpec
     ComputeDelta(snapshot1).map { _ must beAnInstanceOf[UpdateCell] }
 
     project.vizual("r", 
-      vizual.InsertColumn(None, "D")
+      vizual.InsertColumn(None, "D", None)
     )
     ComputeDelta(snapshot2).map { _ must beAnInstanceOf[InsertCell] }
 

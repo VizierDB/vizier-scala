@@ -21,8 +21,8 @@ object TemplateParameters
 
   val DATATYPE: EnumerableParameter = DATATYPE()
 
-  def DATATYPE(id:String = "schema_datatype") =
-    EnumerableParameter(name = "Data Type", id = id, required = false, values = EnumerableValue.withNames(
+  def DATATYPE(id:String = "schema_datatype", required: Boolean = false) =
+    EnumerableParameter(name = "Data Type", id = id, required = required, values = EnumerableValue.withNames(
       "String"                 -> "string",
       "Real"                   -> "real",
       "Float"                  -> "float",

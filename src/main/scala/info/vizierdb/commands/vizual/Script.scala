@@ -14,6 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.vizual
 
+import play.api.libs.json._
 import info.vizierdb.commands._
 import org.mimirdb.vizual
 import org.mimirdb.spark.Schema
@@ -43,7 +44,7 @@ object Script extends VizualCommand
     ("Insert Row", "insert_row", { args => 
       // val values = args.getRecord("values")
       vizual.InsertRow(
-        position = args.get[Int]("position"),
+        position = Some(args.get[Int]("position")),
         values = None
       )
     }),
@@ -83,7 +84,7 @@ object Script extends VizualCommand
       vizual.UpdateCell(
         column = args.get[Int]("column"),
         row = Some(rowSelection),
-        value = Some(args.get[String]("name")),
+        value = Some(JsString(args.get[String]("name"))),
         comment = args.getOpt[String]("comment")
       )
     }),
@@ -100,6 +101,7 @@ object Script extends VizualCommand
       IntParameter(id = "position", name = "Position", required = false),
       StringParameter(id = "name", name = "Name/Value", required = false),
       StringParameter(id = "comment", name = "Comment", required = false),
+      TemplateParameters.DATATYPE("dataType", required = false)
     ))
   )
   def format(arguments: Arguments): String = 

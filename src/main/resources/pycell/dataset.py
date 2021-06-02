@@ -32,6 +32,7 @@ DATATYPE_SHORT = 'short'
 DATATYPE_LONG = 'long'
 DATATYPE_REAL = 'real'
 DATATYPE_VARCHAR = 'varchar'
+DATATYPE_GEOMETRY = "geometry"
 
 
 VIZUAL_DELETE_COLUMN  = "deletecolumn"
@@ -186,12 +187,17 @@ class MutableDatasetRow(object):
         associated with this cell
     """
     col_index = self.dataset.column_index(column)
-    self.values[col_index] = value
+    self.values[col_index] = assert_type(value, self.dataset.columns[col_index].data_type)
+    if comment is not None:
+      self.caveats[col_index] = True
+    else:
+      self.caveats[col_index] = False
     self.dataset.add_delta(
       id=VIZUAL_UPDATE_CELL,
       column=col_index,
       row=self.identifier,
-      comment=comment
+      comment=comment,
+      value=value
     )
 
 
@@ -656,5 +662,29 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
 def export_from_native_type(value: Any, data_type: str) -> Any:
   if data_type == "geometry":
     return value.wkt
+  else:
+    return value
+
+
+def assert_type(value: Any, data_type: str) -> Any:
+  import datetime
+  if data_type == DATATYPE_DATE:
+    assert(isinstance(value, datetime.date))
+    return value
+  elif data_type == DATATYPE_DATETIME:
+    assert(isinstance(value, datetime.datetime))
+    return value
+  elif data_type == DATATYPE_INT or data_type == DATATYPE_SHORT or data_type == DATATYPE_LONG:
+    assert(isinstance(value, int))
+    return value
+  elif data_type == DATATYPE_REAL:
+    assert(isinstance(value, float))
+    return value
+  elif data_type == DATATYPE_VARCHAR:
+    assert(isinstance(value, str))
+    return value
+  elif data_type == DATATYPE_GEOMETRY:
+    # Not sure how to validate this...
+    return value
   else:
     return value
