@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -- copyright-header:end --
-#!/usr/bin/env python3
 from subprocess import Popen
 from os.path import exists as path_exists
 import re
