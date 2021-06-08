@@ -26,7 +26,8 @@ import info.vizierdb.api.response._
 
 case class UpdateProject(
   projectId: Identifier,
-  properties: Map[String, JsValue]
+  properties: Map[String, JsValue],
+  defaultBranch: Option[Identifier]
 )
   extends Request
 {
@@ -34,16 +35,24 @@ case class UpdateProject(
   {
     val project: Project = 
       DB.autoCommit { implicit s => 
-        Project.lookup(projectId)
-               .getOrElse { 
-                 return NoSuchEntityResponse()
-               }
-               .updateProperties(
-                  properties.get("name")
-                            .map { _.as[String] }
-                            .getOrElse { "Untitled Project" },
-                  properties = properties
-               )  
+        var project = Project.lookup(projectId)
+                             .getOrElse { 
+                               return NoSuchEntityResponse()
+                             }
+        if(defaultBranch.isDefined){
+          if(project.branchIds contains defaultBranch.get){
+            project = project.activateBranch(defaultBranch.get)
+          } else {
+            return NoSuchEntityResponse()
+          }
+        }
+        project = project.updateProperties(
+                            properties.get("name")
+                                      .map { _.as[String] }
+                                      .getOrElse { "Untitled Project" },
+                            properties = properties
+                          )
+        /* return */ project
       }
     RawJsonResponse(
       project.summarize

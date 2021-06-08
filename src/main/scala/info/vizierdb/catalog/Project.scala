@@ -44,6 +44,12 @@ case class Project(
       select.from(Branch as b).where.eq(b.projectId, id)
     }.map { Branch(_) }.list.apply()
 
+  def branchIds(implicit session: DBSession) = 
+    withSQL { 
+      val b = Branch.syntax
+      select(b.id).from(Branch as b).where.eq(b.projectId, id)
+    }.map { _.long(0) }.list.apply()
+
   def artifacts(implicit session: DBSession): Seq[Artifact] =
     withSQL {
       val a = Artifact.syntax

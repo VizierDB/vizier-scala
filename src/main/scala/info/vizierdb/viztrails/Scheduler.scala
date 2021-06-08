@@ -34,7 +34,7 @@ object Scheduler
 
   /**
    * Schedule a workflow for execution.  This should be automatically called from the branch
-   * mutator operations.
+   * mutator operations.  <b>Do not call this from within a DB Session</b>
    */
   def schedule(workflowId: Identifier) 
   {
@@ -56,7 +56,8 @@ object Scheduler
 
   /**
    * Abort a (possibly) runnign workflow workflow.  This shouldn't be called directly.  Instead
-   * use Workflow.abort or one of Branch's mutator operations.
+   * use Workflow.abort or one of Branch's mutator operations.  <b>Do not call this from within 
+   * a DB Session</b>
    */
   def abort(workflowId: Identifier)
   {
