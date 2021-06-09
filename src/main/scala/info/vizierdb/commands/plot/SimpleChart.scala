@@ -49,7 +49,9 @@ object SimpleChart extends Command
         "Line Chart with Points"   -> "Line Chart with Points",
         "Line Chart without Points"   -> "Line Chart without Points",
         "Scatter Plot" -> "Scatter Plot"
-      ), default = Some(1)),
+      ), default = Some(1), aliases = Map(
+        "Line Chart" -> "Line Chart with Points"
+      )),
       BooleanParameter(id = "chartGrouped", name = "Grouped", required = false, default = Some(true)),
     ))
   )

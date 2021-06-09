@@ -62,7 +62,7 @@ class ProjectAPISpec
     val deleteResponse = DeleteProjectHandler.handle(Map("projectId" -> JsNumber(id)))
 
     DB.readOnly { implicit s => 
-      Project.lookup(id) must beNone
+      Project.getOption(id) must beNone
     }
   }
 

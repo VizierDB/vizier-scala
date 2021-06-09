@@ -81,21 +81,21 @@ object types
       }
     }
 
-    val PENDING_STATES = Set(
+    val PENDING_STATES: Set[T] = Set(
       WAITING,
       STALE,
       RUNNING,
     )
 
-    val PROVENANCE_VALID_STATES = Set(
+    val PROVENANCE_VALID_STATES: Set[T] = Set(
       DONE,
       WAITING,
       STALE,
       CANCELLED,
       FROZEN
     )
-    val PROVENANCE_NOT_VALID_STATES = 
-      this.values.toSet - PROVENANCE_VALID_STATES
+    val PROVENANCE_NOT_VALID_STATES: Set[T] = 
+      this.values.toSet -- PROVENANCE_VALID_STATES
 
     implicit val format = Format[T](
       new Reads[T]{

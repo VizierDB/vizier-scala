@@ -38,7 +38,7 @@ class ViztrailsSpec
     }
 
     DB autoCommit { implicit session =>
-      val project = Project.lookup(id).getOrElse {
+      val project = Project.getOption(id).getOrElse {
                         ko("newly created project doesn't exist"); null
                       }
       project.name must be equalTo("Test Project")

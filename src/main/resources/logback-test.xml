@@ -23,6 +23,7 @@
   <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
   <logger name="info.vizierdb.viztrails.Scheduler$"              level="TRACE" />
   <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
+  <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
   <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="TRACE" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->

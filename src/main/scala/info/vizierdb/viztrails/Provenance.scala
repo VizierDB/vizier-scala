@@ -95,7 +95,7 @@ object Provenance
   def cellNeedsANewResult(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Boolean =
   {
     if(ExecutionState.PROVENANCE_NOT_VALID_STATES(cell.state)){
-      logger.trace("Cell is in a provenance-not-valid state.  Forcing a conflict")
+      logger.trace(s"Cell is in a provenance-not-valid state (${cell.state}).  Forcing a conflict")
       return true
     } else if(cell.resultId.isEmpty){
       logger.trace("Cell has no result.  By default this is a conflict.")
@@ -153,13 +153,13 @@ object Provenance
           }
         }
         case ExecutionState.STALE | ExecutionState.ERROR => {
-          logger.debug(s"Already STALE (or ERROR)")
+          logger.debug(if(curr.state == ExecutionState.STALE){"Already STALE"} else {"ERROR -> STALE" })
           hitFirstPendingCell = true
         }
         case ExecutionState.RUNNING => {
           // It's possible we'll hit a RUNNING cell if we're appending a
           // cell to the workflow.
-          logger.debug("Hit a RUNNING cell")
+          logger.debug("Already RUNNING")
           hitFirstPendingCell = true
         }
         case ExecutionState.DONE => {

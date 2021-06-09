@@ -2,6 +2,7 @@ package info.vizierdb.viztrails
 
 import scalikejdbc._
 import info.vizierdb.types.ExecutionState
+import com.typesafe.scalalogging.LazyLogging
 
 class StateTransition(
   fromState: ExecutionState.T,
@@ -24,10 +25,16 @@ class StateTransition(
     }
 
   def stateUpdateSyntax:SQLSyntax = 
-    sqls"when $matcherSyntax then $toState"
+    sqls"when $matcherSyntax then ${toState.id}"
 
   def resultUpdateSyntax:SQLSyntax = 
-    sqls"when $matcherSyntax then ${if(keepResult){ sqls"state" } else { sqls"null" }}"
+    sqls"when $matcherSyntax then ${if(keepResult){ sqls"result_id" } else { sqls"null" }}"
+
+  override def toString(): String = 
+    condition match {
+      case None => s"$fromState -> $toState"
+      case Some(c) => s"$fromState (if $c) -> $toState"
+    }
 }
 
 /**
@@ -36,6 +43,8 @@ class StateTransition(
  * See https://github.com/VizierDB/vizier-scala/wiki/DevGuide-CellStates
  */
 object StateTransition
+  extends Object
+  with LazyLogging
 {
   /**
    * Declare a state transition: <pre>
@@ -98,12 +107,17 @@ object StateTransition
    * of declared state transitions.
    */
   def updateState(transitions: Seq[StateTransition]): SQLSyntax =
-    if(transitions.isEmpty){
-      sqls"state"
-    } else {
-      transitions.map { _.stateUpdateSyntax }
-                 .foldLeft(sqls"case") { _ + sqls" " + _ } + sqls" else state end"
-    }
+  {
+    val result = 
+      if(transitions.isEmpty){
+        sqls"state"
+      } else {
+        transitions.map { _.stateUpdateSyntax }
+                   .foldLeft(sqls"case") { _ + sqls" " + _ } + sqls" else state end"
+      }
+    logger.trace(s"State Transitions for: \n${transitions.mkString("\n")}\nare: ${result}")
+    return result
+  }
 
   /**
    * Generate a [[SQLSyntax]] case statement that derives the new result reference
@@ -114,11 +128,16 @@ object StateTransition
    * https://github.com/VizierDB/vizier-scala/wiki/DevGuide-CellStates#state-definitions)
    */
   def updateResult(transitions: Seq[StateTransition]): SQLSyntax = 
-    if(transitions.isEmpty){
-      sqls"resultId"
-    } else {
-      transitions.map { _.stateUpdateSyntax }
-                 .foldLeft(sqls"case") { _ + sqls" " + _ } + sqls" else state end"
-    }
+  {
+    val result = 
+      if(transitions.isEmpty){
+        sqls"resultId"
+      } else {
+        transitions.map { _.resultUpdateSyntax }
+                   .foldLeft(sqls"case") { _ + sqls" " + _ } + sqls" else result_id end"
+      }
+    logger.trace(s"Result Transitions for: \n${transitions.mkString("\n")}\nare: ${result}")
+    return result
+  }
 
 }
