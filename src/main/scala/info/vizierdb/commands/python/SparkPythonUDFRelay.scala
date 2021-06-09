@@ -34,7 +34,7 @@ object SparkPythonUDFRelay
   override def getPickle(name: String): Option[Array[Byte]] =
   {
     DB.readOnly { implicit s => 
-      Artifact.lookup(name.toLong) 
+      Artifact.getOption(name.toLong) 
     }.map { artifact: Artifact => 
       if( (artifact.t != ArtifactType.FUNCTION)
           || (artifact.mimeType != MIME.PYTHON))

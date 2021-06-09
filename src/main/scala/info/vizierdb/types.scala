@@ -58,8 +58,8 @@ object types
                                             error */
     val WAITING   = Value(3, "WAITING")  /* The referenced execution follows a stale cell and *may* be 
                                             out-of-date, depending on the outcome of the stale cell  */
-    val BLOCKED   = Value(4, "BLOCKED")  /* The referenced execution is incorrect for this workflow and 
-                                            needs to be recomputed, but is blocked on another one */
+    // There existed a BLOCKED state (id=4) during development that was never
+    // actually used.
     val STALE     = Value(5, "STALE")    /* The referenced execution is incorrect for this workflow and 
                                             needs to be recomputed */
     val CANCELLED = Value(6, "CANCELLED")/* Execution of the cell or a cell preceding it was 
@@ -74,7 +74,6 @@ object types
         case DONE => 4      // MODULE_SUCCESS
         case ERROR => 3     // MODULE_ERROR
         case WAITING => 0   // MODULE_PENDING
-        case BLOCKED => 0   // MODULE_PENDING
         case STALE => 1     // MODULE_RUNNING
         case RUNNING => 1   // MODULE_RUNNING
         case CANCELLED => 2 // MODULE_CANCELLED
@@ -82,19 +81,22 @@ object types
       }
     }
 
-    def isRunningOrPendingState(state: T) = 
-    {
-      state match { 
-        case DONE => false
-        case ERROR => false
-        case WAITING => true
-        case BLOCKED => true
-        case STALE => true
-        case RUNNING => true
-        case CANCELLED => false
-        case FROZEN => false
-      }
-    }
+    val PENDING_STATES = Set(
+      WAITING,
+      STALE,
+      RUNNING,
+    )
+
+    val PROVENANCE_VALID_STATES = Set(
+      DONE,
+      WAITING,
+      STALE,
+      CANCELLED,
+      FROZEN
+    )
+    val PROVENANCE_NOT_VALID_STATES = 
+      this.values.toSet - PROVENANCE_VALID_STATES
+
     implicit val format = Format[T](
       new Reads[T]{
         def reads(j: JsValue): JsResult[T] = 

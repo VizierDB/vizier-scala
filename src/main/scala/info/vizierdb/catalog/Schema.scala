@@ -28,7 +28,7 @@ object Schema
     if(DB.getTable("metadata").isEmpty){ return 0 }
     else { 
       DB.readOnly { implicit session => 
-        Metadata.lookup("schema") 
+        Metadata.getOption("schema") 
       }.map { _.toInt }.getOrElse { 0 } 
     }
   }

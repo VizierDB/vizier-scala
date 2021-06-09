@@ -32,7 +32,7 @@ object GetBranchHandler
     val projectId = pathParameters("projectId").as[Long]
     val branchId = pathParameters("branchId").as[Long]
     DB.readOnly { implicit session => 
-      Branch.lookup(projectId, branchId) match {
+      Branch.getOption(projectId, branchId) match {
         case Some(branch) => RawJsonResponse(branch.describe)
         case None => NoSuchEntityResponse()
       }

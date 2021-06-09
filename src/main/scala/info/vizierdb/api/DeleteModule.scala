@@ -36,7 +36,7 @@ object DeleteModuleHandler
     val workflow = 
       DB.autoCommit { implicit s => 
         val branch = 
-          Branch.lookup(projectId = projectId, branchId = branchId)
+          Branch.getOption(projectId = projectId, branchId = branchId)
                  .getOrElse { 
                     return NoSuchEntityResponse()
                  }

@@ -44,7 +44,7 @@ object ThawModulesHandler
       DB.autoCommit { implicit s => 
         logger.trace(s"Looking up branch $branchId")
         val branch:Branch =
-          Branch.lookup(projectId, branchId)
+          Branch.getOption(projectId, branchId)
                 .getOrElse { 
                    return NoSuchEntityResponse()
                 }

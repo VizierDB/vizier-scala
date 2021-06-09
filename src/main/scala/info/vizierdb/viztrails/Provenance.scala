@@ -130,10 +130,15 @@ object Provenance
     //       ... but let's get it correct first.
     var scope = outputsAtStart
     var hitFirstStaleCell = false
-    
+
     for(curr <- cells){
       logger.debug(s"Updating execution state for $curr; $scope")
       curr.state match {
+        case ExecutionState.RUNNING => {
+          // It's possible we'll hit a RUNNING cell if we're appending a
+          // cell to the workflow.
+          logger.debug("Hit a RUNNING cell")
+        }
         case ExecutionState.STALE => {
           logger.debug(s"Already STALE")
           hitFirstStaleCell = true

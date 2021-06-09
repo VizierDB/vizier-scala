@@ -35,7 +35,7 @@ case class UpdateProject(
   {
     val project: Project = 
       DB.autoCommit { implicit s => 
-        var project = Project.lookup(projectId)
+        var project = Project.getOption(projectId)
                              .getOrElse { 
                                return NoSuchEntityResponse()
                              }

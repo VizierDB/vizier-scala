@@ -46,9 +46,9 @@ object WorkflowSQLHandler
         val workflow: Workflow = 
           (workflowId match {
             case Some(workflowIdActual) => 
-              Workflow.lookup(projectId, branchId, workflowIdActual)
+              Workflow.getOption(projectId, branchId, workflowIdActual)
             case None => 
-              Branch.lookup(projectId, branchId).map { _.head }
+              Branch.getOption(projectId, branchId).map { _.head }
           }).getOrElse {
             return NoSuchEntityResponse()
           }

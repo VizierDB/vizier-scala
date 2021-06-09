@@ -41,13 +41,13 @@ object CancelWorkflowHandler
       DB.readOnly { implicit s => 
         workflowId match { 
           case None => 
-            Branch.lookup(projectId, branchId)
+            Branch.getOption(projectId, branchId)
                   .getOrElse {
                      return NoSuchEntityResponse()
                   }
                   .head
           case Some(id) =>
-            Workflow.lookup(projectId, branchId, id)
+            Workflow.getOption(projectId, branchId, id)
                     .getOrElse {
                        return NoSuchEntityResponse()
                     }
