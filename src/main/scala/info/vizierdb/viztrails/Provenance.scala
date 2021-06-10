@@ -132,7 +132,6 @@ object Provenance
     // TODO: this update can be moved completely to the database as an UPDATE query
     //       ... but let's get it correct first.
     var scope = outputsAtStart
-    var hitFirstPendingCell = false
 
     for(curr <- cells){
       logger.debug(s"Updating execution state for $curr; $scope")
@@ -141,30 +140,41 @@ object Provenance
           if(cellNeedsANewResult(curr, scope)){ 
             // There is a conflict.  The cell now officially needs to be re-executed.
             logger.debug(s"Conflict detected -> STALE")
-            hitFirstPendingCell = true
             curr.updateState(ExecutionState.STALE)
-          } else if(!hitFirstPendingCell) {
+
+            // Once we hit a STALE cell, the current scope is invalid and we can learn
+            // nothing more about the remaining cells.
+            return
+          } else {
             // There is no conflict, and we haven't hit the first stale cell yet.  
             // Can safely re-use the prior cell execution results
             logger.debug("No conflict -> DONE")
             curr.updateState(ExecutionState.DONE)
-          } else {
-            logger.debug("Already hit stale cell -> WAITING")
           }
         }
-        case ExecutionState.STALE | ExecutionState.ERROR => {
-          logger.debug(if(curr.state == ExecutionState.STALE){"Already STALE"} else {"ERROR -> STALE" })
-          hitFirstPendingCell = true
+        case ExecutionState.ERROR => {
+          logger.debug("ERROR -> STALE")
+          curr.updateState(ExecutionState.STALE)
+          // Once we hit a STALE cell, the current scope is invalid and we can learn
+          // nothing more about the remaining cells.
+          return
+        }
+        case ExecutionState.STALE => {
+          logger.debug("Already STALE")
+          // Once we hit a STALE cell, the current scope is invalid and we can learn
+          // nothing more about the remaining cells.
+          return
         }
         case ExecutionState.RUNNING => {
           // It's possible we'll hit a RUNNING cell if we're appending a
           // cell to the workflow.
           logger.debug("Already RUNNING")
-          hitFirstPendingCell = true
+          // Once we hit a STALE cell, the current scope is invalid and we can learn
+          // nothing more about the remaining cells.
+          return
         }
         case ExecutionState.DONE => {
           logger.debug("Already DONE")
-          hitFirstPendingCell = true
         }
         case ExecutionState.FROZEN => {
           // Frozen cells are simply ignored
