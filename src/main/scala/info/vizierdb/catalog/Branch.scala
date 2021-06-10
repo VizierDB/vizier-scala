@@ -101,7 +101,8 @@ case class Branch(
       module = Some(module),
       action = ActionType.APPEND,
       prevWorkflowId = headId,
-      addModules = Seq(module.id -> Workflow.getLength(headId))
+      abortPrevWorkflow = true,
+      addModules = Seq(module.id -> Workflow.getLength(headId)),
     )
     DeltaBus.notifyCellAppend(ret._2)
     return ret
@@ -120,6 +121,7 @@ case class Branch(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
+      abortPrevWorkflow = true,
       updatePosition = sqls"case when position >= $position then position + 1 else position end",
       recomputeCellsFrom = position,
       addModules = Seq(module.id -> position)
@@ -144,6 +146,7 @@ case class Branch(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
+      abortPrevWorkflow = true,
       recomputeCellsFrom = position,
       keepCells = sqls"position <> $position",
       addModules = Seq(module.id -> position)
@@ -167,6 +170,7 @@ case class Branch(
       module = None,
       action = ActionType.DELETE,
       prevWorkflowId = headId,
+      abortPrevWorkflow = true,
       updatePosition = sqls"case when position > $position then position - 1 else position end",
       recomputeCellsFrom = position,
       keepCells = sqls"position <> $position"
@@ -194,6 +198,7 @@ case class Branch(
       module = None,
       action = ActionType.DELETE,
       prevWorkflowId = headId,
+      abortPrevWorkflow = true,
       updateState = 
         StateTransition.forAll(sqls"position = $position" , FROZEN),
       recomputeCellsFrom = position+1
@@ -216,6 +221,7 @@ case class Branch(
       module = None,
       action = ActionType.DELETE,
       prevWorkflowId = headId,
+      abortPrevWorkflow = true,
       updateState = 
         StateTransition( sqls"position = $position", FROZEN -> WAITING ),
       recomputeCellsFrom = position+1
@@ -243,6 +249,7 @@ case class Branch(
       module = None,
       action = ActionType.FREEZE,
       prevWorkflowId = headId,
+      abortPrevWorkflow = true,
       updateState = 
         StateTransition.forAll(sqls"position >= $position", FROZEN)
     )
@@ -265,6 +272,7 @@ case class Branch(
       module = None,
       action = ActionType.FREEZE,
       prevWorkflowId = headId,
+      abortPrevWorkflow = true,
       updateState = 
         StateTransition(sqls"position <= $position", FROZEN -> WAITING),
       recomputeCellsFrom = position + 1
@@ -348,7 +356,8 @@ case class Branch(
     updateState: Seq[StateTransition] = Seq.empty,
     recomputeCellsFrom: Int = -1,
     keepCells: SQLSyntax = sqls"1=1",
-    addModules: Iterable[(Identifier, Int)] = Seq()
+    addModules: Iterable[(Identifier, Int)] = Seq(),
+    abortPrevWorkflow: Boolean = false
   )(implicit session: DBSession): (Branch, Workflow) = 
   {
     // Note: we're working with immutable objects here.  `branch` will be the 
@@ -358,6 +367,10 @@ case class Branch(
       action = action,
       actionModuleId = module.map { _.id }
     )
+    if(abortPrevWorkflow){
+      Workflow.get(prevWorkflowId).abortIfNeeded
+    }
+
 
     val stateTransitions = 
       updateState ++ (

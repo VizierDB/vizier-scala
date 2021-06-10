@@ -136,7 +136,7 @@ object Provenance
     for(curr <- cells){
       logger.debug(s"Updating execution state for $curr; $scope")
       curr.state match { 
-        case ExecutionState.WAITING | ExecutionState.CANCELLED => {
+        case ExecutionState.WAITING => {
           if(cellNeedsANewResult(curr, scope)){ 
             // There is a conflict.  The cell now officially needs to be re-executed.
             logger.debug(s"Conflict detected -> STALE")
@@ -152,10 +152,15 @@ object Provenance
             curr.updateState(ExecutionState.DONE)
           }
         }
-        case ExecutionState.ERROR => {
-          logger.debug("ERROR -> STALE")
-          curr.updateState(ExecutionState.STALE)
-          // Once we hit a STALE cell, the current scope is invalid and we can learn
+        case ExecutionState.ERROR | ExecutionState.CANCELLED => {
+          // Workflow aborts need to abort both the scheduler and the workflow cell state, and
+          // generally it makes more sense to update the cells first.  As a result, it is possible
+          // that we might hit an ERROR or CANCELLED cell (which generally means that the workflow
+          // was literally just aborted).  
+
+          logger.debug("Already ERROR or CANCELLED")
+
+          // Once we hit an ERROR or CANCELLED cell, the current scope is invalid and we can learn
           // nothing more about the remaining cells.
           return
         }

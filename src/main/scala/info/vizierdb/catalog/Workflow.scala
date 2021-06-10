@@ -123,6 +123,18 @@ case class Workflow(
     }
 
   def length(implicit session: DBSession): Int = Workflow.getLength(id)
+  def abortIfNeeded(implicit session:DBSession): Workflow =
+  {
+    val pendingCellCount = withSQL {
+      val c = Cell.syntax
+      select(sqls"count(*)")
+        .from(Cell as c)
+        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq)
+          .and.eq(c.workflowId, id)
+    }.map { _.long(1) }.single.apply().getOrElse { 0l }
+    if(pendingCellCount > 0){ abort }
+    else { this }
+  }
   def abort(implicit session:DBSession): Workflow =
   {
     withSQL {
@@ -131,7 +143,7 @@ case class Workflow(
         .set(w.aborted -> 1)
         .where.eq(w.id, id)
     }.update.apply()
-    for(cell <- cellsWhere(sqls"state <> ${ExecutionState.DONE.id}")){
+    for(cell <- cellsWhere(sqls.in(sqls"state", ExecutionState.PENDING_STATES.toSeq))) {
       DeltaBus.notifyStateChange(
         this, 
         cell.position, 
@@ -149,7 +161,7 @@ case class Workflow(
           c.state -> StateTransition.updateState(stateTransitions),
           c.resultId -> StateTransition.updateResult(stateTransitions)
         )
-        .where.ne(c.state, ExecutionState.DONE)
+        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq.map { _.id })
           .and.eq(c.workflowId, id)
     }.update.apply()
     copy(aborted = true)
