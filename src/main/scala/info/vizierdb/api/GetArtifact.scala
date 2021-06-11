@@ -33,7 +33,7 @@ object GetArtifactHandler
 {
   def getArtifact(projectId: Long, artifactId: Long, expecting: Option[ArtifactType.T]): Option[Artifact] = 
       DB.readOnly { implicit session => 
-        Artifact.lookup(artifactId, Some(projectId))
+        Artifact.getOption(artifactId, Some(projectId))
       }.filter { artifact => 
         expecting.isEmpty || expecting.get.equals(artifact.t)
       }

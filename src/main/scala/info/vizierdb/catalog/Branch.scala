@@ -22,11 +22,11 @@ import info.vizierdb.types._
 import java.time.format.DateTimeFormatter
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.catalog.binders._
-import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
-import info.vizierdb.viztrails.Provenance
+import info.vizierdb.viztrails.{ Scheduler, Provenance, StateTransition }
 import info.vizierdb.delta.DeltaBus
+import ExecutionState.{ WAITING, STALE, RUNNING, ERROR, CANCELLED, DONE, FROZEN }
 
 /**
  * One branch of the project
@@ -43,36 +43,87 @@ case class Branch(
   createdFromWorkflowId: Option[Identifier]
 )
 {
+  /**
+   * Retrieve the head [[Workflow]]
+   */
   def head(implicit session: DBSession): Workflow = Workflow.get(headId)
+
+  /**
+   * Update the branch head by creating a module and appending it to the workflow
+   * 
+   * @param packageId       The package id of the module's command
+   * @param commandId       The command id of the module's command
+   * @param args            The module's arguments
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def append(packageId: String, commandId: String)
+            (args: (String, Any)*)
+            (implicit session: DBSession): (Branch, Workflow) =
+    append(Module.make(packageId, commandId)(args:_*))
+
+  /**
+   * Update the branch head by creating a module and inserting it into the workflow
+   * 
+   * @param position        The position of the newly inserted cell
+   * @param packageId       The package id of the module's command
+   * @param commandId       The command id of the module's command
+   * @param args            The module's arguments
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def insert(position: Int, packageId: String, commandId: String)
+            (args: (String, Any)*)
+            (implicit session: DBSession): (Branch, Workflow) =
+    insert(position, Module.make(packageId, commandId)(args:_*))
+
+  /**
+   * Update the branch head by creating a module and replacing an existing cell with it
+   * 
+   * @param position        The position of the cell to modify
+   * @param packageId       The package id of the module's command
+   * @param commandId       The command id of the module's command
+   * @param args            The module's arguments
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def update(position: Int, packageId: String, commandId: String)
+            (args: (String, Any)*)
+            (implicit session: DBSession): (Branch, Workflow) =
+    update(position, Module.make(packageId, commandId)(args:_*))
+
+  /**
+   * Update the branch head by appending a module to the workflow
+   * 
+   * @param module          The module to append
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
   def append(module: Module)(implicit session: DBSession): (Branch, Workflow) = 
   {
     val ret = modify(
       module = Some(module),
       action = ActionType.APPEND,
       prevWorkflowId = headId,
-      addModules = Seq(module.id -> Workflow.getLength(headId))
+      abortPrevWorkflow = true,
+      addModules = Seq(module.id -> Workflow.getLength(headId)),
     )
     DeltaBus.notifyCellAppend(ret._2)
     return ret
   }
-  def append(packageId: String, commandId: String)
-            (args: (String, Any)*)
-            (implicit session: DBSession): (Branch, Workflow) =
-    append(Module.make(packageId, commandId)(args:_*))
+
+  /**
+   * Update the branch head by inserting a module into the workflow
+   * 
+   * @param position        The position of the newly inserted cell
+   * @param module          The module to insert
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
   def insert(position: Int, module: Module)(implicit session: DBSession): (Branch, Workflow) =
   {
     val ret = modify(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
+      abortPrevWorkflow = true,
       updatePosition = sqls"case when position >= $position then position + 1 else position end",
-      updateState = sqls"""
-          case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id} 
-               when position >= $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
-               when position >= $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
-               when position >= $position then ${ExecutionState.WAITING.id} 
-               else state end
-      """,
+      recomputeCellsFrom = position,
       addModules = Seq(module.id -> position)
     )
     DeltaBus.notifyCellInserts(ret._2){ (cell, _) => cell.position == position }
@@ -81,46 +132,22 @@ case class Branch(
     }
     return ret
   }
-  def delete(position: Int)(implicit session: DBSession): (Branch, Workflow) =
-  {
-    val ret = modify(
-      module = None,
-      action = ActionType.DELETE,
-      prevWorkflowId = headId,
-      updatePosition = sqls"case when position > $position then position - 1 else position end",
-      updateState = sqls"""
-          case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id} 
-               when position >= $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
-               when position >= $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
-               when position >= $position then ${ExecutionState.WAITING.id} 
-               else state end
-      """,
-      keepCells = sqls"position <> $position",
-      forceRecomputeState = true
-    )
-    DeltaBus.notifyCellDelete(ret._2, position)
-    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
-    }
-    return ret
-  }
-  def insert(position: Int, packageId: String, commandId: String)
-            (args: (String, Any)*)
-            (implicit session: DBSession): (Branch, Workflow) =
-    insert(position, Module.make(packageId, commandId)(args:_*))
+
+  /**
+   * Update the branch head by replacing a cell in the workflow with a new module
+   * 
+   * @param position        The position of the cell to replace
+   * @param module          The module to replace the cell with
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
   def update(position: Int, module: Module)(implicit session: DBSession): (Branch, Workflow) = 
   {
     val ret = modify(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
-      updateState = sqls"""
-          case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id}
-               when position >= $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
-               when position >= $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
-               when position >= $position then ${ExecutionState.WAITING.id} 
-               else state end
-      """,
+      abortPrevWorkflow = true,
+      recomputeCellsFrom = position,
       keepCells = sqls"position <> $position",
       addModules = Seq(module.id -> position)
     )
@@ -130,50 +157,91 @@ case class Branch(
     }
     return ret
   }
-  def update(position: Int, packageId: String, commandId: String)
-            (args: (String, Any)*)
-            (implicit session: DBSession): (Branch, Workflow) =
-    update(position, Module.make(packageId, commandId)(args:_*))
+
+  /**
+   * Update the branch head by deleting a cell from the workflow
+   * 
+   * @param position        The position of the cell to delete
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def delete(position: Int)(implicit session: DBSession): (Branch, Workflow) =
+  {
+    val ret = modify(
+      module = None,
+      action = ActionType.DELETE,
+      prevWorkflowId = headId,
+      abortPrevWorkflow = true,
+      updatePosition = sqls"case when position > $position then position - 1 else position end",
+      recomputeCellsFrom = position,
+      keepCells = sqls"position <> $position"
+    )
+    DeltaBus.notifyCellDelete(ret._2, position)
+    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
+  }
+
+  /**
+   * Update the branch head by freezing one cell in the workflow
+   * 
+   * @param position        The position of the cell to freeze
+   * @return                The updated Branch object and the new head [[Workflow]]
+   * 
+   * A frozen cell is temporarily removed from the workflow.  Its result persists
+   * and is visible, but the cell itself is never scheduled for reexecution, and 
+   * its outputs are not visible to subsequent cells.
+   */
   def freezeOne(position: Int)(implicit session: DBSession): (Branch, Workflow) =
   {
     val ret = modify(
       module = None,
       action = ActionType.DELETE,
       prevWorkflowId = headId,
-      updateState = sqls"""
-        case when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id}
-             when position = $position then ${ExecutionState.FROZEN.id}
-             when position > $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
-             when position > $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
-             when position > $position then ${ExecutionState.WAITING.id}
-             else state end
-      """
+      abortPrevWorkflow = true,
+      updateState = 
+        StateTransition.forAll(sqls"position = $position" , FROZEN),
+      recomputeCellsFrom = position+1
     )
     for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
       DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
     }
     return ret
   }
+
+  /**
+   * Update the branch head by thawing one cell in the workflow
+   * 
+   * @param position        The position of the cell to thaw
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
   def thawOne(position: Int)(implicit session: DBSession): (Branch, Workflow) =
   {
     val ret = modify(
       module = None,
       action = ActionType.DELETE,
       prevWorkflowId = headId,
-      updateState = sqls"""
-        case when position = $position then ${ExecutionState.STALE.id}
-             when state = ${ExecutionState.FROZEN.id} then ${ExecutionState.FROZEN.id}
-             when position > $position and state = ${ExecutionState.ERROR.id} then ${ExecutionState.STALE.id}
-             when position > $position and state = ${ExecutionState.CANCELLED.id} then ${ExecutionState.STALE.id}
-             when position > $position then ${ExecutionState.WAITING.id}
-             else state end
-      """
+      abortPrevWorkflow = true,
+      updateState = 
+        StateTransition( sqls"position = $position", FROZEN -> WAITING ),
+      recomputeCellsFrom = position+1
     )
     for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
       DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
     }
     return ret
   }
+
+  /**
+   * Update the branch head by freezing cells in workflow starting from a position
+   * 
+   * @param position        The position of the first cell to freeze
+   * @return                The updated Branch object and the new head [[Workflow]]
+   * 
+   * A frozen cell is temporarily removed from the workflow.  Its result persists
+   * and is visible, but the cell itself is never scheduled for reexecution, and 
+   * its outputs are not visible to subsequent cells.
+   */
   def freezeFrom(position: Int)
                 (implicit session: DBSession): (Branch, Workflow) =
   {
@@ -181,16 +249,22 @@ case class Branch(
       module = None,
       action = ActionType.FREEZE,
       prevWorkflowId = headId,
-      updateState = sqls"""
-          case when position >= $position then ${ExecutionState.FROZEN.id}
-               else state end
-      """
+      abortPrevWorkflow = true,
+      updateState = 
+        StateTransition.forAll(sqls"position >= $position", FROZEN)
     )
     for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
       DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
     }
     return ret
   }
+
+  /**
+   * Update the branch head by thawing cells in the workflow prior to a position
+   * 
+   * @param position        The position of the last cell to thaw
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
   def thawUpto(position: Int)
               (implicit session: DBSession): (Branch, Workflow) =
   {
@@ -198,13 +272,10 @@ case class Branch(
       module = None,
       action = ActionType.FREEZE,
       prevWorkflowId = headId,
-      updateState = sqls"""
-          case when position <= $position 
-                      and state = ${ExecutionState.FROZEN.id}
-                    then ${ExecutionState.WAITING.id}
-               else state end
-      """,
-      forceRecomputeState = true,
+      abortPrevWorkflow = true,
+      updateState = 
+        StateTransition(sqls"position <= $position", FROZEN -> WAITING),
+      recomputeCellsFrom = position + 1
     )
     for(cell <- ret._2.cellsWhere(sqls"position <= ${position}")){
       DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
@@ -212,6 +283,9 @@ case class Branch(
     return ret
   }
 
+  /**
+   * Create a barebones, empty workflow
+   */
   private[vizierdb] def initWorkflow(
     prevId: Option[Identifier] = None,
     action: ActionType.T = ActionType.CREATE,
@@ -242,15 +316,48 @@ case class Branch(
     }
   }
 
+  val DEFAULT_STATE_TRANSITIONS = 
+    StateTransition(RUNNING -> STALE) ++
+    StateTransition(ERROR -> STALE) ++
+    StateTransition(CANCELLED -> WAITING)
+
+  /**
+   * Utility method to create a workflow derived from the current branch head
+   * 
+   * @param module             The module involved in the action
+   * @param action             The action type
+   * @param prevWorkflowId     The workflowId of the prior workflow (defaults to the branch head)
+   * @param updatePosition     A [[SQLSyntax]] defining the position of cells in the new workflow 
+   *                           (defaults to the identity function)
+   * @param updateState        A [[Seq]] of [[StateTransitions]] describing how cell states should
+   *                           be revised in the derived workflow.  By default, the state 
+   *                           transitions in [[Branch.DEFAULT_STATE_TRANSITIONS]] will be used
+   *                           with a final fallback of the identity function.  
+   *                           [[StateTransition]]s provided here supersede this default behavior.
+   *                           also see the recomputeCellsFrom parameter.
+   * @param recomputeCellsFrom If provided, cells at or after the position specified in this 
+   *                           parameter will be scheduled for potential re-exeution.
+   * @param keepCells          A [[SQLSyntax]] with a boolean-valued expression.  Cells in the
+   *                           <b>original</b> workflow for which this expression evaluates to
+   *                           false will be dropped from the derived one.
+   * @param addModules         A set of module identifiers to add as new cells, provided as 
+   *                           <tt>(moduleId -> position)</tt> pairs.
+   * @return                   The updated Branch object and the new head [[Workflow]]
+   * 
+   * Note that all [[SQLSyntax]] expressions (updatePosition, updateState, keepCells) are 
+   * evaluated on the cells of the <b>original</b> workflow.  Positions are thus the positions 
+   * from the original workflow.
+   */
   private def modify(
     module: Option[Module],
     action: ActionType.T,
     prevWorkflowId: Identifier = headId,
     updatePosition: SQLSyntax = sqls"position",
-    updateState: SQLSyntax = sqls"state",
+    updateState: Seq[StateTransition] = Seq.empty,
+    recomputeCellsFrom: Int = -1,
     keepCells: SQLSyntax = sqls"1=1",
     addModules: Iterable[(Identifier, Int)] = Seq(),
-    forceRecomputeState: Boolean = false
+    abortPrevWorkflow: Boolean = false
   )(implicit session: DBSession): (Branch, Workflow) = 
   {
     // Note: we're working with immutable objects here.  `branch` will be the 
@@ -260,6 +367,17 @@ case class Branch(
       action = action,
       actionModuleId = module.map { _.id }
     )
+    if(abortPrevWorkflow){
+      Workflow.get(prevWorkflowId).abortIfNeeded
+    }
+
+
+    val stateTransitions = 
+      updateState ++ (
+        if(recomputeCellsFrom >= 0){
+          StateTransition( sqls"position >= $recomputeCellsFrom", DONE -> WAITING)
+        } else { Seq.empty }
+      ) ++ DEFAULT_STATE_TRANSITIONS
 
     withSQL {
       val c = Cell.syntax
@@ -268,8 +386,8 @@ case class Branch(
           sqls"""${workflow.id} as workflow_id""",
           updatePosition + sqls" as position",
           c.moduleId,
-          c.resultId,
-          updateState + sqls" as state",
+          StateTransition.updateResult(stateTransitions) + sqls" as resultId",
+          StateTransition.updateState(stateTransitions) + sqls" as state",
           c.created,
         ) {
           _.from(Cell as c)
@@ -286,19 +404,30 @@ case class Branch(
         created = ZonedDateTime.now()
       )
     }
-    if(forceRecomputeState){
-      Provenance.updateCellStates(workflow.cellsInOrder, Map.empty)
-    }
+    Provenance.updateCellStates(workflow.cellsInOrder, Map.empty)
 
     return (branch, workflow)
   }
 
+  /**
+   * The id of the module used in the first branch operation that created this branch.
+   * 
+   * @return        The identifier of the Module or None if no module was used
+   */
   def createdFromModuleId(implicit session:DBSession): Option[Identifier] =
     createdFromWorkflowId.flatMap { Workflow.get(_).actionModuleId }
 
+  /**
+   * Initialize this branch by cloning an existing workflow.
+   * 
+   * @return                   The updated Branch object and the new head [[Workflow]]
+   */
   private[vizierdb] def cloneWorkflow(workflowId: Identifier)(implicit session: DBSession): (Branch, Workflow) =
     modify(None, ActionType.CREATE, workflowId)
 
+  /**
+   * Enumerate the [[Workflow]]s of this branch
+   */
   def workflows(implicit session:DBSession): Seq[Workflow] = 
     withSQL { 
       val w = Workflow.syntax 
@@ -307,9 +436,15 @@ case class Branch(
         .where.eq(w.branchId, id)  
     }.map { Workflow(_) }.list.apply()
 
+  /**
+   * Retrieve the [[Workflow]] used to create this branch.
+   */
   def createdFromWorkflow(implicit session:DBSession): Option[Workflow] = 
     createdFromWorkflowId.map { Workflow.get(_) }
 
+  /**
+   * Generate a Branch Description, suitable for sending to a Vizier frontend
+   */
   def describe(implicit session:DBSession): JsObject =
     JsObject(
       summarize.value ++ Map(
@@ -317,6 +452,11 @@ case class Branch(
       )
     )
 
+  /**
+   * Generate a Branch Summary, suitable for sending to a Vizier frontend 
+   * 
+   * A Workflow Branch is a simplified Branch Description (does not contain workflows)
+   */
   def summarize(implicit session:DBSession): JsObject = 
     Json.obj(
       "id"             -> JsString(id.toString),
@@ -334,6 +474,10 @@ case class Branch(
         HATEOAS.BRANCH_UPDATE  -> VizierAPI.urls.updateBranch(projectId, id),
       ),
     )
+
+  /**
+   * Delete this branch and all contained workflows.
+   */
   def deleteBranch(implicit session: DBSession)
   {
     for(workflow <- workflows){
@@ -346,6 +490,12 @@ case class Branch(
     }.update.apply()
   }
 
+  /**
+   * Update the properties field of this branch
+   * 
+   * @param name        The new name of this branch
+   * @param properties  A dictionary of properties to associate with this branch
+   */ 
   def updateProperties(
     name: String,
     properties: Map[String, JsValue]
@@ -369,8 +519,15 @@ object Branch
   def apply(rs: WrappedResultSet): Branch = autoConstruct(rs, (Branch.syntax).resultName)
   override def columns = Schema.columns(table)
 
-  def get(target: Identifier)(implicit session:DBSession): Branch = lookup(target).get
-  def lookup(target: Identifier)(implicit session:DBSession): Option[Branch] = 
+  /**
+   * Retrieve the specified Branch
+   */
+  def get(target: Identifier)(implicit session:DBSession): Branch = getOption(target).get
+
+  /**
+   * Retrieve the specified Branch, returning None if the branch does not exist.
+   */
+  def getOption(target: Identifier)(implicit session:DBSession): Option[Branch] = 
     withSQL { 
       val b = Branch.syntax 
       select
@@ -378,7 +535,18 @@ object Branch
         .where.eq(b.id, target) 
     }.map { apply(_) }.single.apply()
 
-  def lookup(projectId: Identifier, branchId: Identifier)(implicit session:DBSession): Option[Branch] = 
+  /**
+   * Retrieve the specified Branch, erroring if the branch does not exist or if it is
+   * not part of the specified [[Project]].
+   */
+  def get(projectId: Identifier, branchId: Identifier)(implicit session:DBSession): Branch = 
+    getOption(projectId, branchId).get
+
+  /**
+   * Retrieve the specified Branch, returning None if the branch does not exist or if it is
+   * not part of the specified [[Project]].
+   */
+  def getOption(projectId: Identifier, branchId: Identifier)(implicit session:DBSession): Option[Branch] = 
     withSQL { 
       val b = Branch.syntax 
       select

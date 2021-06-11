@@ -35,7 +35,7 @@ case class UpdateBranch(
   {
     DB.autoCommit { implicit s => 
       val branch: Branch = 
-        Branch.lookup(projectId, branchId)
+        Branch.getOption(projectId, branchId)
                .getOrElse { 
                  return NoSuchEntityResponse()
                }

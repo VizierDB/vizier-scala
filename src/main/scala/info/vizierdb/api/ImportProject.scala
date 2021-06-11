@@ -65,7 +65,7 @@ object ImportProject
       }
 
     DB.readOnly { implicit session => 
-      Project.lookup(projectId) match {
+      Project.getOption(projectId) match {
         case Some(project) => RawJsonResponse(project.describe)
         case None => NoSuchEntityResponse()
       }

@@ -55,7 +55,19 @@ object Vizier
       settings = ConnectionPoolSettings(
         initialSize = 1,
         maxSize = 1,
-        connectionTimeoutMillis = 5000l
+
+        // If you are here to up the connection time-out period because you're getting connection
+        // timeouts, read this first please:
+        //
+        // https://github.com/VizierDB/vizier-scala/wiki/DevGuide-Gotchas#scalikejdbc
+        //
+        // TL;DR: You are almost certainly creating a nested session via DB.readOnly or 
+        //        DB.autocommit  Look through the stack trace.  These methods are NOT reentrant,
+        //        will trigger a connection timeout error when you're using SQLite, and will lead
+        //        to weird inconsistent state when you're using a database that allows parallel
+        //        connections.
+        /* ^^^^^ */ connectionTimeoutMillis = 5000l  /* ^^^^^ */
+        // Read the above comment before modifying connectionTimeoutMillis please.
       )
     )
   }

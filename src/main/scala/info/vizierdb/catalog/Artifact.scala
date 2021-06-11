@@ -256,8 +256,8 @@ object Artifact
     Artifact.get(artifactId)
   }
 
-  def get(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Artifact = lookup(target, projectId).get
-  def lookup(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Option[Artifact] = 
+  def get(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Artifact = getOption(target, projectId).get
+  def getOption(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Option[Artifact] = 
     withSQL { 
       val b = Artifact.syntax 
       select

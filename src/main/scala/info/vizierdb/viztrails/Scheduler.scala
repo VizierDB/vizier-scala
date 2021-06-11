@@ -162,13 +162,23 @@ object Scheduler
     val result = cell.finish(ExecutionState.ERROR)._2
     val position = cell.position
     val workflow = cell.workflow
-    for(cell <- workflow.cellsWhere(sqls"""position >= ${cell.position}""")) {
-      DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.ERROR)
+
+    val stateTransitions = 
+      StateTransition.forAll( 
+        sqls"position > ${cell.position}", 
+        ExecutionState.PENDING_STATES -> ExecutionState.CANCELLED 
+      )
+    DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.ERROR)
+    for(cell <- workflow.cellsWhere(sqls"""position > ${cell.position}""")) {
+      DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.CANCELLED)
     }
     withSQL {
       val c = Cell.column
       update(Cell)
-        .set(c.state -> ExecutionState.ERROR, c.resultId -> None)
+        .set(
+          c.state -> StateTransition.updateState(stateTransitions),
+          c.resultId -> StateTransition.updateResult(stateTransitions)
+        )
         .where.eq(c.workflowId, workflow.id)
           .and.gt(c.position, cell.position)
     }.update.apply()

@@ -32,7 +32,7 @@ object DeleteBranchHandler
     val branchId = pathParameters("branchId").as[Long]
     DB.readOnly { implicit s => 
       val p = 
-        Project.lookup(projectId)
+        Project.getOption(projectId)
                .getOrElse { 
                   return NoSuchEntityResponse()
                }
@@ -42,7 +42,7 @@ object DeleteBranchHandler
     }
     DB.autoCommit { implicit s => 
       val b = 
-        Branch.lookup(projectId = projectId, branchId = branchId)
+        Branch.getOption(projectId = projectId, branchId = branchId)
                .getOrElse { 
                   return NoSuchEntityResponse()
                }

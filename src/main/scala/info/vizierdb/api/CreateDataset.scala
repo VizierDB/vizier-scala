@@ -38,7 +38,7 @@ case class CreateDataset(
   {
     DB.autoCommit { implicit s => 
       val project = 
-        Project.lookup(projectId)
+        Project.getOption(projectId)
                .getOrElse { 
                   return NoSuchEntityResponse()
                }

@@ -57,7 +57,7 @@ object ExportProject
     // File Artifacts
     DB.readOnly { implicit s => 
       val p = 
-        Project.lookup(projectId)
+        Project.getOption(projectId)
                .getOrElse { 
                  throw new VizierException(s"No project with ID $projectId")
                }

@@ -38,9 +38,9 @@ object GetModuleHandler
       val workflowMaybe: Option[Workflow] = 
         workflowId match {
           case Some(workflowIdActual) => 
-            Workflow.lookup(projectId, branchId, workflowIdActual)
+            Workflow.getOption(projectId, branchId, workflowIdActual)
           case None => 
-            Branch.lookup(projectId, projectId).map { _.head }
+            Branch.getOption(projectId, projectId).map { _.head }
         } 
       val cellMaybe: Option[Cell] = 
         workflowMaybe.flatMap { _.cellByPosition(modulePosition) }

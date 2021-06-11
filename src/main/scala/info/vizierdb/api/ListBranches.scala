@@ -31,7 +31,7 @@ object ListBranchesHandler
   {
     val projectId = pathParameters("projectId").as[Long]
     DB.readOnly { implicit session => 
-      Project.lookup(projectId)
+      Project.getOption(projectId)
         match { 
           case Some(project) => 
             RawJsonResponse(

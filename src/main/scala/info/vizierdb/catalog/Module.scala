@@ -221,8 +221,8 @@ object Module
   }
 
 
-  def get(target: Identifier)(implicit session:DBSession): Module = lookup(target).get
-  def lookup(target: Identifier)(implicit session:DBSession): Option[Module] = 
+  def get(target: Identifier)(implicit session:DBSession): Module = getOption(target).get
+  def getOption(target: Identifier)(implicit session:DBSession): Option[Module] = 
     withSQL { 
       val w = Module.syntax 
       select

@@ -37,9 +37,9 @@ object GetWorkflowHandler
       val workflowMaybe: Option[Workflow] = 
         workflowId match {
           case Some(workflowIdActual) => 
-            Workflow.lookup(projectId, branchId, workflowIdActual)
+            Workflow.getOption(projectId, branchId, workflowIdActual)
           case None => 
-            Branch.lookup(projectId, branchId).map { _.head }
+            Branch.getOption(projectId, branchId).map { _.head }
         } 
       workflowMaybe match {
         case Some(workflow) => RawJsonResponse(Json.toJson(workflow.describe))
