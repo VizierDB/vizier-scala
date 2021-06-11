@@ -332,5 +332,6 @@ checkout := {
 ///////////////////////////////////////////
 lazy val routes = taskKey[Unit]("Render routes table")
 routes := {
+  import scala.sys.process.Process
   Process("python3 scripts/build_routes.py")
 }
