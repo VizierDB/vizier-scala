@@ -94,6 +94,10 @@ class BranchWatcherSocket
                                     .describe }
           session.getRemote()
                  .sendString(Json.toJson(workflow).toString)
+         case BranchWatcherSocket.OP_PING => 
+          session.getRemote()
+                 .sendString(Json.obj(BranchWatcherSocket.KEY_OPERATION -> 
+                                        BranchWatcherSocket.OP_PONG).toString)
     }
   }
 
@@ -110,6 +114,8 @@ object BranchWatcherSocket
 {
   val KEY_OPERATION = "operation"
   val OP_SUBSCRIBE = "subscribe"
+  val OP_PING = "ping"
+  val OP_PONG = "pong"
 
   object Creator extends WebSocketCreator
   {
