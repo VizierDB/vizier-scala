@@ -27,12 +27,12 @@ object vizier extends ScalaModule with PublishModule {
     ////////////////////// Mimir ///////////////////////////
     ivy"org.mimirdb::mimir-api::${mimir.VERSION}"
       .exclude(
-        "org.slf4j" -> "*",
+        "org.slf4j" -> "slf4j-log4j12",
         "org.mortbay.jetty" -> "*"
       ),
     ivy"org.mimirdb::mimir-caveats::${caveats.VERSION}"
       .exclude(
-        "org.slf4j" -> "*",
+        "org.slf4j" -> "slf4j-log4j12",
         "org.mortbay.jetty" -> "*"
       ),
 
@@ -52,6 +52,10 @@ object vizier extends ScalaModule with PublishModule {
     ////////////////////// Command-Specific Libraries //////
     ivy"com.github.andyglow::scala-jsonschema::0.7.1",
     ivy"com.github.andyglow::scala-jsonschema-play-json::0.7.1",
+
+    ////////////////////// Logging /////////////////////////
+    ivy"com.typesafe.scala-logging::scala-logging::3.9.2",
+    ivy"ch.qos.logback:logback-classic:1.2.3",
   )
 
   object test extends Tests with TestModule.Specs2 {
