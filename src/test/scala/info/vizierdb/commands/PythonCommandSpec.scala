@@ -231,5 +231,31 @@ print(df['A'].sum())
            .data(0)(0) must beEqualTo("3")
   }
 
+    "Check for images" >>
+  {
+    project.script("""
+      import requests
+      my_url = "http://data.vizierdb.info/Materials_Science/DendriticStructure/figs/t1-20x20-test00000.jpg"
+      ds = vizierdb.new_dataset()
+      ds.insert_column('name')
+      ds.insert_column('image', data_type="binary")
+      image = requests.get(my_url)
+      ds.insert_row(['test', image.content])
+      ds.save('images')
+      ds.show()
+    """.stripMargin)
+    
+    {
+      val art = project.artifact("images")
+      art.t must beEqualTo(ArtifactType.DATASET)
+      val ds = art.getDataset()
+      ds.schema must containTheSameElementsAs(Seq(
+        StructField("name", StringType),
+        StructField("image", BinaryType)
+      ))
+    }
+    
+  }
+
 }
 

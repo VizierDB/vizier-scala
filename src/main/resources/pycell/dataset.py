@@ -33,6 +33,7 @@ DATATYPE_LONG = 'long'
 DATATYPE_REAL = 'real'
 DATATYPE_VARCHAR = 'varchar'
 DATATYPE_GEOMETRY = "geometry"
+DATATYPE_BINARY = 'binary'
 
 
 VIZUAL_DELETE_COLUMN  = "deletecolumn"
@@ -416,10 +417,14 @@ class DatasetClient(object):
     Raises ValueError if the length of the values list does not match the
     number of columns in the dataset.
     """
+    import base64
     # Ensure that there is exactly one value for each column in the dataset
     if values is not None:
       if len(values) != len(self.columns):
         raise ValueError('invalid number of values for dataset schema')
+      for index in range(len(values)):
+        if self.columns[index].data_type == DATATYPE_BINARY:
+          values[index] = base64.b64encode(values[index]).decode('utf-8')
       row = MutableDatasetRow(
         values=[str(v) for v in values],
         dataset=self
