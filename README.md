@@ -38,4 +38,44 @@ For example, you can define and export a function in a python cell, and use it a
 Vizier tracks which artifacts a cell uses, so that if you change something, it knows which cells need to be re-run.
 When an artifact is updated (e.g., when you modify the function), every cell that used it (e.g., the SQL cell) will be re-executed.
 
+---
 
+### Compiling
+
+Some useful commands for using this repository
+
+##### Compile Vizier
+```
+mill vizier.compile
+```
+Compiled class files will be in `out/vizier/compile/dest`
+
+##### Run Test Cases
+```
+mill vizier.test
+```
+
+##### Run Vizier
+```
+mill vizier.run [vizier arguments]
+```
+
+##### Build the UI (fast)
+```
+mill ui.fastOpt
+mill vizier.run --connect-from-any-host
+```
+And load `debug.html` in the browser
+
+Compiled JS outputs will be in `out/ui/fastOpt/dest`
+
+##### Deploy the UI into Vizier
+```
+mill ui.fullOpt
+cp out/ui/fullOpt/dest/out.js vizier/resources/ui/vizier.js
+```
+
+##### Publish the Repo
+```
+mill vizier.publishLocal
+```

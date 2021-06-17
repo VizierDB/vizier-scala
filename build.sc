@@ -1,14 +1,22 @@
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
+import mill.scalajslib._
 import coursier.maven.{ MavenRepository }
 
-object mimir {
-  val VERSION = "1.1.0-SNAPSHOT"
-}
+object upstream extends Module {
 
-object caveats {
-  val VERSION = "0.3.2"
+  object mimir extends SbtModule {
+    val VERSION = "1.1.0-SNAPSHOT"
+    def scalaVersion = "2.12.12"
+
+  }
+  
+  object caveats extends SbtModule {
+    val VERSION = "0.3.2"
+    def scalaVersion = "2.12.12"
+
+  }
 }
 
 object vizier extends ScalaModule with PublishModule {
@@ -25,12 +33,12 @@ object vizier extends ScalaModule with PublishModule {
 
   def ivyDeps = Agg(
     ////////////////////// Mimir ///////////////////////////
-    ivy"org.mimirdb::mimir-api::${mimir.VERSION}"
+    ivy"org.mimirdb::mimir-api::${upstream.mimir.VERSION}"
       .exclude(
         "org.slf4j" -> "slf4j-log4j12",
         "org.mortbay.jetty" -> "*"
       ),
-    ivy"org.mimirdb::mimir-caveats::${caveats.VERSION}"
+    ivy"org.mimirdb::mimir-caveats::${upstream.caveats.VERSION}"
       .exclude(
         "org.slf4j" -> "slf4j-log4j12",
         "org.mortbay.jetty" -> "*"
@@ -85,6 +93,18 @@ object vizier extends ScalaModule with PublishModule {
       Developer("scastelo", "Sonia Castelo", "https://github.com/soniacq"),
       Developer("maqazi", "Munaf Arshad Qazi", ""),
     )
+  )
+}
+
+object ui extends ScalaJSModule { 
+
+  def scalaVersion = vizier.scalaVersion
+  def scalaJSVersion = "1.6.0"
+
+  def ivyDeps = Agg(
+    ivy"org.scala-js::scalajs-dom::1.0.0",
+    ivy"com.lihaoyi::scalarx::0.4.3",
+    ivy"com.lihaoyi::scalatags::0.9.4",
   )
 
 }
