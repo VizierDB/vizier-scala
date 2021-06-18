@@ -20,7 +20,7 @@ class VizierURLs(
   val base: String,
 )
 {
-  val serviceDescriptor = base
+  val serviceDescriptor = base+"/"
 
   def urlencode(str: String, encoding: String) = 
     str

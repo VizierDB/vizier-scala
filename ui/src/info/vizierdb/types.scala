@@ -74,5 +74,17 @@ object types
     val STDOUT = Value(1, "stdout")
     val STDERR = Value(2, "stderr")
   }
+
+  object ArtifactType extends Enumeration
+  {
+    type T = Value
+
+    val DATASET   = Value(1, "Dataset")
+    val FUNCTION  = Value(2, "Function")
+    val BLOB      = Value(3, "Blob")
+    val FILE      = Value(4, "File")
+    val CHART     = Value(5, "Chart")
+    val PARAMETER = Value(6, "Parameter")
+  }
 }
 

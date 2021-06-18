@@ -1,14 +1,14 @@
-package info.vizierdb.ui.view
+package info.vizierdb.ui.components
 
 import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
-import info.vizierdb.ui.state.Message
+import info.vizierdb.ui.network.StreamedMessage
 import rx._
 
-object MessageView
+object Message
 {
-  def apply(message: Message): dom.Node =
+  def apply(message: StreamedMessage): dom.Node =
   {
     message.t match {
       case "text/plain" => 

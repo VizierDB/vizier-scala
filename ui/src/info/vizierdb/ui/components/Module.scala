@@ -1,21 +1,25 @@
-package info.vizierdb.ui.view
+package info.vizierdb.ui.components
 
 import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.RxBufferView
-import info.vizierdb.ui.state.ModuleSubscription
+import info.vizierdb.ui.network.ModuleSubscription
 import rx._
+import info.vizierdb.types.ArtifactType
 
-class ModuleView(subscription: ModuleSubscription)
-                (implicit owner: Ctx.Owner, data: Ctx.Data)
+class Module(subscription: ModuleSubscription)
+            (implicit owner: Ctx.Owner, data: Ctx.Data)
 {
-  println("creating module view")
+
+  val outputs = Var[Map[String, Artifact]](Map.empty)
+
+  println(s"creating module view: $this")
   val messages = 
     RxBufferView(
       ul(),
       subscription.messages
-                  .rxMap { message => li(MessageView(message)) }
+                  .rxMap { message => li(Message(message)) }
     )
   println(s"${messages.root.childNodes.length} messages rendered")
 

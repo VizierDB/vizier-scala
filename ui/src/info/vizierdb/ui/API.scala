@@ -9,14 +9,34 @@ import info.vizierdb.types._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import state.{
+import info.vizierdb.ui.network.{
   ProjectDescription,
   BranchDescription,
 }
+import info.vizierdb.ui.network.PackageDescriptor
+import info.vizierdb.ui.network.ServiceDescriptor
 
 case class API(baseUrl: String)
 {
   val urls = new VizierURLs(baseUrl)
+
+  def packages(): Future[Seq[PackageDescriptor]] =
+  {
+    Ajax.get(
+      urls.serviceDescriptor.toString
+    ).map { xhr => 
+      JSON.parse(
+        xhr.responseText
+      ).asInstanceOf[ServiceDescriptor]
+       .environment
+       .packages
+       .toSeq
+    }.recover { 
+      case error => 
+        println(error.toString)
+        Seq.empty 
+      }
+  }
 
   def project(
     projectId: Identifier

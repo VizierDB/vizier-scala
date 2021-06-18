@@ -7,10 +7,11 @@ import rx._
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.net.URLDecoder
 
-import rxExtras.implicits._
-import rxExtras.RxBufferView
-import state.BranchSubscription
-import view.ProjectView
+import info.vizierdb.ui.rxExtras.implicits._
+import info.vizierdb.ui.rxExtras.OnMount
+import info.vizierdb.ui.rxExtras.RxBufferView
+import info.vizierdb.ui.network.BranchSubscription
+import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
 
 object Vizier {
@@ -23,47 +24,55 @@ object Vizier {
     dom.window.location.search
        .substring(1)
        .split("&")
-       .map { _.split("=") }
-       .map { x => URLDecoder.decode(x(0), "UTF-8") ->
-                      URLDecoder.decode(x(1), "UTF-8") }
+       .map { _.split("=").toSeq }
+       .collect { 
+          case Seq(k, v) => 
+            URLDecoder.decode(k, "UTF-8") ->
+              URLDecoder.decode(v, "UTF-8") 
+        }
        .toMap
 
-  lazy val project = Var[Option[ProjectView]](None)
+  lazy val project = Var[Option[Project]](None)
 
   def error(message: String) =
-    println(message)
+    throw new Exception(message)
 
   def main(args: Array[String]): Unit = 
   {
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      val projectId = 
-        arguments.get("project")
-                 .getOrElse { error("No Project ID specified"); return; }
-      api.project(projectId)
-            .onComplete { 
-              case Success(response) => 
-                project() = Some(new ProjectView(projectId).load(response))
-                println(s"Project: ${project().get}")
-              case Failure(ex) => 
-                error(ex.toString)
-            }
-      document.body.appendChild(
-        div(id := "content",
-          tag("nav")(
-            ul(id := "main_menu", `class` := "menu",
-              li("menu 1", ul(
-                li("menu item 1.1"),
-                li("menu item 1.2"),
-              )),
-              li("menu 2", ul(
-                li("menu item 2.1"),
-              ))
-            )
-          ),
-          Rx { project().map { _.root }
-                        .getOrElse { div("loading...") } }
+      try {
+        val projectId = 
+          arguments.get("project")
+                   .getOrElse { error("No Project ID specified") }
+        api.project(projectId)
+              .onComplete { 
+                case Success(response) => 
+                  project() = Some(new Project(projectId).load(response))
+                  println(s"Project: ${project().get}")
+                case Failure(ex) => 
+                  error(ex.toString)
+              }
+        document.body.appendChild(
+          div(id := "content",
+            tag("nav")(
+              ul(id := "main_menu", `class` := "menu",
+                li("menu 1", ul(
+                  li("menu item 1.1"),
+                  li("menu item 1.2"),
+                )),
+                li("menu 2", ul(
+                  li("menu item 2.1"),
+                ))
+              )
+            ),
+            Rx { project().map { _.root }
+                          .getOrElse { div("loading...") } }
+          )
         )
-      )
+        OnMount.trigger(document.body)
+      } catch {
+        case t: Throwable => println(t)
+      }
     })
   }
 

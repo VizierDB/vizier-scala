@@ -1,17 +1,18 @@
-package info.vizierdb.ui.view
+package info.vizierdb.ui.components
 
 import org.scalajs.dom
 import scalatags.JsDom.all._
 import scala.scalajs.js
 import rx._
-import info.vizierdb.ui.state._
+import info.vizierdb.ui.serialized._
+import info.vizierdb.ui.network._
 import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.rxExtras.implicits._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
 
-class ProjectView(projectId: String)
-                 (implicit owner: Ctx.Owner, data: Ctx.Data)
+class Project(projectId: String)
+             (implicit owner: Ctx.Owner, data: Ctx.Data)
 {
   val properties = Var[Map[String, js.Dynamic]](Map.empty)
   val projectName = Rx { 
@@ -22,7 +23,7 @@ class ProjectView(projectId: String)
   val branches = Var[Map[String, BranchSummary]](Map.empty)
   val activeBranch = Var[Option[String]](None)
 
-  def load(project: ProjectDescription): ProjectView =
+  def load(project: ProjectDescription): Project =
   {
     assert(projectId == project.id)
     properties() = 
@@ -33,22 +34,24 @@ class ProjectView(projectId: String)
       project.branches.map { b =>
         b.id -> b
       }.toMap
-    if(activeBranch().isEmpty){
+    if(activeBranch.now.isEmpty){
       activeBranch() = Some(project.defaultBranch)
     }
     return this
   }
 
-  val branchSubscription = Var[Option[BranchSubscription]](None)
+  var branchSubscription: Option[BranchSubscription] = None
+  val workflow = Var[Option[Workflow]](None) 
+
   activeBranch.trigger { 
-    branchSubscription().foreach { _.close() }
-    branchSubscription() = 
-      if(activeBranch().isDefined){
-        Some(new BranchSubscription(projectId, activeBranch().get, Vizier.api))
-      } else { None }
+    println("Triggering active branch change")
+    branchSubscription.foreach { _.close() }
+    branchSubscription = 
+      activeBranch.now.map { branch =>
+        new BranchSubscription(projectId, branch, Vizier.api)
+      }
+    workflow() = branchSubscription.map { new Workflow(_) }
   }
-  val workflow: Rx[Option[WorkflowView]] = 
-    branchSubscription.map { _.map { new WorkflowView(_) }}
 
       // api.project("1")
       //    .onSuccess { case project =>

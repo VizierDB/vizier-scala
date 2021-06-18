@@ -274,34 +274,15 @@ object DeltaBus
   /**
    * Convenience method to announce a new output artifact
    */
-  def notifyOutputArtifact(
+  def notifyUpdateOutputs(
     workflow: Workflow,
     position: Int,
-    name: String, 
-    artifactId: Identifier,
-    artifactType: ArtifactType.T
+    outputs: Seq[DeltaOutputArtifact]
   )(implicit session: DBSession)
   {
-    DeltaBus.notify(workflow.branchId, AppendCellArtifact(
+    DeltaBus.notify(workflow.branchId, UpdateCellOutputs(
       position,
-      name = name,
-      artifactId = artifactId.toString,
-      artifactType = artifactType
-    ))
-  }
-
-  /**
-   * Convenience method to announce a deleted output artifact
-   */
-  def notifyDeleteArtifact(
-    workflow: Workflow,
-    position: Int,
-    name: String
-  )(implicit session: DBSession)
-  {
-    DeltaBus.notify(workflow.branchId, DeleteCellArtifact(
-      position,
-      name = name
+      outputs
     ))
   }
 

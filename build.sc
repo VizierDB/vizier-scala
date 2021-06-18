@@ -1,3 +1,4 @@
+import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._

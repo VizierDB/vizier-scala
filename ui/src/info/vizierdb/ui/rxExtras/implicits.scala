@@ -9,6 +9,7 @@ import dom.html
 
 package object implicits {
 
+
   implicit def rxFrag[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner, data: Ctx.Data): Frag = {
     def rSafe: dom.Node = span(r()).render
     var last = rSafe
@@ -17,6 +18,7 @@ package object implicits {
       val newLast = rSafe
       last.parentNode.replaceChild(newLast, last)
       last = newLast
+      OnMount.trigger(newLast)
     }
     last
   }

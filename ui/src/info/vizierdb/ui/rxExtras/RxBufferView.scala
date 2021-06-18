@@ -18,6 +18,7 @@ class RxBufferView(val root: dom.Node)(implicit owner: Ctx.Owner, data: Ctx.Data
     val node: dom.Node = elem
     nodes += node
     root.appendChild(node)
+    // println("Done with view append")
   }
 
   def onClear(): Unit = 
@@ -63,10 +64,11 @@ class RxBufferView(val root: dom.Node)(implicit owner: Ctx.Owner, data: Ctx.Data
     println("View Insert")
     val node: dom.Node = elem
     val children = root.childNodes
-    if(n+1 >= children.length){
+    println(children)
+    if(n >= children.length){
       root.appendChild(node)
     } else {
-      root.insertBefore(node, children(n+1))
+      root.insertBefore(node, children(n))
     }
     nodes.insert(n, node)
   }
@@ -79,7 +81,7 @@ object RxBufferView
   {
     val ret = new RxBufferView(root)
     for(node <- source){ ret.onAppend(node) }
-    source.watch(ret)
+    source.deliverUpdatesTo(ret)
     return ret
   }
 }

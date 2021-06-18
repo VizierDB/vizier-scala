@@ -1,4 +1,4 @@
-package info.vizierdb.ui.state
+package info.vizierdb.ui.network
 
 import org.scalajs.dom
 import info.vizierdb.ui.API
@@ -8,6 +8,7 @@ import scala.scalajs.js.JSON
 import info.vizierdb.ui.rxExtras.RxBufferVar
 import info.vizierdb.types._
 import scala.scalajs.js.timers._
+import info.vizierdb.ui.components.Artifact
 
 class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
 {
@@ -117,13 +118,24 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
         case "append_cell_message" =>
           println(s"New Message")
           modules(event.position.asInstanceOf[Int])
-            .messages += new Message(
+            .messages += new StreamedMessage(
                             event.message.asInstanceOf[MessageDescription], 
                             StreamType(event.stream.asInstanceOf[Int])
                          )
         case "advance_result_id" => 
           println("Reset Result")
-          modules(event.position.asInstanceOf[Int]).messages.clear()
+          val module = modules(event.position.asInstanceOf[Int])
+          module.messages.clear()
+          module.outputs() = Map[String,Artifact]()
+        case "update_cell_outputs" => 
+          val module = modules(event.position.asInstanceOf[Int])
+          module.outputs() = 
+            event.outputs.asInstanceOf[js.Array[ArtifactSummary]]
+                         .map { artifact => 
+                            artifact.name -> 
+                              new Artifact(artifact)
+                          }
+                         .toMap
         case "pong" => ()
         case other => 
           println(s"Unknown operation $other\n$event")

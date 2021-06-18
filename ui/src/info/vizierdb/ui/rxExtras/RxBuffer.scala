@@ -10,12 +10,12 @@ abstract class RxBuffer[A]
   def iterator = elements.iterator
   def length = { println("Length"); elements.length }
 
-  def watch[T2 <: RxBufferWatcher[A]](handler: T2): T2
+  def deliverUpdatesTo[T2 <: RxBufferWatcher[A]](handler: T2): T2
   def rxMap[B](f: A => B): DerivedRxBuffer[A, B] =
   { 
     val ret = new DerivedRxBuffer(f)
     ret.onInsertAll(0, elements)
-    watch(ret)
+    deliverUpdatesTo(ret)
     return ret
   }
 }
@@ -42,16 +42,27 @@ abstract class RxBufferBase[A,B]
   def onAppend(sourceElem: A): Unit =
   {
     println(s"$this@$id += $sourceElem (${watchers.size} watchers)")
-    val element = derive(sourceElem)
-    elements += element
-    watchers.foreach { _.onAppend(element) }
+    doAppend(derive(sourceElem))
+  }
+
+  def doAppend(targetElem: B): Unit =
+  {
+    println(s"Apply $this@$id += $targetElem (${watchers.size} watchers)")
+    elements += targetElem
+    watchers.foreach { x => println(s"Notifying: $x"); x.onAppend(targetElem) }
   }
 
   def onPrepend(sourceElem: A): Unit =
   {
-    val element = derive(sourceElem)
-    element +=: elements
-    watchers.foreach { _.onPrepend(element) }
+    println(s"$sourceElem +=: $this@$id (${watchers.size} watchers)")
+    doPrepend(derive(sourceElem))
+  }
+
+  def doPrepend(targetElem: B): Unit =
+  {
+    println(s"Apply $targetElem +=: $this@$id (${watchers.size} watchers)")
+    targetElem +=: elements
+    watchers.foreach { _.onPrepend(targetElem) }
   }
 
   def onClear(): Unit = 
@@ -62,9 +73,15 @@ abstract class RxBufferBase[A,B]
 
   def onInsertAll(n: Int, sourceElems: collection.Traversable[A]) =
   {
-    val elems = sourceElems.map { derive(_) }
-    elements.insertAll(n, elems)
-    watchers.foreach { _.onInsertAll(n, elems) }
+    println(s"$this@$id << $sourceElems (${watchers.size} watchers)")
+    doInsertAll(n, sourceElems.map { derive(_) })
+  }
+
+  def doInsertAll(n: Int, targetElems: collection.Traversable[B]): Unit =
+  {
+    println(s"Apply $this@$id << $targetElems (${watchers.size} watchers)")
+    elements.insertAll(n, targetElems)
+    watchers.foreach { _.onInsertAll(n, targetElems) }
   }
 
   def onRemove(n: Int): Unit =
@@ -75,12 +92,16 @@ abstract class RxBufferBase[A,B]
 
   def onUpdate(n: Int, sourceElem: A): Unit =
   {
-    val elem = derive(sourceElem)
-    elements.update(n, elem)
-    watchers.foreach { _.onUpdate(n, elem) }
+    doUpdate(n, derive(sourceElem))
   }
 
-  def watch[T2 <: RxBufferWatcher[B]](handler: T2): T2 =
+  def doUpdate(n: Int, targetElem: B): Unit =
+  {
+    elements.update(n, targetElem)
+    watchers.foreach { _.onUpdate(n, targetElem) }
+  }
+
+  def deliverUpdatesTo[T2 <: RxBufferWatcher[B]](handler: T2): T2 =
   {
     watchers += handler
     println(s"Registered watcher on $this@$id (now ${watchers.size} watchers)")

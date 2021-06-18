@@ -42,6 +42,8 @@ When an artifact is updated (e.g., when you modify the function), every cell tha
 
 ### Compiling
 
+To use this repository you'll need [Scala 2](https://www.scala-lang.org/download/scala2.html) and [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation).  
+
 Some useful commands for using this repository
 
 ##### Compile Vizier

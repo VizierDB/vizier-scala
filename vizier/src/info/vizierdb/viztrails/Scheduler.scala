@@ -23,7 +23,7 @@ import info.vizierdb.types._
 import info.vizierdb.commands._
 import info.vizierdb.catalog.binders._
 import info.vizierdb.catalog.{ Workflow, Cell, Result }
-import info.vizierdb.delta.DeltaBus
+import info.vizierdb.delta.{ DeltaBus, DeltaOutputArtifact }
 import org.mimirdb.util.UnsupportedFeature
 
 object Scheduler
@@ -202,23 +202,15 @@ object Scheduler
     }
     for((userFacingName, artifact) <- context.outputs) {
       result.addOutput( userFacingName, artifact.map { _.id } )
-      artifact match {
-        case None => 
-          DeltaBus.notifyDeleteArtifact(
-            workflow = workflow,
-            position = cell.position,
-            name = userFacingName
-          )
-        case Some(actualArtifact) => 
-          DeltaBus.notifyOutputArtifact(
-            workflow = workflow, 
-            position = cell.position, 
-            name = userFacingName, 
-            artifactId   = actualArtifact.id, 
-            artifactType = actualArtifact.t
-          )
-      }
     }
+    DeltaBus.notifyUpdateOutputs(
+      workflow = workflow,
+      position = cell.position,
+      outputs = context.outputs.map { 
+        case (name, None) => DeltaOutputArtifact(name, None, None, None)
+        case (name, Some(a)) => DeltaOutputArtifact(name, Some(a.id.toString), Some(a.t), Some(a.mimeType))
+      }.toSeq
+    )
     DeltaBus.notifyStateChange(cell.workflow, cell.position, ExecutionState.DONE)
 
     Provenance.updateSuccessorState(cell, 
