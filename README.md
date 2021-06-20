@@ -6,7 +6,7 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 ### Features
 
 * **No Kernels**: There's no long-running kernel with state to lose if you have to log out.
-* **Reproducibility**: Vizier automatically re-executes cells when their inputs change, so your notebook's outputs are always up-to-date
+* **Reproducibility**: Vizier executes cells *in order*, and automatically re-executes cells when their inputs change so your notebook's outputs are always up-to-date
 * **Data Snapshots**: Vizier automatically snapshots data created by each cell, so you can re-run a cell without re-running all of its inputs
 * **Polyglot**: You can combine Python, SQL, and Scala, all seamlessly working with the same data.
 * **No-code**: Use a spreadsheet-style interface, or Vizier's "data lenses" to work with your data, code optional!
