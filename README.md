@@ -15,6 +15,24 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 
 ---
 
+### Getting started
+
+Install Vizier:
+```
+wget https://maven.mimirdb.info/info/vizierdb/vizier
+chmod +x vizier
+sudo mv vizier /usr/local/bin
+```
+
+Start Vizier:
+```
+vizier
+```
+
+And open up http://localhost:5000 in your web browser.
+
+---
+
 ### More Info
 
 * [Project Website (w/ screenshots)](https://vizierdb.info)
