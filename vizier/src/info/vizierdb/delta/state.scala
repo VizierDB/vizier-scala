@@ -62,8 +62,7 @@ case class WorkflowState(
           cells(position).copy( messageCount = cells(position).messageCount + 1 )
         ), 1)
       )
-      case _:AppendCellArtifact => this
-      case _:DeleteCellArtifact => this
+      case _:UpdateCellOutputs => this
       case AdvanceResultId(position, resultId) => 
         val oldCell = cells(position)
         copy(cells = 

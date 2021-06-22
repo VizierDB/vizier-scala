@@ -21,5 +21,5 @@ class ModuleSubscription(initial: ModuleDescription)
     initial.outputs.stdout.map { (_, StreamType.STDOUT) } ++
     initial.outputs.stderr.map { (_, StreamType.STDERR) }
   ).map { msg => new StreamedMessage(msg._1, msg._2) }:_* )
-  println(s"${messages.length} Messages")
+  println(s"${messages.length} Messages; ${outputs.now.size} outputs; $outputs")
 }

@@ -98,7 +98,6 @@ class Module(
 
     val datasets    = artifactSummaries.filter { _._2.t.equals(ArtifactType.DATASET) }
     val charts      = artifactSummaries.filter { _._2.t.equals(ArtifactType.CHART) }
-    val dataobjects = artifactSummaries.filter { !_._2.t.equals(ArtifactType.DATASET) }
 
     val messages: Seq[Message] = 
       cell.resultId.map { Result.outputs(_) }.toSeq.flatten
@@ -129,9 +128,11 @@ class Module(
       ),
       text = description,
       timestamps = timestamps,
-      datasets  = datasets   .map { case (name, d) => d.summarize(name) },
-      charts    = charts     .map { case (name, d) => d.summarize(name) },
-      artifacts = dataobjects.map { case (name, d) => d.summarize(name) },
+      datasets  = datasets    .map { case (name, d) => d.summarize(name) },
+      charts    = charts      .map { case (name, d) => d.summarize(name) },
+      artifacts = cell.outputs.flatMap { a => a.getSummary.map { _.summarize(a.userFacingName) }},
+        // artifactSummaries.map { case (name, d) => d.summarize(name) },
+
       outputs = ModuleOutputDescription(
         stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
         stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }

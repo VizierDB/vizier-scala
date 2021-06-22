@@ -9,15 +9,15 @@ import rx._
 import info.vizierdb.types.ArtifactType
 
 class Module(subscription: ModuleSubscription)
-            (implicit owner: Ctx.Owner, data: Ctx.Data)
+            (implicit owner: Ctx.Owner)
 {
 
-  val outputs = Var[Map[String, Artifact]](Map.empty)
+  val outputs = subscription.outputs
 
   println(s"creating module view: $this")
   val messages = 
     RxBufferView(
-      ul(),
+      ul(), 
       subscription.messages
                   .rxMap { message => li(Message(message)) }
     )
@@ -26,6 +26,7 @@ class Module(subscription: ModuleSubscription)
   val root = li(
     div(Rx { pre(subscription.text()) }),
     div(Rx { "State: " + subscription.state() }),
-    div("Messages: ", messages.root)
+    div("Outputs: ", Rx { outputs.map { _.keys.mkString(", ") }}),
+    div("Messages: ", messages.root),
   )
 }

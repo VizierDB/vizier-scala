@@ -15,6 +15,7 @@ import info.vizierdb.ui.network.{
 }
 import info.vizierdb.ui.network.PackageDescriptor
 import info.vizierdb.ui.network.ServiceDescriptor
+import info.vizierdb.ui.components.Parameter
 
 case class API(baseUrl: String)
 {

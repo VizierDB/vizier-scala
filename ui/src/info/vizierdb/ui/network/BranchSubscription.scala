@@ -129,9 +129,11 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
           module.outputs() = Map[String,Artifact]()
         case "update_cell_outputs" => 
           val module = modules(event.position.asInstanceOf[Int])
+          println(s"Adding outputs: ${event.outputs} -> ${module.outputs}")
           module.outputs() = 
             event.outputs.asInstanceOf[js.Array[ArtifactSummary]]
                          .map { artifact => 
+                            println(s"Artifact: ${artifact.id}: ${artifact.category}")
                             artifact.name -> 
                               new Artifact(artifact)
                           }

@@ -11,11 +11,12 @@ import info.vizierdb.ui.network.CommandDescriptor
 import info.vizierdb.types.ArtifactType
 
 class TentativeModule(var position: Int, editList: TentativeEdits)
-                     (implicit owner: Ctx.Owner, data: Ctx.Data)
+                     (implicit owner: Ctx.Owner)
 {
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)
-  val visibleArtifacts = Var[Seq[(String, ArtifactType.T)]](Seq.empty)
+  val visibleArtifacts = Var[Rx[Map[String, Artifact]]](Var(Map.empty))
+  val selectedDataset = Var[Option[String]](None)
 
   loadPackages()
 
@@ -46,7 +47,11 @@ class TentativeModule(var position: Int, editList: TentativeEdits)
     span(
       "Visible artifacts here: ",
       Rx { 
-        visibleArtifacts.map { _.map { _._1 }.mkString(", ") }
+        val a = visibleArtifacts()
+        // println(s"VISIBLE ARTIFACTS: $a")
+        Rx { 
+          a().keys.mkString(", ")
+        }
       }
     ),
     Rx { 
@@ -64,7 +69,7 @@ class CommandList(
   module: TentativeModule
 ){
   val root = 
-    div(`class` := "module selectCommand", 
+    div(`class` := "module select-command", 
       "Create a command... ",
       ul(
         packages.map { pkg => 
@@ -86,10 +91,10 @@ class CommandList(
 }
 
 class ModuleEditor(
-  packageId: String, 
-  command: CommandDescriptor, 
-  module: TentativeModule
-) {
+  val packageId: String, 
+  val command: CommandDescriptor, 
+  val module: TentativeModule
+)(implicit owner: Ctx.Owner) {
 
   def saveState()
   {
@@ -97,10 +102,13 @@ class ModuleEditor(
   }
 
   val parameters: Seq[Parameter] = 
-    command.parameters.toSeq.map { Parameter(_) }
+    Parameter.collapse(
+      command.parameters.toSeq
+    ).map { Parameter(_, this) }
 
   val root = 
     div(`class` := "module editable",
+      h4(command.name),
       parameters.filter { !_.hidden }.map { param => div(param.root) },
       div(
         button("Cancel", onclick := { (e: dom.MouseEvent) => module.cancelEditor() }),

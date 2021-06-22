@@ -13,7 +13,7 @@ import info.vizierdb.ui.network.ModuleSubscription
 import info.vizierdb.types.ArtifactType
 
 class Workflow(subscription: BranchSubscription)
-              (implicit owner: Ctx.Owner, data: Ctx.Data)
+              (implicit owner: Ctx.Owner)
 {
 
   val moduleViews = 
@@ -44,13 +44,13 @@ class Workflow(subscription: BranchSubscription)
 }
 
 class TentativeEdits()
-                    (implicit owner: Ctx.Owner, data: Ctx.Data)
+                    (implicit owner: Ctx.Owner)
   extends RxBufferBase[Module,Either[Module,TentativeModule]]
   with RxBufferWatcher[Module]
 {
 
   def this(input: RxBuffer[Module])
-          (implicit owner: Ctx.Owner, data: Ctx.Data)
+          (implicit owner: Ctx.Owner)
   {
     this()
     this.onInsertAll(0, input.elements)
@@ -62,56 +62,78 @@ class TentativeEdits()
 
   def refreshModuleState()
   {
-    var artifacts: Rx[Map[String, ArtifactType.T]] = Var(Map.empty)
-    elements.foreach { 
-      case Left(module) => 
-        artifacts = Rx { 
-          val updates:Map[String,Option[ArtifactType.T]] = 
-            module.outputs.apply().mapValues { _.t }
-          (
-            artifacts() 
-              -- updates.filter { _._2.isEmpty }.keys
-              ++ updates.filter { _._2.isDefined }.mapValues { _.get }
-          )
-        }
-      case Right(tentative) => 
-        artifacts.trigger { tentative.visibleArtifacts() = artifacts.now.toSeq }
-    }
+    elements
+      .zipWithIndex
+      .foldLeft(Var(Map.empty):Rx[Map[String, Artifact]]) {
+        case (artifacts, (Left(module), idx)) =>
+          val outputs = module.outputs
+          outputs.trigger {
+            // println(s"OUTPUTS CHANGED @ $idx: ${module.outputs}")
+          }
+          val oldArtifacts = artifacts
+
+          val insertions: Rx[Map[String, Artifact]] = 
+            outputs.map { _.filter { !_._2.isDeletion } }
+          val deletions: Rx[Set[String]] = 
+            outputs.map { _.filter { _._2.isDeletion }.keys.toSet }
+
+          val updatedArtifacts = Rx { 
+            val ret = (artifacts() -- deletions()) ++ insertions()
+            // println(s"UPDATES @ $idx: $updates + $artifacts -> $ret")
+            ret
+          }
+          // updatedArtifacts.trigger { println(s"ARTIFACTS CHANGED @ $idx: $artifacts")}
+          // println(s"ARTIFACTS <- $module @ $idx: ${artifacts.now}; ${module.outputs}")
+          /* return */ updatedArtifacts
+        case (artifacts, (Right(tentative), idx)) => 
+          // println(s"ARTIFACTS -> $tentative ($idx) <= $artifacts")
+          tentative.visibleArtifacts.now.kill()
+          tentative.visibleArtifacts() = artifacts
+          tentative.position = idx
+          /* return */ artifacts
+      }
   }
 
   override def onPrepend(sourceElem: Module): Unit = 
   {
-    for(edit <- edits) { edit.position += 1 }
     super.onPrepend(sourceElem)
+    refreshModuleState()
   }
 
   override def onInsertAll(n: Int, sourceElems: Traversable[Module]): Unit = 
   {
-    val elems = sourceElems.toSeq
-    val size = elems.size
-    for(edit <- edits) { if(edit.position <= n) { edit.position += size } }
-    super.onInsertAll(n, elems)
+    super.onInsertAll(n, sourceElems)
+    refreshModuleState()
   }
 
   override def onRemove(n: Int): Unit =
   {
-    for(edit <- edits) { if(edit.position > n) { edit.position -= 1 } }
     super.onRemove(n)
+    refreshModuleState()
+  }
+
+  override def onUpdate(n: Int, sourceElem: Module): Unit =
+  {
+    super.onUpdate(n, sourceElem)
+    refreshModuleState()
   }
 
   def appendTentative() =
   {
     doAppend(Right(new TentativeModule(elements.size, this)))
+    refreshModuleState()
   }
 
   def insertTentative(n: Int) =
   {
     doInsertAll(n, Some(Right(new TentativeModule(n, this))))
+    refreshModuleState()
   }
 
   def dropTentative(m: TentativeModule) = 
   {
     onRemove(m.position)
+    refreshModuleState()
   }
 
 }

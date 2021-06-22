@@ -59,11 +59,15 @@ trait CommandDescriptor extends js.Object
 @js.native
 trait ParameterDescriptor extends js.Object
 {
+  val index: Int = js.native
   val id: String = js.native
   val name: String = js.native
   val datatype: String = js.native
   val hidden: Boolean = js.native
   val required: Boolean = js.native
+  val parent: js.UndefOr[String] = js.native
+  val language: js.UndefOr[String] = js.native
+  var elements: js.UndefOr[js.Array[ParameterDescriptor]] = js.native
 }
 
 /**
@@ -167,15 +171,36 @@ trait ModuleOutputDescription extends js.Object
 }
 
 /**
+ * An dataset artifact column
+ */
+@js.native
+trait DatasetColumn extends js.Object
+{
+  val id: Int = js.native
+  val name: String = js.native
+  val `type`: String = js.native
+
+}
+
+/**
+ * A dataset artifact reference
+ */
+@js.native
+trait DatasetSummary extends ArtifactSummary
+{
+  val columns: js.Array[DatasetColumn] = js.native
+}
+
+/**
  * An artifact reference
  */
 @js.native
 trait ArtifactSummary extends js.Object
 {
-  val id: Int = js.native
+  val id: js.UndefOr[Int] = js.native
   val name: String = js.native
-  val category: String = js.native
-  val objType: String = js.native
+  val category: js.UndefOr[String] = js.native
+  val objType: js.UndefOr[String] = js.native
 }
 
 /**

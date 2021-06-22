@@ -15,8 +15,8 @@ import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
 
 object Vizier {
-  import Ctx.Owner.Unsafe._
-  implicit val dataCtx = new Ctx.Data(new Rx.Dynamic[Int]( (owner, data) => 42, None ))
+  implicit val ctx = Ctx.Owner.safe()
+  // implicit val dataCtx = new Ctx.Data(new Rx.Dynamic[Int]( (owner, data) => 42, None ))
 
   lazy val api = API("http://localhost:5000/vizier-db/api/v1")
 
@@ -48,10 +48,11 @@ object Vizier {
               .onComplete { 
                 case Success(response) => 
                   project() = Some(new Project(projectId).load(response))
-                  println(s"Project: ${project().get}")
+                  println(s"Project: ${project.now.get}")
                 case Failure(ex) => 
                   error(ex.toString)
               }
+
         document.body.appendChild(
           div(id := "content",
             tag("nav")(

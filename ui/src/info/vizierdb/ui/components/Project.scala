@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
 
 class Project(projectId: String)
-             (implicit owner: Ctx.Owner, data: Ctx.Data)
+             (implicit owner: Ctx.Owner)
 {
   val properties = Var[Map[String, js.Dynamic]](Map.empty)
   val projectName = Rx { 

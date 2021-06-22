@@ -7,7 +7,8 @@ import rx._
 import scalatags.JsDom.all._
 import scalatags.JsDom
 
-class RxBufferView(val root: dom.Node)(implicit owner: Ctx.Owner, data: Ctx.Data)
+class RxBufferView(val root: dom.Node)
+                  (implicit owner: Ctx.Owner)
   extends SimpleRxBufferWatcher[dom.Node]
 {
   val nodes = mutable.Buffer[dom.Node]()
@@ -77,7 +78,7 @@ class RxBufferView(val root: dom.Node)(implicit owner: Ctx.Owner, data: Ctx.Data
 object RxBufferView
 {
   def apply(root: dom.Node, source: RxBuffer[dom.Node])
-           (implicit owner: Ctx.Owner, data: Ctx.Data): RxBufferView =
+           (implicit owner: Ctx.Owner): RxBufferView =
   {
     val ret = new RxBufferView(root)
     for(node <- source){ ret.onAppend(node) }

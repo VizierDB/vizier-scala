@@ -37,8 +37,15 @@ object UpdateCellState { implicit val format: Format[UpdateCellState] = Json.for
 case class AppendCellMessage(position: Int, stream: StreamType.T, message: MessageDescription) extends WorkflowDelta
 object AppendCellMessage { implicit val format: Format[AppendCellMessage] = Json.format }
 
-case class DeltaOutputArtifact(name: String, id: Option[String], category: Option[ArtifactType.T], objType: Option[String])
-object DeltaOutputArtifact { implicit val format: Format[DeltaOutputArtifact] = Json.format }
+case class DeltaOutputArtifact(name: String, id: Option[Long], category: Option[String], objType: Option[String])
+object DeltaOutputArtifact { 
+  implicit val format: Format[DeltaOutputArtifact] = Json.format 
+  def fromDeletion(name: String) =
+    DeltaOutputArtifact(name, None, None, None)
+  def fromArtifact(name: String, a:Artifact) =
+    DeltaOutputArtifact(name, Some(a.id), Some(a.t.toString().toLowerCase()), Some(a.mimeType))
+
+}
 
 case class UpdateCellOutputs(position: Int, outputs: Seq[DeltaOutputArtifact]) extends WorkflowDelta
 object UpdateCellOutputs { implicit val format: Format[UpdateCellOutputs] = Json.format }
