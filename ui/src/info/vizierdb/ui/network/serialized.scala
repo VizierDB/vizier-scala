@@ -57,6 +57,17 @@ trait CommandDescriptor extends js.Object
  * Details about a Vizier command parameter (typically subclassed)
  */
 @js.native
+trait EnumerableValue extends js.Object
+{
+  val isDefault: Boolean = js.native
+  val text: String = js.native
+  val value: String = js.native
+}
+
+/**
+ * Details about a Vizier command parameter (typically subclassed)
+ */
+@js.native
 trait ParameterDescriptor extends js.Object
 {
   val index: Int = js.native
@@ -67,6 +78,8 @@ trait ParameterDescriptor extends js.Object
   val required: Boolean = js.native
   val parent: js.UndefOr[String] = js.native
   val language: js.UndefOr[String] = js.native
+  val values: js.UndefOr[js.Array[EnumerableValue]] = js.native
+  val artifactType: js.UndefOr[String] = js.native
   var elements: js.UndefOr[js.Array[ParameterDescriptor]] = js.native
 }
 

@@ -486,20 +486,6 @@ case class RowIdParameter(
                                else { Some(s"Expected a number/rowid for $name") }
 }
 
-case class ScalarParameter(
-  id: String,
-  name: String,
-  required: Boolean = true,
-  hidden: Boolean = false
-) extends Parameter with IntegerEncoder
-{
-  def datatype = "scalar"
-  def doStringify(j: JsValue): String = j.toString()
-  def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
-                               else if ((j == JsNull) && (!required)) { None }
-                               else { Some(s"Expected a number for $name") }
-}
-
 /**
  * One option for the EnumerableParameter
  * 

@@ -7,39 +7,82 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types.ArtifactType
-import info.vizierdb.ui.network.{ ParameterDescriptor, DatasetColumn }
+import info.vizierdb.ui.network.{ ParameterDescriptor, DatasetColumn, EnumerableValue }
 import info.vizierdb.ui.facades.CodeMirror
 import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
 
+/**
+ * A parameter for a command.  Primarily used by [[ModuleEditor]]
+ */
 sealed trait Parameter
 {
+  /**
+   * A unique identifier for the parameter; the key in the module arguments
+   */
   val id: String
+  
+  /**
+   * A human-readable name for the parameter.
+   */
   val name: String
+  
+  /**
+   * If true, the parameter value must be set before the form is submitted
+   */
   val required: Boolean
+  
+  /**
+   * If true, the value is hidden.  Hidden arguments are used to pass state
+   * through different iterations of the workflow, and/or backwards compatibility.
+   */
   val hidden: Boolean
+
+  /**
+   * The DOM [[Node]] used to display the parameter's input widget
+   */
   val root: dom.Node
 
-  val changeHandlers = mutable.Buffer[dom.Event => Unit]()
+  /**
+   * Callbacks to trigger when the value of the element changes
+   */
+  private val changeHandlers = mutable.Buffer[dom.Event => Unit]()
+
+  /**
+   * Register code to run when the element's value changes
+   */
   def onChange(handler: dom.Event => Unit) =
     changeHandlers.append(handler)
 
-  def input(
-    name: String, 
-    basetag: String = "input"
+  /**
+   * Generic utility constructor for DOM [[Node]]s for the parameter's field.
+   */
+  def field(
+    basetag: String,
+    attrs: AttrPair*
   )(elems: Frag*) = 
   {
     val identity = s"parameter_${Parameter.nextInputId}"
     div(`class` := "parameter",
       label(attr("for") := identity, name),
-      tag(basetag)(attr("id") := identity, attr("name") := name, elems),
+      tag(basetag)(attrs, attr("id") := identity, attr("name") := name, elems),
       onchange := { (e:dom.Event) => changeHandlers.foreach { _(e) } }
     )
   }
+
+  /**
+   * &lt;input&gt;-tag utility constructor for the parameter's field
+   */
+  def input(
+    attrs: AttrPair*
+  ) = field("input", attrs:_*)()
+
+  /**
+   * &lt;select&gt;-tag utility constructor for the parameter's field
+   */
   def pulldown(
-    name: String, 
     selected: Int
   )(options: (String, String)*) =
-    input(name, "select")(
+    field("select")(
       options.zipWithIndex.map { case ((description, value), idx) => 
         option(
           attr("value") := value, 
@@ -48,22 +91,39 @@ sealed trait Parameter
         )
       }:_*
     )
-
-
 }
+
+/**
+ * Utility methods for decoding [[Parameter]] instances
+ */
 object Parameter
 {
+
+  /**
+   * Decode a [[ParameterDescriptor]] into a [[Parameter]] for use with the
+   * specified [[ModuleEditor]]
+   */
   def apply(description: ParameterDescriptor, editor: ModuleEditor)
            (implicit owner: Ctx.Owner): Parameter =
   {
     description.datatype match {
-      case "code" => new CodeParameter(description)
-      case "colid" => new ColIdParameter(description, editor.module.visibleArtifacts.flatMap { x => x }, editor.parameters)
-      case "dataset" => new DatasetParameter(description, editor.module
-                                                                .visibleArtifacts
-                                                                .map { _().mapValues { _.t } })
-      case "list" => new ListParameter(description, this.apply(_, editor))
-      case _      => new UnsupportedParameter(description)
+      case "code"     => new CodeParameter(description)
+      case "colid"    => new ColIdParameter(description, editor.module.visibleArtifacts.flatMap { x => x }, editor.parameters)
+      case "dataset" | "artifact" 
+                      => new ArtifactParameter(description, editor.module
+                                                                  .visibleArtifacts
+                                                                  .map { _().mapValues { _.t } })
+      case "list"     => new ListParameter(description, this.apply(_, editor))
+      case "record"   => new RecordParameter(description, this.apply(_, editor))
+      case "string" if description.values.isDefined 
+                      => new EnumerableParameter(description)
+      case "string"   => new StringParameter(description)
+      case "int"      => new IntParameter(description)
+      case "decimal"  => new DecimalParameter(description)
+      case "bool"     => new BooleanParameter(description)
+      case "rowid"    => new RowIdParameter(description)
+      case "fileid"   => new FileParameter(description)
+      case _          => new UnsupportedParameter(description)
     }
   }
 
@@ -98,22 +158,44 @@ object Parameter
       .filter { _.parent.isEmpty }
       .sortBy { _.index }
   }
-  var nextInputIdValue: Long = -1l
 
+  private var nextInputIdValue: Long = -1l
+  /**
+   * Each parameter has a unique identifier; Allocate a fresh one
+   */
   def nextInputId = { nextInputIdValue += 1; nextInputIdValue }
 }
 
-class BooleamParameter(
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A Boolean-valued parameter
+ */
+class BooleanParameter(
   val id: String, 
   val name: String, 
-  default: Option[Boolean], 
   val required: Boolean,
   val hidden: Boolean
 ) extends Parameter
 {
-  val root = span(s"Boolean: $name")
+  def this(description: ParameterDescriptor)
+  {
+    this(
+      id = description.id,
+      name = description.name,
+      required = description.required,
+      hidden = description.hidden
+    )
+  }
+  val root = 
+    input(`type` := "checkbox")
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A parameter that accepts a block of code.  Implemented with CodeMirror
+ */
 case class CodeParameter(
   val id: String,
   val name: String,
@@ -151,6 +233,9 @@ case class CodeParameter(
 }
 object CodeParameter
 {
+  /**
+   * Translation table from Vizier-native format descriptions to CodeMirror's identifier
+   */
   val CODEMIRROR_FORMAT = Map(
     "python" -> "text/x-python",
     "scala" -> "text/x-scala",
@@ -159,6 +244,15 @@ object CodeParameter
   )
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A parameter to select a column from the currently selected dataset.
+ * 
+ * A reactive list of [[DatasteColumn]]s determines the list of columns shown.  This is
+ * typically derived from the first [[DatsetParameter]] in the parameter list, and the
+ * datasets visible at this point in the workflow.
+ */
 class ColIdParameter(
   val id: String, 
   val name: String, 
@@ -174,8 +268,10 @@ class ColIdParameter(
       description.id,
       description.name,
       parameters.flatMap {
-        case dsParameter:DatasetParameter => Some(dsParameter)
-        case _ => None
+        case dsParameter:ArtifactParameter 
+                if dsParameter.artifactType == ArtifactType.DATASET 
+                   => Some(dsParameter)
+        case _     => None
       }.headOption
        .map { dsParameter =>
           Rx {
@@ -208,7 +304,7 @@ class ColIdParameter(
 
   val root = span(
     Rx {
-      pulldown(name, 0)(
+      pulldown(0)(
         (
           ("---" -> "") +:
           schema().map { col => 
@@ -220,21 +316,34 @@ class ColIdParameter(
   )
 }
 
-class DatasetParameter(
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A parameter to select an artifact.
+ * 
+ * A reactive list of artifacts must be provided to the parameter.  This is typically
+ * derived from the list of artifacts visible at the point in the workflow where
+ * the module is being inserted.
+ */
+class ArtifactParameter(
   val id: String, 
   val name: String, 
-  datasets: Rx[Map[String, ArtifactType.T]],
+  val artifactType: ArtifactType.T,
+  artifacts: Rx[Map[String, ArtifactType.T]],
   val required: Boolean,
   val hidden: Boolean,
 )(implicit owner: Ctx.Owner) extends Parameter
 {
-  def this(description: ParameterDescriptor, datasets: Rx[Map[String, ArtifactType.T]])
+  def this(description: ParameterDescriptor, artifacts: Rx[Map[String, ArtifactType.T]])
           (implicit owner: Ctx.Owner)
   {
     this(
       description.id, 
       description.name, 
-      datasets,
+      description.artifactType
+                 .map { ArtifactType.withName(_) }
+                 .getOrElse { ArtifactType.DATASET },
+      artifacts,
       description.required, 
       description.hidden
     )
@@ -255,63 +364,157 @@ class DatasetParameter(
 
   val root = 
     Rx { 
-      pulldown(
-        name, 
-        0, 
-      )(
+      pulldown(0)(
         (
           Seq("---" -> "") ++ 
-          datasets().filter { _._2 == ArtifactType.DATASET }
-                    .map { x => x._1 -> x._1 }
+          artifacts().filter { _._2 == artifactType }
+                     .map { x => x._1 -> x._1 }
         ):_*
       )
     }
-
 }
 
-class ArtifactParameter(
-  val id: String, 
-  val name: String, 
-  artifactType: ArtifactType.T,
-  val required: Boolean,
-  val hidden: Boolean
-) extends Parameter
-{
-  val root = span(s"Artifact: $name")
-}
+/////////////////////////////////////////////////////////////////////////////
 
+/**
+ * A Decimal-valued parameter
+ */
 class DecimalParameter(
   val id: String, 
   val name: String, 
-  default: Option[Double], 
   val required: Boolean,
   val hidden: Boolean
 ) extends Parameter
 {
-  val root = span(s"Decimal: $name")
+  def this(description: ParameterDescriptor)
+  {
+    this(
+      id = description.id,
+      name = description.name,
+      required = description.required,
+      hidden = description.hidden
+    )
+  }
+  val root = 
+    input(`type` := "number", step := "0.01")
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A file selector
+ */
 class FileParameter(
   val id: String, 
   val name: String, 
   val required: Boolean,
   val hidden: Boolean
-) extends Parameter
+)(implicit owner: Ctx.Owner) extends Parameter
 {
-  val root = span(s"File: $name")
+  def this(description: ParameterDescriptor)
+          (implicit owner: Ctx.Owner)
+  {
+    this(
+      id = description.id,
+      name = description.name,
+      required = description.required,
+      hidden = description.hidden
+    )
+  }
+
+  val DEFAULT_BODY_TEXT = "Drop a file here"
+  val bodyText = Var(span(DEFAULT_BODY_TEXT))
+
+  val dragAndDropField = 
+    div(`class` := "file-drop-area",
+      bodyText,
+      ondrop := { (e:dom.DragEvent) => 
+        bodyText() = span("file dropped")
+        e.preventDefault()
+      },
+      ondragover := { (e:dom.DragEvent) => 
+        bodyText() = span("file in drop zone")
+        e.preventDefault()
+      },
+      ondragleave := { (e:dom.DragEvent) => 
+        bodyText() = span(DEFAULT_BODY_TEXT)
+        e.preventDefault()
+      }
+    )
+  val urlField =
+  {
+    val identity = s"parameter_${Parameter.nextInputId}"
+    div(`class` := "parameter",
+      label(attr("for") := identity, "URL: "),
+      tag("input")(`type` := "string", attr("id") := identity, attr("name") := "URL")
+    )
+  }
+
+  val displays = Seq(
+    dragAndDropField,
+    urlField
+  )
+
+  val mode = Var(0)
+
+  def tab(name: String, idx: Int) = 
+      Rx { 
+        if(mode().equals(idx)){
+          button(
+            name, 
+            `class` := "tab selected", 
+            onclick := { (e: dom.MouseEvent) => mode() = idx }
+          )
+        } else {
+          button(
+            name, 
+            `class` := "tab not-selected", 
+            onclick := { (e: dom.MouseEvent) => mode() = idx }
+          )
+        }
+      }
+
+  val root = fieldset(
+    `class` := "upload-dataset",
+    legend(name),
+    tab("Upload File", 0),
+    tab("Load URL", 1),
+    mode.map { displays(_) }
+  )
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * An Integer-valued parameter
+ */
 class IntParameter(
   val id: String, 
   val name: String, 
-  default: Option[Int], 
   val required: Boolean,
   val hidden: Boolean
 ) extends Parameter
 {
-  val root = span(s"Int: $name")
+  def this(description: ParameterDescriptor)
+  {
+    this(
+      id = description.id,
+      name = description.name,
+      required = description.required,
+      hidden = description.hidden
+    )
+  }
+  val root = 
+    input(`type` := "number", step := "1")
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A nested list of parameters.  
+ * 
+ * The elements field defines the parameters that appear in each row of the list.
+ */
 class ListParameter(
   val id: String, 
   val name: String, 
@@ -354,7 +557,6 @@ class ListParameter(
       )
     })
   def lastRow = Var(rows.last)
-  lastRow.trigger { println("LAST ROW CHANGED!")}
 
   def tentativeRow(): Seq[Parameter] =
   {
@@ -387,6 +589,13 @@ class ListParameter(
     )
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A group of parameters.
+ * 
+ * The elements field contains the parameters in the group.
+ */
 class RecordParameter(
   val id: String, 
   val name: String, 
@@ -395,9 +604,33 @@ class RecordParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  val root = span(s"Record: $name")
+  def this(description: ParameterDescriptor, getParameter: ParameterDescriptor => Parameter)
+          (implicit owner: Ctx.Owner)
+  {
+    this(
+      description.id,
+      description.name, 
+      description.elements
+                 .map { _.map { getParameter(_) }.toSeq }
+                 .getOrElse { Seq.empty },
+      description.required,
+      description.hidden
+    )
+  }
+  val root = 
+    fieldset(
+      legend(name),
+      ul(
+        elements.map { _.root }.map { li(_) }
+      )
+    )
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A parameter indicating a specific row
+ */
 class RowIdParameter(
   val id: String, 
   val name: String, 
@@ -405,43 +638,81 @@ class RowIdParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  val root = span(s"RowId: $name")
+  def this(description: ParameterDescriptor)
+  {
+    this(
+      id = description.id,
+      name = description.name,
+      required = description.required,
+      hidden = description.hidden
+    )
+  }
+  val root = 
+    input(`type` := "number", step := "1")
 }
 
-class ScalarParaameter(
-  val id: String, 
-  val name: String, 
-  val required: Boolean,
-  val hidden: Boolean
-) extends Parameter
-{
-  val root = span(s"Scalar: $name")
-}
+/////////////////////////////////////////////////////////////////////////////
 
+/**
+ * A parameter with a limited set of options
+ */
 class EnumerableParameter(
   val id: String, 
   val name: String, 
-  values: Seq[(String, String)],
-  default: Option[Int],
+  values: Seq[EnumerableValue],
   val required: Boolean,
   val hidden: Boolean
 ) extends Parameter
 {
-  val root = span(s"Enumerable: $name")
+  def this(description: ParameterDescriptor)
+  {
+    this(
+      id = description.id,
+      name = description.name,
+      values = description.values.get.toSeq,
+      required = description.required,
+      hidden = description.hidden
+    )
+  }
+  val root = 
+    pulldown(
+      values.zipWithIndex
+            .find { _._1.isDefault }
+            .map { _._2 }
+            .getOrElse { 0 }
+    )(values.map { v => v.text -> v.value }:_*)
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A string-valued parameter
+ */
 class StringParameter(
   val id: String, 
   val name: String, 
-  values: Seq[(String, String)],
-  default: Option[Int],
   val required: Boolean,
   val hidden: Boolean
 ) extends Parameter
 {
-  val root = span(s"String: $name")
+  def this(description: ParameterDescriptor)
+  {
+    this(
+      id = description.id,
+      name = description.name,
+      required = description.required,
+      hidden = description.hidden
+    )
+  }
+  val root = 
+    input(`type` := "text")
 }
 
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A fallback class to use a parameter of an unknown type
+ */
 class UnsupportedParameter(
   val id: String, 
   val name: String, 
