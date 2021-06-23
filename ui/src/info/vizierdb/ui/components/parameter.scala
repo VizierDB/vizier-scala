@@ -7,9 +7,17 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types.ArtifactType
-import info.vizierdb.ui.network.{ ParameterDescriptor, DatasetColumn, EnumerableValue }
-import info.vizierdb.ui.facades.CodeMirror
+import info.vizierdb.ui.network.{ 
+  ParameterDescriptor, 
+  DatasetColumn, 
+  EnumerableValue,
+  ModuleArgument
+}
+import info.vizierdb.ui.facades.{ CodeMirror, CodeMirrorEditor }
 import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
+
+
+class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
 /**
  * A parameter for a command.  Primarily used by [[ModuleEditor]]
@@ -43,6 +51,17 @@ sealed trait Parameter
   val root: dom.Node
 
   /**
+   * The current value of this parameter's input widget
+   */
+  def value: Any
+
+  /**
+   * Encode the parameter and its value as a [[ModuleArgument]]
+   */
+  def toArgument: ModuleArgument =
+    js.Object( "id" -> id, "value" -> value ).asInstanceOf[ModuleArgument]
+
+  /**
    * Callbacks to trigger when the value of the element changes
    */
   private val changeHandlers = mutable.Buffer[dom.Event => Unit]()
@@ -59,12 +78,18 @@ sealed trait Parameter
   def field(
     basetag: String,
     attrs: AttrPair*
-  )(elems: Frag*) = 
+  )(elems: Frag*):Frag = 
   {
     val identity = s"parameter_${Parameter.nextInputId}"
     div(`class` := "parameter",
       label(attr("for") := identity, name),
-      tag(basetag)(attrs, attr("id") := identity, attr("name") := name, elems),
+      tag(basetag)(
+        attrs, 
+        `class` := Parameter.PARAMETER_WIDGET_CLASS, 
+        attr("id") := identity, 
+        attr("name") := name, 
+        elems
+      ),
       onchange := { (e:dom.Event) => changeHandlers.foreach { _(e) } }
     )
   }
@@ -74,14 +99,14 @@ sealed trait Parameter
    */
   def input(
     attrs: AttrPair*
-  ) = field("input", attrs:_*)()
+  ): Frag = field("input", attrs:_*)()
 
   /**
    * &lt;select&gt;-tag utility constructor for the parameter's field
    */
   def pulldown(
     selected: Int
-  )(options: (String, String)*) =
+  )(options: (String, String)*): Frag =
     field("select")(
       options.zipWithIndex.map { case ((description, value), idx) => 
         option(
@@ -91,6 +116,28 @@ sealed trait Parameter
         )
       }:_*
     )
+
+  def inputNode[T <: dom.Node]: T = 
+    findArgumentNode(root).get.asInstanceOf[T]
+
+  def findArgumentNode(search: dom.Node): Option[dom.Node] = 
+  {
+    if(search.attributes.equals(js.undefined)) { return None }
+    val classAttr = 
+      search.attributes.getNamedItem("class")
+    val isCommand = 
+      Option(classAttr).map { _.value.split(" ") contains Parameter.PARAMETER_WIDGET_CLASS }
+                       .getOrElse { false }
+    if(isCommand) {
+      return Some(search)
+    } else {
+      for(i <- 0 until search.childNodes.length){
+        val r = findArgumentNode(search.childNodes(i))
+        if(r.isDefined) { return r }
+      }
+      return None
+    }
+  }
 }
 
 /**
@@ -98,6 +145,8 @@ sealed trait Parameter
  */
 object Parameter
 {
+
+  val PARAMETER_WIDGET_CLASS = "command-argument"
 
   /**
    * Decode a [[ParameterDescriptor]] into a [[Parameter]] for use with the
@@ -188,7 +237,9 @@ class BooleanParameter(
     )
   }
   val root = 
-    input(`type` := "checkbox")
+    input(`type` := "checkbox").render
+  def value = 
+    inputNode[dom.html.Input].value.toBoolean
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -215,12 +266,14 @@ case class CodeParameter(
     )
   }
 
+  var editor: CodeMirrorEditor = null
+
   val root = 
     div(
       textarea(
         // "code goes here...",
         OnMount { (n: dom.Node) => 
-          CodeMirror.fromTextArea(n,
+          editor = CodeMirror.fromTextArea(n,
             js.Dictionary(
               "value" -> "this is a test",
               "mode" -> CodeParameter.CODEMIRROR_FORMAT.getOrElse(language, "text/plain"),
@@ -230,6 +283,10 @@ case class CodeParameter(
         }
       )
     )
+  def value = 
+    Option(editor).map { _.getValue }
+                  .getOrElse { "" }
+
 }
 object CodeParameter
 {
@@ -314,6 +371,8 @@ class ColIdParameter(
       )
     }
   )
+  def value = 
+    inputNode[dom.html.Select].value
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -362,7 +421,7 @@ class ArtifactParameter(
        }
   }
 
-  val root = 
+  val root = span(
     Rx { 
       pulldown(0)(
         (
@@ -371,6 +430,12 @@ class ArtifactParameter(
                      .map { x => x._1 -> x._1 }
         ):_*
       )
+    }
+  )
+  def value = 
+    inputNode[dom.html.Select].value match {
+      case "" => null
+      case x => x
     }
 }
 
@@ -396,7 +461,9 @@ class DecimalParameter(
     )
   }
   val root = 
-    input(`type` := "number", step := "0.01")
+    input(`type` := "number", step := "0.01").render.asInstanceOf[dom.html.Input]
+  def value = 
+    inputNode[dom.html.Input].value.toDouble
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -425,7 +492,10 @@ class FileParameter(
   val DEFAULT_BODY_TEXT = "Drop a file here"
   val bodyText = Var(span(DEFAULT_BODY_TEXT))
 
-  val dragAndDropField = 
+  var uploadedFileId = "no-file-uploaded"
+  var uploadedFileName = "not-a-file"
+
+  val dragAndDropField:dom.Node = 
     div(`class` := "file-drop-area",
       bodyText,
       ondrop := { (e:dom.DragEvent) => 
@@ -441,16 +511,21 @@ class FileParameter(
         e.preventDefault()
       }
     )
-  val urlField =
+  val urlField:dom.Node =
   {
     val identity = s"parameter_${Parameter.nextInputId}"
     div(`class` := "parameter",
       label(attr("for") := identity, "URL: "),
-      tag("input")(`type` := "string", attr("id") := identity, attr("name") := "URL")
+      tag("input")(
+        `type` := "string",
+        `class` := Parameter.PARAMETER_WIDGET_CLASS, 
+        attr("id") := identity, 
+        attr("name") := "URL"
+      )
     )
   }
 
-  val displays = Seq(
+  val displays = Seq[dom.Node](
     dragAndDropField,
     urlField
   )
@@ -481,6 +556,12 @@ class FileParameter(
     tab("Load URL", 1),
     mode.map { displays(_) }
   )
+  def value =
+    mode.now match {
+      case 0 => js.Object("fileid" -> uploadedFileId, "filename" -> uploadedFileName)
+      case 1 => js.Object("url" -> inputNode[dom.html.Input].value)
+      case _ => null
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -505,7 +586,9 @@ class IntParameter(
     )
   }
   val root = 
-    input(`type` := "number", step := "1")
+    input(`type` := "number", step := "1").render.asInstanceOf[dom.html.Input]
+  def value = 
+    inputNode[dom.html.Input].value.toInt
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -587,6 +670,10 @@ class ListParameter(
         rowView.root,
       )
     )
+  def value = 
+    rows.toSeq
+        .take(rows.length-1)
+        .map { _.map { _.toArgument } }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -624,6 +711,8 @@ class RecordParameter(
         elements.map { _.root }.map { li(_) }
       )
     )
+  def value = 
+    elements.map { _.toArgument }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -648,7 +737,9 @@ class RowIdParameter(
     )
   }
   val root = 
-    input(`type` := "number", step := "1")
+    input(`type` := "number", step := "1").render.asInstanceOf[dom.html.Input]
+  def value = 
+    inputNode[dom.html.Input].value
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -681,6 +772,10 @@ class EnumerableParameter(
             .map { _._2 }
             .getOrElse { 0 }
     )(values.map { v => v.text -> v.value }:_*)
+      .render.asInstanceOf[dom.html.Select]
+
+  def value = 
+    inputNode[dom.html.Input].value
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -705,7 +800,9 @@ class StringParameter(
     )
   }
   val root = 
-    input(`type` := "text")
+    input(`type` := "text").render.asInstanceOf[dom.html.Input]
+  def value =
+    inputNode[dom.html.Input].value
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -732,4 +829,5 @@ class UnsupportedParameter(
     )
   }
   val root = span(s"Unsupported parameter type: $dataType")
+  def value = null
 }

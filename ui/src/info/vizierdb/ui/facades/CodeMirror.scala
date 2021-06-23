@@ -9,6 +9,14 @@ import scala.scalajs.js.annotation.JSGlobal
 @JSGlobal("CodeMirror")
 object CodeMirror extends js.Object
 {
-  def fromTextArea(textArea: dom.Node): Unit = js.native
-  def fromTextArea(textArea: dom.Node, config: js.Dictionary[Any]): Unit = js.native
+  def fromTextArea(textArea: dom.Node): CodeMirrorEditor = js.native
+  def fromTextArea(textArea: dom.Node, config: js.Dictionary[Any]): CodeMirrorEditor = js.native
+}
+
+@js.native
+trait CodeMirrorEditor extends js.Object
+{
+  def getValue(): String = js.native
+  def getValue(separator: String): String = js.native
+  def setValue(content: String): String = js.native
 }

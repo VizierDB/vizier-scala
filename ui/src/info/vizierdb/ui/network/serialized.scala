@@ -54,7 +54,7 @@ trait CommandDescriptor extends js.Object
 }
 
 /**
- * Details about a Vizier command parameter (typically subclassed)
+ * Details about a Vizier command parameter
  */
 @js.native
 trait EnumerableValue extends js.Object
@@ -65,7 +65,10 @@ trait EnumerableValue extends js.Object
 }
 
 /**
- * Details about a Vizier command parameter (typically subclassed)
+ * Details about a Vizier command parameter
+ * 
+ * [[UndefOr]] fields are used for specific parameter types.  This might be better
+ * represented by subclassing, but this works for now.
  */
 @js.native
 trait ParameterDescriptor extends js.Object
@@ -171,6 +174,16 @@ trait CommandDescription extends js.Object
   val packageId: String = js.native
   val commandId: String = js.native
   // val arguments: js.Array[js.Dictionary[js.Dynamic]] = js.native
+}
+
+/**
+ * An argument (key-value pair) used for a module
+ */
+@js.native
+trait ModuleArgument extends js.Object
+{
+  val id: String = js.native
+  val value: Any = js.native
 }
 
 /**

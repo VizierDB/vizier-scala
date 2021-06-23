@@ -7,8 +7,9 @@ import rx._
 import info.vizierdb.ui.network.PackageDescriptor
 import info.vizierdb.ui.Vizier
 import scala.concurrent.ExecutionContext.Implicits.global
-import info.vizierdb.ui.network.CommandDescriptor
 import info.vizierdb.types.ArtifactType
+import info.vizierdb.ui.network.CommandDescriptor
+
 
 class TentativeModule(var position: Int, editList: TentativeEdits)
                      (implicit owner: Ctx.Owner)
@@ -90,29 +91,3 @@ class CommandList(
     )
 }
 
-class ModuleEditor(
-  val packageId: String, 
-  val command: CommandDescriptor, 
-  val module: TentativeModule
-)(implicit owner: Ctx.Owner) {
-
-  def saveState()
-  {
-    println(s"Would Save: $packageId.${command.id}")
-  }
-
-  val parameters: Seq[Parameter] = 
-    Parameter.collapse(
-      command.parameters.toSeq
-    ).map { Parameter(_, this) }
-
-  val root = 
-    div(`class` := "module editable",
-      h4(command.name),
-      parameters.filter { !_.hidden }.map { param => div(param.root) },
-      div(
-        button("Cancel", onclick := { (e: dom.MouseEvent) => module.cancelEditor() }),
-        button("Save", onclick := { (e: dom.MouseEvent) => saveState() })
-      )
-    )
-}
