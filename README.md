@@ -9,7 +9,7 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 * Reproducibility: Vizier automatically re-executes cells when their inputs change, so your notebook's outputs are always up-to-date
 * Data Snapshots: Vizier automatically snapshots data created by each cell, so you can re-run a cell without re-running all of its inputs
 * Polyglot: You can combine Python, SQL, and Scala, all seamlessly working with the same data.
-* No-code: Use a spreadsheet-style interface, or Vizier's "data lenses" to work with your data, no code required!
+* No-code: Use a spreadsheet-style interface, or Vizier's "data lenses" to work with your data, code optional!
 * Workflow Snapshots: Vizier automatically keeps a record of how you edit your workflow so you can always go back to an earlier version.
 * Scalable: Vizier datasets are backed by Spark and Apache Arrow, allowing you to make big changes without fuss.
 
@@ -27,16 +27,16 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 
 Unlike most notebooks, Vizier is not backed by a long-running kernel.  Each cell runs in a fresh interpreter.  
 
-Cells communicate by creating "artifacts":
+Cells communicate by exporting _artifacts_:
 * datasets (e.g., Pandas or Spark dataframes)
 * files
 * parameters
 * charts
-* python code
+* python functions
 
-For example, you can define and export a function in a python cell, and use it as a User Defined Function in a SQL cell.  
-Vizier tracks which artifacts a cell uses, so that if you change something, it knows which cells need to be re-run.
-When an artifact is updated (e.g., when you modify the function), every cell that used it (e.g., the SQL cell) will be re-executed.
+Define and export a function in a python cell, and then use it in a SQL cell.  
+
+Vizier tracks how cells use artifacts and inter-cell dependencies.  When a cell is updated, all cells that depend on it will be automatically re-run.  For example, when you modify the python function, Vizier will automatically re-run the SQL cell.
 
 ---
 
