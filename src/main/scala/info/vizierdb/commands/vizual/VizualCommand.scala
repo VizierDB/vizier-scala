@@ -55,7 +55,7 @@ trait VizualCommand
     logger.debug(s"${this.getClass().getName()} -> $input -> $output")
 
     VizualRequest(
-      input = input,
+      input = Some(input),
       script = vizualScript,
       resultName = Some(output),
       compile = Some(false)
