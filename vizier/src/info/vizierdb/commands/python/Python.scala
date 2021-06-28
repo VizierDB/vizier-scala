@@ -74,7 +74,9 @@ object Python extends Command
     val ret = python.monitor { event => 
       logger.debug(s"STDIN: $event")
       def withArtifact(handler: Artifact => Unit) =
-        context.artifact( (event\"name").as[String] ) match {
+        withNamedArtifact((event\"name").as[String]) { handler(_) }
+      def withNamedArtifact(name: String)(handler: Artifact => Unit) =
+        context.artifact( name ) match {
           case None => 
             val name = (event\"name").as[String]
             context.error(s"No such artifact '$name'")
@@ -95,7 +97,10 @@ object Python extends Command
                                               .as[String]
                 )
               // each message object already gets a free newline, so trim here
-              case "stderr" => context.error( (event\"content").as[String].trim() )
+              case "stderr" => {
+                logger.warn( (event\"content").as[String].trim() )
+                context.error( (event\"content").as[String].trim() )
+              }
               case x => context.error(s"Received message on unknown stream '$x'")
             }
           case "get_dataset" => 
@@ -151,19 +156,14 @@ object Python extends Command
               )
             }
           case "vizual_script" => 
-            withArtifact { existingDs => 
-
+            def handler(inputNameInBackend: Option[String]): Unit = {
               val output = (event\"output").as[String]
               val (nameInBackend, id) = 
                 context.outputDataset( output )
               logger.trace(s"Visual being used to create dataset: $output (artifact $id)")
 
-              assert(
-                (event\"identifier").as[Long] == existingDs.id,
-                s"Vizual script for ${output} with out-of-sync identifier (Python has ${(event\"identifier")}; Spark has ${existingDs.id})"
-              )
               val response = VizualRequest(
-                input = existingDs.nameInBackend,
+                input = inputNameInBackend,
                 script = (event\"script").as[Seq[VizualCommand]],
                 resultName = Some(nameInBackend),
                 compile = None
@@ -173,6 +173,19 @@ object Python extends Command
                 "artifactId" -> JsNumber(id)
               )
             }
+            ((event\"name").asOpt[String]:Option[String]) match {
+              case None => 
+                handler(None)
+              case Some(ds) => 
+                withNamedArtifact(ds) { existingDs => 
+                  assert(
+                    (event\"identifier").as[Long] == existingDs.id,
+                    s"Vizual script for ${(event\"output")} with out-of-sync identifier (Python has ${(event\"identifier")}; Spark has ${existingDs.id})"
+                  )
+                  handler(Some(existingDs.nameInBackend)) 
+                }
+            }
+
           case "create_dataset" => 
             {
               val fileId = (event \ "file").as[String].toLong

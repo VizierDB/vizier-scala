@@ -28,7 +28,7 @@ class PythonSaveDatasetSpec
   def beforeAll = SharedTestResources.init
 
   Fragments.foreach(Seq(
-    // "Raw Data Transfer" -> "False",
+    "Raw Data Transfer" -> "False",
     "Vizual Log Transfer" -> "True"
   )) { case (test, use_deltas) =>
 
@@ -56,6 +56,24 @@ class PythonSaveDatasetSpec
       ds.schema(3).dataType must beEqualTo(FloatType)
       ds.data.map { _(3) } must contain(14.0)
     }
+  }
 
+  "Save Raw Datasets" >> 
+  {
+    val project = MutableProject("Create Dataset Test")
+    project.script(s"""
+        |ds = vizierdb.new_dataset()
+        |ds.insert_column("A")
+        |ds.insert_column("B")
+        |ds.insert_row(["a1","b1"])
+        |ds.insert_row(["a2","b2"])
+        |ds.save("Moo")
+        """.stripMargin
+    )
+    project.waitUntilReadyAndThrowOnError
+    val ds = project.artifact("Moo").getDataset()
+    ds.schema(0).name must beEqualTo("A")
+    ds.schema(1).name must beEqualTo("B")
+    ds.data.map { _(0) } must contain("a1", "a2")
   }
 }
