@@ -12,7 +12,7 @@ import info.vizierdb.ui.rxExtras.RxBufferWatcher
 import info.vizierdb.ui.network.ModuleSubscription
 import info.vizierdb.types.ArtifactType
 
-class Workflow(subscription: BranchSubscription)
+class Workflow(subscription: BranchSubscription, project: Project)
               (implicit owner: Ctx.Owner)
 {
 
@@ -20,7 +20,7 @@ class Workflow(subscription: BranchSubscription)
     subscription.modules
                 .rxMap { module => new Module(module) }
 
-  val moduleViewsWithEdits = new TentativeEdits(moduleViews)
+  val moduleViewsWithEdits = new TentativeEdits(moduleViews, project)
 
   val moduleNodes =
     RxBufferView(ul(), 

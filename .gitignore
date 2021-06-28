@@ -10,3 +10,4 @@ __pycache__
 /src/main/resources/__pycache__
 .python-version
 /out
+/node_modules

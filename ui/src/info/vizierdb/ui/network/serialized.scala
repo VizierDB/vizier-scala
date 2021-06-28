@@ -169,18 +169,18 @@ trait WorkflowDescription extends WorkflowSummary
  * A description of a command embedded in a module
  */
 @js.native
-trait CommandDescription extends js.Object
+trait ModuleCommand extends js.Object
 {
   val packageId: String = js.native
   val commandId: String = js.native
-  // val arguments: js.Array[js.Dictionary[js.Dynamic]] = js.native
+  val arguments: js.Array[CommandArgument] = js.native
 }
 
 /**
  * An argument (key-value pair) used for a module
  */
 @js.native
-trait ModuleArgument extends js.Object
+trait CommandArgument extends js.Object
 {
   val id: String = js.native
   val value: Any = js.native
@@ -238,7 +238,7 @@ trait ModuleDescription extends js.Object
   val id: String = js.native
   val state: Int = js.native
   val statev2: Int = js.native
-  val command: CommandDescription = js.native
+  val command: CommandDescriptor = js.native
   val text: String = js.native
   val links: js.Dictionary[js.Dynamic] = js.native
   val outputs: ModuleOutputDescription = js.native

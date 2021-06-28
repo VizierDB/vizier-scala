@@ -11,6 +11,7 @@ import info.vizierdb.types.ArtifactType
 class Module(subscription: ModuleSubscription)
             (implicit owner: Ctx.Owner)
 {
+  def id = subscription.id
 
   val outputs = subscription.outputs
 

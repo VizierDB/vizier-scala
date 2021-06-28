@@ -3,8 +3,8 @@ package info.vizierdb.ui.components
 import org.scalajs.dom
 import scalatags.JsDom.all._
 import rx._
-import info.vizierdb.ui.network.{ CommandDescriptor, ModuleArgument }
-
+import scala.scalajs.js
+import info.vizierdb.ui.network.{ CommandDescriptor, CommandArgument, ModuleCommand }
 
 class ModuleEditor(
   val packageId: String, 
@@ -14,7 +14,18 @@ class ModuleEditor(
 
   def saveState()
   {
-    println(s"Would Save: $packageId.${command.id}(${arguments.map { x => x.toString() }.mkString(", ")})")
+    module
+      .editList
+      .project
+      .branchSubscription match {
+        case None => println("ERROR: No connection!")
+        case Some(s) => 
+          s.allocateModule(
+            command = serialized,
+            atPosition = if(module.nextModule.isDefined){ Some(module.position) } else { None }
+          )
+      }
+    // println(s"Would Save: $packageId.${command.id}(${arguments.map { x => x.toString() }.mkString(", ")})")
   }
 
   val parameters: Seq[Parameter] = 
@@ -22,8 +33,19 @@ class ModuleEditor(
       command.parameters.toSeq
     ).map { Parameter(_, this) }
 
-  def arguments: Seq[ModuleArgument] =
+  def arguments: Seq[CommandArgument] =
     parameters.map { _.toArgument }.toSeq
+
+  def serialized: ModuleCommand =
+  {
+    val me = this
+    js.Dynamic.literal(
+      packageId = me.packageId,
+      commandId = me.command.id,
+      arguments = me.arguments
+    ).asInstanceOf[ModuleCommand]
+  }
+
 
   val root = 
     div(`class` := "module editable",

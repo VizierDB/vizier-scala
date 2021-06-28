@@ -5,10 +5,13 @@ import info.vizierdb.ui.API
 import rx._
 import scala.scalajs.js
 import scala.scalajs.js.JSON
+import scala.collection.mutable
+import scala.concurrent.{ Promise, Future }
 import info.vizierdb.ui.rxExtras.RxBufferVar
 import info.vizierdb.types._
 import scala.scalajs.js.timers._
 import info.vizierdb.ui.components.Artifact
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
 {
@@ -19,7 +22,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
   val connected = Var(false)
   val modules = new RxBufferVar[ModuleSubscription]()
 
-  private def getSocket(): dom.WebSocket =
+  protected[ui] def getSocket(): dom.WebSocket =
   {
     println(s"Connecting to ${api.urls.websocket}")
     val s = new dom.WebSocket(api.urls.websocket)
@@ -39,10 +42,12 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
           "operation" -> "ping",
         )
       )
-
     )
   }
 
+  /**
+   * Close the websocket
+   */
   def close()
   {
     socket.close()
@@ -51,6 +56,61 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
       keepaliveTimer = null
     }
     connected() = false
+  }
+
+  var nextMessageId = 0l;
+  val messageCallbacks = mutable.Map[Long, Promise[js.Dynamic]]()
+  def withResponse(arguments: mutable.Map[String,Any]): Promise[js.Dynamic] =
+    withResponse(arguments.toSeq:_*)
+  def withResponse(arguments: (String, Any)*): Promise[js.Dynamic] =
+  {
+    if(!connected.now){
+      throw new RuntimeException("Websocket not connected")
+    }
+    val messageId = nextMessageId
+    nextMessageId = nextMessageId + 1
+    val ret = Promise[js.Dynamic]()
+    messageCallbacks.put(messageId, ret)
+    socket.send(JSON.stringify(
+      js.Dictionary(
+        (arguments :+ ("messageId" -> messageId.toInt)):_*
+      )
+    ))
+    ret
+  }
+
+  /**
+   * Allocate a module and insert or append it into the workflow
+   * @param command       A [[CommandDescription]] expressing the command
+   * @param beforeModule  If Some(moduleId), insert before moduleId; if None, append.
+   * @return              A future for the identifier of the inserted module.  The 
+   *                      future is guaranteed to resolve before the corresponding 
+   *                      cell insert event.
+   */
+  def allocateModule(
+    command: ModuleCommand,
+    atPosition: Option[Int]
+  ): Future[Identifier] = 
+  {
+    val request = 
+      command.asInstanceOf[js.Dictionary[Any]] ++ (
+        atPosition match { 
+          case None => 
+            js.Dictionary("op" -> "workflow.append")
+          case Some(id) => 
+            js.Dictionary("op" -> "workflow.insert", "modulePosition" -> atPosition)
+        }
+      )
+
+/*
+          _.identifier.asInstanceOf[Identifier] }
+*/
+    withResponse(request)
+      .future
+      .map { x => 
+        println(x)
+        ???
+      }
   }
 
   def onConnected(event: dom.Event)
@@ -89,22 +149,32 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
       println("Got initial sync")
       modules.clear()
       modules ++= base.modules
-                      .map { new ModuleSubscription(_) }
+                      .map { new ModuleSubscription(_, this) }
       awaitingReSync = false
     } else {
       val event = JSON.parse(message.data.asInstanceOf[String])
       println(s"Got Event: ${event.operation}")
       event.operation.asInstanceOf[String] match {
+        case "response" => 
+          messageCallbacks.remove(event.messageId.asInstanceOf[Int].toLong) match {
+            case Some(promise) => promise.success(event)
+            case None => println(s"WARNING: Response to unsent messageId: ${event.messageId}")
+          }
+
         case "insert_cell" => 
           modules.insert(
             event.position.asInstanceOf[Int],
-            new ModuleSubscription(event.cell.asInstanceOf[ModuleDescription])
+            new ModuleSubscription(
+              event.cell.asInstanceOf[ModuleDescription], 
+              this
+            )
           )
         case "update_cell" => 
           modules.update(
             event.position.asInstanceOf[Int],
             new ModuleSubscription(
-              event.cell.asInstanceOf[ModuleDescription]
+              event.cell.asInstanceOf[ModuleDescription],
+              this
             )
           )
         case "delete_cell" => 

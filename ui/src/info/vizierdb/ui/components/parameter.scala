@@ -11,7 +11,7 @@ import info.vizierdb.ui.network.{
   ParameterDescriptor, 
   DatasetColumn, 
   EnumerableValue,
-  ModuleArgument
+  CommandArgument
 }
 import info.vizierdb.ui.facades.{ CodeMirror, CodeMirrorEditor }
 import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
@@ -58,8 +58,8 @@ sealed trait Parameter
   /**
    * Encode the parameter and its value as a [[ModuleArgument]]
    */
-  def toArgument: ModuleArgument =
-    js.Object( "id" -> id, "value" -> value ).asInstanceOf[ModuleArgument]
+  def toArgument: CommandArgument =
+    js.Object( "id" -> id, "value" -> value ).asInstanceOf[CommandArgument]
 
   /**
    * Callbacks to trigger when the value of the element changes

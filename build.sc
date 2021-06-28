@@ -1,4 +1,5 @@
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
+import $ivy.`org.scala-js::scalajs-env-jsdom-nodejs:1.0.0`
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
@@ -108,4 +109,14 @@ object ui extends ScalaJSModule {
     ivy"com.lihaoyi::scalatags::0.9.4",
   )
 
+  object test extends Tests with TestModule.Utest {
+    def testFramework = "utest.runner.Framework"
+    def ivyDeps = Agg(
+      ivy"com.lihaoyi::utest::0.7.10",
+    )
+    import mill.scalajslib.api.JsEnvConfig
+    def jsEnvConfig = 
+      T { JsEnvConfig.JsDom() }
+
+  }
 }

@@ -71,8 +71,15 @@ mill vizier.compile
 Compiled class files will be in `out/vizier/compile/dest`
 
 ##### Run Test Cases
+
 ```
 mill vizier.test
+mill ui.test
+```
+
+The UI test cases require `node`.  Install it and then 
+```
+npm install jsdom
 ```
 
 ##### Run Vizier

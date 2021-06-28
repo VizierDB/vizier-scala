@@ -5,19 +5,20 @@ import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import rx._
 import info.vizierdb.ui.network.PackageDescriptor
-import info.vizierdb.ui.Vizier
+import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.ui.network.CommandDescriptor
+import info.vizierdb.types.Identifier
 
-
-class TentativeModule(var position: Int, editList: TentativeEdits)
+class TentativeModule(var position: Int, val editList: TentativeEdits)
                      (implicit owner: Ctx.Owner)
 {
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)
   val visibleArtifacts = Var[Rx[Map[String, Artifact]]](Var(Map.empty))
   val selectedDataset = Var[Option[String]](None)
+  var id: Option[Identifier] = None
 
   loadPackages()
 
@@ -38,10 +39,21 @@ class TentativeModule(var position: Int, editList: TentativeEdits)
 
   def loadPackages()
   {
-    Vizier.api.packages
-              .onSuccess { case packages => 
-                activeView() = Some(Left(new CommandList(packages, this)))
-              }
+    editList
+      .project
+      .api
+      .packages
+      .onSuccess { case packages => 
+        activeView() = Some(Left(new CommandList(packages, this)))
+      }
+  }
+
+  def nextModule(): Option[Identifier] =
+  {
+    editList.elements
+            .drop(position)
+            .find { _.isLeft }
+            .collect { case Left(m) => m.id }
   }
 
   val root = li(

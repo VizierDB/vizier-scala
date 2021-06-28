@@ -7,7 +7,7 @@ import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.types._
 import info.vizierdb.ui.components.Artifact
 
-class ModuleSubscription(initial: ModuleDescription)
+class ModuleSubscription(initial: ModuleDescription, branch: BranchSubscription)
 {
   def id = initial.id
   val state = Var(ExecutionState(initial.statev2))

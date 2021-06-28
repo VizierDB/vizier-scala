@@ -32,7 +32,7 @@ object Vizier {
         }
        .toMap
 
-  lazy val project = Var[Option[Project]](None)
+  val project = Var[Option[Project]](None)
 
   def error(message: String) =
     throw new Exception(message)
@@ -47,7 +47,7 @@ object Vizier {
         api.project(projectId)
               .onComplete { 
                 case Success(response) => 
-                  project() = Some(new Project(projectId).load(response))
+                  project() = Some(new Project(projectId, api).load(response))
                   println(s"Project: ${project.now.get}")
                 case Failure(ex) => 
                   error(ex.toString)

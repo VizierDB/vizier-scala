@@ -19,7 +19,7 @@ import org.mimirdb.api.JsonResponse
 import javax.servlet.http.HttpServletResponse
 
 case class RawJsonResponse(
-  data: JsValue, 
+  val data: JsValue, 
   override val status: Int = HttpServletResponse.SC_OK
 ) extends JsonResponse[RawJsonResponse]
 

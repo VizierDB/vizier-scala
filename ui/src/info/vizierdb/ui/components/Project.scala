@@ -4,14 +4,15 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import scala.scalajs.js
 import rx._
+import scala.concurrent.{ Promise, Future }
 import info.vizierdb.ui.serialized._
 import info.vizierdb.ui.network._
-import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.rxExtras.implicits._
+import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
 
-class Project(projectId: String)
+class Project(val projectId: String, val api: API, autosubscribe: Boolean = true)
              (implicit owner: Ctx.Owner)
 {
   val properties = Var[Map[String, js.Dynamic]](Map.empty)
@@ -43,27 +44,17 @@ class Project(projectId: String)
   var branchSubscription: Option[BranchSubscription] = None
   val workflow = Var[Option[Workflow]](None) 
 
-  activeBranch.trigger { 
-    println("Triggering active branch change")
-    branchSubscription.foreach { _.close() }
-    branchSubscription = 
-      activeBranch.now.map { branch =>
-        new BranchSubscription(projectId, branch, Vizier.api)
-      }
-    workflow() = branchSubscription.map { new Workflow(_) }
+  if(autosubscribe){
+    activeBranch.trigger { 
+      println("Triggering active branch change")
+      branchSubscription.foreach { _.close() }
+      branchSubscription = 
+        activeBranch.now.map { branch =>
+          new BranchSubscription(projectId, branch, api)
+        }
+      workflow() = branchSubscription.map { new Workflow(_, this) }
+    }
   }
-
-      // api.project("1")
-      //    .onSuccess { case project =>
-      //       project.defaultBranch
-      //              .onSuccess { case branch =>
-      //                 println(s"Branch: $branch")
-      //                 val subscription = branch.subscribe
-      //                 workflowView = new WorkflowView(subscription)
-      //                 document.body.appendChild(workflowView.root)
-      //              }
-      //    }
-
 
   val root = 
     div(id := "project",
