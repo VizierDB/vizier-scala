@@ -38,11 +38,10 @@ class JsonHandler[R <: Request]()(
     pathParameters: Map[String, JsValue], 
     request: ClientConnection 
   ): Response = {
-    val text = scala.io.Source.fromInputStream(request.getInputStream).mkString 
     // logger.debug(s"$text")
     val parsed: Either[Request, Response] = 
       try { 
-        var parsed = Json.parse(text)
+        var parsed = request.getJson
 
         if(!pathParameters.isEmpty){
           parsed = JsObject(
@@ -56,14 +55,14 @@ class JsonHandler[R <: Request]()(
           logger.error(e.getMessage + "\n" + e.getStackTrace.map(_.toString).mkString("\n"))
           Right(VizierErrorResponse(
             e.getClass().getCanonicalName(),
-            s"Error(s) parsing API request\n${ellipsize(text, 100)}\n"+stringifyJsonParseErrors(errors).mkString("\n")
+            s"Error(s) parsing API request\n"+stringifyJsonParseErrors(errors).mkString("\n")
           ))
         }
         case e:Throwable => {
           logger.error(e.getMessage + "\n" + e.getStackTrace.map(_.toString).mkString("\n"))
           Right(VizierErrorResponse(
             e.getClass().getCanonicalName(),
-            s"Error(s) parsing API request\n${ellipsize(text, 100)}\n"
+            s"Error(s) parsing API request"
           ))
         }
       }

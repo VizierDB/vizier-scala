@@ -66,16 +66,15 @@ class ModuleEditor(
   lazy val getParameter:Map[String, Parameter] = 
     parameters.map { p => p.id -> p }.toMap
 
-  def arguments: Seq[CommandArgument] =
-    parameters.map { _.toArgument }.toSeq
+  def arguments: js.Array[CommandArgument] =
+    js.Array(parameters.map { _.toArgument }.toSeq:_*)
 
   def serialized: ModuleCommand =
   {
-    val me = this
-    js.Dynamic.literal(
-      packageId = me.packageId,
-      commandId = me.command.id,
-      arguments = me.arguments
+    js.Dictionary(
+      "packageId" -> packageId,
+      "commandId" -> command.id,
+      "arguments" -> arguments
     ).asInstanceOf[ModuleCommand]
   }
 

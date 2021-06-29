@@ -36,9 +36,9 @@ import info.vizierdb.catalog._
 import info.vizierdb.delta.{ DeltaBus, WorkflowDelta }
 import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet
-import info.vizierdb.api.servlet.WebsocketEvents
 import org.mimirdb.api.{ Response, JsonResponse }
 import info.vizierdb.api.response.RawJsonResponse
+import info.vizierdb.api.response.VizierErrorResponse
 
 // https://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/jetty-websocket/websocket-server/src/test/java/org/eclipse/jetty/websocket/server/examples/echo/ExampleEchoServer.java
 
@@ -135,6 +135,7 @@ class BranchWatcherSocket
               }
               response.foreach {  
                 case j:RawJsonResponse => respond(j.data.as[JsObject])
+                case j:VizierErrorResponse => respond(Json.obj("error" -> j.json))
               }
               /* return */ response.isDefined
             }
@@ -161,7 +162,7 @@ class BranchWatcherSocket
             null
           )
         }
-        notificationBuffer = oldBuffer  
+        notificationBuffer = oldBuffer
       }
     }
 
@@ -172,7 +173,10 @@ class BranchWatcherSocket
   {
     synchronized { 
       Option(notificationBuffer) match {
-        case None => 
+        case None => session.getRemote.sendString(
+                        Json.toJson(delta).toString, 
+                        null
+                      )
         case Some(buffer) => buffer.append(delta)
       }
     }

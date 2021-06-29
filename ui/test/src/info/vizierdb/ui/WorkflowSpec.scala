@@ -3,8 +3,10 @@ package info.vizierdb.ui
 import utest._
 
 import scala.scalajs.js
+import scala.scalajs.js.JSON
 import info.vizierdb.test._
 import info.vizierdb.ui.components._
+import info.vizierdb.ui.network._
 import scala.concurrent.Await
 
 object WorkflowSpec extends TestSuite with TestFixtures
@@ -51,6 +53,11 @@ object WorkflowSpec extends TestSuite with TestFixtures
       assert(request.operation.equals("workflow.append"))
       assert(request.packageId.equals("debug"))
       assert(request.commandId.equals("drop"))
+      assert(request.arguments
+                    .asInstanceOf[js.Array[CommandArgument]]
+                    .find { _.id.equals("dataset") }
+                    .isDefined)
+      assert(request.arguments.isInstanceOf[js.Array[_]])
 
       assert(modules.size == initialSize + 1)
 

@@ -16,17 +16,23 @@ package info.vizierdb.api.handler
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import java.io.InputStream
+import play.api.libs.json.{ JsValue, Json }
 
 abstract class ClientConnection {
   def getInputStream: InputStream
   def getPart(part: String): (InputStream, String)
   def getParameter(name: String): String
+  def getJson: JsValue = 
+    Json.parse(
+      scala.io.Source.fromInputStream(getInputStream).mkString 
+    )
 }
 
 class JettyClientConnection(request: HttpServletRequest, response: HttpServletResponse)
   extends ClientConnection
 {
   def getInputStream: InputStream = request.getInputStream()
+
   def getPart(part: String): (InputStream, String) = 
   {
     val segment = request.getPart(part)
