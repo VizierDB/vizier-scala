@@ -5,12 +5,18 @@ import scalatags.JsDom.all._
 import rx._
 import scala.scalajs.js
 import info.vizierdb.ui.network.{ CommandDescriptor, CommandArgument, ModuleCommand }
+import scala.concurrent.ExecutionContext.Implicits.global
+import info.vizierdb.util.Logging
+
 
 class ModuleEditor(
   val packageId: String, 
   val command: CommandDescriptor, 
   val module: TentativeModule
-)(implicit owner: Ctx.Owner) {
+)(implicit owner: Ctx.Owner) 
+  extends Object 
+  with Logging
+{
 
   def saveState()
   {
@@ -18,20 +24,47 @@ class ModuleEditor(
       .editList
       .project
       .branchSubscription match {
-        case None => println("ERROR: No connection!")
+        case None => logger.error("No connection!")
         case Some(s) => 
           s.allocateModule(
             command = serialized,
             atPosition = if(module.nextModule.isDefined){ Some(module.position) } else { None }
           )
+          .onSuccess { case id =>
+            module.id = Some(id)
+          }
       }
-    // println(s"Would Save: $packageId.${command.id}(${arguments.map { x => x.toString() }.mkString(", ")})")
+  }
+
+  def loadState(arguments: Seq[CommandArgument])
+  {
+    for(arg <- arguments){
+      getParameter.get(arg.id) match {
+        case Some(parameter) => parameter.set(arg.value)
+        case None => logger.warn(s"Load state with undefined parameter: ${arg.id}")
+      }
+    }
+  }
+
+  def setState(arguments: (String, Any)*)
+  {
+    loadState(
+      arguments.map { case (id, value) =>
+        assert(value.asInstanceOf[js.UndefOr[Any]].isDefined)
+        js.Dictionary(
+          "id" -> id,
+          "value" -> value
+        ).asInstanceOf[CommandArgument]
+      }
+    )
   }
 
   val parameters: Seq[Parameter] = 
     Parameter.collapse(
       command.parameters.toSeq
     ).map { Parameter(_, this) }
+  lazy val getParameter:Map[String, Parameter] = 
+    parameters.map { p => p.id -> p }.toMap
 
   def arguments: Seq[CommandArgument] =
     parameters.map { _.toArgument }.toSeq

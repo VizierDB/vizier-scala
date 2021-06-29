@@ -4,6 +4,8 @@ package info.vizierdb.ui.components
 import rx._
 import info.vizierdb.ui.rxExtras._
 import info.vizierdb.types.Identifier
+import info.vizierdb.ui.network.PackageDescriptor
+import info.vizierdb.util.Logging
 
 /**
  * A wrapper around an [[RxBuffer]] of [[Module]] objects that allows "new"
@@ -33,6 +35,7 @@ class TentativeEdits(val project: Project)
                     (implicit owner: Ctx.Owner)
   extends RxBufferBase[Module,Either[Module,TentativeModule]]
      with RxBufferWatcher[Module]
+     with Logging
 {
 
   def this(input: RxBuffer[Module], project: Project)
@@ -64,9 +67,6 @@ class TentativeEdits(val project: Project)
       .foldLeft(Var(Map.empty):Rx[Map[String, Artifact]]) {
         case (artifacts, (Left(module), idx)) =>
           val outputs = module.outputs
-          outputs.trigger {
-            // println(s"OUTPUTS CHANGED @ $idx: ${module.outputs}")
-          }
           val oldArtifacts = artifacts
 
           val insertions: Rx[Map[String, Artifact]] = 
@@ -76,14 +76,10 @@ class TentativeEdits(val project: Project)
 
           val updatedArtifacts = Rx { 
             val ret = (artifacts() -- deletions()) ++ insertions()
-            // println(s"UPDATES @ $idx: $updates + $artifacts -> $ret")
             ret
           }
-          // updatedArtifacts.trigger { println(s"ARTIFACTS CHANGED @ $idx: $artifacts")}
-          // println(s"ARTIFACTS <- $module @ $idx: ${artifacts.now}; ${module.outputs}")
           /* return */ updatedArtifacts
         case (artifacts, (Right(tentative), idx)) => 
-          // println(s"ARTIFACTS -> $tentative ($idx) <= $artifacts")
           tentative.visibleArtifacts.now.kill()
           tentative.visibleArtifacts() = artifacts
           tentative.position = idx
@@ -112,10 +108,16 @@ class TentativeEdits(val project: Project)
    * inserted module.
    */
   def findInsertCandidate(targetPosition: Int, id: Identifier): Option[TentativeModule] = 
+  {
+    logger.trace(s"FIND INSERT: $id @ $targetPosition")
     elements.drop(targetPosition)
             .takeWhile { _.isRight }
             .collect { case Right(t) => t }
-            .find { t => t.id.isDefined && t.id.get.equals(id) }
+            .find { t => 
+              logger.trace(s"CHECK: ${t.id}")
+              t.id.isDefined && t.id.get.equals(id) 
+            }
+  }
 
   /**
    * Find a candidate position for append.
@@ -150,10 +152,14 @@ class TentativeEdits(val project: Project)
   override def onInsertAll(n: Int, sourceElems: Traversable[Module]): Unit = 
   {
     var targetPosition = sourceToTargetPosition(n)
+    logger.trace(s"ON INSERT ALL: $n")
     for(sourceElem <- sourceElems) {
       findInsertCandidate(targetPosition, sourceElem.id) match {
-        case Some(tentativeModule) => doUpdate(tentativeModule.position, Left(sourceElem))
+        case Some(tentativeModule) => 
+          logger.trace(s"REPLACING: $tentativeModule")
+          doUpdate(tentativeModule.position, Left(sourceElem))
         case None => {
+          logger.trace(s"IN-PLACE: $sourceElem")
           doInsertAll(targetPosition, Seq(Left(sourceElem)))
           targetPosition = targetPosition + 
                               elements.drop(targetPosition)
@@ -207,22 +213,32 @@ class TentativeEdits(val project: Project)
     refreshModuleState()
   }
 
-
   /**
    * Append a [[TentativeModule]] to the end of the workflow
    */
-  def appendTentative() =
+  def appendTentative(defaultPackageList: Option[Seq[PackageDescriptor]] = None) =
   {
-    doAppend(Right(new TentativeModule(elements.size, this)))
+    doAppend(Right(new TentativeModule(
+                            position = elements.size, 
+                            editList = this, 
+                            defaultPackageList = defaultPackageList
+                          )))
     refreshModuleState()
   }
 
   /**
    * Insert a [[TentativeModule]] at the specified position
    */
-  def insertTentative(n: Int) =
+  def insertTentative(
+    n: Int,
+    defaultPackageList: Option[Seq[PackageDescriptor]] = None
+  ) =
   {
-    doInsertAll(n, Some(Right(new TentativeModule(n, this))))
+    doInsertAll(n, Some(Right(new TentativeModule(
+                            position = n, 
+                            editList = this,
+                            defaultPackageList = defaultPackageList
+                          ))))
     refreshModuleState()
   }
 

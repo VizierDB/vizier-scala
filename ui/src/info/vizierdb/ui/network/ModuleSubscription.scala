@@ -6,8 +6,11 @@ import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.types._
 import info.vizierdb.ui.components.Artifact
+import info.vizierdb.util.Logging
 
 class ModuleSubscription(initial: ModuleDescription, branch: BranchSubscription)
+  extends Object
+  with Logging
 {
   def id = initial.id
   val state = Var(ExecutionState(initial.statev2))
@@ -21,5 +24,5 @@ class ModuleSubscription(initial: ModuleDescription, branch: BranchSubscription)
     initial.outputs.stdout.map { (_, StreamType.STDOUT) } ++
     initial.outputs.stderr.map { (_, StreamType.STDERR) }
   ).map { msg => new StreamedMessage(msg._1, msg._2) }:_* )
-  println(s"${messages.length} Messages; ${outputs.now.size} outputs; $outputs")
+  logger.debug(s"${messages.length} Messages; ${outputs.now.size} outputs; $outputs")
 }

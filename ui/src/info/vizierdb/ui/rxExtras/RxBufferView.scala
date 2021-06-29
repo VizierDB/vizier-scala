@@ -6,25 +6,26 @@ import info.vizierdb.ui.rxExtras.implicits._
 import rx._
 import scalatags.JsDom.all._
 import scalatags.JsDom
+import info.vizierdb.util.Logging
 
 class RxBufferView(val root: dom.Node)
                   (implicit owner: Ctx.Owner)
   extends SimpleRxBufferWatcher[dom.Node]
+  with Logging
 {
   val nodes = mutable.Buffer[dom.Node]()
 
   def onAppend(elem: dom.Node): Unit =
   {
-    println(s"View Append: $elem -> $root")
+    logger.debug(s"View Append: $elem -> $root")
     val node: dom.Node = elem
     nodes += node
     root.appendChild(node)
-    // println("Done with view append")
   }
 
   def onClear(): Unit = 
   {
-    println("View Clear")
+    logger.debug("View Clear")
     nodes.clear()
     while(root.hasChildNodes()){
       root.removeChild(root.firstChild)
@@ -33,7 +34,7 @@ class RxBufferView(val root: dom.Node)
 
   def onPrepend(elem: dom.Node): Unit =
   {
-    println("View Prepend")
+    logger.debug("View Prepend")
     val node: dom.Node = elem
     node +=: nodes
     if(root.hasChildNodes()){
@@ -45,7 +46,7 @@ class RxBufferView(val root: dom.Node)
 
   def onRemove(n: Int): Unit = 
   {
-    println("View Remove")
+    logger.debug("View Remove")
     val node = nodes(n)
     root.removeChild(node)
     nodes.remove(n)
@@ -53,7 +54,7 @@ class RxBufferView(val root: dom.Node)
 
   def onUpdate(n: Int, elem: dom.Node): Unit =
   {
-    println("View Update")
+    logger.debug("View Update")
     val node: dom.Node = elem
     val oldNode = nodes(n)
     root.replaceChild(node, oldNode)
@@ -62,10 +63,10 @@ class RxBufferView(val root: dom.Node)
 
   def onInsert(n: Int, elem: dom.Node): Unit = 
   {
-    println("View Insert")
+    logger.debug("View Insert")
     val node: dom.Node = elem
     val children = root.childNodes
-    println(children)
+    logger.trace(children.toString)
     if(n >= children.length){
       root.appendChild(node)
     } else {

@@ -15,6 +15,7 @@ import info.vizierdb.ui.network.{
 }
 import info.vizierdb.ui.facades.{ CodeMirror, CodeMirrorEditor }
 import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
+import info.vizierdb.util.{ Logger, Logging }
 
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
@@ -56,10 +57,15 @@ sealed trait Parameter
   def value: Any
 
   /**
+   * Update the current value of this parameter's input widget
+   */
+  def set(v: Any)
+
+  /**
    * Encode the parameter and its value as a [[ModuleArgument]]
    */
   def toArgument: CommandArgument =
-    js.Object( "id" -> id, "value" -> value ).asInstanceOf[CommandArgument]
+    js.Dictionary( "id" -> id, "value" -> value ).asInstanceOf[CommandArgument]
 
   /**
    * Callbacks to trigger when the value of the element changes
@@ -144,8 +150,8 @@ sealed trait Parameter
  * Utility methods for decoding [[Parameter]] instances
  */
 object Parameter
+  extends Logging
 {
-
   val PARAMETER_WIDGET_CLASS = "command-argument"
 
   /**
@@ -197,7 +203,7 @@ object Parameter
             parent.elements = js.Array(element)
           }
         } else {
-          println(s"WARNING: parameter ${element.id} has an invalid parent ${element.parent} (in ${elements.keys.mkString(", ")})")
+          logger.warn(s"parameter ${element.id} has an invalid parent ${element.parent} (in ${elements.keys.mkString(", ")})")
         }
       }
     }
@@ -227,6 +233,8 @@ class BooleanParameter(
   val hidden: Boolean
 ) extends Parameter
 {
+
+
   def this(description: ParameterDescriptor)
   {
     this(
@@ -240,6 +248,8 @@ class BooleanParameter(
     input(`type` := "checkbox").render
   def value = 
     inputNode[dom.html.Input].value.toBoolean
+  override def set(v: Any): Unit =
+    inputNode[dom.html.Input].value = v.asInstanceOf[Boolean].toString
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -255,6 +265,8 @@ case class CodeParameter(
   val hidden: Boolean
 ) extends Parameter
 {
+
+
   def this(description: ParameterDescriptor)
   {
     this(
@@ -286,7 +298,8 @@ case class CodeParameter(
   def value = 
     Option(editor).map { _.getValue }
                   .getOrElse { "" }
-
+  override def set(v: Any): Unit = 
+    Option(editor).map { _.setValue(v.asInstanceOf[String]) }
 }
 object CodeParameter
 {
@@ -318,6 +331,7 @@ class ColIdParameter(
   val hidden: Boolean
 ) (implicit owner: Ctx.Owner) extends Parameter
 {
+
   def this(description: ParameterDescriptor, datasets: Rx[Map[String, Artifact]], parameters: Seq[Parameter])
           (implicit owner: Ctx.Owner)
   {
@@ -337,21 +351,21 @@ class ColIdParameter(
               case Some(dsName) => 
                 datasets().get(dsName) match {
                   case None => 
-                    println(s"WARNING: ColIdParameter $name used with an undefined artifact")
+                    Parameter.logger.warn(s"ColIdParameter $name used with an undefined artifact")
                     Seq.empty
                   case Some(dsArtifact) => 
                     dsArtifact.metadata match {
                       case Some(DatasetMetadata(columns)) =>
                         columns
                       case _ => 
-                        println(s"WARNING: ColIdParameter $name used with a non-dataset artifact")
+                        Parameter.logger.warn(s"ColIdParameter $name used with a non-dataset artifact")
                         Seq.empty
                     }
                 }
             }
           }
       }.getOrElse { 
-        println(s"WARNING: ColIdParameter $name used with out an associated dataset")
+        Parameter.logger.warn(s"ColIdParameter $name used with out an associated dataset")
         Var(Seq.empty) 
       },
       description.required,
@@ -373,6 +387,9 @@ class ColIdParameter(
   )
   def value = 
     inputNode[dom.html.Select].value
+  override def set(v: Any): Unit = 
+    inputNode[dom.html.Select].value = v.asInstanceOf[String]
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -393,6 +410,7 @@ class ArtifactParameter(
   val hidden: Boolean,
 )(implicit owner: Ctx.Owner) extends Parameter
 {
+
   def this(description: ParameterDescriptor, artifacts: Rx[Map[String, ArtifactType.T]])
           (implicit owner: Ctx.Owner)
   {
@@ -437,6 +455,8 @@ class ArtifactParameter(
       case "" => null
       case x => x
     }
+  override def set(v: Any): Unit = 
+    inputNode[dom.html.Select].value = v.asInstanceOf[String]
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -464,6 +484,8 @@ class DecimalParameter(
     input(`type` := "number", step := "0.01").render.asInstanceOf[dom.html.Input]
   def value = 
     inputNode[dom.html.Input].value.toDouble
+  override def set(v: Any): Unit = 
+    inputNode[dom.html.Input].value = v.asInstanceOf[Float].toString
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -562,6 +584,8 @@ class FileParameter(
       case 1 => js.Object("url" -> inputNode[dom.html.Input].value)
       case _ => null
     }
+  def set(v: Any): Unit = 
+    ???
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -589,6 +613,8 @@ class IntParameter(
     input(`type` := "number", step := "1").render.asInstanceOf[dom.html.Input]
   def value = 
     inputNode[dom.html.Input].value.toInt
+  def set(v: Any): Unit = 
+    inputNode[dom.html.Input].value = v.asInstanceOf[Int].toString
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -674,6 +700,8 @@ class ListParameter(
     rows.toSeq
         .take(rows.length-1)
         .map { _.map { _.toArgument } }
+  def set(v: Any): Unit = 
+    ???
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -713,6 +741,8 @@ class RecordParameter(
     )
   def value = 
     elements.map { _.toArgument }
+  def set(v: Any): Unit = 
+    ???
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -740,6 +770,9 @@ class RowIdParameter(
     input(`type` := "number", step := "1").render.asInstanceOf[dom.html.Input]
   def value = 
     inputNode[dom.html.Input].value
+  def set(v: Any): Unit = 
+    inputNode[dom.html.Input].value = v.asInstanceOf[String]
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -775,7 +808,10 @@ class EnumerableParameter(
       .render.asInstanceOf[dom.html.Select]
 
   def value = 
-    inputNode[dom.html.Input].value
+    inputNode[dom.html.Select].value
+  def set(v: Any): Unit = 
+    inputNode[dom.html.Select].value = v.asInstanceOf[String]
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -803,6 +839,8 @@ class StringParameter(
     input(`type` := "text").render.asInstanceOf[dom.html.Input]
   def value =
     inputNode[dom.html.Input].value
+  def set(v: Any): Unit = 
+    inputNode[dom.html.Input].value = v.asInstanceOf[String]
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -830,4 +868,5 @@ class UnsupportedParameter(
   }
   val root = span(s"Unsupported parameter type: $dataType")
   def value = null
+  def set(v: Any): Unit = {}
 }

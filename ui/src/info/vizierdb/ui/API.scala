@@ -16,8 +16,11 @@ import info.vizierdb.ui.network.{
 import info.vizierdb.ui.network.PackageDescriptor
 import info.vizierdb.ui.network.ServiceDescriptor
 import info.vizierdb.ui.components.Parameter
+import info.vizierdb.util.Logging
 
 case class API(baseUrl: String)
+  extends Object
+  with Logging
 {
   val urls = new VizierURLs(baseUrl)
 
@@ -34,7 +37,7 @@ case class API(baseUrl: String)
        .toSeq
     }.recover { 
       case error => 
-        println(error.toString)
+        logger.error(error.toString)
         Seq.empty 
       }
   }

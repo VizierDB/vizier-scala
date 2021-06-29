@@ -1,4 +1,4 @@
-package info.vizierdb.ui
+package info.vizierdb.test
 
 import scala.collection.mutable
 import scala.scalajs.js
@@ -8,6 +8,7 @@ import org.scalajs.dom
 import info.vizierdb.types._
 import info.vizierdb.ui.components._
 import info.vizierdb.ui.network._
+import info.vizierdb.ui._
 import scala.concurrent.{ Promise, Future }
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -36,24 +37,43 @@ trait TestFixtures
     )
   }
 
-
-
-  def expectMessage[T](request: (String, Any)*)(response: Any)(op: => T): T =
+  def appendModule(): TentativeModule =
   {
+    modules.appendTentative(Some(TestFixtures.defaultPackages))
+    val Right(ret) = modules.last
+    return ret
+  }
+
+  def insertModule(n: Int): TentativeModule =
+  {
+    modules.insertTentative(n, Some(TestFixtures.defaultPackages))
+    val Right(ret) = modules(n)
+    return ret
+  }
+
+
+  def expectMessage[T](response: Any)(op: => T): (js.Dynamic, T) =
+  {
+    var request: js.Dynamic = null
     val height = MockBranchSubscription.expectedMessages.size
-    MockBranchSubscription.expectedMessages.push( (request, response.asInstanceOf[js.Dynamic]) )
+    MockBranchSubscription.expectedMessages.push( 
+      actualRequest => {
+        request = actualRequest
+        response.asInstanceOf[js.Dynamic]
+      }
+    )
     val ret = op
     assert(MockBranchSubscription.expectedMessages.size == height, 
           s"Expecting ${Math.abs(MockBranchSubscription.expectedMessages.size - height)} ${if(MockBranchSubscription.expectedMessages.size > height){ "fewer" } else { "more" }} messages than were sent."
         )
-    return ret
+    return (request, ret)
   }
 
   object MockBranchSubscription
     extends BranchSubscription("1", "1", Vizier.api)
   {
 
-    val expectedMessages = mutable.Stack[(Seq[(String, Any)], js.Dynamic)]()
+    val expectedMessages = mutable.Stack[js.Dynamic => js.Dynamic]()
 
     override def getSocket(): dom.WebSocket =
     {
@@ -64,23 +84,10 @@ trait TestFixtures
       Promise[js.Dynamic] =
     {
       assert(expectedMessages.size > 0, "Unexpected message sent")
-      val (expectedFields, response) = expectedMessages.pop()
-      val fields = arguments.toMap
-
-      val errors = 
-        expectedFields.map { case (field, value) =>
-                        (field, value, fields(field))
-                      }
-                      .filter { x => !x._2.equals(x._3) }
-
-      assert(errors.isEmpty,
-        s"Error in message.\n${errors.map { case (field, expected, got) => 
-                                            s"Field: $field\n  Expected: $expected\n  Got: $got"
-                                          }.mkString("\n")}"
+      val handleRequest = expectedMessages.pop()
+      MockPromise(
+        handleRequest(js.Dictionary(arguments:_*).asInstanceOf[js.Dynamic])
       )
-      val ret = Promise[js.Dynamic]()
-      ret.success(response)
-      return ret
     }
   }
 
@@ -88,7 +95,7 @@ trait TestFixtures
     extends API("")
   {
     override def packages(): Future[Seq[PackageDescriptor]] =
-      Future(Seq())
+      MockFuture(TestFixtures.defaultPackages)
 
     override def project(projectId: Identifier): Future[ProjectDescription] =
       ???
@@ -100,30 +107,37 @@ trait TestFixtures
 
 object TestFixtures
 {
+
+  val defaultPackages: Seq[PackageDescriptor] = 
+    Seq(
+      BuildA.Package("debug")(
+        BuildA.Command("add")(
+          BuildA.Parameter("output", "string")
+        ),
+        BuildA.Command("drop")(
+          BuildA.Parameter("dataset", "string")
+        )
+      )
+    )
+
+  def command(packageId: String, commandId: String) =
+    defaultPackages
+      .find(_.id.equals(packageId))
+      .get
+      .commands
+      .find { _.id.equals(commandId) }
+      .get
+
   val defaultWorkflow = 
     js.Dictionary(
       "state" -> ExecutionState.DONE,
       "modules" -> Seq(
-        js.Dictionary(
-          "id" -> "raw",
-          "state" -> -1,
-          "statev2" -> ExecutionState.DONE.id,
-          "command" -> js.Dictionary(
-
-          ).asInstanceOf[CommandDescriptor],
-          "text" -> "LOAD DATASET foo;",
-          "links" -> js.Dictionary(),
-          "outputs" -> Seq(),
-          "artifacts" -> Seq(
-            js.Dictionary(
-              "id" -> 23,
-              "name" -> "foo",
-              "category" -> ArtifactType.DATASET.toString,
-              "objType" -> "dataset/view"
-
-            ).asInstanceOf[ArtifactSummary]
-          )
-        ).asInstanceOf[ModuleDescription]
+        BuildA.Module(
+          "debug", "add", 
+          artifacts = Seq("foo" -> ArtifactType.DATASET)
+        )( 
+          "output" -> "foo"
+        )
       ),
       "datasets" -> Seq(),
       "dataobjects" -> Seq(),

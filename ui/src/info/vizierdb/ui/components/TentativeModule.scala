@@ -9,10 +9,14 @@ import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.ui.network.CommandDescriptor
+import scala.concurrent.{ Future, Promise }
 import info.vizierdb.types.Identifier
 
-class TentativeModule(var position: Int, val editList: TentativeEdits)
-                     (implicit owner: Ctx.Owner)
+class TentativeModule(
+  var position: Int, 
+  val editList: TentativeEdits, 
+  defaultPackageList: Option[Seq[PackageDescriptor]] = None
+)(implicit owner: Ctx.Owner)
 {
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)
@@ -39,13 +43,18 @@ class TentativeModule(var position: Int, val editList: TentativeEdits)
 
   def loadPackages()
   {
-    editList
-      .project
-      .api
-      .packages
-      .onSuccess { case packages => 
+    defaultPackageList match {
+      case Some(packages) => 
         activeView() = Some(Left(new CommandList(packages, this)))
-      }
+      case None =>
+        editList
+          .project
+          .api
+          .packages
+          .onSuccess { case packages => 
+            activeView() = Some(Left(new CommandList(packages, this)))
+          }
+    }
   }
 
   def nextModule(): Option[Identifier] =
@@ -61,7 +70,6 @@ class TentativeModule(var position: Int, val editList: TentativeEdits)
       "Visible artifacts here: ",
       Rx { 
         val a = visibleArtifacts()
-        // println(s"VISIBLE ARTIFACTS: $a")
         Rx { 
           a().keys.mkString(", ")
         }

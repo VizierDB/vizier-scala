@@ -43,7 +43,6 @@ class Artifact(
       mimeType = summary.objType.orNull,
       ArtifactMetadata(summary)
     )
-    println("Done")
   }
 
 }

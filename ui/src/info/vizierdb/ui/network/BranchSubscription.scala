@@ -12,8 +12,11 @@ import info.vizierdb.types._
 import scala.scalajs.js.timers._
 import info.vizierdb.ui.components.Artifact
 import scala.concurrent.ExecutionContext.Implicits.global
+import info.vizierdb.util.Logging
 
 class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
+  extends Object
+  with Logging
 {
   var socket = getSocket() 
   var awaitingReSync = false
@@ -24,7 +27,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
 
   protected[ui] def getSocket(): dom.WebSocket =
   {
-    println(s"Connecting to ${api.urls.websocket}")
+    logger.info(s"Connecting to ${api.urls.websocket}")
     val s = new dom.WebSocket(api.urls.websocket)
     s.onopen = onConnected
     s.onclose = onClosed
@@ -96,27 +99,22 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
       command.asInstanceOf[js.Dictionary[Any]] ++ (
         atPosition match { 
           case None => 
-            js.Dictionary("op" -> "workflow.append")
+            js.Dictionary("operation" -> "workflow.append")
           case Some(id) => 
-            js.Dictionary("op" -> "workflow.insert", "modulePosition" -> atPosition)
+            js.Dictionary("operation" -> "workflow.insert", "modulePosition" -> atPosition)
         }
       )
-
-/*
-          _.identifier.asInstanceOf[Identifier] }
-*/
     withResponse(request)
       .future
       .map { x => 
-        println(x)
-        ???
+        x.id.asInstanceOf[Identifier]
       }
   }
 
   def onConnected(event: dom.Event)
   {
     connected() = true
-    println("Connected!")
+    logger.debug("Connected!")
     awaitingReSync = true
     socket.send(
       JSON.stringify(
@@ -138,27 +136,27 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
   }
   def onError(event: dom.Event) = 
   {
-    println(s"Error: $event")
+    logger.error(s"Error: $event")
   }
   def onMessage(message: dom.MessageEvent) =
   {
-    // println(s"Got: ${event.data}")
+    logger.trace(s"Got: ${message.data}")
     if(awaitingReSync){
       val base = JSON.parse(message.data.asInstanceOf[String])
                      .asInstanceOf[WorkflowDescription]
-      println("Got initial sync")
+      logger.debug("Got initial sync")
       modules.clear()
       modules ++= base.modules
                       .map { new ModuleSubscription(_, this) }
       awaitingReSync = false
     } else {
       val event = JSON.parse(message.data.asInstanceOf[String])
-      println(s"Got Event: ${event.operation}")
+      logger.debug(s"Got Event: ${event.operation}")
       event.operation.asInstanceOf[String] match {
         case "response" => 
           messageCallbacks.remove(event.messageId.asInstanceOf[Int].toLong) match {
             case Some(promise) => promise.success(event)
-            case None => println(s"WARNING: Response to unsent messageId: ${event.messageId}")
+            case None => logger.warn(s"Response to unsent messageId: ${event.messageId}")
           }
 
         case "insert_cell" => 
@@ -182,35 +180,35 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
             event.position.asInstanceOf[Int]
           )
         case "update_cell_state" =>
-          println(s"State Update: ${event.state} @ ${event.position}")
+          logger.debug(s"State Update: ${event.state} @ ${event.position}")
           modules(event.position.asInstanceOf[Int]).state() = 
             ExecutionState(event.state.asInstanceOf[Int])
         case "append_cell_message" =>
-          println(s"New Message")
+          logger.debug(s"New Message")
           modules(event.position.asInstanceOf[Int])
             .messages += new StreamedMessage(
                             event.message.asInstanceOf[MessageDescription], 
                             StreamType(event.stream.asInstanceOf[Int])
                          )
         case "advance_result_id" => 
-          println("Reset Result")
+          logger.debug("Reset Result")
           val module = modules(event.position.asInstanceOf[Int])
           module.messages.clear()
           module.outputs() = Map[String,Artifact]()
         case "update_cell_outputs" => 
           val module = modules(event.position.asInstanceOf[Int])
-          println(s"Adding outputs: ${event.outputs} -> ${module.outputs}")
+          logger.debug(s"Adding outputs: ${event.outputs} -> ${module.outputs}")
           module.outputs() = 
             event.outputs.asInstanceOf[js.Array[ArtifactSummary]]
                          .map { artifact => 
-                            println(s"Artifact: ${artifact.id}: ${artifact.category}")
+                            logger.trace(s"Artifact: ${artifact.id}: ${artifact.category}")
                             artifact.name -> 
                               new Artifact(artifact)
                           }
                          .toMap
         case "pong" => ()
         case other => 
-          println(s"Unknown operation $other\n$event")
+          logger.warn(s"Unknown operation $other\n$event")
       }
     }
   }

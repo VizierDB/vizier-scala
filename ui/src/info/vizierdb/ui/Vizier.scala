@@ -13,8 +13,12 @@ import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
+import info.vizierdb.util.Logging
 
-object Vizier {
+object Vizier 
+  extends Object
+  with Logging
+{
   implicit val ctx = Ctx.Owner.safe()
   // implicit val dataCtx = new Ctx.Data(new Rx.Dynamic[Int]( (owner, data) => 42, None ))
 
@@ -48,7 +52,7 @@ object Vizier {
               .onComplete { 
                 case Success(response) => 
                   project() = Some(new Project(projectId, api).load(response))
-                  println(s"Project: ${project.now.get}")
+                  logger.debug(s"Project: ${project.now.get}")
                 case Failure(ex) => 
                   error(ex.toString)
               }
@@ -72,7 +76,7 @@ object Vizier {
         )
         OnMount.trigger(document.body)
       } catch {
-        case t: Throwable => println(t)
+        case t: Throwable => logger.error(t.toString)
       }
     })
   }

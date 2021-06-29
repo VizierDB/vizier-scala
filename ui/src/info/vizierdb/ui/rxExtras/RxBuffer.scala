@@ -1,6 +1,7 @@
 package info.vizierdb.ui.rxExtras
 
 import scala.collection.mutable
+import info.vizierdb.util.Logging
 
 abstract class RxBuffer[A]
   extends Seq[A]
@@ -8,7 +9,7 @@ abstract class RxBuffer[A]
   val elements = mutable.Buffer[A]()
   def apply(idx: Int) = elements(idx)
   def iterator = elements.iterator
-  def length = { println("Length"); elements.length }
+  def length = { elements.length }
 
   def deliverUpdatesTo[T2 <: RxBufferWatcher[A]](handler: T2): T2
   def rxMap[B](f: A => B): DerivedRxBuffer[A, B] =
@@ -20,6 +21,8 @@ abstract class RxBuffer[A]
   }
 }
 object RxBuffer
+  extends Object
+  with Logging
 {
   def apply[A](initial: A*): RxBufferVar[A] = 
   {
@@ -41,26 +44,26 @@ abstract class RxBufferBase[A,B]
 
   def onAppend(sourceElem: A): Unit =
   {
-    println(s"$this@$id += $sourceElem (${watchers.size} watchers)")
+    RxBuffer.logger.trace(s"$this@$id += $sourceElem (${watchers.size} watchers)")
     doAppend(derive(sourceElem))
   }
 
   def doAppend(targetElem: B): Unit =
   {
-    println(s"Apply $this@$id += $targetElem (${watchers.size} watchers)")
+    RxBuffer.logger.trace(s"Apply $this@$id += $targetElem (${watchers.size} watchers)")
     elements += targetElem
-    watchers.foreach { x => println(s"Notifying: $x"); x.onAppend(targetElem) }
+    watchers.foreach { x => RxBuffer.logger.trace(s"Notifying: $x"); x.onAppend(targetElem) }
   }
 
   def onPrepend(sourceElem: A): Unit =
   {
-    println(s"$sourceElem +=: $this@$id (${watchers.size} watchers)")
+    RxBuffer.logger.trace(s"$sourceElem +=: $this@$id (${watchers.size} watchers)")
     doPrepend(derive(sourceElem))
   }
 
   def doPrepend(targetElem: B): Unit =
   {
-    println(s"Apply $targetElem +=: $this@$id (${watchers.size} watchers)")
+    RxBuffer.logger.trace(s"Apply $targetElem +=: $this@$id (${watchers.size} watchers)")
     targetElem +=: elements
     watchers.foreach { _.onPrepend(targetElem) }
   }
@@ -73,13 +76,13 @@ abstract class RxBufferBase[A,B]
 
   def onInsertAll(n: Int, sourceElems: collection.Traversable[A]) =
   {
-    println(s"$this@$id << $sourceElems (${watchers.size} watchers)")
+    RxBuffer.logger.trace(s"$this@$id << $sourceElems (${watchers.size} watchers)")
     doInsertAll(n, sourceElems.map { derive(_) })
   }
 
   def doInsertAll(n: Int, targetElems: collection.Traversable[B]): Unit =
   {
-    println(s"Apply $this@$id << $targetElems (${watchers.size} watchers)")
+    RxBuffer.logger.trace(s"Apply $this@$id << $targetElems (${watchers.size} watchers)")
     elements.insertAll(n, targetElems)
     watchers.foreach { _.onInsertAll(n, targetElems) }
   }
@@ -104,7 +107,7 @@ abstract class RxBufferBase[A,B]
   def deliverUpdatesTo[T2 <: RxBufferWatcher[B]](handler: T2): T2 =
   {
     watchers += handler
-    println(s"Registered watcher on $this@$id (now ${watchers.size} watchers)")
+    RxBuffer.logger.trace(s"Registered watcher on $this@$id (now ${watchers.size} watchers)")
     return handler
   }
 }

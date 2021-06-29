@@ -5,15 +5,17 @@ import scalatags.JsDom.all._
 import scala.scalajs.js
 import rx._
 import scala.concurrent.{ Promise, Future }
-import info.vizierdb.ui.serialized._
 import info.vizierdb.ui.network._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
+import info.vizierdb.util.Logging
 
 class Project(val projectId: String, val api: API, autosubscribe: Boolean = true)
              (implicit owner: Ctx.Owner)
+  extends Object
+  with Logging
 {
   val properties = Var[Map[String, js.Dynamic]](Map.empty)
   val projectName = Rx { 
@@ -46,7 +48,7 @@ class Project(val projectId: String, val api: API, autosubscribe: Boolean = true
 
   if(autosubscribe){
     activeBranch.trigger { 
-      println("Triggering active branch change")
+      logger.info("Triggering active branch change")
       branchSubscription.foreach { _.close() }
       branchSubscription = 
         activeBranch.now.map { branch =>

@@ -238,7 +238,7 @@ trait ModuleDescription extends js.Object
   val id: String = js.native
   val state: Int = js.native
   val statev2: Int = js.native
-  val command: CommandDescriptor = js.native
+  val command: ModuleCommand = js.native
   val text: String = js.native
   val links: js.Dictionary[js.Dynamic] = js.native
   val outputs: ModuleOutputDescription = js.native
