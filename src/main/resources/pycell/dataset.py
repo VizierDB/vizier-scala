@@ -34,6 +34,7 @@ DATATYPE_REAL = 'real'
 DATATYPE_VARCHAR = 'varchar'
 DATATYPE_GEOMETRY = "geometry"
 DATATYPE_BINARY = 'binary'
+DATATYPE_IMAGE = 'image/png'
 
 
 VIZUAL_DELETE_COLUMN  = "deletecolumn"
@@ -422,11 +423,8 @@ class DatasetClient(object):
     if values is not None:
       if len(values) != len(self.columns):
         raise ValueError('invalid number of values for dataset schema')
-      for index in range(len(values)):
-        if self.columns[index].data_type == DATATYPE_BINARY:
-          values[index] = base64.b64encode(values[index]).decode('utf-8')
       row = MutableDatasetRow(
-        values=[str(v) for v in values],
+        values=[v for v in values],
         dataset=self
       )
     else:
@@ -660,6 +658,9 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
   if data_type == "geometry":
     from shapely import wkt  # type: ignore[import]
     return wkt.loads(value)
+  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+    import base64
+    return base64.b64decode(value.encode('utf-8'))
   else:
     return value
 
@@ -667,6 +668,9 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
 def export_from_native_type(value: Any, data_type: str) -> Any:
   if data_type == "geometry":
     return value.wkt
+  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+    import base64
+    return base64.b64encode(bytes(value)).decode('utf-8')
   else:
     return value
 
@@ -690,6 +694,9 @@ def assert_type(value: Any, data_type: str) -> Any:
     return value
   elif data_type == DATATYPE_GEOMETRY:
     # Not sure how to validate this...
+    return value
+  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+    assert(isinstance(value, bytes))
     return value
   else:
     return value

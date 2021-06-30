@@ -174,6 +174,7 @@ object types
     val DATE     = Value(6, "date")
     val DATETIME = Value(7, "datetime")
     val BINARY   = Value(8, "binary")
+    val IMAGE    = Value(9, "image/png")
 
     def fromSpark(t: org.apache.spark.sql.types.DataType): T =
     {
@@ -187,6 +188,7 @@ object types
         case org.apache.spark.sql.types.DateType => DATE
         case org.apache.spark.sql.types.TimestampType => DATETIME
         case org.apache.spark.sql.types.BinaryType => BINARY
+        case org.apache.spark.sql.types.ImageType => IMAGE
         case _ => VARCHAR
       }
     }
