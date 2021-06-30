@@ -506,7 +506,10 @@ case class Branch(
       val b = Branch.column
       scalikejdbc.update(Branch)
         .set(b.name       -> Option(name).getOrElse { this.name },
-             b.properties -> Option(properties).getOrElse { this.properties }.toString,
+             b.properties -> Option(properties)
+                                      .map { JsObject(_) }
+                                      .getOrElse { this.properties }
+                                      .toString,
              b.modified   -> now)
         .where.eq(b.id, id)
     }.update.apply()

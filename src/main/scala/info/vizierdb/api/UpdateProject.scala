@@ -23,10 +23,12 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.util.StupidReactJsonField
 
 case class UpdateProject(
   projectId: Identifier,
-  properties: Map[String, JsValue],
+  properties: StupidReactJsonMap.T,
   defaultBranch: Option[Identifier]
 )
   extends Request
@@ -46,11 +48,12 @@ case class UpdateProject(
             return NoSuchEntityResponse()
           }
         }
+        val saneProperties = StupidReactJsonMap.decode(properties)
         project = project.updateProperties(
-                            properties.get("name")
-                                      .map { _.as[String] }
-                                      .getOrElse { "Untitled Project" },
-                            properties = properties
+                            saneProperties.get("name")
+                                          .map { _.as[String] }
+                                          .getOrElse { "Untitled Project" },
+                            properties = saneProperties
                           )
         /* return */ project
       }

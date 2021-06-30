@@ -150,7 +150,10 @@ case class Project(
       val p = Project.column
       scalikejdbc.update(Project)
         .set(p.name       -> Option(name).getOrElse { this.name },
-             p.properties -> Option(properties).getOrElse { this.properties }.toString,
+             p.properties -> Option(properties)
+                                  .map { JsObject(_) }
+                                  .getOrElse { this.properties }
+                                  .toString,
              p.modified   -> now)
         .where.eq(p.id, id)
     }.update.apply()
