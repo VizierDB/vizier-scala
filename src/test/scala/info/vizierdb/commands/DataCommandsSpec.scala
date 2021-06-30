@@ -127,5 +127,19 @@ class DataCommandsSpec
 
     project.lastOutput.map { _.dataString } must contain(exactly("floop", "23.7", "999"))
   }
+
+  "load json data" >> {
+    val project = MutableProject("Load JSON")
+
+    project.load(
+      file = "test_data/simple.json",
+      name = "test",
+      format = "json",
+      inferTypes = false,
+    )
+
+    val ds = project.artifact("test").getDataset()
+    ok
+  }
 }
 

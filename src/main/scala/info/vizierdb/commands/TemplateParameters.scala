@@ -21,7 +21,7 @@ object TemplateParameters
 
   val DATATYPE: EnumerableParameter = DATATYPE()
 
-  def DATATYPE(id:String = "schema_datatype", required: Boolean = false) =
+  def DATATYPE(id:String = "schema_datatype", required: Boolean = false, allowOther: Boolean = true) =
     EnumerableParameter(name = "Data Type", id = id, required = required, values = EnumerableValue.withNames(
       "String"                 -> "string",
       "Real"                   -> "real",
@@ -34,7 +34,7 @@ object TemplateParameters
       "1 Byte"                 -> "byte",
       "Date"                   -> "date",
       "Date+Time"              -> "timestamp",
-    ), default = Some(0), aliases = Map(
+    ), default = Some(0), allowOther = allowOther, aliases = Map(
       "integer" -> "int",
     ))
 
