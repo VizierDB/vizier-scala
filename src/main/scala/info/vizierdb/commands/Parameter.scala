@@ -539,7 +539,8 @@ case class EnumerableParameter(
   default: Option[Int] = None,
   required: Boolean = true,
   hidden: Boolean = false,
-  aliases: Map[String,String] = Map.empty
+  aliases: Map[String,String] = Map.empty,
+  allowOther: Boolean = false
 ) extends Parameter with StringEncoder
 {
   lazy val possibilities = Set(values.map { _.value }:_*) ++ aliases.keySet
@@ -547,7 +548,7 @@ case class EnumerableParameter(
   def doStringify(j: JsValue): String = j.as[String]
   def doValidate(j: JsValue) = 
     if(j.isInstanceOf[JsString]){ 
-      if(possibilities(j.as[String])){ None }
+      if(possibilities(j.as[String]) || allowOther){ None }
       else {
         Some(s"Expected $name to be one of ${possibilities.mkString(", ")}, but got $j")
       }
@@ -556,13 +557,16 @@ case class EnumerableParameter(
     else { Some(s"Expected a string/enumerable for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default.map { values(_).value })
-  override def describe = super.describe ++ Map("values" -> JsArray(
-    values.zipWithIndex.map { case (v, idx) => Json.obj(
-      "isDefault" -> JsBoolean(default.map { _ == idx }.getOrElse(false)),
-      "text"      -> v.text,
-      "value"     -> v.value
-    )}
-  ))
+  override def describe = super.describe ++ Map(
+      "values" -> JsArray(
+        values.zipWithIndex.map { case (v, idx) => Json.obj(
+          "isDefault" -> JsBoolean(default.map { _ == idx }.getOrElse(false)),
+          "text"      -> v.text,
+          "value"     -> v.value
+        )}
+      ),
+      "allowOther" -> JsBoolean(allowOther)
+    )
   override def convertFromReact(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
   {
     super.convertFromReact(j, preprocess) match { 
