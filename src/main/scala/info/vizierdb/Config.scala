@@ -90,14 +90,22 @@ class Config(arguments: Seq[String])
     noshort = true
   )
 
+  val workingDirectory = opt[String]("working-directory",
+    descr = "Override the current working directory for relative file paths",
+    default = None
+  )
+
+  //////////////////////////////////////////////////////
+
   object ingest extends Subcommand("import", "ingest") {
     val execute = toggle("execute", default = Some(true))
     val file = trailArg[File]("export", 
       descr = "The exported vizier file"
     )
   }
-
   addSubcommand(ingest)
+  
+  //////////////////////////////////////////////////////
   
   object export extends Subcommand("export") {
     val projectId = trailArg[Long]("project-id",
@@ -109,10 +117,14 @@ class Config(arguments: Seq[String])
   }
   addSubcommand(export)
 
+  //////////////////////////////////////////////////////
+
   object doctor extends Subcommand("doctor") {
 
   }
   addSubcommand(doctor)
+
+  //////////////////////////////////////////////////////
 
   verify()
 
@@ -121,8 +133,10 @@ class Config(arguments: Seq[String])
     val config = 
       new MimirConfig(Seq(
         "--python", pythonPath(),
-        "--data-dir", basePath().toString,
-      ))
+        "--data-dir", basePath().toString
+      )++workingDirectory.toOption.toSeq.flatMap { 
+        Seq("--working-directory", _)
+      })
     config.verify()
     return config
   }
