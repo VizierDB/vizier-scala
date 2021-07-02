@@ -49,9 +49,17 @@ object UnloadFile extends Command
                               }
 
     val path = arguments.get[String](PATH)
-    val url = if(path.size > 0 && path(0) == '/'){
-                new URL("file://"+path)
-              } else { new URL(path) }
+    val url = if(path.size <= 0) { new URL(path) } 
+              else {
+                if(path(0) == '/'){ 
+                  new URL("file://"+path) 
+                } else if(!path.contains(":/") 
+                            && Vizier.config.workingDirectory.isDefined) {
+                  new URL("file://"+Vizier.config.workingDirectory()+"/"+path)
+                } else {
+                  new URL(path)
+                }
+              }
 
     url.getProtocol() match {
       case "file" if Vizier.config.serverMode() => {
