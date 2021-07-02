@@ -50,7 +50,14 @@ object Python extends Command
   def format(arguments: Arguments): String = 
     arguments.pretty("source")
   def title(arguments: Arguments): String =
-    "Python Script"
+  {
+    val line1 = arguments.get[String]("source").split("\n")(0)
+    if(line1.startsWith("#")){
+      line1.replaceFirst("^# *", "")
+    } else {
+      "Python Script"
+    }
+  }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     logger.debug("Initializing...")
