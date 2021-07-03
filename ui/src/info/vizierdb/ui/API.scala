@@ -9,12 +9,7 @@ import info.vizierdb.types._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import info.vizierdb.ui.network.{
-  ProjectDescription,
-  BranchDescription,
-}
-import info.vizierdb.ui.network.PackageDescriptor
-import info.vizierdb.ui.network.ServiceDescriptor
+import info.vizierdb.encoding
 import info.vizierdb.ui.components.Parameter
 import info.vizierdb.util.Logging
 
@@ -24,14 +19,14 @@ case class API(baseUrl: String)
 {
   val urls = new VizierURLs(baseUrl)
 
-  def packages(): Future[Seq[PackageDescriptor]] =
+  def packages(): Future[Seq[encoding.PackageDescriptor]] =
   {
     Ajax.get(
       urls.serviceDescriptor.toString
     ).map { xhr => 
       JSON.parse(
         xhr.responseText
-      ).asInstanceOf[ServiceDescriptor]
+      ).asInstanceOf[encoding.ServiceDescriptor]
        .environment
        .packages
        .toSeq
@@ -44,7 +39,7 @@ case class API(baseUrl: String)
 
   def project(
     projectId: Identifier
-  ): Future[ProjectDescription] =
+  ): Future[encoding.ProjectDescription] =
   {
     Ajax.get(
       urls.getProject(projectId).toString
@@ -61,14 +56,14 @@ case class API(baseUrl: String)
       }
       response
     }.map {
-      _.asInstanceOf[ProjectDescription]
+      _.asInstanceOf[encoding.ProjectDescription]
     }
   }
 
   def branch(
     projectId: Identifier, 
     branchId: Identifier
-  ): Future[BranchDescription] =
+  ): Future[encoding.BranchDescription] =
   {
     Ajax.get(
       urls.getBranch(projectId, branchId).toString
@@ -77,7 +72,7 @@ case class API(baseUrl: String)
         xhr.responseText
       )
     }.map {
-      _.asInstanceOf[BranchDescription]
+      _.asInstanceOf[encoding.BranchDescription]
     }
   }
 

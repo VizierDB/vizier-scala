@@ -1,27 +1,27 @@
 package info.vizierdb.ui.components
 
 import scala.scalajs.js
-import info.vizierdb.ui.network.{ ArtifactSummary, DatasetColumn, DatasetSummary }
+import info.vizierdb.encoding
 import info.vizierdb.types.ArtifactType
 
 sealed trait ArtifactMetadata
 
 object ArtifactMetadata
 {
-  def apply(summary: ArtifactSummary): Option[ArtifactMetadata] =
+  def apply(summary: encoding.ArtifactSummary): Option[ArtifactMetadata] =
   {
     if(summary.category.isEmpty){ return None }
     else { Some(
       ArtifactType.withName(summary.category.get) match {
         case ArtifactType.DATASET => 
-          DatasetMetadata(summary.asInstanceOf[DatasetSummary].columns.toSeq)
+          DatasetMetadata(summary.asInstanceOf[encoding.DatasetSummary].columns.toSeq)
         case _ => return None
       }
     )}
   }
 }
 
-case class DatasetMetadata(columns: Seq[DatasetColumn]) extends ArtifactMetadata
+case class DatasetMetadata(columns: Seq[encoding.DatasetColumn]) extends ArtifactMetadata
 
 class Artifact(
   val name: String, 
@@ -33,7 +33,7 @@ class Artifact(
 )
 {
 
-  def this(summary: ArtifactSummary)
+  def this(summary: encoding.ArtifactSummary)
   {
     this(
       name = summary.name, 

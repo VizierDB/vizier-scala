@@ -1,4 +1,4 @@
-package info.vizierdb.ui.network
+package info.vizierdb.encoding
 
 import scala.scalajs.js
 import info.vizierdb.ui.API
@@ -86,6 +86,13 @@ trait ParameterDescriptor extends js.Object
   var elements: js.UndefOr[js.Array[ParameterDescriptor]] = js.native
 }
 
+@js.native
+trait OneProperty extends js.Object
+{
+  val key: String = js.native
+  val value: js.Dynamic = js.native
+}
+
 /**
  * Details about a project
  */
@@ -96,7 +103,7 @@ trait ProjectSummary extends js.Object
   val createdAt: String = js.native
   val lastModifiedAt: String = js.native
   val defaultBranch: String = js.native
-  val properties: js.Array[js.Dynamic] = js.native
+  val properties: js.Array[OneProperty] = js.native
   val links: js.Dictionary[js.JSStringOps] = js.native
 }
 
@@ -123,7 +130,7 @@ trait BranchSummary extends js.Object
   val sourceWorkflow: js.JSNumberOps = js.native
   val sourceModule: js.JSNumberOps = js.native
   val isDefault: Boolean = js.native
-  val properties: js.Array[js.Dynamic] = js.native
+  val properties: js.Array[OneProperty] = js.native
 }
 
 /**
@@ -215,6 +222,33 @@ trait DatasetColumn extends js.Object
 trait DatasetSummary extends ArtifactSummary
 {
   val columns: js.Array[DatasetColumn] = js.native
+}
+
+/**
+ * A serialized dataset row
+ */
+@js.native
+trait DatasetRow extends js.Object
+{
+  val id: String = js.native
+  val values: js.Array[js.Dynamic] = js.native
+  val rowAnnotationFlags: js.Array[Boolean] = js.native
+  val rowIsAnnotated: Boolean = js.native
+}
+
+/**
+ * A serialized dataset artifact
+ */
+@js.native
+trait Dataset extends js.Object
+{
+  val name: String = js.native
+  val properties: js.Array[OneProperty] = js.native
+  val id: js.Dynamic = js.native
+  val offset: js.UndefOr[Int] = js.native
+  val limit: js.UndefOr[Int] = js.native
+  val columns: js.Array[DatasetColumn] = js.native
+  val rows: js.Array[DatasetRow] = js.native
 }
 
 /**

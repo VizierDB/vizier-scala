@@ -33,6 +33,10 @@ class Workflow(subscription: BranchSubscription, project: Project)
 
   val root = 
     div(id := "workflow",
+      Rx { 
+        if(subscription.awaitingReSync()) { div("Syncing workflow...") } 
+        else { span("") }
+      },
       moduleNodes.root,
       div(
         button(

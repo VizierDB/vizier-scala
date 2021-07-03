@@ -20,17 +20,24 @@ class Module(subscription: ModuleSubscription)
 
   logger.trace(s"creating module view: $this")
   val messages = 
-    RxBufferView(
-      ul(), 
-      subscription.messages
-                  .rxMap { message => li(Message(message)) }
-    )
-  logger.trace(s"${messages.root.childNodes.length} messages rendered")
+    subscription.messages
+                .rxMap { message => Message(message) }
+  val messageView = RxBufferView(ul(), messages.rxMap { _.root })
+  logger.trace(s"${messageView.root.childNodes.length} messages rendered")
 
   val root = li(
     div(Rx { pre(subscription.text()) }),
     div(Rx { "State: " + subscription.state() }),
     div("Outputs: ", Rx { outputs.map { _.keys.mkString(", ") }}),
-    div("Messages: ", messages.root),
+    div("Messages: ", messageView.root),
+    div("Menu: ", 
+      button("Add Cell Above"),
+      button("Add Cell Below"),
+      button("Edit Cell"),
+      button("Freeze Cell"),
+      button("Freeze From Here"),
+      button("Delete Cell", 
+        onclick := { (_:dom.MouseEvent) => subscription.delete() })
+    )
   )
 }

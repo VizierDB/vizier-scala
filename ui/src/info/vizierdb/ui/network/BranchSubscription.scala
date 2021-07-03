@@ -13,16 +13,17 @@ import scala.scalajs.js.timers._
 import info.vizierdb.ui.components.Artifact
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.util.Logging
+import info.vizierdb.encoding
 
 class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
   extends Object
   with Logging
 {
   var socket = getSocket() 
-  var awaitingReSync = false
   var keepaliveTimer: SetIntervalHandle = null
 
   val connected = Var(false)
+  val awaitingReSync = Var(false)
   val modules = new RxBufferVar[ModuleSubscription]()
 
   protected[ui] def getSocket(): dom.WebSocket =
@@ -91,7 +92,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
    *                      cell insert event.
    */
   def allocateModule(
-    command: ModuleCommand,
+    command: encoding.ModuleCommand,
     atPosition: Option[Int]
   ): Future[Identifier] = 
   {
@@ -111,11 +112,26 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
       }
   }
 
+  /**
+   * Delete a module already in the workflow
+   * @param position     The position of the module to delete
+   */
+  def deleteModule(
+    position: Int
+  ): Future[Boolean] =
+  {
+    val request =
+      js.Dictionary("operation" -> "workflow.delete", "modulePosition" -> position)
+    withResponse(request)
+      .future
+      .map { x => true }
+  }
+
   def onConnected(event: dom.Event)
   {
     connected() = true
     logger.debug("Connected!")
-    awaitingReSync = true
+    awaitingReSync() = true
     socket.send(
       JSON.stringify(
         js.Dictionary(
@@ -141,14 +157,17 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
   def onMessage(message: dom.MessageEvent) =
   {
     logger.trace(s"Got: ${message.data}")
-    if(awaitingReSync){
+    if(awaitingReSync.now){
       val base = JSON.parse(message.data.asInstanceOf[String])
-                     .asInstanceOf[WorkflowDescription]
+                     .asInstanceOf[encoding.WorkflowDescription]
       logger.debug("Got initial sync")
       modules.clear()
       modules ++= base.modules
-                      .map { new ModuleSubscription(_, this) }
-      awaitingReSync = false
+                      .zipWithIndex
+                      .map { case (initialState, idx) =>
+                        new ModuleSubscription(initialState, this, idx) 
+                      }
+      awaitingReSync() = false
     } else {
       val event = JSON.parse(message.data.asInstanceOf[String])
       logger.debug(s"Got Event: ${event.operation}")
@@ -160,25 +179,34 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
           }
 
         case "insert_cell" => 
+          val position = event.position.asInstanceOf[Int]
           modules.insert(
-            event.position.asInstanceOf[Int],
+            position,
             new ModuleSubscription(
-              event.cell.asInstanceOf[ModuleDescription], 
-              this
+              event.cell.asInstanceOf[encoding.ModuleDescription], 
+              this,
+              position
             )
           )
+          modules.drop(position)
+                 .zipWithIndex
+                 .foreach { case (module, offset) => module.position = position+offset }
         case "update_cell" => 
+          val position = event.position.asInstanceOf[Int]
           modules.update(
-            event.position.asInstanceOf[Int],
+            position,
             new ModuleSubscription(
-              event.cell.asInstanceOf[ModuleDescription],
-              this
+              event.cell.asInstanceOf[encoding.ModuleDescription],
+              this,
+              position
             )
           )
         case "delete_cell" => 
-          modules.remove(
-            event.position.asInstanceOf[Int]
-          )
+          val position = event.position.asInstanceOf[Int]
+          modules.remove(position)
+          modules.drop(position-1)
+                 .zipWithIndex
+                 .foreach { case (module, offset) => module.position = position+offset }
         case "update_cell_state" =>
           logger.debug(s"State Update: ${event.state} @ ${event.position}")
           modules(event.position.asInstanceOf[Int]).state() = 
@@ -186,8 +214,8 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
         case "append_cell_message" =>
           logger.debug(s"New Message")
           modules(event.position.asInstanceOf[Int])
-            .messages += new StreamedMessage(
-                            event.message.asInstanceOf[MessageDescription], 
+            .messages += new encoding.StreamedMessage(
+                            event.message.asInstanceOf[encoding.MessageDescription], 
                             StreamType(event.stream.asInstanceOf[Int])
                          )
         case "advance_result_id" => 
@@ -199,7 +227,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
           val module = modules(event.position.asInstanceOf[Int])
           logger.debug(s"Adding outputs: ${event.outputs} -> ${module.outputs}")
           module.outputs() = 
-            event.outputs.asInstanceOf[js.Array[ArtifactSummary]]
+            event.outputs.asInstanceOf[js.Array[encoding.ArtifactSummary]]
                          .map { artifact => 
                             logger.trace(s"Artifact: ${artifact.id}: ${artifact.category}")
                             artifact.name -> 

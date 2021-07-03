@@ -7,8 +7,13 @@ import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.types._
 import info.vizierdb.ui.components.Artifact
 import info.vizierdb.util.Logging
+import info.vizierdb.encoding
 
-class ModuleSubscription(initial: ModuleDescription, branch: BranchSubscription)
+class ModuleSubscription(
+  initial: encoding.ModuleDescription, 
+  branch: BranchSubscription,
+  var position: Int
+)
   extends Object
   with Logging
 {
@@ -20,9 +25,14 @@ class ModuleSubscription(initial: ModuleDescription, branch: BranchSubscription)
   val outputs = Var[Map[String,Artifact]](
     initial.artifacts.map { a => a.name -> new Artifact(a) }.toMap
   )
-  val messages:RxBufferVar[StreamedMessage] = RxBuffer[StreamedMessage]( (
+  val messages:RxBufferVar[encoding.StreamedMessage] = RxBuffer[encoding.StreamedMessage]( (
     initial.outputs.stdout.map { (_, StreamType.STDOUT) } ++
     initial.outputs.stderr.map { (_, StreamType.STDERR) }
-  ).map { msg => new StreamedMessage(msg._1, msg._2) }:_* )
+  ).map { msg => new encoding.StreamedMessage(msg._1, msg._2) }:_* )
   logger.debug(s"${messages.length} Messages; ${outputs.now.size} outputs; $outputs")
+
+  /**
+   * Delete this module from the workflow
+   */
+  def delete(): Unit = branch.deleteModule(position)
 }

@@ -4,7 +4,7 @@ package info.vizierdb.ui.components
 import rx._
 import info.vizierdb.ui.rxExtras._
 import info.vizierdb.types.Identifier
-import info.vizierdb.ui.network.PackageDescriptor
+import info.vizierdb.encoding
 import info.vizierdb.util.Logging
 
 /**
@@ -216,7 +216,7 @@ class TentativeEdits(val project: Project)
   /**
    * Append a [[TentativeModule]] to the end of the workflow
    */
-  def appendTentative(defaultPackageList: Option[Seq[PackageDescriptor]] = None) =
+  def appendTentative(defaultPackageList: Option[Seq[encoding.PackageDescriptor]] = None) =
   {
     doAppend(Right(new TentativeModule(
                             position = elements.size, 
@@ -231,7 +231,7 @@ class TentativeEdits(val project: Project)
    */
   def insertTentative(
     n: Int,
-    defaultPackageList: Option[Seq[PackageDescriptor]] = None
+    defaultPackageList: Option[Seq[encoding.PackageDescriptor]] = None
   ) =
   {
     doInsertAll(n, Some(Right(new TentativeModule(

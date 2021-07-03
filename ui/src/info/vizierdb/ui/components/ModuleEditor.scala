@@ -4,14 +4,14 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import rx._
 import scala.scalajs.js
-import info.vizierdb.ui.network.{ CommandDescriptor, CommandArgument, ModuleCommand }
+import info.vizierdb.encoding
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.util.Logging
 
 
 class ModuleEditor(
   val packageId: String, 
-  val command: CommandDescriptor, 
+  val command: encoding.CommandDescriptor, 
   val module: TentativeModule
 )(implicit owner: Ctx.Owner) 
   extends Object 
@@ -36,7 +36,7 @@ class ModuleEditor(
       }
   }
 
-  def loadState(arguments: Seq[CommandArgument])
+  def loadState(arguments: Seq[encoding.CommandArgument])
   {
     for(arg <- arguments){
       getParameter.get(arg.id) match {
@@ -54,7 +54,7 @@ class ModuleEditor(
         js.Dictionary(
           "id" -> id,
           "value" -> value
-        ).asInstanceOf[CommandArgument]
+        ).asInstanceOf[encoding.CommandArgument]
       }
     )
   }
@@ -66,16 +66,16 @@ class ModuleEditor(
   lazy val getParameter:Map[String, Parameter] = 
     parameters.map { p => p.id -> p }.toMap
 
-  def arguments: js.Array[CommandArgument] =
+  def arguments: js.Array[encoding.CommandArgument] =
     js.Array(parameters.map { _.toArgument }.toSeq:_*)
 
-  def serialized: ModuleCommand =
+  def serialized: encoding.ModuleCommand =
   {
     js.Dictionary(
       "packageId" -> packageId,
       "commandId" -> command.id,
       "arguments" -> arguments
-    ).asInstanceOf[ModuleCommand]
+    ).asInstanceOf[encoding.ModuleCommand]
   }
 
 

@@ -5,7 +5,8 @@ import scalatags.JsDom.all._
 import scala.scalajs.js
 import rx._
 import scala.concurrent.{ Promise, Future }
-import info.vizierdb.ui.network._
+import info.vizierdb.encoding
+import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,10 +24,10 @@ class Project(val projectId: String, val api: API, autosubscribe: Boolean = true
                 .map { _.toString}
                 .getOrElse { "Untitled Project" } }
 
-  val branches = Var[Map[String, BranchSummary]](Map.empty)
+  val branches = Var[Map[String, encoding.BranchSummary]](Map.empty)
   val activeBranch = Var[Option[String]](None)
 
-  def load(project: ProjectDescription): Project =
+  def load(project: encoding.ProjectDescription): Project =
   {
     assert(projectId == project.id)
     properties() = 

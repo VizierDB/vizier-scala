@@ -4,18 +4,17 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import rx._
-import info.vizierdb.ui.network.PackageDescriptor
 import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.types.ArtifactType
-import info.vizierdb.ui.network.CommandDescriptor
+import info.vizierdb.encoding
 import scala.concurrent.{ Future, Promise }
 import info.vizierdb.types.Identifier
 
 class TentativeModule(
   var position: Int, 
   val editList: TentativeEdits, 
-  defaultPackageList: Option[Seq[PackageDescriptor]] = None
+  defaultPackageList: Option[Seq[encoding.PackageDescriptor]] = None
 )(implicit owner: Ctx.Owner)
 {
 
@@ -26,7 +25,7 @@ class TentativeModule(
 
   loadPackages()
 
-  def selectCommand(packageId: String, command: CommandDescriptor)
+  def selectCommand(packageId: String, command: encoding.CommandDescriptor)
   {
     activeView() = Some(Right(new ModuleEditor(packageId, command, this)))
   }
@@ -86,7 +85,7 @@ class TentativeModule(
 }
 
 class CommandList(
-  packages: Seq[PackageDescriptor], 
+  packages: Seq[encoding.PackageDescriptor], 
   module: TentativeModule
 ){
   val root = 

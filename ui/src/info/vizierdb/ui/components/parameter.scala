@@ -7,16 +7,10 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types.ArtifactType
-import info.vizierdb.ui.network.{ 
-  ParameterDescriptor, 
-  DatasetColumn, 
-  EnumerableValue,
-  CommandArgument
-}
 import info.vizierdb.ui.facades.{ CodeMirror, CodeMirrorEditor }
 import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
 import info.vizierdb.util.{ Logger, Logging }
-
+import info.vizierdb.encoding
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
@@ -64,8 +58,8 @@ sealed trait Parameter
   /**
    * Encode the parameter and its value as a [[ModuleArgument]]
    */
-  def toArgument: CommandArgument =
-    js.Dictionary( "id" -> id, "value" -> value ).asInstanceOf[CommandArgument]
+  def toArgument: encoding.CommandArgument =
+    js.Dictionary( "id" -> id, "value" -> value ).asInstanceOf[encoding.CommandArgument]
 
   /**
    * Callbacks to trigger when the value of the element changes
@@ -158,7 +152,7 @@ object Parameter
    * Decode a [[ParameterDescriptor]] into a [[Parameter]] for use with the
    * specified [[ModuleEditor]]
    */
-  def apply(description: ParameterDescriptor, editor: ModuleEditor)
+  def apply(description: encoding.ParameterDescriptor, editor: ModuleEditor)
            (implicit owner: Ctx.Owner): Parameter =
   {
     description.datatype match {
@@ -189,9 +183,9 @@ object Parameter
    * sequence, in particular affecting List and Record parameters.  This 
    * function unflattens the representation.
    */
-  def collapse(descriptions: Seq[ParameterDescriptor]): Seq[ParameterDescriptor] =
+  def collapse(descriptions: Seq[encoding.ParameterDescriptor]): Seq[encoding.ParameterDescriptor] =
   {
-    val elements = mutable.Map[String, ParameterDescriptor]()
+    val elements = mutable.Map[String, encoding.ParameterDescriptor]()
     descriptions.foreach { element => 
       elements += (element.id -> element)
       if(element.parent.isDefined) {
@@ -235,7 +229,7 @@ class BooleanParameter(
 {
 
 
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
   {
     this(
       id = description.id,
@@ -267,7 +261,7 @@ case class CodeParameter(
 {
 
 
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
   {
     this(
       description.id, 
@@ -326,13 +320,13 @@ object CodeParameter
 class ColIdParameter(
   val id: String, 
   val name: String, 
-  schema: Rx[Seq[DatasetColumn]],
+  schema: Rx[Seq[encoding.DatasetColumn]],
   val required: Boolean,
   val hidden: Boolean
 ) (implicit owner: Ctx.Owner) extends Parameter
 {
 
-  def this(description: ParameterDescriptor, datasets: Rx[Map[String, Artifact]], parameters: Seq[Parameter])
+  def this(description: encoding.ParameterDescriptor, datasets: Rx[Map[String, Artifact]], parameters: Seq[Parameter])
           (implicit owner: Ctx.Owner)
   {
     this(
@@ -411,7 +405,7 @@ class ArtifactParameter(
 )(implicit owner: Ctx.Owner) extends Parameter
 {
 
-  def this(description: ParameterDescriptor, artifacts: Rx[Map[String, ArtifactType.T]])
+  def this(description: encoding.ParameterDescriptor, artifacts: Rx[Map[String, ArtifactType.T]])
           (implicit owner: Ctx.Owner)
   {
     this(
@@ -471,7 +465,7 @@ class DecimalParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
   {
     this(
       id = description.id,
@@ -500,7 +494,7 @@ class FileParameter(
   val hidden: Boolean
 )(implicit owner: Ctx.Owner) extends Parameter
 {
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
           (implicit owner: Ctx.Owner)
   {
     this(
@@ -600,7 +594,7 @@ class IntParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
   {
     this(
       id = description.id,
@@ -634,7 +628,7 @@ class ListParameter(
 )(implicit owner: Ctx.Owner)
   extends Parameter
 {
-  def this(description: ParameterDescriptor, getParameter: ParameterDescriptor => Parameter)
+  def this(description: encoding.ParameterDescriptor, getParameter: encoding.ParameterDescriptor => Parameter)
           (implicit owner: Ctx.Owner)
   {
     this(
@@ -719,7 +713,7 @@ class RecordParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: ParameterDescriptor, getParameter: ParameterDescriptor => Parameter)
+  def this(description: encoding.ParameterDescriptor, getParameter: encoding.ParameterDescriptor => Parameter)
           (implicit owner: Ctx.Owner)
   {
     this(
@@ -757,7 +751,7 @@ class RowIdParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
   {
     this(
       id = description.id,
@@ -783,12 +777,12 @@ class RowIdParameter(
 class EnumerableParameter(
   val id: String, 
   val name: String, 
-  values: Seq[EnumerableValue],
+  values: Seq[encoding.EnumerableValue],
   val required: Boolean,
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
   {
     this(
       id = description.id,
@@ -826,7 +820,7 @@ class StringParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
   {
     this(
       id = description.id,
@@ -856,7 +850,7 @@ class UnsupportedParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: ParameterDescriptor)
+  def this(description: encoding.ParameterDescriptor)
   {
     this(
       description.id, 
