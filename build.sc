@@ -21,6 +21,11 @@ object upstream extends Module {
   }
 }
 
+object shared extends ScalaModule {
+  def scalaVersion = "2.12.12"
+
+}
+
 object vizier extends ScalaModule with PublishModule {
   val VERSION = "1.2.0-SNAPSHOT"
 
@@ -32,6 +37,11 @@ object vizier extends ScalaModule with PublishModule {
     MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
     MavenRepository("https://repo.osgeo.org/repository/release/")
   )}
+
+  def sources = T.sources(
+    millSourcePath / "src",
+    millSourcePath / "shared" 
+  )
 
   def ivyDeps = Agg(
     ////////////////////// Mimir ///////////////////////////
@@ -96,27 +106,33 @@ object vizier extends ScalaModule with PublishModule {
       Developer("maqazi", "Munaf Arshad Qazi", ""),
     )
   )
-}
 
-object ui extends ScalaJSModule { 
+  object ui extends ScalaJSModule { 
 
-  def scalaVersion = vizier.scalaVersion
-  def scalaJSVersion = "1.6.0"
+    def scalaVersion = vizier.scalaVersion
+    def scalaJSVersion = "1.6.0"
 
-  def ivyDeps = Agg(
-    ivy"org.scala-js::scalajs-dom::1.0.0",
-    ivy"com.lihaoyi::scalarx::0.4.3",
-    ivy"com.lihaoyi::scalatags::0.9.4",
-  )
-
-  object test extends Tests with TestModule.Utest {
-    def testFramework = "utest.runner.Framework"
     def ivyDeps = Agg(
-      ivy"com.lihaoyi::utest::0.7.10",
+      ivy"org.scala-js::scalajs-dom::1.0.0",
+      ivy"com.lihaoyi::scalarx::0.4.3",
+      ivy"com.lihaoyi::scalatags::0.9.4",
     )
-    import mill.scalajslib.api.JsEnvConfig
-    def jsEnvConfig = 
-      T { JsEnvConfig.JsDom() }
 
+    def sources = T.sources(
+      millSourcePath / "src",
+      vizier.millSourcePath / "shared" 
+    )
+
+    object test extends Tests with TestModule.Utest {
+      def testFramework = "utest.runner.Framework"
+      def ivyDeps = Agg(
+        ivy"com.lihaoyi::utest::0.7.10",
+      )
+      import mill.scalajslib.api.JsEnvConfig
+      def jsEnvConfig = 
+        T { JsEnvConfig.JsDom() }
+
+    }
   }
 }
+

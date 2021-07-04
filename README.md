@@ -74,7 +74,7 @@ Compiled class files will be in `out/vizier/compile/dest`
 
 ```
 mill vizier.test
-mill ui.test
+mill vizier.ui.test
 ```
 
 The UI test cases require `node`.  Install it and then 
@@ -89,7 +89,7 @@ mill vizier.run [vizier arguments]
 
 ##### Build the UI (fast)
 ```
-mill ui.fastOpt
+mill vizier.ui.fastOpt
 mill vizier.run --connect-from-any-host
 ```
 And load `debug.html` in the browser
@@ -98,8 +98,8 @@ Compiled JS outputs will be in `out/ui/fastOpt/dest`
 
 ##### Deploy the UI into Vizier
 ```
-mill ui.fullOpt
-cp out/ui/fullOpt/dest/out.js vizier/resources/ui/vizier.js
+mill vizier.ui.fullOpt
+cp out/vizier/ui/fullOpt/dest/out.js vizier/resources/ui/vizier.js
 ```
 
 ##### Publish the Repo
