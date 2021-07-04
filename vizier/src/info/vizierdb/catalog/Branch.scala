@@ -20,13 +20,14 @@ import java.time.ZonedDateTime
 import play.api.libs.json._
 import info.vizierdb.types._
 import java.time.format.DateTimeFormatter
-import info.vizierdb.util.HATEOAS
+import info.vizierdb.shared.HATEOAS
 import info.vizierdb.catalog.binders._
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.viztrails.{ Scheduler, Provenance, StateTransition }
 import info.vizierdb.delta.DeltaBus
 import ExecutionState.{ WAITING, STALE, RUNNING, ERROR, CANCELLED, DONE, FROZEN }
+import info.vizierdb.serializers._
 
 /**
  * One branch of the project

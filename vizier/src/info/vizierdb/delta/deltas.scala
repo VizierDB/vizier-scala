@@ -18,14 +18,15 @@ import scalikejdbc.DBSession
 import play.api.libs.json._
 import info.vizierdb.types._
 import info.vizierdb.catalog._
-import info.vizierdb.catalog.serialized._
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
 
 sealed trait WorkflowDelta
 
-case class InsertCell(cell: ModuleDescription, position: Int) extends WorkflowDelta
+case class InsertCell(cell: serialized.ModuleDescription, position: Int) extends WorkflowDelta
 object InsertCell { implicit val format: Format[InsertCell] = Json.format }
 
-case class UpdateCell(cell: ModuleDescription, position: Int) extends WorkflowDelta
+case class UpdateCell(cell: serialized.ModuleDescription, position: Int) extends WorkflowDelta
 object UpdateCell { implicit val format: Format[UpdateCell] = Json.format }
 
 case class DeleteCell(position: Int) extends WorkflowDelta
@@ -34,7 +35,7 @@ object DeleteCell { implicit val format: Format[DeleteCell] = Json.format }
 case class UpdateCellState(position: Int, state: ExecutionState.T) extends WorkflowDelta
 object UpdateCellState { implicit val format: Format[UpdateCellState] = Json.format }
 
-case class AppendCellMessage(position: Int, stream: StreamType.T, message: MessageDescription) extends WorkflowDelta
+case class AppendCellMessage(position: Int, stream: StreamType.T, message: serialized.MessageDescription) extends WorkflowDelta
 object AppendCellMessage { implicit val format: Format[AppendCellMessage] = Json.format }
 
 case class DeltaOutputArtifact(name: String, id: Option[Long], category: Option[String], objType: Option[String])

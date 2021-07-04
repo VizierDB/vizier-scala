@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow }
 import info.vizierdb.commands.Commands
@@ -26,6 +25,7 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
+import info.vizierdb.serializers._
 
 object CancelWorkflow
 {

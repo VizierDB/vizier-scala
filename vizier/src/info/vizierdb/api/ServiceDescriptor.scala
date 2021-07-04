@@ -19,10 +19,11 @@ import play.api.libs.json._
 import org.mimirdb.api.{ Request, JsonResponse, Response }
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import info.vizierdb.VizierAPI
-import info.vizierdb.util.HATEOAS
+import info.vizierdb.shared.HATEOAS
 import info.vizierdb.commands.Commands
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
+import info.vizierdb.serializers._
 
 object ServiceDescriptor
 {

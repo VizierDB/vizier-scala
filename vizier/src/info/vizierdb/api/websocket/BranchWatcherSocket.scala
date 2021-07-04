@@ -39,6 +39,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet
 import org.mimirdb.api.{ Response, JsonResponse }
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.response.VizierErrorResponse
+import info.vizierdb.serializers._
 
 // https://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/jetty-websocket/websocket-server/src/test/java/org/eclipse/jetty/websocket/server/examples/echo/ExampleEchoServer.java
 
@@ -111,36 +112,36 @@ class BranchWatcherSocket
                                         BranchWatcherSocket.OP_PONG).toString)
         }
 
-        case x:String => 
-        {
-          if( (projectId < 0) || (branchId < 0) ){
-            throw new RuntimeException(s"First send a ${BranchWatcherSocket.OP_SUBSCRIBE} before anything else.")
-          }
-          val handled = 
-            whilePausingNotifications { 
-              val response:Option[Response] = WebsocketEvents.headAction(
-                  x, 
-                  projectId,
-                  branchId,
-                  message
-                )
-              def respond(jsonResponse: JsObject) = 
-              {
-                val enhancedResponse = 
-                  jsonResponse ++ Json.obj(
-                    "messageId" -> (message \ "messageId").get
-                  )
-                session.getRemote()
-                       .sendString(enhancedResponse.toString)
-              }
-              response.foreach {  
-                case j:RawJsonResponse => respond(j.data.as[JsObject])
-                case j:VizierErrorResponse => respond(Json.obj("error" -> j.json))
-              }
-              /* return */ response.isDefined
-            }
-          if(!handled){ throw new RuntimeException(s"Unsupported operation: $x") }
-        }
+        // case x:String => 
+        // {
+        //   if( (projectId < 0) || (branchId < 0) ){
+        //     throw new RuntimeException(s"First send a ${BranchWatcherSocket.OP_SUBSCRIBE} before anything else.")
+        //   }
+        //   val handled = 
+        //     whilePausingNotifications { 
+        //       val response:Option[Response] = WebsocketEvents.headAction(
+        //           x, 
+        //           projectId,
+        //           branchId,
+        //           message
+        //         )
+        //       def respond(jsonResponse: JsObject) = 
+        //       {
+        //         val enhancedResponse = 
+        //           jsonResponse ++ Json.obj(
+        //             "messageId" -> (message \ "messageId").get
+        //           )
+        //         session.getRemote()
+        //                .sendString(enhancedResponse.toString)
+        //       }
+        //       response.foreach {  
+        //         case j:RawJsonResponse => respond(j.data.as[JsObject])
+        //         case j:VizierErrorResponse => respond(Json.obj("error" -> j.json))
+        //       }
+        //       /* return */ response.isDefined
+        //     }
+        //   if(!handled){ throw new RuntimeException(s"Unsupported operation: $x") }
+        // }
     }
   }
 

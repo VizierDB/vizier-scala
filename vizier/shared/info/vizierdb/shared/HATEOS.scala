@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.util
+package info.vizierdb.shared
 
 import play.api.libs.json._
 import java.net.URL

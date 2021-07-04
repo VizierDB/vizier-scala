@@ -20,9 +20,9 @@ import java.time.ZonedDateTime
 import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import java.time.format.DateTimeFormatter
-import info.vizierdb.util.HATEOAS
+import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
-import info.vizierdb.catalog.serialized._
+import info.vizierdb.serialized
 import info.vizierdb.delta.{ UpdateCell, DeltaBus }
 import info.vizierdb.viztrails.{ Provenance, StateTransition }
 
@@ -216,7 +216,7 @@ case class Workflow(
           .and.eq(c.workflowId, id)
     }.map { _ => 1 }.list.apply().size > 0
 
-  def describe(implicit session: DBSession): WorkflowDescription = 
+  def describe(implicit session: DBSession): serialized.WorkflowDescription = 
   {
     val branch = Branch.get(branchId)
     val cellsAndModules = cellsAndModulesInOrder
@@ -236,7 +236,7 @@ case class Workflow(
 
     val TOC_HEADER = "(#+) *(.+)".r
 
-    val tableOfContents: Seq[TableOfContentsEntry] = 
+    val tableOfContents: Seq[serialized.TableOfContentsEntry] = 
       cellsAndModules.flatMap { case (cell, module) => 
         if(module.packageId.equals("docs")){
           cell.messages
@@ -253,7 +253,7 @@ case class Workflow(
               }
               .headOption.flatten
               .map { case (level, title) => 
-                TableOfContentsEntry(title, Some(level), cell.position, module.id)
+                serialized.TableOfContentsEntry(title, Some(level), cell.position, module.id)
               }
         } else {
           val blurb: String =  
@@ -261,7 +261,7 @@ case class Workflow(
                   .map { _.title(module.arguments) }
                   .getOrElse { s"${module.packageId}.${module.commandId}" }
           Seq(
-            TableOfContentsEntry(
+            serialized.TableOfContentsEntry(
               blurb,
               None,
               cell.position,
@@ -292,13 +292,13 @@ case class Workflow(
       ),
     )
   }
-  def summarize(implicit session: DBSession): WorkflowSummary = 
+  def summarize(implicit session: DBSession): serialized.WorkflowSummary = 
   {
     makeSummary(Branch.get(branchId), actionModuleId.map { Module.get(_) })
   }
 
-  def makeSummary(branch: Branch, actionModule: Option[Module]): WorkflowSummary =
-    WorkflowSummary(
+  def makeSummary(branch: Branch, actionModule: Option[Module]): serialized.WorkflowSummary =
+    serialized.WorkflowSummary(
       id          = id.toString,
       createdAt   = Timestamps.format(created),
       action      = action.toString,

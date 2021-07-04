@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow, Module }
 import info.vizierdb.commands.Commands
@@ -27,9 +26,10 @@ import info.vizierdb.api.response._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
+import info.vizierdb.serializers._
 
 object FreezeModules
-  extends SimpleHandler
+  extends Object
   with LazyLogging
 {
   def apply(freezeFromHere: Boolean)(

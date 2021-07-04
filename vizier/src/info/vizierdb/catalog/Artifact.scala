@@ -21,7 +21,7 @@ import play.api.libs.json._
 import info.vizierdb.types._
 import java.time.ZonedDateTime
 import info.vizierdb.catalog.binders._
-import info.vizierdb.util.HATEOAS
+import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
 import org.mimirdb.api.request.DataContainer
@@ -36,7 +36,8 @@ import info.vizierdb.util.StupidReactJsonMap
 import org.locationtech.jts.geom.Geometry
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.types.StructField
-import info.vizierdb.catalog.serialized.ParameterArtifact
+import info.vizierdb.serialized.ParameterArtifact
+import info.vizierdb.serializers._
 
 case class Artifact(
   id: Identifier,

@@ -16,13 +16,13 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow }
 import org.mimirdb.api.Response
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.SimpleHandler
+import info.vizierdb.serializers._
 
 object GetWorkflow
 {

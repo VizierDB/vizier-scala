@@ -153,6 +153,18 @@ object types
     )
   }
 
+  object MessageType extends Enumeration
+  {
+    type T = Value
+
+    val TEXT        = Value(1, "text/plain")
+    val HTML        = Value(2, "text/html")
+    val MARKDOWN    = Value(3, "text/markdown")
+    val JAVASCRIPT  = Value(4, "text/javascript")
+    val DATASET     = Value(5, "dataset/view")
+    val CHART       = Value(6, "chart/view")
+  }
+
   object MIME
   {
     val CHART_VIEW    = "chart/view"

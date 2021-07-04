@@ -20,7 +20,7 @@ import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import org.mimirdb.api.request.DataContainer
 import java.time.ZonedDateTime
-import info.vizierdb.catalog.serialized.MessageDescription
+import info.vizierdb.serialized.MessageDescription
 
 
 case class DatasetMessage(
@@ -87,19 +87,21 @@ case class Message(
 
   def describe(implicit session: DBSession): MessageDescription = 
     try { 
+      val t = MessageType.withName(mimeType)
       MessageDescription(
-        `type` = mimeType,
-        value = (mimeType match {
-          case MIME.DATASET_VIEW => Json.parse(data).as[DatasetMessage].describe
-          case MIME.CHART_VIEW => Json.parse(data)
-          case MIME.JAVASCRIPT => Json.parse(data)
-          case _ => JsString(new String(data))
+        `type` = t,
+        value = (t match {
+          case MessageType.DATASET => Json.parse(data).as[DatasetMessage].describe
+          case MessageType.CHART => Json.parse(data)
+          case MessageType.JAVASCRIPT => Json.parse(data)
+          case MessageType.HTML => JsString(new String(data))
+          case MessageType.TEXT => JsString(new String(data))
         })
       )
     } catch {
       case e: Throwable => 
         MessageDescription(
-          `type` = MIME.TEXT,
+          `type` = MessageType.TEXT,
           value  = JsString(s"Error retrieving message: $e")
         )
     }

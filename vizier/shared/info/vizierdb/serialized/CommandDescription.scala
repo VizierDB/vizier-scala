@@ -12,34 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.catalog.serialized
+package info.vizierdb.serialized
 
-import play.api.libs.json._
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-
-case class Timestamps(
-  createdAt: String,
-  startedAt: Option[String],
-  finishedAt: Option[String]
+case class CommandDescription(
+  packageId: String,
+  commandId: String,
+  arguments: PropertyList.T
 )
-
-object Timestamps
-{
-  implicit val format: Format[Timestamps] = Json.format
-
-  def format(t: ZonedDateTime): String =
-    DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(t)
-
-  def apply(
-    createdAt: ZonedDateTime,
-    startedAt: Option[ZonedDateTime] = None,
-    finishedAt: Option[ZonedDateTime] = None,
-  ): Timestamps =
-    Timestamps(
-      createdAt  = format(createdAt),
-      startedAt  = startedAt.map { format(_) },
-      finishedAt = finishedAt.map { format(_) }
-    )
-}
-

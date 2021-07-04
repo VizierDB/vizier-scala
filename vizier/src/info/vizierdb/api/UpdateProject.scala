@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.Project
 import org.mimirdb.api.{ Request, Response }
@@ -24,6 +23,7 @@ import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.serialized.PropertyList
+import info.vizierdb.serializers._
 
 object UpdateProject
 {

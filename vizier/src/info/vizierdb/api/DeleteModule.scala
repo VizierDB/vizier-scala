@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
+import info.vizierdb.serializers._
 
 object DeleteModule
 {

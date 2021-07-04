@@ -19,14 +19,13 @@ import java.time.format.DateTimeFormatter
 import play.api.libs.json._
 import info.vizierdb.VizierException
 import info.vizierdb.types._
-import info.vizierdb.commands.Commands
+import info.vizierdb.commands.{ Commands, Parameter }
 import info.vizierdb.catalog.binders._
 import com.typesafe.scalalogging.LazyLogging
-import info.vizierdb.util.HATEOAS
+import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.viztrails.Provenance
-
-import info.vizierdb.catalog.serialized._
+import info.vizierdb.serialized
 
 /**
  * One step in an arbitrary workflow.
@@ -79,10 +78,10 @@ class Module(
     branchId: Identifier, 
     workflowId: Identifier, 
     artifacts: Seq[ArtifactRef]
-  )(implicit session:DBSession): ModuleDescription = 
+  )(implicit session:DBSession): serialized.ModuleDescription = 
   {
     val result = cell.result
-    val timestamps = Timestamps(
+    val timestamps = serialized.Timestamps(
       createdAt = cell.created,
       startedAt = result.map { _.started },
       finishedAt = result.flatMap { _.finished }
@@ -103,28 +102,24 @@ class Module(
       cell.resultId.map { Result.outputs(_) }.toSeq.flatten
 
 
-    ModuleDescription(
+    serialized.ModuleDescription(
       id = cell.moduleDescriptor,
       moduleId = id,
       state = ExecutionState.translateToClassicVizier(cell.state),
       statev2 = cell.state,
-      command = CommandDescription(
+      command = serialized.CommandDescription(
         packageId = packageId,
         commandId = commandId,
-        arguments = JsArray(
-          command match { 
+        arguments = 
+          (command match { 
             case None => 
-              arguments.value.map { case (arg, v) => Json.obj("id" -> arg, "value" -> v) }.toSeq
+              serialized.PropertyList.toPropertyList(arguments.value.toMap)
             case Some(cmd) => 
-              cmd.parameters map { param => 
+              cmd.parameters.map { param:Parameter => 
                 val v = arguments.value.getOrElse(param.id, param.getDefault)
-                Json.obj(
-                  "id" -> param.id,
-                  "value" -> param.convertToReact(v)
-                )
-              }
-          }
-        )
+                serialized.Property(param.id, param.convertToReact(v))
+              }.toSeq
+          }):serialized.PropertyList.T
       ),
       text = description,
       timestamps = timestamps,
@@ -133,7 +128,7 @@ class Module(
       artifacts = cell.outputs.flatMap { a => a.getSummary.map { _.summarize(a.userFacingName) }},
         // artifactSummaries.map { case (name, d) => d.summarize(name) },
 
-      outputs = ModuleOutputDescription(
+      outputs = serialized.ModuleOutputDescription(
         stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
         stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
       ),
@@ -236,7 +231,7 @@ object Module
     branchId: Identifier, 
     workflowId: Identifier,
     cells: Seq[(Cell, Module)]
-  )(implicit session: DBSession): Seq[ModuleDescription] =
+  )(implicit session: DBSession): Seq[serialized.ModuleDescription] =
   { 
     var scope = Map[String,ArtifactRef]()
     cells.sortBy { _._1.position }

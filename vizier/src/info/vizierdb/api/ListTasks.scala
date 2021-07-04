@@ -20,6 +20,7 @@ import org.mimirdb.api.Request
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
+import info.vizierdb.serializers._
 
 object ListTasks
 {
