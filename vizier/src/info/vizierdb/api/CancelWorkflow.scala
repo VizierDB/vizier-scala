@@ -27,16 +27,16 @@ import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 
-object CancelWorkflowHandler
-  extends SimpleHandler
+object CancelWorkflow
 {
   override val summary = "Cancel a running workflow"
 
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    workflowId: Option[Identifier] = None
+  ): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
-    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
     var workflow:Workflow =
       DB.readOnly { implicit s => 
         workflowId match { 

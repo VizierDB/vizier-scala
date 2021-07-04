@@ -22,13 +22,13 @@ import info.vizierdb.viztrails.graph.WorkflowTrace
 import info.vizierdb.api.handler._
 
 object VizualizeWorkflow
-  extends SimpleHandler
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    workflowId: Option[Identifier] = None
+  ): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
-    val workflowId = pathParameters("workflowId").asOpt[Long]
     StringResponse(
       WorkflowTrace(
         projectId,

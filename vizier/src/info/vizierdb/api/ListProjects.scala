@@ -24,10 +24,9 @@ import info.vizierdb.api.response._
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
 
-object ListProjectsHandler
-  extends DeterministicHandler
+object ListProjects
 {
-  def handle =
+  def apply() =
   {
     RawJsonResponse(
       Json.obj(

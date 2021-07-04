@@ -21,10 +21,9 @@ import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
 
-object ListTasksHandler
-  extends DeterministicHandler
+object ListTasks
 {
-  def handle = 
+  def apply() = 
   {
     DB.readOnly { implicit session => 
       RawJsonResponse(

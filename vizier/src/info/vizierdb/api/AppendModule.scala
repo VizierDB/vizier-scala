@@ -26,19 +26,20 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.serialized.PropertyList
 
-case class AppendModule(
-  projectId: Identifier,
-  branchId: Identifier,
-  workflowId: Option[Identifier],
-  packageId: String,
-  commandId: String,
-  arguments: JsArray
-)
-  extends Request
+object AppendModule
+  extends Object
     with LazyLogging
 {
-  def handle: Response = 
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    packageId: String,
+    commandId: String,
+    arguments: PropertyList.T,
+    workflowId: Option[Identifier] = None,
+  ): Response = 
   {
     val command = Commands.get(packageId, commandId)
 
@@ -93,10 +94,5 @@ case class AppendModule(
       )
     }
   } 
-}
-
-object AppendModule
-{
-  implicit val format: Format[AppendModule] = Json.format
 }
 

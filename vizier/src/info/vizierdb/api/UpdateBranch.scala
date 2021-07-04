@@ -23,16 +23,17 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.serialized.PropertyList
 
-case class UpdateBranch(
-  projectId: Identifier,
-  branchId: Identifier,
-  properties: Map[String, JsValue]
-)
-  extends Request
+object UpdateBranch
 {
-  def handle: Response = 
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    properties: PropertyList.T
+  ): Response =
   {
+    val saneProperties = PropertyList.toMap(properties)
     DB.autoCommit { implicit s => 
       val branch: Branch = 
         Branch.getOption(projectId, branchId)
@@ -40,20 +41,15 @@ case class UpdateBranch(
                  return NoSuchEntityResponse()
                }
                .updateProperties(
-                  properties.get("name")
-                            .map { _.as[String] }
-                            .getOrElse { "Untitled Branch" },
-                  properties = properties
+                  saneProperties.get("name")
+                                .map { _.as[String] }
+                                .getOrElse { "Untitled Branch" },
+                  properties = saneProperties
                )  
       RawJsonResponse(
         branch.summarize
       )
     }
   } 
-}
-
-object UpdateBranch
-{
-  implicit val format: Format[UpdateBranch] = Json.format
 }
 

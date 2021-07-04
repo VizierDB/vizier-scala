@@ -23,13 +23,13 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 
-object DeleteBranchHandler
-  extends SimpleHandler
+object DeleteBranch
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier
+  ): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
     DB.readOnly { implicit s => 
       val p = 
         Project.getOption(projectId)

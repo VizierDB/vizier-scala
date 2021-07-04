@@ -25,19 +25,19 @@ import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.serialized.PropertyList
 
-case class InsertModule(
-  projectId: Identifier,
-  branchId: Identifier,
-  modulePosition: Int,
-  workflowId: Option[Identifier],
-  packageId: String,
-  commandId: String,
-  arguments: JsArray
-)
-  extends Request
+object InsertModule
 {
-  def handle: Response = 
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    modulePosition: Int,
+    packageId: String,
+    commandId: String,
+    arguments: PropertyList.T,
+    workflowId: Option[Identifier] = None,
+  ): Response =
   {
     val command = Commands.get(packageId, commandId)
 
@@ -83,9 +83,3 @@ case class InsertModule(
     }
   } 
 }
-
-object InsertModule
-{
-  implicit val format: Format[InsertModule] = Json.format
-}
-

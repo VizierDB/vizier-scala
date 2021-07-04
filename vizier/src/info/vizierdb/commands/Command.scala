@@ -17,6 +17,7 @@ package info.vizierdb.commands
 import play.api.libs.json._
 import info.vizierdb.VizierException
 import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.serialized.PropertyList
 
 trait Command
 {
@@ -156,7 +157,7 @@ trait Command
    * </pre>
    */
   def decodeReactArguments(
-    arguments: JsValue, 
+    arguments: PropertyList.T, 
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x } 
   ): JsObject =
   {

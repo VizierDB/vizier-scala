@@ -20,21 +20,24 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Project, Artifact }
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types._
-import info.vizierdb.artifacts.{ DatasetColumn, DatasetRow, DatasetAnnotation }
+import info.vizierdb.serialized.{ DatasetColumn, DatasetRow, DatasetAnnotation }
+import info.vizierdb.serializers._
+import info.vizierdb.nativeTypes.datasetColumnToStructField
 import org.mimirdb.api.request.LoadInlineRequest
 import info.vizierdb.api.response._
+import info.vizierdb.serialized.PropertyList
 
-case class CreateDataset(
-  projectId: Identifier,
-  columns: Seq[DatasetColumn],
-  rows: Seq[DatasetRow],
-  name: Option[String],
-  properties: Option[Map[String, JsValue]],
-  annotations: Option[DatasetAnnotation]
-)
-  extends Request
+object CreateDataset
 {
-  def handle: Response = 
+
+  def apply(
+    projectId: Identifier,
+    columns: Seq[DatasetColumn],
+    rows: Seq[DatasetRow],
+    name: Option[String],
+    properties: Option[PropertyList.T],
+    annotations: Option[DatasetAnnotation]
+  ): Response =
   {
     DB.autoCommit { implicit s => 
       val project = 
@@ -51,11 +54,11 @@ case class CreateDataset(
       )
 
       LoadInlineRequest(
-        schema = columns.map { _.toSpark },
+        schema = columns.map { datasetColumnToStructField(_) },
         data = rows.map { _.values },
         dependencies = None,
         resultName = Some(artifact.nameInBackend),
-        properties = properties,
+        properties = properties.map { PropertyList.toMap(_) },
         humanReadableName = name
       ).handle
 
@@ -65,9 +68,3 @@ case class CreateDataset(
     }
   } 
 }
-
-object CreateDataset
-{
-  implicit val format: Format[CreateDataset] = Json.format
-}
-

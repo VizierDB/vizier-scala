@@ -24,10 +24,9 @@ import info.vizierdb.commands.Commands
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
 
-object ServiceDescriptorHandler
-  extends DeterministicHandler
+object ServiceDescriptor
 {
-  def handle =
+  def apply() =
   {
     RawJsonResponse(
       Json.obj(

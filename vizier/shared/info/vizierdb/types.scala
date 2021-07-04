@@ -22,6 +22,8 @@ object types
   type Identifier = Long
   type DatasetIdentifier = String
   type FileIdentifier = java.util.UUID
+  type CellDataType = nativeTypes.CellDataType
+  type RowIdentifier = String
 
   object ActionType extends Enumeration
   {

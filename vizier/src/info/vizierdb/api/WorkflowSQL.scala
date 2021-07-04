@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import java.net.URLDecoder
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow, Artifact, ArtifactSummary }
@@ -27,20 +26,17 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 
-object WorkflowSQLHandler
-  extends Handler
+object WorkflowSQL
+  extends Object
   with LazyLogging
 {
-  def handle(
-    pathParameters: Map[String, JsValue], 
-    connection: ClientConnection 
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    query: Option[String],
+    workflowId: Option[Identifier] = None
   ): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
-    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
-    val query = URLDecoder.decode(connection.getParameter("query"), "UTF-8")
-
     val (datasets, functions) = 
       DB.readOnly { implicit session => 
         val workflow: Workflow = 
@@ -75,11 +71,11 @@ object WorkflowSQLHandler
         /* return */ (datasets, functions)
       }
 
-    logger.trace(s"Query Tail: $query")
+    logger.trace(s"Query Tail: ${query.get}")
     return QueryMimirRequest(
       input = None,
       views = Some(datasets),
-      query = query,
+      query = query.get,
       includeUncertainty = Some(true),
       includeReasons = None
     ).handle

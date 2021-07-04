@@ -25,19 +25,19 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.commands.Commands
+import info.vizierdb.serialized.PropertyList
 
-case class ReplaceModule(
-  projectId: Identifier,
-  branchId: Identifier,
-  modulePosition: Int,
-  workflowId: Option[Identifier],
-  packageId: String,
-  commandId: String,
-  arguments: JsArray
-)
-  extends Request
+object ReplaceModule
 {
-  def handle: Response = 
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    modulePosition: Int,
+    packageId: String,
+    commandId: String,
+    arguments: PropertyList.T,
+    workflowId: Option[Identifier] = None,
+  ): Response =
   {
     val workflow: Workflow = 
       DB.autoCommit { implicit s => 
@@ -83,9 +83,3 @@ case class ReplaceModule(
     }
   } 
 }
-
-object ReplaceModule
-{
-  implicit val format: Format[ReplaceModule] = Json.format
-}
-

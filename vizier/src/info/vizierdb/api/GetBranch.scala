@@ -24,13 +24,10 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 
-object GetBranchHandler
-  extends SimpleHandler
+object GetBranch
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def apply(projectId: Identifier, branchId: Identifier): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
     DB.readOnly { implicit session => 
       Branch.getOption(projectId, branchId) match {
         case Some(branch) => RawJsonResponse(branch.describe)

@@ -22,7 +22,6 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Project, Artifact }
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types._
-import info.vizierdb.artifacts.{ DatasetColumn, DatasetRow, DatasetAnnotation }
 import org.mimirdb.api.request.LoadInlineRequest
 import info.vizierdb.filestore.Filestore
 import java.io.FileOutputStream
@@ -30,19 +29,15 @@ import info.vizierdb.util.Streams
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 
-object CreateFileHandler
-  extends Handler
+object CreateFile
 {
-  override def filePart = Some("file")
-  def handle(
-    pathParameters: Map[String, JsValue], 
-    connection: ClientConnection 
+  // override def filePart = Some("file")
+  def apply(
+    projectId: Identifier,
+    file: (InputStream, String),
   ): Response =
-  {
-    val projectId = pathParameters("projectId").as[Long]
-    val (content, filename) = connection.getPart("file")
-    handle(projectId, content, filename)
-  }
+    handle(projectId, file._1, file._2)
+
   def handle(
     projectId: Identifier,
     content: InputStream,

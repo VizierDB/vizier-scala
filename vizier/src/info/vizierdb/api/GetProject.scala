@@ -24,12 +24,10 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 
-object GetProjectHandler
-  extends SimpleHandler
+object GetProject
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def apply(projectId: Identifier): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
     DB.readOnly { implicit session => 
       Project.getOption(projectId) match {
         case Some(project) => RawJsonResponse(project.describe)

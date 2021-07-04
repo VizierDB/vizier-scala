@@ -28,19 +28,17 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
 
-object FreezeModulesHandler
+object FreezeModules
   extends SimpleHandler
   with LazyLogging
 {
-  def handle(pathParameters: Map[String, JsValue]): Response = 
-    handle(pathParameters = pathParameters, onlyFreezeOne = false)
-
-  def handle(pathParameters: Map[String, JsValue], onlyFreezeOne: Boolean): Response =
+  def apply(freezeFromHere: Boolean)(
+    projectId: Identifier,
+    branchId: Identifier,
+    modulePosition: Int,
+    workflowId: Option[Identifier] = None,
+  ): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
-    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
-    val position = pathParameters("modulePosition").as[Int]
     val workflow: Workflow = 
       DB.autoCommit { implicit s => 
         logger.trace(s"Looking up branch $branchId")
@@ -56,12 +54,12 @@ object FreezeModulesHandler
           }
         }
 
-        logger.debug(s"Freezing workflow from position $position")
+        logger.debug(s"Freezing workflow from position $modulePosition")
 
-        if(onlyFreezeOne){
-          /* return */ branch.freezeOne(position)._2
+        if(freezeFromHere){
+          /* return */ branch.freezeFrom(modulePosition)._2
         } else {
-          /* return */ branch.freezeFrom(position)._2
+          /* return */ branch.freezeOne(modulePosition)._2
         }
 
       }
@@ -80,13 +78,5 @@ object FreezeModulesHandler
       )
     }
   } 
-
-  object FreezeOne
-    extends SimpleHandler
-    with LazyLogging
-  {
-    def handle(pathParameters: Map[String,JsValue]): Response = 
-      FreezeModulesHandler.handle(pathParameters = pathParameters, onlyFreezeOne = true)
-  }
 }
 

@@ -25,15 +25,15 @@ import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Provenance
 import info.vizierdb.api.handler.SimpleHandler
 
-object GetModuleHandler
-  extends SimpleHandler
+object GetModule
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    modulePosition: Int,
+    workflowId: Option[Identifier] = None
+  ): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
-    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
-    val modulePosition = pathParameters("modulePosition").as[Int]
     DB.readOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
         workflowId match {

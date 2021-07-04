@@ -5,16 +5,22 @@ package info.vizierdb.api.servlet
 
 import play.api.libs.json._
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import java.net.URLDecoder
 import org.mimirdb.api.Response
 import info.vizierdb.types._
 import info.vizierdb.api._
 import info.vizierdb.api.response.CORSPreflightResponse
 import info.vizierdb.api.handler._
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
 
 trait VizierAPIServletRoutes extends HttpServlet {
 
   def processResponse(request: HttpServletRequest, output: HttpServletResponse)(response: => Response): Unit
   def fourOhFour(response: HttpServletRequest): Response
+  implicit def liftToOption[T](x: T): Option[T] = Some(x)
+  def queryParameter(connection: JettyClientConnection, name:String): Option[String] =
+    Option(connection.getParameter(name)).map { URLDecoder.decode(_, "UTF-8") }
 
   val ROUTE_PATTERN_4 = "/projects/([0-9]+)/export".r
   val ROUTE_PATTERN_5 = "/projects/([0-9]+)".r
@@ -57,7 +63,7 @@ trait VizierAPIServletRoutes extends HttpServlet {
   val ROUTE_PATTERN_42 = "/projects/([0-9]+)/branches/([0-9]+)/head/modules/([0-9]+)/freeze_one".r
   val ROUTE_PATTERN_43 = "/projects/([0-9]+)/branches/([0-9]+)/workflows/([0-9]+)/modules/([0-9]+)/charts/([0-9]+)".r
   val ROUTE_PATTERN_44 = "/projects/([0-9]+)/branches/([0-9]+)/head/modules/([0-9]+)/charts/([0-9]+)".r
-  val ROUTE_PATTERN_45 = "/projects/([0-9]+)/datasets/([0-9]+)".r
+  val ROUTE_PATTERN_45 = "/projects/([0-9]+)/datasets".r
   val ROUTE_PATTERN_46 = "/projects/([0-9]+)/datasets/([0-9]+)".r
   val ROUTE_PATTERN_47 = "/projects/([0-9]+)/datasets/([0-9]+)/annotations".r
   val ROUTE_PATTERN_48 = "/projects/([0-9]+)/datasets/([0-9]+)/descriptor".r
@@ -75,39 +81,40 @@ trait VizierAPIServletRoutes extends HttpServlet {
   override def doGet(request: HttpServletRequest, response: HttpServletResponse) = 
   {
     val connection = new JettyClientConnection(request, response)
+    lazy val jsonBody = connection.getJson.as[JsObject]
     processResponse(request, response) {
       request.getPathInfo match {
-        case "/" => ServiceDescriptorHandler.handle(Map(), connection)
-        case "/projects" => ListProjectsHandler.handle(Map(), connection)
-        case ROUTE_PATTERN_4(projectId) => ExportProject.handle(Map("projectId" -> JsNumber(projectId.toLong)), connection)
-        case ROUTE_PATTERN_5(projectId) => GetProjectHandler.handle(Map("projectId" -> JsNumber(projectId.toLong)), connection)
-        case ROUTE_PATTERN_9(projectId) => ListBranchesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong)), connection)
-        case ROUTE_PATTERN_11(projectId, branchId) => GetBranchHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_15(projectId, branchId, workflowId) => GetWorkflowHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong)), connection)
-        case ROUTE_PATTERN_16(projectId, branchId) => GetWorkflowHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_19(projectId, branchId, workflowId) => WorkflowSQLHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong)), connection)
-        case ROUTE_PATTERN_20(projectId, branchId) => WorkflowSQLHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_21(projectId, branchId, workflowId) => VizualizeWorkflow.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong)), connection)
-        case ROUTE_PATTERN_22(projectId, branchId) => VizualizeWorkflow.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_23(projectId, branchId, workflowId) => GetAllModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong)), connection)
-        case ROUTE_PATTERN_24(projectId, branchId) => GetAllModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_27(projectId, branchId, workflowId, modulePosition) => GetModuleHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_28(projectId, branchId, modulePosition) => GetModuleHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_43(projectId, branchId, workflowId, modulePosition, artifactId) => GetArtifactHandler.Typed(ArtifactType.CHART).handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_44(projectId, branchId, modulePosition, artifactId) => GetArtifactHandler.Typed(ArtifactType.CHART).handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_46(projectId, artifactId) => GetArtifactHandler.Typed(ArtifactType.DATASET).handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_47(projectId, artifactId) => GetArtifactHandler.Annotations.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_48(projectId, artifactId) => GetArtifactHandler.Summary.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_49(projectId, artifactId) => GetArtifactHandler.CSV.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_50(projectId, artifactId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_51(projectId, artifactId) => GetArtifactHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_52(projectId, artifactId) => GetArtifactHandler.Annotations.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_53(projectId, artifactId) => GetArtifactHandler.Summary.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_54(projectId, artifactId) => GetArtifactHandler.CSV.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_55(projectId, artifactId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_57(projectId, fileId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong)), connection)
-        case ROUTE_PATTERN_58(projectId, fileId, tail) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong), "tail" -> JsString(tail)), connection)
-        case "/tasks" => ListTasksHandler.handle(Map(), connection)
+        case "/" => ServiceDescriptor()
+        case "/projects" => ListProjects()
+        case ROUTE_PATTERN_4(projectId) => ExportProject(projectId = projectId.toLong)
+        case ROUTE_PATTERN_5(projectId) => GetProject(projectId = projectId.toLong)
+        case ROUTE_PATTERN_9(projectId) => ListBranches(projectId = projectId.toLong)
+        case ROUTE_PATTERN_11(projectId, branchId) => GetBranch(projectId = projectId.toLong, branchId = branchId.toLong)
+        case ROUTE_PATTERN_15(projectId, branchId, workflowId) => GetWorkflow(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong)
+        case ROUTE_PATTERN_16(projectId, branchId) => GetWorkflow(projectId = projectId.toLong, branchId = branchId.toLong)
+        case ROUTE_PATTERN_19(projectId, branchId, workflowId) => WorkflowSQL(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, query = queryParameter(connection, "query"))
+        case ROUTE_PATTERN_20(projectId, branchId) => WorkflowSQL(projectId = projectId.toLong, branchId = branchId.toLong, query = queryParameter(connection, "query"))
+        case ROUTE_PATTERN_21(projectId, branchId, workflowId) => VizualizeWorkflow(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong)
+        case ROUTE_PATTERN_22(projectId, branchId) => VizualizeWorkflow(projectId = projectId.toLong, branchId = branchId.toLong)
+        case ROUTE_PATTERN_23(projectId, branchId, workflowId) => GetAllModules(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong)
+        case ROUTE_PATTERN_24(projectId, branchId) => GetAllModules(projectId = projectId.toLong, branchId = branchId.toLong)
+        case ROUTE_PATTERN_27(projectId, branchId, workflowId, modulePosition) => GetModule(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_28(projectId, branchId, modulePosition) => GetModule(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_43(projectId, branchId, workflowId, modulePosition, artifactId) => GetArtifact.typed(ArtifactType.CHART)(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt, artifactId = artifactId.toInt)
+        case ROUTE_PATTERN_44(projectId, branchId, modulePosition, artifactId) => GetArtifact.typed(ArtifactType.CHART)(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt, artifactId = artifactId.toInt)
+        case ROUTE_PATTERN_46(projectId, artifactId) => GetArtifact.typed(ArtifactType.DATASET)(projectId = projectId.toLong, artifactId = artifactId.toLong, offset = queryParameter(connection, "offset").map { _.toLong }, limit = queryParameter(connection, "limit").map { _.toInt }, profile = queryParameter(connection, "profile"))
+        case ROUTE_PATTERN_47(projectId, artifactId) => GetArtifact.Annotations(projectId = projectId.toLong, artifactId = artifactId.toLong, column = queryParameter(connection, "column").map { _.toInt }, row = queryParameter(connection, "row"))
+        case ROUTE_PATTERN_48(projectId, artifactId) => GetArtifact.Summary(projectId = projectId.toLong, artifactId = artifactId.toLong)
+        case ROUTE_PATTERN_49(projectId, artifactId) => GetArtifact.CSV(projectId = projectId.toLong, artifactId = artifactId.toLong)
+        case ROUTE_PATTERN_50(projectId, artifactId) => GetArtifact.File(projectId = projectId.toLong, artifactId = artifactId.toLong)
+        case ROUTE_PATTERN_51(projectId, artifactId) => GetArtifact(projectId = projectId.toLong, artifactId = artifactId.toLong, offset = queryParameter(connection, "offset").map { _.toLong }, limit = queryParameter(connection, "limit").map { _.toInt }, profile = queryParameter(connection, "profile"))
+        case ROUTE_PATTERN_52(projectId, artifactId) => GetArtifact.Annotations(projectId = projectId.toLong, artifactId = artifactId.toLong, column = queryParameter(connection, "column").map { _.toInt }, row = queryParameter(connection, "row"))
+        case ROUTE_PATTERN_53(projectId, artifactId) => GetArtifact.Summary(projectId = projectId.toLong, artifactId = artifactId.toLong)
+        case ROUTE_PATTERN_54(projectId, artifactId) => GetArtifact.CSV(projectId = projectId.toLong, artifactId = artifactId.toLong)
+        case ROUTE_PATTERN_55(projectId, artifactId) => GetArtifact.File(projectId = projectId.toLong, artifactId = artifactId.toLong)
+        case ROUTE_PATTERN_57(projectId, artifactId) => GetArtifact.File(projectId = projectId.toLong, artifactId = artifactId.toLong)
+        case ROUTE_PATTERN_58(projectId, artifactId, tail) => GetArtifact.File(projectId = projectId.toLong, artifactId = artifactId.toLong, tail = tail)
+        case "/tasks" => ListTasks()
         case _ => fourOhFour(request)
       }
     }
@@ -115,30 +122,31 @@ trait VizierAPIServletRoutes extends HttpServlet {
   override def doPost(request: HttpServletRequest, response: HttpServletResponse) = 
   {
     val connection = new JettyClientConnection(request, response)
+    lazy val jsonBody = connection.getJson.as[JsObject]
     processResponse(request, response) {
       request.getPathInfo match {
-        case "/projects" => JsonHandler[CreateProject].handle(Map(), connection)
-        case "/projects/import" => ImportProject.handle(Map(), connection)
-        case ROUTE_PATTERN_6(projectId) => JsonHandler[UpdateProject].handle(Map("projectId" -> JsNumber(projectId.toLong)), connection)
-        case ROUTE_PATTERN_10(projectId) => JsonHandler[CreateBranch].handle(Map("projectId" -> JsNumber(projectId.toLong)), connection)
-        case ROUTE_PATTERN_14(projectId, branchId) => CancelWorkflowHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_17(projectId, branchId, workflowId) => CancelWorkflowHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong)), connection)
-        case ROUTE_PATTERN_18(projectId, branchId) => CancelWorkflowHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_25(projectId, branchId, workflowId) => JsonHandler[AppendModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong)), connection)
-        case ROUTE_PATTERN_26(projectId, branchId) => JsonHandler[AppendModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_29(projectId, branchId, workflowId, modulePosition) => JsonHandler[InsertModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_30(projectId, branchId, modulePosition) => JsonHandler[InsertModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_35(projectId, branchId, workflowId, modulePosition) => ThawModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_36(projectId, branchId, modulePosition) => ThawModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_37(projectId, branchId, workflowId, modulePosition) => ThawModulesHandler.ThawOne.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_38(projectId, branchId, modulePosition) => ThawModulesHandler.ThawOne.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_39(projectId, branchId, workflowId, modulePosition) => FreezeModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_40(projectId, branchId, modulePosition) => FreezeModulesHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_41(projectId, branchId, workflowId, modulePosition) => FreezeModulesHandler.FreezeOne.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_42(projectId, branchId, modulePosition) => FreezeModulesHandler.FreezeOne.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_45(projectId, artifactId) => JsonHandler[CreateDataset].handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
-        case ROUTE_PATTERN_56(projectId) => CreateFileHandler.handle(Map("projectId" -> JsNumber(projectId.toLong)), connection)
-        case "/reload" => ReloadHandler.handle(Map(), connection)
+        case "/projects" => CreateProject(properties = (jsonBody \ "properties").as[serialized.PropertyList.T])
+        case "/projects/import" => ImportProject(file = connection.getPart("file"))
+        case ROUTE_PATTERN_6(projectId) => UpdateProject(projectId = projectId.toLong, properties = (jsonBody \ "properties").as[serialized.PropertyList.T], defaultBranch = (jsonBody \ "defaultBranch").asOpt[Identifier])
+        case ROUTE_PATTERN_10(projectId) => CreateBranch(projectId = projectId.toLong, source = (jsonBody \ "source").asOpt[serialized.BranchSource], properties = (jsonBody \ "properties").as[serialized.PropertyList.T])
+        case ROUTE_PATTERN_14(projectId, branchId) => CancelWorkflow(projectId = projectId.toLong, branchId = branchId.toLong)
+        case ROUTE_PATTERN_17(projectId, branchId, workflowId) => CancelWorkflow(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong)
+        case ROUTE_PATTERN_18(projectId, branchId) => CancelWorkflow(projectId = projectId.toLong, branchId = branchId.toLong)
+        case ROUTE_PATTERN_25(projectId, branchId, workflowId) => AppendModule(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, packageId = (jsonBody \ "packageId").as[String], commandId = (jsonBody \ "commandId").as[String], arguments = (jsonBody \ "arguments").as[serialized.PropertyList.T])
+        case ROUTE_PATTERN_26(projectId, branchId) => AppendModule(projectId = projectId.toLong, branchId = branchId.toLong, packageId = (jsonBody \ "packageId").as[String], commandId = (jsonBody \ "commandId").as[String], arguments = (jsonBody \ "arguments").as[serialized.PropertyList.T])
+        case ROUTE_PATTERN_29(projectId, branchId, workflowId, modulePosition) => InsertModule(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt, packageId = (jsonBody \ "packageId").as[String], commandId = (jsonBody \ "commandId").as[String], arguments = (jsonBody \ "arguments").as[serialized.PropertyList.T])
+        case ROUTE_PATTERN_30(projectId, branchId, modulePosition) => InsertModule(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt, packageId = (jsonBody \ "packageId").as[String], commandId = (jsonBody \ "commandId").as[String], arguments = (jsonBody \ "arguments").as[serialized.PropertyList.T])
+        case ROUTE_PATTERN_35(projectId, branchId, workflowId, modulePosition) => ThawModules(thawUptoHere=true)(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_36(projectId, branchId, modulePosition) => ThawModules(thawUptoHere=true)(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_37(projectId, branchId, workflowId, modulePosition) => ThawModules(thawUptoHere=false)(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_38(projectId, branchId, modulePosition) => ThawModules(thawUptoHere=false)(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_39(projectId, branchId, workflowId, modulePosition) => FreezeModules(freezeFromHere=true)(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_40(projectId, branchId, modulePosition) => FreezeModules(freezeFromHere=true)(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_41(projectId, branchId, workflowId, modulePosition) => FreezeModules(freezeFromHere=false)(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_42(projectId, branchId, modulePosition) => FreezeModules(freezeFromHere=false)(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_45(projectId) => CreateDataset(projectId = projectId.toLong, columns = (jsonBody \ "columns").as[Seq[serialized.DatasetColumn]], rows = (jsonBody \ "rows").as[Seq[serialized.DatasetRow]], name = (jsonBody \ "name").asOpt[String], properties = (jsonBody \ "properties").as[serialized.PropertyList.T], annotations = (jsonBody \ "annotations").asOpt[serialized.DatasetAnnotation])
+        case ROUTE_PATTERN_56(projectId) => CreateFile(projectId = projectId.toLong, file = connection.getPart("file"))
+        case "/reload" => Reload()
         case _ => fourOhFour(request)
       }
     }
@@ -146,12 +154,13 @@ trait VizierAPIServletRoutes extends HttpServlet {
   override def doDelete(request: HttpServletRequest, response: HttpServletResponse) = 
   {
     val connection = new JettyClientConnection(request, response)
+    lazy val jsonBody = connection.getJson.as[JsObject]
     processResponse(request, response) {
       request.getPathInfo match {
-        case ROUTE_PATTERN_7(projectId) => DeleteProjectHandler.handle(Map("projectId" -> JsNumber(projectId.toLong)), connection)
-        case ROUTE_PATTERN_12(projectId, branchId) => DeleteBranchHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_31(projectId, branchId, workflowId, modulePosition) => DeleteModuleHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_32(projectId, branchId, modulePosition) => DeleteModuleHandler.handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
+        case ROUTE_PATTERN_7(projectId) => DeleteProject(projectId = projectId.toLong)
+        case ROUTE_PATTERN_12(projectId, branchId) => DeleteBranch(projectId = projectId.toLong, branchId = branchId.toLong)
+        case ROUTE_PATTERN_31(projectId, branchId, workflowId, modulePosition) => DeleteModule(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt)
+        case ROUTE_PATTERN_32(projectId, branchId, modulePosition) => DeleteModule(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt)
         case _ => fourOhFour(request)
       }
     }
@@ -159,12 +168,13 @@ trait VizierAPIServletRoutes extends HttpServlet {
   override def doPut(request: HttpServletRequest, response: HttpServletResponse) = 
   {
     val connection = new JettyClientConnection(request, response)
+    lazy val jsonBody = connection.getJson.as[JsObject]
     processResponse(request, response) {
       request.getPathInfo match {
-        case ROUTE_PATTERN_8(projectId) => JsonHandler[UpdateProject].handle(Map("projectId" -> JsNumber(projectId.toLong)), connection)
-        case ROUTE_PATTERN_13(projectId, branchId) => JsonHandler[UpdateBranch].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong)), connection)
-        case ROUTE_PATTERN_33(projectId, branchId, workflowId, modulePosition) => JsonHandler[ReplaceModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "workflowId" -> JsNumber(workflowId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
-        case ROUTE_PATTERN_34(projectId, branchId, modulePosition) => JsonHandler[ReplaceModule].handle(Map("projectId" -> JsNumber(projectId.toLong), "branchId" -> JsNumber(branchId.toLong), "modulePosition" -> JsNumber(modulePosition.toLong)), connection)
+        case ROUTE_PATTERN_8(projectId) => UpdateProject(projectId = projectId.toLong, properties = (jsonBody \ "properties").as[serialized.PropertyList.T], defaultBranch = (jsonBody \ "defaultBranch").asOpt[Identifier])
+        case ROUTE_PATTERN_13(projectId, branchId) => UpdateBranch(projectId = projectId.toLong, branchId = branchId.toLong, properties = (jsonBody \ "properties").as[serialized.PropertyList.T])
+        case ROUTE_PATTERN_33(projectId, branchId, workflowId, modulePosition) => ReplaceModule(projectId = projectId.toLong, branchId = branchId.toLong, workflowId = workflowId.toLong, modulePosition = modulePosition.toInt, packageId = (jsonBody \ "packageId").as[String], commandId = (jsonBody \ "commandId").as[String], arguments = (jsonBody \ "arguments").as[serialized.PropertyList.T])
+        case ROUTE_PATTERN_34(projectId, branchId, modulePosition) => ReplaceModule(projectId = projectId.toLong, branchId = branchId.toLong, modulePosition = modulePosition.toInt, packageId = (jsonBody \ "packageId").as[String], commandId = (jsonBody \ "commandId").as[String], arguments = (jsonBody \ "arguments").as[serialized.PropertyList.T])
         case _ => fourOhFour(request)
       }
     }
@@ -205,7 +215,8 @@ trait VizierAPIServletRoutes extends HttpServlet {
         case ROUTE_PATTERN_42(projectId, branchId, modulePosition) => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_43(projectId, branchId, workflowId, modulePosition, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_44(projectId, branchId, modulePosition, artifactId) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_45(projectId, artifactId) => CORSPreflightResponse("POST", "GET")
+        case ROUTE_PATTERN_45(projectId) => CORSPreflightResponse("POST")
+        case ROUTE_PATTERN_46(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_47(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_48(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_49(projectId, artifactId) => CORSPreflightResponse("GET")
@@ -216,8 +227,8 @@ trait VizierAPIServletRoutes extends HttpServlet {
         case ROUTE_PATTERN_54(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_55(projectId, artifactId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_56(projectId) => CORSPreflightResponse("POST")
-        case ROUTE_PATTERN_57(projectId, fileId) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_58(projectId, fileId, tail) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_57(projectId, artifactId) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_58(projectId, artifactId, tail) => CORSPreflightResponse("GET")
         case "/tasks" => CORSPreflightResponse("GET")
         case "/reload" => CORSPreflightResponse("POST")
         case _ => fourOhFour(request)

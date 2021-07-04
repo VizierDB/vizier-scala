@@ -22,7 +22,6 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Project, Artifact }
 import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types._
-import info.vizierdb.artifacts.{ DatasetColumn, DatasetRow, DatasetAnnotation }
 import org.mimirdb.api.request.LoadInlineRequest
 import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
 import java.io.FileOutputStream
@@ -36,15 +35,13 @@ import info.vizierdb.api.handler._
 import info.vizierdb.api.handler.ClientConnection
 
 object ImportProject
-  extends Handler
 {
-  override def filePart = Some("file")
-  def handle(
-    pathParameters: Map[String, JsValue], 
-    request: ClientConnection 
+  // override def filePart = Some("file")
+  def apply(
+    file: (InputStream, String), 
   ): Response =
   {
-    val (content, _) = request.getPart("file")
+    val (content, _) = file
 
     val f = File.createTempFile("vizier-", "-import.tgz")
     Streams.closeAfter(new FileOutputStream(f)) {

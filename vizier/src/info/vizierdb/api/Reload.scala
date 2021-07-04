@@ -23,8 +23,7 @@ import info.vizierdb.commands.Commands
 import info.vizierdb.api.handler._
 import info.vizierdb.api.response._
 
-object ReloadHandler
-  extends DeterministicHandler
+object Reload
 {
   case class ReloadRequestResponse(
     success: Boolean = true
@@ -36,6 +35,6 @@ object ReloadHandler
 
   // Archaic... we don't need this anymore, but produce 
   // *some* response in case the UI needs it
-  def handle = ReloadRequestResponse()
+  def apply() = ReloadRequestResponse()
 }
 

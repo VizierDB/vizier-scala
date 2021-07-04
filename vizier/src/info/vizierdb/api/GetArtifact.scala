@@ -28,8 +28,7 @@ import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.VizierException
 
-object GetArtifactHandler
-  extends Handler
+object GetArtifact
 {
   def getArtifact(projectId: Long, artifactId: Long, expecting: Option[ArtifactType.T]): Option[Artifact] = 
       DB.readOnly { implicit session => 
@@ -38,23 +37,19 @@ object GetArtifactHandler
         expecting.isEmpty || expecting.get.equals(artifact.t)
       }
 
-  def handle(
-    pathParameters: Map[String, JsValue], 
-    connection: ClientConnection
-  ): Response = handle(pathParameters, connection, None)
-
-
-  def handle(
-    pathParameters: Map[String, JsValue], 
-    connection: ClientConnection, 
-    expecting: Option[ArtifactType.T]
-  ): Response =
+  def apply(
+    projectId: Identifier,
+    artifactId: Identifier,
+    offset: Option[Long] = None,
+    limit: Option[Int] = None,
+    profile: Option[String] = None,
+    expecting: Option[ArtifactType.T] = None,
+    branchId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
+    workflowId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
+    modulePosition: Option[Int] = None, // Not used... but necessary for routing compatibility
+  ): Response = 
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val artifactId = pathParameters("artifactId").as[Long]
-    val offset = Option(connection.getParameter("offset")).map { _.split(",")(0).toLong }
-    val limit = Option(connection.getParameter("limit")).map { _.toInt }
-    val forceProfiler = Option(connection.getParameter("profile")).map { _.equals("true") }.getOrElse(false)
+    val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
         return RawJsonResponse(
@@ -67,40 +62,45 @@ object GetArtifactHandler
       case None => 
         return NoSuchEntityResponse() 
     }
-  } 
-
-  case class Typed(
-    expectedType: ArtifactType.T
-  ) extends Handler
-  {
-    def handle(
-      pathParameters: Map[String,JsValue], 
-      connection: ClientConnection
-    ): Response = 
-    {
-      GetArtifactHandler.handle(pathParameters, connection, Some(expectedType))
-    }
   }
 
-  object Annotations extends Handler
+  def typed(
+    expectedType: ArtifactType.T
+  )(
+    projectId: Identifier,
+    artifactId: Identifier,
+    offset: Option[Long] = None,
+    limit: Option[Int] = None,
+    profile: Option[String] = None,
+    branchId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
+    workflowId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
+    modulePosition: Option[Int] = None, // Not used... but necessary for routing compatibility
+  ): Response = apply(
+    projectId = projectId,
+    artifactId = artifactId,
+    offset = offset,
+    limit = limit,
+    profile = profile,
+    expecting = Some(expectedType)
+  )
+
+  object Annotations
   {
-    def handle(
-      pathParameters: Map[String, JsValue], 
-      connection: ClientConnection 
+    def apply(
+      projectId: Identifier,
+      artifactId: Identifier,
+      column: Option[Int],
+      row: Option[String],
     ): Response =
     {
-      val projectId = pathParameters("projectId").as[Long]
-      val artifactId = pathParameters("artifactId").as[Long]
-      val columnId = Option(connection.getParameter("column")).map { _.toInt }
-      val rowId = Option(connection.getParameter("row"))
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match { 
         case Some(artifact) => 
           return RawJsonResponse(
             Json.toJson(
               Explain(
                 s"SELECT * FROM ${artifact.nameInBackend}",
-                rows = rowId.map { Seq(_) }.getOrElse { null },
-                cols = columnId.map { col => 
+                rows = row.map { Seq(_) }.getOrElse { null },
+                cols = column.map { col => 
                           Seq(
                             MimirAPI.catalog.get(artifact.nameInBackend)
                                     .schema(col)
@@ -116,15 +116,13 @@ object GetArtifactHandler
     }
   }
 
-  object Summary extends Handler
+  object Summary
   {
-    def handle(
-      pathParameters: Map[String, JsValue], 
-      connection: ClientConnection 
+    def apply(
+      projectId: Identifier,
+      artifactId: Identifier
     ): Response =
     {
-      val projectId = pathParameters("projectId").as[Long]
-      val artifactId = pathParameters("artifactId").as[Long]
       getArtifact(projectId, artifactId, None) match {
         case Some(artifact) => 
           return RawJsonResponse(
@@ -138,13 +136,11 @@ object GetArtifactHandler
 
   object CSV extends Handler
   {
-    def handle(
-      pathParameters: Map[String, JsValue], 
-      connection: ClientConnection 
+    def apply(
+      projectId: Identifier,
+      artifactId: Identifier,
     ): Response =
     {
-      val projectId = pathParameters("projectId").as[Long]
-      val artifactId = pathParameters("artifactId").as[Long]
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match {
         case Some(artifact) =>
           val tempFile = java.io.File.createTempFile("artifact_"+artifactId, ".csv")
@@ -188,14 +184,13 @@ object GetArtifactHandler
   val SANE_FILE_CHARACTERS = "^([\\-_.,a-zA-Z0-9]*)$".r
   object File extends Handler
   {
-    def handle(
-      pathParameters: Map[String, JsValue], 
-      connection: ClientConnection 
+    def apply(
+      projectId: Identifier,
+      artifactId: Identifier,
+      tail: Option[String] = None,
     ): Response =
     {
-      val projectId = pathParameters("projectId").as[Long]
-      val artifactId = pathParameters("artifactId").as[Long]
-      val subpathElements = pathParameters.get("subpath").map { _.as[Seq[String]] }
+      val subpathElements = tail.map { _.split("/") }
       val subpath = subpathElements.map { _.mkString("/") }
       for(element <- subpathElements.toSeq.flatten) { 
         element match {

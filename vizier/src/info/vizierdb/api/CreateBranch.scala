@@ -23,32 +23,22 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.serialized.BranchSource
+import info.vizierdb.serialized.PropertyList
 
-case class SourceBranch(
-  branchId: Identifier,
-  workflowId: Option[Identifier],
-  moduleId: Option[Identifier]
-)
-
-object SourceBranch
+object CreateBranch
 {
-  implicit val format: Format[SourceBranch] = Json.format
-}
-
-case class CreateBranch(
-  projectId: Identifier,
-  source: Option[SourceBranch],
-  properties: JsObject
-)
-  extends Request
-{
-  def handle: Response = 
+  def apply(
+    projectId: Identifier,
+    source: Option[BranchSource],
+    properties: PropertyList.T
+  ): Response = 
   {
+    val saneProperties = PropertyList.toMap(properties)
     val branchName =
-      properties.value
-                .get("name")
-                .map { _.as[String] }
-                .getOrElse { "Untitled Branch" }
+      saneProperties.get("name")
+                    .map { _.as[String] }
+                    .getOrElse { "Untitled Branch" }
     DB.autoCommit { implicit s => 
       val (project, branch, workflow): (Project, Branch, Workflow) = 
         Project.getOption(projectId)
@@ -57,7 +47,7 @@ case class CreateBranch(
                }
                .createBranch(
                  name = branchName,
-                 properties = properties,
+                 properties = JsObject(saneProperties),
                  fromBranch = source.map { _.branchId },
                  fromWorkflow = source.flatMap { _.workflowId }
                )
@@ -68,9 +58,3 @@ case class CreateBranch(
     }
   } 
 }
-
-object CreateBranch
-{
-  implicit val format: Format[CreateBranch] = Json.format
-}
-

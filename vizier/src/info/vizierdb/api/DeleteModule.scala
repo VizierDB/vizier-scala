@@ -24,15 +24,15 @@ import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
 
-object DeleteModuleHandler
-  extends SimpleHandler
+object DeleteModule
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def apply(
+    projectId: Identifier,
+    branchId: Identifier,
+    modulePosition: Int,
+    workflowId: Option[Identifier] = None,
+  ): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
-    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
-    val modulePosition = pathParameters("modulePosition").as[Int]
     val workflow = 
       DB.autoCommit { implicit s => 
         val branch = 

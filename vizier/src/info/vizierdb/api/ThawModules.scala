@@ -28,18 +28,17 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
 
-object ThawModulesHandler
-  extends SimpleHandler
+object ThawModules
+  extends Object
   with LazyLogging
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
-    handle(pathParameters = pathParameters, onlyThawOne = false)
-  def handle(pathParameters: Map[String, JsValue], onlyThawOne: Boolean): Response =
+  def apply(thawUptoHere: Boolean)(
+    projectId: Identifier,
+    branchId: Identifier,
+    modulePosition: Int,
+    workflowId: Option[Identifier] = None,
+  ): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
-    val branchId = pathParameters("branchId").as[Long]
-    val workflowId = pathParameters.get("workflowId").map { _.as[Long] }
-    val position = pathParameters("modulePosition").as[Int]
     val workflow: Workflow = 
       DB.autoCommit { implicit s => 
         logger.trace(s"Looking up branch $branchId")
@@ -55,10 +54,10 @@ object ThawModulesHandler
           }
         }
 
-        if(onlyThawOne){
-          /* return */ branch.thawOne(position)._2
+        if(thawUptoHere){
+          /* return */ branch.thawUpto(modulePosition)._2
         } else {
-          /* return */ branch.thawUpto(position)._2
+          /* return */ branch.thawOne(modulePosition)._2
         }
 
       }
@@ -77,13 +76,5 @@ object ThawModulesHandler
       )
     }
   } 
-
-  object ThawOne
-    extends SimpleHandler
-    with LazyLogging
-  {
-    def handle(pathParameters: Map[String,JsValue]): Response = 
-      ThawModulesHandler.handle(pathParameters = pathParameters, onlyThawOne = true)
-  }
 }
 

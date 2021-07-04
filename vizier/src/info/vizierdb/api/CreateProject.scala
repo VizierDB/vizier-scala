@@ -24,15 +24,13 @@ import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.serialized.PropertyList
 
-case class CreateProject(
-  properties: StupidReactJsonMap.T
-)
-  extends Request
+object CreateProject
 {
-  def handle: RawJsonResponse = 
+  def apply(properties: PropertyList.T): RawJsonResponse = 
   {
-    val saneProperties = StupidReactJsonMap.decode(properties)
+    val saneProperties = PropertyList.toMap(properties)
     val project = 
       DB.autoCommit { implicit s => 
         Project.create(
@@ -48,10 +46,3 @@ case class CreateProject(
     )
   } 
 }
-
-object CreateProject
-{
-  implicit val format: Format[CreateProject] = Json.format
-  import com.github.andyglow.jsonschema.AsPlay._
-}
-

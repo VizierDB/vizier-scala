@@ -23,15 +23,15 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.serialized.PropertyList
 
-case class UpdateProject(
-  projectId: Identifier,
-  properties: Map[String, JsValue],
-  defaultBranch: Option[Identifier]
-)
-  extends Request
+object UpdateProject
 {
-  def handle: Response = 
+  def apply(
+    projectId: Identifier,
+    properties: Option[PropertyList.T] = None,
+    defaultBranch: Option[Identifier] = None
+  ): Response =
   {
     val project: Project = 
       DB.autoCommit { implicit s => 
@@ -46,12 +46,15 @@ case class UpdateProject(
             return NoSuchEntityResponse()
           }
         }
-        project = project.updateProperties(
-                            properties.get("name")
-                                      .map { _.as[String] }
-                                      .getOrElse { "Untitled Project" },
-                            properties = properties
-                          )
+        if(properties.isDefined){
+          val saneProperties:Map[String, JsValue] = PropertyList.toMap(properties.get)
+          project = project.updateProperties(
+                              saneProperties.get("name")
+                                            .map { _.as[String] }
+                                            .getOrElse { "Untitled Project" },
+                              properties = saneProperties
+                            )
+        }
         /* return */ project
       }
     RawJsonResponse(
@@ -59,9 +62,3 @@ case class UpdateProject(
     )
   } 
 }
-
-object UpdateProject
-{
-  implicit val format: Format[UpdateProject] = Json.format
-}
-

@@ -23,11 +23,10 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 
-object DeleteProjectHandler extends SimpleHandler
+object DeleteProject
 {
-  def handle(pathParameters: Map[String, JsValue]): Response =
+  def apply(projectId: Identifier): Response =
   {
-    val projectId = pathParameters("projectId").as[Long]
     DB.autoCommit { implicit s => 
       val p = 
         Project.getOption(projectId)
