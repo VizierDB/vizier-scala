@@ -22,15 +22,16 @@ import org.mimirdb.api.Response
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
+import info.vizierdb.serialized
 
 object GetProject
 {
-  def apply(projectId: Identifier): Response =
+  def apply(projectId: Identifier): serialized.ProjectDescription =
   {
     DB.readOnly { implicit session => 
       Project.getOption(projectId) match {
-        case Some(project) => RawJsonResponse(project.describe)
-        case None => NoSuchEntityResponse()
+        case Some(project) => project.describe
+        case None => ErrorResponse.noSuchEntity
       }
     } 
   } 

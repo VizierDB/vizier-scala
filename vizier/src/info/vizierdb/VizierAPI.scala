@@ -43,7 +43,7 @@ import org.mimirdb.api.{ Request, Response }
 import org.mimirdb.api.request.Query
 import java.net.{ URL, URI }
 import java.sql.Time
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import info.vizierdb.api._
 import info.vizierdb.api.websocket.BranchWatcherSocket
 import java.net.URLConnection
@@ -69,7 +69,7 @@ object VizierAPI
 
 
   var urls: VizierURLs = null
-  var started: LocalDateTime = null
+  var started: ZonedDateTime = null
 
   lazy val WEB_UI_URL = getClass().getClassLoader().getResource("ui")
 
@@ -140,7 +140,7 @@ object VizierAPI
     )
     server.start()
     // server.dump(System.err)
-    started = LocalDateTime.now()
+    started = ZonedDateTime.now()
   }
 }
 

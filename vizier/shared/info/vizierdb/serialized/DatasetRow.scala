@@ -5,5 +5,7 @@ import info.vizierdb.nativeTypes.JsValue
 
 case class DatasetRow(
   id: RowIdentifier,
-  values: Seq[JsValue]
+  values: Seq[JsValue],
+  rowAnnotationFlags: Option[Seq[Boolean]],
+  rowIsAnnotated: Option[Boolean]
 )

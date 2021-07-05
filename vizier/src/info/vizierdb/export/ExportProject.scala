@@ -25,6 +25,7 @@ import info.vizierdb.util._
 import scala.collection.mutable.HashMap
 import info.vizierdb.commands.Commands
 import info.vizierdb.VizierException
+import info.vizierdb.serializers._
 
 object ExportProject
 {
@@ -113,7 +114,7 @@ object ExportProject
                                   val arguments = 
                                     module.command
                                           .get
-                                          .encodeReactArguments(module.arguments)
+                                          .propertyListFromArguments(module.arguments)
 
                                   if(!modules.contains(module.id)) {
                                     modules += module.id -> 
@@ -161,7 +162,7 @@ object ExportProject
                             val arguments = 
                               module.command
                                     .get
-                                    .encodeReactArguments(module.arguments)
+                                    .propertyListFromArguments(module.arguments)
                             modules += module.id -> 
                               ExportedModule(
                                 id = cell_id,

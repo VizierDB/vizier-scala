@@ -15,12 +15,14 @@
 package info.vizierdb.export
 
 import play.api.libs.json._
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
 
 case class ExportedCommand(
   id: Option[String],
   packageId: String,
   commandId: String,
-  arguments: JsValue,
+  arguments: serialized.CommandArgumentList.T,
   revisionOfId: Option[String],
   properties: Option[Map[String,JsValue]]
 )

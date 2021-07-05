@@ -113,13 +113,10 @@ class Module(
         arguments = 
           (command match { 
             case None => 
-              serialized.PropertyList.toPropertyList(arguments.value.toMap)
+              serialized.CommandArgumentList.toPropertyList(arguments.value.toMap)
             case Some(cmd) => 
-              cmd.parameters.map { param:Parameter => 
-                val v = arguments.value.getOrElse(param.id, param.getDefault)
-                serialized.Property(param.id, param.convertToReact(v))
-              }.toSeq
-          }):serialized.PropertyList.T
+              cmd.propertyListFromArguments(arguments)
+          }):serialized.CommandArgumentList.T
       ),
       text = description,
       timestamps = timestamps,

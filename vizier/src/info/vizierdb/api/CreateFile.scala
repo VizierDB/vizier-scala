@@ -28,6 +28,7 @@ import java.io.FileOutputStream
 import info.vizierdb.util.Streams
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
+import info.vizierdb.serialized
 
 object CreateFile
 {
@@ -35,20 +36,18 @@ object CreateFile
   def apply(
     projectId: Identifier,
     file: (InputStream, String),
-  ): Response =
+  ): serialized.ArtifactSummary =
     handle(projectId, file._1, file._2)
 
   def handle(
     projectId: Identifier,
     content: InputStream,
     filename: String
-  ): Response = {
+  ): serialized.ArtifactSummary = {
     DB.autoCommit { implicit s => 
       val project = 
         Project.getOption(projectId)
-               .getOrElse { 
-                  return NoSuchEntityResponse()
-               }
+               .getOrElse { ErrorResponse.noSuchEntity }
 
       val artifact = Artifact.make(
         project.id, 
@@ -63,9 +62,7 @@ object CreateFile
 
       Streams.cat(content, new FileOutputStream(file))
 
-      RawJsonResponse(
-        artifact.summarize()
-      )
+      artifact.summarize()
     }
   } 
 

@@ -148,9 +148,19 @@ for idx, path, verb, handler, group, action, return_type, body_fields in routes:
   ]
 
   all_fields = path_fields + query_fields + body_fields
+
+  invokeHandler = f"{handler}({format_arg_constructor(all_fields)})"
+
+  if return_type.startswith("serialized.") or return_type.startswith("Seq[serialized.") or return_type == "DataContainer" or return_type == "Seq[Caveat]":
+    invokeHandler = f"RawJsonResponse(Json.toJson({invokeHandler}:{return_type}))"
+  elif return_type.startswith("FILE"):
+    pass
+  elif return_type == "Unit":
+    invokeHandler = invokeHandler + "; NoContentResponse()"
+  else:
+    raise Exception(f"Unsupported return type {return_type}")
   
-  invokeHandler = "case {} => {}({})".format(
-                    matcher, handler, format_arg_constructor(all_fields))
+  invokeHandler = f"case {matcher} => {invokeHandler}"
 
   if verb not in verbHandlers:
     verbHandlers[verb] = cast(List[str], [])
@@ -172,9 +182,12 @@ with open(SERVLET_FILE, "w") as f:
   print("import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}")
   print("import java.net.URLDecoder")
   print("import org.mimirdb.api.Response")
+  print("import org.mimirdb.api.request.DataContainer")
+  print("import org.mimirdb.caveats.Caveat")
+  print("import org.mimirdb.api.CaveatFormat._")
   print("import info.vizierdb.types._")
   print("import info.vizierdb.api._")
-  print("import info.vizierdb.api.response.CORSPreflightResponse")
+  print("import info.vizierdb.api.response.{ CORSPreflightResponse, RawJsonResponse, NoContentResponse }")
   print("import info.vizierdb.api.handler._")
   print("import info.vizierdb.serialized")
   print("import info.vizierdb.serializers._")

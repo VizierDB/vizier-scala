@@ -23,24 +23,21 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.api.response._
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
+import info.vizierdb.serialized
 
 object ListProjects
 {
-  def apply() =
-  {
-    RawJsonResponse(
-      Json.obj(
-        "projects" -> 
-          DB.readOnly { implicit session => 
-            Project.list.map { _.summarize }
-          },
-        HATEOAS.LINKS -> HATEOAS(
-          HATEOAS.SELF            -> VizierAPI.urls.listProjects,
-          HATEOAS.PROJECT_CREATE  -> VizierAPI.urls.createProject,
-          HATEOAS.PROJECT_IMPORT  -> VizierAPI.urls.importProject
-        )
+  def apply(): serialized.ProjectList =
+    serialized.ProjectList(
+      projects =
+        DB.readOnly { implicit session => 
+          Project.list.map { _.summarize }
+        },
+      links = HATEOAS(
+        HATEOAS.SELF            -> VizierAPI.urls.listProjects,
+        HATEOAS.PROJECT_CREATE  -> VizierAPI.urls.createProject,
+        HATEOAS.PROJECT_IMPORT  -> VizierAPI.urls.importProject
       )
     )
-  } 
 }
 

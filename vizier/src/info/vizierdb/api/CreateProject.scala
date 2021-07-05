@@ -23,13 +23,13 @@ import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.util.StupidReactJsonMap
-import info.vizierdb.serialized.PropertyList
+import info.vizierdb.serialized
 
 object CreateProject
 {
-  def apply(properties: PropertyList.T): RawJsonResponse = 
+  def apply(properties: serialized.PropertyList.T): serialized.ProjectSummary = 
   {
-    val saneProperties = PropertyList.toMap(properties)
+    val saneProperties = serialized.PropertyList.toMap(properties)
     val project = 
       DB.autoCommit { implicit s => 
         Project.create(
@@ -39,9 +39,6 @@ object CreateProject
           properties = JsObject(saneProperties)
         ) 
       }
-    RawJsonResponse(
-      project.summarize,
-      status = HttpServletResponse.SC_CREATED
-    )
+    project.summarize
   } 
 }

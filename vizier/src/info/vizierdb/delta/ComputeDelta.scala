@@ -18,7 +18,7 @@ import scalikejdbc._
 import scala.collection.mutable.Buffer
 import info.vizierdb.catalog._
 import info.vizierdb.types._
-import info.vizierdb.catalog.serialized.ModuleDescription
+import info.vizierdb.serialized
 import info.vizierdb.viztrails.Provenance
 
 object ComputeDelta
@@ -124,7 +124,7 @@ object ComputeDelta
     var buffer = Buffer[WorkflowDelta]()
     var workflowSize = 0
 
-    def describe(position: Int): ModuleDescription = 
+    def describe(position: Int): serialized.ModuleDescription = 
     {
       val cell = workflow.cellByPosition(position).get
       cell.module.describe(

@@ -23,6 +23,7 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 object GetAllModules
 {
@@ -30,7 +31,7 @@ object GetAllModules
     projectId: Identifier,
     branchId: Identifier,
     workflowId: Option[Identifier] = None
-  ): Response =
+  ): Seq[serialized.ModuleDescription] =
   {
     DB.readOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
@@ -41,17 +42,14 @@ object GetAllModules
             Branch.getOption(projectId, projectId).map { _.head }
         } 
       workflowMaybe match {
-        case Some(workflow) => RawJsonResponse(
-          Json.toJson(
+        case Some(workflow) => 
             Module.describeAll(
               projectId = projectId,
               branchId = branchId, 
               workflowId = workflow.id,
               workflow.cellsAndModulesInOrder
             )
-          )
-        )
-        case None => NoSuchEntityResponse()
+        case None => ErrorResponse.noSuchEntity
       }
     }
   } 

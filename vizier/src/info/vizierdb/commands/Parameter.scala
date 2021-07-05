@@ -18,6 +18,8 @@ import play.api.libs.json._
 import info.vizierdb.VizierException
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.types.ArtifactType
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
 
 sealed trait Parameter
 {
@@ -47,16 +49,19 @@ sealed trait Parameter
     } else { doValidate(j: JsValue) }
   def doValidate(j: JsValue): Iterable[String]
   def encode(v: Any): JsValue
-  def describe: Map[String, JsValue] =
-    Map(
-      "id"       -> JsString(id),
-      "name"     -> JsString(name),
-      "datatype" -> JsString(datatype),
-      "hidden"   -> JsBoolean(hidden),
-      "required" -> JsBoolean(required)
-    )
-  def convertToReact(j: JsValue): JsValue = j
-  def convertFromReact(
+  def describe(parent: Option[String], index: Int): Seq[serialized.ParameterDescription] =
+    Seq(serialized.SimpleParameterDescription(
+      id = id,
+      name = name,
+      datatype = datatype,
+      hidden = hidden,
+      required = required,
+      parent = parent,
+      index = index,
+      default = Some(getDefault)
+    ))
+  def convertToProperty(j: JsValue): JsValue = j
+  def convertFromProperty(
     j: JsValue,
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
   ): JsValue = j
@@ -65,39 +70,19 @@ sealed trait Parameter
 object Parameter
 {
 
-  def describe(list: Seq[Parameter]): JsValue =
-    JsArray(doDescribe(list, 0, None)._1.map { JsObject(_) })
+  def describe(list: Seq[Parameter]): Seq[serialized.ParameterDescription] =
+    doDescribe(list, 0, None)._1
 
-  private def doDescribe(
+  def doDescribe(
     list: Seq[Parameter], 
     startIdx: Int, 
     parent: Option[String]
-  ): (Seq[Map[String, JsValue]], Int) =
+  ): (Seq[serialized.ParameterDescription], Int) =
   {
-    list.foldLeft( (Seq[Map[String, JsValue]](), startIdx) ) { 
+    list.foldLeft( (Seq[serialized.ParameterDescription](), startIdx) ) { 
       case ((accum, idx), curr) =>
-        val currDescription =
-          curr.describe ++ 
-          parent.map { p => Map("parent" -> JsString(p)) }
-                .getOrElse { Map.empty } ++ 
-          Map("index" -> JsNumber(idx))
-
-        curr match {
-          case l:ListParameter => 
-            val (components, nextIdx) = doDescribe(l.components, idx+1, Some(l.id))
-            (
-              accum ++ Seq(currDescription) ++ components,
-              nextIdx
-            )
-          case l:RecordParameter => 
-            val (components, nextIdx) = doDescribe(l.components, idx+1, Some(l.id))
-            (
-              accum ++ Seq(currDescription) ++ components,
-              nextIdx
-            )
-
-          case _ => (accum ++ Seq(currDescription), idx + 1)
-        }
+        val currDescription = curr.describe(parent, idx)
+        (accum ++ currDescription, idx + currDescription.size)
     }
   }
 
@@ -185,7 +170,19 @@ case class CodeParameter(
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
                                else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a string for $name") }
-  override def describe = super.describe ++ Map("language" -> JsString(language))
+ 
+  override def describe(parent: Option[String], index: Int) = 
+    Seq(serialized.CodeParameterDescription(
+      id = id,
+      name = name,
+      datatype = datatype,
+      hidden = hidden,
+      required = required,
+      parent = parent,
+      index = index,
+      default = Some(getDefault),
+      language = language
+    ))
 }
 
 case class ColIdParameter(
@@ -230,8 +227,18 @@ case class ArtifactParameter(
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
                                else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a string/dataset id for $name") }
-  override def describe = 
-    super.describe ++ Map("artifactType" -> JsString(artifactType.toString.toLowerCase()))
+  override def describe(parent: Option[String], index: Int) = 
+    Seq(serialized.ArtifactParameterDescription(
+      id = id,
+      name = name,
+      datatype = datatype,
+      hidden = hidden,
+      required = required,
+      parent = parent,
+      index = index,
+      default = Some(getDefault),
+      artifactType = artifactType
+    ))
 }
 
 case class DecimalParameter(
@@ -344,37 +351,31 @@ case class ListParameter(
       }
       case _ => throw new VizierException(s"Invalid Parameter to $name (expected Seq)")
     }
-  override def convertToReact(j: JsValue): JsValue = 
+  override def convertToProperty(j: JsValue): JsValue = 
   {
     Json.toJson(
       j.as[Seq[Map[String,JsValue]]].map { row =>
         components.map { param => 
           val v = row.getOrElse(param.id, param.getDefault)
-          Map(
-            "id" -> JsString(param.id),
-            "value" -> param.convertToReact(v)
-          )
+          serialized.CommandArgument(id = param.id, value = param.convertToProperty(v))
         }
       }
     )
   }
-  override def convertFromReact(
+  override def convertFromProperty(
     j: JsValue,
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
   ): JsValue = 
   {
     JsArray(
-      j.as[Seq[Seq[Map[String,JsValue]]]].map { case row => 
-        val arguments = row.map { arg => 
-                             arg("id").as[String] -> arg("value")
-                           }
-                          .toMap
+      j.as[Seq[serialized.CommandArgumentList.T]].map { case row => 
+        val arguments = serialized.CommandArgumentList.toMap(row)
         JsObject(
           components.flatMap { param => 
             arguments.get(param.id)
                      .map { v => 
                         param.id -> 
-                          param.convertFromReact(
+                          param.convertFromProperty(
                             preprocess(param, v),
                             preprocess
                           )
@@ -385,6 +386,11 @@ case class ListParameter(
       }
     )
   }
+  override def describe(parent: Option[String], index: Int): Seq[serialized.ParameterDescription] =
+  {
+    super.describe(parent, index) ++ Parameter.doDescribe(components, index+1, Some(id))._1
+  }
+
   override def getDefault: JsValue = JsArray(Seq())
 }
 
@@ -414,16 +420,13 @@ case class RecordParameter(
           component.validate( v.getOrElse { component.getDefault } )
         }
     }
-  override def convertToReact(j: JsValue): JsValue = 
+  override def convertToProperty(j: JsValue): JsValue = 
   {
     val record = j.as[Map[String,JsValue]]
     Json.toJson(
       components.map { param => 
         val v = record.getOrElse(param.id, param.getDefault)
-        Map(
-          "id" -> JsString(param.id),
-          "value" -> param.convertToReact(v)
-        )
+        serialized.CommandArgument(id = param.id, value = param.convertToProperty(v))
       }
     )
   }
@@ -441,22 +444,18 @@ case class RecordParameter(
 
       case _ => throw new VizierException(s"Invalid Parameter to $name (expected Map)")
     }
-  override def convertFromReact(
+  override def convertFromProperty(
     j: JsValue,
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
   ): JsValue = 
   {
-    val arguments = j.as[Seq[Map[String,JsValue]]]
-                     .map { arg => 
-                         arg("id").as[String] -> arg("value")
-                     }
-                    .toMap
+    val arguments = serialized.CommandArgumentList.toMap(j.as[serialized.CommandArgumentList.T])
     JsObject(
       components.flatMap { param => 
         arguments.get(param.id)
                  .map { v => 
                     param.id -> 
-                      param.convertFromReact(
+                      param.convertFromProperty(
                         preprocess(param, v),
                         preprocess
                       )
@@ -464,6 +463,10 @@ case class RecordParameter(
       }
       .toMap
     )
+  }
+  override def describe(parent: Option[String], index: Int): Seq[serialized.ParameterDescription] =
+  {
+    super.describe(parent, index) ++ Parameter.doDescribe(components, index+1, Some(id))._1
   }
 }
 
@@ -485,6 +488,7 @@ case class RowIdParameter(
                                else if ((j == JsNull) && (!required)) { None }
                                else { Some(s"Expected a number/rowid for $name") }
 }
+
 
 /**
  * One option for the EnumerableParameter
@@ -542,16 +546,27 @@ case class EnumerableParameter(
     else { Some(s"Expected a string/enumerable for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default.map { values(_).value })
-  override def describe = super.describe ++ Map("values" -> JsArray(
-    values.zipWithIndex.map { case (v, idx) => Json.obj(
-      "isDefault" -> JsBoolean(default.map { _ == idx }.getOrElse(false)),
-      "text"      -> v.text,
-      "value"     -> v.value
-    )}
-  ))
-  override def convertFromReact(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
+  override def describe(parent: Option[String], index: Int) = 
+    Seq(serialized.EnumerableParameterDescription(
+      id = id,
+      name = name,
+      datatype = datatype,
+      hidden = hidden,
+      required = required,
+      parent = parent,
+      index = index,
+      default = Some(getDefault),
+      values = values.zipWithIndex.map { case (v, idx) => 
+        serialized.EnumerableValueDescription(
+          isDefault = default.map { _ == idx }.getOrElse(false),
+          text = v.text,
+          value = v.value
+        )
+      }
+    ))
+  override def convertFromProperty(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
   {
-    super.convertFromReact(j, preprocess) match { 
+    super.convertFromProperty(j, preprocess) match { 
       case JsString(key) => JsString(aliases.getOrElse(key, key))
       case x => x
     }

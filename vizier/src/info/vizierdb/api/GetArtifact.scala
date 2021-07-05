@@ -22,10 +22,12 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.{ Identifier, ArtifactType }
 import org.mimirdb.api.request.Explain
 import org.mimirdb.api.CaveatFormat._
+import org.mimirdb.caveats.Caveat
 import org.mimirdb.api.MimirAPI
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.VizierException
+import info.vizierdb.serialized
 
 object GetArtifact
 {
@@ -46,20 +48,18 @@ object GetArtifact
     branchId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
     workflowId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
     modulePosition: Option[Int] = None, // Not used... but necessary for routing compatibility
-  ): Response = 
+  ): serialized.ArtifactDescription = 
   {
     val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
-        return RawJsonResponse(
-          artifact.describe(
-            offset = offset, 
-            limit = limit, 
-            forceProfiler = forceProfiler
-          )
+        artifact.describe(
+          offset = offset, 
+          limit = limit, 
+          forceProfiler = forceProfiler
         )
       case None => 
-        return NoSuchEntityResponse() 
+        ErrorResponse.noSuchEntity
     }
   }
 
@@ -74,7 +74,7 @@ object GetArtifact
     branchId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
     workflowId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
     modulePosition: Option[Int] = None, // Not used... but necessary for routing compatibility
-  ): Response = apply(
+  ): serialized.ArtifactDescription = apply(
     projectId = projectId,
     artifactId = artifactId,
     offset = offset,
@@ -90,27 +90,24 @@ object GetArtifact
       artifactId: Identifier,
       column: Option[Int],
       row: Option[String],
-    ): Response =
+    ): Seq[Caveat] =
     {
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match { 
         case Some(artifact) => 
-          return RawJsonResponse(
-            Json.toJson(
-              Explain(
-                s"SELECT * FROM ${artifact.nameInBackend}",
-                rows = row.map { Seq(_) }.getOrElse { null },
-                cols = column.map { col => 
-                          Seq(
-                            MimirAPI.catalog.get(artifact.nameInBackend)
-                                    .schema(col)
-                                    .name
-                          )
-                       }.getOrElse { null }
-              )
-            )
+          Explain(
+            s"SELECT * FROM ${artifact.nameInBackend}",
+            rows = row.map { Seq(_) }.getOrElse { null },
+            cols = column.map { col => 
+                      Seq(
+                        MimirAPI.catalog.get(artifact.nameInBackend)
+                                .schema(col)
+                                .name
+                      )
+                   }.getOrElse { null }
           )
-      case None => 
-        return NoSuchEntityResponse() 
+      
+        case None => 
+          ErrorResponse.noSuchEntity
       }
     }
   }
@@ -120,20 +117,18 @@ object GetArtifact
     def apply(
       projectId: Identifier,
       artifactId: Identifier
-    ): Response =
+    ): serialized.ArtifactSummary =
     {
       getArtifact(projectId, artifactId, None) match {
         case Some(artifact) => 
-          return RawJsonResponse(
             artifact.summarize()
-          )
         case None => 
-          return NoSuchEntityResponse() 
+          ErrorResponse.noSuchEntity
       }
     } 
   }
 
-  object CSV extends Handler
+  object CSV
   {
     def apply(
       projectId: Identifier,
@@ -181,7 +176,7 @@ object GetArtifact
 
 
   val SANE_FILE_CHARACTERS = "^([\\-_.,a-zA-Z0-9]*)$".r
-  object File extends Handler
+  object File
   {
     def apply(
       projectId: Identifier,

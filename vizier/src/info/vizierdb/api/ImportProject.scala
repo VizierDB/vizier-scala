@@ -33,13 +33,14 @@ import info.vizierdb.export.{ ImportProject => DoImport }
 import info.vizierdb.util.Streams.closeAfter
 import info.vizierdb.api.handler._
 import info.vizierdb.api.handler.ClientConnection
+import info.vizierdb.serialized
 
 object ImportProject
 {
   // override def filePart = Some("file")
   def apply(
     file: (InputStream, String), 
-  ): Response =
+  ): serialized.ProjectDescription =
   {
     val (content, _) = file
 
@@ -63,8 +64,8 @@ object ImportProject
 
     DB.readOnly { implicit session => 
       Project.getOption(projectId) match {
-        case Some(project) => RawJsonResponse(project.describe)
-        case None => NoSuchEntityResponse()
+        case Some(project) => project.describe
+        case None => ErrorResponse.noSuchEntity
       }
     } 
 

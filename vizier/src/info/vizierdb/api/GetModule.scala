@@ -24,6 +24,7 @@ import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Provenance
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 object GetModule
 {
@@ -32,7 +33,7 @@ object GetModule
     branchId: Identifier,
     modulePosition: Int,
     workflowId: Option[Identifier] = None
-  ): Response =
+  ): serialized.ModuleDescription =
   {
     DB.readOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
@@ -45,8 +46,7 @@ object GetModule
       val cellMaybe: Option[Cell] = 
         workflowMaybe.flatMap { _.cellByPosition(modulePosition) }
       cellMaybe match {
-        case Some(cell) => RawJsonResponse(
-          Json.toJson(
+        case Some(cell) => 
             cell.module.describe(
               cell = cell, 
               projectId = projectId, 
@@ -54,9 +54,7 @@ object GetModule
               workflowId = workflowMaybe.get.id,
               artifacts = Provenance.getRefScope(cell).values.toSeq
             )
-          )
-        )
-        case None => NoSuchEntityResponse()
+        case None => ErrorResponse.noSuchEntity
       }
     }
   } 

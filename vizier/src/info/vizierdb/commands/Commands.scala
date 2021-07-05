@@ -16,6 +16,7 @@ package info.vizierdb.commands
 
 import play.api.libs.json._
 import info.vizierdb.VizierException
+import info.vizierdb.serialized
 
 object Commands
 {
@@ -40,28 +41,24 @@ object Commands
     }
   } 
 
-  def toJson: JsValue =
+  def describe: Seq[serialized.PackageDescription] =
   {
-    JsArray(
-      packages.values.map { pkg => 
-        Json.obj(
-          "category" -> pkg.category,
-          "id"       -> pkg.id,
-          "name"     -> pkg.name,
-          "commands" -> JsArray(
-            pkg.commands.map { case (commandId, command) =>
-              var idx = 0
-              Json.obj(
-                "id" -> commandId,
-                "name" -> command.name,
-                "parameters" -> Parameter.describe(command.parameters),
-                "suggest" -> false
-              )
-            }.toSeq
-          ),
-        )
-      }.toSeq
-    )
+    packages.values.map { pkg => 
+      serialized.PackageDescription(
+        category = pkg.category,
+        id = pkg.id,
+        name = pkg.name,
+        commands = 
+          pkg.commands.map { case (commandId, command) =>
+            serialized.PackageCommand(
+              id = commandId,
+              name = command.name,
+              parameters = Parameter.describe(command.parameters),
+              suggest = Some(false)
+            )
+          }.toSeq
+      )
+    }.toSeq
   }
 
 

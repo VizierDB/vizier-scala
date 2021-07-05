@@ -31,7 +31,8 @@ import info.vizierdb.catalog.ArtifactSummary
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{ StructField, DataType }
-import info.vizierdb.catalog.serialized.ParameterArtifact
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
 import info.vizierdb.delta.DeltaBus
 
 class ExecutionContext(
@@ -150,7 +151,7 @@ class ExecutionContext(
    *
    * Parameters should be valid spark data values of the type provided.
    */
-  def parameter(name: String): Option[ParameterArtifact] =
+  def parameter(name: String): Option[serialized.ParameterArtifact] =
   {
     artifact(name)
       .filter { _.t == ArtifactType.PARAMETER }
@@ -171,7 +172,7 @@ class ExecutionContext(
     output(
       name, 
       ArtifactType.PARAMETER, 
-      Json.toJson(ParameterArtifact(value, dataType)).toString.getBytes
+      Json.toJson(serialized.ParameterArtifact.fromNative(value, dataType)).toString.getBytes
     )
   }
 

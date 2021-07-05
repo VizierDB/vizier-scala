@@ -26,31 +26,26 @@ import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 object CancelWorkflow
 {
-  override val summary = "Cancel a running workflow"
-
   def apply(
     projectId: Identifier,
     branchId: Identifier,
     workflowId: Option[Identifier] = None
-  ): Response =
+  ): serialized.WorkflowDescription =
   {
     var workflow:Workflow =
       DB.readOnly { implicit s => 
         workflowId match { 
           case None => 
             Branch.getOption(projectId, branchId)
-                  .getOrElse {
-                     return NoSuchEntityResponse()
-                  }
+                  .getOrElse { ErrorResponse.noSuchEntity }
                   .head
           case Some(id) =>
             Workflow.getOption(projectId, branchId, id)
-                    .getOrElse {
-                       return NoSuchEntityResponse()
-                    }
+                    .getOrElse { ErrorResponse.noSuchEntity }
         }
       }
 
@@ -62,11 +57,7 @@ object CancelWorkflow
     }
 
     DB.readOnly { implicit s => 
-      RawJsonResponse(
-        Json.toJson(
-          workflow.describe
-        )
-      )
+      workflow.describe
     }
   } 
 }

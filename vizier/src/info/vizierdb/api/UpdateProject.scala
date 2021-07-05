@@ -22,32 +22,28 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
-import info.vizierdb.serialized.PropertyList
+import info.vizierdb.serialized
 import info.vizierdb.serializers._
 
 object UpdateProject
 {
   def apply(
     projectId: Identifier,
-    properties: Option[PropertyList.T] = None,
+    properties: Option[serialized.PropertyList.T] = None,
     defaultBranch: Option[Identifier] = None
-  ): Response =
+  ): serialized.ProjectSummary =
   {
     val project: Project = 
       DB.autoCommit { implicit s => 
         var project = Project.getOption(projectId)
-                             .getOrElse { 
-                               return NoSuchEntityResponse()
-                             }
+                             .getOrElse { ErrorResponse.noSuchEntity }
         if(defaultBranch.isDefined){
           if(project.branchIds contains defaultBranch.get){
             project = project.activateBranch(defaultBranch.get)
-          } else {
-            return NoSuchEntityResponse()
-          }
+          } else { ErrorResponse.noSuchEntity }
         }
         if(properties.isDefined){
-          val saneProperties:Map[String, JsValue] = PropertyList.toMap(properties.get)
+          val saneProperties:Map[String, JsValue] = serialized.PropertyList.toMap(properties.get)
           project = project.updateProperties(
                               saneProperties.get("name")
                                             .map { _.as[String] }
@@ -57,8 +53,6 @@ object UpdateProject
         }
         /* return */ project
       }
-    RawJsonResponse(
-      project.summarize
-    )
+    project.summarize
   } 
 }

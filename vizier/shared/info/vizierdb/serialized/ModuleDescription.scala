@@ -13,9 +13,9 @@ case class ModuleDescription(
   command: CommandDescription,
   text: String,
   timestamps: Timestamps,
-  datasets: Seq[JsObject],
-  charts: Seq[JsObject],
-  artifacts: Seq[JsObject],
+  datasets: Seq[ArtifactSummary],
+  charts: Seq[ArtifactSummary],
+  artifacts: Seq[ArtifactSummary],
   outputs: ModuleOutputDescription,
   resultId: Option[String],
   links: HATEOAS.T

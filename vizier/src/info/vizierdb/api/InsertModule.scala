@@ -24,8 +24,9 @@ import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
-import info.vizierdb.serialized.PropertyList
+import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import org.apache.spark.deploy.rest.ErrorResponse
 
 object InsertModule
 {
@@ -35,9 +36,9 @@ object InsertModule
     modulePosition: Int,
     packageId: String,
     commandId: String,
-    arguments: PropertyList.T,
+    arguments: serialized.CommandArgumentList.T,
     workflowId: Option[Identifier] = None,
-  ): Response =
+  ): serialized.WorkflowDescription =
   {
     val command = Commands.get(packageId, commandId)
 
@@ -45,19 +46,15 @@ object InsertModule
       DB.autoCommit { implicit s => 
         val branch: (Branch) = 
           Branch.getOption(projectId, branchId)
-                .getOrElse { 
-                  return NoSuchEntityResponse()
-                }
+                .getOrElse { ErrorResponse.noSuchEntity }
         val cell = 
           branch.head
                 .cellByPosition(modulePosition)
-                .getOrElse {
-                  return NoSuchEntityResponse()
-                }
+                .getOrElse { ErrorResponse.noSuchEntity }
 
         if(workflowId.isDefined) {
           if(branch.headId != workflowId.get){
-            return VizierErrorResponse("Invalid", "Trying to modify an immutable workflow")
+            ErrorResponse.invalidRequest("Trying to modify an immutable workflow")
           }
         }
         
@@ -65,7 +62,7 @@ object InsertModule
           Module.make(
             packageId = packageId,
             commandId = commandId,
-            arguments = command.decodeReactArguments(arguments),
+            arguments = command.argumentsFromPropertyList(arguments),
             revisionOfId = None
           )
         
@@ -75,11 +72,7 @@ object InsertModule
     Scheduler.schedule(workflow.id)
 
     DB.readOnly { implicit s => 
-      RawJsonResponse(
-        Json.toJson(
-          workflow.describe
-        )
-      )
+      workflow.describe
     }
   } 
 }

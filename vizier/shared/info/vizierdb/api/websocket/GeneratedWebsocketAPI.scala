@@ -16,11 +16,11 @@ trait GeneratedWebsocketAPI
   def workflowCancel(projectId:Long, branchId:Long): serialized.WorkflowDescription
   def workflowQuery(projectId:Long, branchId:Long, query:String): DataContainer
   def workflowModules(projectId:Long, branchId:Long): Seq[serialized.ModuleDescription]
-  def workflowAppend(projectId:Long, branchId:Long, packageId:String, commandId:String, arguments:serialized.PropertyList.T): serialized.WorkflowDescription
+  def workflowAppend(projectId:Long, branchId:Long, packageId:String, commandId:String, arguments:serialized.CommandArgumentList.T): serialized.WorkflowDescription
   def workflowGetModule(projectId:Long, branchId:Long, modulePosition:Int): serialized.ModuleDescription
-  def workflowInsert(projectId:Long, branchId:Long, modulePosition:Int, packageId:String, commandId:String, arguments:serialized.PropertyList.T): serialized.WorkflowDescription
+  def workflowInsert(projectId:Long, branchId:Long, modulePosition:Int, packageId:String, commandId:String, arguments:serialized.CommandArgumentList.T): serialized.WorkflowDescription
   def workflowDelete(projectId:Long, branchId:Long, modulePosition:Int): serialized.WorkflowDescription
-  def workflowReplace(projectId:Long, branchId:Long, modulePosition:Int, packageId:String, commandId:String, arguments:serialized.PropertyList.T): serialized.WorkflowDescription
+  def workflowReplace(projectId:Long, branchId:Long, modulePosition:Int, packageId:String, commandId:String, arguments:serialized.CommandArgumentList.T): serialized.WorkflowDescription
   def workflowThawUpto(projectId:Long, branchId:Long, modulePosition:Int): serialized.WorkflowDescription
   def workflowThawOne(projectId:Long, branchId:Long, modulePosition:Int): serialized.WorkflowDescription
   def workflowFreezeFrom(projectId:Long, branchId:Long, modulePosition:Int): serialized.WorkflowDescription

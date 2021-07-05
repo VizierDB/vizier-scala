@@ -28,6 +28,7 @@ import info.vizierdb.viztrails.{ Scheduler, Provenance, StateTransition }
 import info.vizierdb.delta.DeltaBus
 import ExecutionState.{ WAITING, STALE, RUNNING, ERROR, CANCELLED, DONE, FROZEN }
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 /**
  * One branch of the project
@@ -446,34 +447,30 @@ case class Branch(
   /**
    * Generate a Branch Description, suitable for sending to a Vizier frontend
    */
-  def describe(implicit session:DBSession): JsObject =
-    JsObject(
-      summarize.value ++ Map(
-        "workflows" -> Json.toJson(workflows.map { _.summarize })
-      )
-    )
+  def describe(implicit session:DBSession): serialized.BranchDescription =
+    summarize.toDescription(workflows.map { _.summarize })
 
   /**
    * Generate a Branch Summary, suitable for sending to a Vizier frontend 
    * 
    * A Workflow Branch is a simplified Branch Description (does not contain workflows)
    */
-  def summarize(implicit session:DBSession): JsObject = 
-    Json.obj(
-      "id"             -> JsString(id.toString),
-      "createdAt"      -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(created),
-      "lastModifiedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(modified),
-      "sourceBranch"   -> createdFromBranchId.map { _.toString },
-      "sourceWorkflow" -> createdFromWorkflowId.map { _.toString },
-      "sourceModule"   -> createdFromModuleId.map { _.toString },
-      "isDefault"      -> Project.get(projectId).activeBranchId.equals(id),
-      "properties"     -> StupidReactJsonMap(properties.value.toMap, "name" -> JsString(name)),
-      HATEOAS.LINKS    -> HATEOAS(
+  def summarize(implicit session:DBSession): serialized.BranchSummary = 
+    serialized.BranchSummary(
+      id = id,
+      createdAt = created,
+      lastModifiedAt = modified,
+      sourceBranch = createdFromBranchId,
+      sourceWorkflow = createdFromWorkflowId,
+      sourceModule = createdFromModuleId,
+      isDefault = Project.get(projectId).activeBranchId.equals(id),
+      properties = serialized.PropertyList.toPropertyList(properties.value.toMap ++ Map("name" -> JsString(name))),
+      links = HATEOAS(
         HATEOAS.SELF           -> VizierAPI.urls.getBranch(projectId, id),
         HATEOAS.BRANCH_DELETE  -> VizierAPI.urls.deleteBranch(projectId, id),
         HATEOAS.BRANCH_HEAD    -> VizierAPI.urls.getBranchHead(projectId, id),
         HATEOAS.BRANCH_UPDATE  -> VizierAPI.urls.updateBranch(projectId, id),
-      ),
+      )
     )
 
   /**

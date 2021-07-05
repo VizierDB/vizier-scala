@@ -16,8 +16,7 @@ package info.vizierdb.commands
 
 import play.api.libs.json._
 import info.vizierdb.VizierException
-import info.vizierdb.util.StupidReactJsonMap
-import info.vizierdb.serialized.PropertyList
+import info.vizierdb.serialized
 
 trait Command
 {
@@ -156,22 +155,18 @@ trait Command
    * }
    * </pre>
    */
-  def decodeReactArguments(
-    arguments: PropertyList.T, 
+  def argumentsFromPropertyList(
+    arguments: serialized.CommandArgumentList.T, 
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x } 
   ): JsObject =
   {
     val saneArguments = 
-      arguments.as[Seq[Map[String,JsValue]]]
-               .map { arg => 
-                 arg("id").as[String] -> arg.getOrElse("value", JsNull)
-               }
-               .toMap
+      serialized.CommandArgumentList.toMap(arguments)
 
     JsObject(
       parameters.flatMap { param => 
         saneArguments.get(param.id).map { v => 
-          param.id -> param.convertFromReact(
+          param.id -> param.convertFromProperty(
             preprocess(param, v), 
             preprocess
           )
@@ -187,21 +182,14 @@ trait Command
    * 
    * See [[decodeReactArguments]]; This is the inverse
    */
-  def encodeReactArguments(
+  def propertyListFromArguments(
     arguments: JsObject
-  ): JsArray = 
-  {
-    JsArray(
-      parameters.flatMap { param => 
-        arguments.value.get(param.id).map { j => 
-          Json.obj(
-            "id" -> param.id,
-            "value" -> param.convertToReact(j)
-          )
-        }
+  ): serialized.CommandArgumentList.T = 
+    parameters.flatMap { param => 
+      arguments.value.get(param.id).map { j => 
+        serialized.CommandArgument(id = param.id, value = param.convertToProperty(j))
       }
-    )
-  }
+    }
 
   /**
    * Predict the provenance (inputs and outputs) of this command from arguments

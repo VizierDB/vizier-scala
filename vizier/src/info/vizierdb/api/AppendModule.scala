@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.viztrails.Scheduler
-import info.vizierdb.serialized.PropertyList
+import info.vizierdb.serialized
 import info.vizierdb.serializers._
 
 object AppendModule
@@ -38,9 +38,9 @@ object AppendModule
     branchId: Identifier,
     packageId: String,
     commandId: String,
-    arguments: PropertyList.T,
+    arguments: serialized.CommandArgumentList.T,
     workflowId: Option[Identifier] = None,
-  ): Response = 
+  ): serialized.WorkflowDescription = 
   {
     val command = Commands.get(packageId, commandId)
 
@@ -49,14 +49,12 @@ object AppendModule
         logger.trace(s"Looking up branch $branchId")
         val branch:Branch =
           Branch.getOption(projectId, branchId)
-                .getOrElse { 
-                   return NoSuchEntityResponse()
-                }
+                .getOrElse { ErrorResponse.noSuchEntity }
         val currentWorkflow = branch.head
 
         if(workflowId.isDefined) {
           if(branch.headId != workflowId.get){
-            return VizierErrorResponse("Invalid", "Trying to modify an immutable workflow")
+            ErrorResponse.invalidRequest("Trying to modify an immutable workflow")
           }
         }
 
@@ -66,7 +64,7 @@ object AppendModule
           Module.make(
             packageId = packageId,
             commandId = commandId,
-            arguments = command.decodeReactArguments(arguments),
+            arguments = command.argumentsFromPropertyList(arguments),
             revisionOfId = None
           )
 
@@ -88,11 +86,7 @@ object AppendModule
     logger.trace("Building response")
 
     DB.readOnly { implicit s => 
-      RawJsonResponse(
-        Json.toJson(
-          workflow.describe
-        )
-      )
+      workflow.describe
     }
   } 
 }

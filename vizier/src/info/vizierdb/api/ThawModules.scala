@@ -27,6 +27,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 object ThawModules
   extends Object
@@ -37,20 +38,18 @@ object ThawModules
     branchId: Identifier,
     modulePosition: Int,
     workflowId: Option[Identifier] = None,
-  ): Response =
+  ): serialized.WorkflowDescription =
   {
     val workflow: Workflow = 
       DB.autoCommit { implicit s => 
         logger.trace(s"Looking up branch $branchId")
         val branch:Branch =
           Branch.getOption(projectId, branchId)
-                .getOrElse { 
-                   return NoSuchEntityResponse()
-                }
+                .getOrElse { ErrorResponse.noSuchEntity }
 
         if(workflowId.isDefined) {
           if(branch.headId != workflowId.get){
-            return VizierErrorResponse("Invalid", "Trying to modify an immutable workflow")
+            ErrorResponse.invalidRequest("Trying to modify an immutable workflow")
           }
         }
 
@@ -69,11 +68,7 @@ object ThawModules
     logger.trace("Building response")
 
     DB.readOnly { implicit s => 
-      RawJsonResponse(
-        Json.toJson(
-          workflow.describe
-        )
-      )
+      workflow.describe
     }
   } 
 }

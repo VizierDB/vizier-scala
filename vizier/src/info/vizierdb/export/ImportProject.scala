@@ -51,7 +51,7 @@ object ImportProject
                 .getOrElse {
                   throw new VizierException(s"Cannot import.  Unsupported command ${command.packageId}.${command.commandId}")
                 }
-                .decodeReactArguments(
+                .argumentsFromPropertyList(
                   command.arguments,
                   (param, arg) => {
                     param match {

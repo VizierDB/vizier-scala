@@ -21,18 +21,15 @@ import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 object ListTasks
 {
-  def apply() = 
+  def apply(): Seq[serialized.WorkflowSummary] = 
   {
     DB.readOnly { implicit session => 
-      RawJsonResponse(
-        Json.toJson(
-          Scheduler.running
-                   .map { workflow => workflow.summarize }
-        )
-      )
+      Scheduler.running
+               .map { workflow => workflow.summarize }
     }
   } 
 }

@@ -25,7 +25,7 @@ import info.vizierdb.serializers._
 import info.vizierdb.nativeTypes.datasetColumnToStructField
 import org.mimirdb.api.request.LoadInlineRequest
 import info.vizierdb.api.response._
-import info.vizierdb.serialized.PropertyList
+import info.vizierdb.serialized
 
 object CreateDataset
 {
@@ -35,16 +35,14 @@ object CreateDataset
     columns: Seq[DatasetColumn],
     rows: Seq[DatasetRow],
     name: Option[String],
-    properties: Option[PropertyList.T],
+    properties: Option[serialized.PropertyList.T],
     annotations: Option[DatasetAnnotation]
-  ): Response =
+  ): serialized.ArtifactSummary =
   {
     DB.autoCommit { implicit s => 
       val project = 
         Project.getOption(projectId)
-               .getOrElse { 
-                  return NoSuchEntityResponse()
-               }
+               .getOrElse { ErrorResponse.noSuchEntity }
 
       val artifact = Artifact.make(
         project.id, 
@@ -58,13 +56,11 @@ object CreateDataset
         data = rows.map { _.values },
         dependencies = None,
         resultName = Some(artifact.nameInBackend),
-        properties = properties.map { PropertyList.toMap(_) },
+        properties = properties.map { serialized.PropertyList.toMap(_) },
         humanReadableName = name
       ).handle
 
-      RawJsonResponse(
-        artifact.summarize(name.getOrElse { null })
-      )
+      artifact.summarize(name.getOrElse { null })
     }
   } 
 }

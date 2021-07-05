@@ -16,7 +16,7 @@ package info.vizierdb.delta
 
 import scalikejdbc.DBSession
 import info.vizierdb.types._
-import info.vizierdb.catalog.serialized.ModuleDescription
+import info.vizierdb.serialized
 
 case class CellState(
   moduleId: String,
@@ -26,7 +26,7 @@ case class CellState(
 )
 object CellState
 {
-  def apply(description: ModuleDescription): CellState =
+  def apply(description: serialized.ModuleDescription): CellState =
     CellState(
       description.moduleId.toString,
       description.resultId,

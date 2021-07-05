@@ -20,7 +20,8 @@ import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import org.mimirdb.api.request.DataContainer
 import java.time.ZonedDateTime
-import info.vizierdb.serialized.MessageDescription
+import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 
 case class DatasetMessage(
@@ -33,7 +34,7 @@ case class DatasetMessage(
   created: ZonedDateTime
 )
 {
-  def describe(implicit session: DBSession): JsValue =
+  def describe(implicit session: DBSession): serialized.ArtifactDescription =
   {
     // how we proceed depends on whether we have a cached data container
     dataCache match { 
@@ -46,24 +47,23 @@ case class DatasetMessage(
       // otoh, if we have a cache, we need to work around Artifact
       case Some(cache) => 
         {
-          val (fields, links) =
-            Artifact.translateDatasetContainerToVizierClassic(
-              projectId = projectId,
-              artifactId = artifactId,
-              data = cache,
-              offset = offset,
-              limit = cache.data.size,
-              rowCount = rowCount
+          val base = 
+            Artifact.summarize(
+              artifactId = artifactId, 
+              projectId = projectId, 
+              t = ArtifactType.DATASET, 
+              created = created, 
+              mimeType = MIME.DATASET_VIEW, 
+              name = name
             )
-          Artifact.summarize(
-            artifactId = artifactId, 
-            projectId = projectId, 
-            t = ArtifactType.DATASET, 
-            created = created, 
-            mimeType = MIME.DATASET_VIEW, 
-            name = name,
-            extraHateoas = links,
-            extraFields = fields
+          Artifact.translateDatasetContainerToVizierClassic(
+            projectId = projectId,
+            artifactId = artifactId,
+            data = cache,
+            offset = offset,
+            limit = cache.data.size,
+            rowCount = rowCount,
+            base = base
           )
         }
 
@@ -85,13 +85,13 @@ case class Message(
 {
   def dataString: String = new String(data)
 
-  def describe(implicit session: DBSession): MessageDescription = 
+  def describe(implicit session: DBSession): serialized.MessageDescription = 
     try { 
       val t = MessageType.withName(mimeType)
-      MessageDescription(
+      serialized.MessageDescription(
         `type` = t,
         value = (t match {
-          case MessageType.DATASET => Json.parse(data).as[DatasetMessage].describe
+          case MessageType.DATASET => Json.toJson(Json.parse(data).as[DatasetMessage].describe)
           case MessageType.CHART => Json.parse(data)
           case MessageType.JAVASCRIPT => Json.parse(data)
           case MessageType.HTML => JsString(new String(data))
@@ -100,7 +100,7 @@ case class Message(
       )
     } catch {
       case e: Throwable => 
-        MessageDescription(
+        serialized.MessageDescription(
           `type` = MessageType.TEXT,
           value  = JsString(s"Error retrieving message: $e")
         )

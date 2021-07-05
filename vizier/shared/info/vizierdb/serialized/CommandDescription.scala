@@ -17,5 +17,5 @@ package info.vizierdb.serialized
 case class CommandDescription(
   packageId: String,
   commandId: String,
-  arguments: PropertyList.T
+  arguments: CommandArgumentList.T,
 )

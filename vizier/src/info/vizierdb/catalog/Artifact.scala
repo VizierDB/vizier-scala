@@ -36,7 +36,7 @@ import info.vizierdb.util.StupidReactJsonMap
 import org.locationtech.jts.geom.Geometry
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.types.StructField
-import info.vizierdb.serialized.ParameterArtifact
+import info.vizierdb.serialized
 import info.vizierdb.serializers._
 
 case class Artifact(
@@ -53,32 +53,38 @@ case class Artifact(
   def absoluteFile: File = Filestore.getAbsolute(projectId, id)
   def relativeFile: File = Filestore.getRelative(projectId, id)
   def file = absoluteFile
-  def parameter = json.as[ParameterArtifact]
+  def parameter = json.as[serialized.ParameterArtifact]
   def json = Json.parse(string)
-  def summarize(name: String = null) = 
+  def summarize(name: String = null): serialized.ArtifactSummary = 
   {
     val extras:Map[String,JsValue] = t match {
-      case ArtifactType.DATASET => 
-        Map(
-          "columns" -> 
-            JsArray(
-              getSchema()
-                .schema
-                .zipWithIndex
-                .map { case (field, idx) => 
-                  Json.toJson(
-                    Map(
-                      "id" -> JsNumber(idx),
-                      "name" -> JsString(field.name),
-                      "type" -> JsString(SparkSchema.encodeType(field.dataType))
-                    )
-                  )
-                }
-            )
-        )
       case _ => Map.empty
     }
-    Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
+    val base = Artifact.summarize(
+                  artifactId = id, 
+                  projectId = projectId, 
+                  t = t, 
+                  created = created, 
+                  mimeType = mimeType, 
+                  name = Option(name)
+                )
+    t match {
+      case ArtifactType.DATASET => 
+        base.toDatasetSummary(
+          columns = getSchema()
+                     .schema
+                     .zipWithIndex
+                     .map { case (field, idx) => 
+                              serialized.DatasetColumn(
+                                id = idx, 
+                                name = field.name, 
+                                `type` = field.dataType
+                              ) 
+                          }
+        )
+      case _ => base
+
+    }
   }
   def jsonData = Json.parse(data)
 
@@ -88,53 +94,51 @@ case class Artifact(
     offset: Option[Long] = None, 
     limit: Option[Int] = None, 
     forceProfiler: Boolean = false
-  ): JsObject = 
+  ): serialized.ArtifactDescription = 
   {
-    val (extensions, links): (Map[String,JsValue], Seq[(String,URL)]) = 
-      t match { 
-        case ArtifactType.DATASET => 
-          {
-            val actualLimit = 
-              limit.getOrElse { VizierAPI.MAX_DOWNLOAD_ROW_LIMIT }
+    val base = 
+      Artifact.summarize(
+        artifactId = id, 
+        projectId = projectId, 
+        t = t, 
+        created = created, 
+        mimeType = mimeType, 
+        name = Option(name)
+      )
+    t match { 
+      case ArtifactType.DATASET => 
+        {
+          val actualLimit = 
+            limit.getOrElse { VizierAPI.MAX_DOWNLOAD_ROW_LIMIT }
 
-            val data =  getDataset(
-                          offset = offset, 
-                          limit = Some(actualLimit), 
-                          forceProfiler = forceProfiler, 
-                          includeUncertainty = true
-                        )
-            val rowCount: Long = 
-                data.properties
-                    .get("count")
-                    .map { _.as[Long] }
-                    .getOrElse { MimirAPI.catalog
-                                         .get(nameInBackend)
-                                         .count() }
+          val data =  getDataset(
+                        offset = offset, 
+                        limit = Some(actualLimit), 
+                        forceProfiler = forceProfiler, 
+                        includeUncertainty = true
+                      )
+          val rowCount: Long = 
+              data.properties
+                  .get("count")
+                  .map { _.as[Long] }
+                  .getOrElse { MimirAPI.catalog
+                                       .get(nameInBackend)
+                                       .count() }
 
-            Artifact.translateDatasetContainerToVizierClassic(
-              projectId = projectId,
-              artifactId = id,
-              data = data,
-              offset = offset.getOrElse { 0 },
-              limit = actualLimit,
-              rowCount = rowCount
-            )
-            
-          }
+          Artifact.translateDatasetContainerToVizierClassic(
+            projectId = projectId,
+            artifactId = id,
+            data = data,
+            offset = offset.getOrElse { 0 },
+            limit = actualLimit,
+            rowCount = rowCount,
+            base = base
+          )
+        }
         case ArtifactType.BLOB | ArtifactType.FUNCTION | ArtifactType.FILE | ArtifactType.CHART => 
-          (Map.empty, Seq.empty)
+          base
       }
 
-    Artifact.summarize(
-      artifactId = id, 
-      projectId = projectId, 
-      t = t, 
-      created = created, 
-      mimeType = mimeType, 
-      name = Option(name),
-      extraHateoas = links,
-      extraFields = extensions,
-    )
   }
 
   def getDataset(
@@ -190,30 +194,36 @@ case class ArtifactSummary(
 )
 {
   def nameInBackend = Artifact.nameInBackend(t, id)
-  def summarize(name: String = null) = 
+  def summarize(name: String = null): serialized.ArtifactSummary = 
   {
     val extras:Map[String,JsValue] = t match {
-      case ArtifactType.DATASET => 
-        Map(
-          "columns" -> 
-            JsArray(
-              getSchema()
-                .schema
-                .zipWithIndex
-                .map { case (field, idx) => 
-                  Json.toJson(
-                    Map(
-                      "id" -> JsNumber(idx),
-                      "name" -> JsString(field.name),
-                      "type" -> JsString(SparkSchema.encodeType(field.dataType))
-                    )
-                  )
-                }
-            )
-        )
       case _ => Map.empty
     }
-    Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
+    val base = Artifact.summarize(
+                  artifactId = id, 
+                  projectId = projectId, 
+                  t = t, 
+                  created = created, 
+                  mimeType = mimeType, 
+                  name = Option(name)
+                )
+    t match {
+      case ArtifactType.DATASET => 
+        base.toDatasetSummary(
+          columns = getSchema()
+                     .schema
+                     .zipWithIndex
+                     .map { case (field, idx) => 
+                              serialized.DatasetColumn(
+                                id = idx, 
+                                name = field.name, 
+                                `type` = field.dataType
+                              ) 
+                          }
+        )
+      case _ => base
+
+    }
   }
   def absoluteFile: File = Filestore.getAbsolute(projectId, id)
   def relativeFile: File = Filestore.getRelative(projectId, id)
@@ -312,16 +322,15 @@ object Artifact
     created: ZonedDateTime, 
     mimeType: String, 
     name: Option[String],
-    extraHateoas: Seq[(String, URL)] = Seq.empty,
-    extraFields: Map[String, JsValue] = Map.empty
-  ): JsObject =
-    JsObject(Map(
-      "key" -> JsNumber(artifactId),
-      "id" -> JsNumber(artifactId),
-      "objType" -> JsString(mimeType), 
-      "category" -> JsString(t.toString.toLowerCase()),
-      "name" -> JsString(name.getOrElse(artifactId.toString)),
-      HATEOAS.LINKS -> HATEOAS((
+    extraHateoas: Seq[(String, URL)] = Seq.empty
+  ): serialized.StandardArtifact =
+    serialized.StandardArtifact(
+      key = artifactId,
+      id = artifactId,
+      objType = mimeType,
+      category = t,
+      name = name.getOrElse { s"$t $artifactId" },
+      links = HATEOAS((
         Seq(
           HATEOAS.SELF -> urlForArtifact(artifactId, projectId, t)
         ) ++ (t match {
@@ -332,8 +341,8 @@ object Artifact
           )
           case _ => Seq()
         }) ++ extraHateoas
-      ):_*),
-    ) ++ extraFields)
+      ):_*)
+    )
 
   /**
    * Translate a Mimir DataContainer to something the frontend UI wants to see
@@ -343,46 +352,42 @@ object Artifact
    * similar structures elsewhere (e.g., when we want to cache a DataContainer)
    */
   def translateDatasetContainerToVizierClassic(
+    base: serialized.StandardArtifact,
     projectId: Identifier,
     artifactId: Identifier, 
     data: DataContainer,
     offset: Long,
     limit: Int,
-    rowCount: Long
-  ): (Map[String,JsValue],Seq[(String, URL)]) = 
+    rowCount: Long,
+  ): serialized.DatasetDescription = 
   {
-    (
-      Map(
-        "columns"    -> JsArray(data.schema.zipWithIndex.map { case (field, idx) => 
-                          Json.obj(
-                            "id" -> idx,
-                            "name" -> field.name,
-                            "type" -> SparkSchema.encodeType(field.dataType)
-                          )
-                        }),
-        "rows"       -> JsArray(
-          data.data
-              .zip(data.prov)
-              .zip(data.rowTaint.zip(data.colTaint))
-              .map { case ((row, rowid), (rowCaveatted, attrCaveats)) => 
-                Json.obj(
-                  "id" -> rowid,
-                  "values" -> JsArray(
-                    data.schema.zip(row)
-                        .map { 
-                          case (col, v) => SparkPrimitive.encode(v, col.dataType) 
-                        }
-                  ),
-                  "rowAnnotationFlags" -> JsArray(attrCaveats.map { c => JsBoolean(!c) }),
-                  "rowIsAnnotated"     -> rowCaveatted
-                )
-              }
-        ),
-        "rowCount"   -> JsNumber(rowCount),
-        "offset"     -> JsNumber(offset),
-        "properties" -> JsObject(data.properties)
-      ),
-      Seq(
+    base.toDatasetDescription(
+      columns = 
+        data.schema.zipWithIndex.map { case (field, idx) =>
+          serialized.DatasetColumn(id = idx, name = field.name, `type` = field.dataType)
+        },
+      rows =
+        data.data
+            .zip(data.prov)
+            .zip(data.rowTaint.zip(data.colTaint))
+            .map { case ((row, rowid), (rowCaveatted, attrCaveats)) => 
+              serialized.DatasetRow(
+                id = rowid,
+                values = 
+                  data.schema.zip(row)
+                      .map { 
+                        case (col, v) => SparkPrimitive.encode(v, col.dataType) 
+                      },
+                rowAnnotationFlags =
+                  Some(attrCaveats.map { c => !c }),
+                rowIsAnnotated = 
+                  Some(rowCaveatted)
+              ) 
+            },
+      rowCount = rowCount,
+      offset = offset,
+      properties = serialized.PropertyList.toPropertyList(data.properties),
+      extraLinks = HATEOAS(
         HATEOAS.PAGE_FIRST -> (if(offset <= 0){ null }
                                else { VizierAPI.urls.getDataset(
                                         projectId, artifactId, 

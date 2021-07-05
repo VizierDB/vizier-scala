@@ -24,34 +24,31 @@ import info.vizierdb.commands.Commands
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 object ServiceDescriptor
 {
-  def apply() =
-  {
-    RawJsonResponse(
-      Json.obj(
-        "name" -> JsString(VizierAPI.NAME),
-        "startedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(VizierAPI.started),
-        "defaults" -> Json.obj(
-          "maxFileSize" -> VizierAPI.MAX_UPLOAD_SIZE,
-          "maxDownloadRowLimit" -> VizierAPI.MAX_DOWNLOAD_ROW_LIMIT
-        ),
-        "environment" -> Json.obj(
-          "name" -> VizierAPI.SERVICE_NAME,
-          "version" -> VizierAPI.VERSION,
-          "backend" -> VizierAPI.BACKEND,
-          "packages" -> Commands.toJson
-        ),
-        HATEOAS.LINKS -> HATEOAS(
-          HATEOAS.SELF           -> VizierAPI.urls.serviceDescriptor,
-          HATEOAS.API_DOC        -> VizierAPI.urls.apiDoc,
-          HATEOAS.PROJECT_CREATE -> VizierAPI.urls.createProject,
-          HATEOAS.PROJECT_LIST   -> VizierAPI.urls.listProjects,
-          HATEOAS.PROJECT_IMPORT -> VizierAPI.urls.importProject,
-        )
+  def apply(): serialized.ServiceDescriptor =
+    serialized.ServiceDescriptor(
+      name = VizierAPI.NAME,
+      startedAt = VizierAPI.started,
+      defaults = serialized.ServiceDescriptorDefaults(
+        maxFileSize = VizierAPI.MAX_UPLOAD_SIZE,
+        maxDownloadRowLimit = VizierAPI.MAX_DOWNLOAD_ROW_LIMIT
+      ),
+      environment = serialized.ServiceDescriptorEnvironment(
+        name = VizierAPI.SERVICE_NAME,
+        version = VizierAPI.VERSION,
+        backend = VizierAPI.BACKEND,
+        packages = Commands.describe
+      ),
+      links = HATEOAS(
+        HATEOAS.SELF           -> VizierAPI.urls.serviceDescriptor,
+        HATEOAS.API_DOC        -> VizierAPI.urls.apiDoc,
+        HATEOAS.PROJECT_CREATE -> VizierAPI.urls.createProject,
+        HATEOAS.PROJECT_LIST   -> VizierAPI.urls.listProjects,
+        HATEOAS.PROJECT_IMPORT -> VizierAPI.urls.importProject,
       )
     )
-  }
 }
 

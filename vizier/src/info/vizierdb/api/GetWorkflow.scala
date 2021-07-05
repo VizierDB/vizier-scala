@@ -23,6 +23,7 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 object GetWorkflow
 {
@@ -30,7 +31,7 @@ object GetWorkflow
     projectId: Identifier, 
     branchId: Identifier, 
     workflowId: Option[Identifier] = None
-  ): Response =
+  ): serialized.WorkflowDescription =
   {
     DB.readOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
@@ -41,8 +42,8 @@ object GetWorkflow
             Branch.getOption(projectId, branchId).map { _.head }
         } 
       workflowMaybe match {
-        case Some(workflow) => RawJsonResponse(Json.toJson(workflow.describe))
-        case None => NoSuchEntityResponse()
+        case Some(workflow) => workflow.describe
+        case None => ErrorResponse.noSuchEntity
       }
     }
   } 

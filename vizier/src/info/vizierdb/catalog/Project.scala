@@ -25,6 +25,7 @@ import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
 import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.serialized
 
 /**
  * A vistrails project.  The project may have an optional set of user-defined properties.
@@ -170,21 +171,17 @@ case class Project(
     this.copy(activeBranchId = branchId, modified = now)
   }
 
-  def describe(implicit session:DBSession): JsObject =
-    JsObject(
-      summarize.value ++ Map(
-        "branches" -> JsArray(branches.map { _.summarize })
-      )
-    )
+  def describe(implicit session:DBSession): serialized.ProjectDescription =
+    summarize.toDescription(branches.map { _.summarize })
 
-  def summarize: JsObject = 
-    Json.obj(
-      "id"             -> id.toString,
-      "createdAt"      -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(created),
-      "lastModifiedAt" -> DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(modified),
-      "defaultBranch"  -> activeBranchId.toString,
-      "properties"     -> StupidReactJsonMap(properties.value.toMap, "name" -> JsString(name)),
-      HATEOAS.LINKS    -> HATEOAS(
+  def summarize: serialized.ProjectSummary = 
+    serialized.ProjectSummary(
+      id = id,
+      createdAt = created,
+      lastModifiedAt = modified,
+      defaultBranch = activeBranchId,
+      properties = serialized.PropertyList.toPropertyList(properties.value.toMap ++ Map("name" -> JsString(name))),
+      links = HATEOAS(
         HATEOAS.SELF           -> VizierAPI.urls.getProject(id),
         HATEOAS.API_HOME       -> VizierAPI.urls.serviceDescriptor,
         HATEOAS.API_DOC        -> VizierAPI.urls.apiDoc,

@@ -23,24 +23,23 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
+import info.vizierdb.serialized
 
 object ListBranches
 {
-  def apply(projectId: Identifier): Response =
+  def apply(projectId: Identifier): serialized.BranchList =
   {
     DB.readOnly { implicit session => 
       Project.getOption(projectId)
         match { 
           case Some(project) => 
-            RawJsonResponse(
-              Json.obj(
-                "branches" -> JsArray(project.branches.map { _.summarize }),
-                HATEOAS.LINKS -> HATEOAS(
-                  HATEOAS.SELF -> VizierAPI.urls.listBranches(projectId)
-                )
+            serialized.BranchList(
+              branches = project.branches.map { _.summarize },
+              links = HATEOAS(
+                HATEOAS.SELF -> VizierAPI.urls.listBranches(projectId)
               )
             )
-          case None => NoSuchEntityResponse()
+          case None => ErrorResponse.noSuchEntity
         }
     }
   }

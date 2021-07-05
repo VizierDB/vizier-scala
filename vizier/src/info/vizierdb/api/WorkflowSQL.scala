@@ -24,6 +24,7 @@ import org.mimirdb.api.request.QueryMimirRequest
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
+import org.mimirdb.api.request.DataContainer
 
 object WorkflowSQL
   extends Object
@@ -34,7 +35,7 @@ object WorkflowSQL
     branchId: Identifier,
     query: Option[String],
     workflowId: Option[Identifier] = None
-  ): Response =
+  ): DataContainer =
   {
     val (datasets, functions) = 
       DB.readOnly { implicit session => 
@@ -44,9 +45,7 @@ object WorkflowSQL
               Workflow.getOption(projectId, branchId, workflowIdActual)
             case None => 
               Branch.getOption(projectId, branchId).map { _.head }
-          }).getOrElse {
-            return NoSuchEntityResponse()
-          }
+          }).getOrElse { ErrorResponse.noSuchEntity }
 
         val artifacts: Seq[(String, ArtifactSummary)] = 
           workflow.outputArtifacts

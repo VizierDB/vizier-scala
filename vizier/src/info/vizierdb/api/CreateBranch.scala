@@ -22,18 +22,18 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
-import info.vizierdb.serialized.BranchSource
-import info.vizierdb.serialized.PropertyList
+import info.vizierdb.serialized
+import info.vizierdb.serialized
 
 object CreateBranch
 {
   def apply(
     projectId: Identifier,
-    source: Option[BranchSource],
-    properties: PropertyList.T
-  ): Response = 
+    source: Option[serialized.BranchSource],
+    properties: serialized.PropertyList.T
+  ): serialized.BranchSummary = 
   {
-    val saneProperties = PropertyList.toMap(properties)
+    val saneProperties = serialized.PropertyList.toMap(properties)
     val branchName =
       saneProperties.get("name")
                     .map { _.as[String] }
@@ -41,19 +41,14 @@ object CreateBranch
     DB.autoCommit { implicit s => 
       val (project, branch, workflow): (Project, Branch, Workflow) = 
         Project.getOption(projectId)
-               .getOrElse { 
-                 return NoSuchEntityResponse()
-               }
+               .getOrElse { ErrorResponse.noSuchEntity }
                .createBranch(
                  name = branchName,
                  properties = JsObject(saneProperties),
                  fromBranch = source.map { _.branchId },
                  fromWorkflow = source.flatMap { _.workflowId }
                )
-      RawJsonResponse(
-        branch.summarize,
-        status = HttpServletResponse.SC_CREATED
-      )
+      branch.summarize,
     }
   } 
 }

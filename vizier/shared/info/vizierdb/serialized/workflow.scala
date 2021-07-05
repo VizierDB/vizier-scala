@@ -3,11 +3,10 @@ package info.vizierdb.serialized
 import java.time.ZonedDateTime
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.nativeTypes.JsObject
-import info.vizierdb.catalog.ArtifactSummary
 
 case class WorkflowSummary(
   id: String,
-  createdAt: String,
+  createdAt: ZonedDateTime,
   action: String,
   packageId: Option[String],
   commandId: Option[String],
@@ -17,8 +16,8 @@ case class WorkflowSummary(
   def toDescription(
     state: Int,
     modules: Seq[ModuleDescription],
-    datasets: Map[String,ArtifactSummary],
-    dataobjects: Map[String,ArtifactSummary],
+    datasets: Seq[ArtifactSummary],
+    dataobjects: Seq[ArtifactSummary],
     readOnly: Boolean,
     tableOfContents: Option[Seq[TableOfContentsEntry]],
     newLinks: HATEOAS.T
@@ -41,14 +40,14 @@ case class WorkflowSummary(
 
 case class WorkflowDescription(
   id: String,
-  createdAt: String,
+  createdAt: ZonedDateTime,
   action: String,
   packageId: Option[String],
   commandId: Option[String],
   state: Int,
   modules: Seq[ModuleDescription],
-  datasets: Map[String,ArtifactSummary],
-  dataobjects: Map[String,ArtifactSummary],
+  datasets: Seq[ArtifactSummary],
+  dataobjects: Seq[ArtifactSummary],
   readOnly: Boolean,
   tableOfContents: Option[Seq[TableOfContentsEntry]],
   links: HATEOAS.T

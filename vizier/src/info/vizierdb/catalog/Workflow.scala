@@ -300,7 +300,7 @@ case class Workflow(
   def makeSummary(branch: Branch, actionModule: Option[Module]): serialized.WorkflowSummary =
     serialized.WorkflowSummary(
       id          = id.toString,
-      createdAt   = Timestamps.format(created),
+      createdAt   = created,
       action      = action.toString,
       packageId   = actionModule.map { _.packageId },
       commandId   = actionModule.map { _.commandId },

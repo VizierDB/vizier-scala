@@ -24,6 +24,7 @@ import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
+import info.vizierdb.serialized
 
 object DeleteModule
 {
@@ -32,25 +33,21 @@ object DeleteModule
     branchId: Identifier,
     modulePosition: Int,
     workflowId: Option[Identifier] = None,
-  ): Response =
+  ): serialized.WorkflowDescription =
   {
     val workflow = 
       DB.autoCommit { implicit s => 
         val branch = 
           Branch.getOption(projectId = projectId, branchId = branchId)
-                 .getOrElse { 
-                    return NoSuchEntityResponse()
-                 }
+                 .getOrElse { ErrorResponse.noSuchEntity }
         if(workflowId.isDefined) {
           if(branch.headId != workflowId.get){
-            return VizierErrorResponse("Invalid", "Trying to modify an immutable workflow")
+            ErrorResponse.invalidRequest("Trying to modify an immutable workflow")
           }
         }
         val cellToDelete =
           branch.head.cellByPosition(modulePosition)
-                .getOrElse {
-                    return NoSuchEntityResponse()
-                }
+                .getOrElse { ErrorResponse.noSuchEntity }
         branch.delete(cellToDelete.position)._2
       }
 
@@ -58,11 +55,7 @@ object DeleteModule
     Scheduler.schedule(workflow.id)
 
     DB.readOnly { implicit s => 
-      return RawJsonResponse(
-        Json.toJson(
-          workflow.describe
-        )
-      )
+      workflow.describe
     }
   }
 }
