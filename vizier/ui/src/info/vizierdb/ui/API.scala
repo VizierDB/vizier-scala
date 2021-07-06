@@ -1,7 +1,7 @@
 package info.vizierdb.ui
 
 import scala.scalajs.js
-import scala.scalajs.js.JSON
+import play.api.libs.json._
 import org.scalajs.dom.ext.Ajax
 
 import info.vizierdb.VizierURLs
@@ -9,9 +9,10 @@ import info.vizierdb.types._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import info.vizierdb.encoding
+import info.vizierdb.serialized
 import info.vizierdb.ui.components.Parameter
 import info.vizierdb.util.Logging
+import info.vizierdb.serializers._
 
 case class API(baseUrl: String)
   extends Object
@@ -19,14 +20,14 @@ case class API(baseUrl: String)
 {
   val urls = new VizierURLs(baseUrl)
 
-  def packages(): Future[Seq[encoding.PackageDescriptor]] =
+  def packages(): Future[Seq[serialized.PackageDescription]] =
   {
     Ajax.get(
       urls.serviceDescriptor.toString
     ).map { xhr => 
-      JSON.parse(
+      Json.parse(
         xhr.responseText
-      ).asInstanceOf[encoding.ServiceDescriptor]
+      ).as[serialized.ServiceDescriptor]
        .environment
        .packages
        .toSeq
@@ -39,40 +40,28 @@ case class API(baseUrl: String)
 
   def project(
     projectId: Identifier
-  ): Future[encoding.ProjectDescription] =
+  ): Future[serialized.ProjectDescription] =
   {
     Ajax.get(
       urls.getProject(projectId).toString
     ).map { xhr =>
-      val response = JSON.parse(
+      Json.parse(
         xhr.responseText
-      )
-      if(response.id.equals(js.undefined)){
-        if(response.message.equals(js.undefined)){
-          throw new Exception("Unexpected error fetching project")
-        } else {
-          throw new Exception(s"While fetching project: ${response.message}")
-        }
-      }
-      response
-    }.map {
-      _.asInstanceOf[encoding.ProjectDescription]
+      ).as[serialized.ProjectDescription]
     }
   }
 
   def branch(
     projectId: Identifier, 
     branchId: Identifier
-  ): Future[encoding.BranchDescription] =
+  ): Future[serialized.BranchDescription] =
   {
     Ajax.get(
       urls.getBranch(projectId, branchId).toString
     ).map { xhr =>
-      JSON.parse(
+      Json.parse(
         xhr.responseText
-      )
-    }.map {
-      _.asInstanceOf[encoding.BranchDescription]
+      ).as[serialized.BranchDescription]
     }
   }
 

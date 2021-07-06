@@ -208,7 +208,7 @@ object Scheduler
       position = cell.position,
       outputs = context.outputs.map { 
         case (name, None) => DeltaOutputArtifact.fromDeletion(name)
-        case (name, Some(a)) => DeltaOutputArtifact.fromArtifact(name, a)
+        case (name, Some(a)) => DeltaOutputArtifact.fromArtifact(a.summarize(name))
       }.toSeq
     )
     DeltaBus.notifyStateChange(cell.workflow, cell.position, ExecutionState.DONE)

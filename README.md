@@ -106,3 +106,8 @@ cp out/vizier/ui/fullOpt/dest/out.js vizier/resources/ui/vizier.js
 ```
 mill vizier.publishLocal
 ```
+
+##### Set up bloop/metals
+```
+mill mill.contrib.Bloop/install
+```

@@ -4,14 +4,17 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import rx._
 import scala.scalajs.js
-import info.vizierdb.encoding
+import info.vizierdb.serialized
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.util.Logging
-
+import autowire._
+import info.vizierdb.serializers._
+import info.vizierdb.api.websocket
+import info.vizierdb.serialized.{ CommandArgument, CommandDescription }
 
 class ModuleEditor(
   val packageId: String, 
-  val command: encoding.CommandDescriptor, 
+  val command: serialized.PackageCommand, 
   val module: TentativeModule
 )(implicit owner: Ctx.Owner) 
   extends Object 
@@ -26,17 +29,26 @@ class ModuleEditor(
       .branchSubscription match {
         case None => logger.error("No connection!")
         case Some(s) => 
-          s.allocateModule(
-            command = serialized,
-            atPosition = if(module.nextModule.isDefined){ Some(module.position) } else { None }
-          )
-          .onSuccess { case id =>
-            module.id = Some(id)
-          }
+          s.Client[websocket.BranchWatcherAPI]
+            .workflowInsert(
+              modulePosition = module.position,
+              packageId = packageId,
+              commandId = command.id,
+              arguments = arguments
+            )
+            .call()
+            .onSuccess { case workflow =>
+              module.id = Some(workflow.modules(module.position).moduleId)
+            }
+
+          // s.requests.(
+          //   command = serialized,
+          //   atPosition = if(module.nextModule.isDefined){ Some(module.position) } else { None }
+          // )
       }
   }
 
-  def loadState(arguments: Seq[encoding.CommandArgument])
+  def loadState(arguments: Seq[CommandArgument])
   {
     for(arg <- arguments){
       getParameter.get(arg.id) match {
@@ -54,7 +66,7 @@ class ModuleEditor(
         js.Dictionary(
           "id" -> id,
           "value" -> value
-        ).asInstanceOf[encoding.CommandArgument]
+        ).asInstanceOf[CommandArgument]
       }
     )
   }
@@ -66,17 +78,15 @@ class ModuleEditor(
   lazy val getParameter:Map[String, Parameter] = 
     parameters.map { p => p.id -> p }.toMap
 
-  def arguments: js.Array[encoding.CommandArgument] =
-    js.Array(parameters.map { _.toArgument }.toSeq:_*)
+  def arguments: Seq[CommandArgument] =
+    parameters.map { _.toArgument }
 
-  def serialized: encoding.ModuleCommand =
-  {
-    js.Dictionary(
-      "packageId" -> packageId,
-      "commandId" -> command.id,
-      "arguments" -> arguments
-    ).asInstanceOf[encoding.ModuleCommand]
-  }
+  def serialized: CommandDescription =
+    CommandDescription(
+      packageId = packageId,
+      commandId = command.id,
+      arguments = arguments
+    )
 
 
   val root = 

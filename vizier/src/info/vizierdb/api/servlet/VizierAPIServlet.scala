@@ -17,7 +17,7 @@ package info.vizierdb.api.servlet
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.api.Response
-import info.vizierdb.api.response.VizierErrorResponse
+import info.vizierdb.api.response.{ VizierErrorResponse, ErrorResponse }
 import info.vizierdb.{ Vizier, VizierAPI }
 import play.api.libs.json.JsResultException
 import info.vizierdb.util.JsonUtils
@@ -51,6 +51,9 @@ object VizierAPIServlet
             e.getClass.getCanonicalName(),
             "Json Errors: "+JsonUtils.prettyJsonParseError(e).mkString(", ")
           )
+        case ErrorResponse(e: Response) => 
+          logger.error(e.toString)
+          e
         case e: Throwable => 
           logger.error(e.getMessage + "\n" + e.getStackTrace.map { _.toString }.mkString("\n"))
           VizierErrorResponse(

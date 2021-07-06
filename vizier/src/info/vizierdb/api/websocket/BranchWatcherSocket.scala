@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.servlet.{
   WebSocketServlet,
   WebSocketServletFactory
 }
+import autowire._
 import scalikejdbc.DB
 import scala.collection.mutable
 import play.api.libs.json._
@@ -36,10 +37,9 @@ import info.vizierdb.catalog._
 import info.vizierdb.delta.{ DeltaBus, WorkflowDelta }
 import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet
-import org.mimirdb.api.{ Response, JsonResponse }
-import info.vizierdb.api.response.RawJsonResponse
-import info.vizierdb.api.response.VizierErrorResponse
 import info.vizierdb.serializers._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{ Success, Failure }
 
 // https://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/jetty-websocket/websocket-server/src/test/java/org/eclipse/jetty/websocket/server/examples/echo/ExampleEchoServer.java
 
@@ -57,11 +57,21 @@ class BranchWatcherSocket
   extends LazyLogging
 {
   logger.trace("Websocket allocated")
-  var session: Session = null
+  private var session: Session = null
   var subscription: DeltaBus.Subscription = null
-  var projectId: Identifier = -1
-  var branchId: Identifier = -1
   lazy val client = session.getRemoteAddress.toString
+
+  def registerSubscription(projectId: Identifier, branchId: Identifier): Unit = 
+  {
+    if(subscription != null){
+      logger.warn(s"Websocket ($client) overriding existing subscription")
+      DeltaBus.unsubscribe(subscription)
+    }
+    
+    val branch = DB.readOnly { implicit s => Branch.get(projectId, branchId) } 
+    
+    subscription = DeltaBus.subscribe(branchId, this.notify, s"Websocket $client")
+  }
 
   @OnWebSocketConnect
   def onOpen(session: Session) 
@@ -77,76 +87,37 @@ class BranchWatcherSocket
       DeltaBus.unsubscribe(subscription)
     }
   }
+
+  implicit val requestFormat = Json.format[WebsocketRequest]
+  implicit val normalResponseWrites = Json.writes[NormalWebsocketResponse]
+  implicit val errorResponseWrites = Json.writes[ErrorWebsocketResponse]
+  implicit val notificationResponseWrites = Json.writes[NotificationWebsocketMessage]
+  implicit val responseWrites = Json.writes[WebsocketResponse]
+
   @OnWebSocketMessage
   def onText(data: String)
   {
     logger.trace(s"Websocket received ${data.length()} bytes: ${data.take(20)}")
-    val message = Json.parse(data).as[JsObject]
-    (message \ BranchWatcherSocket.KEY_OPERATION).asOpt[String]
-      .getOrElse { 
-        logger.error(s"Invalid operation in websocket ($client) message: ${data.take(300)}")
-      } match {
-        case BranchWatcherSocket.OP_SUBSCRIBE => 
-        {
-          val request = message.as[SubscribeRequest]
-          if(subscription != null){
-            logger.warn(s"Websocket ($client) overriding existing subscription")
-            DeltaBus.unsubscribe(subscription)
+    val request = Json.parse(data).as[WebsocketRequest]
+    Router.routes
+          .apply(request.autowireRequest)
+          .onComplete {
+            case Success(result) => send(NormalWebsocketResponse(request.id, result))
+            case Failure(error) => send(ErrorWebsocketResponse(request.id, error.getMessage))
           }
-          
-          branchId = request.branchId.toLong
-          val branch = DB.readOnly { implicit s => Branch.get(branchId) } 
-          projectId = branch.projectId
-          
-          subscription = DeltaBus.subscribe(branchId, this.notify, s"Websocket $client")
-
-          val workflow = DB.readOnly { implicit s => branch.head.describe }
-          session.getRemote()
-                 .sendString(Json.toJson(workflow).toString)
-        }
-
-        case BranchWatcherSocket.OP_PING => 
-        {
-          session.getRemote()
-                 .sendString(Json.obj(BranchWatcherSocket.KEY_OPERATION -> 
-                                        BranchWatcherSocket.OP_PONG).toString)
-        }
-
-        // case x:String => 
-        // {
-        //   if( (projectId < 0) || (branchId < 0) ){
-        //     throw new RuntimeException(s"First send a ${BranchWatcherSocket.OP_SUBSCRIBE} before anything else.")
-        //   }
-        //   val handled = 
-        //     whilePausingNotifications { 
-        //       val response:Option[Response] = WebsocketEvents.headAction(
-        //           x, 
-        //           projectId,
-        //           branchId,
-        //           message
-        //         )
-        //       def respond(jsonResponse: JsObject) = 
-        //       {
-        //         val enhancedResponse = 
-        //           jsonResponse ++ Json.obj(
-        //             "messageId" -> (message \ "messageId").get
-        //           )
-        //         session.getRemote()
-        //                .sendString(enhancedResponse.toString)
-        //       }
-        //       response.foreach {  
-        //         case j:RawJsonResponse => respond(j.data.as[JsObject])
-        //         case j:VizierErrorResponse => respond(Json.obj("error" -> j.json))
-        //       }
-        //       /* return */ response.isDefined
-        //     }
-        //   if(!handled){ throw new RuntimeException(s"Unsupported operation: $x") }
-        // }
-    }
   }
 
   var notificationBuffer: mutable.Buffer[WorkflowDelta] = null
 
+  /**
+   * Send a message
+   */
+  def send[T <: WebsocketResponse](message: T)(implicit writes: Writes[T]) =
+    session.getRemote.sendString(Json.stringify(Json.toJson(message)))
+
+  /**
+   * Delay out-of-band notifications until the enclosed block completes
+   */
   def whilePausingNotifications[T](op: => T): T = 
   {
     val oldBuffer = notificationBuffer
@@ -156,31 +127,66 @@ class BranchWatcherSocket
       op
     } finally {
       synchronized {
-        val remote = session.getRemote()
-        myBuffer.foreach { delta => 
-          remote.sendString(
-            Json.toJson(delta).toString, 
-            null
-          )
-        }
+        myBuffer.foreach { delta => send(NotificationWebsocketMessage(delta)) }
         notificationBuffer = oldBuffer
       }
     }
 
   }
 
-
+  /**
+   * Post an out-of-band notification
+   */
   def notify(delta: WorkflowDelta)
   {
     synchronized { 
       Option(notificationBuffer) match {
-        case None => session.getRemote.sendString(
-                        Json.toJson(delta).toString, 
-                        null
-                      )
+        case None => send(NotificationWebsocketMessage(delta))
         case Some(buffer) => buffer.append(delta)
       }
     }
+  }
+
+  object APIImpl 
+    extends BranchWatcherAPIRoutes // <--- default routes implemented here
+  {
+    var projectId: Identifier = -1
+    var branchId: Identifier = -1
+
+    /**
+     * Wrap the call
+     */
+    def wrapCall[T](action: String, op: => T): T = 
+    {
+      logger.debug(s"Processing Websocket Request: $action")
+      whilePausingNotifications { op }
+    }
+
+    /**
+     * Override get as a way to signal a subscription event
+     */
+    def subscribe(projectId: Identifier, branchId: Identifier) =
+    {
+      registerSubscription(projectId, branchId)
+      this.branchId = branchId
+      this.projectId = projectId
+      workflowGet()
+    }
+
+    /**
+     * No-op, just a way to get the system to acknowledge its existence and
+     * keep the channel open
+     */
+    def ping() = System.currentTimeMillis()
+  }
+
+  object Router extends autowire.Server[JsValue, Reads, Writes]
+  {
+    def write[T: Writes](t: T) = Json.toJson(t)
+    def read[T: Reads](s: JsValue): T = Json.fromJson[T](s).get
+
+    // val routes = route[BranchHeadAPI](BranchHeadAPIImpl)
+    val routes = route[BranchWatcherAPI](APIImpl)
   }
 }
 

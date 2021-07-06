@@ -48,6 +48,7 @@ object Vizier
         val projectId = 
           arguments.get("project")
                    .getOrElse { error("No Project ID specified") }
+                   .toLong
         api.project(projectId)
               .onComplete { 
                 case Success(response) => 

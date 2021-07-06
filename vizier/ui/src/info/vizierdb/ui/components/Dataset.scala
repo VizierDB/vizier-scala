@@ -7,7 +7,8 @@ import scalajs.js
 import info.vizierdb.ui.rxExtras._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types._
-import info.vizierdb.encoding
+import info.vizierdb.serialized.{ DatasetDescription, DatasetColumn, DatasetRow }
+import info.vizierdb.nativeTypes.JsValue
 
 class Dataset(id: Identifier)
              (implicit val owner: Ctx.Owner)
@@ -16,16 +17,16 @@ class Dataset(id: Identifier)
   val rows = RxBuffer[Row]()
   val name = Var[String]("unnamed")
 
-  def this(serialized: encoding.Dataset)
+  def this(description: DatasetDescription)
           (implicit owner: Ctx.Owner) =
   {
-    this(serialized.id.toString)
-    loadColumns(serialized.columns)
-    loadRows(serialized.rows)
-    name() = serialized.name
+    this(description.id)
+    loadColumns(description.columns)
+    loadRows(description.rows)
+    name() = description.name
   }
 
-  def loadColumns(serializedColumns: Seq[encoding.DatasetColumn]) =
+  def loadColumns(serializedColumns: Seq[DatasetColumn]) =
   {
     columns.clear()
     for(col <- serializedColumns){
@@ -33,7 +34,7 @@ class Dataset(id: Identifier)
     }
   }
 
-  def loadRows(serializedRows: Seq[encoding.DatasetRow]) =
+  def loadRows(serializedRows: Seq[DatasetRow]) =
   {
     rows.clear()
     for(row <- serializedRows){
@@ -45,20 +46,20 @@ class Dataset(id: Identifier)
   class Column(
     id: Identifier,
     name: String,
-    dataType: String
+    dataType: JsValue
   ){
     val root = th(
       `class` := "column_header",
       name,
       span(`class` := "column_type", s"($dataType)")
     )
-    def this(encoded: encoding.DatasetColumn){
-      this(encoded.id.toString, encoded.name, encoded.`type`)
+    def this(encoded: DatasetColumn){
+      this(encoded.id, encoded.name, encoded.`type`)
     }
   }
 
   class Row(
-    id: Identifier,
+    id: RowIdentifier,
   ){
     val values = RxBuffer[Cell]()
     val isAnnotated = Var[Boolean](false)
@@ -66,22 +67,23 @@ class Dataset(id: Identifier)
     private val view = RxBufferView(tr(), values.rxMap { _.root })
     def root:dom.Node = view.root
     
-    def this(encoded: encoding.DatasetRow){
-      this(encoded.id.toString)
+    def this(encoded: DatasetRow){
+      this(encoded.id)
       val inputs = 
         encoded.values.zip(
           encoded.rowAnnotationFlags
+                 .getOrElse { encoded.values.map { _ => false }}
         )
       for( (value, isCaveatted) <- inputs ){
         values.append( new Cell(value, isCaveatted) )
       }
-      isAnnotated() = encoded.rowIsAnnotated
+      isAnnotated() = encoded.rowIsAnnotated.getOrElse { false }
     }
 
   }
 
   class Cell(
-    value: js.Dynamic,
+    value: JsValue,
     isCaveatted: Boolean
   ){
     def valueString: String = 

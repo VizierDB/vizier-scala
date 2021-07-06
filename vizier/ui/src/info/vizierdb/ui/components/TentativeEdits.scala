@@ -4,7 +4,7 @@ package info.vizierdb.ui.components
 import rx._
 import info.vizierdb.ui.rxExtras._
 import info.vizierdb.types.Identifier
-import info.vizierdb.encoding
+import info.vizierdb.serialized
 import info.vizierdb.util.Logging
 
 /**
@@ -64,15 +64,15 @@ class TentativeEdits(val project: Project)
   {
     elements
       .zipWithIndex
-      .foldLeft(Var(Map.empty):Rx[Map[String, Artifact]]) {
+      .foldLeft(Var(Map.empty):Rx[Map[String, serialized.ArtifactSummary]]) {
         case (artifacts, (Left(module), idx)) =>
           val outputs = module.outputs
           val oldArtifacts = artifacts
 
-          val insertions: Rx[Map[String, Artifact]] = 
-            outputs.map { _.filter { !_._2.isDeletion } }
+          val insertions: Rx[Map[String, serialized.ArtifactSummary]] = 
+            outputs.map { _.filter { _._2.isDefined }.mapValues { _.get } }
           val deletions: Rx[Set[String]] = 
-            outputs.map { _.filter { _._2.isDeletion }.keys.toSet }
+            outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
 
           val updatedArtifacts = Rx { 
             val ret = (artifacts() -- deletions()) ++ insertions()
@@ -216,7 +216,7 @@ class TentativeEdits(val project: Project)
   /**
    * Append a [[TentativeModule]] to the end of the workflow
    */
-  def appendTentative(defaultPackageList: Option[Seq[encoding.PackageDescriptor]] = None) =
+  def appendTentative(defaultPackageList: Option[Seq[serialized.PackageDescription]] = None) =
   {
     doAppend(Right(new TentativeModule(
                             position = elements.size, 
@@ -231,7 +231,7 @@ class TentativeEdits(val project: Project)
    */
   def insertTentative(
     n: Int,
-    defaultPackageList: Option[Seq[encoding.PackageDescriptor]] = None
+    defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
   ) =
   {
     doInsertAll(n, Some(Right(new TentativeModule(

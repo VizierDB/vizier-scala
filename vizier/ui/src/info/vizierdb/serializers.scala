@@ -1,13 +1,9 @@
 package info.vizierdb
 
 import play.api.libs.json._
-import info.vizierdb.api.AppendModule
-import org.mimirdb.spark.{ Schema => SparkSchema, SparkPrimitive }
 
 object serializers
 {
-  implicit val sparkPrimitiveFormat = SparkSchema.dataTypeFormat
-
   implicit val simpleParameterDescriptionFormat: Format[serialized.SimpleParameterDescription] = Json.format
   implicit val codeParameterDescriptionFormat: Format[serialized.CodeParameterDescription] = Json.format
   implicit val artifactParameterDescriptionFormat: Format[serialized.ArtifactParameterDescription] = Json.format

@@ -5,12 +5,11 @@ import info.vizierdb.ui.rxExtras.{ RxBufferVar, RxBuffer, RxBufferView }
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.types._
-import info.vizierdb.ui.components.Artifact
 import info.vizierdb.util.Logging
-import info.vizierdb.encoding
+import info.vizierdb.serialized
 
 class ModuleSubscription(
-  initial: encoding.ModuleDescription, 
+  initial: serialized.ModuleDescription, 
   branch: BranchSubscription,
   var position: Int
 )
@@ -18,17 +17,18 @@ class ModuleSubscription(
   with Logging
 {
   def id = initial.id
-  val state = Var(ExecutionState(initial.statev2))
+  val state = Var(initial.statev2)
   def command = initial.command
   def text = Var(initial.text)
   def links = initial.links
-  val outputs = Var[Map[String,Artifact]](
-    initial.artifacts.map { a => a.name -> new Artifact(a) }.toMap
+  val outputs = Var[Map[String,Option[serialized.ArtifactSummary]]](
+    initial.artifacts.map { x => x.name -> Some(x) }.toMap
   )
-  val messages:RxBufferVar[encoding.StreamedMessage] = RxBuffer[encoding.StreamedMessage]( (
-    initial.outputs.stdout.map { (_, StreamType.STDOUT) } ++
-    initial.outputs.stderr.map { (_, StreamType.STDERR) }
-  ).map { msg => new encoding.StreamedMessage(msg._1, msg._2) }:_* )
+  val messages:RxBufferVar[serialized.MessageDescriptionWithStream] = 
+    RxBuffer[serialized.MessageDescriptionWithStream]( (
+      initial.outputs.stdout.map { _.withStream(StreamType.STDOUT) } ++
+      initial.outputs.stderr.map { _.withStream(StreamType.STDERR) }
+    ):_* )
   logger.debug(s"${messages.length} Messages; ${outputs.now.size} outputs; $outputs")
 
   /**

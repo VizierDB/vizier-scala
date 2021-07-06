@@ -15,7 +15,6 @@
 package info.vizierdb
 
 import play.api.libs.json._
-import org.apache.spark.sql.execution.columnar.STRING
 
 object types 
 {
@@ -174,34 +173,6 @@ object types
     val DATASET_VIEW  = "dataset/view"
     val PYTHON        = "application/python"
     val JAVASCRIPT    = "text/javascript"
-  }
-
-  object DATATYPE extends Enumeration
-  {
-    type T = Value
-
-    val INT      = Value(1, "int")
-    val SHORT    = Value(2, "short")
-    val LONG     = Value(3, "long")
-    val REAL     = Value(4, "real")
-    val VARCHAR  = Value(5, "varchar")
-    val DATE     = Value(6, "date")
-    val DATETIME = Value(7, "datetime")
-
-    def fromSpark(t: org.apache.spark.sql.types.DataType): T =
-    {
-      t match {
-        case org.apache.spark.sql.types.IntegerType => INT
-        case org.apache.spark.sql.types.ShortType => SHORT
-        case org.apache.spark.sql.types.LongType => LONG
-        case org.apache.spark.sql.types.FloatType => REAL
-        case org.apache.spark.sql.types.DoubleType => REAL
-        case org.apache.spark.sql.types.StringType => VARCHAR
-        case org.apache.spark.sql.types.DateType => DATE
-        case org.apache.spark.sql.types.TimestampType => DATETIME
-        case _ => VARCHAR
-      }
-    }
   }
 }
 

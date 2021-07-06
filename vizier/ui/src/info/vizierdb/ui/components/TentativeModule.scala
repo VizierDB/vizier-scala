@@ -7,25 +7,25 @@ import rx._
 import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.types.ArtifactType
-import info.vizierdb.encoding
+import info.vizierdb.serialized
 import scala.concurrent.{ Future, Promise }
 import info.vizierdb.types.Identifier
 
 class TentativeModule(
   var position: Int, 
   val editList: TentativeEdits, 
-  defaultPackageList: Option[Seq[encoding.PackageDescriptor]] = None
+  defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
 )(implicit owner: Ctx.Owner)
 {
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)
-  val visibleArtifacts = Var[Rx[Map[String, Artifact]]](Var(Map.empty))
+  val visibleArtifacts = Var[Rx[Map[String, serialized.ArtifactSummary]]](Var(Map.empty))
   val selectedDataset = Var[Option[String]](None)
   var id: Option[Identifier] = None
 
   loadPackages()
 
-  def selectCommand(packageId: String, command: encoding.CommandDescriptor)
+  def selectCommand(packageId: String, command: serialized.PackageCommand)
   {
     activeView() = Some(Right(new ModuleEditor(packageId, command, this)))
   }
@@ -56,13 +56,13 @@ class TentativeModule(
     }
   }
 
-  def nextModule(): Option[Identifier] =
-  {
-    editList.elements
-            .drop(position)
-            .find { _.isLeft }
-            .collect { case Left(m) => m.id }
-  }
+  // def nextModule(): Option[Identifier] =
+  // {
+  //   editList.elements
+  //           .drop(position)
+  //           .find { _.isLeft }
+  //           .collect { case Left(m) => m.id }
+  // }
 
   val root = li(
     span(
@@ -85,7 +85,7 @@ class TentativeModule(
 }
 
 class CommandList(
-  packages: Seq[encoding.PackageDescriptor], 
+  packages: Seq[serialized.PackageDescription], 
   module: TentativeModule
 ){
   val root = 

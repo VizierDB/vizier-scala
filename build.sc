@@ -21,11 +21,6 @@ object upstream extends Module {
   }
 }
 
-object shared extends ScalaModule {
-  def scalaVersion = "2.12.12"
-
-}
-
 object vizier extends ScalaModule with PublishModule {
   val VERSION = "1.2.0-SNAPSHOT"
 
@@ -38,9 +33,14 @@ object vizier extends ScalaModule with PublishModule {
     MavenRepository("https://repo.osgeo.org/repository/release/")
   )}
 
+  override def compile = T {
+    routes()
+    super.compile()
+  }
+
   def sources = T.sources(
     millSourcePath / "src",
-    millSourcePath / "shared" 
+    millSourcePath / "shared" / "src"
   )
 
   def ivyDeps = Agg(
@@ -68,6 +68,7 @@ object vizier extends ScalaModule with PublishModule {
     ////////////////////// API Support /////////////////////
     ivy"javax.servlet:javax.servlet-api:3.1.0",
     ivy"org.eclipse.jetty.websocket:websocket-server:9.4.10.v20180503",
+    ivy"com.lihaoyi::autowire:0.3.3",
 
     ////////////////////// Command-Specific Libraries //////
     ivy"com.github.andyglow::scala-jsonschema::0.7.1",
@@ -88,6 +89,14 @@ object vizier extends ScalaModule with PublishModule {
         ivy"org.specs2::specs2-junit::4.8.2",
       )
 
+  }
+
+  def buildRoutesScript = T.sources { os.pwd / "scripts" / "build_routes.py" }
+  def routesFile        = T.sources { millSourcePath / "resources" / "vizier-routes.txt" }
+
+  def routes = T { 
+    println("Recompiling routes from "+routesFile().head.path); 
+    os.proc("python3", buildRoutesScript().head.path.toString).call() 
   }
 
   def publishVersion = VERSION
@@ -116,12 +125,19 @@ object vizier extends ScalaModule with PublishModule {
       ivy"org.scala-js::scalajs-dom::1.0.0",
       ivy"com.lihaoyi::scalarx::0.4.3",
       ivy"com.lihaoyi::scalatags::0.9.4",
+      ivy"com.lihaoyi::autowire::0.3.3",
+      ivy"com.typesafe.play::play-json:2.8.1",
     )
 
     def sources = T.sources(
       millSourcePath / "src",
-      vizier.millSourcePath / "shared" 
+      vizier.millSourcePath / "shared" / "src"
     )
+  
+    override def compile = T {
+      routes()
+      super.compile()
+    }
 
     object test extends Tests with TestModule.Utest {
       def testFramework = "utest.runner.Framework"

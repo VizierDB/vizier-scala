@@ -5,29 +5,31 @@ import scalatags.JsDom.all._
 import scala.scalajs.js
 import rx._
 import scala.concurrent.{ Promise, Future }
-import info.vizierdb.encoding
+import info.vizierdb.serialized
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
+import info.vizierdb.types.Identifier
+import info.vizierdb.nativeTypes.JsValue
 
-class Project(val projectId: String, val api: API, autosubscribe: Boolean = true)
+class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = true)
              (implicit owner: Ctx.Owner)
   extends Object
   with Logging
 {
-  val properties = Var[Map[String, js.Dynamic]](Map.empty)
+  val properties = Var[Map[String, JsValue]](Map.empty)
   val projectName = Rx { 
     properties().get("name")
                 .map { _.toString}
                 .getOrElse { "Untitled Project" } }
 
-  val branches = Var[Map[String, encoding.BranchSummary]](Map.empty)
-  val activeBranch = Var[Option[String]](None)
+  val branches = Var[Map[Identifier, serialized.BranchSummary]](Map.empty)
+  val activeBranch = Var[Option[Identifier]](None)
 
-  def load(project: encoding.ProjectDescription): Project =
+  def load(project: serialized.ProjectDescription): Project =
   {
     assert(projectId == project.id)
     properties() = 
