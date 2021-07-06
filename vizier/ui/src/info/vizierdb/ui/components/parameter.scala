@@ -10,7 +10,7 @@ import info.vizierdb.types.ArtifactType
 import info.vizierdb.ui.facades.{ CodeMirror, CodeMirrorEditor }
 import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
 import info.vizierdb.util.{ Logger, Logging }
-import info.vizierdb.encoding
+import info.vizierdb.serialized
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
@@ -58,8 +58,8 @@ sealed trait Parameter
   /**
    * Encode the parameter and its value as a [[ModuleArgument]]
    */
-  def toArgument: encoding.CommandArgument =
-    js.Dictionary( "id" -> id, "value" -> value ).asInstanceOf[encoding.CommandArgument]
+  def toArgument: serialized.CommandArgument =
+    js.Dictionary( "id" -> id, "value" -> value ).asInstanceOf[serialized.CommandArgument]
 
   /**
    * Callbacks to trigger when the value of the element changes
@@ -152,60 +152,36 @@ object Parameter
    * Decode a [[ParameterDescriptor]] into a [[Parameter]] for use with the
    * specified [[ModuleEditor]]
    */
-  def apply(description: encoding.ParameterDescriptor, editor: ModuleEditor)
+  def apply(tree: serialized.ParameterDescriptionTree, editor: ModuleEditor)
            (implicit owner: Ctx.Owner): Parameter =
   {
-    description.datatype match {
-      case "code"     => new CodeParameter(description)
-      case "colid"    => new ColIdParameter(description, editor.module.visibleArtifacts.flatMap { x => x }, editor.parameters)
-      case "dataset" | "artifact" 
-                      => new ArtifactParameter(description, editor.module
-                                                                  .visibleArtifacts
-                                                                  .map { _().mapValues { _.t } })
-      case "list"     => new ListParameter(description, this.apply(_, editor))
-      case "record"   => new RecordParameter(description, this.apply(_, editor))
-      case "string" if description.values.isDefined 
-                      => new EnumerableParameter(description)
-      case "string"   => new StringParameter(description)
-      case "int"      => new IntParameter(description)
-      case "decimal"  => new DecimalParameter(description)
-      case "bool"     => new BooleanParameter(description)
-      case "rowid"    => new RowIdParameter(description)
-      case "fileid"   => new FileParameter(description)
-      case _          => new UnsupportedParameter(description)
-    }
-  }
-
-  /**
-   * Unflatten the flattened wire representation of the parameters
-   * 
-   * The Vizier 1.1 wire protocol flattens the parameters out into a single 
-   * sequence, in particular affecting List and Record parameters.  This 
-   * function unflattens the representation.
-   */
-  def collapse(descriptions: Seq[encoding.ParameterDescriptor]): Seq[encoding.ParameterDescriptor] =
-  {
-    val elements = mutable.Map[String, encoding.ParameterDescriptor]()
-    descriptions.foreach { element => 
-      elements += (element.id -> element)
-      if(element.parent.isDefined) {
-        if(elements contains element.parent.get){
-          val parent = elements(element.parent.get)
-          if(parent.elements.isDefined){
-            parent.elements.get.push(element)
-          } else {
-            parent.elements = js.Array(element)
-          }
-        } else {
-          logger.warn(s"parameter ${element.id} has an invalid parent ${element.parent} (in ${elements.keys.mkString(", ")})")
+    tree.parameter match {
+      case param: serialized.SimpleParameterDescription =>
+        param.datatype match {
+          case "colid"   => new ColIdParameter(param, editor.module.visibleArtifacts.flatMap { x => x }, editor.parameters)
+          case "list"    => new ListParameter(param, tree.children, this.apply(_, editor))
+          case "record"  => new RecordParameter(param, tree.children, this.apply(_, editor))
+          case "string"  => new StringParameter(param)
+          case "int"     => new IntParameter(param)
+          case "decimal" => new DecimalParameter(param)
+          case "bool"    => new BooleanParameter(param)
+          case "rowid"   => new RowIdParameter(param)
+          case "fileid"  => new FileParameter(param)
+          case _         => new UnsupportedParameter(param)
         }
-      }
+
+      case param: serialized.CodeParameterDescription =>
+        new CodeParameter(param)
+
+      case param: serialized.ArtifactParameterDescription =>
+        new ArtifactParameter(param, editor.module
+                                          .visibleArtifacts
+                                          .map { _().mapValues { _.t } })
+      case param: serialized.EnumerableParameterDescription =>
+        new EnumerableParameter(param)
+
+      case _ => new UnsupportedParameter(tree.parameter)
     }
-    elements
-      .values
-      .toSeq
-      .filter { _.parent.isEmpty }
-      .sortBy { _.index }
   }
 
   private var nextInputIdValue: Long = -1l
@@ -229,13 +205,13 @@ class BooleanParameter(
 {
 
 
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.ParameterDescription)
   {
     this(
-      id = description.id,
-      name = description.name,
-      required = description.required,
-      hidden = description.hidden
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
     )
   }
   val root = 
@@ -261,14 +237,14 @@ case class CodeParameter(
 {
 
 
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.CodeParameterDescription)
   {
     this(
-      description.id, 
-      description.name, 
-      description.language.getOrElse { "text" },
-      description.required, 
-      description.hidden
+      parameter.id, 
+      parameter.name, 
+      parameter.language,
+      parameter.required, 
+      parameter.hidden
     )
   }
 
@@ -320,19 +296,23 @@ object CodeParameter
 class ColIdParameter(
   val id: String, 
   val name: String, 
-  schema: Rx[Seq[encoding.DatasetColumn]],
+  schema: Rx[Seq[serialized.DatasetColumn]],
   val required: Boolean,
   val hidden: Boolean
 ) (implicit owner: Ctx.Owner) extends Parameter
 {
 
-  def this(description: encoding.ParameterDescriptor, datasets: Rx[Map[String, Artifact]], parameters: Seq[Parameter])
+  def this(
+    parameter: serialized.ParameterDescription, 
+    datasets: Rx[Map[String, serialized.ArtifactSummary]], 
+    otherParameters: Seq[Parameter]
+  )
           (implicit owner: Ctx.Owner)
   {
     this(
-      description.id,
-      description.name,
-      parameters.flatMap {
+      parameter.id,
+      parameter.name,
+      otherParameters.flatMap {
         case dsParameter:ArtifactParameter 
                 if dsParameter.artifactType == ArtifactType.DATASET 
                    => Some(dsParameter)
@@ -347,14 +327,11 @@ class ColIdParameter(
                   case None => 
                     Parameter.logger.warn(s"ColIdParameter $name used with an undefined artifact")
                     Seq.empty
-                  case Some(dsArtifact) => 
-                    dsArtifact.metadata match {
-                      case Some(DatasetMetadata(columns)) =>
-                        columns
-                      case _ => 
-                        Parameter.logger.warn(s"ColIdParameter $name used with a non-dataset artifact")
-                        Seq.empty
-                    }
+                  case Some(ds:serialized.DatasetSummary) => ds.columns
+                  case Some(ds:serialized.DatasetDescription) => ds.columns
+                  case Some(_) => 
+                    Parameter.logger.warn(s"ColIdParameter $name used with a non-dataset artifact")
+                    Seq.empty
                 }
             }
           }
@@ -362,8 +339,8 @@ class ColIdParameter(
         Parameter.logger.warn(s"ColIdParameter $name used with out an associated dataset")
         Var(Seq.empty) 
       },
-      description.required,
-      description.hidden
+      parameter.required,
+      parameter.hidden
     )
   }
 
@@ -405,18 +382,16 @@ class ArtifactParameter(
 )(implicit owner: Ctx.Owner) extends Parameter
 {
 
-  def this(description: encoding.ParameterDescriptor, artifacts: Rx[Map[String, ArtifactType.T]])
+  def this(parameter: serialized.ArtifactParameterDescription, artifacts: Rx[Map[String, ArtifactType.T]])
           (implicit owner: Ctx.Owner)
   {
     this(
-      description.id, 
-      description.name, 
-      description.artifactType
-                 .map { ArtifactType.withName(_) }
-                 .getOrElse { ArtifactType.DATASET },
+      parameter.id, 
+      parameter.name, 
+      parameter.artifactType,
       artifacts,
-      description.required, 
-      description.hidden
+      parameter.required, 
+      parameter.hidden
     )
   }
 
@@ -465,13 +440,13 @@ class DecimalParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.ParameterDescription)
   {
     this(
-      id = description.id,
-      name = description.name,
-      required = description.required,
-      hidden = description.hidden
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
     )
   }
   val root = 
@@ -494,14 +469,14 @@ class FileParameter(
   val hidden: Boolean
 )(implicit owner: Ctx.Owner) extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.ParameterDescription)
           (implicit owner: Ctx.Owner)
   {
     this(
-      id = description.id,
-      name = description.name,
-      required = description.required,
-      hidden = description.hidden
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
     )
   }
 
@@ -594,13 +569,13 @@ class IntParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.ParameterDescription)
   {
     this(
-      id = description.id,
-      name = description.name,
-      required = description.required,
-      hidden = description.hidden
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
     )
   }
   val root = 
@@ -628,18 +603,19 @@ class ListParameter(
 )(implicit owner: Ctx.Owner)
   extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor, getParameter: encoding.ParameterDescriptor => Parameter)
-          (implicit owner: Ctx.Owner)
+  def this(
+    parameter: serialized.ParameterDescription, 
+    children: Seq[serialized.ParameterDescriptionTree], 
+    getParameter: serialized.ParameterDescriptionTree => Parameter
+  )(implicit owner: Ctx.Owner)
   {
     this(
-      description.id,
-      description.name, 
-      description.elements.map { _.map { _.name }.toSeq }.getOrElse { Seq.empty },
-      description.elements
-                 .map { _.map { x => () => getParameter(x) }.toSeq }
-                 .getOrElse { Seq.empty },
-      description.required,
-      description.hidden
+      parameter.id,
+      parameter.name, 
+      children.map { _.parameter.name },
+      children.map { x => () => getParameter(x) },
+      parameter.required,
+      parameter.hidden
     )
   }
 
@@ -713,17 +689,18 @@ class RecordParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor, getParameter: encoding.ParameterDescriptor => Parameter)
-          (implicit owner: Ctx.Owner)
+  def this(
+    parameter: serialized.ParameterDescription, 
+    children: Seq[serialized.ParameterDescriptionTree],
+    getParameter: serialized.ParameterDescriptionTree => Parameter
+  )(implicit owner: Ctx.Owner)
   {
     this(
-      description.id,
-      description.name, 
-      description.elements
-                 .map { _.map { getParameter(_) }.toSeq }
-                 .getOrElse { Seq.empty },
-      description.required,
-      description.hidden
+      parameter.id,
+      parameter.name, 
+      children.map { getParameter(_) },
+      parameter.required,
+      parameter.hidden
     )
   }
   val root = 
@@ -751,13 +728,13 @@ class RowIdParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.ParameterDescription)
   {
     this(
-      id = description.id,
-      name = description.name,
-      required = description.required,
-      hidden = description.hidden
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
     )
   }
   val root = 
@@ -777,19 +754,19 @@ class RowIdParameter(
 class EnumerableParameter(
   val id: String, 
   val name: String, 
-  values: Seq[encoding.EnumerableValue],
+  values: Seq[serialized.EnumerableValueDescription],
   val required: Boolean,
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.EnumerableParameterDescription)
   {
     this(
-      id = description.id,
-      name = description.name,
-      values = description.values.get.toSeq,
-      required = description.required,
-      hidden = description.hidden
+      id = parameter.id,
+      name = parameter.name,
+      values = parameter.values,
+      required = parameter.required,
+      hidden = parameter.hidden
     )
   }
   val root = 
@@ -820,13 +797,13 @@ class StringParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.ParameterDescription)
   {
     this(
-      id = description.id,
-      name = description.name,
-      required = description.required,
-      hidden = description.hidden
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
     )
   }
   val root = 
@@ -850,14 +827,14 @@ class UnsupportedParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(description: encoding.ParameterDescriptor)
+  def this(parameter: serialized.ParameterDescription)
   {
     this(
-      description.id, 
-      description.name, 
-      description.datatype,
-      description.required, 
-      description.hidden
+      parameter.id, 
+      parameter.name, 
+      parameter.datatype,
+      parameter.required, 
+      parameter.hidden
     )
   }
   val root = span(s"Unsupported parameter type: $dataType")

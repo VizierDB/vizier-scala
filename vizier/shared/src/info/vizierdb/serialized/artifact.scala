@@ -11,6 +11,7 @@ sealed trait ArtifactSummary
   val category: ArtifactType.T
   val name: String
   val links: HATEOAS.T
+  def t = category
 }
 
 sealed trait ArtifactDescription extends ArtifactSummary

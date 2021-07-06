@@ -1,13 +1,13 @@
 package info.vizierdb.serialized
 
-import java.time.ZonedDateTime
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.types.Identifier
+import info.vizierdb.nativeTypes.DateTime
 
 case class BranchSummary(
   id: Identifier,
-  createdAt: ZonedDateTime,
-  lastModifiedAt: ZonedDateTime,
+  createdAt: DateTime,
+  lastModifiedAt: DateTime,
   sourceBranch: Option[Identifier],
   sourceWorkflow: Option[Identifier],
   sourceModule: Option[Identifier],
@@ -33,8 +33,8 @@ case class BranchSummary(
 
 case class BranchDescription(
   id: Identifier,
-  createdAt: ZonedDateTime,
-  lastModifiedAt: ZonedDateTime,
+  createdAt: DateTime,
+  lastModifiedAt: DateTime,
   sourceBranch: Option[Identifier],
   sourceWorkflow: Option[Identifier],
   sourceModule: Option[Identifier],

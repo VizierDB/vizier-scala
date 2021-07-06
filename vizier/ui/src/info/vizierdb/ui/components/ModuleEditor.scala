@@ -10,7 +10,7 @@ import info.vizierdb.util.Logging
 import autowire._
 import info.vizierdb.serializers._
 import info.vizierdb.api.websocket
-import info.vizierdb.serialized.{ CommandArgument, CommandDescription }
+import info.vizierdb.serialized.{ CommandArgument, CommandDescription, ParameterDescriptionTree }
 
 class ModuleEditor(
   val packageId: String, 
@@ -72,7 +72,7 @@ class ModuleEditor(
   }
 
   val parameters: Seq[Parameter] = 
-    Parameter.collapse(
+    ParameterDescriptionTree(
       command.parameters.toSeq
     ).map { Parameter(_, this) }
   lazy val getParameter:Map[String, Parameter] = 

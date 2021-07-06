@@ -1,7 +1,7 @@
 package info.vizierdb.serialized
 
-import java.time.ZonedDateTime
 import info.vizierdb.shared.HATEOAS
+import info.vizierdb.nativeTypes.DateTime
 
 case class ServiceDescriptorDefaults(
   maxFileSize: Long,
@@ -17,7 +17,7 @@ case class ServiceDescriptorEnvironment(
 
 case class ServiceDescriptor(
   name: String,
-  startedAt: ZonedDateTime,
+  startedAt: DateTime,
   defaults: ServiceDescriptorDefaults,
   environment: ServiceDescriptorEnvironment,
   links: HATEOAS.T

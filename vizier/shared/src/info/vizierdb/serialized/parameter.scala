@@ -15,6 +15,34 @@ sealed trait ParameterDescription
   def default: Option[JsValue]
 }
 
+class ParameterDescriptionTree(
+  val parameter: ParameterDescription,
+  val children: Seq[ParameterDescriptionTree]
+)
+object ParameterDescriptionTree
+{
+  def apply(parameters: Seq[ParameterDescription]): Seq[ParameterDescriptionTree] =
+    buildTree(parameters.groupBy { _.parent }, None)
+
+  def buildTree(
+    parameters: Map[Option[String], Seq[ParameterDescription]], 
+    root: Option[ParameterDescription]
+  ): Seq[ParameterDescriptionTree] =
+                  // get the direct descendants of the root (if one exists)
+    parameters(root.map { _.id })
+                  // for each child of the root node
+              .map { child => 
+                  // create a tree node for the child
+                new ParameterDescriptionTree(
+                  child, 
+                  // by recursively finding the descendants of the child (if any exist)
+                  buildTree(parameters, Some(child))
+                )
+              }
+                    // and finally we want the children as a sequence
+              .toSeq
+}
+
 case class SimpleParameterDescription(
   id: String,
   name: String,

@@ -1,12 +1,12 @@
 package info.vizierdb.serialized
 
-import java.time.ZonedDateTime
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.nativeTypes.JsObject
+import info.vizierdb.nativeTypes.DateTime
 
 case class WorkflowSummary(
   id: String,
-  createdAt: ZonedDateTime,
+  createdAt: DateTime,
   action: String,
   packageId: Option[String],
   commandId: Option[String],
@@ -40,7 +40,7 @@ case class WorkflowSummary(
 
 case class WorkflowDescription(
   id: String,
-  createdAt: ZonedDateTime,
+  createdAt: DateTime,
   action: String,
   packageId: Option[String],
   commandId: Option[String],

@@ -3,10 +3,30 @@ package info.vizierdb
 import play.api.libs.json._
 import info.vizierdb.api.AppendModule
 import org.mimirdb.spark.{ Schema => SparkSchema, SparkPrimitive }
+import java.time.format.{ DateTimeFormatter, DateTimeParseException }
+import java.time.{ ZonedDateTime, LocalDateTime, ZoneId }
 
 object serializers
 {
   implicit val sparkPrimitiveFormat = SparkSchema.dataTypeFormat
+  implicit val zonedDateTimeFormat = Format[ZonedDateTime](
+    new Reads[ZonedDateTime] {
+      def reads(j: JsValue) =
+        try { 
+          JsSuccess(ZonedDateTime.parse(j.as[String]))
+        } catch {
+          case _:DateTimeParseException => 
+            JsSuccess(ZonedDateTime.of(
+              LocalDateTime.parse(j.as[String]),
+              ZoneId.systemDefault()
+            ))
+        }
+    },
+    new Writes[ZonedDateTime] {
+      def writes(t: ZonedDateTime) = 
+        JsString(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(t))
+    }
+  )
 
   implicit val simpleParameterDescriptionFormat: Format[serialized.SimpleParameterDescription] = Json.format
   implicit val codeParameterDescriptionFormat: Format[serialized.CodeParameterDescription] = Json.format

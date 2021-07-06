@@ -7,6 +7,11 @@ import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.types._
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized
+import info.vizierdb.serializers._
+import autowire._
+import info.vizierdb.api.websocket.BranchWatcherAPI
+import scala.concurrent.ExecutionContext.Implicits.global
+
 
 class ModuleSubscription(
   initial: serialized.ModuleDescription, 
@@ -16,7 +21,7 @@ class ModuleSubscription(
   extends Object
   with Logging
 {
-  def id = initial.id
+  def id: Identifier = initial.moduleId
   val state = Var(initial.statev2)
   def command = initial.command
   def text = Var(initial.text)
@@ -34,5 +39,8 @@ class ModuleSubscription(
   /**
    * Delete this module from the workflow
    */
-  def delete(): Unit = branch.deleteModule(position)
+  def delete(): Unit = 
+    branch.Client[BranchWatcherAPI]
+          .workflowDelete(position)
+          .call()
 }

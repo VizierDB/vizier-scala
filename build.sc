@@ -126,7 +126,7 @@ object vizier extends ScalaModule with PublishModule {
       ivy"com.lihaoyi::scalarx::0.4.3",
       ivy"com.lihaoyi::scalatags::0.9.4",
       ivy"com.lihaoyi::autowire::0.3.3",
-      ivy"com.typesafe.play::play-json:2.8.1",
+      ivy"com.typesafe.play::play-json::2.9.2",
     )
 
     def sources = T.sources(

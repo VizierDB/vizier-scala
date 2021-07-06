@@ -1,13 +1,13 @@
 package info.vizierdb.serialized
 
-import java.time.ZonedDateTime
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.types.Identifier
+import info.vizierdb.nativeTypes.DateTime
 
 case class ProjectSummary(
   id: Identifier,
-  createdAt: ZonedDateTime,
-  lastModifiedAt: ZonedDateTime,
+  createdAt: DateTime,
+  lastModifiedAt: DateTime,
   defaultBranch: Identifier,
   properties: PropertyList.T,
   links: HATEOAS.T
@@ -27,8 +27,8 @@ case class ProjectSummary(
 
 case class ProjectDescription(
   id: Identifier,
-  createdAt: ZonedDateTime,
-  lastModifiedAt: ZonedDateTime,
+  createdAt: DateTime,
+  lastModifiedAt: DateTime,
   defaultBranch: Identifier,
   properties: PropertyList.T,
   links: HATEOAS.T,

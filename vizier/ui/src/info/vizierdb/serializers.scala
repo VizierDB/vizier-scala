@@ -1,9 +1,15 @@
 package info.vizierdb
 
 import play.api.libs.json._
+import scala.scalajs.js
 
 object serializers
 {
+  implicit val zonedDateTimeFormat = Format[js.Date](
+    new Reads[js.Date]  { def reads(j: JsValue)  = JsSuccess(new js.Date(j.as[String])) },
+    new Writes[js.Date] { def writes(t: js.Date) = JsString(t.toISOString) }
+  )
+
   implicit val simpleParameterDescriptionFormat: Format[serialized.SimpleParameterDescription] = Json.format
   implicit val codeParameterDescriptionFormat: Format[serialized.CodeParameterDescription] = Json.format
   implicit val artifactParameterDescriptionFormat: Format[serialized.ArtifactParameterDescription] = Json.format
