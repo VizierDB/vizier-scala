@@ -129,7 +129,7 @@ class Module(
         stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
         stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
       ),
-      resultId = cell.resultId.map { _.toString },
+      resultId = cell.resultId,
       links = HATEOAS(
         HATEOAS.SELF            -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
         HATEOAS.MODULE_INSERT   -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),

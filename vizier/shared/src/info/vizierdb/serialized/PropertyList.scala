@@ -22,4 +22,11 @@ object PropertyList
 
   implicit def toPropertyList(map: Map[String, nativeTypes.JsValue]): T =
     map.toSeq.map { Property(_) }
+
+  def apply(properties: (String, nativeTypes.JsValue)*): T =
+    properties.map { Property(_) }
+
+  def lookup(properties: T, key: String): Option[nativeTypes.JsValue] =
+    properties.find { _.key.equals(key) }
+              .map { _.value }
 }

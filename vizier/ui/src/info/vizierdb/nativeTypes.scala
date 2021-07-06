@@ -8,6 +8,7 @@ object nativeTypes
   type JsObject = PlayJsObject
   type CellDataType = JsValue
   type DateTime = scala.scalajs.js.Date
+  type URL = String
 
   case class Caveat(
     message: String,

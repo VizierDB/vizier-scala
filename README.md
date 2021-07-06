@@ -72,6 +72,8 @@ Compiled class files will be in `out/vizier/compile/dest`
 
 ##### Run Test Cases
 
+We suggest using at least mill version 0.9.8 (released May 27, 2021), as it has somewhat better support for specs2 testing.
+
 ```
 mill vizier.test
 mill vizier.ui.test

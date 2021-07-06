@@ -17,6 +17,6 @@ case class ModuleDescription(
   charts: Seq[ArtifactSummary],
   artifacts: Seq[ArtifactSummary],
   outputs: ModuleOutputDescription,
-  resultId: Option[String],
+  resultId: Option[Identifier],
   links: HATEOAS.T
 )

@@ -2,12 +2,15 @@ package info.vizierdb.ui
 
 import utest._
 
+import play.api.libs.json._
 import scala.scalajs.js
-import scala.scalajs.js.JSON
 import info.vizierdb.test._
 import info.vizierdb.ui.components._
 import info.vizierdb.ui.network._
 import scala.concurrent.Await
+import info.vizierdb.serializers._
+import info.vizierdb.serialized.CommandArgumentList
+import info.vizierdb.delta
 
 object WorkflowSpec extends TestSuite with TestFixtures
 {
@@ -44,33 +47,33 @@ object WorkflowSpec extends TestSuite with TestFixtures
               .map { _.value }
               .equals(Some("foo"))
       )
+
+      val derivedModule =
+        BuildA.Module(
+          packageId = "debug",
+          commandId = "drop",
+          id = 999999
+        )("dataset" -> JsString("foo"))
+
       val (request, _) = 
-        expectMessage(
-          js.Dictionary("id" -> "appended_module")
-        ) {
+        pushResponse { 
+          BuildA.WorkflowByAppending(TestFixtures.defaultWorkflow, derivedModule)
+        } {
           module.saveState()
         }
-      assert(request.operation.equals("workflow.append"))
-      assert(request.packageId.equals("debug"))
-      assert(request.commandId.equals("drop"))
-      assert(request.arguments
-                    .asInstanceOf[js.Array[CommandArgument]]
+      assert(request.path.equals("workflowAppend"))
+      assert(request.args("packageId").as[String].equals("debug"))
+      assert(request.args("commandId").as[String].equals("drop"))
+      assert(request.args("arguments").as[CommandArgumentList.T]
                     .find { _.id.equals("dataset") }
                     .isDefined)
-      assert(request.arguments.isInstanceOf[js.Array[_]])
 
       assert(modules.size == initialSize + 1)
 
-      sendMessage(
-        js.Dictionary(
-          "operation" -> "insert_cell",
-          "position" -> initialSize,
-          "cell" -> BuildA.Module(
-            "debug", "drop",
-            id = "appended_module"
-          )(
-            "dataset" -> "foo"
-          ),
+      signalDelta(
+        delta.InsertCell(
+          position = initialSize,
+          cell = derivedModule
         )
       )
       assert(modules.size == initialSize + 1)

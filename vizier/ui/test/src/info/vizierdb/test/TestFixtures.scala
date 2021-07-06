@@ -2,7 +2,7 @@ package info.vizierdb.test
 
 import scala.collection.mutable
 import scala.scalajs.js
-import scala.scalajs.js.JSON
+import play.api.libs.json._
 import rx._
 import org.scalajs.dom
 import info.vizierdb.types._
@@ -11,30 +11,26 @@ import info.vizierdb.ui.network._
 import info.vizierdb.ui._
 import scala.concurrent.{ Promise, Future }
 import scala.concurrent.ExecutionContext.Implicits.global
-
+import info.vizierdb.serialized
+import info.vizierdb.serialized.SimpleParameterDescription
+import info.vizierdb.shared.HATEOAS
+import info.vizierdb.serializers._
+import info.vizierdb.delta.WorkflowDelta
+import info.vizierdb.api.websocket.NotificationWebsocketMessage
 
 trait TestFixtures
 {
   implicit val ctx = Ctx.Owner.Unsafe
 
-  val project = new Project("1", MockAPI, autosubscribe = false)
+  val project = new Project(1, MockAPI, autosubscribe = false)
   project.branchSubscription = Some(MockBranchSubscription)
   project.workflow() = Some(new Workflow(MockBranchSubscription, project))
   def workflow = project.workflow.now.get
   def modules = workflow.moduleViewsWithEdits
 
-  def init(workflow: WorkflowDescription = TestFixtures.defaultWorkflow) =
+  def init(workflow: serialized.WorkflowDescription = TestFixtures.defaultWorkflow) =
   {
-    sendMessage(workflow)
-  }
-
-  def sendMessage(message: js.Any) =
-  {
-    MockBranchSubscription.onMessage(
-      js.Dictionary(
-        "data" -> JSON.stringify(message)
-      ).asInstanceOf[dom.MessageEvent]
-    )
+    MockBranchSubscription.onSync(workflow)
   }
 
   def appendModule(): TentativeModule =
@@ -51,15 +47,23 @@ trait TestFixtures
     return ret
   }
 
-
-  def expectMessage[T](response: Any)(op: => T): (js.Dynamic, T) =
+  def signalDelta(delta: WorkflowDelta) =
   {
-    var request: js.Dynamic = null
+    implicit val format = MockBranchSubscription.notificationwebsocketmessageformat
+    MockBranchSubscription.onMessage(js.Dictionary(
+      "data" -> Json.toJson(NotificationWebsocketMessage(delta)).toString
+    ).asInstanceOf[dom.MessageEvent])
+  }
+
+
+  def pushResponse[T, M](response: M)(op: => T)(implicit writes: Writes[M]): (MockBranchSubscription.Client.Request, T) =
+  {
+    var request: MockBranchSubscription.Client.Request = null
     val height = MockBranchSubscription.expectedMessages.size
     MockBranchSubscription.expectedMessages.push( 
       actualRequest => {
         request = actualRequest
-        response.asInstanceOf[js.Dynamic]
+        Json.toJson(response)
       }
     )
     val ret = op
@@ -69,38 +73,37 @@ trait TestFixtures
     return (request, ret)
   }
 
+
+
   object MockBranchSubscription
-    extends BranchSubscription("1", "1", Vizier.api)
+    extends BranchSubscription(1, 1, Vizier.api)
   {
 
-    val expectedMessages = mutable.Stack[js.Dynamic => js.Dynamic]()
+    val expectedMessages = mutable.Stack[Client.Request => JsValue]()
 
     override def getSocket(): dom.WebSocket =
     {
       return null
     }
 
-    override def withResponse(arguments: (String, Any)*): 
-      Promise[js.Dynamic] =
+    override def makeRequest(request: Client.Request): Promise[JsValue] =
     {
       assert(expectedMessages.size > 0, "Unexpected message sent")
       val handleRequest = expectedMessages.pop()
-      MockPromise(
-        handleRequest(js.Dictionary(arguments:_*).asInstanceOf[js.Dynamic])
-      )
+      return MockPromise(handleRequest(request))
     }
   }
 
   object MockAPI
     extends API("")
   {
-    override def packages(): Future[Seq[PackageDescriptor]] =
+    override def packages(): Future[Seq[serialized.PackageDescription]] =
       MockFuture(TestFixtures.defaultPackages)
 
-    override def project(projectId: Identifier): Future[ProjectDescription] =
+    override def project(projectId: Identifier): Future[serialized.ProjectDescription] =
       ???
 
-    override def branch(projectId: Identifier, branchId: Identifier): Future[BranchDescription] =
+    override def branch(projectId: Identifier, branchId: Identifier): Future[serialized.BranchDescription] =
       ???
   }
 }
@@ -108,14 +111,14 @@ trait TestFixtures
 object TestFixtures
 {
 
-  val defaultPackages: Seq[PackageDescriptor] = 
+  val defaultPackages: Seq[serialized.PackageDescription] = 
     Seq(
       BuildA.Package("debug")(
         BuildA.Command("add")(
-          BuildA.Parameter("output", "string")
+          SimpleParameterDescription("output", "Output", "string", false, false, None, _, None)
         ),
         BuildA.Command("drop")(
-          BuildA.Parameter("dataset", "string")
+          SimpleParameterDescription("dataset", "Dataset", "string", false, false, None, _, None)
         )
       )
     )
@@ -129,19 +132,26 @@ object TestFixtures
       .get
 
   val defaultWorkflow = 
-    js.Dictionary(
-      "state" -> ExecutionState.DONE,
-      "modules" -> Seq(
+    serialized.WorkflowDescription(
+      id = 1,
+      state = ExecutionState.translateToClassicVizier(ExecutionState.DONE),
+      statev2 = ExecutionState.DONE,
+      modules = Seq(
         BuildA.Module(
           "debug", "add", 
           artifacts = Seq("foo" -> ArtifactType.DATASET)
         )( 
-          "output" -> "foo"
+          "output" -> JsString("foo")
         )
       ),
-      "datasets" -> Seq(),
-      "dataobjects" -> Seq(),
-      "readOnly" -> false,
-      "tableOfContents" -> Seq()
-    ).asInstanceOf[WorkflowDescription]
+      datasets = Seq(),
+      dataobjects = Seq(),
+      readOnly = false,
+      tableOfContents = None,
+      createdAt = new js.Date(),
+      action = "create",
+      packageId = None,
+      commandId = None,
+      links = HATEOAS()
+    )
 }

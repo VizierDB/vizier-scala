@@ -3,9 +3,10 @@ package info.vizierdb.serialized
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.nativeTypes.JsObject
 import info.vizierdb.nativeTypes.DateTime
+import info.vizierdb.types.{ Identifier, ExecutionState }
 
 case class WorkflowSummary(
-  id: String,
+  id: Identifier,
   createdAt: DateTime,
   action: String,
   packageId: Option[String],
@@ -14,7 +15,7 @@ case class WorkflowSummary(
 )
 {
   def toDescription(
-    state: Int,
+    state: ExecutionState.T,
     modules: Seq[ModuleDescription],
     datasets: Seq[ArtifactSummary],
     dataobjects: Seq[ArtifactSummary],
@@ -28,7 +29,8 @@ case class WorkflowSummary(
       action = action,
       packageId = packageId,
       commandId = commandId,
-      state = state,
+      state = ExecutionState.translateToClassicVizier(state),
+      statev2 = state,
       modules = modules,
       datasets = datasets,
       dataobjects = dataobjects,
@@ -39,12 +41,13 @@ case class WorkflowSummary(
 }
 
 case class WorkflowDescription(
-  id: String,
+  id: Identifier,
   createdAt: DateTime,
   action: String,
   packageId: Option[String],
   commandId: Option[String],
   state: Int,
+  statev2: ExecutionState.T,
   modules: Seq[ModuleDescription],
   datasets: Seq[ArtifactSummary],
   dataobjects: Seq[ArtifactSummary],

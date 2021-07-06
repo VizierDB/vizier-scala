@@ -10,6 +10,7 @@ object nativeTypes
   type JsValue = PlayJsValue
   type JsObject = PlayJsObject
   type DateTime = java.time.ZonedDateTime
+  type URL = java.net.URL
 
   implicit def datasetColumnToStructField(column: serialized.DatasetColumn): StructField =
     StructField(column.name, column.`type`)

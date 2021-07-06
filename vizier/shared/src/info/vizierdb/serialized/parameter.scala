@@ -29,7 +29,9 @@ object ParameterDescriptionTree
     root: Option[ParameterDescription]
   ): Seq[ParameterDescriptionTree] =
                   // get the direct descendants of the root (if one exists)
-    parameters(root.map { _.id })
+    parameters.get(root.map { _.id })
+                  // if no entry, then there are no children of this root
+              .getOrElse { Seq.empty }
                   // for each child of the root node
               .map { child => 
                   // create a tree node for the child

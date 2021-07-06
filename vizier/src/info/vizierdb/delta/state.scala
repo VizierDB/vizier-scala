@@ -20,7 +20,7 @@ import info.vizierdb.serialized
 
 case class CellState(
   moduleId: String,
-  resultId: Option[String],
+  resultId: Option[Identifier],
   state: ExecutionState.T, 
   messageCount: Int
 )

@@ -237,7 +237,7 @@ object ComputeDelta
       cells = cellsAndModules.map { case (cell, module) =>
         CellState(
           moduleId = module.id.toString,
-          resultId = cell.resultId.map { _.toString },
+          resultId = cell.resultId,
           state = cell.state,
           messageCount = cell.messages.size
         )

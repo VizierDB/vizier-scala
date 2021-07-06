@@ -22,4 +22,7 @@ object CommandArgumentList
 
   implicit def toPropertyList(map: Map[String, nativeTypes.JsValue]): T =
     map.toSeq.map { CommandArgument(_) }
+
+  def apply(args: (String, nativeTypes.JsValue)*) =
+    args.map  { CommandArgument(_) }
 }

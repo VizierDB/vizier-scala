@@ -20,7 +20,7 @@ import play.api.libs.json._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import info.vizierdb.test.SharedTestResources
-import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.serialized.PropertyList
 import info.vizierdb.catalog.Project
 import info.vizierdb.types._
 import info.vizierdb.api.response.NoSuchEntityResponse
@@ -28,6 +28,7 @@ import info.vizierdb.api.response.RawJsonResponse
 import java.io.FileInputStream
 import info.vizierdb.commands.data.LoadDataset
 import info.vizierdb.commands.FileArgument
+import info.vizierdb.serialized
 
 class WorkflowAPISpec
   extends Specification
@@ -53,59 +54,39 @@ A,B,C
   sequential
 
   "Workflow Test Setup" >> {
-    val response = 
-      CreateProject(StupidReactJsonMap(
+    val projectSummary: serialized.ProjectSummary = 
+      CreateProject(PropertyList(
         "name" -> JsString(PROJECT_NAME)
-      )).handle
+      ))
+    project = projectSummary.id
+    branch = projectSummary.defaultBranch
 
-    project = response.data.as[JsObject].value("id").as[String].toLong
-    val descriptor = GetProjectHandler.handle(Map("projectId" -> JsNumber(project)))
-    descriptor match { 
-      case NoSuchEntityResponse() => ko("Workflow project not created correctly")
-      case RawJsonResponse(data, _) => 
-        branch = data.as[Map[String, JsValue]].apply("defaultBranch").as[String].toLong
-    }
+    val descriptor: serialized.ProjectDescription = 
+      GetProject(projectId = project)
     ok
   }
 
   "Create and load a file" >> {
-    val fileResponse = CreateFileHandler.handle(
-                        project, 
-                        new ByteArrayInputStream(FILE_DATA.getBytes),
-                        "test file"
-                      )
+    val fileResponse: serialized.ArtifactSummary = 
+      CreateFile(project, (new ByteArrayInputStream(FILE_DATA.getBytes), "test file") )
 
-    var fileId = -1l
-    fileResponse match {
-      case NoSuchEntityResponse() => ko("No such project")
-      case RawJsonResponse(data, _) => {
-        fileId = data.as[Map[String,JsValue]].apply("id").as[Identifier]
-      }
-    }
+    var fileId = fileResponse.id
 
     val appendResponse = AppendModule(
       projectId = project,
       branchId = branch,
-      None,
       packageId = "data",
       commandId = "load",
       arguments = 
-        JsArray(
+        serialized.CommandArgumentList.toPropertyList(
           LoadDataset.encodeArguments(Map(
             "file" -> FileArgument(filename = Some("R.csv"), fileid = Some(fileId)),
             "name" -> "R",
             "loadFormat" -> "csv",
             "loadDetectHeaders" -> true,
           )).as[Map[String,JsValue]]
-          .toSeq
-          .map { case (k, v) => 
-            Json.obj(
-              "id" -> k,
-              "value" -> v
-            )
-          }
         )
-    ).handle
+    )
 
     ok
   }

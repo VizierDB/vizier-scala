@@ -272,7 +272,7 @@ case class Workflow(
       }
 
     summary.toDescription(
-      state = ExecutionState.translateToClassicVizier(state),
+      state = state,
       modules = Module.describeAll(
           projectId = branch.projectId,
           branchId = branchId,
@@ -299,7 +299,7 @@ case class Workflow(
 
   def makeSummary(branch: Branch, actionModule: Option[Module]): serialized.WorkflowSummary =
     serialized.WorkflowSummary(
-      id          = id.toString,
+      id          = id,
       createdAt   = created,
       action      = action.toString,
       packageId   = actionModule.map { _.packageId },

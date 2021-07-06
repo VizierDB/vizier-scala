@@ -297,7 +297,7 @@ object DeltaBus
   {
     DeltaBus.notify(workflow.branchId, AdvanceResultId(
       position,
-      resultId.toString
+      resultId
     ))
   }
 

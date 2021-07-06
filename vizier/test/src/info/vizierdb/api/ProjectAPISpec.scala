@@ -19,9 +19,10 @@ import play.api.libs.json._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import info.vizierdb.test.SharedTestResources
-import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.serialized.{ Property, PropertyList }
 import info.vizierdb.catalog.Project
 import info.vizierdb.types._
+import info.vizierdb.serialized
 
 class ProjectAPISpec
   extends Specification
@@ -35,53 +36,44 @@ class ProjectAPISpec
   sequential
 
   "Create Projects" >> {
-    val response = 
-      CreateProject(StupidReactJsonMap(
+    val response: serialized.ProjectSummary = 
+      CreateProject(PropertyList(
         "thing" -> JsString("value"),
         "name" -> JsString(CREATE_PROJECT_NAME)
-      )).handle
+      ))
 
     DB.readOnly { implicit s => 
-      val project = Project.get(
-        response.data.as[JsObject].value("id").as[String].toLong
-      )
+      val project = Project.get(response.id)
       project.name must beEqualTo(CREATE_PROJECT_NAME)
       project.properties.value("thing").as[String] must beEqualTo("value")
     }
   }
 
   "Delete Projects" >> {
-    val createResponse = 
-      CreateProject(StupidReactJsonMap(
+    val project: serialized.ProjectSummary = 
+      CreateProject(PropertyList(
         "thing" -> JsString("value"),
         "name" -> JsString(DELETE_PROJECT_NAME)
-      )).handle
+      ))
 
-    val id = createResponse.data.as[JsObject].value("id").as[String].toLong
-
-    val deleteResponse = DeleteProjectHandler.handle(Map("projectId" -> JsNumber(id)))
+    DeleteProject(projectId = project.id)
 
     DB.readOnly { implicit s => 
-      Project.getOption(id) must beNone
+      Project.getOption(project.id) must beNone
     }
   }
 
   "List Projects" >> {
-    val response = 
-      ListProjectsHandler.handle
+    val projects: Seq[serialized.ProjectSummary] = ListProjects().projects
 
-    val projects = 
-      response.data.as[Map[String, JsValue]]
-        .apply("projects").as[Seq[Map[String, JsValue]]]
-        .map { project => 
-          project("id").as[String] -> 
-            StupidReactJsonMap.decode(project("properties"))("name")
-        }
-        .toMap
-        .mapValues { _.as[String] }
+    val projectNames = projects.map { project => 
+                          PropertyList.lookup(project.properties, "name")
+                                      .get
+                                      .as[String]
+                       }
 
-    projects.values must contain(CREATE_PROJECT_NAME)
-    projects.values must not contain(DELETE_PROJECT_NAME)
+    projectNames must contain(CREATE_PROJECT_NAME)
+    projectNames must not contain(DELETE_PROJECT_NAME)
   }
 }
 

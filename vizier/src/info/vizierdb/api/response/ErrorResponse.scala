@@ -2,7 +2,7 @@ package info.vizierdb.api.response
 
 import org.mimirdb.api.Response
 
-case class ErrorResponse(response: Response) extends Exception
+case class ErrorResponse(response: Response) extends Exception(response.toString)
 
 object ErrorResponse
 {

@@ -15,7 +15,7 @@
 package info.vizierdb.shared
 
 import play.api.libs.json._
-import java.net.URL
+import info.vizierdb.nativeTypes.URL
 
 object HATEOAS
 {

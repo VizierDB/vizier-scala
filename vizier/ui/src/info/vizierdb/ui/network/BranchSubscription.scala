@@ -66,6 +66,17 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
     connected() = false
   }
 
+  def onSync(workflow: serialized.WorkflowDescription) = 
+  {
+    logger.debug("Got initial sync")
+    modules.clear()
+    modules ++= workflow.modules
+                        .zipWithIndex
+                        .map { case (initialState, idx) =>
+                          new ModuleSubscription(initialState, this, idx) 
+                        }
+    awaitingReSync() = false
+  }
   def onConnected(event: dom.Event)
   {
     connected() = true
@@ -75,16 +86,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
     Client[websocket.BranchWatcherAPI]
       .subscribe(projectId, branchId)
       .call()
-      .onSuccess { case workflow => 
-        logger.debug("Got initial sync")
-        modules.clear()
-        modules ++= workflow.modules
-                            .zipWithIndex
-                            .map { case (initialState, idx) =>
-                              new ModuleSubscription(initialState, this, idx) 
-                            }
-        awaitingReSync() = false
-      }
+      .onSuccess { case workflow => onSync(workflow) } 
   }
   def onClosed(event: dom.Event)
   {
@@ -99,6 +101,9 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
     logger.error(s"Error: $event")
   }
 
+
+
+
   implicit val websocketRequestFormat = Json.format[websocket.WebsocketRequest]
   implicit val normalwebsocketresponseformat = Json.format[websocket.NormalWebsocketResponse]
   implicit val errorwebsocketresponseformat = Json.format[websocket.ErrorWebsocketResponse]
@@ -107,6 +112,18 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
 
   var nextMessageId = 0l;
   val messageCallbacks = mutable.Map[Long, Promise[JsValue]]()
+  def makeRequest(request: Client.Request): Promise[JsValue] =
+  {
+    val id = nextMessageId; 
+    logger.trace(s"${request.path.mkString("/")} <- Request ${id}")
+    nextMessageId += 1
+    val response = Promise[JsValue]()
+    messageCallbacks.put(id, response) 
+    val wrappedRequest = websocket.WebsocketRequest(id, request)
+    val requestJson = Json.toJson(wrappedRequest)
+    socket.send(requestJson.toString)
+    return response
+  }
 
   def onMessage(message: dom.MessageEvent) =
   {
@@ -206,17 +223,9 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
     def write[T: Writes](t: T) = Json.toJson(t)
     def read[T: Reads](s: JsValue): T = Json.fromJson[T](s).get
     
-    override def doCall(req: Request): Future[JsValue] =
+    override def doCall(request: Request): Future[JsValue] =
     {
-      val id = nextMessageId
-      val response = Promise[JsValue]
-      nextMessageId += 1;
-      logger.trace(s"${req.path.mkString("/")} <- Request ${id}")
-      messageCallbacks.put(id, response)
-      val wrappedRequest = websocket.WebsocketRequest(id, req)
-      val requestJson = Json.toJson(wrappedRequest)
-      socket.send(requestJson.toString)
-      return response.future
+      return makeRequest(request).future
     }
 
   }

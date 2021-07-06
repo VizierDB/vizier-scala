@@ -14,7 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.delta
 
-import info.vizierdb.types.{ ExecutionState, StreamType }
+import info.vizierdb.types.{ ExecutionState, StreamType, Identifier }
 import info.vizierdb.serialized
 
 sealed trait WorkflowDelta
@@ -40,7 +40,7 @@ object DeltaOutputArtifact {
 }
 
 case class UpdateCellOutputs(position: Int, outputs: Seq[DeltaOutputArtifact]) extends WorkflowDelta
-case class AdvanceResultId(position: Int, resultId: String) extends WorkflowDelta
+case class AdvanceResultId(position: Int, resultId: Identifier) extends WorkflowDelta
 
 
 object WorkflowDelta
