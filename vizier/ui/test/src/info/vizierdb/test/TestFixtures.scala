@@ -17,6 +17,7 @@ import info.vizierdb.shared.HATEOAS
 import info.vizierdb.serializers._
 import info.vizierdb.delta.WorkflowDelta
 import info.vizierdb.api.websocket.NotificationWebsocketMessage
+import info.vizierdb.api.websocket.WebsocketResponse
 
 trait TestFixtures
 {
@@ -49,9 +50,9 @@ trait TestFixtures
 
   def signalDelta(delta: WorkflowDelta) =
   {
-    implicit val format = MockBranchSubscription.notificationwebsocketmessageformat
+    implicit val format = MockBranchSubscription.websocketResponseFormat
     MockBranchSubscription.onMessage(js.Dictionary(
-      "data" -> Json.toJson(NotificationWebsocketMessage(delta)).toString
+      "data" -> Json.toJson(NotificationWebsocketMessage(delta):WebsocketResponse).toString
     ).asInstanceOf[dom.MessageEvent])
   }
 

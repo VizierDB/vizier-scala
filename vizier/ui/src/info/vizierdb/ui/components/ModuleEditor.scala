@@ -10,7 +10,8 @@ import info.vizierdb.util.Logging
 import autowire._
 import info.vizierdb.serializers._
 import info.vizierdb.api.websocket
-import info.vizierdb.serialized.{ CommandArgument, CommandDescription, ParameterDescriptionTree }
+import info.vizierdb.serialized.{ CommandArgument, CommandArgumentList, CommandDescription, ParameterDescriptionTree }
+import info.vizierdb.nativeTypes.JsValue
 
 class ModuleEditor(
   val packageId: String, 
@@ -58,18 +59,8 @@ class ModuleEditor(
     }
   }
 
-  def setState(arguments: (String, Any)*)
-  {
-    loadState(
-      arguments.map { case (id, value) =>
-        assert(value.asInstanceOf[js.UndefOr[Any]].isDefined)
-        js.Dictionary(
-          "id" -> id,
-          "value" -> value
-        ).asInstanceOf[CommandArgument]
-      }
-    )
-  }
+  def setState(arguments: (String, JsValue)*) =
+    loadState(CommandArgumentList(arguments:_*))
 
   val parameters: Seq[Parameter] = 
     ParameterDescriptionTree(

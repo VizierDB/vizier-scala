@@ -39,13 +39,15 @@ object WorkflowSpec extends TestSuite with TestFixtures
       assert(editor.activeView.now.get.isRight)
       val module = editor.activeView.now.get.right.get
       module.setState(
-        "dataset" -> "foo"
+        "dataset" -> JsString("foo")
       )
       assert(
         module.arguments
               .find { _.id.equals("dataset") }
-              .map { _.value }
-              .equals(Some("foo"))
+              .get
+              .value
+              .as[String]
+              .equals("foo")
       )
 
       val derivedModule =
@@ -57,11 +59,11 @@ object WorkflowSpec extends TestSuite with TestFixtures
 
       val (request, _) = 
         pushResponse { 
-          BuildA.WorkflowByAppending(TestFixtures.defaultWorkflow, derivedModule)
+          BuildA.WorkflowByAppending(TestFixtures.defaultWorkflow.copy(modules = Seq.empty), derivedModule)
         } {
           module.saveState()
         }
-      assert(request.path.equals("workflowAppend"))
+      assert(request.path.last.equals("workflowInsert"))
       assert(request.args("packageId").as[String].equals("debug"))
       assert(request.args("commandId").as[String].equals("drop"))
       assert(request.args("arguments").as[CommandArgumentList.T]

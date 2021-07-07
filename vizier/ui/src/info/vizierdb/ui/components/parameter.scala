@@ -1,6 +1,7 @@
 package info.vizierdb.ui.components
 
 import scala.collection.mutable
+import play.api.libs.json._
 import scalajs.js
 import rx._
 import org.scalajs.dom
@@ -11,6 +12,7 @@ import info.vizierdb.ui.facades.{ CodeMirror, CodeMirrorEditor }
 import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
 import info.vizierdb.util.{ Logger, Logging }
 import info.vizierdb.serialized
+import info.vizierdb.serializers._
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
@@ -48,18 +50,18 @@ sealed trait Parameter
   /**
    * The current value of this parameter's input widget
    */
-  def value: Any
+  def value: JsValue
 
   /**
    * Update the current value of this parameter's input widget
    */
-  def set(v: Any)
+  def set(v: JsValue)
 
   /**
    * Encode the parameter and its value as a [[ModuleArgument]]
    */
   def toArgument: serialized.CommandArgument =
-    js.Dictionary( "id" -> id, "value" -> value ).asInstanceOf[serialized.CommandArgument]
+    serialized.CommandArgument(id, value)
 
   /**
    * Callbacks to trigger when the value of the element changes
@@ -217,9 +219,10 @@ class BooleanParameter(
   val root = 
     input(`type` := "checkbox").render
   def value = 
-    inputNode[dom.html.Input].value.toBoolean
-  override def set(v: Any): Unit =
-    inputNode[dom.html.Input].value = v.asInstanceOf[Boolean].toString
+    JsBoolean(inputNode[dom.html.Input].value.toBoolean)
+
+  override def set(v: JsValue): Unit =
+    inputNode[dom.html.Input].value = v.as[Boolean].toString
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -266,10 +269,12 @@ case class CodeParameter(
       )
     )
   def value = 
-    Option(editor).map { _.getValue }
-                  .getOrElse { "" }
-  override def set(v: Any): Unit = 
-    Option(editor).map { _.setValue(v.asInstanceOf[String]) }
+    JsString(
+      Option(editor).map { _.getValue }
+                    .getOrElse { "" }
+    )
+  override def set(v: JsValue): Unit = 
+    Option(editor).map { _.setValue(v.as[String]) }
 }
 object CodeParameter
 {
@@ -357,9 +362,9 @@ class ColIdParameter(
     }
   )
   def value = 
-    inputNode[dom.html.Select].value
-  override def set(v: Any): Unit = 
-    inputNode[dom.html.Select].value = v.asInstanceOf[String]
+    JsString(inputNode[dom.html.Select].value)
+  override def set(v: JsValue): Unit = 
+    inputNode[dom.html.Select].value = v.as[String]
 
 }
 
@@ -421,11 +426,11 @@ class ArtifactParameter(
   )
   def value = 
     inputNode[dom.html.Select].value match {
-      case "" => null
-      case x => x
+      case "" => JsNull
+      case x => JsString(x)
     }
-  override def set(v: Any): Unit = 
-    inputNode[dom.html.Select].value = v.asInstanceOf[String]
+  override def set(v: JsValue): Unit = 
+    inputNode[dom.html.Select].value = v.as[String]
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -452,9 +457,9 @@ class DecimalParameter(
   val root = 
     input(`type` := "number", step := "0.01").render.asInstanceOf[dom.html.Input]
   def value = 
-    inputNode[dom.html.Input].value.toDouble
-  override def set(v: Any): Unit = 
-    inputNode[dom.html.Input].value = v.asInstanceOf[Float].toString
+    JsNumber(inputNode[dom.html.Input].value.toDouble)
+  override def set(v: JsValue): Unit = 
+    inputNode[dom.html.Input].value = v.as[Float].toString
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -549,11 +554,11 @@ class FileParameter(
   )
   def value =
     mode.now match {
-      case 0 => js.Object("fileid" -> uploadedFileId, "filename" -> uploadedFileName)
-      case 1 => js.Object("url" -> inputNode[dom.html.Input].value)
-      case _ => null
+      case 0 => Json.obj("fileid" -> uploadedFileId, "filename" -> uploadedFileName)
+      case 1 => Json.obj("url" -> inputNode[dom.html.Input].value)
+      case _ => JsNull
     }
-  def set(v: Any): Unit = 
+  def set(v: JsValue): Unit = 
     ???
 }
 
@@ -581,9 +586,9 @@ class IntParameter(
   val root = 
     input(`type` := "number", step := "1").render.asInstanceOf[dom.html.Input]
   def value = 
-    inputNode[dom.html.Input].value.toInt
-  def set(v: Any): Unit = 
-    inputNode[dom.html.Input].value = v.asInstanceOf[Int].toString
+    JsNumber(inputNode[dom.html.Input].value.toInt)
+  def set(v: JsValue): Unit = 
+    inputNode[dom.html.Input].value = v.as[Int].toString
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -667,10 +672,14 @@ class ListParameter(
       )
     )
   def value = 
-    rows.toSeq
-        .take(rows.length-1)
-        .map { _.map { _.toArgument } }
-  def set(v: Any): Unit = 
+    JsArray(
+      rows.toSeq
+          .dropRight(1) // drop the "template" row
+          .map { row => 
+            JsArray(row.map { field => Json.toJson(field.toArgument) })
+          }
+    )
+  def set(v: JsValue): Unit = 
     ???
 }
 
@@ -711,8 +720,8 @@ class RecordParameter(
       )
     )
   def value = 
-    elements.map { _.toArgument }
-  def set(v: Any): Unit = 
+    Json.toJson(elements.map { _.toArgument })
+  def set(v: JsValue): Unit = 
     ???
 }
 
@@ -740,9 +749,9 @@ class RowIdParameter(
   val root = 
     input(`type` := "number", step := "1").render.asInstanceOf[dom.html.Input]
   def value = 
-    inputNode[dom.html.Input].value
-  def set(v: Any): Unit = 
-    inputNode[dom.html.Input].value = v.asInstanceOf[String]
+    JsString(inputNode[dom.html.Input].value)
+  def set(v: JsValue): Unit = 
+    inputNode[dom.html.Input].value = v.as[String]
 
 }
 
@@ -779,9 +788,9 @@ class EnumerableParameter(
       .render.asInstanceOf[dom.html.Select]
 
   def value = 
-    inputNode[dom.html.Select].value
-  def set(v: Any): Unit = 
-    inputNode[dom.html.Select].value = v.asInstanceOf[String]
+    JsString(inputNode[dom.html.Select].value)
+  def set(v: JsValue): Unit = 
+    inputNode[dom.html.Select].value = v.as[String]
 
 }
 
@@ -809,9 +818,9 @@ class StringParameter(
   val root = 
     input(`type` := "text").render.asInstanceOf[dom.html.Input]
   def value =
-    inputNode[dom.html.Input].value
-  def set(v: Any): Unit = 
-    inputNode[dom.html.Input].value = v.asInstanceOf[String]
+    JsString(inputNode[dom.html.Input].value)
+  def set(v: JsValue): Unit = 
+    inputNode[dom.html.Input].value = v.as[String]
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -838,6 +847,6 @@ class UnsupportedParameter(
     )
   }
   val root = span(s"Unsupported parameter type: $dataType")
-  def value = null
-  def set(v: Any): Unit = {}
+  def value = JsNull
+  def set(v: JsValue): Unit = {}
 }

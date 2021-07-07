@@ -18,6 +18,7 @@ import info.vizierdb.api.websocket
 import info.vizierdb.delta
 import info.vizierdb.serializers._
 import autowire._
+import info.vizierdb.api.websocket.BranchWatcherAPI
 
 class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
   extends Object
@@ -44,13 +45,11 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
 
   private def keepalive(s: dom.WebSocket)
   {
-    s.send(
-      JSON.stringify(
-        js.Dictionary(
-          "operation" -> "ping",
-        )
-      )
-    )
+    Client[BranchWatcherAPI].ping()
+                            .call()
+                            .onSuccess { case ts => ts
+                              logger.trace(s"Ping response $ts")
+                            }
   }
 
   /**

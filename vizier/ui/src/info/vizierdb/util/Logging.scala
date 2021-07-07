@@ -9,6 +9,7 @@ trait Logging
 
 class Logger(loggerName: String)
 {
+  // println(loggerName)
   val level = idx(Logging.get(loggerName))
 
   @inline
@@ -47,6 +48,8 @@ object Logging extends Enumeration
   val DEFAULT = INFO
 
   val levels = mutable.Map[String, Level](
+    "info.vizierdb.ui.network.BranchSubscription" -> INFO,
+    "info.vizierdb.test.TestFixtures$MockBranchSubscription$" -> INFO
   )
 
   def get(logger: String) = 

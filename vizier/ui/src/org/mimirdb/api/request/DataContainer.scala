@@ -3,6 +3,11 @@ package org.mimirdb.api.request
 import info.vizierdb.serialized.DatasetColumn
 import info.vizierdb.nativeTypes.{ JsValue, Caveat }
 
+/**
+ * A js-native counterpart of the Mimir Data Container class.
+ * 
+ * This will be removed as soon as we merge Mimir into Vizier
+ */
 case class DataContainer (
   schema: Seq[DatasetColumn],
   data: Seq[Seq[Any]],
