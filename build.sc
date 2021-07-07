@@ -40,7 +40,7 @@ object vizier extends ScalaModule with PublishModule {
 
   def sources = T.sources(
     millSourcePath / "src",
-    millSourcePath / "shared" / "src"
+    millSourcePath / "shared-src"
   )
 
   def ivyDeps = Agg(
@@ -68,7 +68,6 @@ object vizier extends ScalaModule with PublishModule {
     ////////////////////// API Support /////////////////////
     ivy"javax.servlet:javax.servlet-api:3.1.0",
     ivy"org.eclipse.jetty.websocket:websocket-server:9.4.10.v20180503",
-    ivy"com.lihaoyi::autowire:0.3.3",
 
     ////////////////////// Command-Specific Libraries //////
     ivy"com.github.andyglow::scala-jsonschema::0.7.1",
@@ -125,13 +124,12 @@ object vizier extends ScalaModule with PublishModule {
       ivy"org.scala-js::scalajs-dom::1.0.0",
       ivy"com.lihaoyi::scalarx::0.4.3",
       ivy"com.lihaoyi::scalatags::0.9.4",
-      ivy"com.lihaoyi::autowire::0.3.3",
       ivy"com.typesafe.play::play-json::2.9.2",
     )
 
     def sources = T.sources(
       millSourcePath / "src",
-      vizier.millSourcePath / "shared" / "src"
+      vizier.millSourcePath / "shared-src"
     )
   
     override def compile = T {

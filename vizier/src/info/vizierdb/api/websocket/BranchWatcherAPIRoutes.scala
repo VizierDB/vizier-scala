@@ -8,40 +8,29 @@ import info.vizierdb.types._
 import info.vizierdb.api.handler._
 import info.vizierdb.api._
 import info.vizierdb.serialized
+import info.vizierdb.serializers._
 import org.mimirdb.api.request.DataContainer
 
-abstract class BranchWatcherAPIRoutes extends BranchWatcherAPI
+abstract class BranchWatcherAPIRoutes
 {
-
   implicit def liftToOption[T](x: T): Option[T] = Some(x)
-  def wrapCall[T](action: String, op: => T): T
   def projectId: Identifier
   def branchId: Identifier
 
-  def workflowGet(): serialized.WorkflowDescription =
-    wrapCall("workflowGet", GetWorkflow(projectId = projectId, branchId = branchId))
-  def workflowCancel(): serialized.WorkflowDescription =
-    wrapCall("workflowCancel", CancelWorkflow(projectId = projectId, branchId = branchId))
-  def workflowQuery(query:String): DataContainer =
-    wrapCall("workflowQuery", WorkflowSQL(projectId = projectId, branchId = branchId, query = query))
-  def workflowModules(): Seq[serialized.ModuleDescription] =
-    wrapCall("workflowModules", GetAllModules(projectId = projectId, branchId = branchId))
-  def workflowAppend(packageId:String, commandId:String, arguments:serialized.CommandArgumentList.T): serialized.WorkflowDescription =
-    wrapCall("workflowAppend", AppendModule(projectId = projectId, branchId = branchId, packageId = packageId, commandId = commandId, arguments = arguments))
-  def workflowGetModule(modulePosition:Int): serialized.ModuleDescription =
-    wrapCall("workflowGetModule", GetModule(projectId = projectId, branchId = branchId, modulePosition = modulePosition))
-  def workflowInsert(modulePosition:Int, packageId:String, commandId:String, arguments:serialized.CommandArgumentList.T): serialized.WorkflowDescription =
-    wrapCall("workflowInsert", InsertModule(projectId = projectId, branchId = branchId, modulePosition = modulePosition, packageId = packageId, commandId = commandId, arguments = arguments))
-  def workflowDelete(modulePosition:Int): serialized.WorkflowDescription =
-    wrapCall("workflowDelete", DeleteModule(projectId = projectId, branchId = branchId, modulePosition = modulePosition))
-  def workflowReplace(modulePosition:Int, packageId:String, commandId:String, arguments:serialized.CommandArgumentList.T): serialized.WorkflowDescription =
-    wrapCall("workflowReplace", ReplaceModule(projectId = projectId, branchId = branchId, modulePosition = modulePosition, packageId = packageId, commandId = commandId, arguments = arguments))
-  def workflowThawUpto(modulePosition:Int): serialized.WorkflowDescription =
-    wrapCall("workflowThawUpto", ThawModules(thawUptoHere=true)(projectId = projectId, branchId = branchId, modulePosition = modulePosition))
-  def workflowThawOne(modulePosition:Int): serialized.WorkflowDescription =
-    wrapCall("workflowThawOne", ThawModules(thawUptoHere=false)(projectId = projectId, branchId = branchId, modulePosition = modulePosition))
-  def workflowFreezeFrom(modulePosition:Int): serialized.WorkflowDescription =
-    wrapCall("workflowFreezeFrom", FreezeModules(freezeFromHere=true)(projectId = projectId, branchId = branchId, modulePosition = modulePosition))
-  def workflowFreezeOne(modulePosition:Int): serialized.WorkflowDescription =
-    wrapCall("workflowFreezeOne", FreezeModules(freezeFromHere=false)(projectId = projectId, branchId = branchId, modulePosition = modulePosition))
+  def route(path: Seq[String], args: Map[String, JsValue]): JsValue =
+    path.last match {
+      case "workflowGet" => Json.toJson(GetWorkflow(projectId = projectId, branchId = branchId):serialized.WorkflowDescription)
+      case "workflowCancel" => Json.toJson(CancelWorkflow(projectId = projectId, branchId = branchId):serialized.WorkflowDescription)
+      case "workflowQuery" => Json.toJson(WorkflowSQL(projectId = projectId, branchId = branchId, query = args("query").as[String]):DataContainer)
+      case "workflowModules" => Json.toJson(GetAllModules(projectId = projectId, branchId = branchId):Seq[serialized.ModuleDescription])
+      case "workflowAppend" => Json.toJson(AppendModule(projectId = projectId, branchId = branchId, packageId = args("packageId").as[String], commandId = args("commandId").as[String], arguments = args("arguments").as[serialized.CommandArgumentList.T]):serialized.WorkflowDescription)
+      case "workflowGetModule" => Json.toJson(GetModule(projectId = projectId, branchId = branchId, modulePosition = args("modulePosition").as[Int]):serialized.ModuleDescription)
+      case "workflowInsert" => Json.toJson(InsertModule(projectId = projectId, branchId = branchId, modulePosition = args("modulePosition").as[Int], packageId = args("packageId").as[String], commandId = args("commandId").as[String], arguments = args("arguments").as[serialized.CommandArgumentList.T]):serialized.WorkflowDescription)
+      case "workflowDelete" => Json.toJson(DeleteModule(projectId = projectId, branchId = branchId, modulePosition = args("modulePosition").as[Int]):serialized.WorkflowDescription)
+      case "workflowReplace" => Json.toJson(ReplaceModule(projectId = projectId, branchId = branchId, modulePosition = args("modulePosition").as[Int], packageId = args("packageId").as[String], commandId = args("commandId").as[String], arguments = args("arguments").as[serialized.CommandArgumentList.T]):serialized.WorkflowDescription)
+      case "workflowThawUpto" => Json.toJson(ThawModules(thawUptoHere=true)(projectId = projectId, branchId = branchId, modulePosition = args("modulePosition").as[Int]):serialized.WorkflowDescription)
+      case "workflowThawOne" => Json.toJson(ThawModules(thawUptoHere=false)(projectId = projectId, branchId = branchId, modulePosition = args("modulePosition").as[Int]):serialized.WorkflowDescription)
+      case "workflowFreezeFrom" => Json.toJson(FreezeModules(freezeFromHere=true)(projectId = projectId, branchId = branchId, modulePosition = args("modulePosition").as[Int]):serialized.WorkflowDescription)
+      case "workflowFreezeOne" => Json.toJson(FreezeModules(freezeFromHere=false)(projectId = projectId, branchId = branchId, modulePosition = args("modulePosition").as[Int]):serialized.WorkflowDescription)
+    }
 }

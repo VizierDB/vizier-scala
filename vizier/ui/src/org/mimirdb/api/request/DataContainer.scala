@@ -10,7 +10,7 @@ import info.vizierdb.nativeTypes.{ JsValue, Caveat }
  */
 case class DataContainer (
   schema: Seq[DatasetColumn],
-  data: Seq[Seq[Any]],
+  data: Seq[Seq[JsValue]],
   prov: Seq[String],
   colTaint: Seq[Seq[Boolean]],
   rowTaint: Seq[Boolean],

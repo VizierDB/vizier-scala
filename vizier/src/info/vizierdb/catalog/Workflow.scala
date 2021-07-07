@@ -299,12 +299,13 @@ case class Workflow(
 
   def makeSummary(branch: Branch, actionModule: Option[Module]): serialized.WorkflowSummary =
     serialized.WorkflowSummary(
-      id          = id,
-      createdAt   = created,
-      action      = action.toString,
-      packageId   = actionModule.map { _.packageId },
-      commandId   = actionModule.map { _.commandId },
-      links       = HATEOAS(
+      id           = id,
+      createdAt    = created,
+      action       = action.toString,
+      actionModule = actionModule.map { _.id },
+      packageId    = actionModule.map { _.packageId },
+      commandId    = actionModule.map { _.commandId },
+      links        = HATEOAS(
         HATEOAS.SELF             -> VizierAPI.urls.getWorkflow(branch.projectId, branchId, id),
         HATEOAS.WORKFLOW_APPEND  -> VizierAPI.urls.appendWorkflow(branch.projectId, branchId, id),
         HATEOAS.WORKFLOW_BRANCH  -> VizierAPI.urls.getBranch(branch.projectId, branchId),

@@ -9,6 +9,7 @@ case class WorkflowSummary(
   id: Identifier,
   createdAt: DateTime,
   action: String,
+  actionModule: Option[Identifier],
   packageId: Option[String],
   commandId: Option[String],
   links: HATEOAS.T
@@ -27,6 +28,7 @@ case class WorkflowSummary(
       id = id,
       createdAt = createdAt,
       action = action,
+      actionModule = actionModule,
       packageId = packageId,
       commandId = commandId,
       state = ExecutionState.translateToClassicVizier(state),
@@ -44,6 +46,7 @@ case class WorkflowDescription(
   id: Identifier,
   createdAt: DateTime,
   action: String,
+  actionModule: Option[Identifier],
   packageId: Option[String],
   commandId: Option[String],
   state: Int,

@@ -22,6 +22,7 @@ class TentativeModule(
   val visibleArtifacts = Var[Rx[Map[String, serialized.ArtifactSummary]]](Var(Map.empty))
   val selectedDataset = Var[Option[String]](None)
   var id: Option[Identifier] = None
+  def isLast = position >= editList.size - 1
 
   loadPackages()
 

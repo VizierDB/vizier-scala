@@ -2,9 +2,11 @@ package info.vizierdb
 
 import play.api.libs.json._
 import scala.scalajs.js
+import org.mimirdb.api.request.DataContainer
 
 object serializers
 {
+
   implicit val zonedDateTimeFormat = Format[js.Date](
     new Reads[js.Date]  { def reads(j: JsValue)  = JsSuccess(new js.Date(j.as[String])) },
     new Writes[js.Date] { def writes(t: js.Date) = JsString(t.toISOString) }
@@ -152,4 +154,6 @@ object serializers
         }
     }
   )
+  implicit val caveatFormat = Json.format[nativeTypes.Caveat]
+  implicit val dataContainerFormat = Json.format[DataContainer]
 }

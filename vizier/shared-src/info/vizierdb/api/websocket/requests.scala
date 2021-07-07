@@ -9,14 +9,6 @@ case class WebsocketRequest(
   path: Seq[String],
   args: Map[String, JsValue]
 )
-{
-  def autowireRequest = autowire.Core.Request[JsValue](path, args)
-}
-object WebsocketRequest
-{
-  def apply(id: Identifier, req: autowire.Core.Request[JsValue]): WebsocketRequest = 
-    WebsocketRequest(id, req.path, req.args)
-}
 
 sealed trait WebsocketResponse
 {

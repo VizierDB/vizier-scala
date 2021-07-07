@@ -28,7 +28,6 @@ import org.eclipse.jetty.websocket.servlet.{
   WebSocketServlet,
   WebSocketServletFactory
 }
-import autowire._
 import scalikejdbc.DB
 import scala.collection.mutable
 import play.api.libs.json._
@@ -37,6 +36,7 @@ import info.vizierdb.catalog._
 import info.vizierdb.delta.{ DeltaBus, WorkflowDelta }
 import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet
+import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Success, Failure }
@@ -99,12 +99,17 @@ class BranchWatcherSocket
   {
     logger.trace(s"Websocket received ${data.length()} bytes: ${data.take(20)}")
     val request = Json.parse(data).as[WebsocketRequest]
-    Router.routes
-          .apply(request.autowireRequest)
-          .onComplete {
-            case Success(result) => send(NormalWebsocketResponse(request.id, result))
-            case Failure(error) => send(ErrorWebsocketResponse(request.id, error.getMessage))
-          }
+    try { 
+      logger.debug(s"Processing Websocket Request: ${request.path.last} (${Router.projectId} / ${Router.branchId})")
+      whilePausingNotifications {
+        val result = Router.route(request.path, request.args)
+        send(NormalWebsocketResponse(request.id, result))
+      }
+    } catch {
+      case error: Throwable =>
+        logger.warn(s"Websocket error: $error")
+        send(ErrorWebsocketResponse(request.id, error.getMessage))
+    }
   }
 
   var notificationBuffer: mutable.Buffer[WorkflowDelta] = null
@@ -112,8 +117,11 @@ class BranchWatcherSocket
   /**
    * Send a message
    */
-  def send[T <: WebsocketResponse](message: T)(implicit writes: Writes[T]) =
+  def send(message: WebsocketResponse) =
+  {
+    logger.trace(s"SEND: $message")
     session.getRemote.sendString(Json.stringify(Json.toJson(message)))
+  }
 
   /**
    * Delay out-of-band notifications until the enclosed block completes
@@ -127,7 +135,9 @@ class BranchWatcherSocket
       op
     } finally {
       synchronized {
-        myBuffer.foreach { delta => send(NotificationWebsocketMessage(delta)) }
+        logger.trace(s"Clearing buffer of ${myBuffer.size} messages")
+        myBuffer.foreach { delta => 
+          send(NotificationWebsocketMessage(delta)) }
         notificationBuffer = oldBuffer
       }
     }
@@ -147,30 +157,21 @@ class BranchWatcherSocket
     }
   }
 
-  object APIImpl 
-    extends BranchWatcherAPIRoutes // <--- default routes implemented here
+  object Router 
+    extends BranchWatcherAPIRoutes // <- default route implementations live here
   {
     var projectId: Identifier = -1
     var branchId: Identifier = -1
 
     /**
-     * Wrap the call
-     */
-    def wrapCall[T](action: String, op: => T): T = 
-    {
-      logger.debug(s"Processing Websocket Request: $action")
-      whilePausingNotifications { op }
-    }
-
-    /**
      * Override get as a way to signal a subscription event
      */
-    def subscribe(projectId: Identifier, branchId: Identifier) =
+    def subscribe(projectId: Identifier, branchId: Identifier): serialized.WorkflowDescription =
     {
       registerSubscription(projectId, branchId)
       this.branchId = branchId
       this.projectId = projectId
-      workflowGet()
+      info.vizierdb.api.GetWorkflow(projectId = projectId, branchId = branchId)
     }
 
     /**
@@ -178,15 +179,13 @@ class BranchWatcherSocket
      * keep the channel open
      */
     def ping() = System.currentTimeMillis()
-  }
 
-  object Router extends autowire.Server[JsValue, Reads, Writes]
-  {
-    def write[T: Writes](t: T) = Json.toJson(t)
-    def read[T: Reads](s: JsValue): T = Json.fromJson[T](s).get
-
-    // val routes = route[BranchHeadAPI](BranchHeadAPIImpl)
-    val routes = route[BranchWatcherAPI](APIImpl)
+    override def route(path: Seq[String], args: Map[String, JsValue]) =
+      path.last match {
+        case "subscribe" => Json.toJson(subscribe(args("projectId").as[Identifier], args("branchId").as[Identifier]))
+        case "ping" => Json.toJson(ping())
+        case _ => super.route(path, args)
+      }
   }
 }
 

@@ -17,8 +17,7 @@ import info.vizierdb.serialized
 import info.vizierdb.api.websocket
 import info.vizierdb.delta
 import info.vizierdb.serializers._
-import autowire._
-import info.vizierdb.api.websocket.BranchWatcherAPI
+import scala.util.{ Success, Failure }
 
 class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
   extends Object
@@ -45,11 +44,11 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
 
   private def keepalive(s: dom.WebSocket)
   {
-    Client[BranchWatcherAPI].ping()
-                            .call()
-                            .onSuccess { case ts => 
-                              logger.trace(s"Ping response $ts")
-                            }
+    Client.ping()
+          .onComplete { 
+            case Success(ts) => logger.trace(s"Ping response $ts")
+            case Failure(error) => logger.error(s"Ping error: $error")
+          }
   }
 
   /**
@@ -82,10 +81,8 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
     logger.debug("Connected!")
     awaitingReSync() = true
 
-    Client[websocket.BranchWatcherAPI]
-      .subscribe(projectId, branchId)
-      .call()
-      .onSuccess { case workflow => onSync(workflow) } 
+    Client.subscribe(projectId, branchId)
+          .onSuccess { case workflow => onSync(workflow) } 
   }
   def onClosed(event: dom.Event)
   {
@@ -100,30 +97,11 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
     logger.error(s"Error: $event")
   }
 
-
-
-
   implicit val websocketRequestFormat = Json.format[websocket.WebsocketRequest]
   implicit val normalwebsocketresponseformat = Json.format[websocket.NormalWebsocketResponse]
   implicit val errorwebsocketresponseformat = Json.format[websocket.ErrorWebsocketResponse]
   implicit val notificationwebsocketmessageformat = Json.format[websocket.NotificationWebsocketMessage]
   implicit val websocketResponseFormat = Json.format[websocket.WebsocketResponse]
-
-  var nextMessageId = 0l;
-  val messageCallbacks = mutable.Map[Long, Promise[JsValue]]()
-  def makeRequest(request: Client.Request): Promise[JsValue] =
-  {
-    val id = nextMessageId; 
-    logger.trace(s"${request.path.mkString("/")} <- Request ${id}")
-    nextMessageId += 1
-    val response = Promise[JsValue]()
-    messageCallbacks.put(id, response) 
-    val wrappedRequest = websocket.WebsocketRequest(id, request)
-    val requestJson = Json.toJson(wrappedRequest)
-    socket.send(requestJson.toString)
-    return response
-  }
-
   def onMessage(message: dom.MessageEvent) =
   {
     logger.trace(s"Got: ${message.data}")
@@ -133,18 +111,12 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
           /*************************************************************/
 
           case websocket.NormalWebsocketResponse(id, message) => 
-            messageCallbacks.remove(id) match {
-              case Some(promise) => promise.success(message)
-              case None => logger.warn(s"Response to unsent messageId: ${id}")
-            }
+            Client.reportSuccess(id, message)
 
           /*************************************************************/
 
           case websocket.ErrorWebsocketResponse(id, error, detail) =>
-            messageCallbacks.remove(id) match {
-              case Some(promise) => promise.failure(new Exception(error))
-              case None => logger.warn(s"ERROR Response to unsent messageId: ${id}")
-            }
+            Client.reportError(id, error, detail)
 
           /*************************************************************/
 
@@ -217,15 +189,47 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
         }
   }
 
-  object Client extends autowire.Client[JsValue, Reads, Writes]
+  object Client extends BranchWatcherAPIProxy
   {
-    def write[T: Writes](t: T) = Json.toJson(t)
-    def read[T: Reads](s: JsValue): T = Json.fromJson[T](s).get
-    
-    override def doCall(request: Request): Future[JsValue] =
+    var nextMessageId = 0l;
+    val messageCallbacks = mutable.Map[Long, Promise[JsValue]]()
+    val BASE_PATH = Seq("info", "vizierdb", "api", "websocket", "BranchWatcherAPI")
+
+    def reportSuccess(id: Long, message: JsValue) =
+      messageCallbacks.remove(id) match {
+        case Some(promise) => promise.success(message)
+        case None => logger.warn(s"Response to unsent messageId: ${id}")
+      }
+
+    def reportError(id: Long, error: String, detail: Option[String] = None) =
+      messageCallbacks.remove(id) match {
+        case Some(promise) => logger.warn(s"Error Response: $error"); 
+                              promise.failure(new Exception(error))
+        case None => logger.warn(s"ERROR Response to unsent messageId: ${id}")
+      }
+
+    def logRequest: (Long, Future[JsValue]) =
     {
-      return makeRequest(request).future
+      val id = nextMessageId; 
+      nextMessageId += 1
+      val response = Promise[JsValue]()
+      messageCallbacks.put(id, response) 
+      return (id, response.future)
     }
 
+    def sendRequest(leafPath: Seq[String], args: Map[String, JsValue]): Future[JsValue] =
+    {
+      val (id, response) = logRequest
+      val request = websocket.WebsocketRequest(id, BASE_PATH++leafPath, args)
+      logger.trace(s"${request.path.mkString("/")} <- Request ${request.id}")
+      socket.send(Json.toJson(request).toString)
+      return response
+    }
+
+    def ping(): Future[Long] =
+      sendRequest(Seq("ping"), Map.empty).map { _.as[Long] }
+
+    def subscribe(projectId: Identifier, branchId: Identifier): Future[serialized.WorkflowDescription] =
+      sendRequest(Seq("subscribe"), Map("projectId" -> Json.toJson(projectId), "branchId" -> Json.toJson(branchId))).map { _.as[serialized.WorkflowDescription] }
   }
 }

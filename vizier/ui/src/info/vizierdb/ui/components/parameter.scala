@@ -157,10 +157,13 @@ object Parameter
   def apply(tree: serialized.ParameterDescriptionTree, editor: ModuleEditor)
            (implicit owner: Ctx.Owner): Parameter =
   {
+    def visibleArtifactsByType = editor.module
+                                       .visibleArtifacts
+                                       .map { _().mapValues { _.t } }
     tree.parameter match {
       case param: serialized.SimpleParameterDescription =>
         param.datatype match {
-          case "colid"   => new ColIdParameter(param, editor.module.visibleArtifacts.flatMap { x => x }, editor.parameters)
+          case "colid"   => new ColIdParameter(param, editor.module.visibleArtifacts.flatMap { x => x }, editor.selectedDataset)
           case "list"    => new ListParameter(param, tree.children, this.apply(_, editor))
           case "record"  => new RecordParameter(param, tree.children, this.apply(_, editor))
           case "string"  => new StringParameter(param)
@@ -169,6 +172,7 @@ object Parameter
           case "bool"    => new BooleanParameter(param)
           case "rowid"   => new RowIdParameter(param)
           case "fileid"  => new FileParameter(param)
+          case "dataset" => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
           case _         => new UnsupportedParameter(param)
         }
 
@@ -176,9 +180,8 @@ object Parameter
         new CodeParameter(param)
 
       case param: serialized.ArtifactParameterDescription =>
-        new ArtifactParameter(param, editor.module
-                                          .visibleArtifacts
-                                          .map { _().mapValues { _.t } })
+        new ArtifactParameter(param, visibleArtifactsByType)
+        
       case param: serialized.EnumerableParameterDescription =>
         new EnumerableParameter(param)
 
@@ -310,39 +313,28 @@ class ColIdParameter(
   def this(
     parameter: serialized.ParameterDescription, 
     datasets: Rx[Map[String, serialized.ArtifactSummary]], 
-    otherParameters: Seq[Parameter]
+    selectedDataset: Rx[Option[String]]
   )
           (implicit owner: Ctx.Owner)
   {
     this(
       parameter.id,
       parameter.name,
-      otherParameters.flatMap {
-        case dsParameter:ArtifactParameter 
-                if dsParameter.artifactType == ArtifactType.DATASET 
-                   => Some(dsParameter)
-        case _     => None
-      }.headOption
-       .map { dsParameter =>
-          Rx {
-            dsParameter.selectedDataset() match {
-              case None => Seq.empty
-              case Some(dsName) => 
-                datasets().get(dsName) match {
-                  case None => 
-                    Parameter.logger.warn(s"ColIdParameter $name used with an undefined artifact")
-                    Seq.empty
-                  case Some(ds:serialized.DatasetSummary) => ds.columns
-                  case Some(ds:serialized.DatasetDescription) => ds.columns
-                  case Some(_) => 
-                    Parameter.logger.warn(s"ColIdParameter $name used with a non-dataset artifact")
-                    Seq.empty
-                }
+      Rx {
+        selectedDataset() match {
+          case None => Seq.empty
+          case Some(dsName) => 
+            datasets().get(dsName) match {
+              case None => 
+                Parameter.logger.warn(s"ColIdParameter $name used with an undefined artifact")
+                Seq.empty
+              case Some(ds:serialized.DatasetSummary) => ds.columns
+              case Some(ds:serialized.DatasetDescription) => ds.columns
+              case Some(_) => 
+                Parameter.logger.warn(s"ColIdParameter $name used with a non-dataset artifact")
+                Seq.empty
             }
-          }
-      }.getOrElse { 
-        Parameter.logger.warn(s"ColIdParameter $name used with out an associated dataset")
-        Var(Seq.empty) 
+        }
       },
       parameter.required,
       parameter.hidden
@@ -394,6 +386,18 @@ class ArtifactParameter(
       parameter.id, 
       parameter.name, 
       parameter.artifactType,
+      artifacts,
+      parameter.required, 
+      parameter.hidden
+    )
+  }
+  def this(parameter: serialized.SimpleParameterDescription, artifactType: ArtifactType.T, artifacts: Rx[Map[String, ArtifactType.T]])
+          (implicit owner: Ctx.Owner)
+  {
+    this(
+      parameter.id, 
+      parameter.name, 
+      artifactType,
       artifacts,
       parameter.required, 
       parameter.hidden
@@ -832,6 +836,7 @@ class UnsupportedParameter(
   val id: String, 
   val name: String, 
   dataType: String,
+  context: String,
   val required: Boolean,
   val hidden: Boolean
 ) extends Parameter
@@ -842,11 +847,12 @@ class UnsupportedParameter(
       parameter.id, 
       parameter.name, 
       parameter.datatype,
+      parameter.getClass().getSimpleName(),
       parameter.required, 
       parameter.hidden
     )
   }
-  val root = span(s"Unsupported parameter type: $dataType")
+  val root = span(s"Unsupported parameter type: $dataType ($context)")
   def value = JsNull
   def set(v: JsValue): Unit = {}
 }

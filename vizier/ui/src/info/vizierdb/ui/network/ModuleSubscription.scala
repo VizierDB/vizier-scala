@@ -8,8 +8,6 @@ import info.vizierdb.types._
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
-import autowire._
-import info.vizierdb.api.websocket.BranchWatcherAPI
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
@@ -40,7 +38,5 @@ class ModuleSubscription(
    * Delete this module from the workflow
    */
   def delete(): Unit = 
-    branch.Client[BranchWatcherAPI]
-          .workflowDelete(position)
-          .call()
+    branch.Client.workflowDelete(position)
 }

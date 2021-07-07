@@ -7,10 +7,19 @@ import scala.scalajs.js
 import info.vizierdb.serialized
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.util.Logging
-import autowire._
 import info.vizierdb.serializers._
 import info.vizierdb.api.websocket
-import info.vizierdb.serialized.{ CommandArgument, CommandArgumentList, CommandDescription, ParameterDescriptionTree }
+import info.vizierdb.types.ArtifactType
+import info.vizierdb.serialized.{ 
+  CommandArgument, 
+  CommandArgumentList, 
+  CommandDescription, 
+  ParameterDescriptionTree,
+  DatasetSummary,
+  DatasetDescription,
+  DatasetColumn
+
+}
 import info.vizierdb.nativeTypes.JsValue
 
 class ModuleEditor(
@@ -30,22 +39,33 @@ class ModuleEditor(
       .branchSubscription match {
         case None => logger.error("No connection!")
         case Some(s) => 
-          s.Client[websocket.BranchWatcherAPI]
-            .workflowInsert(
-              modulePosition = module.position,
-              packageId = packageId,
-              commandId = command.id,
-              arguments = arguments
-            )
-            .call()
-            .onSuccess { case workflow =>
+          val response = 
+            if(module.isLast){
+               s.Client.workflowAppend(
+                  packageId = packageId,
+                  commandId = command.id,
+                  arguments = arguments
+                )
+            } else {
+              s.Client
+                .workflowInsert(
+                  modulePosition = module.position,
+                  packageId = packageId,
+                  commandId = command.id,
+                  arguments = arguments
+                )
+            }
+          response.onSuccess { case workflow =>
+            logger.trace("SUCCESS!")
+            if(workflow.actionModule.isDefined){
+              logger.trace(s"has action module: ${workflow.actionModule}")
+              module.id = workflow.actionModule
+            } else {
+              logger.debug(s"no action module... falling back: ${workflow.modules.size}")
               module.id = Some(workflow.modules(module.position).moduleId)
             }
-
-          // s.requests.(
-          //   command = serialized,
-          //   atPosition = if(module.nextModule.isDefined){ Some(module.position) } else { None }
-          // )
+            logger.debug(s"New module id is... ${module.id}")
+          }
       }
   }
 
@@ -62,10 +82,23 @@ class ModuleEditor(
   def setState(arguments: (String, JsValue)*) =
     loadState(CommandArgumentList(arguments:_*))
 
+  val selectedDataset = Var[Option[String]](None)
+
   val parameters: Seq[Parameter] = 
     ParameterDescriptionTree(
       command.parameters.toSeq
     ).map { Parameter(_, this) }
+
+  parameters.collect { 
+    case dsParam:ArtifactParameter if dsParam.artifactType == ArtifactType.DATASET => dsParam 
+  }.headOption match {
+    case None => ()
+    case Some(dsParameter) => 
+      dsParameter.selectedDataset.trigger {
+        selectedDataset() = dsParameter.selectedDataset.now
+      }
+  }
+
   lazy val getParameter:Map[String, Parameter] = 
     parameters.map { p => p.id -> p }.toMap
 
