@@ -47,7 +47,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
   {
     Client[BranchWatcherAPI].ping()
                             .call()
-                            .onSuccess { case ts => ts
+                            .onSuccess { case ts => 
                               logger.trace(s"Ping response $ts")
                             }
   }
