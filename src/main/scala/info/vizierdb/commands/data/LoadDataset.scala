@@ -24,6 +24,7 @@ import org.mimirdb.api.{ Tuple => MimirTuple }
 import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.spark.Schema
 import org.apache.spark.sql.types.StructField
+import org.mimirdb.api.FormattedError
 
 object LoadDataset
   extends Command
@@ -57,9 +58,9 @@ object LoadDataset
       "ORC"          -> "orc",
     ), default = Some(0)),
     TemplateParameters.SCHEMA,
-    BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(false)),
-    BooleanParameter(name = "File Has Headers", id = PARAM_HEADERS, default = Some(false)),
-    BooleanParameter(name = "Annotate Load Errors", id = PARAM_ANNOTATE_ERRORS, default = Some(false)),
+    BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(true)),
+    BooleanParameter(name = "File Has Headers", id = PARAM_HEADERS, default = Some(true)),
+    BooleanParameter(name = "Annotate Load Errors", id = PARAM_ANNOTATE_ERRORS, default = Some(true)),
     ListParameter(name = "Load Options", id = PARAM_OPTIONS, required = false, components = Seq(
       StringParameter(name = "Option Key", id  = PARAM_OPTION_KEY),
       StringParameter(name = "Option Value", id  = PARAM_OPTION_VALUE),
@@ -96,37 +97,41 @@ object LoadDataset
     logger.debug(s"Source: $file")
     logger.debug(s"${if(relative){"RELATIVE"}else{"ABSOLUTE"}} PATH: $path")
 
+    try {
+      val result = LoadRequest(
+        file = path,
+        format = arguments.get[String](PARAM_FORMAT),
+        inferTypes = arguments.get[Boolean](PARAM_GUESS_TYPES),
+        detectHeaders = arguments.get[Boolean](PARAM_HEADERS),
+        humanReadableName = Some(file.filename.getOrElse { datasetName }),
+        backendOption = arguments.getList(PARAM_OPTIONS)
+                                 .map { option => MimirTuple(option.get[String](PARAM_OPTION_KEY),
+                                                             option.get[String](PARAM_OPTION_VALUE)) },
+        dependencies = None,
+        resultName = Some(dsName),
+        properties = None,
+        proposedSchema = proposedSchema,
+        urlIsRelativeToDataDir = Some(relative)
+      ).handle
 
-    val result = LoadRequest(
-      file = path,
-      format = arguments.get[String](PARAM_FORMAT),
-      inferTypes = arguments.get[Boolean](PARAM_GUESS_TYPES),
-      detectHeaders = arguments.get[Boolean](PARAM_HEADERS),
-      humanReadableName = Some(file.filename.getOrElse { datasetName }),
-      backendOption = arguments.getList(PARAM_OPTIONS)
-                               .map { option => MimirTuple(option.get[String](PARAM_OPTION_KEY),
-                                                           option.get[String](PARAM_OPTION_VALUE)) },
-      dependencies = None,
-      resultName = Some(dsName),
-      properties = None,
-      proposedSchema = proposedSchema,
-      urlIsRelativeToDataDir = Some(relative)
-    ).handle
+      /** 
+       * Replace the proposed schema with the inferred/actual schema
+       */
+      context.updateArguments(
+        PARAM_FILE -> DB.readOnly { implicit s:DBSession => file.withGuessedFilename(Some(context.projectId)) },
+        "schema" -> result.schema.map { field =>
+          Map(
+            "schema_column" -> field.name,
+            "schema_datatype" -> Schema.encodeType(field.dataType)
+          )
+        }
+      )
 
-    /** 
-     * Replace the proposed schema with the inferred/actual schema
-     */
-    context.updateArguments(
-      PARAM_FILE -> DB.readOnly { implicit s:DBSession => file.withGuessedFilename(Some(context.projectId)) },
-      "schema" -> result.schema.map { field =>
-        Map(
-          "schema_column" -> field.name,
-          "schema_datatype" -> Schema.encodeType(field.dataType)
-        )
-      }
-    )
-
-    context.displayDataset(datasetName)
+      context.displayDataset(datasetName)
+    } catch { 
+      case error: FormattedError => 
+        context.error(error.getMessage())
+    }
   }
 
   def predictProvenance(arguments: Arguments) = 
