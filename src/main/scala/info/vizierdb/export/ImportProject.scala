@@ -73,7 +73,7 @@ object ImportProject
         packageId = command.sanitizedPackageId,
         commandId = command.sanitizedCommandId,
         properties = JsObject(command.properties.getOrElse { Map() }),
-        revisionOfId = command.revisionOfId.map { cache(_).id },
+        revisionOfId = command.revisionOfId.flatMap { cache.get(_) }.map { _.id },
         arguments = arguments
       )
     })
@@ -208,7 +208,7 @@ object ImportProject
             val (updatedBranch, updatedWorkflow) = branch.initWorkflow(
               prevId = Some(workflow.id),
               action = exportedWorkflow.decodedAction,
-              actionModuleId = exportedWorkflow.actionModule.map { modules(_).id },
+              actionModuleId = exportedWorkflow.actionModule.flatMap { modules.get(_) }.map { _.id  },
               setHead = false,
               createdAt = Some(exportedWorkflow.createdAt)
             )
