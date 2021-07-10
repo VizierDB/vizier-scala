@@ -39,8 +39,10 @@
 
   <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
   <logger name="org.mimirdb.spark.PythonUDFBuilder"              level="WARN" />
-  <logger name="org.mimirdb.api.request.Explain"                 level="WARN" />
+  <logger name="org.mimirdb.api.request.Explain$"                level="WARN" />
   <logger name="org.mimirdb.caveats.enumerate.EnumeratePlanCaveats$"
+                                                                 level="WARN" />
+  <logger name="org.mimirdb.caveats.enumerate.EnumerateExpressionCaveats$"
                                                                  level="WARN" />
 
   <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
