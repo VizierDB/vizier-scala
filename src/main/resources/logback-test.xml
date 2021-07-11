@@ -44,6 +44,8 @@
                                                                  level="WARN" />
   <logger name="org.mimirdb.caveats.enumerate.EnumerateExpressionCaveats$"
                                                                  level="WARN" />
+  <logger name="org.mimirdb.lenses.implementation.MissingValueLens$"
+                                                                 level="WARN" />
 
   <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />
