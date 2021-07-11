@@ -53,8 +53,10 @@ sealed trait Parameter
       "name"     -> JsString(name),
       "datatype" -> JsString(datatype),
       "hidden"   -> JsBoolean(hidden),
-      "required" -> JsBoolean(required)
-    )
+      "required" -> JsBoolean(required),
+    ) ++ (
+      getDefault match { case JsNull => Map.empty; case x => Map("defaultValue" -> x) }
+    ):Map[String, JsValue]
   def convertToReact(j: JsValue): JsValue = j
   def convertFromReact(
     j: JsValue,
