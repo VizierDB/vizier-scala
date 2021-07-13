@@ -30,7 +30,7 @@ object DeleteProjectHandler extends SimpleHandler
     val projectId = pathParameters("projectId").as[Long]
     DB.autoCommit { implicit s => 
       val p = 
-        Project.lookup(projectId)
+        Project.getOption(projectId)
                .getOrElse { 
                   return NoSuchEntityResponse()
                }

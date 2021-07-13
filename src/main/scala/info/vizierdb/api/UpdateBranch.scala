@@ -23,27 +23,29 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.util.StupidReactJsonMap
 
 case class UpdateBranch(
   projectId: Identifier,
   branchId: Identifier,
-  properties: Map[String, JsValue]
+  properties: StupidReactJsonMap.T
 )
   extends Request
 {
   def handle: Response = 
   {
     DB.autoCommit { implicit s => 
+      val saneProperties = StupidReactJsonMap.decode(properties)  
       val branch: Branch = 
-        Branch.lookup(projectId, branchId)
+        Branch.getOption(projectId, branchId)
                .getOrElse { 
                  return NoSuchEntityResponse()
                }
                .updateProperties(
-                  properties.get("name")
-                            .map { _.as[String] }
-                            .getOrElse { "Untitled Branch" },
-                  properties = properties
+                  saneProperties.get("name")
+                                .map { _.as[String] }
+                                .getOrElse { "Untitled Branch" },
+                  properties = saneProperties
                )  
       RawJsonResponse(
         branch.summarize

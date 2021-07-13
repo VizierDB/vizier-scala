@@ -17,17 +17,19 @@
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from pycell.base import VizierDBClient
+    from pycell.client import VizierDBClient
 
 import json
-import re
 import io
+from bokeh.resources import Resources  # type: ignore[import]
 from bokeh.io import output_notebook  # type: ignore[import]
 from bokeh.io.notebook import install_notebook_hook  # type: ignore[import]
 from bokeh.embed import json_item  # type: ignore[import]
 
 
 target_client: Optional["VizierDBClient"] = None
+
+bokeh_resources = Resources()
 
 
 def python_cell_preload(client: "VizierDBClient"):
@@ -54,33 +56,26 @@ def vizier_bokeh_load(resources, verbose, hide_banner, load_timeout):
     pass
 
 
-def vizier_bokeh_render(obj):
-    plot_object_id = "bokeh_plot_{}".format(obj.id)
-
-    # Generate and sanitize the plot content
-    content = json.dumps(json_item(obj, target=plot_object_id))
-    content = re.sub(r"\"", r"&#34;", content)
-
-    # Allocate a div for the plot to be rendered into
-    html = (('<div id="{}"></div>'.format(plot_object_id)))
-
-    # Hack around the lack of support for script-tags in cell results:
-    # load an image that doesn't exist, and add an onError script that
-    # actually embeds the image.  Note the substitution of single-quotes
-    # in the sanitization step above.
-    html += (('<img src onError="Bokeh.embed.embed_item(' + content + ');"/>'))
-    return html
-
-
 def vizier_bokeh_show(obj, state, notebook_handle):
     """Hook called by Bokeh when show() is called"""
     # r = "bokeh_plot_"+str([ random.choice(range(0, 10)) for x in range(0, 20) ])
     global target_client
-    html = vizier_bokeh_render(obj)
-    if target_client is None:
-        print(html)
-    else:
-        target_client.show_html(html)
+    global bokeh_resources
+
+    if(target_client is None):
+        raise Exception("Internal error: Bokeh not set up properly")
+
+    plot_object_id = "bokeh_plot_{}".format(target_client.cell_id)
+    json_graph = json_item(obj, target=plot_object_id)
+
+    target_client.show_javascript(
+        # JSON is/should be valid javascript
+        code="Bokeh.embed.embed_item({})".format(json.dumps(json_graph)),
+        # Dump out a placeholder for the json
+        html='<div id="{}"></div>'.format(plot_object_id),
+        # Include dependencies based on current version of bokeh
+        dependencies=bokeh_resources.js_files
+    )
 
 
 def vizier_bokeh_app(app, state, notebook_url, **kwargs):
@@ -96,4 +91,3 @@ def vizier_matplotlib_render(figure):
     with io.BytesIO() as imgbytes:
         figure.savefig(imgbytes, format="svg")
         return imgbytes.getvalue().decode("utf-8")
-

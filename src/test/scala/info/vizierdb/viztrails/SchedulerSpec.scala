@@ -34,7 +34,7 @@ class SchedulerSpec
 
   lazy val projectId = 
     DB.autoCommit { implicit s => 
-      Project.create("Executor Test").id
+      Project.create("Scheduler Test").id
     }
   def project(implicit session: DBSession) = Project.get(projectId)
   def activeBranch(implicit session: DBSession) = Project.activeBranchFor(projectId)
@@ -169,6 +169,35 @@ class SchedulerSpec
     project.thawUpto(3)
     project.waitUntilReadyAndThrowOnError
     project(3).get.map { _.dataString }.mkString must beEqualTo("👎")
+  }
+
+  "abort cell execution safely" >>
+  {
+    val project = MutableProject("Abort Execution Test")
+
+    project.script("""
+                   |from time import sleep
+                   |sleep(2)
+                   |print("👍")
+                   """.stripMargin, waitForResult = false)
+    val interimWorkflowId = project.branch.headId
+    
+    project.script("""
+                   |print("😼")
+                   """.stripMargin, waitForResult = false)
+    project.waitUntilReadyAndThrowOnError
+
+    val interimWorkflow = 
+      DB.readOnly { implicit s => Workflow.get(interimWorkflowId) }
+    interimWorkflow.aborted should beTrue
+
+    val interimWorkflowCells = 
+      DB.readOnly { implicit s => interimWorkflow.cellsInOrder }
+    interimWorkflowCells(0).state should be(ExecutionState.CANCELLED)
+
+
+    project(0).get.map { _.dataString } must contain("👍")
+    project(1).get.map { _.dataString } must contain("😼")
   }
 }
 

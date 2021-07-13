@@ -27,7 +27,7 @@ class IO_Wrapper(IOBase):
   def write(self, b):
     self.buffer += b
     if "\n" in self.buffer:
-      self.soft_flush()
+      self.flush()
 
   def soft_flush(self):
     if len(self.buffer) > 0:

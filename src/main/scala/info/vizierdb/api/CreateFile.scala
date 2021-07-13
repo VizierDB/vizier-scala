@@ -50,7 +50,7 @@ object CreateFileHandler
   ): Response = {
     DB.autoCommit { implicit s => 
       val project = 
-        Project.lookup(projectId)
+        Project.getOption(projectId)
                .getOrElse { 
                   return NoSuchEntityResponse()
                }
@@ -64,7 +64,7 @@ object CreateFileHandler
         ).toString.getBytes
       )
 
-      val file: File = Filestore.get(project.id, artifact.id)
+      val file: File = Filestore.getAbsolute(project.id, artifact.id)
 
       Streams.cat(content, new FileOutputStream(file))
 

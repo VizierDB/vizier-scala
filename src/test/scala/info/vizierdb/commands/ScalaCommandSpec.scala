@@ -17,6 +17,7 @@ package info.vizierdb.commands
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 
+import scala.collection.mutable
 import info.vizierdb.commands.jvmScript._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.viztrails.MutableProject
@@ -31,11 +32,20 @@ class ScalaCommandSpec
   sequential 
 
   "Barebones Scala Execution" >> {
-    val ctx = new ExecutionContext(1, Map.empty, null, null)
+    val output = mutable.Buffer[String]()
+    val ctx = new ExecutionContext(
+                    1, 
+                    Map.empty, 
+                    null, 
+                    null, 
+                    null, 
+                    { (mime, data) => output += new String(data) },
+                    { (err) => println(err) }
+                  )
     ScalaScript.eval("""
       println("yo yo yo")
     """, ctx)
-    ctx.messages.map { x => new String(x._2) }.mkString must beEqualTo("yo yo yo\n")
+    output.mkString must beEqualTo("yo yo yo\n")
   }
 
   "Execution in a workflow" >> {

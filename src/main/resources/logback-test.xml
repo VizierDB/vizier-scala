@@ -23,6 +23,8 @@
   <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
   <logger name="info.vizierdb.viztrails.Scheduler$"              level="TRACE" />
   <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
+  <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
+  <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="TRACE" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.python.Python$"           level="WARN" />
@@ -33,6 +35,17 @@
   <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
   <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
+  <logger name="info.vizierdb.commands.data.LoadDataset$"        level="WARN" />
+
+  <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
+  <logger name="org.mimirdb.spark.PythonUDFBuilder"              level="WARN" />
+  <logger name="org.mimirdb.api.request.Explain$"                level="WARN" />
+  <logger name="org.mimirdb.caveats.enumerate.EnumeratePlanCaveats$"
+                                                                 level="WARN" />
+  <logger name="org.mimirdb.caveats.enumerate.EnumerateExpressionCaveats$"
+                                                                 level="WARN" />
+  <logger name="org.mimirdb.lenses.implementation.MissingValueLens$"
+                                                                 level="WARN" />
 
   <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />

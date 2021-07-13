@@ -31,6 +31,11 @@ class Arguments(values: Map[String, (JsValue, Parameter)])
     try { 
       val (argument, parameter) = values(arg)
       argument match {
+        // hack to work around broken frontend
+        case JsString("") if parameter.isInstanceOf[ColIdParameter] =>
+          if(parameter.required) {
+            throw new VizierException(s"Undefined required parameter ${parameter.name}")
+          } else { None }
         case JsNull if parameter.required => 
           throw new VizierException(s"Undefined required parameter ${parameter.name}")
         case JsNull => None

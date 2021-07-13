@@ -25,7 +25,6 @@ import info.vizierdb.types._
 import info.vizierdb.artifacts.{ DatasetColumn, DatasetRow, DatasetAnnotation }
 import org.mimirdb.api.request.LoadInlineRequest
 import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
-import info.vizierdb.filestore.Filestore
 import java.io.FileOutputStream
 import info.vizierdb.util.Streams
 import org.eclipse.jetty.server.{ Request => JettyRequest }
@@ -66,7 +65,7 @@ object ImportProject
       }
 
     DB.readOnly { implicit session => 
-      Project.lookup(projectId) match {
+      Project.getOption(projectId) match {
         case Some(project) => RawJsonResponse(project.describe)
         case None => NoSuchEntityResponse()
       }

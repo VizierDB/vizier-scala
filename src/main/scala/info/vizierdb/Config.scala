@@ -24,8 +24,8 @@ class Config(arguments: Seq[String])
   extends ScallopConf(arguments)
   with LazyLogging
 {
-  version("Vizier-Scala 0.5 (c) 2020 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
-  banner("""Docs: https://github.com/VizierDB/web-ui/wiki
+  version("Vizier-Scala 1.1.0 (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
+  banner("""Docs: https://github.com/VizierDB/vizier-scala/wiki
            |Usage: vizier [OPTIONS]
            |    or vizier import [OPTIONS] export
            |""".stripMargin)
@@ -84,14 +84,28 @@ class Config(arguments: Seq[String])
     noshort = true
   )
 
+  val serverMode = opt[Boolean]("server",
+    descr = "Disable features that assume Vizier is running under the account of the user interacting with it",
+    default = Option(false),
+    noshort = true
+  )
+
+  val workingDirectory = opt[String]("working-directory",
+    descr = "Override the current working directory for relative file paths",
+    default = None
+  )
+
+  //////////////////////////////////////////////////////
+
   object ingest extends Subcommand("import", "ingest") {
     val execute = toggle("execute", default = Some(true))
     val file = trailArg[File]("export", 
       descr = "The exported vizier file"
     )
   }
-
   addSubcommand(ingest)
+  
+  //////////////////////////////////////////////////////
   
   object export extends Subcommand("export") {
     val projectId = trailArg[Long]("project-id",
@@ -103,18 +117,26 @@ class Config(arguments: Seq[String])
   }
   addSubcommand(export)
 
+  //////////////////////////////////////////////////////
+
+  object doctor extends Subcommand("doctor") {
+
+  }
+  addSubcommand(doctor)
+
+  //////////////////////////////////////////////////////
 
   verify()
-
 
   def getMimirConfig: MimirConfig =
   {
     val config = 
       new MimirConfig(Seq(
         "--python", pythonPath(),
-        "--data-dir", new File(basePath(), "mimir_data").toString,
-        "--staging-dir", basePath().toString
-      ))
+        "--data-dir", basePath().toString
+      )++workingDirectory.toOption.toSeq.flatMap { 
+        Seq("--working-directory", _)
+      })
     config.verify()
     return config
   }

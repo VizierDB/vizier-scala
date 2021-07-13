@@ -57,16 +57,16 @@ object ExportProject
     // File Artifacts
     DB.readOnly { implicit s => 
       val p = 
-        Project.lookup(projectId)
+        Project.getOption(projectId)
                .getOrElse { 
                  throw new VizierException(s"No project with ID $projectId")
                }
       val files: Seq[FileSummary] = (
         p.artifacts
           .filter { _.t == ArtifactType.FILE }
-          .filter { !_.file.isDirectory() }
+          .filter { !_.absoluteFile.isDirectory() }
           .map { artifact => 
-            val f = artifact.file
+            val f = artifact.absoluteFile
             writeFile(s"fs/${artifact.id}", f)
 
             FileSummary(
@@ -93,8 +93,11 @@ object ExportProject
               branch.workflows
                     .map { workflow => 
 
+                      val cellsAndModulesInOrder = workflow.cellsAndModulesInOrder
+                      val moduleIds = cellsAndModulesInOrder.map { _._2.id }.toSet
+
                       val cells:Seq[Identifier] = 
-                        workflow.cellsAndModulesInOrder
+                        cellsAndModulesInOrder
                                 .map { case (cell, module) => 
                                   // State schema conventions underwent a little 
                                   // revamp in Vizier-scala.  Specifically, now
@@ -134,7 +137,6 @@ object ExportProject
                                           lastModifiedAt = None,
                                         )
                                       )
-
                                   }
                                   module.id
                                 }
@@ -142,6 +144,49 @@ object ExportProject
 
                       val actionModule: Option[Module] = 
                         workflow.actionModuleId.map { Module.get(_) }
+
+                      // When a cell execution produces a new set of parameters for a
+                      // module (e.g., embedding the schema into the parameters of a
+                      // LOAD DATASET module), the result is a brand new module that 
+                      // references the original user-provided version of the module.  
+                      // The revised version is in the workflow, but we also need to
+                      // embed the original into the export.
+                      // 
+                      // Note: the actionModuleId may point to one of these.
+                      for((cell, baseModule) <- cellsAndModulesInOrder){
+                        for(moduleId <- baseModule.revisionOfId){
+                          val module = Module.get(moduleId)
+                          if(!modules.contains(module.id)){
+                            val cell_id = s"${workflow.id}_${cell.position}_original"
+                            val arguments = 
+                              module.command
+                                    .get
+                                    .encodeReactArguments(module.arguments)
+                            modules += module.id -> 
+                              ExportedModule(
+                                id = cell_id,
+                                state = ExecutionState.translateToClassicVizier(ExecutionState.STALE),
+                                command = ExportedCommand(
+                                  id = Some(module.id.toString),
+                                  packageId = module.packageId,
+                                  commandId = module.commandId,
+                                  arguments = arguments,
+                                  revisionOfId = module.revisionOfId
+                                                       .map { _.toString },
+                                  properties = Some(module.properties.value.toMap),
+                                ),
+                                text = JsString(module.description),
+                                timestamps = ExportedTimestamps(
+                                  createdAt = cell.created,
+                                  startedAt = None,
+                                  finishedAt = None,
+                                  lastModifiedAt = None,
+                                )
+                              )
+                          }
+                        }
+                      }
+
 
                       ExportedWorkflow(
                         id = workflow.id.toString,
@@ -175,9 +220,9 @@ object ExportProject
             assert(modules contains module.toLong, s"Module $module in workflow ${workflow.id} did not get properly exported")
 
           }
-          // for(module <- workflow.actionModule){
-          //   assert(modules contains module.toLong, s"Action module $module for workflow ${workflow.id} did not get properly exported")
-          // }
+          for(module <- workflow.actionModule){
+            assert(modules contains module.toLong, s"Action module $module for workflow ${workflow.id} did not get properly exported")
+          }
         }
       }
 

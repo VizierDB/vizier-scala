@@ -23,10 +23,13 @@ import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
+import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.util.StupidReactJsonField
 
 case class UpdateProject(
   projectId: Identifier,
-  properties: Map[String, JsValue]
+  properties: StupidReactJsonMap.T,
+  defaultBranch: Option[Identifier]
 )
   extends Request
 {
@@ -34,16 +37,25 @@ case class UpdateProject(
   {
     val project: Project = 
       DB.autoCommit { implicit s => 
-        Project.lookup(projectId)
-               .getOrElse { 
-                 return NoSuchEntityResponse()
-               }
-               .updateProperties(
-                  properties.get("name")
-                            .map { _.as[String] }
-                            .getOrElse { "Untitled Project" },
-                  properties = properties
-               )  
+        var project = Project.getOption(projectId)
+                             .getOrElse { 
+                               return NoSuchEntityResponse()
+                             }
+        if(defaultBranch.isDefined){
+          if(project.branchIds contains defaultBranch.get){
+            project = project.activateBranch(defaultBranch.get)
+          } else {
+            return NoSuchEntityResponse()
+          }
+        }
+        val saneProperties = StupidReactJsonMap.decode(properties)
+        project = project.updateProperties(
+                            saneProperties.get("name")
+                                          .map { _.as[String] }
+                                          .getOrElse { "Untitled Project" },
+                            properties = saneProperties
+                          )
+        /* return */ project
       }
     RawJsonResponse(
       project.summarize

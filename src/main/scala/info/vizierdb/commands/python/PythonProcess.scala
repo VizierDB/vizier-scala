@@ -27,6 +27,7 @@ import info.vizierdb.commands.ExecutionContext
 // in livelocks when we try to do bi-directional communication.  As a result
 // we're going to use the lower level Java process builder here.
 import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder}
+import org.mimirdb.spark.PythonUDFBuilder
 
 class PythonProcess(python: JProcess)
   extends LazyLogging
@@ -77,6 +78,8 @@ object PythonProcess
   var PYTHON_COMMAND = "python3"
   val JAR_PREFIX = "^jar:(.*)!(.*)$".r
   val FILE_PREFIX = "f".r
+
+  def udfBuilder = PythonUDFBuilder(Some(PYTHON_COMMAND))
 
   def scriptPath: String =
   {
@@ -150,7 +153,7 @@ object PythonProcess
     "bokeh"      -> "bokeh",
     "matplotlib" -> "matplotlib",
     "astor"      -> "astor",
-    "pyarrow"    -> "pyarrow",
+    "pyarrow"    -> "pyarrow<4.0.0",
     "pandas"     -> "pandas",
     "shapely"    -> "shapely",
     "pyspark"    -> "pyspark",
@@ -181,7 +184,10 @@ object PythonProcess
       if(ret.length() > 0){
         System.err.println("\nYour installed python is missing dependencies. Python cells may not work properly.")
         System.err.println("\nThe following command will install required dependencies.")
-        System.err.println(s"  ${PythonProcess.PYTHON_COMMAND} -m pip install ${ret.replaceAll("\n", " ")}")
+        val deps = ret.split("\n")
+                      .map { "'"+_+"'" }
+                      .mkString(" ")
+        System.err.println(s"  ${PythonProcess.PYTHON_COMMAND} -m pip install $deps")
       }
     } catch {
       case e:Throwable => 

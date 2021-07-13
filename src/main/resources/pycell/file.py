@@ -24,6 +24,7 @@ class FileClient(object):
                mime_type: str = "text/plain",
                filename: Optional[str] = None,
                metadata: Optional[Dict[str, str]] = None,
+               open_mode: str = "w"
                ):
     self.client = client
     self.name = name
@@ -38,15 +39,17 @@ class FileClient(object):
                                         "filename": self.filename
                                        },
                                       )
+    assert(metadata is not None)
     self.identifier = metadata["artifactId"]
     self.file_path = metadata["path"]
     self.meta_url = metadata["url"]
     self.url = metadata["url"] + "/file"
+    self.open_mode = open_mode
 
   def __enter__(self):
     if self.io is not None:
       raise Exception("Already opened file")
-    self.io = open(self.file_path, "w")
+    self.io = open(self.file_path, self.open_mode)
 
     # Add some convenience attributes
     self.io._repr_html_ = self._repr_html_
@@ -62,4 +65,3 @@ class FileClient(object):
 
   def _repr_html_(self) -> str:
     return "<a href='{}'>{}</a>".format(self.url, self.filename)
-

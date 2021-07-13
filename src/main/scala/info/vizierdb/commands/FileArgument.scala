@@ -15,8 +15,11 @@
 package info.vizierdb.commands
 
 import play.api.libs.json._
+import scalikejdbc._
 import info.vizierdb.types.Identifier
 import info.vizierdb.filestore.Filestore
+import java.net.URL
+import info.vizierdb.catalog.Artifact
 
 case class FileDescription(
   preview: Option[String]
@@ -38,17 +41,56 @@ case class FileArgument(
     if(fileid.isEmpty && url.isEmpty){
       Some("Expecting either url or fileid")
     } else { None }
-  def getPath(projectId: Identifier): String =
-    url.getOrElse { 
-      fileid.map { Filestore.get(projectId, _).toString }
-      .getOrElse { 
-        throw new IllegalArgumentException("Need at least one of fileid or url")
-      }
+
+  /**
+   * Get a path to the referenced file argument.
+   * @param project         The project in which to look for the file
+   * @param noRelativePaths Require that the returned file use an absolute path
+   * @return                The path to the file, and a boolean that is true if
+   *                        the returned path should be treated as relative to the
+   *                        data directory.
+   */
+  def getPath(projectId: Identifier, noRelativePaths: Boolean = false): (String, Boolean) =
+    url.map { (_, false) }
+       .orElse { 
+         fileid.map { fileId => 
+           if(noRelativePaths) { 
+             (Filestore.getAbsolute(projectId, fileId).toString, false)
+           } else {
+             (Filestore.getRelative(projectId, fileId).toString, true)
+           }
+         }
+       }.getOrElse { 
+         throw new IllegalArgumentException("Need at least one of fileid or url")
+       }
+
+  def guessFilename(projectId: Option[Identifier] = None)(implicit session:DBSession) =
+    filename.getOrElse {
+      url.map { _.split("/").last }
+         .orElse { 
+            fileid.flatMap { fileId =>
+              val properties = Artifact.get(fileId, projectId).json
+              (properties \ "filename").asOpt[String]
+            } 
+          }
+         .getOrElse { "<unknown filename>" }
     }
-  override def toString =
-    filename
-      .orElse(fileid.map { _.toString })
-      .getOrElse { "<unknown file>" }
+
+  def withGuessedFilename(projectId: Option[Identifier] = None)(implicit session:DBSession) = 
+    if(filename.isDefined){ this }
+    else { copy(filename = Some(guessFilename(projectId))) }
+
+  override def toString: String =
+  {
+    val name = 
+      filename
+        .getOrElse { "<unknown file>" }
+    val rel = 
+      url.map { " @ url '"+_+"'" }
+         .orElse { fileid.map { " @ artifact file " + _ } }
+         .getOrElse { "" }
+    return name + rel
+  }
 
 }
 object FileArgument
@@ -70,5 +112,8 @@ object FileArgument
       (j \ "url").asOpt[String]
     )
   }
+
+  def fromUrl(url: String, filename: String = null) = 
+    new FileArgument(url = Some(url), filename = Option(filename))
 }
 

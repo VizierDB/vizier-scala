@@ -30,6 +30,8 @@ import org.eclipse.jetty.server.Handler
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.server.{ Request => JettyRequest }
+import org.eclipse.jetty.websocket.server.WebSocketHandler
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet
 import javax.servlet.MultipartConfigElement
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import com.typesafe.scalalogging.LazyLogging
@@ -43,6 +45,7 @@ import java.net.{ URL, URI }
 import java.sql.Time
 import java.time.LocalDateTime
 import info.vizierdb.api._
+import info.vizierdb.api.websocket.BranchWatcherSocket
 import java.net.URLConnection
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import info.vizierdb.util.Streams
@@ -99,9 +102,14 @@ object VizierAPI
     server.setHandler(context)
     context.setBaseResource(Resource.newResource(new File(".")))
 
-
+    /////////////// Websocket API ///////////////
     {
-      // Actual API
+      val websocket = new ServletHolder(BranchWatcherSocket.Servlet)
+      context.addServlet(websocket, "/vizier-db/api/v1/websocket")
+    }
+
+    /////////////// Transactional API ///////////////
+    {
       val api = new ServletHolder(VizierAPIServlet)
       api.getRegistration()
          .setMultipartConfig(new MultipartConfigElement(
@@ -113,10 +121,12 @@ object VizierAPI
       context.addServlet(api, "/vizier-db/api/v1/*")
     }
 
+    /////////////// Static UI Pages ///////////////
     {
       val webUI = new ServletHolder("default", VizierUIServlet)
       context.addServlet(webUI, "/*")
     }
+
 
     val actualPublicURL =
       Option(publicURL)

@@ -20,6 +20,8 @@ import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import org.mimirdb.api.request.DataContainer
 import java.time.ZonedDateTime
+import info.vizierdb.catalog.serialized.MessageDescription
+import com.typesafe.scalalogging.LazyLogging
 
 
 case class DatasetMessage(
@@ -81,24 +83,27 @@ case class Message(
   val data: Array[Byte],
   val stream: StreamType.T
 )
+  extends LazyLogging
 {
   def dataString: String = new String(data)
 
-  def describe(implicit session: DBSession): JsObject = 
+  def describe(implicit session: DBSession): MessageDescription = 
     try { 
-      Json.obj(
-        "type" -> mimeType,
-        "value" -> (mimeType match {
+      MessageDescription(
+        `type` = mimeType,
+        value = (mimeType match {
           case MIME.DATASET_VIEW => Json.parse(data).as[DatasetMessage].describe
           case MIME.CHART_VIEW => Json.parse(data)
+          case MIME.JAVASCRIPT => Json.parse(data)
           case _ => JsString(new String(data))
         })
       )
     } catch {
       case e: Throwable => 
-        Json.obj(
-          "type" -> MIME.TEXT,
-          "value" -> s"Error retrieving message: $e"
+        logger.error(s"Error retrieving message: ${e.getMessage}\n${e.getStackTraceString}")
+        MessageDescription(
+          `type` = MIME.TEXT,
+          value  = JsString(s"Error retrieving message: $e")
         )
     }
 }

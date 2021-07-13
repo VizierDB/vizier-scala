@@ -36,6 +36,7 @@ import info.vizierdb.util.StupidReactJsonMap
 import org.locationtech.jts.geom.Geometry
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.types.StructField
+import info.vizierdb.catalog.serialized.ParameterArtifact
 
 case class Artifact(
   id: Identifier,
@@ -48,7 +49,11 @@ case class Artifact(
 {
   def string = new String(data)
   def nameInBackend = Artifact.nameInBackend(t, id)
-  def file: File = Filestore.get(projectId, id)
+  def absoluteFile: File = Filestore.getAbsolute(projectId, id)
+  def relativeFile: File = Filestore.getRelative(projectId, id)
+  def file = absoluteFile
+  def parameter = json.as[ParameterArtifact]
+  def json = Json.parse(string)
   def summarize(name: String = null) = 
   {
     val extras:Map[String,JsValue] = t match {
@@ -209,7 +214,9 @@ case class ArtifactSummary(
     }
     Artifact.summarize(id, projectId, t, created, mimeType, Option(name), extraFields = extras)
   }
-  def file = Filestore.get(projectId, id)
+  def absoluteFile: File = Filestore.getAbsolute(projectId, id)
+  def relativeFile: File = Filestore.getRelative(projectId, id)
+  def file = absoluteFile
   def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
   def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
 
@@ -249,8 +256,8 @@ object Artifact
     Artifact.get(artifactId)
   }
 
-  def get(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Artifact = lookup(target, projectId).get
-  def lookup(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Option[Artifact] = 
+  def get(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Artifact = getOption(target, projectId).get
+  def getOption(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Option[Artifact] = 
     withSQL { 
       val b = Artifact.syntax 
       select

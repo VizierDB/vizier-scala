@@ -14,10 +14,13 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.vizual
 
+import play.api.libs.json._
 import info.vizierdb.commands._
 import org.mimirdb.vizual
-import org.apache.spark.sql.types.StructType
+import org.mimirdb.spark.Schema
+import org.apache.spark.sql.types.{ StructType, StringType } 
 import info.vizierdb.VizierException
+import org.mimirdb.spark.SparkPrimitive
 
 object Script extends VizualCommand
 {
@@ -33,13 +36,16 @@ object Script extends VizualCommand
     ("Insert Column", "insert_column", { args => 
       vizual.InsertColumn(
         position = args.getOpt[Int]("position"),
-        name = args.get[String]("name")
+        name = args.get[String]("name"),
+        dataType = args.getOpt[String]("dataType").map { Schema.decodeType(_) }
       )
     }),
 
     ("Insert Row", "insert_row", { args => 
+      // val values = args.getRecord("values")
       vizual.InsertRow(
-        position = args.get[Int]("position")
+        position = Some(args.get[Int]("position")),
+        values = None
       )
     }),
 
@@ -78,7 +84,8 @@ object Script extends VizualCommand
       vizual.UpdateCell(
         column = args.get[Int]("column"),
         row = Some(rowSelection),
-        value = Some(args.get[String]("name"))
+        value = Some(JsString(args.get[String]("name"))),
+        comment = args.getOpt[String]("comment")
       )
     }),
   )
@@ -92,7 +99,9 @@ object Script extends VizualCommand
       ColIdParameter(id = "column", name = "Column", required = false),
       RowIdParameter(id = "row", name = "Row", required = false),
       IntParameter(id = "position", name = "Position", required = false),
-      StringParameter(id = "name", name = "Name/Value", required = false)
+      StringParameter(id = "name", name = "Name/Value", required = false),
+      StringParameter(id = "comment", name = "Comment", required = false),
+      TemplateParameters.DATATYPE("dataType", required = false)
     ))
   )
   def format(arguments: Arguments): String = 
@@ -109,10 +118,10 @@ object Script extends VizualCommand
         Map("command" -> "delete_column", "column" -> column)
       case vizual.DeleteRow(row) => 
         Map("command" -> "delete_row", "row" -> row)
-      case vizual.InsertColumn(position, name) => 
-        Map("command" -> "insert_column", "position" -> position, "name" -> name)
-      case vizual.InsertRow(position) => 
-        Map("command" -> "insert_row", "position" -> position)
+      case vizual.InsertColumn(position, name, dataType) => 
+        Map("command" -> "insert_column", "position" -> position, "name" -> name, "dataType" -> Schema.encodeType(dataType.getOrElse { StringType }))
+      case vizual.InsertRow(position, values) => 
+        Map("command" -> "insert_row", "position" -> position, "values" -> None) 
       case vizual.MoveColumn(column, position) => 
         Map("command" -> "move_column", "column" -> column, "position" -> position)
       case vizual.MoveRow(row, position) => 
@@ -121,11 +130,11 @@ object Script extends VizualCommand
         Map("command" -> "rename_column", "column" -> column, "name" -> name)
       case vizual.Sort(Seq(vizual.SortColumn(column, asc))) => 
         Map("command" -> "sort", "column" -> column)
-      case vizual.UpdateCell(column, Some(vizual.RowsById(rows)), value) if (rows.size == 1) => 
-        Map("command" -> "update", "column" -> column, "row" -> rows.head.toLong, "name" -> value)
-      case vizual.UpdateCell(column, (Some(vizual.AllRows()) | None), value) => 
-        Map("command" -> "update", "column" -> column, "name" -> value)
-      case vizual.UpdateCell(column, _, value) => 
+      case vizual.UpdateCell(column, Some(vizual.RowsById(rows)), value, comment) if (rows.size == 1) => 
+        Map("command" -> "update", "column" -> column, "row" -> rows.head.toLong, "name" -> value, "comment" -> comment)
+      case vizual.UpdateCell(column, (Some(vizual.AllRows()) | None), value, comment) => 
+        Map("command" -> "update", "column" -> column, "name" -> value, "comment" -> comment)
+      case vizual.UpdateCell(column, _, value, comment) => 
         throw new VizierException(s"Unsupported in scripts (for now): update cell on multiple rows")
       case vizual.Sort(Seq(order)) => 
         throw new VizierException(s"Unsupported in scripts (for now): sort with multiple columns or descending order")

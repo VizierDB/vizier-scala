@@ -46,10 +46,13 @@ object SimpleChart extends Command
       EnumerableParameter(id = "chartType", name = "Type", values = EnumerableValue.withNames(
         "Area Chart"   -> "Area Chart",
         "Bar Chart"    -> "Bar Chart",
-        "Line Chart"   -> "Line Chart",
+        "Line Chart with Points"   -> "Line Chart with Points",
+        "Line Chart without Points"   -> "Line Chart without Points",
         "Scatter Plot" -> "Scatter Plot"
-      ), default = Some(1)),
-      BooleanParameter(id = "chartGrouped", name = "Grouped", required = false),
+      ), default = Some(1), aliases = Map(
+        "Line Chart" -> "Line Chart with Points"
+      )),
+      BooleanParameter(id = "chartGrouped", name = "Grouped", required = false, default = Some(true)),
     ))
   )
   def format(arguments: Arguments): String = 
@@ -65,7 +68,7 @@ object SimpleChart extends Command
     context.chart(
       Chart(
         dataset         = datasetName,
-        name            = arguments.getOpt[String]("name").getOrElse { datasetName },
+        name            = arguments.getOpt[String]("name").getOrElse { datasetName + "_Visualized" },
         chartType       = arguments.getRecord("chart").get[String]("chartType"),
         grouped         = arguments.getRecord("chart").getOpt[Boolean]("chartGrouped").getOrElse(true),
         xaxis           = arguments.getRecord("xaxis").getOpt[Int]("xaxis_column").map { schema(_).name },

@@ -44,6 +44,12 @@ case class Project(
       select.from(Branch as b).where.eq(b.projectId, id)
     }.map { Branch(_) }.list.apply()
 
+  def branchIds(implicit session: DBSession) = 
+    withSQL { 
+      val b = Branch.syntax
+      select(b.id).from(Branch as b).where.eq(b.projectId, id)
+    }.map { _.long(0) }.list.apply()
+
   def artifacts(implicit session: DBSession): Seq[Artifact] =
     withSQL {
       val a = Artifact.syntax
@@ -89,7 +95,7 @@ case class Project(
       if(isInitialBranch) { None }
       else { 
         Some(
-          fromBranch.map { Branch.lookup(id, _).get }
+          fromBranch.map { Branch.get(id, _) }
                     .getOrElse { activeBranch }
         )
       }
@@ -97,7 +103,7 @@ case class Project(
       if(isInitialBranch) { None }
       else {
         Some( 
-          fromWorkflow.map { Workflow.lookup(sourceBranch.get.id, _).get.id }
+          fromWorkflow.map { Workflow.getOption(sourceBranch.get.id, _).get.id }
                       .getOrElse { sourceBranch.get.headId }
         )
       }
@@ -144,7 +150,10 @@ case class Project(
       val p = Project.column
       scalikejdbc.update(Project)
         .set(p.name       -> Option(name).getOrElse { this.name },
-             p.properties -> Option(properties).getOrElse { this.properties }.toString,
+             p.properties -> Option(properties)
+                                  .map { JsObject(_) }
+                                  .getOrElse { this.properties }
+                                  .toString,
              p.modified   -> now)
         .where.eq(p.id, id)
     }.update.apply()
@@ -238,8 +247,8 @@ object Project
     }
   }
 
-  def get(target: Identifier)(implicit session:DBSession): Project = lookup(target).get
-  def lookup(target: Identifier)(implicit session:DBSession): Option[Project] = 
+  def get(target: Identifier)(implicit session:DBSession): Project = getOption(target).get
+  def getOption(target: Identifier)(implicit session:DBSession): Option[Project] = 
     withSQL { 
       val p = Project.syntax 
       select

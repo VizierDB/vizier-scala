@@ -42,14 +42,15 @@ case class AppendModule(
   {
     val command = Commands.get(packageId, commandId)
 
-    val workflow: Workflow = 
+    val (workflow, workflowIdToAbort): (Workflow, Option[Identifier]) = 
       DB.autoCommit { implicit s => 
         logger.trace(s"Looking up branch $branchId")
         val branch:Branch =
-          Branch.lookup(projectId, branchId)
+          Branch.getOption(projectId, branchId)
                 .getOrElse { 
                    return NoSuchEntityResponse()
                 }
+        val currentWorkflow = branch.head
 
         if(workflowId.isDefined) {
           if(branch.headId != workflowId.get){
@@ -69,12 +70,17 @@ case class AppendModule(
 
         logger.debug(s"Appending Module: $module")
         
-        /* return */ branch.append(module)._2
-
+        /* return */ (
+          branch.append(module)._2, 
+          if(currentWorkflow.isRunning) { Some(currentWorkflow.id) } else { None }
+        )
       }
 
     logger.trace(s"Scheduling ${workflow.id}")
     // The workflow must be scheduled AFTER the enclosing transaction finishes
+    if(workflowIdToAbort.isDefined) {
+      Scheduler.abort(workflowIdToAbort.get)
+    }
     Scheduler.schedule(workflow.id)
 
     logger.trace("Building response")

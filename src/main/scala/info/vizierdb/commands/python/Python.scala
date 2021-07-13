@@ -35,6 +35,9 @@ import org.mimirdb.spark.Schema.fieldFormat
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.catalog.ArtifactRef
 import info.vizierdb.catalog.ArtifactSummary
+import org.mimirdb.util.UnsupportedFeature
+import org.mimirdb.vizual.{ Command => VizualCommand }
+import org.mimirdb.api.request.VizualRequest
 
 object Python extends Command
   with LazyLogging
@@ -47,7 +50,14 @@ object Python extends Command
   def format(arguments: Arguments): String = 
     arguments.pretty("source")
   def title(arguments: Arguments): String =
-    "Python Script"
+  {
+    val line1 = arguments.get[String]("source").split("\n")(0)
+    if(line1.startsWith("#")){
+      line1.replaceFirst("^# *", "")
+    } else {
+      "Python Script"
+    }
+  }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     logger.debug("Initializing...")
@@ -64,16 +74,19 @@ object Python extends Command
             "artifactId" -> artifact.id
           )
         }),
-      "projectId" -> JsNumber(context.projectId)
+      "projectId" -> JsNumber(context.projectId), 
+      "cellId" -> JsString(context.executionIdentifier)
     )
 
     val ret = python.monitor { event => 
       logger.debug(s"STDIN: $event")
       def withArtifact(handler: Artifact => Unit) =
-        context.artifact( (event\"name").as[String] ) match {
+        withNamedArtifact((event\"name").as[String]) { handler(_) }
+      def withNamedArtifact(name: String)(handler: Artifact => Unit) =
+        context.artifact( name ) match {
           case None => 
             val name = (event\"name").as[String]
-            context.error("No such artifact '$name'")
+            context.error(s"No such artifact '$name'")
             python.kill()
           case Some(artifact) => 
             handler(artifact)
@@ -83,6 +96,7 @@ object Python extends Command
           case "message" => 
             (event\"stream").as[String] match {  
               case "stdout" => 
+                logger.trace(s"Python STDOUT: ${event\ "content"}")
                 context.message( 
                   // each message object already gets a free newline, so trim here
                   content = (event\"content").as[String].trim(),
@@ -90,7 +104,10 @@ object Python extends Command
                                               .as[String]
                 )
               // each message object already gets a free newline, so trim here
-              case "stderr" => context.error( (event\"content").as[String].trim() )
+              case "stderr" => {
+                logger.warn( (event\"content").as[String].trim() )
+                context.error( (event\"content").as[String].trim() )
+              }
               case x => context.error(s"Received message on unknown stream '$x'")
             }
           case "get_dataset" => 
@@ -106,15 +123,24 @@ object Python extends Command
           case "get_blob" => 
             withArtifact { artifact => 
               python.send("blob",
-                "data" -> JsString(new String(artifact.data)),
+                "data" -> JsString(artifact.string),
+                "artifactId" -> JsNumber(artifact.id)
+              )
+            }
+          case "get_parameter" => 
+            withArtifact { artifact => 
+              python.send("parameter",
+                "data" -> artifact.json,
                 "artifactId" -> JsNumber(artifact.id)
               )
             }
           case "get_file" => 
             withArtifact { artifact => 
               python.send("file",
-                "path" -> JsString(artifact.file.toString),
-                "artifactId" -> JsNumber(artifact.id)
+                "path" -> JsString(artifact.absoluteFile.toString),
+                "artifactId" -> JsNumber(artifact.id),
+                "url" -> JsString(artifact.url.toString),
+                "properties" -> artifact.json
               )
             }
           case "save_dataset" =>
@@ -136,10 +162,41 @@ object Python extends Command
                 "artifactId" -> JsNumber(id)
               )
             }
+          case "vizual_script" => 
+            def handler(inputNameInBackend: Option[String]): Unit = {
+              val output = (event\"output").as[String]
+              val (nameInBackend, id) = 
+                context.outputDataset( output )
+              logger.trace(s"Visual being used to create dataset: $output (artifact $id)")
+
+              val response = VizualRequest(
+                input = inputNameInBackend,
+                script = (event\"script").as[Seq[VizualCommand]],
+                resultName = Some(nameInBackend),
+                compile = None
+              ).handle
+
+              python.send("datasetId",
+                "artifactId" -> JsNumber(id)
+              )
+            }
+            ((event\"name").asOpt[String]:Option[String]) match {
+              case None => 
+                handler(None)
+              case Some(ds) => 
+                withNamedArtifact(ds) { existingDs => 
+                  assert(
+                    (event\"identifier").as[Long] == existingDs.id,
+                    s"Vizual script for ${(event\"output")} with out-of-sync identifier (Python has ${(event\"identifier")}; Spark has ${existingDs.id})"
+                  )
+                  handler(Some(existingDs.nameInBackend)) 
+                }
+            }
+
           case "create_dataset" => 
             {
               val fileId = (event \ "file").as[String].toLong
-              val filePath = Filestore.get(context.projectId, fileId).toString
+              val filePath = Filestore.getRelative(context.projectId, fileId).toString
               val (nameInBackend, id) = 
                 context.outputDataset( (event\"name").as[String] )
 
@@ -161,7 +218,8 @@ object Python extends Command
                   ),
                 resultName = Some(nameInBackend),
                 properties = None,
-                proposedSchema = None
+                proposedSchema = None,
+                urlIsRelativeToDataDir = Some(true)
               ).handle
 
               python.send("datasetId",
@@ -222,7 +280,7 @@ object Python extends Command
               )
               python.send("file_artifact",
                 "artifactId" -> JsString(file.id.toString),
-                "path" -> JsString(file.file.toString),
+                "path" -> JsString(file.absoluteFile.toString),
                 "url" -> JsString(file.url.toString)
               )
 
@@ -235,8 +293,13 @@ object Python extends Command
       } catch {
         case e: Exception => 
           {
-            e.printStackTrace()
-            context.error(s"INTERNAL ERROR: $e")
+            e match {
+              case m:UnsupportedFeature => 
+                context.error(m.getMessage())
+              case _ => 
+                e.printStackTrace()
+                context.error(s"INTERNAL ERROR: $e")
+            }
             python.kill()
           }
       }

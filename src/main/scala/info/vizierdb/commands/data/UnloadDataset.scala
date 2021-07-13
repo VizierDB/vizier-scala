@@ -82,7 +82,7 @@ object UnloadDataset extends Command
 
     val response: UnloadResponse = UnloadRequest(
       input = dataset,
-      file = artifactIfNeeded.map { _.file.toString }
+      file = artifactIfNeeded.map { _.absoluteFile.toString }
                              .getOrElse { "unknown_file" },
       format = format,
       backendOption = 

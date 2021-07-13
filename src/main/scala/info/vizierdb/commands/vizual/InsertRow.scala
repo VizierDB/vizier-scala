@@ -29,7 +29,8 @@ object InsertRow extends VizualCommand
   def script(arguments: Arguments, context: ExecutionContext) = 
     Seq(
       vizual.InsertRow(
-        position = arguments.get[Int]("position"),
+        position = Some(arguments.get[Int]("position")),
+        None
       )
     )
 }

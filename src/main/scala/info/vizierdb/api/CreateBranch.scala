@@ -51,7 +51,7 @@ case class CreateBranch(
                 .getOrElse { "Untitled Branch" }
     DB.autoCommit { implicit s => 
       val (project, branch, workflow): (Project, Branch, Workflow) = 
-        Project.lookup(projectId)
+        Project.getOption(projectId)
                .getOrElse { 
                  return NoSuchEntityResponse()
                }

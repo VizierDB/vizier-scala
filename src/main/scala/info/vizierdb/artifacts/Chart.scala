@@ -59,36 +59,51 @@ case class Chart(
 
   def render(df: DataFrame): JsValue =
   {
-    val query = 
-      df.select(
-        allColumns.map { case ChartSeries(col, _, constraint) =>
-          // TODO: Don't ignore "constraint"
-          df(col)
-        }:_*
-      )
+    var query = df
+    // if(xaxis.isDefined){
+    //   query = query.filter( df(xaxis.get).isNotNull )
+    // }
+    query = query
+              .select(
+                allColumns.map { case ChartSeries(col, _, constraint) =>
+                  // TODO: Don't ignore "constraint"
+                  df(col)
+                }:_*
+              )
 
     val result = 
-      df.trackCaveats
-        .stripCaveats
-        .take(Query.RESULT_THRESHOLD+1)
+      query.trackCaveats
+            .stripCaveats
+            .take(Query.RESULT_THRESHOLD+1)
 
     if(result.size >= Query.RESULT_THRESHOLD){
       throw new ResultTooBig()
     }
 
 
-    def getColumn(column: String): Seq[JsValue] =
-      result.map { 
-        _.getAs[Any](column) match {
-          case x:Integer => JsNumber(x.toLong)
-          case x:Long => JsNumber(x)
-          case x:Float => JsNumber(x)
-          case x:Double => JsNumber(x)
-          case x:String => JsString(x)
-          case x:UTF8String => JsString(x.toString)
-          case x => throw new IllegalArgumentException(s"Unsupported value ($x) in column $column")
+    def getColumn(column: String): Seq[JsValue] = 
+    {
+      if(result.isEmpty) { Seq() } 
+      else {
+        val fieldIndex: Int = result.head.fieldIndex(column)
+        result.map { row =>
+          if(row.isNullAt(fieldIndex)){
+            JsNull
+          } else {
+            row.getAs[Any](fieldIndex) match {
+              case x:Short => JsNumber(x.toLong)
+              case x:Integer => JsNumber(x.toLong)
+              case x:Long => JsNumber(x)
+              case x:Float => JsNumber(x)
+              case x:Double => JsNumber(x)
+              case x:String => JsString(x)
+              case x:UTF8String => JsString(x.toString)
+              case x => throw new IllegalArgumentException(s"Unsupported value ($x:${x.getClass.getSimpleName}) in column $column")
+            }
+          }
         }
       }
+    }
 
     val seriesData = 
       series.map { case ChartSeries(column, label, _) =>

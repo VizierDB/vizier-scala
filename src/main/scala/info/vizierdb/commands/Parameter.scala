@@ -42,7 +42,7 @@ sealed trait Parameter
    */
   def validate(j: JsValue): Iterable[String] =
     if(j.equals(JsNull)) {
-      if(required) { Some(s"Missing parameter for $name") }
+      if(required) { Some(s"Missing parameter for parameter $name") }
       else { None }
     } else { doValidate(j: JsValue) }
   def doValidate(j: JsValue): Iterable[String]
@@ -53,8 +53,10 @@ sealed trait Parameter
       "name"     -> JsString(name),
       "datatype" -> JsString(datatype),
       "hidden"   -> JsBoolean(hidden),
-      "required" -> JsBoolean(required)
-    )
+      "required" -> JsBoolean(required),
+    ) ++ (
+      getDefault match { case JsNull => Map.empty; case x => Map("defaultValue" -> x) }
+    ):Map[String, JsValue]
   def convertToReact(j: JsValue): JsValue = j
   def convertFromReact(
     j: JsValue,
@@ -108,6 +110,7 @@ trait StringEncoder
   def name: String
   def encode(v: Any): JsValue = 
     v match {
+      case j:JsValue => j
       case x:String => JsString(x)
       case None => JsNull
       case Some(x) => encode(x)
@@ -120,6 +123,7 @@ trait IntegerEncoder
   def name: String
   def encode(v: Any): JsValue = 
     v match {
+      case j:JsValue => j
       case x:Int => JsNumber(x)
       case x:Integer => JsNumber(x:Int)
       case x:Long => JsNumber(x)
@@ -134,6 +138,7 @@ trait FloatEncoder
   def name: String
   def encode(v: Any): JsValue = 
     v match {
+      case j:JsValue => j
       case x:Int => JsNumber(x)
       case x:Integer => JsNumber(x:Int)
       case x:Long => JsNumber(x)
@@ -163,6 +168,7 @@ case class BooleanParameter(
     default.map { JsBoolean(_) }.getOrElse { JsNull }
   def encode(v: Any): JsValue = 
     v match {
+      case j:JsValue => j
       case x:Boolean => JsBoolean(x)
       case _ => throw new VizierException("Invalid Parameter to $name (expected Boolean)")
     }
@@ -390,7 +396,7 @@ case class RecordParameter(
   components: Seq[Parameter],
   required: Boolean = true,
   hidden: Boolean = false
-) extends Parameter with StringEncoder
+) extends Parameter
 {
   def datatype = "record"
   def doStringify(j: JsValue): String = 
@@ -423,6 +429,20 @@ case class RecordParameter(
       }
     )
   }
+  def encode(v: Any): JsValue = 
+    v match { 
+      case fields:Map[_,_] => 
+        JsObject( 
+          zipParameters(fields.asInstanceOf[Map[String,Any]])
+            .map { case (component, subV) =>
+              component.id -> 
+                subV.map { component.encode(_) }
+                    .getOrElse { component.getDefault }
+            }.toMap
+        )
+
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Map)")
+    }
   override def convertFromReact(
     j: JsValue,
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
@@ -521,7 +541,8 @@ case class EnumerableParameter(
   default: Option[Int] = None,
   required: Boolean = true,
   hidden: Boolean = false,
-  aliases: Map[String,String] = Map.empty
+  aliases: Map[String,String] = Map.empty,
+  allowOther: Boolean = false
 ) extends Parameter with StringEncoder
 {
   lazy val possibilities = Set(values.map { _.value }:_*) ++ aliases.keySet
@@ -529,7 +550,7 @@ case class EnumerableParameter(
   def doStringify(j: JsValue): String = j.as[String]
   def doValidate(j: JsValue) = 
     if(j.isInstanceOf[JsString]){ 
-      if(possibilities(j.as[String])){ None }
+      if(possibilities(j.as[String]) || allowOther){ None }
       else {
         Some(s"Expected $name to be one of ${possibilities.mkString(", ")}, but got $j")
       }
@@ -538,13 +559,16 @@ case class EnumerableParameter(
     else { Some(s"Expected a string/enumerable for $name") }
   override def getDefault: JsValue = 
     Json.toJson(default.map { values(_).value })
-  override def describe = super.describe ++ Map("values" -> JsArray(
-    values.zipWithIndex.map { case (v, idx) => Json.obj(
-      "isDefault" -> JsBoolean(default.map { _ == idx }.getOrElse(false)),
-      "text"      -> v.text,
-      "value"     -> v.value
-    )}
-  ))
+  override def describe = super.describe ++ Map(
+      "values" -> JsArray(
+        values.zipWithIndex.map { case (v, idx) => Json.obj(
+          "isDefault" -> JsBoolean(default.map { _ == idx }.getOrElse(false)),
+          "text"      -> v.text,
+          "value"     -> v.value
+        )}
+      ),
+      "allowOther" -> JsBoolean(allowOther)
+    )
   override def convertFromReact(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
   {
     super.convertFromReact(j, preprocess) match { 

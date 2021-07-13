@@ -38,7 +38,7 @@ class DataCommandsSpec
     val project = MutableProject("Data Project")
 
     project.append("data", "load")(
-      "file" -> "test_data/r.csv",
+      "file" -> FileArgument.fromUrl("test_data/r.csv"),
       "name" -> "test_r",
       "loadFormat" -> "csv",
       "loadInferTypes" -> true,
@@ -106,8 +106,40 @@ class DataCommandsSpec
     )
     project.waitUntilReady
     f.exists must beTrue
+  }
 
+  "manage parameters" >> {
+    val project = MutableProject("Parameter Project")
+    
+    project.setParameters(
+      "foo" -> "floop",
+      "bar" -> 23.7,
+      "baz" -> 999
+    )
 
+    project.script("""
+      |print(vizierdb["foo"])
+      |print(vizierdb["bar"])
+      |print(vizierdb["baz"])
+    """.stripMargin)
+
+    project.waitUntilReady
+
+    project.lastOutput.map { _.dataString } must contain(exactly("floop", "23.7", "999"))
+  }
+
+  "load json data" >> {
+    val project = MutableProject("Load JSON")
+
+    project.load(
+      file = "test_data/simple.json",
+      name = "test",
+      format = "json",
+      inferTypes = false,
+    )
+
+    val ds = project.artifact("test").getDataset()
+    ok
   }
 }
 

@@ -19,7 +19,7 @@ import play.api.libs.json._
 import scalikejdbc._
 import info.vizierdb.types._
 import info.vizierdb.Vizier
-import info.vizierdb.catalog.{ Artifact, Module, Cell }
+import info.vizierdb.catalog.{ Artifact, Workflow, Module, Cell, Result }
 import org.mimirdb.api.request.QueryTableRequest
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
@@ -30,20 +30,26 @@ import info.vizierdb.catalog.DatasetMessage
 import info.vizierdb.catalog.ArtifactSummary
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.{ StructField, DataType }
+import info.vizierdb.catalog.serialized.ParameterArtifact
+import info.vizierdb.delta.DeltaBus
 
 class ExecutionContext(
   val projectId: Identifier,
   val scope: Map[String, ArtifactSummary],
+  workflow: Workflow,
   cell: Cell,
-  module: Module
+  module: Module,
+  stdout: (String, Array[Byte]) => Unit,
+  stderr: String => Unit
 )
   extends LazyLogging
 {
   val inputs = scala.collection.mutable.Map[String, Identifier]()
   val outputs = scala.collection.mutable.Map[String, Option[Artifact]]()
-  val messages = scala.collection.mutable.Buffer[(String, Array[Byte])]()
-  var errorMessages = scala.collection.mutable.Buffer[(String, Array[Byte])]()
+  // val messages = scala.collection.mutable.Buffer[(String, Array[Byte])]()
+  // var errorMessages = scala.collection.mutable.Buffer[(String, Array[Byte])]()
+  var isError = false
 
   /**
    * Check to see if the specified artifact appears in the scope
@@ -135,6 +141,38 @@ class ExecutionContext(
       // block
       ).toIndexedSeq.toMap
     }
+  }
+
+  /**
+   * Get a parameter artifact defined in an earlier cell
+   * 
+   * @param   name         The name of the artifact
+   *
+   * Parameters should be valid spark data values of the type provided.
+   */
+  def parameter(name: String): Option[ParameterArtifact] =
+  {
+    artifact(name)
+      .filter { _.t == ArtifactType.PARAMETER }
+      .map { _.parameter }
+  }
+
+  /**
+   * Set a parameter artifact for use in later cells
+   * 
+   * @param   name         The name of the artifact
+   * @param   value        The value of the artifact
+   * @param   dataType     The data type of the artifact
+   * 
+   * Parameters should be valid spark data values of the type provided.
+   */
+  def setParameter(name: String, value: Any, dataType: DataType)
+  {
+    output(
+      name, 
+      ArtifactType.PARAMETER, 
+      Json.toJson(ParameterArtifact(value, dataType)).toString.getBytes
+    )
   }
 
   /**
@@ -240,7 +278,8 @@ class ExecutionContext(
    */
   def error(message: String)
   {
-    errorMessages.append( (MIME.TEXT, message.getBytes) )
+    stderr(message)
+    isError = true
   }
 
   /**
@@ -273,7 +312,7 @@ class ExecutionContext(
   def message(mimeType: String, content: Array[Byte])
   {
     logger.trace(s"APPEND[$mimeType]: $content")
-    messages.append( (mimeType, content) )
+    stdout(mimeType, content)
   }
 
   /**
@@ -381,11 +420,17 @@ class ExecutionContext(
     }
   }
 
+  /**
+   * Get a unique string for this execution
+   */
+  def executionIdentifier: String =
+  {
+    s"${module.id}_${cell.position}${cell.resultId.map { "_"+_ }.getOrElse("")}"
+  }
+
   override def toString: String =
     {
       s"SCOPE: { ${scope.map { case (ds, art) => ds+" -> "+art.id }.mkString(", ")} }"
     }
-
-  def isError = !errorMessages.isEmpty
 }
 

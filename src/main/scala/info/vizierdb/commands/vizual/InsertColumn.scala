@@ -16,22 +16,29 @@ package info.vizierdb.commands.vizual
 
 import info.vizierdb.commands._
 import org.mimirdb.vizual
+import org.mimirdb.spark.Schema
 
 object InsertColumn extends VizualCommand
 {
+  val PARA_POSITION = "position"
+  val PARA_NAME = "name"
+  val PARA_DATATYPE = "dataType"
+
   def name: String = "Insert Column"
   def vizualParameters: Seq[Parameter] = Seq(
-    IntParameter(id = "position", name = "Position", required = false),
-    StringParameter(id = "name", name = "Column Name")
+    IntParameter(id = PARA_POSITION, name = "Position", required = false),
+    StringParameter(id = PARA_NAME, name = "Column Name"),
+    TemplateParameters.DATATYPE(id = PARA_DATATYPE)
   )
   def format(arguments: Arguments): String = 
-    s"INSERT COLUMN ${arguments.get[String]("name")} INTO DATASET ${arguments.get[String]("dataset")}${arguments.getOpt[Int]("position").map {" AT POSITION "+_}.getOrElse{""}}"
+    s"INSERT COLUMN ${arguments.get[String](PARA_NAME)} OF TYPE ${arguments.get[String]("datatype")} INTO DATASET ${arguments.get[String](PARA_DATASET)}${arguments.getOpt[Int](PARA_POSITION).map {" AT POSITION "+_}.getOrElse{""}}"
 
   def script(arguments: Arguments, context: ExecutionContext) = 
     Seq(
       vizual.InsertColumn(
-        position = arguments.getOpt[Int]("position"),
-        name = arguments.get[String]("name")
+        position = arguments.getOpt[Int](PARA_POSITION),
+        name = arguments.get[String](PARA_NAME),
+        dataType = arguments.getOpt[String](PARA_DATATYPE).map { Schema.decodeType(_) }
       )
     )
 }

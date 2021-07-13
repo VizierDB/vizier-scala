@@ -18,25 +18,32 @@ import sys
 import ast
 import astor  # type: ignore[import]
 import inspect
-import pandas
+import pandas  # type: ignore[import]
 import os
 import re
 from datetime import datetime
-from pycell.dataset import DatasetClient
-from pycell.plugins import vizier_bokeh_render, vizier_matplotlib_render
+from pycell.dataset import DatasetClient, import_to_native_type
+from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
 from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
 from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
 from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
+import pickle
+import base64
 
-ARTIFACT_TYPE_DATASET  = "Dataset"
-MIME_TYPE_DATASET      = "dataset/view"
-ARTIFACT_TYPE_FUNCTION = "Function"
-MIME_TYPE_PYTHON       = "application/python"
+ARTIFACT_TYPE_DATASET   = "Dataset"
+MIME_TYPE_DATASET       = "dataset/view"
+ARTIFACT_TYPE_FUNCTION  = "Function"
+MIME_TYPE_PYTHON        = "application/python"
+ARTIFACT_TYPE_BLOB      = "Blob"
+MIME_TYPE_PICKLE        = "application/pickle"
+ARTIFACT_TYPE_PARAMETER = "Parameter"
+ARTIFACT_TYPE_FILE      = "File"
 
-OUTPUT_TEXT    = "text/plain"
-OUTPUT_HTML    = "text/html"
-OUTPUT_DATASET = "dataset/view"
+OUTPUT_TEXT       = "text/plain"
+OUTPUT_HTML       = "text/html"
+OUTPUT_JAVASCRIPT = "text/javascript"
+OUTPUT_DATASET    = "dataset/view"
 
 
 class Artifact(object):
@@ -49,6 +56,7 @@ class Artifact(object):
     self.name = name
     self.artifact_type = artifact_type
     self.artifact_id = artifact_id
+    self.mime_type = mime_type
 
 
 class ArtifactProxy(object):
@@ -62,6 +70,11 @@ class ArtifactProxy(object):
   def load_if_needed(self):
     if self.__artifact is None:
       self.__artifact = self.__client[self.__artifact_name]
+
+  def __getitem__(self, key: Any) -> Any:
+    self.load_if_needed()
+    assert(self.__artifact is not None)
+    return self.__artifact.__getitem__(key)
 
   def __getattr__(self, name):
     self.load_if_needed()
@@ -78,7 +91,16 @@ class ArtifactProxy(object):
     self.load_if_needed()
     return self.__artifact.__call__(*args, **kwargs)
 
+  def __repr__(self):
+    self.load_if_needed()
+    return self.__artifact.__repr__()
+
   @property
+  def get(self):
+    self.load_if_needed()
+    return self.__artifact
+
+  @property  # type: ignore[misc]
   def __class__(self):
     self.load_if_needed()
     return self.__artifact.__class__
@@ -92,14 +114,16 @@ class VizierDBClient(object):
                artifacts: Dict[str, Artifact],
                source: str,
                raw_output: IO,
-               project_id: str
+               project_id: str,
+               cell_id: str
                ):
     self.artifacts = artifacts
     self.source = source
     self.project_id = project_id
+    self.cell_id = cell_id
     self.raw_output = raw_output
-    self.datasets = {}
-    self.py_objects = {}
+    self.datasets: Dict[str, DatasetClient] = {}
+    self.py_objects: Dict[str, Any] = {}
 
   def __getitem__(self, key: str) -> Any:
     key = key.lower()
@@ -110,6 +134,17 @@ class VizierDBClient(object):
       return self.get_dataset(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_FUNCTION:
       return self.get_module(key)
+    elif artifact.artifact_type == ARTIFACT_TYPE_PARAMETER:
+      return self.get_parameter(key)
+    elif artifact.artifact_type == ARTIFACT_TYPE_FILE:
+      return self.get_file(key)
+    elif artifact.artifact_type == ARTIFACT_TYPE_BLOB:
+      if artifact.mime_type == MIME_TYPE_PICKLE:
+        return self.get_pickle(key)
+      else:
+        raise ValueError("Unsupported format {} for blob artifact \'{}\'".format(
+                            artifact.mime_type, 
+                            key))
     else:
       raise ValueError("Unsupported artifact \'{}\' ({} [{}])".format(
                 key,
@@ -130,28 +165,54 @@ class VizierDBClient(object):
     if has_response:
       response = sys.stdin.readline()
       return json.loads(response)
+    else:
+      return None
 
   def get_artifact_proxies(self) -> Dict[str, ArtifactProxy]:
     return {
       self.artifacts[artifact].name:
         ArtifactProxy(client=self, artifact_name=self.artifacts[artifact].name)
       for artifact in self.artifacts
-      if self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_FUNCTION
+      if (
+        self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_FUNCTION
+      )  # or (
+         # self.artifacts[artifact].artifact_type == ARTIFACT_TYPE_PARAMETER
+         # )
     }
+
+  def get_parameter(self, name: str) -> Any:
+    name = name.lower()
+    if name not in self.artifacts:
+      raise ValueError("unknown parameter \'{}\'".format(name))
+    if self.artifacts[name].artifact_type != ARTIFACT_TYPE_PARAMETER:
+      raise ValueError("\'{}\' is not a parameter".format(name))
+    if name in self.py_objects:
+      return self.py_objects[name]
+    response = self.vizier_request(
+        event="get_parameter",
+        name=name,
+        has_response=True
+      )
+    assert(response is not None)
+    return import_to_native_type(
+      response["data"]["value"],
+      response["data"]["dataType"]
+    )
 
   def get_module(self, name: str) -> Any:
     name = name.lower()
-    if name in self.py_objects:
-      return self.py_objects[name]
     if name not in self.artifacts:
       raise ValueError("unknown module \'{}\'".format(name))
     if self.artifacts[name].artifact_type != ARTIFACT_TYPE_FUNCTION:
       raise ValueError("\'{}\' is not a module".format(name))
+    if name in self.py_objects:
+      return self.py_objects[name]
     response = self.vizier_request(
         event="get_blob",
         name=name,
         has_response=True
       )
+    assert(response is not None)
 
     def output_exported(x):
       self.py_objects[name] = x
@@ -188,6 +249,7 @@ class VizierDBClient(object):
       has_response=True,
       name=name
     )
+    assert(response is not None)
     assert(response["event"] == "dataset")
     ds = DatasetClient(
       client=self,
@@ -201,7 +263,8 @@ class VizierDBClient(object):
   def create_dataset(self,
                      name: str,
                      dataset: DatasetClient,
-                     backend_options: List[Tuple[str, str]] = []
+                     backend_options: List[Tuple[str, str]] = [],
+                     use_deltas: bool = True
                      ) -> None:
     """Save a new dataset in Vizier with given name.
 
@@ -210,13 +273,22 @@ class VizierDBClient(object):
     name = name.lower()
     if name in self.artifacts:
       raise ValueError('dataset \'{}\' already exists'.format(name))
-    response = self.vizier_request("save_dataset",
-      name=name,
-      has_response=True,
-      dataset=dataset.to_json()
-    )
+    if use_deltas:
+      response = self.vizier_request("vizual_script",
+        output=name,
+        name=dataset.existing_name,
+        identifier=dataset.identifier,
+        has_response=True,
+        script=dataset.history
+      )
+    else:
+      response = self.vizier_request("save_dataset",
+        name=name,
+        has_response=True,
+        dataset=dataset.to_json()
+      )
+    assert(response is not None)
     dataset.identifier = response["artifactId"]
-    dataset.name_in_backend = response["artifactId"]
     self.datasets[name] = dataset
     self.artifacts[name] = Artifact(name=name,
                                     artifact_type=ARTIFACT_TYPE_DATASET,
@@ -226,7 +298,8 @@ class VizierDBClient(object):
 
   def update_dataset(self,
                      name: str,
-                     dataset: DatasetClient
+                     dataset: DatasetClient,
+                     use_deltas: bool = True
                      ) -> DatasetClient:
     """Update a given dataset.
 
@@ -234,20 +307,30 @@ class VizierDBClient(object):
     """
     name = name.lower()
     if name not in self.artifacts:
-      raise ValueError('dataset \'{}\' already exists'.format(name))
-    response = self.vizier_request("save_dataset",
-      name=name,
-      has_response=True,
-      dataset=dataset.to_json
-    )
+      raise ValueError('dataset \'{}\' doesn\'t already exist'.format(name))
+    if use_deltas:
+      response = self.vizier_request("vizual_script",
+        output=name,
+        name=dataset.existing_name,
+        identifier=dataset.identifier,
+        has_response=True,
+        script=dataset.history
+      )
+    else:
+      response = self.vizier_request("save_dataset",
+        name=name,
+        has_response=True,
+        dataset=dataset.to_json()
+      )
+    assert(response is not None)
     dataset.identifier = response["artifactId"]
-    dataset.name_in_backend = response["artifactId"]
     self.datasets[name] = dataset
     self.artifacts[name] = Artifact(name=name,
                                     artifact_type=ARTIFACT_TYPE_DATASET,
                                     mime_type=MIME_TYPE_DATASET,
                                     artifact_id=response["artifactId"]
                                     )
+    return dataset
 
   def drop_dataset(self, name: str) -> None:
     """Remove the dataset with the given name.
@@ -300,14 +383,102 @@ class VizierDBClient(object):
   def create_file(self,
                   name: str,
                   filename: Optional[str] = None,
-                  mime_type: str = "text/plain"
+                  mime_type: str = "text/plain",
+                  binary_mode: bool = False
                  ) -> FileClient:
     return FileClient(
         client=self,
         name=name,
         filename=filename,
-        mime_type=mime_type
+        mime_type=mime_type,
+        open_mode="w" + ("b" if binary_mode else "t")
       )
+
+  def import_file(self,
+                  path: str,
+                  name: Optional[str] = None,
+                  filename: Optional[str] = None,
+                  mime_type: str = "text/plain",
+                  buffer_size: int = (10 * 1024)
+                 ) -> None:
+    if filename is None:
+      filename = os.path.basename(path)
+    if name is None:
+      name = filename
+    path = os.path.expanduser(path)
+    with open(path, "rb") as src:
+      with self.create_file(name=name, filename=filename, mime_type=mime_type, binary_mode=True) as dst:
+        buffer = src.read(buffer_size)
+        while len(buffer) > 0:
+          dst.write(buffer)
+          buffer = src.read(buffer_size)
+
+  def get_file(self, name: str, binary_mode: bool = False) -> FileClient:
+    name = name.lower()
+    if name not in self.artifacts:
+      raise ValueError("unknown file \'{}\'".format(name))
+    artifact = self.artifacts[name]
+    if artifact.artifact_type != ARTIFACT_TYPE_FILE:
+      raise ValueError("\'{}\' is not a file".format(name))
+
+    response = self.vizier_request(
+        event="get_file",
+        name=name,
+        has_response=True
+      )
+    assert(response is not None)
+
+    return FileClient(
+      client=self,
+      name=name,
+      mime_type=artifact.mime_type,
+      filename=response["properties"].get("filename", "unknown_file"),
+      metadata=response,
+      open_mode="r" + ("b" if binary_mode else "t")
+    )
+
+  def get_pickle(self, key: str) -> Any:
+    key = key.lower()
+    if key not in self.artifacts:
+      raise ValueError("unknown pickle \'{}\'".format(key))
+    artifact = self.artifacts[key]
+    if ((artifact.artifact_type != ARTIFACT_TYPE_BLOB) 
+        or (artifact.mime_type != MIME_TYPE_PICKLE)):  # noqa: E129, W503
+      raise ValueError("\'{}\' is not a pickle".format(key))
+
+    response = self.vizier_request(
+        event="get_blob",
+        name=key,
+        has_response=True
+      )
+    assert(response is not None)
+
+    data = response["data"].encode()
+    data = base64.decodebytes(data)
+    return pickle.loads(data)
+
+  def export_pickle(self, key: str, value: Any) -> None:
+    if key in self.artifacts:
+      raise ValueError("An artifact named {} already exists".format(key))
+
+    exported = pickle.dumps(value)
+    encoded = base64.encodebytes(exported).decode()
+
+    response = self.vizier_request("save_artifact",
+        name=key,
+        data=encoded,
+        mimeType=MIME_TYPE_PICKLE,
+        artifactType=ARTIFACT_TYPE_BLOB,
+        has_response=True
+      )
+    assert(response is not None)
+
+    self.artifacts[key] = Artifact(
+      name=key,
+      artifact_type=ARTIFACT_TYPE_BLOB,
+      mime_type=MIME_TYPE_PICKLE,
+      artifact_id=response["artifactId"]
+    )
 
   def pycell_open(self,
                   file: str,
@@ -316,7 +487,7 @@ class VizierDBClient(object):
                   encoding: Optional[str] = None,
                   errors: Any = None,
                   newline: Optional[str] = None,
-                  closefd: Optional[bool] = True,
+                  closefd: bool = True,
                   opener: Optional[Any] = None
                   ) -> IO:
     print("***File access may not be reproducible because filesystem resources are transient***")
@@ -346,8 +517,9 @@ class VizierDBClient(object):
         })
         mime_type = OUTPUT_DATASET
       elif issubclass(type(value), BokehLayout):
-        value = vizier_bokeh_render(value)
-        mime_type = OUTPUT_HTML
+        # redirect via bokeh plugin
+        vizier_bokeh_show(value, None, None)
+        return
       elif issubclass(type(value), MatplotlibFigure):
         value = vizier_matplotlib_render(value)
         mime_type = OUTPUT_HTML
@@ -378,8 +550,20 @@ class VizierDBClient(object):
       has_response=False
     )
 
-  def show_html(self, value):
+  def show_html(self, value: str) -> None:
     self.show(value, mime_type=OUTPUT_HTML)
+
+  def show_javascript(
+      self,
+      code: str,
+      html: str = "",
+      dependencies: List[str] = []
+    ) -> None:
+    self.show(json.dumps({
+        "code": code,
+        "html": html,
+        "js_deps": dependencies
+      }), mime_type=OUTPUT_JAVASCRIPT)
 
   def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
     if name_override is not None:
@@ -423,6 +607,7 @@ class VizierDBClient(object):
         artifactType=ARTIFACT_TYPE_FUNCTION,
         has_response=True
       )
+    assert(response is not None)
 
     self.artifacts[exp_name] = Artifact(
       name=exp_name,
@@ -452,12 +637,16 @@ class VizierDBClient(object):
       includeUncertainty=True,
       has_response=True
     )
+    assert(response is not None)
     results = list(_load_from_socket((response['port'], response['secret']), ArrowCollectSerializer()))
     batches = results[:-1]
     batch_order = results[-1]
     ordered_batches = [batches[i] for i in batch_order]
-    table = pa.Table.from_batches(ordered_batches)
-    return table.to_pandas()
+    if len(ordered_batches) > 0:
+      table = pa.Table.from_batches(ordered_batches)
+      return table.to_pandas()
+    else:
+      raise Exception("Error loading dataframe '{}'.  It has no content.".format(name))
 
   def save_data_frame(self, name: str, df: pandas.DataFrame) -> None:
     name = name.lower()
@@ -470,12 +659,14 @@ class VizierDBClient(object):
         "filename": name
       }
     )
+    assert(response is not None)
     df.to_parquet(path=response["path"])
     response = self.vizier_request("create_dataset",
       has_response=True,
       file=response["artifactId"],
       name=name
     )
+    assert(response is not None)
     if name in self.datasets:
       del self.datasets[name]
     self.artifacts[name] = Artifact(name=name,
@@ -540,7 +731,7 @@ class VizierDBClient(object):
 
           # Make sure the record is in the right order
           row = [
-            entry.get(col.name, None)
+            entry.get(col.name, None) if col.name is not None else None
             for col in ds.columns
           ]
 
@@ -554,6 +745,7 @@ class VizierDBClient(object):
     except ResponseError:
       return None
       pass
+    return None
 
 
 class Analyzer(ast.NodeVisitor):
@@ -576,7 +768,7 @@ class Analyzer(ast.NodeVisitor):
   def visit_Assign(self, node):
     self.context.append(('assignment', set()))
     target = node.targets[0]
-    if target.id == self.name:
+    if isinstance(target, ast.Name) and target.id == self.name:
       self.source = astor.to_source(node.value)
       self.generic_visit(target)
     self.context.pop()
@@ -619,4 +811,3 @@ def is_valid_name(name: str) -> bool:
     elif c not in ['_', '-', ' ']:
       return False
   return (allnums > 0)
-

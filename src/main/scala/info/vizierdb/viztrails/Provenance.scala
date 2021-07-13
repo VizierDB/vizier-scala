@@ -29,11 +29,15 @@ object Provenance
 
   def getSummaryScope(cell: Cell)(implicit session: DBSession): Map[String, ArtifactSummary] =
   {
-    val refs = getRefScope(cell).mapValues { _.artifactId.get }
-    val summaries = Artifact.lookupSummaries(refs.values.toSeq)
+    val refs = getRefScope(cell)
+    refScopeToSummaryScope(refs)
+  }
+  def refScopeToSummaryScope(refs: Map[String, ArtifactRef])(implicit session: DBSession): Map[String, ArtifactSummary] =
+  {
+    val summaries = Artifact.lookupSummaries(refs.values.map { _.artifactId.get }.toSeq)
                             .map { a => a.id -> a }
                             .toMap
-    refs.mapValues { summaries(_) }
+    refs.mapValues { ref => summaries(ref.artifactId.get) }
   }
 
   def getRefScope(cell: Cell)(implicit session: DBSession): Map[String, ArtifactRef] = 
@@ -86,11 +90,14 @@ object Provenance
    * Check to see whether the provided cell needs re-execution if the following scope is provided
    * @param    cell       The cell to check
    * @param    scope      The artifact state prior to the cell's execution
-   * @return              true if the cell's prior execution can be applied directly without re-running the cell
+   * @return              false if the cell's prior execution can be applied directly without re-running the cell
    */
-  def checkForConflicts(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Boolean =
+  def cellNeedsANewResult(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Boolean =
   {
-    if(cell.resultId.isEmpty){
+    if(ExecutionState.PROVENANCE_NOT_VALID_STATES(cell.state)){
+      logger.trace(s"Cell is in a provenance-not-valid state (${cell.state}).  Forcing a conflict")
+      return true
+    } else if(cell.resultId.isEmpty){
       logger.trace("Cell has no result.  By default this is a conflict.")
       return true
     } else {
@@ -125,46 +132,63 @@ object Provenance
     // TODO: this update can be moved completely to the database as an UPDATE query
     //       ... but let's get it correct first.
     var scope = outputsAtStart
-    var hitFirstStaleCell = false
-    
+
     for(curr <- cells){
       logger.debug(s"Updating execution state for $curr; $scope")
-      curr.state match {
-        case ExecutionState.STALE => {
-          logger.debug(s"Already STALE")
-          hitFirstStaleCell = true
-        }
+      curr.state match { 
         case ExecutionState.WAITING => {
-          if(checkForConflicts(curr, scope)){ 
+          if(cellNeedsANewResult(curr, scope)){ 
             // There is a conflict.  The cell now officially needs to be re-executed.
             logger.debug(s"Conflict detected -> STALE")
-            hitFirstStaleCell = true
             curr.updateState(ExecutionState.STALE)
-          } else if(!hitFirstStaleCell) {
+
+            // Once we hit a STALE cell, the current scope is invalid and we can learn
+            // nothing more about the remaining cells.
+            return
+          } else {
             // There is no conflict, and we haven't hit the first stale cell yet.  
             // Can safely re-use the prior cell execution results
             logger.debug("No conflict -> DONE")
             curr.updateState(ExecutionState.DONE)
-          } else {
-            logger.debug("Already hit stale cell -> WAITING")
           }
+        }
+        case ExecutionState.ERROR | ExecutionState.CANCELLED => {
+          // Workflow aborts need to abort both the scheduler and the workflow cell state, and
+          // generally it makes more sense to update the cells first.  As a result, it is possible
+          // that we might hit an ERROR or CANCELLED cell (which generally means that the workflow
+          // was literally just aborted).  
+
+          logger.debug("Already ERROR or CANCELLED")
+
+          // Once we hit an ERROR or CANCELLED cell, the current scope is invalid and we can learn
+          // nothing more about the remaining cells.
+          return
+        }
+        case ExecutionState.STALE => {
+          logger.debug("Already STALE")
+          // Once we hit a STALE cell, the current scope is invalid and we can learn
+          // nothing more about the remaining cells.
+          return
+        }
+        case ExecutionState.RUNNING => {
+          // It's possible we'll hit a RUNNING cell if we're appending a
+          // cell to the workflow.
+          logger.debug("Already RUNNING")
+          // Once we hit a STALE cell, the current scope is invalid and we can learn
+          // nothing more about the remaining cells.
+          return
         }
         case ExecutionState.DONE => {
           logger.debug("Already DONE")
         }
         case ExecutionState.FROZEN => {
+          // Frozen cells are simply ignored
           logger.debug("Already FROZEN")
         }
-        case ExecutionState.ERROR | ExecutionState.CANCELLED => {
-          if(hitFirstStaleCell){
-            throw new RuntimeException(s"Invalid state.  ${curr.state} states should never follow a STALE cell")
-          } else { 
-            logger.debug(s"Already ${curr.state}; Skipping rest of workflow")
-            return
-          }
-        }
-      }    
-      scope = updateScope(curr, scope)
+      }
+      if(curr.state != ExecutionState.FROZEN){
+        scope = updateScope(curr, scope)
+      }
     }
   }
 }

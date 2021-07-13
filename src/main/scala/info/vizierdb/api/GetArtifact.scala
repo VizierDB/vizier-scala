@@ -33,7 +33,7 @@ object GetArtifactHandler
 {
   def getArtifact(projectId: Long, artifactId: Long, expecting: Option[ArtifactType.T]): Option[Artifact] = 
       DB.readOnly { implicit session => 
-        Artifact.lookup(artifactId, Some(projectId))
+        Artifact.getOption(artifactId, Some(projectId))
       }.filter { artifact => 
         expecting.isEmpty || expecting.get.equals(artifact.t)
       }
@@ -207,7 +207,7 @@ object GetArtifactHandler
       getArtifact(projectId, artifactId, Some(ArtifactType.FILE)) match {
         case Some(artifact) => 
         {
-          var path = artifact.file
+          var path = artifact.absoluteFile
           subpath match {
             case None => ()
             case Some(SANE_FILE_CHARACTERS(saneSubpath)) =>

@@ -23,6 +23,8 @@ import java.time.format.DateTimeFormatter
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.serialized._
+import info.vizierdb.delta.{ UpdateCell, DeltaBus }
+import info.vizierdb.viztrails.{ Provenance, StateTransition }
 
 /**
  * One version of a workflow.  
@@ -40,6 +42,9 @@ case class Workflow(
   aborted: Boolean
 )
 {
+  def projectId(implicit session: DBSession) = 
+    Branch.get(branchId).projectId
+
   def cells(implicit session: DBSession): Seq[Cell] = 
     withSQL {
       val c = Cell.syntax
@@ -76,6 +81,14 @@ case class Workflow(
           .and.eq(m.id, c.moduleId)
         .orderBy(c.position)
     }.map { Module(_) }.list.apply()
+  def cellsWhere(condition: SQLSyntax)(implicit session: DBSession): Seq[Cell] =
+    withSQL {
+      val c = Cell.syntax
+      select
+        .from(Cell as c)
+        .where.eq(c.workflowId, id)
+          .and(Some(condition))
+    }.map { Cell(_) }.list.apply()
   def cellsAndModulesInOrder(implicit session: DBSession): Seq[(Cell, Module)] =
     withSQL {
       val c = Cell.syntax
@@ -110,6 +123,18 @@ case class Workflow(
     }
 
   def length(implicit session: DBSession): Int = Workflow.getLength(id)
+  def abortIfNeeded(implicit session:DBSession): Workflow =
+  {
+    val pendingCellCount = withSQL {
+      val c = Cell.syntax
+      select(sqls"count(*)")
+        .from(Cell as c)
+        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq)
+          .and.eq(c.workflowId, id)
+    }.map { _.long(1) }.single.apply().getOrElse { 0l }
+    if(pendingCellCount > 0){ abort }
+    else { this }
+  }
   def abort(implicit session:DBSession): Workflow =
   {
     withSQL {
@@ -118,11 +143,25 @@ case class Workflow(
         .set(w.aborted -> 1)
         .where.eq(w.id, id)
     }.update.apply()
+    for(cell <- cellsWhere(sqls.in(sqls"state", ExecutionState.PENDING_STATES.toSeq))) {
+      DeltaBus.notifyStateChange(
+        this, 
+        cell.position, 
+        ExecutionState.CANCELLED
+      )
+    }
+    val stateTransitions = 
+      StateTransition.forAll( 
+        ExecutionState.PENDING_STATES -> ExecutionState.CANCELLED 
+      )
     withSQL {
       val c = Cell.column
       update(Cell)
-        .set(c.state -> ExecutionState.CANCELLED)
-        .where.ne(c.state, ExecutionState.DONE)
+        .set(
+          c.state -> StateTransition.updateState(stateTransitions),
+          c.resultId -> StateTransition.updateResult(stateTransitions)
+        )
+        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq.map { _.id })
           .and.eq(c.workflowId, id)
     }.update.apply()
     copy(aborted = true)
@@ -168,6 +207,15 @@ case class Workflow(
      .list.apply()
   }
 
+  def isRunning(implicit session: DBSession): Boolean =
+    withSQL {
+      val c = Cell.syntax
+      select( c.resultAll )
+        .from(Cell as c)
+        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq.map { _.id } )
+          .and.eq(c.workflowId, id)
+    }.map { _ => 1 }.list.apply().size > 0
+
   def describe(implicit session: DBSession): WorkflowDescription = 
   {
     val branch = Branch.get(branchId)
@@ -180,10 +228,6 @@ case class Workflow(
     val (datasets, dataobjects) =
       artifacts.partition { _._1.t.equals(ArtifactType.DATASET) }
     val summary = makeSummary(branch, actionModuleId.map { Module.get(_) })
-
-    val isRunning = cellsAndModules.exists { cellAndModule => 
-                      ExecutionState.isRunningOrPendingState(cellAndModule._1.state)
-                    }
 
     val state = cellsAndModules.foldLeft(ExecutionState.DONE) { (prev, curr) =>
       if(!prev.equals(ExecutionState.DONE)){ prev }
@@ -373,6 +417,9 @@ case class Workflow(
         .where.eq(c.workflowId, id)
     }.update.apply()
   }
+
+  def actionModule(implicit session: DBSession): Option[Module] =
+    actionModuleId.map { Module.get(_) }
 }
 object Workflow 
   extends SQLSyntaxSupport[Workflow]
@@ -384,8 +431,8 @@ object Workflow
     sql"select max(position) from cell where workflow_id = $workflowId"
       .map { _.intOpt(1).map { _ + 1 } }.single.apply().flatten.getOrElse { 0 }
 
-  def get(target: Identifier)(implicit session:DBSession): Workflow = lookup(target).get
-  def lookup(target: Identifier)(implicit session:DBSession): Option[Workflow] = 
+  def get(target: Identifier)(implicit session:DBSession): Workflow = getOption(target).get
+  def getOption(target: Identifier)(implicit session:DBSession): Option[Workflow] = 
     withSQL { 
       val w = Workflow.syntax 
       select
@@ -393,7 +440,7 @@ object Workflow
         .where.eq(w.id, target)  
     }.map { apply(_) }.single.apply()
 
-  def lookup(branchId: Identifier, workflowId: Identifier)(implicit session:DBSession): Option[Workflow] = 
+  def getOption(branchId: Identifier, workflowId: Identifier)(implicit session:DBSession): Option[Workflow] = 
     withSQL { 
       val w = Workflow.syntax 
       select
@@ -402,7 +449,7 @@ object Workflow
           .and.eq(w.branchId, branchId)  
     }.map { apply(_) }.single.apply()
 
-  def lookup(projectId: Identifier, branchId: Identifier, workflowId: Identifier)(implicit session:DBSession): Option[Workflow] = 
+  def getOption(projectId: Identifier, branchId: Identifier, workflowId: Identifier)(implicit session:DBSession): Option[Workflow] = 
     withSQL { 
       val w = Workflow.syntax 
       val b = Branch.syntax 

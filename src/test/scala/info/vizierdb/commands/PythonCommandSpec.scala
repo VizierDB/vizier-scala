@@ -25,6 +25,7 @@ import info.vizierdb.viztrails.MutableProject
 import info.vizierdb.commands.python.PythonProcess
 import org.apache.spark.sql.types._
 import org.mimirdb.api.MimirAPI
+import org.mimirdb.util.FeatureSupported
 
 class PythonCommandSpec
   extends Specification
@@ -143,6 +144,9 @@ show(vizierdb["q"])
 
   "Arrow DataFrames" >>
   {
+    if(FeatureSupported.majorVersion >= 9){
+      skipped("Java 9+ doesn't seem to like pyarrow. See: https://github.com/VizierDB/vizier-scala/issues/92")
+    }
     project.script("""
 df = vizierdb.get_data_frame("q")
 print(df['A'].sum())
@@ -187,6 +191,44 @@ print(df['A'].sum())
       df.count() must beEqualTo(10000)
       df.distinct().count() must beEqualTo(10000)
     }
+  }
+
+  "Export Pickles" >> 
+  {
+    project.script("""
+      |a = 1
+      |b = "hello world"
+      |c = [
+      |      { "x" : i, "y" : "foo" } 
+      |      for i in range(0, 100)
+      |    ]
+      |vizierdb.export_pickle("pickle_a", a)
+      |vizierdb.export_pickle("pickle_b", b)
+      |vizierdb.export_pickle("pickle_c", c)
+    """.stripMargin)
+
+    project.script("print(vizierdb.get_pickle(\"pickle_a\"))")
+    project.lastOutputString must beEqualTo("1")
+
+    project.script("print(vizierdb.get_pickle(\"pickle_b\"))")
+    project.lastOutputString must beEqualTo("hello world")
+
+    project.script("print(vizierdb.get_pickle(\"pickle_c\")[23][\"x\"])")
+    project.lastOutputString must beEqualTo("23")
+  }
+
+  "Export functions to SQL" >>
+  {
+    project.script("""
+      |def addOne(x):
+      |  return x + 1
+      |vizierdb.export_module(addOne)
+    """.stripMargin)
+    project.sql("SELECT addOne(2)" -> "functionTest")
+    project.waitUntilReadyAndThrowOnError
+    project.artifact("functionTest")
+           .getDataset()
+           .data(0)(0) must beEqualTo("3")
   }
 
 }

@@ -18,12 +18,14 @@ import play.api.libs.json._
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
+import info.vizierdb.types._
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import org.mimirdb.api.request.CreateViewRequest
 import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.spark.InjectedSparkSQL
 import org.mimirdb.api.MimirAPI
+import info.vizierdb.catalog.ArtifactSummary
 
 object Query extends Command
   with LazyLogging
@@ -45,6 +47,12 @@ object Query extends Command
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val scope = context.allDatasets
+    val functions = context.scope
+                           .toSeq
+                           .filter { case (name, summary) => 
+                                      summary.t == ArtifactType.FUNCTION }
+                           .map { case (name, summary:ArtifactSummary) => name -> summary.id }
+                           .toMap
     val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
     val (dsName, dsId) = context.outputDataset(datasetName)
     val query = arguments.get[String]("source")
@@ -55,7 +63,7 @@ object Query extends Command
       logger.trace("Creating view")
       val response = CreateViewRequest(
         input = scope.mapValues { _.nameInBackend }, 
-        functions = None,
+        functions = Some(functions.mapValues { _.toString }),
         query = query, 
         resultName = Some(dsName),
         properties = None
@@ -64,6 +72,9 @@ object Query extends Command
       logger.trace("View created; Gathering dependencies")
       for(dep <- response.dependencies){
         context.inputs.put(dep, scope(dep).id)
+      }
+      for(dep <- response.functions){
+        context.inputs.put(dep, functions(dep))
       }
 
       logger.trace("Rendering dataset summary")

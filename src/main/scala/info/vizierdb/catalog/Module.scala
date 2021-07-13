@@ -105,8 +105,10 @@ class Module(
 
 
     ModuleDescription(
-      id = s"${id}_${cell.resultId.getOrElse {"noresult"}}",
+      id = cell.moduleDescriptor,
+      moduleId = id,
       state = ExecutionState.translateToClassicVizier(cell.state),
+      statev2 = cell.state,
       command = CommandDescription(
         packageId = packageId,
         commandId = commandId,
@@ -134,6 +136,7 @@ class Module(
         stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
         stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
       ),
+      resultId = cell.resultId.map { _.toString },
       links = HATEOAS(
         HATEOAS.SELF            -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
         HATEOAS.MODULE_INSERT   -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),
@@ -143,6 +146,11 @@ class Module(
           HATEOAS.MODULE_THAW   -> VizierAPI.urls.thawWorkflowModules(projectId, branchId, workflowId, cell.position)
         } else {
           HATEOAS.MODULE_FREEZE -> VizierAPI.urls.freezeWorkflowModules(projectId, branchId, workflowId, cell.position)
+        }),
+        (if(cell.state.equals(ExecutionState.FROZEN)) {
+          HATEOAS.MODULE_THAW_ONE   -> VizierAPI.urls.thawOneWorkflowModule(projectId, branchId, workflowId, cell.position)
+        } else {
+          HATEOAS.MODULE_FREEZE_ONE -> VizierAPI.urls.freezeOneWorkflowModule(projectId, branchId, workflowId, cell.position)
         }),
       )
     )
@@ -213,8 +221,8 @@ object Module
   }
 
 
-  def get(target: Identifier)(implicit session:DBSession): Module = lookup(target).get
-  def lookup(target: Identifier)(implicit session:DBSession): Option[Module] = 
+  def get(target: Identifier)(implicit session:DBSession): Module = getOption(target).get
+  def getOption(target: Identifier)(implicit session:DBSession): Option[Module] = 
     withSQL { 
       val w = Module.syntax 
       select

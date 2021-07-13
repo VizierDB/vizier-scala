@@ -32,6 +32,8 @@ import info.vizierdb.util.Streams
 import org.mimirdb.util.ExperimentalOptions
 import info.vizierdb.commands.python.PythonProcess
 import py4j.reflection.PythonProxyHandler
+import info.vizierdb.catalog.Doctor
+import info.vizierdb.commands.python.SparkPythonUDFRelay
 
 object Vizier
   extends LazyLogging
@@ -53,14 +55,26 @@ object Vizier
       settings = ConnectionPoolSettings(
         initialSize = 1,
         maxSize = 1,
-        connectionTimeoutMillis = 5000l
+
+        // If you are here to up the connection time-out period because you're getting connection
+        // timeouts, read this first please:
+        //
+        // https://github.com/VizierDB/vizier-scala/wiki/DevGuide-Gotchas#scalikejdbc
+        //
+        // TL;DR: You are almost certainly creating a nested session via DB.readOnly or 
+        //        DB.autocommit  Look through the stack trace.  These methods are NOT reentrant,
+        //        will trigger a connection timeout error when you're using SQLite, and will lead
+        //        to weird inconsistent state when you're using a database that allows parallel
+        //        connections.
+        /* ^^^^^ */ connectionTimeoutMillis = 5000l  /* ^^^^^ */
+        // Read the above comment before modifying connectionTimeoutMillis please.
       )
     )
   }
 
   def initMimir(
     db: String = "Mimir.db", 
-    stagingDirectory: String = ".", 
+    stagingDirectory: String = "staging", 
     runServer: Boolean = true
   ) =
   {
@@ -70,9 +84,14 @@ object Vizier
     MimirAPI.metadata = new MimirJDBC("sqlite", new File(config.basePath(), db).toString)
     MimirAPI.catalog = new MimirCatalog(
       MimirAPI.metadata,
-      new LocalFSStagingProvider(config.basePath()),
+      new LocalFSStagingProvider(
+        basePath = stagingDirectory, 
+        basePathIsRelativeToDataDir = true
+      ),
       MimirAPI.sparkSession
     )
+    MimirAPI.blobs = info.vizierdb.commands.python.SparkPythonUDFRelay
+    MimirAPI.pythonUDF = info.vizierdb.commands.python.PythonProcess.udfBuilder
     val geocoders = 
       Seq(
         config.googleAPIKey.map { k =>
@@ -143,47 +162,60 @@ object Vizier
     // Set up Mimir
     println("Starting Mimir...")
     initMimir(
-      runServer = 
-        !config.ingest.file.isSupplied
-        && !config.export.projectId.isSupplied
+      runServer = !config.subcommand.isDefined
     )
 
-    //////////////// HANDLE SPECIAL COMMANDS //////////////////
-    // Ingest
-    if(config.ingest.file.isSupplied){
-      try {
-        Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
-          ImportProject(
-            _,
-            execute = config.ingest.execute()
-          )
+    config.subcommand match {
+      //////////////// HANDLE SPECIAL COMMANDS //////////////////
+      case Some(subcommand) => 
+        
+        // Ingest
+        if(subcommand.equals(config.ingest)){
+          try {
+            Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
+              ImportProject(
+                _,
+                execute = config.ingest.execute()
+              )
+            }
+          } catch {
+            case e:VizierException => 
+              println(s"\nError: ${e.getMessage()}")
+          }
+        // Export
+        } else if (subcommand.equals(config.export)){
+          try { 
+            Streams.closeAfter(new FileOutputStream(config.export.file())) { 
+              ExportProject(
+                config.export.projectId(),
+                _
+              )
+            }
+            println(s"\nExported project ${config.export.projectId()} to '${config.export.file()}'")
+          } catch {
+            case e:VizierException => 
+              println(s"\nError: ${e.getMessage()}")
+          }
+        } else if (subcommand.equals(config.doctor)) {
+          println("Checking project database...")
+          val errors = Doctor.checkup()
+          for(msg <- errors){
+            println(msg)
+          }
+          if(errors.isEmpty){ 
+            println("No problems found")
+          }
+        } else { 
+          println(s"Unimplemented subcommand $subcommand")
+          System.exit(-1)
         }
-      } catch {
-        case e:VizierException => 
-          println(s"\nError: ${e.getMessage()}")
-      }
 
-    // Export
-    } else if (config.export.projectId.isSupplied){
-      try { 
-        Streams.closeAfter(new FileOutputStream(config.export.file())) { 
-          ExportProject(
-            config.export.projectId(),
-            _
-          )
-        }
-        println(s"\nExported project ${config.export.projectId()} to '${config.export.file()}'")
-      } catch {
-        case e:VizierException => 
-          println(s"\nError: ${e.getMessage()}")
-      }
-
-    //////////////// SPIN UP THE SERVER //////////////////
-    } else {
-      println("Starting server...")
-      VizierAPI.init()
-      println(s"... Server running at < ${VizierAPI.urls.ui} >")
-      VizierAPI.server.join()
+      //////////////// SPIN UP THE SERVER //////////////////
+      case None => 
+        println("Starting server...")
+        VizierAPI.init()
+        println(s"... Server running at < ${VizierAPI.urls.ui} >")
+        VizierAPI.server.join()
     }
   }
 }

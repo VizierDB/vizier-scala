@@ -19,8 +19,10 @@ object TemplateParameters
   val COLUMN = 
     ColIdParameter(id = "column", name = "Column")
 
-  val DATATYPE = 
-    EnumerableParameter(name = "Data Type", id = "schema_datatype", required = false, values = EnumerableValue.withNames(
+  val DATATYPE: EnumerableParameter = DATATYPE()
+
+  def DATATYPE(id:String = "schema_datatype", required: Boolean = false, allowOther: Boolean = true) =
+    EnumerableParameter(name = "Data Type", id = id, required = required, values = EnumerableValue.withNames(
       "String"                 -> "string",
       "Real"                   -> "real",
       "Float"                  -> "float",
@@ -32,7 +34,7 @@ object TemplateParameters
       "1 Byte"                 -> "byte",
       "Date"                   -> "date",
       "Date+Time"              -> "timestamp",
-    ), default = Some(0), aliases = Map(
+    ), default = Some(0), allowOther = allowOther, aliases = Map(
       "integer" -> "int",
     ))
 
