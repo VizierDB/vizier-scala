@@ -36,14 +36,14 @@ sudo mv vizier /usr/local/bin
 ```
 vizier
 ```
-
-And open up http://localhost:5000 in your web browser.
+... and open up http://localhost:5000 in your web browser.
 
 ##### Or run with Docker
 
 ```
-docker run -p 5000:500 --name vizier okennedy/vizier:latest
+docker run -p 5000:5000 --name vizier okennedy/vizier:latest
 ```
+... and open up http://localhost:5000 in your web browser.
 
 ---
 
