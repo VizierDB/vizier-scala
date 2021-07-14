@@ -292,9 +292,10 @@ checkout := {
     Files.createDirectory(upstream)
   }
   Seq(
-    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"     , "ui"     , Some("scala")), 
-    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"    , "mimir"  , None),
-    ("Caveats"  , "git@github.com:UBOdin/mimir-caveats.git", "caveats", None),
+    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"       , "ui"     , Some("scala")), 
+    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"      , "mimir"  , None),
+    ("Caveats"  , "git@github.com:UBOdin/mimir-caveats.git"  , "caveats", None),
+    ("Docker"   , "git@github.com:VizierDB/vizier-docker.git", "docker",  None),
   ).foreach { case (name, repo, stub, branch) => 
     val dir = upstream.resolve(stub)
     if(!Files.exists(dir.resolve(".git"))){
