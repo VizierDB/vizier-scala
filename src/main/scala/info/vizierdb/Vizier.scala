@@ -228,7 +228,9 @@ object Vizier
         VizierAPI.init()
         println(s"... server running at < ${VizierAPI.urls.ui} >")
 
-        if(!config.noUI()){ launchUIIfPossible() }
+        // Don't auto-launch the UI if we're asked not to
+        // or if we're in server mode.
+        if(!config.noUI() && !config.serverMode()){ launchUIIfPossible() }
 
         VizierAPI.server.join()
     }
