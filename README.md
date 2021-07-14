@@ -31,6 +31,12 @@ vizier
 
 And open up http://localhost:5000 in your web browser.
 
+### Getting started (with Docker)
+
+```
+docker run -p 5000:500 --name vizier okennedy/vizier:latest
+```
+
 ---
 
 ### More Info
