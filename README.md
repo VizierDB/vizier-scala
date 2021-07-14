@@ -17,19 +17,31 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 
 ### Getting started
 
-Install Vizier:
+Make sure you have JDK (v8 preferred, v11 otherwise) and Python3.X installed.
+
+Download vizier from [releases](https://github.com/VizierDB/vizier-scala/releases) or 
 ```
 wget https://maven.mimirdb.info/info/vizierdb/vizier
+```
+
+##### Install Vizier
+```
 chmod +x vizier
 sudo mv vizier /usr/local/bin
 ```
 
-Start Vizier:
+##### Start Vizier
 ```
 vizier
 ```
 
 And open up http://localhost:5000 in your web browser.
+
+##### Or run with Docker
+
+```
+docker run -p 5000:500 --name vizier okennedy/vizier:latest
+```
 
 ---
 
