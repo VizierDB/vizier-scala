@@ -17,12 +17,13 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 
 ### Getting started
 
-Install Vizier:
+Install Vizier
 ```
 wget https://maven.mimirdb.info/info/vizierdb/vizier
 chmod +x vizier
 sudo mv vizier /usr/local/bin
 ```
+(or get it from [releases](https://github.com/VizierDB/vizier-scala/releases))
 
 Start Vizier:
 ```
