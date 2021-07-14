@@ -34,6 +34,7 @@ import info.vizierdb.commands.python.PythonProcess
 import py4j.reflection.PythonProxyHandler
 import info.vizierdb.catalog.Doctor
 import info.vizierdb.commands.python.SparkPythonUDFRelay
+import scala.sys.process.Process
 
 object Vizier
   extends LazyLogging
@@ -127,6 +128,17 @@ object Vizier
     }
   }
 
+  def launchUIIfPossible()
+  {
+    val command: Seq[String] = 
+      System.getProperty("os.name").toLowerCase match {
+        case "linux"  => Seq("xdg-open", VizierAPI.urls.ui.toString)
+        case "darwin" => Seq("open", VizierAPI.urls.ui.toString)
+        case _ => return
+      }
+    Process(command).!
+  }
+
   def main(args: Array[String]) 
   {
     config = new Config(args)
@@ -214,7 +226,10 @@ object Vizier
       case None => 
         println("Starting server...")
         VizierAPI.init()
-        println(s"... Server running at < ${VizierAPI.urls.ui} >")
+        println(s"... server running at < ${VizierAPI.urls.ui} >")
+
+        if(!config.noUI()){ launchUIIfPossible() }
+
         VizierAPI.server.join()
     }
   }

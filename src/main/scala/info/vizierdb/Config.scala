@@ -78,6 +78,11 @@ class Config(arguments: Seq[String])
                 .orElse { Some(false) }
   )
 
+  val noUI = opt[Boolean]("no-ui",
+    descr = "Don't auto-launch the UI on startup",
+    default = Some(false)
+  )
+
   val connectFromAnyHost = opt[Boolean]("connect-from-any-host",
     descr = "Allow connections from any IP (WARNING: this will let anyone on your network run code on your machine)",
     default = Option(false),
