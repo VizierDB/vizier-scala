@@ -188,7 +188,7 @@ object types
         case org.apache.spark.sql.types.DateType => DATE
         case org.apache.spark.sql.types.TimestampType => DATETIME
         case org.apache.spark.sql.types.BinaryType => BINARY
-        case org.apache.spark.sql.types.ImageType => IMAGE
+        case org.apache.spark.sql.types.ImageUDT => IMAGE
         case _ => VARCHAR
       }
     }
