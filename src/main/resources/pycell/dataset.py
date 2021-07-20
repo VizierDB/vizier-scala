@@ -26,7 +26,7 @@ distinguished: date (format yyyy-MM-dd), int, varchar, real, and datetime
 (format yyyy-MM-dd hh:mm:ss:zzzz).
 """
 DATATYPE_DATE = 'date'
-DATATYPE_DATETIME = 'datetime'
+DATATYPE_DATETIME = 'timestamp'
 DATATYPE_INT = 'int'
 DATATYPE_SHORT = 'short'
 DATATYPE_LONG = 'long'
