@@ -420,8 +420,10 @@ class DatasetClient(object):
     if values is not None:
       if len(values) != len(self.columns):
         raise ValueError('invalid number of values for dataset schema')
+      for v, col in zip(values, self.columns):
+        assert_type(v, col.data_type, col.name)
       row = MutableDatasetRow(
-        values=[str(v) for v in values],
+        values=[v for v in values],
         dataset=self
       )
     else:
@@ -621,7 +623,7 @@ class DatasetClient(object):
       ],
       "data": [
         [
-          export_from_native_type(v, c.data_type)
+          export_from_native_type(v, c.data_type, c.name)
           for (v, c) in zip(row.values, self.columns)
         ]
         for row in rows
@@ -652,38 +654,62 @@ def collabel_2_index(label):
 
 
 def import_to_native_type(value: Any, data_type: str) -> Any:
-  if data_type == "geometry":
+  if value is None:
+    return None
+  elif data_type == DATATYPE_GEOMETRY:
     from shapely import wkt  # type: ignore[import]
     return wkt.loads(value)
+  elif data_type == DATATYPE_DATETIME:
+    from datetime import datetime
+    return datetime.fromisoformat(value)
+  elif data_type == DATATYPE_DATE:
+    from datetime import date
+    return date.fromisoformat(value)
   else:
     return value
 
 
-def export_from_native_type(value: Any, data_type: str) -> Any:
-  if data_type == "geometry":
-    return value.wkt
+def export_from_native_type(value: Any, data_type: str, context = "the value") -> Any:
+  assert_type(value, data_type, context)
+  if value is None:
+    return None
+  elif data_type == DATATYPE_GEOMETRY:
+    from shapely.geometry import asShape
+    return asShape(value).wkt
+  elif data_type == DATATYPE_DATETIME or data_type == DATATYPE_DATE:
+    return value.isoformat()
   else:
     return value
 
 
-def assert_type(value: Any, data_type: str) -> Any:
-  import datetime
-  if data_type == DATATYPE_DATE:
-    assert(isinstance(value, datetime.date))
+def assert_type(value: Any, data_type: str, context = "the value") -> Any:
+  if value is None:
+    return value
+  elif data_type == DATATYPE_DATE:
+    import datetime
+    if not isinstance(value, datetime.date):
+      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a date")
     return value
   elif data_type == DATATYPE_DATETIME:
-    assert(isinstance(value, datetime.datetime))
+    import datetime
+    if not isinstance(value, datetime.datetime):
+      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a datetime")
     return value
   elif data_type == DATATYPE_INT or data_type == DATATYPE_SHORT or data_type == DATATYPE_LONG:
-    assert(isinstance(value, int))
+    if not isinstance(value, int):
+      raise ValueError(f"{context} ({value}) is a {type(value)} but should be an int")
     return value
   elif data_type == DATATYPE_REAL:
-    assert(isinstance(value, float))
+    if not isinstance(value, float):
+      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a float")
     return value
   elif data_type == DATATYPE_VARCHAR:
-    assert(isinstance(value, str))
+    if not isinstance(value, str):
+      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a str")
     return value
   elif data_type == DATATYPE_GEOMETRY:
+    if not hasattr(value, "__geo_interface__"):
+      raise ValueError(f"{context} ({value}) is a {type(value)}, and not a type that supports the geometry interface")
     # Not sure how to validate this...
     return value
   else:
