@@ -9,9 +9,11 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 * **Reproducibility**: Vizier executes cells *in order*, and automatically re-executes cells when their inputs change so your notebook's outputs are always up-to-date.
 * **Data Snapshots**: Vizier automatically snapshots data created by each cell, so you can re-run a cell without re-running all of its inputs.
 * **Polyglot**: You can combine Python, SQL, and Scala, all seamlessly working with the same data.
-* **No-code**: Use a spreadsheet-style interface, or Vizier's "data lenses" to work with your data, code optional!
+* **Code-Optional**: Use a spreadsheet-style interface, or Vizier's "data lenses" to work with your data, code optional!
 * **Workflow Snapshots**: Vizier automatically keeps a record of how you edit your workflow so you can always go back to an earlier version.
 * **Scalable**: Vizier datasets are backed by Spark and Apache Arrow, allowing you to make big changes fast.
+
+**See some [Screenshots](https://vizierdb.info/#features)**
 
 ---
 
@@ -34,14 +36,14 @@ sudo mv vizier /usr/local/bin
 ```
 vizier
 ```
-
-And open up http://localhost:5000 in your web browser.
+... and open up http://localhost:5000 in your web browser.
 
 ##### Or run with Docker
 
 ```
-docker run -p 5000:500 --name vizier okennedy/vizier:latest
+docker run -p 5000:5000 --name vizier okennedy/vizier:latest
 ```
+... and open up http://localhost:5000 in your web browser.
 
 ---
 
