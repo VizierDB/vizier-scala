@@ -81,7 +81,8 @@ object UnloadDataset extends Command
           artifact = artifact, 
           name = optionList.find { _.name.equalsIgnoreCase("name") }
                     .map { _.value },
-          properties = Json.obj()
+          properties = Json.obj(),
+          overwrite = true
         )
       }
 

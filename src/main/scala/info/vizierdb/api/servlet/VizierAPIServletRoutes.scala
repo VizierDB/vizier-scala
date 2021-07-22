@@ -109,7 +109,7 @@ trait VizierAPIServletRoutes extends HttpServlet {
         case ROUTE_PATTERN_55(projectId, artifactId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "artifactId" -> JsNumber(artifactId.toLong)), connection)
         case ROUTE_PATTERN_57(projectId, fileId) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong)), connection)
         case ROUTE_PATTERN_58(projectId, fileId, tail) => GetArtifactHandler.File.handle(Map("projectId" -> JsNumber(projectId.toLong), "fileId" -> JsNumber(fileId.toLong), "tail" -> JsString(tail)), connection)
-        case ROUTE_PATTERN_59(artifactName) => GetPublishedArtifactHandler.handle(Map("artifactName" -> JsString(URLDecoder.decode(artifactName, "UTF-8"))), connection)
+        case ROUTE_PATTERN_59(name) => GetPublishedArtifactHandler.handle(Map("name" -> JsString(URLDecoder.decode(name, "UTF-8"))), connection)
         case "/tasks" => ListTasksHandler.handle(Map(), connection)
         case _ => fourOhFour(request)
       }
@@ -221,7 +221,7 @@ trait VizierAPIServletRoutes extends HttpServlet {
         case ROUTE_PATTERN_56(projectId) => CORSPreflightResponse("POST")
         case ROUTE_PATTERN_57(projectId, fileId) => CORSPreflightResponse("GET")
         case ROUTE_PATTERN_58(projectId, fileId, tail) => CORSPreflightResponse("GET")
-        case ROUTE_PATTERN_59(artifactName) => CORSPreflightResponse("GET")
+        case ROUTE_PATTERN_59(name) => CORSPreflightResponse("GET")
         case "/tasks" => CORSPreflightResponse("GET")
         case "/reload" => CORSPreflightResponse("POST")
         case _ => fourOhFour(request)
