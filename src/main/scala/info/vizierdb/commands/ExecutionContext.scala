@@ -33,6 +33,8 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{ StructField, DataType }
 import info.vizierdb.catalog.serialized.ParameterArtifact
 import info.vizierdb.delta.DeltaBus
+import info.vizierdb.viztrails.ScopeSummary
+import info.vizierdb.catalog.ArtifactRef
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -52,11 +54,22 @@ class ExecutionContext(
   var isError = false
 
   /**
+   * Get a summary of the input scope
+   */
+  def inputScopeSummary: ScopeSummary = 
+    ScopeSummary(scope.mapValues { _.id })
+
+  /**
+   * Get a summary of the input scope
+   */
+  def outputScopeSummary: ScopeSummary = 
+    inputScopeSummary.withUpdates(outputs.mapValues { _.map { _.id }}.toMap)
+
+  /**
    * Check to see if the specified artifact appears in the scope
    */
-  def artifactExists(name: String): Boolean = {
+  def artifactExists(name: String): Boolean = 
     scope.contains(name.toLowerCase()) || outputs.contains(name.toLowerCase())
-  }
 
   /**
    * Retrieve the specified artifact

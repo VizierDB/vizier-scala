@@ -21,6 +21,12 @@ import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import java.time.ZonedDateTime
 import info.vizierdb.VizierException
+import info.vizierdb.viztrails.{ 
+  Provenance, 
+  ProvenanceForStaleModule,
+  ProvenanceForInvalidState,
+  ValidProvenance
+}
 
 /**
  * One cell in a [[Workflow]], assigning a computation described by a [[Module]] to
@@ -62,6 +68,19 @@ case class Cell(
       val o = OutputArtifactRef.syntax
       select.from(OutputArtifactRef as o).where.eq(o.resultId, resultId)
     }.map { OutputArtifactRef(_) }.list.apply()
+  def provenance(implicit session: DBSession): Provenance =
+    if(resultId.isEmpty){
+      ProvenanceForStaleModule(moduleId)
+    } else if(ExecutionState.PROVENANCE_NOT_VALID_STATES(state)){
+      ProvenanceForInvalidState(state)
+    } else {
+      ValidProvenance(
+        inputs.map { ref => ref.userFacingName -> ref.artifactId.get }
+              .toMap,
+        outputs.map { ref => ref.userFacingName -> ref.artifactId }
+               .toMap
+      )
+    }
   def messages(implicit session: DBSession):Iterable[Message] = 
     withSQL { 
       val m = Message.syntax
@@ -74,6 +93,13 @@ case class Cell(
             .where.eq(c.workflowId, workflowId).and.gt(c.position, position)
             .orderBy(c.position.asc)
     }.map { Cell(_) }.list.apply()
+  def successorsWithModules(implicit session: DBSession): Seq[(Cell, Module)] = 
+    withSQL { 
+      val c = Cell.syntax
+      select.from(Cell as c)
+            .where.eq(c.workflowId, workflowId).and.gt(c.position, position)
+            .orderBy(c.position.asc)
+    }.map { row => (Cell(row), Module(row)) }.list.apply()
 
   def projectId(implicit session: DBSession): Identifier = 
     withSQL {

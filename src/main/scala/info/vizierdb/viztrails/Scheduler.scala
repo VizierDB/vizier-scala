@@ -221,11 +221,9 @@ object Scheduler
     }
     DeltaBus.notifyStateChange(cell.workflow, cell.position, ExecutionState.DONE)
 
-    Provenance.updateSuccessorState(cell, 
-      Provenance.updateScope(
-        context.outputs.mapValues { _.map { _.id } }.toSeq,
-        context.scope.mapValues { _.id }
-      )
+    Provenance.updateSuccessorState(
+      cell, 
+      context.outputScopeSummary
     )
     for(cell <- workflow.cellsWhere(sqls"position > ${cell.position}")){
       DeltaBus.notifyStateChange(
@@ -250,8 +248,7 @@ object Scheduler
       DB autoCommit { implicit session =>
         val module = cell.module
         val (startedCell, result) = cell.start
-        val refs = Provenance.getRefScope(startedCell)
-        val scope = Provenance.refScopeToSummaryScope(refs)
+        val scope = ScopeSummary(startedCell).namedArtifactSummaries
         val workflow = startedCell.workflow
         val context = new ExecutionContext(
                             startedCell.projectId, 
@@ -373,7 +370,7 @@ object Scheduler
         }
         logger.debug("Recomputing Cell States")
         DB autoCommit { implicit session => 
-          Provenance.updateCellStates(Workflow.get(workflowId).cells, Map.empty)
+          Provenance.updateCellStates(Workflow.get(workflowId).cells, ScopeSummary.empty)
         }
         logger.debug(s"Starting processing of Workflow ${workflowId}")
         var cell: Option[Cell] = nextTarget

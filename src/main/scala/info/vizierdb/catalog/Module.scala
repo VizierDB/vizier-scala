@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.viztrails.Provenance
+import info.vizierdb.viztrails.ScopeSummary
 
 import info.vizierdb.catalog.serialized._
 
@@ -78,7 +79,7 @@ class Module(
     projectId: Identifier, 
     branchId: Identifier, 
     workflowId: Identifier, 
-    artifacts: Seq[ArtifactRef]
+    artifacts: ScopeSummary
   )(implicit session:DBSession): ModuleDescription = 
   {
     val result = cell.result
@@ -88,13 +89,7 @@ class Module(
       finishedAt = result.flatMap { _.finished }
     )
 
-    val artifactSummaries = 
-                      artifacts
-                        .filter { !_.artifactId.isEmpty }
-                        .map { ref => 
-                          logger.trace(s"Looking up artifact ${ref.userFacingName} -> ${ref.artifactId}")
-                          ref.userFacingName -> Artifact.lookupSummary(ref.artifactId.get).get 
-                        }
+    val artifactSummaries = artifacts.namedArtifactSummaries.toSeq
 
     val datasets    = artifactSummaries.filter { _._2.t.equals(ArtifactType.DATASET) }
     val charts      = artifactSummaries.filter { _._2.t.equals(ArtifactType.CHART) }
@@ -237,16 +232,16 @@ object Module
     cells: Seq[(Cell, Module)]
   )(implicit session: DBSession): Seq[ModuleDescription] =
   { 
-    var scope = Map[String,ArtifactRef]()
+    var scope = ScopeSummary.empty
     cells.sortBy { _._1.position }
          .map { case (cell, module) => 
-           scope = Provenance.updateRefScope(cell, scope)
+           scope = scope.withUpdates(cell)
            module.describe(
              cell = cell, 
              projectId = projectId,
              branchId = branchId,
              workflowId = workflowId,
-             artifacts = scope.values.toSeq
+             artifacts = scope
            )
          }
   }

@@ -21,123 +21,66 @@ import info.vizierdb.catalog.{ Cell, OutputArtifactRef, InputArtifactRef, Artifa
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.catalog.{ Artifact, ArtifactSummary }
 
+sealed trait Provenance
+{
+  def needsARecomputeOnScope(scope: ScopeSummary): Boolean
+}
+
+case class ProvenanceForInvalidState(state: ExecutionState.T) extends Provenance
+{
+  def needsARecomputeOnScope(scope: ScopeSummary): Boolean = true
+}
+
+case class ProvenanceForStaleModule(moduleId: Identifier) extends Provenance
+{
+  def needsARecomputeOnScope(scope: ScopeSummary): Boolean = true
+}
+
+case class ValidProvenance(
+  inputs: Map[String, Identifier],
+  outputs: Map[String, Option[Identifier]]
+) extends Provenance
+  with LazyLogging
+{
+  def needsARecomputeOnScope(scope: ScopeSummary): Boolean =
+  {
+    for((userFacingName, artifactId) <- inputs.iterator){
+      logger.trace(s"Checking input ${userFacingName} -> ${artifactId} for conflicts")
+      if(scope contains userFacingName){
+        logger.trace("Scope has input")
+        if(artifactId.toLong == scope(userFacingName).get){
+          logger.trace("Input matches prior execution; Trying next")
+        } else {
+          logger.trace("Input is a conflict")
+          return true
+        }
+      } else { 
+        logger.trace("Input deleted from scope: Conflict")
+        return true 
+      }
+    }
+    return false    
+  }
+}
+
 object Provenance
   extends LazyLogging
 {
-  def getScope(cell: Cell)(implicit session: DBSession): Map[String, Identifier] =
-    getRefScope(cell).mapValues { _.artifactId.get }
 
-  def getSummaryScope(cell: Cell)(implicit session: DBSession): Map[String, ArtifactSummary] =
-  {
-    val refs = getRefScope(cell)
-    refScopeToSummaryScope(refs)
-  }
-  def refScopeToSummaryScope(refs: Map[String, ArtifactRef])(implicit session: DBSession): Map[String, ArtifactSummary] =
-  {
-    val summaries = Artifact.lookupSummaries(refs.values.map { _.artifactId.get }.toSeq)
-                            .map { a => a.id -> a }
-                            .toMap
-    refs.mapValues { ref => summaries(ref.artifactId.get) }
-  }
+  def updateSuccessorState(cell: Cell, scopeAtStart: ScopeSummary)(implicit session: DBSession): Unit =
+    updateCellStates(cell.successors, scopeAtStart)
 
-  def getRefScope(cell: Cell)(implicit session: DBSession): Map[String, ArtifactRef] = 
-  {
-    val c = Cell.syntax
-    val o = OutputArtifactRef.syntax
-    withSQL {
-      select
-        .from(Cell as c)
-        .join(OutputArtifactRef as o)
-        .where.eq(c.resultId, o.resultId)
-          .and.eq(c.workflowId, cell.workflowId)
-          .and.lt(c.position, cell.position)
-        .orderBy(c.position.desc)
-    }.map { OutputArtifactRef(_) }
-     .list.apply()
-     // identifier = None means that the dataset was deleted
-     .foldLeft(Map[String, ArtifactRef]()) { 
-      (scope:Map[String, ArtifactRef], output:ArtifactRef) =>
-        logger.trace(s"Get Scope: Adding $output")
-        // Thanks to the orderBy above, the first version of each identifier
-        // that we encounter should be the right one.
-        if(scope contains output.userFacingName) { scope }
-        else { scope ++ Map(output.userFacingName -> output) }
-     }
-     .filterNot { _._2.artifactId.isEmpty }
-  }
-
-  def updateScope(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Map[String, Identifier] = 
-    updateScope(cell.outputs.map { o => o.userFacingName -> o.artifactId }, scope)
-  def updateScope(outputs: Seq[(String, Option[Identifier])], scope: Map[String, Identifier]): Map[String, Identifier] =
-  {
-    val (deleteRefs, insertRefs) = outputs.partition { _._2.isEmpty }
-    val deletions = deleteRefs.map { _._1 }.toSet
-    val insertions = insertRefs.toMap.mapValues { _.get }
-    scope.filterNot { case (k, v) => deletions(k) } ++ insertions
-  }
-
-  def updateRefScope(cell: Cell, scope: Map[String, ArtifactRef])(implicit session: DBSession): Map[String, ArtifactRef] = 
-    updateRefScope(cell.outputs, scope)
-  def updateRefScope(outputs: Seq[ArtifactRef], scope: Map[String, ArtifactRef]): Map[String, ArtifactRef] =
-  {
-    val (deleteRefs, insertRefs) = outputs.partition { _.artifactId.isEmpty }
-    val deletions = deleteRefs.map { _.userFacingName }.toSet
-    val insertions = insertRefs.map { x => x.userFacingName -> x }.toMap
-    scope.filterNot { case (k, v) => deletions(k) } ++ insertions
-  }
-
-  /**
-   * Check to see whether the provided cell needs re-execution if the following scope is provided
-   * @param    cell       The cell to check
-   * @param    scope      The artifact state prior to the cell's execution
-   * @return              false if the cell's prior execution can be applied directly without re-running the cell
-   */
-  def cellNeedsANewResult(cell: Cell, scope: Map[String, Identifier])(implicit session: DBSession): Boolean =
-  {
-    if(ExecutionState.PROVENANCE_NOT_VALID_STATES(cell.state)){
-      logger.trace(s"Cell is in a provenance-not-valid state (${cell.state}).  Forcing a conflict")
-      return true
-    } else if(cell.resultId.isEmpty){
-      logger.trace("Cell has no result.  By default this is a conflict.")
-      return true
-    } else {
-      for(i <- cell.inputs.iterator){
-        logger.trace(s"Checking input ${i.userFacingName} -> ${i.artifactId} for conflicts")
-        if(i.artifactId.isEmpty){ 
-          logger.trace("Strangely, the input does not have an artifactId; assuming a conflict")
-          return true
-        }
-        if(scope contains i.userFacingName){
-          logger.trace("Scope has input")
-          if(i.artifactId.get.toLong == scope(i.userFacingName)){
-            logger.trace("Input matches prior execution; Trying next")
-          } else {
-            logger.trace("Input is a conflict")
-            return true
-          }
-        } else { 
-          logger.trace("Input deleted from scope: Conflict")
-          return true 
-        }
-      }
-      return false
-    }
-  }
-
-  def updateSuccessorState(cell: Cell, outputs: Map[String, Identifier])(implicit session: DBSession): Unit =
-    updateCellStates(cell.successors, outputs)
-
-  def updateCellStates(cells: Seq[Cell], outputsAtStart: Map[String, Identifier])(implicit session: DBSession): Unit =
+  def updateCellStates(cells: Seq[Cell], scopeAtStart: ScopeSummary)(implicit session: DBSession): Unit =
   {
     // TODO: this update can be moved completely to the database as an UPDATE query
     //       ... but let's get it correct first.
-    var scope = outputsAtStart
+    var scope: ScopeSummary = scopeAtStart
 
     for(curr <- cells){
       logger.debug(s"Updating execution state for $curr; $scope")
       curr.state match { 
         case ExecutionState.WAITING => {
-          if(cellNeedsANewResult(curr, scope)){ 
+          if(curr.provenance.needsARecomputeOnScope(scope)){ 
             // There is a conflict.  The cell now officially needs to be re-executed.
             logger.debug(s"Conflict detected -> STALE")
             curr.updateState(ExecutionState.STALE)
@@ -187,7 +130,7 @@ object Provenance
         }
       }
       if(curr.state != ExecutionState.FROZEN){
-        scope = updateScope(curr, scope)
+        scope = scope.withUpdates(curr)
       }
     }
   }
