@@ -159,6 +159,35 @@ case class Branch(
   }
 
   /**
+   * Invalidate all cells in the workflow
+   * 
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def invalidate(cells: Set[Int] = Set.empty)
+                (implicit session: DBSession): (Branch, Workflow) = 
+  {
+    val stateUpdate = 
+      if(cells.isEmpty){
+        StateTransition( sqls"1=1", DONE -> STALE )
+      } else {
+        StateTransition( sqls.in(sqls"position", cells.toSeq), DONE -> STALE )
+      }
+    val ret =
+      modify(
+        module = None,
+        action = ActionType.INSERT,
+        prevWorkflowId = headId,
+        abortPrevWorkflow = true,
+        recomputeCellsFrom = 0,
+        updateState = stateUpdate
+      )
+    for(cell <- ret._2.cells){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
+  }
+
+  /**
    * Update the branch head by deleting a cell from the workflow
    * 
    * @param position        The position of the cell to delete
@@ -219,7 +248,7 @@ case class Branch(
   {
     val ret = modify(
       module = None,
-      action = ActionType.DELETE,
+      action = ActionType.INSERT,
       prevWorkflowId = headId,
       abortPrevWorkflow = true,
       updateState = 
@@ -558,6 +587,14 @@ object Branch
           .and.eq(b.projectId, projectId)
     }.map { apply(_) }.single.apply()
 
+  def withName(projectId: Identifier, name: String)(implicit session:DBSession): Option[Branch] = 
+    withSQL {
+      val b = Branch.syntax 
+      select
+        .from(Branch as b)
+        .where.eq(b.name, name)
+          .and.eq(b.projectId, projectId)
+    }.map { apply(_) }.list.apply().headOption
 
   /**
    * Overwrite the Branch Head (DO NOT USE)

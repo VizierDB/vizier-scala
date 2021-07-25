@@ -35,6 +35,9 @@ import py4j.reflection.PythonProxyHandler
 import info.vizierdb.catalog.Doctor
 import info.vizierdb.commands.python.SparkPythonUDFRelay
 import scala.sys.process.Process
+import info.vizierdb.viztrails.MutableProject
+import org.mimirdb.caveats.Caveat
+import info.vizierdb.util.StringUtils
 
 object Vizier
   extends LazyLogging
@@ -174,14 +177,14 @@ object Vizier
     // Set up Mimir
     println("Starting Mimir...")
     initMimir(
-      runServer = !config.subcommand.isDefined
+      runServer = !config.commandOrSubcommandNeedsMimir
     )
 
     config.subcommand match {
       //////////////// HANDLE SPECIAL COMMANDS //////////////////
       case Some(subcommand) => 
         
-        // Ingest
+        //////////////////// Ingest ////////////////////
         if(subcommand.equals(config.ingest)){
           try {
             Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
@@ -194,7 +197,7 @@ object Vizier
             case e:VizierException => 
               println(s"\nError: ${e.getMessage()}")
           }
-        // Export
+        //////////////////// Export ////////////////////
         } else if (subcommand.equals(config.export)){
           try { 
             Streams.closeAfter(new FileOutputStream(config.export.file())) { 
@@ -208,6 +211,7 @@ object Vizier
             case e:VizierException => 
               println(s"\nError: ${e.getMessage()}")
           }
+        //////////////////// Doctor ////////////////////
         } else if (subcommand.equals(config.doctor)) {
           println("Checking project database...")
           val errors = Doctor.checkup()
@@ -217,6 +221,71 @@ object Vizier
           if(errors.isEmpty){ 
             println("No problems found")
           }
+
+        //////////////////// Run ////////////////////
+        } else if(subcommand.equals(config.run)) {
+          VizierAPI.init()
+          val project = 
+            MutableProject.find(config.run.project())
+                          .getOrElse { 
+                            println(s"Did not find project: '${config.run.project()}'")
+                            System.exit(-1)
+                            null
+                          }
+          config.run.branch.foreach { branchNameOrId => 
+            val branch = project.findBranch(branchNameOrId)
+                                .getOrElse {
+                                  println(s"Did not find branch '$branchNameOrId' in project ${project.project.name}")
+                                  System.exit(-1)
+                                  null
+                                }
+            project.workWithBranch(branch.id)
+          }
+          println(s"Running ${project.project.name}, Branch ${project.branch.name}")
+          if(config.run.cells().isEmpty){
+            println("... clearing all cell results")
+            project.invalidateAllCells
+          } else {
+            println(s"... clearing results for cells: ${StringUtils.oxfordComma(config.run.cells().map { _.toString })}")
+            project.invalidate( config.run.cells() )
+          }
+          println("Waiting for execution to finish...")
+          try {
+            project.waitUntilReadyAndThrowOnError
+          } catch {
+            case e: Throwable =>
+              println(s"Problem During Re-execution: ${e.getMessage}")
+              System.exit(-1)
+          }
+          println("... execution finished.")
+          if(config.run.showCaveats()){
+            val caveats: Map[String, Seq[Caveat]] =
+              project.artifactSummaries
+                     .toSeq
+                     .filter { _._2.t.equals(ArtifactType.DATASET) }
+                     .map { case (name, artifact) =>
+                        name -> org.mimirdb.api.request.Explain(
+                          s"SELECT * FROM ${artifact.nameInBackend}",
+                        )
+                     }
+                     .filterNot { _._2.isEmpty }
+                     .toMap
+            if(!caveats.isEmpty){
+              System.err.println("\nThere were potential problems with generated datasets")
+              for( (artifact, caveats) <- caveats ){
+                System.err.println(s"\n==== $artifact ====")
+                for( caveat <- caveats ){
+                  System.err.println( " * " + caveat.message )
+                }
+              }
+              System.err.println("")
+              System.exit(-1)
+            } else {
+              println("... all datasets check out")
+              System.exit(0)
+            }
+          }
+
         } else { 
           println(s"Unimplemented subcommand $subcommand")
           System.exit(-1)

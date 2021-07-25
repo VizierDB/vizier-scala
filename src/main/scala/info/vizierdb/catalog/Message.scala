@@ -101,6 +101,7 @@ case class Message(
     } catch {
       case e: Throwable => 
         logger.error(s"Error retrieving message: ${e.getMessage}\n${e.getStackTraceString}")
+        e.printStackTrace()
         MessageDescription(
           `type` = MIME.TEXT,
           value  = JsString(s"Error retrieving message: $e")

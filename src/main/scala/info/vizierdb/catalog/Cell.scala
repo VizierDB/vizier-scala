@@ -39,7 +39,7 @@ import info.vizierdb.VizierException
  */
 case class Cell(
   workflowId: Identifier,
-  position: Int,
+  position: Cell.Position,
   moduleId: Identifier,
   resultId: Option[Identifier],
   state: ExecutionState.T,
@@ -152,6 +152,8 @@ case class Cell(
 object Cell 
   extends SQLSyntaxSupport[Cell]
 {
+  type Position = Int
+
   def apply(rs: WrappedResultSet): Cell = autoConstruct(rs, (Cell.syntax).resultName)
   override def columns = Schema.columns(table)
 
