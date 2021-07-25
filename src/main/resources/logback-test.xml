@@ -20,11 +20,12 @@
   <logger name="info.vizierdb.Config$"                           level="WARN" />
   <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="WARN" />
   <logger name="info.vizierdb.api.AppendModule"                  level="WARN" />
-  <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
-  <logger name="info.vizierdb.viztrails.Scheduler$"              level="TRACE" />
-  <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
+  <logger name="info.vizierdb.catalog.Module"                    level="INFO" />
+  <logger name="info.vizierdb.viztrails.RunningWorkflow"         level="INFO" />
+  <logger name="info.vizierdb.viztrails.RunningCell"             level="INFO" />
+  <logger name="info.vizierdb.viztrails.Scheduler$"              level="INFO" />
   <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
-  <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="TRACE" />
+  <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="INFO" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.python.Python$"           level="WARN" />
@@ -64,6 +65,9 @@
   <logger name="org.eclipse.jetty.servlet.ServletHandler"        level="WARN" />
   <logger name="org.eclipse.jetty.servlet.DefaultServlet"        level="WARN" />
   <logger name="org.eclipse.jetty.server.session"                level="WARN" />
+
+  <!--+++++++++++++++++++++++  Test  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.test.DummyWait"                    level="TRACE" />
 
     
   <root level="ERROR">

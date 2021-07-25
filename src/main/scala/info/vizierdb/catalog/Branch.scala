@@ -24,7 +24,7 @@ import info.vizierdb.util.HATEOAS
 import info.vizierdb.catalog.binders._
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
-import info.vizierdb.viztrails.{ Scheduler, Provenance, StateTransition, ScopeSummary }
+import info.vizierdb.viztrails.{ Scheduler, StateTransition, ScopeSummary }
 import info.vizierdb.delta.DeltaBus
 import ExecutionState.{ WAITING, STALE, RUNNING, ERROR, CANCELLED, DONE, FROZEN }
 
@@ -404,7 +404,6 @@ case class Branch(
         created = ZonedDateTime.now()
       )
     }
-    Provenance.updateCellStates(workflow.cellsInOrder, ScopeSummary.empty)
 
     return (branch, workflow)
   }

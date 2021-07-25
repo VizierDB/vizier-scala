@@ -24,7 +24,6 @@ import info.vizierdb.catalog.binders._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.util.HATEOAS
 import info.vizierdb.VizierAPI
-import info.vizierdb.viztrails.Provenance
 import info.vizierdb.viztrails.ScopeSummary
 
 import info.vizierdb.catalog.serialized._
@@ -89,7 +88,7 @@ class Module(
       finishedAt = result.flatMap { _.finished }
     )
 
-    val artifactSummaries = artifacts.namedArtifactSummaries.toSeq
+    val artifactSummaries = artifacts.allArtifactSummaries.toSeq
 
     val datasets    = artifactSummaries.filter { _._2.t.equals(ArtifactType.DATASET) }
     val charts      = artifactSummaries.filter { _._2.t.equals(ArtifactType.CHART) }
@@ -235,7 +234,7 @@ object Module
     var scope = ScopeSummary.empty
     cells.sortBy { _._1.position }
          .map { case (cell, module) => 
-           scope = scope.withUpdates(cell)
+           scope = scope.copyWithUpdatesForCell(cell)
            module.describe(
              cell = cell, 
              projectId = projectId,

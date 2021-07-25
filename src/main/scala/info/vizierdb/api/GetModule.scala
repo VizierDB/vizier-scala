@@ -22,7 +22,6 @@ import info.vizierdb.catalog.{ Branch, Workflow, Cell }
 import org.mimirdb.api.Response
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
-import info.vizierdb.viztrails.Provenance
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.api.handler.SimpleHandler
 

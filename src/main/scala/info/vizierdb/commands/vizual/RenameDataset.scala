@@ -15,6 +15,7 @@
 package info.vizierdb.commands.vizual
 
 import info.vizierdb.commands._
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object RenameDataset extends Command
 {
@@ -38,8 +39,11 @@ object RenameDataset extends Command
   }
 
   def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), 
-           Seq(arguments.get[String]("dataset"), arguments.get[String]("name"))) )
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyDeletes(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 
 
 }

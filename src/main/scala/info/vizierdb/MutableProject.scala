@@ -12,20 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.viztrails
+package info.vizierdb
 
 import play.api.libs.json._
 
 import scalikejdbc._
 import java.io.File
 import java.net.URLConnection
-import info.vizierdb.Vizier
 import info.vizierdb.catalog._
 import info.vizierdb.types._
 import info.vizierdb.util.Streams
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import info.vizierdb.VizierException
+import info.vizierdb.viztrails._
 import org.mimirdb.vizual.{ Command => VizualCommand }
 import info.vizierdb.commands.vizual.{ Script => VizualScript }
 import org.apache.spark.sql.types._
@@ -84,7 +83,7 @@ class MutableProject(
       (oldbranch, oldbranch.append(packageId, commandId)(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
-    Scheduler.schedule(ret._2.id)
+    Scheduler.schedule(ret._2)
     return ret
   }
 
@@ -115,7 +114,7 @@ class MutableProject(
       (oldbranch, oldbranch.insert(position, packageId, commandId)(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
-    Scheduler.schedule(ret._2.id)
+    Scheduler.schedule(ret._2)
     return ret
   }
 
@@ -146,7 +145,7 @@ class MutableProject(
       (oldbranch, oldbranch.update(position, packageId, commandId)(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
-    Scheduler.schedule(ret._2.id)
+    Scheduler.schedule(ret._2)
     return ret
   }
 
@@ -164,7 +163,7 @@ class MutableProject(
       (oldbranch, oldbranch.freezeFrom(position)) 
     }
     Scheduler.abort(oldbranch.headId)
-    Scheduler.schedule(ret._2.id)
+    Scheduler.schedule(ret._2)
     return ret
   }
 
@@ -182,7 +181,7 @@ class MutableProject(
       (oldbranch, oldbranch.thawUpto(position)) 
     }
     Scheduler.abort(oldbranch.headId)
-    Scheduler.schedule(ret._2.id)
+    Scheduler.schedule(ret._2)
     return ret
   }
 

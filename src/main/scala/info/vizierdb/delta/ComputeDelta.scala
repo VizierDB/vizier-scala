@@ -19,7 +19,6 @@ import scala.collection.mutable.Buffer
 import info.vizierdb.catalog._
 import info.vizierdb.types._
 import info.vizierdb.catalog.serialized.ModuleDescription
-import info.vizierdb.viztrails.Provenance
 import info.vizierdb.viztrails.ScopeSummary
 
 object ComputeDelta

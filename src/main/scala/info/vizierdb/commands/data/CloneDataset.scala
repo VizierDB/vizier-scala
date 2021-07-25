@@ -23,6 +23,7 @@ import info.vizierdb.filestore.Filestore
 import java.io.File
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object CloneDataset extends Command
 {
@@ -46,6 +47,9 @@ object CloneDataset extends Command
     context.message("Dataset Cloned")
   }
   def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name"))) )
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 }
 

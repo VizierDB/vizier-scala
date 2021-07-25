@@ -81,7 +81,7 @@ case class AppendModule(
     if(workflowIdToAbort.isDefined) {
       Scheduler.abort(workflowIdToAbort.get)
     }
-    Scheduler.schedule(workflow.id)
+    Scheduler.schedule(workflow)
 
     logger.trace("Building response")
 

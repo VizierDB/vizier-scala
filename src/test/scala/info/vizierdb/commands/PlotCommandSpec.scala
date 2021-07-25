@@ -19,7 +19,7 @@ import play.api.libs.json._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.MutableProject
 import info.vizierdb.test.SharedTestResources
 
 class PlotCommandSpec

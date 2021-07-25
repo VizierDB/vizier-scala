@@ -57,13 +57,13 @@ class ExecutionContext(
    * Get a summary of the input scope
    */
   def inputScopeSummary: ScopeSummary = 
-    ScopeSummary(scope.mapValues { _.id })
+    ScopeSummary.withIds(scope.mapValues { _.id })
 
   /**
    * Get a summary of the input scope
    */
   def outputScopeSummary: ScopeSummary = 
-    inputScopeSummary.withUpdates(outputs.mapValues { _.map { _.id }}.toMap)
+    inputScopeSummary.copyWithOutputs(outputs.mapValues { _.map { _.id }}.toMap)
 
   /**
    * Check to see if the specified artifact appears in the scope

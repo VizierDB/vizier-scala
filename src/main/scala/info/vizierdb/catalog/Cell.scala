@@ -21,12 +21,6 @@ import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import java.time.ZonedDateTime
 import info.vizierdb.VizierException
-import info.vizierdb.viztrails.{ 
-  Provenance, 
-  ProvenanceForStaleModule,
-  ProvenanceForInvalidState,
-  ValidProvenance
-}
 
 /**
  * One cell in a [[Workflow]], assigning a computation described by a [[Module]] to
@@ -45,7 +39,7 @@ import info.vizierdb.viztrails.{
  */
 case class Cell(
   workflowId: Identifier,
-  position: Int,
+  position: Cell.Position,
   moduleId: Identifier,
   resultId: Option[Identifier],
   state: ExecutionState.T,
@@ -68,19 +62,6 @@ case class Cell(
       val o = OutputArtifactRef.syntax
       select.from(OutputArtifactRef as o).where.eq(o.resultId, resultId)
     }.map { OutputArtifactRef(_) }.list.apply()
-  def provenance(implicit session: DBSession): Provenance =
-    if(resultId.isEmpty){
-      ProvenanceForStaleModule(moduleId)
-    } else if(ExecutionState.PROVENANCE_NOT_VALID_STATES(state)){
-      ProvenanceForInvalidState(state)
-    } else {
-      ValidProvenance(
-        inputs.map { ref => ref.userFacingName -> ref.artifactId.get }
-              .toMap,
-        outputs.map { ref => ref.userFacingName -> ref.artifactId }
-               .toMap
-      )
-    }
   def messages(implicit session: DBSession):Iterable[Message] = 
     withSQL { 
       val m = Message.syntax
@@ -98,6 +79,20 @@ case class Cell(
       val c = Cell.syntax
       select.from(Cell as c)
             .where.eq(c.workflowId, workflowId).and.gt(c.position, position)
+            .orderBy(c.position.asc)
+    }.map { row => (Cell(row), Module(row)) }.list.apply()
+  def predecessors(implicit session: DBSession): Seq[Cell] = 
+    withSQL { 
+      val c = Cell.syntax
+      select.from(Cell as c)
+            .where.eq(c.workflowId, workflowId).and.lt(c.position, position)
+            .orderBy(c.position.asc)
+    }.map { Cell(_) }.list.apply()
+  def predecessorsWithModules(implicit session: DBSession): Seq[(Cell, Module)] = 
+    withSQL { 
+      val c = Cell.syntax
+      select.from(Cell as c)
+            .where.eq(c.workflowId, workflowId).and.lt(c.position, position)
             .orderBy(c.position.asc)
     }.map { row => (Cell(row), Module(row)) }.list.apply()
 
@@ -178,6 +173,8 @@ case class Cell(
 object Cell 
   extends SQLSyntaxSupport[Cell]
 {
+  type Position = Int
+
   def apply(rs: WrappedResultSet): Cell = autoConstruct(rs, (Cell.syntax).resultName)
   override def columns = Schema.columns(table)
 

@@ -24,8 +24,8 @@ import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.catalog.{ Project, Module }
-import info.vizierdb.viztrails.{ Scheduler, MutableProject }
-
+import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.MutableProject 
 import info.vizierdb.commands.transform._
 
 class TransformCommandsSpec

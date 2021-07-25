@@ -68,7 +68,7 @@ object FreezeModulesHandler
 
     logger.trace(s"Scheduling ${workflow.id}")
     // The workflow must be scheduled AFTER the enclosing transaction finishes
-    Scheduler.schedule(workflow.id)
+    Scheduler.schedule(workflow)
 
     logger.trace("Building response")
 

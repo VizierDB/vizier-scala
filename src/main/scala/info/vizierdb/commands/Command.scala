@@ -17,6 +17,7 @@ package info.vizierdb.commands
 import play.api.libs.json._
 import info.vizierdb.VizierException
 import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.viztrails.ProvenancePrediction
 
 trait Command
 {
@@ -206,13 +207,26 @@ trait Command
    * Predict the provenance (inputs and outputs) of this command from arguments
    * 
    * @param   arguments      The encoded argument object
-   * @return                 Optionally a 2-tuple of the input and output artifact names
+   * @return                 Optionally a [[ProvenancePrediction]] object
    * 
    * Some commands operate on inputs/outputs that can be statically inferred from the
    * arguments.  Although not presently used anywhere, this information will be used to
    * allow concurrent execution of cells in the future
    */
-  def predictProvenance(arguments: Arguments): Option[(Seq[String], Seq[String])]
+  def predictProvenance(arguments: Arguments): ProvenancePrediction
+
+  /**
+   * Predict the provenance (inputs and outputs) of this command from arguments
+   * 
+   * @param   arguments      The Json encoded argument object
+   * @return                 Optionally a [[ProvenancePrediction]] object
+   * 
+   * Some commands operate on inputs/outputs that can be statically inferred from the
+   * arguments.  Although not presently used anywhere, this information will be used to
+   * allow concurrent execution of cells in the future
+   */
+  def predictProvenance(arguments: JsObject): ProvenancePrediction =
+    predictProvenance(Arguments(arguments.as[Map[String, JsValue]], parameters))
 
 }
 

@@ -25,6 +25,7 @@ import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
 import org.mimirdb.api.request.QueryMimirRequest
 import org.mimirdb.api.request.CreateViewRequest
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object EmptyDataset extends Command
 {
@@ -49,9 +50,8 @@ object EmptyDataset extends Command
     context.message("Empty Dataset Created")
   }
   def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq.empty,
-      Seq(arguments.get[String]("name"))
-    ) )
+    ProvenancePrediction
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 }
 
