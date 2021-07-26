@@ -129,7 +129,8 @@ object Commands
     "shape_watcher"  -> info.vizierdb.commands.mimir.ShapeWatcher,
     "comment"        -> info.vizierdb.commands.mimir.Comment,
     "pivot"          -> info.vizierdb.commands.mimir.Pivot,
-    "geocode"        -> info.vizierdb.commands.mimir.Geocode
+    "geocode"        -> info.vizierdb.commands.mimir.Geocode,
+    "geotag"         -> info.vizierdb.commands.mimir.Geotag,
   )
 }
 

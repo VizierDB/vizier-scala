@@ -74,7 +74,7 @@ case class ScopeSummary(
         )
 
         case ExecutionState.ERROR | ExecutionState.CANCELLED => 
-          assert(false, "We should have returned from an ERROR or CANCELLED state before now"); null
+          copyWithAnOpenWorld
 
         case ExecutionState.WAITING  =>
           copyWithPredictionForWaitingCell(predictedProvenance)

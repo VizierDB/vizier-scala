@@ -163,6 +163,7 @@ object types
     val DATASET_VIEW  = "dataset/view"
     val PYTHON        = "application/python"
     val JAVASCRIPT    = "text/javascript"
+    val JSON          = "text/JSON"
   }
 
   object DATATYPE extends Enumeration
