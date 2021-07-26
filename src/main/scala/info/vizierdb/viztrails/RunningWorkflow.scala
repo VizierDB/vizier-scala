@@ -193,11 +193,20 @@ class RunningWorkflow(workflow: Workflow)
 
           // Now we look at the second question.
           val cellIsRunnable =
-            inputProvenance match {
-              case None => 
-                if(predictedProvenance.openWorldReads) { scope.isRunnableForUnknownInputs }
-                else { scope.isRunnableForKnownInputs(predictedProvenance.reads) }
-              case Some(inputReads) => scope.isRunnableForKnownInputs(inputReads.keys)
+            if(predictedProvenance.openWorldReads){
+              // If we can't predict what artifacts the cell is going to read, then
+              // check to see if we have a valid prior execution before falling 
+              // through to checking for a completely finalized scope.
+              if(!cellNeedsReexecution && inputProvenance.isDefined){
+                scope.isRunnableForKnownInputs(inputProvenance.get.keys)
+              } else {
+                scope.isRunnableForUnknownInputs 
+              }
+            } else {
+              // We can properly predict the provenance!  Yay!  We only need to check
+              // the subset of the inputs that we know are going to be read by the
+              // cell.
+              scope.isRunnableForKnownInputs(predictedProvenance.reads)
             }
 
           (cellNeedsReexecution, cellIsRunnable) match {
@@ -226,7 +235,10 @@ class RunningWorkflow(workflow: Workflow)
             case (false, false) => 
             {
               logger.trace("Cell does not need re-execution, but is not runnable.  Leaving unchanged.")
-              transitionToState(ExecutionState.DONE)
+              if(cell.state.equals(ExecutionState.STALE)){
+                logger.warn(s"Potential scheduler bug: Previously decided that $cell was stale, but no longer needs re-execution.")
+                logger.warn(s"Please report this at https://github.com/VizierDB/vizier-scala/issues")
+              }
             }
           }
         }

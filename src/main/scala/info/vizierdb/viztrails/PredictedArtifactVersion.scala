@@ -32,7 +32,7 @@ case object UnknownArtifactVersion extends OpenWorldPredictedArtifactVersion
 
   override def toString: String = "[??]"
 }
-case object ChanrgedArtifactVersion extends PredictedArtifactVersion
+case object ChangedArtifactVersion extends PredictedArtifactVersion
 {
   /** 
    * If the version is different, but we don't have the new version, then 

@@ -12,34 +12,46 @@ case class ScopeSummary(
 {
   def copyWithOutputs(outputs: Map[String, Option[Identifier]]): ScopeSummary =
   {
-    val (deleteRefs, insertRefs) = outputs.toSeq.partition { _._2.isEmpty }
-    val deletions = deleteRefs.map { _._1.toLowerCase }.toSet
-    val insertions = insertRefs.map { case (userFacingName, artifactId) => 
-                        userFacingName.toLowerCase -> ExactArtifactVersion(artifactId.get)
-                     }.toMap
     ScopeSummary(
-      scope.filterNot { case (k, v) => deletions(k) } ++ insertions,
+      scope
+        ++ (outputs.mapValues { 
+          case None => ArtifactDoesNotExist
+          case Some(artifactId) => ExactArtifactVersion(artifactId)
+        }.map { case (name, version) => name.toLowerCase -> version }
+         .toMap),
       openWorldPrediction
     )
   }
   def copyWithPredictionForStaleCell(prediction: ProvenancePrediction) =
-    copyWithPrediction(prediction, ChanrgedArtifactVersion)
+    copyWithPrediction(prediction, ChangedArtifactVersion)
   def copyWithPredictionForWaitingCell(prediction: ProvenancePrediction) =
     copyWithPrediction(prediction, UnknownArtifactVersion)
   def copyWithPrediction(
     prediction: ProvenancePrediction, 
     writeVersion: PredictedArtifactVersion
   ) =
-    ScopeSummary(
-      scope
-        ++ prediction.deletes.map { _.toLowerCase -> ArtifactDoesNotExist }.toMap
-        ++ prediction.writes.map { _.toLowerCase -> writeVersion }.toMap,
-      if(prediction.openWorldWrites){
-        UnknownArtifactVersion
-      } else {
-        openWorldPrediction
-      }
+  {
+    val newPredictions = (
+         prediction.deletes.map { _.toLowerCase -> ArtifactDoesNotExist }.toMap
+      ++ prediction.writes.map { _.toLowerCase -> writeVersion }.toMap
     )
+    if(prediction.openWorldWrites){
+      // If we don't know what the cell is going to write, then all artifacts in
+      // the existing scope are fair game.  Drop them and replace with a generic
+      // "unknown" version.
+      ScopeSummary(
+        newPredictions,
+        UnknownArtifactVersion
+      )
+    } else {
+      // If we're in a closed world, then only update the artifacts in the
+      // scope with the proposed writes and deletes
+      ScopeSummary(
+        scope ++ newPredictions,
+        openWorldPrediction
+      )
+    }
+  }
   def copyWithAnOpenWorld =
     ScopeSummary(
       Map.empty,
