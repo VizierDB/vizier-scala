@@ -478,5 +478,7 @@ class ExecutionContext(
     {
       s"SCOPE: { ${scope.map { case (ds, art) => ds+" -> "+art.id }.mkString(", ")} }"
     }
+
+  def spark = org.mimirdb.api.MimirAPI.sparkSession
 }
 

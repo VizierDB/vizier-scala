@@ -1,8 +1,8 @@
 scalaVersion := "2.12.12"
 
 val VIZIER_VERSION = "1.2.0-SNAPSHOT"
-val MIMIR_VERSION = "1.1.0"
-val CAVEATS_VERSION = "0.3.3"
+val MIMIR_VERSION = "1.1.1-SNAPSHOT"
+val CAVEATS_VERSION = "0.3.4"
 
 // Project and subprojects
 lazy val vizier = (project in file("."))
@@ -292,9 +292,10 @@ checkout := {
     Files.createDirectory(upstream)
   }
   Seq(
-    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"     , "ui"     , Some("scala")), 
-    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"    , "mimir"  , None),
-    ("Caveats"  , "git@github.com:UBOdin/mimir-caveats.git", "caveats", None),
+    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"       , "ui"     , Some("scala")), 
+    ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"      , "mimir"  , None),
+    ("Caveats"  , "git@github.com:UBOdin/mimir-caveats.git"  , "caveats", None),
+    ("Docker"   , "git@github.com:VizierDB/vizier-docker.git", "docker",  None),
   ).foreach { case (name, repo, stub, branch) => 
     val dir = upstream.resolve(stub)
     if(!Files.exists(dir.resolve(".git"))){

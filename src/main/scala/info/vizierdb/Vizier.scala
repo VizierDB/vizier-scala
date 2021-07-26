@@ -172,6 +172,9 @@ object Vizier
     Schema.initialize()
     initORMLogging()
     bringDatabaseToSaneState()
+    if(config.workingDirectory.isDefined){
+      System.setProperty("user.dir", config.workingDirectory())
+    }
 
     // Set up Mimir
     println("Starting Mimir...")

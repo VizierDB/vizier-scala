@@ -20,6 +20,8 @@
   <logger name="info.vizierdb.Config$"                           level="WARN" />
   <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="WARN" />
   <logger name="info.vizierdb.api.AppendModule"                  level="WARN" />
+  <logger name="info.vizierdb.catalog.Schema$"                   level="INFO" />
+  <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
   <logger name="info.vizierdb.catalog.Module"                    level="INFO" />
   <logger name="info.vizierdb.viztrails.RunningWorkflow"         level="INFO" />
   <logger name="info.vizierdb.viztrails.RunningCell"             level="INFO" />

@@ -15,6 +15,7 @@
 package info.vizierdb.commands
 
 import scalikejdbc.DB
+import play.api.libs.json._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 
@@ -229,6 +230,38 @@ print(df['A'].sum())
     project.artifact("functionTest")
            .getDataset()
            .data(0)(0) must beEqualTo("3")
+  }
+
+  "Export types properly" >>
+  {
+    project.script("""
+      |from datetime import datetime, date
+      |from shapely.geometry import Point
+      |ds = vizierdb.new_dataset()
+      |ds.insert_column("a", "string")
+      |ds.insert_column("b", "timestamp") 
+      |ds.insert_column("c", "date")
+      |ds.insert_column("d", "geometry")
+      |ds.insert_row([
+      |  "hello",
+      |  datetime.now(),
+      |  date.today(),
+      |  Point(42, 59)
+      |])
+      |ds.save("funky_format_export")
+    """.stripMargin)
+    project.waitUntilReadyAndThrowOnError
+    val row:Seq[Any] = 
+      project.artifact("funky_format_export")
+             .getDataset()
+             .data(0)
+    row(0).asInstanceOf[String] must beEqualTo("hello")
+    val timestamp: AnyRef = row(1).asInstanceOf[AnyRef]
+    val date: AnyRef = row(2).asInstanceOf[AnyRef]
+    val geometry: AnyRef = row(3).asInstanceOf[AnyRef]
+    timestamp must beAnInstanceOf[java.sql.Timestamp]
+    date must beAnInstanceOf[java.sql.Date]
+    geometry must beAnInstanceOf[org.locationtech.jts.geom.Geometry]
   }
 
 }
