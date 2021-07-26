@@ -32,6 +32,7 @@ import org.mimirdb.spark.{ Schema => SparkSchema }
 import info.vizierdb.commands.data.DeclareParameters
 import info.vizierdb.delta.WorkflowState
 import info.vizierdb.delta.ComputeDelta
+import info.vizierdb.catalog.serialized.Timestamps
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -190,7 +191,7 @@ class MutableProject(
       (oldbranch, activeBranch.invalidate()) 
     }
     Scheduler.abort(oldbranch.headId)
-    Scheduler.schedule(ret._2.id)
+    Scheduler.schedule(ret._2)
     return ret
   }
 
@@ -207,7 +208,7 @@ class MutableProject(
       (oldbranch, activeBranch.invalidate(cells.toSet)) 
     }
     Scheduler.abort(oldbranch.headId)
-    Scheduler.schedule(ret._2.id)
+    Scheduler.schedule(ret._2)
     return ret
   }
 
@@ -269,9 +270,22 @@ class MutableProject(
   def apply(idx: Int): Option[Seq[Message]] =
   {
     DB.readOnly { implicit s => 
-      Project.activeHeadFor(projectId)
+      activeBranch
+             .head
              .cellByPosition(idx)
              .map { _.messages.toSeq }
+    }
+  }
+
+  /**
+   * Retrieve [[Timestamps]] resulting from cell processing for the head workflow
+   */
+  def timestamps: Seq[Timestamps] =
+  {
+    DB.readOnly { implicit s =>
+      activeBranch.head
+                  .cellsInOrder
+                  .map { _.timestamps }
     }
   }
 

@@ -21,6 +21,7 @@ import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import java.time.ZonedDateTime
 import info.vizierdb.VizierException
+import info.vizierdb.catalog.serialized.Timestamps
 
 /**
  * One cell in a [[Workflow]], assigning a computation described by a [[Module]] to
@@ -95,6 +96,16 @@ case class Cell(
             .where.eq(c.workflowId, workflowId).and.lt(c.position, position)
             .orderBy(c.position.asc)
     }.map { row => (Cell(row), Module(row)) }.list.apply()
+  def timestamps(implicit session: DBSession): Timestamps =
+  { 
+    val r = result
+    Timestamps(
+      createdAt = created, 
+      startedAt = r.map { _.started },
+      finishedAt = r.flatMap { _.finished }
+    ) 
+  }
+
 
   def projectId(implicit session: DBSession): Identifier = 
     withSQL {

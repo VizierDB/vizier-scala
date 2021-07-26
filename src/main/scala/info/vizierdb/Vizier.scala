@@ -35,7 +35,6 @@ import py4j.reflection.PythonProxyHandler
 import info.vizierdb.catalog.Doctor
 import info.vizierdb.commands.python.SparkPythonUDFRelay
 import scala.sys.process.Process
-import info.vizierdb.viztrails.MutableProject
 import org.mimirdb.caveats.Caveat
 import info.vizierdb.util.StringUtils
 
