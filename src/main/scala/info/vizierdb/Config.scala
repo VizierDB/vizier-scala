@@ -19,12 +19,13 @@ import java.io.File
 import org.rogach.scallop._
 import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.api.{ MimirAPI, MimirConfig }
+import info.vizierdb.catalog.Cell
 
 class Config(arguments: Seq[String]) 
   extends ScallopConf(arguments)
   with LazyLogging
 {
-  version("Vizier-Scala 1.1.0 (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
+  version("Vizier-Scala 1.2.0 (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
   banner("""Docs: https://github.com/VizierDB/vizier-scala/wiki
            |Usage: vizier [OPTIONS]
            |    or vizier import [OPTIONS] export
@@ -121,6 +122,25 @@ class Config(arguments: Seq[String])
     )
   }
   addSubcommand(export)
+  
+  //////////////////////////////////////////////////////
+  
+  object run extends Subcommand("run") {
+    val project = trailArg[String]("project",
+      descr = "The name or identifier of the project run"
+    )
+    val branch = opt[String]("branch", short = 'b',
+      descr = "The branch to re-execute (default = head)"
+    )
+    val cells = opt[List[Cell.Position]]("cell", short = 'c',
+      descr = "One or more cells to force re-execution on (default = all)",
+      default = Some(List.empty)
+    )
+    val showCaveats = toggle("show-caveats", noshort = true, default = Some(true),
+      descrYes = "Compute and print caveats for every dataset artifact at the end of the trace.  Return an error code if any exist."
+    )
+  }
+  addSubcommand(run)
 
   //////////////////////////////////////////////////////
 
@@ -146,6 +166,13 @@ class Config(arguments: Seq[String])
     return config
   }
   def setMimirConfig = { MimirAPI.conf = getMimirConfig }
+
+  def commandOrSubcommandNeedsMimir: Boolean =
+  {
+    if(!subcommand.isDefined){ return true }
+    else if(subcommand.equals(run)){ return true }
+    else { return false }
+  }
 
 }
 

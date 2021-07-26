@@ -43,6 +43,11 @@ class MutableProject(
 )
 {
   /**
+   * The temporarily selected branch identifier
+   */
+  var branchId: Option[Identifier] = None
+
+  /**
    * The current version of the [[Project]] represented by this mutable project
    */
   def project: Project = DB readOnly { implicit s => Project.get(projectId) }
@@ -50,12 +55,20 @@ class MutableProject(
   /**
    * The current version of the active [[Branch]] being operated on by this mutable project
    */
-  def branch: Branch = DB readOnly { implicit s => Project.activeBranchFor(projectId) }
+  def branch: Branch = DB readOnly { implicit s => activeBranch }
+
+  /**
+   * The current version of the active [[Branch]] being operated on by this mutable project
+   * without a DB Session
+   */
+  def activeBranch(implicit session: DBSession) = 
+    branchId.map { id => Branch.get(projectId = projectId, branchId = id) }
+            .getOrElse { Project.activeBranchFor(projectId) }
 
   /**
    * The head [[Workflow]] being operated on by this mutable project
    */
-  def head: Workflow = DB readOnly { implicit s => Project.activeHeadFor(projectId) }
+  def head: Workflow = DB readOnly { implicit s => activeBranch.head }
 
   /**
    * Append a new command to the end of the workflow.  The existing workflow will be aborted
@@ -79,7 +92,7 @@ class MutableProject(
             (args: (String, Any)*): (Branch, Workflow) =
   {
     val (oldbranch, ret) = DB autoCommit { implicit s => 
-      val oldbranch = Project.activeBranchFor(projectId)
+      val oldbranch = activeBranch
       (oldbranch, oldbranch.append(packageId, commandId)(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
@@ -110,7 +123,7 @@ class MutableProject(
             (args: (String, Any)*): (Branch, Workflow) =
   {
     val (oldbranch, ret) = DB autoCommit { implicit s => 
-      val oldbranch = Project.activeBranchFor(projectId)
+      val oldbranch = activeBranch
       (oldbranch, oldbranch.insert(position, packageId, commandId)(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
@@ -141,7 +154,7 @@ class MutableProject(
             (args: (String, Any)*): (Branch, Workflow) =
   {
     val (oldbranch, ret) = DB autoCommit { implicit s => 
-      val oldbranch = Project.activeBranchFor(projectId)
+      val oldbranch = activeBranch
       (oldbranch, oldbranch.update(position, packageId, commandId)(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
@@ -159,11 +172,42 @@ class MutableProject(
   def freezeFrom(position: Int): (Branch, Workflow) =
   {
     val (oldbranch, ret) = DB autoCommit { implicit s => 
-      val oldbranch = Project.activeBranchFor(projectId)
+      val oldbranch = activeBranch
       (oldbranch, oldbranch.freezeFrom(position)) 
     }
     Scheduler.abort(oldbranch.headId)
     Scheduler.schedule(ret._2)
+    return ret
+  }
+
+  /**
+   * Update the branch head by invalidating every cell in the workflow and rerunning
+   */
+  def invalidateAllCells: (Branch, Workflow) =
+  {
+    val (oldbranch, ret) = DB autoCommit { implicit s => 
+      val oldbranch = activeBranch
+      (oldbranch, activeBranch.invalidate()) 
+    }
+    Scheduler.abort(oldbranch.headId)
+    Scheduler.schedule(ret._2.id)
+    return ret
+  }
+
+  /**
+   * Update the branch head by invalidating every cell in the workflow and rerunning
+   */
+  def invalidate(cells: Iterable[Int]): (Branch, Workflow) =
+  {
+    if(cells.isEmpty){ 
+      throw new IllegalArgumentException("Invalidating no cells")
+    }
+    val (oldbranch, ret) = DB autoCommit { implicit s => 
+      val oldbranch = activeBranch
+      (oldbranch, activeBranch.invalidate(cells.toSet)) 
+    }
+    Scheduler.abort(oldbranch.headId)
+    Scheduler.schedule(ret._2.id)
     return ret
   }
 
@@ -177,7 +221,7 @@ class MutableProject(
   def thawUpto(position: Int): (Branch, Workflow) =
   {
     val (oldbranch, ret) = DB autoCommit { implicit s => 
-      val oldbranch = Project.activeBranchFor(projectId)
+      val oldbranch = activeBranch
       (oldbranch, oldbranch.thawUpto(position)) 
     }
     Scheduler.abort(oldbranch.headId)
@@ -190,7 +234,8 @@ class MutableProject(
    */
   def waitUntilReady
   {
-    Scheduler.joinWorkflow(head.id, failIfNotRunning = false)
+    val workflowId = head.id
+    Scheduler.joinWorkflow(workflowId, failIfNotRunning = false)
   }
 
   /**
@@ -413,17 +458,29 @@ class MutableProject(
       workflow.outputArtifacts
     }
   }
+  /**
+   * Retrieve [[ArtifactSummary]]s to all artifacts output by the entire workflow (the scope)
+   * @return              A collection of [[ArtifactSummary]]s in the final cell's output scope.
+   */
+  def artifactSummaries: Map[String, ArtifactSummary] = 
+  {
+    val refs = artifactRefs
+    DB.readOnly { implicit s => 
+      refs.map { ref => ref.userFacingName -> ref.getSummary.get }
+          .toMap
+    }
+  }
 
   /**
    * Retrieve all [[Artifact]]s output by the entire workflow (the scope)
    * @return              A collection of [[Artifact]]s in the final cell's output scope.
    */
-  def artifacts: Seq[Artifact] =
+  def artifacts: Map[String, Artifact] =
   {
     val refs = artifactRefs
     DB.readOnly { implicit s => 
-      refs.map { _.get.get }
-    }    
+      refs.map { ref => ref.userFacingName -> ref.get.get }
+    }.toMap
   }
 
   /**
@@ -474,6 +531,32 @@ class MutableProject(
     val b = branch
     DB.readOnly { implicit s => ComputeDelta.getState(b) }
   }
+
+  /**
+   * Switch this [[MutableProject]] to a different branch without activating
+   * the target branch.
+   */
+  def workWithBranch(branchId: Identifier): Unit =
+  {
+    this.branchId = Some(branchId)
+  }
+
+  /**
+   * Find a branch with the specified name
+   */
+  def findBranch(nameOrBranchId: String): Option[Branch] =
+  {
+    nameOrBranchId match { 
+      case MutableProject.NUMERIC(num) => 
+        DB.readOnly { implicit s =>
+          Branch.getOption(projectId, num.toLong)
+        }
+      case name => 
+        DB.readOnly { implicit s =>
+          Branch.withName(projectId, name)
+        }
+    }
+  }
 }
 
 /**
@@ -497,5 +580,23 @@ object MutableProject
    * @return            The constructed MutableProject
    */
   def apply(projectId: Identifier): MutableProject = new MutableProject(projectId)
+
+  val NUMERIC = "^([0-9]+)$".r
+
+  /**
+   * Find a project for the provided name
+   * @param project     The project name or identifier
+   * @return            The constructed MutableProject
+   */
+  def find(nameOrProjectId: String): Option[MutableProject] =
+  {
+    nameOrProjectId match { 
+      case NUMERIC(num) => Some(apply(num.toLong))
+      case name => 
+        DB.readOnly { implicit s =>
+          Project.withName(name).map { _.id }.map { apply(_) }
+        }
+    }
+  }
 }
 

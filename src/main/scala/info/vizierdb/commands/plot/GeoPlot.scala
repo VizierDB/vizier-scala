@@ -22,13 +22,13 @@ import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import org.mimirdb.api.request.CreateViewRequest
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.sql.{ Row, Column }
+import org.apache.spark.sql.{ Row, Column, DataFrame }
 import org.apache.spark.sql.functions.{ expr, first }
 import org.apache.spark.sql.catalyst.analysis.{ UnresolvedFunction, UnresolvedAttribute }
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.catalyst.expressions.{ Literal, Cast, Subtract }
 import org.locationtech.jts.geom.Geometry
-import org.apache.spark.sql.types.LongType
+import org.apache.spark.sql.types.{ LongType, StructField }
 import org.apache.sedona.viz.core.ImageSerializableWrapper
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
@@ -39,27 +39,59 @@ import info.vizierdb.viztrails.ProvenancePrediction
 object GeoPlot extends Command
   with LazyLogging
 {
-  def name: String = "Geospatial Plot"
+  val PARAM_DATASET = "dataset"
+  val PARAM_SHAPE_COL = "shape_column"
+  val PARAM_WEIGHT_COL = "weight_column"
+
+  def name: String = "Plot Data on Map"
   def parameters: Seq[Parameter] = Seq(
-    DatasetParameter(id = "dataset", name = "Dataset"),
-    ColIdParameter(id = "shape_column", name = "Shape"),
-    ColIdParameter(id = "weight_column", name = "Weight"),
+    DatasetParameter(id = PARAM_DATASET, name = "Dataset", required = false),
+    ColIdParameter(id = PARAM_SHAPE_COL, name = "Feature", required = false),
+    ColIdParameter(id = PARAM_WEIGHT_COL, name = "Weight", required = false),
   )
   def format(arguments: Arguments): String = 
-    s"CREATE GEOPLOT ${arguments.pretty("dataset")}.${arguments.pretty("shape_column")} COLOR BY ${arguments.pretty("weight_column")}"
+    s"PLOT MAP DATA FROM ${arguments.pretty(PARAM_DATASET)}.${arguments.pretty(PARAM_SHAPE_COL)} COLOR BY ${arguments.pretty(PARAM_WEIGHT_COL)}"
   def title(arguments: Arguments): String = 
-    s"Geoplot of ${arguments.pretty("dataset")}"
+    s"Plot ${arguments.pretty(PARAM_DATASET)} on map"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    val datasetName = arguments.get[String]("dataset")
-    val df = context.dataframe(datasetName)
-    val shape_column = df.schema.fields(arguments.get[Int]("shape_column"))
-    val weight_column = df.schema.fields(arguments.get[Int]("weight_column"))
+    val datasetName = arguments.get[String](PARAM_DATASET)
+    // val df = context.dataframe(datasetName)
+    // val shape_column = df.schema.fields(arguments.get[Int](PARAM_SHAPE_COL))
+    // val weight_column = df.schema.fields(arguments.get[Int](PARAM_WEIGHT_COL))
 
-    val boundsTable = df.agg(shape_column.name -> "st_envelope_aggr")
-    lazy val bounds = boundsTable.take(1).head.get(0)
-    logger.debug(s"Polygon Bounds: ${bounds.toString}")
+    // val boundsTable = df.agg(shape_column.name -> "st_envelope_aggr")
+    // lazy val bounds = boundsTable.take(1).head.get(0).asInstanceOf[Geometry]
+    // logger.debug(s"Polygon Bounds: ${bounds.toString}")
 
+
+    val mapDiv = "map_"+context.executionIdentifier
+    val leafletVersion = "1.7.1"
+
+    context.displayHTML(
+      html = f"<div id='$mapDiv' style='height: 300px'/>",
+      javascript = f"""
+        |var theMap = L.map('$mapDiv').setView([43.016844, -78.741447], 13)
+        |L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        |   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        |}).addTo(theMap)
+        |""".stripMargin,
+      javascriptDependencies = Seq(
+        s"https://unpkg.com/leaflet@$leafletVersion/dist/leaflet-src.js"
+      ),
+      cssDependencies = Seq(
+        s"https://unpkg.com/leaflet@$leafletVersion/dist/leaflet.css"
+      )
+    )
+  } 
+
+  def genRasterLayer(
+    df: DataFrame, 
+    shape_column: StructField, 
+    weight_column: StructField, 
+    bounds: Geometry
+  ): String =
+  {
     val pixelized = df.select(
         new Column(
           UnresolvedFunction("st_pixelize", Seq(
@@ -69,7 +101,7 @@ object GeoPlot extends Command
             Literal(256), /* x */ Literal(256),
             /* Bounds */
             Literal.fromObject(
-              GeometryUDT.serialize(bounds.asInstanceOf[Geometry])
+              GeometryUDT.serialize(bounds)
             )
               
           ), false)
@@ -114,9 +146,10 @@ object GeoPlot extends Command
     val imageBuffer = new ByteArrayOutputStream()
     ImageIO.write(rendered, "png", imageBuffer)
 
-    context.message(MIME.HTML, s"""
-      <img src="data:image/png;base64,${Base64.getEncoder.encodeToString(imageBuffer.toByteArray)}">
-    """)
+    val imageURL = s"data:image/png;base64,${Base64.getEncoder.encodeToString(imageBuffer.toByteArray)}"
+    val envelope = bounds.getEnvelopeInternal()
+
+    return s"L.imageOverlay('$imageURL', [[${envelope.getMinX()},${envelope.getMinY()}], [${envelope.getMaxX()},${envelope.getMaxY()}]])"
   }
 
 
