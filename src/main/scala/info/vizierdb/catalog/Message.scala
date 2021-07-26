@@ -76,6 +76,21 @@ object DatasetMessage
   implicit val format: Format[DatasetMessage] = Json.format
 }
 
+case class JavascriptMessage(
+  // javascript to run once the HTML below loads
+  code: String,
+  // a bit of HTML to display in the output
+  html: String,
+  // javascript dependency URLs
+  js_deps: Seq[String],
+  // css dependency URLs
+  css_deps: Seq[String]
+)
+object JavascriptMessage
+{
+  implicit val format: Format[JavascriptMessage] = Json.format
+}
+
 
 case class Message(
   val resultId: Identifier,

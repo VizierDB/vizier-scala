@@ -33,6 +33,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{ StructField, DataType }
 import info.vizierdb.catalog.serialized.ParameterArtifact
 import info.vizierdb.delta.DeltaBus
+import info.vizierdb.catalog.JavascriptMessage
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -353,6 +354,38 @@ class ExecutionContext(
         )
       ).toString.getBytes
     )
+  }
+
+  /**
+   * Display HTML, along with embedded javascript
+   * 
+   * @param html          The HTML to display
+   * @param javascript    Javascript code to execute after the HTML is loaded
+   * @param dependencies  A list of Javascript files to load into the global
+   *                      context.
+   * 
+   * Dependencies are typically cached by the client and only loaded once per
+   * session.  
+   */
+  def displayHTML(
+    html: String, 
+    javascript: String = "", 
+    javascriptDependencies: Iterable[String] = Seq.empty,
+    cssDependencies: Iterable[String] = Seq.empty
+  )
+  {
+    if(javascript.isEmpty && javascriptDependencies.isEmpty && cssDependencies.isEmpty){
+      message(MIME.HTML, html.getBytes)
+    } else {
+      message(MIME.JAVASCRIPT, 
+        Json.toJson(JavascriptMessage(
+          html = html,
+          code = javascript,
+          js_deps = javascriptDependencies.toSeq,
+          css_deps = cssDependencies.toSeq
+        )).toString.getBytes()
+      )
+    }
   }
 
   /**
