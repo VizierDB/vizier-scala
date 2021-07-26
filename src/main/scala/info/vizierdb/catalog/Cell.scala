@@ -74,6 +74,27 @@ case class Cell(
             .where.eq(c.workflowId, workflowId).and.gt(c.position, position)
             .orderBy(c.position.asc)
     }.map { Cell(_) }.list.apply()
+  def successorsWithModules(implicit session: DBSession): Seq[(Cell, Module)] = 
+    withSQL { 
+      val c = Cell.syntax
+      select.from(Cell as c)
+            .where.eq(c.workflowId, workflowId).and.gt(c.position, position)
+            .orderBy(c.position.asc)
+    }.map { row => (Cell(row), Module(row)) }.list.apply()
+  def predecessors(implicit session: DBSession): Seq[Cell] = 
+    withSQL { 
+      val c = Cell.syntax
+      select.from(Cell as c)
+            .where.eq(c.workflowId, workflowId).and.lt(c.position, position)
+            .orderBy(c.position.asc)
+    }.map { Cell(_) }.list.apply()
+  def predecessorsWithModules(implicit session: DBSession): Seq[(Cell, Module)] = 
+    withSQL { 
+      val c = Cell.syntax
+      select.from(Cell as c)
+            .where.eq(c.workflowId, workflowId).and.lt(c.position, position)
+            .orderBy(c.position.asc)
+    }.map { row => (Cell(row), Module(row)) }.list.apply()
 
   def projectId(implicit session: DBSession): Identifier = 
     withSQL {

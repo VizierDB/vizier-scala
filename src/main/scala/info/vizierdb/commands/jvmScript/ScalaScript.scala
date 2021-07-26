@@ -30,6 +30,7 @@ import scala.beans.BeanProperty
 import scala.reflect.runtime._
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object ScalaScript extends Command
 {
@@ -82,7 +83,8 @@ object ScalaScript extends Command
     }
   }
 
-  def predictProvenance(arguments: Arguments) = None
+  def predictProvenance(arguments: Arguments) =
+    ProvenancePrediction.default
 
 
 }

@@ -24,7 +24,8 @@ import scala.collection.mutable.HashMap
 import info.vizierdb.types._
 import info.vizierdb.VizierException
 import info.vizierdb.util.Streams
-import info.vizierdb.viztrails.{ MutableProject, Scheduler }
+import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.MutableProject
 import info.vizierdb.catalog._
 import info.vizierdb.commands.Commands
 import java.io.FileOutputStream
@@ -264,7 +265,7 @@ object ImportProject
         val mutableProject = MutableProject(project.id)
         val head = mutableProject.head
         DB.autoCommit { implicit s => head.discardResults() }
-        Scheduler.schedule(head.id)
+        Scheduler.schedule(head)
         if(blockOnExecution){
           mutableProject.waitUntilReadyAndThrowOnError
         }

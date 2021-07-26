@@ -26,6 +26,7 @@ import info.vizierdb.VizierException
 import org.mimirdb.spark.Schema.decodeType
 import org.mimirdb.spark.SparkPrimitive.{ encode => sparkToJs }
 import org.apache.spark.sql.catalyst.expressions.{Cast, Literal}
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object DeclareParameters extends Command
 {
@@ -68,9 +69,11 @@ object DeclareParameters extends Command
     }
   }
   def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq.empty,
-      arguments.getList(PARAM_LIST).map { _.get[String](PARAM_NAME) },
-    ) )
+    ProvenancePrediction
+      .definitelyWrites(
+        arguments.getList(PARAM_LIST)
+                 .map { _.get[String](PARAM_NAME) }:_*
+      )
+      .andNothingElse
 }
 

@@ -18,6 +18,7 @@ import info.vizierdb.commands._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.catalog.Artifact
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object FilterDataset 
   extends SQLTemplateCommand
@@ -53,9 +54,11 @@ object FilterDataset
     return (deps, query)
   }
 
-  def predictProvenance(arguments: Arguments): Option[(Seq[String], Seq[String])] = 
-    Some( (
-      Seq(arguments.get[String](PARAM_DATASET)),
-      Seq(arguments.getOpt[String](PARAM_OUTPUT_DATASET).getOrElse(DEFAULT_DS_NAME))
-    ) )
+  def predictProvenance(arguments: Arguments) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PARAM_DATASET))
+      .definitelyWrites(
+        arguments.getOpt[String](PARAM_OUTPUT_DATASET).getOrElse(DEFAULT_DS_NAME)
+      )
+      .andNothingElse
 }

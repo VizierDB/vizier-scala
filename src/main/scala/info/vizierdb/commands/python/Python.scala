@@ -38,6 +38,7 @@ import info.vizierdb.catalog.ArtifactSummary
 import org.mimirdb.util.UnsupportedFeature
 import org.mimirdb.vizual.{ Command => VizualCommand }
 import org.mimirdb.api.request.VizualRequest
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object Python extends Command
   with LazyLogging
@@ -313,6 +314,7 @@ object Python extends Command
     logger.debug("Done")
   }
 
-  def predictProvenance(arguments: Arguments) = None
+  def predictProvenance(arguments: Arguments) =
+    ProvenancePrediction.default
 }
 

@@ -15,6 +15,7 @@
 package info.vizierdb.commands.vizual
 
 import info.vizierdb.commands._
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object DropDataset extends Command
 {
@@ -32,9 +33,8 @@ object DropDataset extends Command
     context.delete(datasetName)
   }
   def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq.empty,
-      Seq(arguments.get[String]("dataset")) 
-    ) )
+    ProvenancePrediction
+      .definitelyDeletes(arguments.get[String]("dataset"))
+      .andNothingElse
 }
 

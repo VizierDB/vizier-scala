@@ -34,6 +34,7 @@ import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 import info.vizierdb.types.MIME
 import java.util.Base64
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object GeoPlot extends Command
   with LazyLogging
@@ -153,7 +154,8 @@ object GeoPlot extends Command
 
 
   def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), 
-           Seq.empty) )
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .andNothingElse
 }
 

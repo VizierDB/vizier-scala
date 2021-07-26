@@ -22,6 +22,7 @@ import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object UnloadDataset extends Command
   with LazyLogging
@@ -112,9 +113,9 @@ object UnloadDataset extends Command
   }
 
   def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq(arguments.get[String]("dataset")),
-      Seq("file_export")
-    ) )
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyWrites("file_export")
+      .andNothingElse
 }
 
