@@ -25,6 +25,8 @@ import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.spark.Schema
 import org.apache.spark.sql.types.StructField
 import org.mimirdb.api.FormattedError
+import info.vizierdb.catalog.PublishedArtifact
+import org.mimirdb.api.request.CreateViewRequest
 
 object LoadDataset
   extends Command
@@ -46,16 +48,17 @@ object LoadDataset
     FileParameter(name = "Source File", id = PARAM_FILE),
     StringParameter(name = "Dataset Name", id = PARAM_NAME),
     EnumerableParameter(name = "Load Format", id = PARAM_FORMAT, values = EnumerableValue.withNames(
-      "CSV"          -> "csv",
-      "JSON"         -> "json",
-      "PDF"          -> "mimir.exec.spark.datasource.pdf",
-      "Google Sheet" -> "mimir.exec.spark.datasource.google.spreadsheet",
-      "XML"          -> "com.databricks.spark.xml",
-      "Excel"        -> "com.crealytics.spark.excel",
-      "JDBC Source"  -> "jdbc",
-      "Text"         -> "text",
-      "Parquet"      -> "parquet",
-      "ORC"          -> "orc",
+      "CSV"               -> "csv",
+      "JSON"              -> "json",
+      "PDF"               -> "mimir.exec.spark.datasource.pdf",
+      "Google Sheet"      -> "mimir.exec.spark.datasource.google.spreadsheet",
+      "XML"               -> "com.databricks.spark.xml",
+      "Excel"             -> "com.crealytics.spark.excel",
+      "JDBC Source"       -> "jdbc",
+      "Text"              -> "text",
+      "Parquet"           -> "parquet",
+      "ORC"               -> "orc",
+      "Locally Published" -> "publish_local",
     ), default = Some(0)),
     TemplateParameters.SCHEMA,
     BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(true)),
@@ -73,6 +76,8 @@ object LoadDataset
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String](PARAM_NAME).toLowerCase()
+    val format = arguments.get[String](PARAM_FORMAT)
+
     if(context.artifactExists(datasetName))
     {
       throw new VizierException("Dataset $name already exists.")
@@ -80,6 +85,40 @@ object LoadDataset
     val file = arguments.get[FileArgument](PARAM_FILE)
     val (dsName, dsId) = context.outputDataset(datasetName)
     logger.trace(arguments.yaml())
+
+    // Special-Case publish local
+    if(format.equals("publish_local") || file.url.map { _.startsWith("vizier://") }.getOrElse(false)){
+      val url = file.url.map { _.replace("vizier://", "http://").replace("viziers://", "https://")}
+                        .getOrElse{
+                          context.error("No URL provided")
+                          return
+                        }
+      val exportName = 
+        if(url.startsWith("http://") || url.startsWith("https://")){
+          PublishedArtifact.nameFromURL(url)
+                           .getOrElse {
+                             context.error(s"${file.url.get} is not a valid local dataset url")
+                             return
+                            }
+        } else { url }
+      val published: PublishedArtifact = 
+        DB.readOnly { implicit s => 
+          PublishedArtifact.getOption(exportName)
+        }.getOrElse {
+          context.error(s"No published dataset named ${exportName} exists")
+          return
+        }
+      val source = DB.readOnly { implicit s => published.artifact }
+      CreateViewRequest(
+        input = Map("input" -> source.nameInBackend),
+        functions = None,
+        query = "SELECT * FROM input",
+        resultName = Some(dsName),
+        properties = None
+      ).handle
+      context.displayDataset(datasetName)
+      return
+    }
 
     val proposedSchema =
       arguments.getList("schema") match {
@@ -100,7 +139,7 @@ object LoadDataset
     try {
       val result = LoadRequest(
         file = path,
-        format = arguments.get[String](PARAM_FORMAT),
+        format = format,
         inferTypes = arguments.get[Boolean](PARAM_GUESS_TYPES),
         detectHeaders = arguments.get[Boolean](PARAM_HEADERS),
         humanReadableName = Some(file.filename.getOrElse { datasetName }),

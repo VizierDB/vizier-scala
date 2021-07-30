@@ -17,26 +17,27 @@ package info.vizierdb.catalog.migrations
 import scalikejdbc.DBSession
 import scalikejdbc.metadata.{ Table, Column }
 
-trait Migration
+case class AddColumnMigration(
+  table: String,
+  column: Column
+) extends Migration
 {
-  def apply(implicit session: DBSession): Unit
-  def drop(implicit session: DBSession): Unit
-  def updateSchema(sch: Map[String, Table]): Map[String, Table]
+  def apply(implicit session: DBSession): Unit =
+    session.executeUpdate(sql)
+  def drop(implicit session: DBSession): Unit =
+    session.executeUpdate(s"ALTER TABLE `${table}` DROP COLUMN `${column.name}`")
 
-  def sql: String
+  def updateSchema(sch: Map[String, Table]): Map[String, Table] =
+  {
+    val tableDefn = sch(table.toLowerCase())
+    return sch ++ Map(
+      table -> tableDefn.copy(
+        columns = tableDefn.columns :+ column
+      )
+    )
+  }
 
+  def sql: String =
+    s"ALTER TABLE ${table.toLowerCase()} ADD COLUMN ${Migration.columnSql(column)}"
 }
 
-object Migration
-{
-  def columnSql(column: Column, ignorePrimaryKey: Boolean = false) = 
-    Seq(
-      Some(column.name),
-      Some(column.typeName),
-      if(column.isRequired) { Some("NOT NULL") } else { None },
-      if(column.isPrimaryKey && !ignorePrimaryKey) { Some("PRIMARY KEY") } else { None },
-      if(column.isAutoIncrement) { Some("AUTOINCREMENT") } else { None },
-      Option(column.defaultValue).map { "DEFAULT "+_  }
-    ).flatten.mkString(" ")
-
-}

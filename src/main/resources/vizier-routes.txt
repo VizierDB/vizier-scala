@@ -57,5 +57,6 @@
 /projects/{projectId:int}/files                                                                                                   POST    file      CreateFileHandler
 /projects/{projectId:int}/files/{fileId:int}                                                                                      GET     file      GetArtifactHandler.File
 /projects/{projectId:int}/files/{fileId:int}/{tail:subpath}                                                                       GET     file      GetArtifactHandler.File
+/published/{name:string}                                                                                                          GET     file      GetPublishedArtifactHandler
 /tasks                                                                                                                            GET     task      ListTasksHandler
 /reload                                                                                                                           POST    service   ReloadHandler

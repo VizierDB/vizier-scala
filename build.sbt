@@ -1,8 +1,8 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "1.1.0"
-val MIMIR_VERSION = "1.1.0"
-val CAVEATS_VERSION = "0.3.3"
+val VIZIER_VERSION = "1.1.1"
+val MIMIR_VERSION = "1.1.1"
+val CAVEATS_VERSION = "0.3.4"
 
 // Project and subprojects
 lazy val vizier = (project in file("."))

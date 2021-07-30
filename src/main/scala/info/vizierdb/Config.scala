@@ -24,7 +24,7 @@ class Config(arguments: Seq[String])
   extends ScallopConf(arguments)
   with LazyLogging
 {
-  version("Vizier-Scala 1.1.0 (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
+  version("Vizier-Scala 1.1.1 (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
   banner("""Docs: https://github.com/VizierDB/vizier-scala/wiki
            |Usage: vizier [OPTIONS]
            |    or vizier import [OPTIONS] export
