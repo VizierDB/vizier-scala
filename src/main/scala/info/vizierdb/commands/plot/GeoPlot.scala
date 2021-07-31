@@ -48,7 +48,7 @@ object GeoPlot extends Command
   val PARAM_SHAPE_COL = "shape_column"
   val PARAM_WEIGHT_COL = "weight_column"
 
-  val POINT_LIMIT_THRESHOLD = 5000
+  val POINT_LIMIT_THRESHOLD = 500
 
   def name: String = "Plot Data on Map"
   def parameters: Seq[Parameter] = Seq(
@@ -75,10 +75,11 @@ object GeoPlot extends Command
 
     val layers = 
       arguments.getList(PARAM_LAYERS).zipWithIndex.map { case (layer, idx) =>
-        val shape_column = df.schema.fields(layer.get[Int](PARAM_SHAPE_COL))
-        val weight_column = layer.getOpt[Int](PARAM_WEIGHT_COL).map { df.schema.fields(_) }
+        val shapeColumnIdx = layer.get[Int](PARAM_SHAPE_COL)
+        val shapeColumn = df.schema.fields(shapeColumnIdx)
+        val weightColumn = layer.getOpt[Int](PARAM_WEIGHT_COL).map { df.schema.fields(_) }
 
-        val boundsTable = df.agg(shape_column.name -> "st_envelope_aggr")
+        val boundsTable = df.agg(shapeColumn.name -> "st_envelope_aggr")
         val envelope = boundsTable.take(1).head.get(0).asInstanceOf[Geometry].getEnvelopeInternal()
         if(bounds == null){
           bounds = envelope
@@ -88,13 +89,33 @@ object GeoPlot extends Command
 
         val features =
           FeatureCollection( 
-            df.select(df(shape_column.name))
-              .take(POINT_LIMIT_THRESHOLD + 1)
-              .map { row => row.getAs[Geometry](0) }
+            df.take(POINT_LIMIT_THRESHOLD + 1)
+              .map { row => 
+                Feature(
+                  geometry = row.getAs[Geometry](shapeColumnIdx),
+                  properties = Json.obj(
+                    "popup" -> (
+                      "<table>"+
+                      df.columns
+                        .zipWithIndex
+                        .filterNot { _._2 == shapeColumnIdx }
+                        .map { case (field, idx) => 
+                          s"<tr><th>$field</th><td>${row.get(idx)}</td></tr>"
+                        }
+                        .mkString("\n")+
+                      "</table>"
+                    )
+                  )
+                )
+              }
           )
 
+        if(features.features.length > POINT_LIMIT_THRESHOLD){
+          context.message(s"More than $POINT_LIMIT_THRESHOLD points in $datasetName; Not showing all points.")
+        }
+
         val layerName = layer.getOpt[String](PARAM_NAME)
-                             .getOrElse { shape_column.name.replaceAll("[^\"]", "") }
+                             .getOrElse { shapeColumn.name.replaceAll("[^\"]", "") }
 
         val layerFile =
           context.outputFile(s"geojson_$idx", mimeType = MIME.JSON)
@@ -106,6 +127,7 @@ object GeoPlot extends Command
         |{
         |  let layer = L.geoJson()
         |  layers["${layerName}"] = layer
+        |  layer.bindPopup(function(layer) { return layer.feature.properties.popup; })
         |  layer.addTo(theMap)
         |  
         |  let oReq = new XMLHttpRequest()
