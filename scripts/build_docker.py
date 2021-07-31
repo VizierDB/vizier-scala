@@ -15,6 +15,7 @@
 import os
 import subprocess
 import sys
+from datetime import date
 
 DOCKER_DIR = "upstream/docker"
 
@@ -35,7 +36,7 @@ os.chdir(DOCKER_DIR)
 base_tag, revision = tag.split(":")
 latest_tag = f"{base_tag}:latest"
 
-subprocess.run(["docker", "build", ".", "-t", tag], check=True)
+subprocess.run(["docker", "build", ".", "-t", tag, "--build-arg", "CACHE_DATE=" + str(date.today())], check=True)
 subprocess.run(["docker", "push", tag], check=True)
 subprocess.run(["docker", "tag", tag, latest_tag], check=True)
 subprocess.run(["docker", "push", latest_tag], check=True)
