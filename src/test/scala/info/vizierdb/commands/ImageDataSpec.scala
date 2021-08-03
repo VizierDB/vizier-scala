@@ -16,12 +16,13 @@ package info.vizierdb.commands
 
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
+import org.apache.spark.sql.types._
 
 import play.api.libs.json._
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.catalog.{ Message, DatasetMessage }
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.MutableProject
 import java.awt.image.BufferedImage
 
 class ImageDataSpec
@@ -55,14 +56,19 @@ class ImageDataSpec
     outputs must contain { (x:Message) => x.mimeType.equals(MIME.DATASET_VIEW) }
     val dsMessage = outputs.filter { (x:Message) => x.mimeType.equals(MIME.DATASET_VIEW) }
                            .head
-    println(s"MESSAGE: ${dsMessage.dataString}")
+    // println(s"MESSAGE: ${dsMessage.dataString}")
     val dataset = dsMessage.dataJson.as[DatasetMessage]
 
     dataset.dataCache must beSome
+    
+    dataset.dataCache.get.schema must containTheSameElementsAs(Seq(
+      StructField("url", StringType),
+      StructField("image", ImageUDT)
+    ))
 
     val firstRow = dataset.dataCache.get.data(0)
     val imageValue = firstRow(1)
-    println(imageValue)
+    // println(imageValue)
     imageValue must not beNull
 
 

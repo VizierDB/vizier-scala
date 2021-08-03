@@ -18,6 +18,7 @@ import info.vizierdb.commands._
 import org.mimirdb.vizual
 import org.mimirdb.api.request.VizualRequest
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.viztrails.ProvenancePrediction
 
 trait VizualCommand 
   extends Command
@@ -65,8 +66,10 @@ trait VizualCommand
   }
 
   def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String](PARA_DATASET)), 
-           Seq(arguments.get[String](PARA_DATASET))) )
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PARA_DATASET))
+      .definitelyWrites(arguments.get[String](PARA_DATASET))
+      .andNothingElse
 
 
 }

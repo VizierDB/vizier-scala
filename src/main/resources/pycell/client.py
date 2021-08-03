@@ -488,9 +488,11 @@ class VizierDBClient(object):
                   errors: Any = None,
                   newline: Optional[str] = None,
                   closefd: bool = True,
-                  opener: Optional[Any] = None
+                  opener: Optional[Any] = None,
+                  ignore_warning: bool = False
                   ) -> IO:
-    print("***File access may not be reproducible because filesystem resources are transient***")
+    if not ignore_warning:
+      print("***File access may not be reproducible because filesystem resources are transient***")
     return open(file, mode, buffering, encoding, errors, newline, closefd, opener)
 
   def show(self,

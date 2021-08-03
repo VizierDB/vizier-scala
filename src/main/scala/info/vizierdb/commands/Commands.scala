@@ -78,6 +78,7 @@ object Commands
   register(packageId = "transform", name = "Transformation", category = "data")(
     "aggregate"  -> info.vizierdb.commands.transform.AggregateDataset,
     "filter"     -> info.vizierdb.commands.transform.FilterDataset,
+    "split"      -> info.vizierdb.commands.transform.SplitDataset,
   )
 
   register(packageId = "plot", name = "Data Plotting", category = "plot")(
@@ -129,7 +130,8 @@ object Commands
     "shape_watcher"  -> info.vizierdb.commands.mimir.ShapeWatcher,
     "comment"        -> info.vizierdb.commands.mimir.Comment,
     "pivot"          -> info.vizierdb.commands.mimir.Pivot,
-    "geocode"        -> info.vizierdb.commands.mimir.Geocode
+    "geocode"        -> info.vizierdb.commands.mimir.Geocode,
+    "geotag"         -> info.vizierdb.commands.mimir.Geotag,
   )
 }
 

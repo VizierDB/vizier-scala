@@ -14,49 +14,89 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
+import scalikejdbc.DB
 import play.api.libs.json.Json
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
+import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object UnloadDataset extends Command
   with LazyLogging
 {
+  val PARAM_DATASET = "dataset"
+  val PARAM_FORMAT = "unloadFormat"
+  val PARAM_OPTIONS = "unloadOptions"
+  val PARAM_OPTION_KEY = "unloadOptionKey"
+  val PARAM_OPTION_VALUE = "unloadOptionValue"
+
   def name: String = "Unload Dataset"
   def parameters: Seq[Parameter] = Seq(
-    DatasetParameter(id = "dataset", name = "Dataset"),
-    EnumerableParameter(id = "unloadFormat", name = "Unload Format", values = EnumerableValue.withNames(
-      "CSV"          -> "csv", 
-      "JSON"         -> "json", 
-      "Google Sheet" -> "mimir.exec.spark.datasource.google.spreadsheet", 
-      "XML"          -> "com.databricks.spark.xml", 
-      "Excel"        -> "com.crealytics.spark.excel", 
-      "JDBC Source"  -> "jdbc", 
-      "Text"         -> "text", 
-      "Parquet"      -> "parquet", 
-      "ORC"          -> "orc"
+    DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
+    EnumerableParameter(id = PARAM_FORMAT, name = "Unload Format", values = EnumerableValue.withNames(
+      "CSV"             -> "csv", 
+      "JSON"            -> "json", 
+      "Google Sheet"    -> "mimir.exec.spark.datasource.google.spreadsheet", 
+      "XML"             -> "com.databricks.spark.xml", 
+      "Excel"           -> "com.crealytics.spark.excel", 
+      "JDBC Source"     -> "jdbc", 
+      "Text"            -> "text", 
+      "Parquet"         -> "parquet", 
+      "ORC"             -> "orc",
+      "Publish Locally" -> "publish_local",
     ), default = Some(0)),
-    ListParameter(id = "unloadOptions", name = "Unload Options", components = Seq(
-      StringParameter(id = "unloadOptionKey", name = "Option Key"),
-      StringParameter(id = "unloadOptionValue", name = "Option Value")
+    ListParameter(id = PARAM_OPTIONS, name = "Unload Options", components = Seq(
+      StringParameter(id = PARAM_OPTION_KEY, name = "Option Key"),
+      StringParameter(id = PARAM_OPTION_VALUE, name = "Option Value")
     ), required = false)
   )
   def format(arguments: Arguments): String = 
-    s"UNLOAD ${arguments.pretty("dataset")} TO ${arguments.pretty("unloadFormat")}"
+    s"UNLOAD ${arguments.pretty(PARAM_DATASET)} TO ${arguments.pretty(PARAM_FORMAT)}"
   def title(arguments: Arguments): String = 
-    s"Unload ${arguments.pretty("dataset")}"
+    s"Unload ${arguments.pretty(PARAM_DATASET)}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    val datasetName = arguments.get[String]("dataset")
+    val datasetName = arguments.get[String](PARAM_DATASET)
+    val format = arguments.get[String](PARAM_FORMAT)
+    val optionList =
+              arguments.getList(PARAM_OPTIONS)
+                 .map { option => MimirTuple(option.get[String](PARAM_OPTION_KEY),
+                                             option.get[String](PARAM_OPTION_VALUE)) }
+
+    
+    // Publish Local gets some special handling, since we're not creating an 
+    // artifact.
+    if(format.equals("publish_local")) {
+      val artifact = context.artifact(datasetName)
+                            .getOrElse{ 
+                              context.error(s"Dataset $datasetName does not exist"); return
+                            }
+
+      val published:PublishedArtifact = DB.autoCommit { implicit s => 
+        PublishedArtifact.make(
+          artifact = artifact, 
+          name = optionList.find { _.name.equalsIgnoreCase("name") }
+                    .map { _.value },
+          properties = Json.obj(),
+          overwrite = true
+        )
+      }
+
+      context.message(s"Access as ${published.url}")
+
+      return
+    }
+
     val dataset = context.dataset(datasetName)
                          .getOrElse{ 
                            context.error(s"Dataset $datasetName does not exist"); return
                          }
-    val format = arguments.get[String]("unloadFormat")
+
 
     val mimeTypeForFile = format match {
       case "mimir.exec.spark.datasource.google.spreadsheet" 
@@ -85,10 +125,7 @@ object UnloadDataset extends Command
       file = artifactIfNeeded.map { _.absoluteFile.toString }
                              .getOrElse { "unknown_file" },
       format = format,
-      backendOption = 
-        arguments.getList("unloadOptions")
-                 .map { option => MimirTuple(option.get[String]("unloadOptionKey"),
-                                             option.get[String]("unloadOptionValue")) }
+      backendOption = optionList
     ).handle
 
     logger.debug(response.toString())
@@ -112,9 +149,9 @@ object UnloadDataset extends Command
   }
 
   def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq(arguments.get[String]("dataset")),
-      Seq("file_export")
-    ) )
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PARAM_DATASET))
+      .definitelyWrites("file_export")
+      .andNothingElse
 }
 

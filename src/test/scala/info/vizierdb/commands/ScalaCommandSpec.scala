@@ -20,7 +20,7 @@ import org.specs2.specification.BeforeAll
 import scala.collection.mutable
 import info.vizierdb.commands.jvmScript._
 import info.vizierdb.test.SharedTestResources
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.MutableProject
 
 class ScalaCommandSpec
   extends Specification

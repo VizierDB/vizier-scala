@@ -19,12 +19,13 @@ import java.io.File
 import org.rogach.scallop._
 import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.api.{ MimirAPI, MimirConfig }
+import info.vizierdb.catalog.Cell
 
 class Config(arguments: Seq[String]) 
   extends ScallopConf(arguments)
   with LazyLogging
 {
-  version("Vizier-Scala 1.1.0 (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
+  version("Vizier-Scala 1.2.0 (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
   banner("""Docs: https://github.com/VizierDB/vizier-scala/wiki
            |Usage: vizier [OPTIONS]
            |    or vizier import [OPTIONS] export
@@ -78,6 +79,11 @@ class Config(arguments: Seq[String])
                 .orElse { Some(false) }
   )
 
+  val noUI = opt[Boolean]("no-ui",
+    descr = "Don't auto-launch the UI on startup",
+    default = Some(false)
+  )
+
   val connectFromAnyHost = opt[Boolean]("connect-from-any-host",
     descr = "Allow connections from any IP (WARNING: this will let anyone on your network run code on your machine)",
     default = Option(false),
@@ -90,14 +96,22 @@ class Config(arguments: Seq[String])
     noshort = true
   )
 
+  val workingDirectory = opt[String]("working-directory",
+    descr = "Override the current working directory for relative file paths",
+    default = None
+  )
+
+  //////////////////////////////////////////////////////
+
   object ingest extends Subcommand("import", "ingest") {
     val execute = toggle("execute", default = Some(true))
     val file = trailArg[File]("export", 
       descr = "The exported vizier file"
     )
   }
-
   addSubcommand(ingest)
+  
+  //////////////////////////////////////////////////////
   
   object export extends Subcommand("export") {
     val projectId = trailArg[Long]("project-id",
@@ -108,11 +122,34 @@ class Config(arguments: Seq[String])
     )
   }
   addSubcommand(export)
+  
+  //////////////////////////////////////////////////////
+  
+  object run extends Subcommand("run") {
+    val project = trailArg[String]("project",
+      descr = "The name or identifier of the project run"
+    )
+    val branch = opt[String]("branch", short = 'b',
+      descr = "The branch to re-execute (default = head)"
+    )
+    val cells = opt[List[Cell.Position]]("cell", short = 'c',
+      descr = "One or more cells to force re-execution on (default = all)",
+      default = Some(List.empty)
+    )
+    val showCaveats = toggle("show-caveats", noshort = true, default = Some(true),
+      descrYes = "Compute and print caveats for every dataset artifact at the end of the trace.  Return an error code if any exist."
+    )
+  }
+  addSubcommand(run)
+
+  //////////////////////////////////////////////////////
 
   object doctor extends Subcommand("doctor") {
 
   }
   addSubcommand(doctor)
+
+  //////////////////////////////////////////////////////
 
   verify()
 
@@ -121,12 +158,21 @@ class Config(arguments: Seq[String])
     val config = 
       new MimirConfig(Seq(
         "--python", pythonPath(),
-        "--data-dir", basePath().toString,
-      ))
+        "--data-dir", basePath().toString
+      )++workingDirectory.toOption.toSeq.flatMap { 
+        Seq("--working-directory", _)
+      })
     config.verify()
     return config
   }
   def setMimirConfig = { MimirAPI.conf = getMimirConfig }
+
+  def commandOrSubcommandNeedsMimir: Boolean =
+  {
+    if(!subcommand.isDefined){ return true }
+    else if(subcommand.equals(run)){ return true }
+    else { return false }
+  }
 
 }
 

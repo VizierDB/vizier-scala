@@ -19,6 +19,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.api.request.CreateSampleRequest
 import org.mimirdb.api.request.Sample.Uniform
 import org.mimirdb.api.request.MaterializeRequest
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object BasicSample extends Command
   with LazyLogging
@@ -82,9 +83,13 @@ object BasicSample extends Command
   }
 
   def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String](PAR_INPUT_DATASET)), 
-           Seq(arguments.getOpt[String](PAR_OUTPUT_DATASET)
-                        .getOrElse { arguments.get[String](PAR_INPUT_DATASET) })) )
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PAR_INPUT_DATASET))
+      .definitelyWrites(
+        arguments.getOpt[String](PAR_OUTPUT_DATASET)
+                 .getOrElse { arguments.get[String](PAR_INPUT_DATASET) }
+      )
+      .andNothingElse
 
 
 }

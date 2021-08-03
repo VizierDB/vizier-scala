@@ -24,6 +24,7 @@ import java.io.File
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
 import org.mimirdb.api.request.MaterializeRequest
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object SetIndex extends Command
 {
@@ -51,6 +52,9 @@ object SetIndex extends Command
 
   }
   def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("dataset"))) )
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("dataset"))
+      .andNothingElse
 }
 

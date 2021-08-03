@@ -24,7 +24,7 @@ import info.vizierdb.util.HATEOAS
 import info.vizierdb.catalog.binders._
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
-import info.vizierdb.viztrails.{ Scheduler, Provenance, StateTransition }
+import info.vizierdb.viztrails.{ Scheduler, StateTransition, ScopeSummary }
 import info.vizierdb.delta.DeltaBus
 import ExecutionState.{ WAITING, STALE, RUNNING, ERROR, CANCELLED, DONE, FROZEN }
 
@@ -159,6 +159,35 @@ case class Branch(
   }
 
   /**
+   * Invalidate all cells in the workflow
+   * 
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def invalidate(cells: Set[Int] = Set.empty)
+                (implicit session: DBSession): (Branch, Workflow) = 
+  {
+    val stateUpdate = 
+      if(cells.isEmpty){
+        StateTransition( sqls"1=1", DONE -> STALE )
+      } else {
+        StateTransition( sqls.in(sqls"position", cells.toSeq), DONE -> STALE )
+      }
+    val ret =
+      modify(
+        module = None,
+        action = ActionType.INSERT,
+        prevWorkflowId = headId,
+        abortPrevWorkflow = true,
+        recomputeCellsFrom = 0,
+        updateState = stateUpdate
+      )
+    for(cell <- ret._2.cells){
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+    }
+    return ret
+  }
+
+  /**
    * Update the branch head by deleting a cell from the workflow
    * 
    * @param position        The position of the cell to delete
@@ -219,7 +248,7 @@ case class Branch(
   {
     val ret = modify(
       module = None,
-      action = ActionType.DELETE,
+      action = ActionType.INSERT,
       prevWorkflowId = headId,
       abortPrevWorkflow = true,
       updateState = 
@@ -404,7 +433,6 @@ case class Branch(
         created = ZonedDateTime.now()
       )
     }
-    Provenance.updateCellStates(workflow.cellsInOrder, Map.empty)
 
     return (branch, workflow)
   }
@@ -506,7 +534,10 @@ case class Branch(
       val b = Branch.column
       scalikejdbc.update(Branch)
         .set(b.name       -> Option(name).getOrElse { this.name },
-             b.properties -> Option(properties).getOrElse { this.properties }.toString,
+             b.properties -> Option(properties)
+                                      .map { JsObject(_) }
+                                      .getOrElse { this.properties }
+                                      .toString,
              b.modified   -> now)
         .where.eq(b.id, id)
     }.update.apply()
@@ -555,6 +586,14 @@ object Branch
           .and.eq(b.projectId, projectId)
     }.map { apply(_) }.single.apply()
 
+  def withName(projectId: Identifier, name: String)(implicit session:DBSession): Option[Branch] = 
+    withSQL {
+      val b = Branch.syntax 
+      select
+        .from(Branch as b)
+        .where.eq(b.name, name)
+          .and.eq(b.projectId, projectId)
+    }.map { apply(_) }.list.apply().headOption
 
   /**
    * Overwrite the Branch Head (DO NOT USE)

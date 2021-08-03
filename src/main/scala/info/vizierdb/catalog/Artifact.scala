@@ -300,6 +300,8 @@ object Artifact
         VizierAPI.urls.getDataset(projectId, artifactId)
       case ArtifactType.CHART => 
         VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
+      case ArtifactType.FILE => 
+        VizierAPI.urls.downloadFile(projectId, artifactId)
       case _ => 
         VizierAPI.urls.getArtifact(projectId, artifactId)
     }

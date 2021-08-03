@@ -33,6 +33,9 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{ StructField, DataType }
 import info.vizierdb.catalog.serialized.ParameterArtifact
 import info.vizierdb.delta.DeltaBus
+import info.vizierdb.viztrails.ScopeSummary
+import info.vizierdb.catalog.ArtifactRef
+import info.vizierdb.catalog.JavascriptMessage
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -52,11 +55,22 @@ class ExecutionContext(
   var isError = false
 
   /**
+   * Get a summary of the input scope
+   */
+  def inputScopeSummary: ScopeSummary = 
+    ScopeSummary.withIds(scope.mapValues { _.id })
+
+  /**
+   * Get a summary of the input scope
+   */
+  def outputScopeSummary: ScopeSummary = 
+    inputScopeSummary.copyWithOutputs(outputs.mapValues { _.map { _.id }}.toMap)
+
+  /**
    * Check to see if the specified artifact appears in the scope
    */
-  def artifactExists(name: String): Boolean = {
+  def artifactExists(name: String): Boolean = 
     scope.contains(name.toLowerCase()) || outputs.contains(name.toLowerCase())
-  }
 
   /**
    * Retrieve the specified artifact
@@ -356,6 +370,38 @@ class ExecutionContext(
   }
 
   /**
+   * Display HTML, along with embedded javascript
+   * 
+   * @param html          The HTML to display
+   * @param javascript    Javascript code to execute after the HTML is loaded
+   * @param dependencies  A list of Javascript files to load into the global
+   *                      context.
+   * 
+   * Dependencies are typically cached by the client and only loaded once per
+   * session.  
+   */
+  def displayHTML(
+    html: String, 
+    javascript: String = "", 
+    javascriptDependencies: Iterable[String] = Seq.empty,
+    cssDependencies: Iterable[String] = Seq.empty
+  )
+  {
+    if(javascript.isEmpty && javascriptDependencies.isEmpty && cssDependencies.isEmpty){
+      message(MIME.HTML, html.getBytes)
+    } else {
+      message(MIME.JAVASCRIPT, 
+        Json.toJson(JavascriptMessage(
+          html = html,
+          code = javascript,
+          js_deps = javascriptDependencies.toSeq,
+          css_deps = cssDependencies.toSeq
+        )).toString.getBytes()
+      )
+    }
+  }
+
+  /**
    * Modify the arguments of the calling cell (DANGEROUS)
    *
    * Alter a subset of the arguments to the cell currently being
@@ -432,5 +478,7 @@ class ExecutionContext(
     {
       s"SCOPE: { ${scope.map { case (ds, art) => ds+" -> "+art.id }.mkString(", ")} }"
     }
+
+  def spark = org.mimirdb.api.MimirAPI.sparkSession
 }
 

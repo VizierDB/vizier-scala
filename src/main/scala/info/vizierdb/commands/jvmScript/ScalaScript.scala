@@ -30,6 +30,7 @@ import scala.beans.BeanProperty
 import scala.reflect.runtime._
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object ScalaScript extends Command
 {
@@ -74,15 +75,27 @@ object ScalaScript extends Command
 
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
+    def outputException(e: Throwable)
+    {
+      val buffer = new java.io.StringWriter
+      e.printStackTrace(new java.io.PrintWriter(buffer))
+      context.error(buffer.getBuffer().toString())
+    }
+
     try {
       eval(arguments.get[String]("source"), context)
     } catch {
-      case e: scala.tools.reflect.ToolBoxError => 
-        context.error(e.getMessage()) // sadly no line numbers here
+      // case e: scala.tools.reflect.ToolBoxError => 
+      //   context.error(e.getMessage()) // sadly no line numbers here
+      case e: java.lang.reflect.InvocationTargetException =>
+        outputException(e.getCause())
+      case e: Throwable =>
+        outputException(e)
     }
   }
 
-  def predictProvenance(arguments: Arguments) = None
+  def predictProvenance(arguments: Arguments) =
+    ProvenancePrediction.default
 
 
 }

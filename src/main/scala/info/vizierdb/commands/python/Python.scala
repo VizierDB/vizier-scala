@@ -38,6 +38,7 @@ import info.vizierdb.catalog.ArtifactSummary
 import org.mimirdb.util.UnsupportedFeature
 import org.mimirdb.vizual.{ Command => VizualCommand }
 import org.mimirdb.api.request.VizualRequest
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object Python extends Command
   with LazyLogging
@@ -50,7 +51,14 @@ object Python extends Command
   def format(arguments: Arguments): String = 
     arguments.pretty("source")
   def title(arguments: Arguments): String =
-    "Python Script"
+  {
+    val line1 = arguments.get[String]("source").split("\n")(0)
+    if(line1.startsWith("#")){
+      line1.replaceFirst("^# *", "")
+    } else {
+      "Python Script"
+    }
+  }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     logger.debug("Initializing...")
@@ -306,6 +314,7 @@ object Python extends Command
     logger.debug("Done")
   }
 
-  def predictProvenance(arguments: Arguments) = None
+  def predictProvenance(arguments: Arguments) =
+    ProvenancePrediction.default
 }
 
