@@ -8,6 +8,7 @@ import info.vizierdb.ui.network.ModuleSubscription
 import rx._
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.util.Logging
+import info.vizierdb.types
 
 class Module(subscription: ModuleSubscription)
             (implicit owner: Ctx.Owner)
@@ -34,8 +35,20 @@ class Module(subscription: ModuleSubscription)
       button("Add Cell Above"),
       button("Add Cell Below"),
       button("Edit Cell"),
-      button("Freeze Cell"),
-      button("Freeze From Here"),
+      Rx { 
+        if (subscription.state() == types.ExecutionState.FROZEN) { 
+          button("Thaw Cell", onclick := { (_:dom.MouseEvent) => subscription.thawCell() })
+        } else { 
+          button("Freeze Cell", onclick := { (_:dom.MouseEvent) => subscription.freezeCell() })
+        }
+      },
+      Rx { 
+        if (subscription.state() == types.ExecutionState.FROZEN) {
+          button("Thaw Upto Here", onclick := { (_:dom.MouseEvent) => subscription.thawUpto() }) 
+        } else { 
+          button("Freeze From Here", onclick := { (_:dom.MouseEvent) => subscription.freezeFrom() })
+        }
+      },
       button("Delete Cell", 
         onclick := { (_:dom.MouseEvent) => subscription.delete() })
     )

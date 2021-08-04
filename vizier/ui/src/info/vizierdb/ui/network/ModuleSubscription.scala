@@ -9,6 +9,8 @@ import info.vizierdb.util.Logging
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import scala.concurrent.ExecutionContext.Implicits.global
+import info.vizierdb.ui.components.Module
+import info.vizierdb.ui.components.TentativeEdits
 
 
 class ModuleSubscription(
@@ -39,4 +41,28 @@ class ModuleSubscription(
    */
   def delete(): Unit = 
     branch.Client.workflowDelete(position)
+
+  /**
+   * Freeze the current cell
+   */
+  def freezeCell(): Unit = 
+    branch.Client.workflowFreezeOne(position)
+
+  /**
+   * Freeze all cells starting with current cell
+   */
+  def freezeFrom(): Unit = 
+    branch.Client.workflowFreezeFrom(position)
+
+  /**
+   * Thaw the current cell
+   */
+  def thawCell(): Unit = 
+    branch.Client.workflowThawOne(position)
+
+  /**
+   * Thaw all cells upto current cell
+   */
+  def thawUpto(): Unit = 
+    branch.Client.workflowThawUpto(position)
 }
