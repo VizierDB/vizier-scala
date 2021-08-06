@@ -18,7 +18,7 @@ class Workflow(subscription: BranchSubscription, project: Project)
 
   val moduleViews = 
     subscription.modules
-                .rxMap { module => new Module(module) }
+                .rxMap { module => new Module(module, this) }
 
   val moduleViewsWithEdits = new TentativeEdits(moduleViews, project)
 

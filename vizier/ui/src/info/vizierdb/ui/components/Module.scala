@@ -10,7 +10,7 @@ import info.vizierdb.types.ArtifactType
 import info.vizierdb.util.Logging
 import info.vizierdb.types
 
-class Module(subscription: ModuleSubscription)
+class Module(subscription: ModuleSubscription, workflow: Workflow)
             (implicit owner: Ctx.Owner)
   extends Object
   with Logging
@@ -32,8 +32,8 @@ class Module(subscription: ModuleSubscription)
     div("Outputs: ", Rx { outputs.map { _.keys.mkString(", ") }}),
     div("Messages: ", messageView.root),
     div("Menu: ", 
-      button("Add Cell Above"),
-      button("Add Cell Below"),
+      button("Add Cell Above", onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) }),
+      button("Add Cell Below", onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) }),
       button("Edit Cell"),
       Rx { 
         if (subscription.state() == types.ExecutionState.FROZEN) { 

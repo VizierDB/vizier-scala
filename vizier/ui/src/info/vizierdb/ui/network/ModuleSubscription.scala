@@ -11,6 +11,7 @@ import info.vizierdb.serializers._
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.ui.components.Module
 import info.vizierdb.ui.components.TentativeEdits
+import info.vizierdb.ui.components.Workflow
 
 
 class ModuleSubscription(
@@ -65,4 +66,16 @@ class ModuleSubscription(
    */
   def thawUpto(): Unit = 
     branch.Client.workflowThawUpto(position)
+
+  /**
+   * Thaw all cells upto current cell
+   */
+  def addCellAbove(workflow: Workflow): Unit = 
+    workflow.moduleViewsWithEdits.insertTentative(position)
+  
+  /**
+   * Thaw all cells upto current cell
+   */
+  def addCellBelow(workflow: Workflow): Unit = 
+    workflow.moduleViewsWithEdits.insertTentative(position+1)
 }
