@@ -21,37 +21,40 @@ import info.vizierdb.catalog.Artifact
 import info.vizierdb.viztrails.ProvenancePrediction
 import org.mimirdb.api.request.CreateViewRequest
 import info.vizierdb.VizierException
+import info.vizierdb.util.StringUtils
 
 object SplitDataset 
   extends Command
   with LazyLogging
 {
   val PARAM_DATASET = "dataset"
+  val PARAM_PARTITIONS = "partition"
   val PARAM_CONDITION = "condition"
-  val PARAM_IF_TRUE = "if_true"
-  val PARAM_IF_FALSE = "if_false"
+  val PARAM_OUTPUT = "output"
+  val PARAM_OTHERWISE = "otherwise_output"
 
   val name = "Split Dataset"
 
   val parameters = Seq[Parameter](
     DatasetParameter(PARAM_DATASET, "Dataset"),
-    StringParameter(PARAM_CONDITION, "Condition"),
-    StringParameter(PARAM_IF_TRUE, "Pass Dataset"),
-    StringParameter(PARAM_IF_FALSE, "Fail Dataset", required = false)
+    ListParameter(PARAM_PARTITIONS, "Partitions", components = Seq(
+      StringParameter(PARAM_CONDITION, "Condition"),
+      StringParameter(PARAM_OUTPUT, "Output Dataset"),
+    )),
+    StringParameter(PARAM_OTHERWISE, "Otherwise Dataset", required = false)
   )
 
   def format(arguments: Arguments) =
-    s"""SPLIT ${arguments.pretty(PARAM_DATASET)} ON ${arguments.pretty(PARAM_CONDITION)} 
-       |PASSING RECORDS INTO ${arguments.pretty(PARAM_IF_TRUE)}""".stripMargin + 
-       arguments.getOpt[String](PARAM_IF_FALSE)
-                .map { "\nFAILING RECORDS INTO "+_ }
-                .getOrElse("")
+  {
+    val names:Seq[String] = 
+      arguments.getList(PARAM_PARTITIONS)
+               .map { a => s"${a.pretty(PARAM_OUTPUT)} (${a.pretty(PARAM_CONDITION)})" } ++
+               arguments.getOpt[String](PARAM_OTHERWISE).map { _ + " (otherwise)" }
+    s"SPLIT ${arguments.pretty(PARAM_DATASET)} INTO ${StringUtils.oxfordComma(names)}"
+  }
 
   def title(arguments: Arguments) = 
-    s"Split ${arguments.pretty(PARAM_DATASET)} INTO ${arguments.pretty(PARAM_IF_TRUE)}"+
-       arguments.getOpt[String](PARAM_IF_FALSE)
-                .map { " and "+_ }
-                .getOrElse("")
+    s"Split ${arguments.pretty(PARAM_DATASET)}"
 
   def process(arguments: Arguments, context: ExecutionContext)
   {
@@ -60,13 +63,22 @@ object SplitDataset
                               .getOrElse {
                                 throw new VizierException("Expected dataset parameter")
                               }
-    val condition = arguments.get[String](PARAM_CONDITION)
-    val outputs = Seq(
-      (arguments.get[String](PARAM_IF_TRUE), condition)
-    ) ++ arguments.getOpt[String](PARAM_IF_FALSE).map { 
-      (_, s"NOT ($condition)")
-    }
-
+    val (partitions, preconditions) = 
+      arguments.getList(PARAM_PARTITIONS)
+               .foldLeft(Seq[(String, String)](), Seq[String]()) { 
+                  case ((partitions, preconditions), partition) =>
+                    val safeCondition = "(" + partition.get[String](PARAM_CONDITION) + ")"
+                    val output = partition.get[String](PARAM_OUTPUT)
+                    val fullCondition = preconditions :+ safeCondition
+                    (
+                      partitions :+ (output, fullCondition.mkString(" AND ")),
+                      preconditions :+ ("(NOT "+safeCondition+")")
+                    )
+               }
+    val outputs = partitions ++
+                    arguments.getOpt[String](PARAM_OTHERWISE).map { 
+                        (_, preconditions.mkString(" AND "))
+                    }
     try { 
       for( (outputTable, outputCondition) <- outputs){
         logger.trace("Creating view for $outputTable / $outputCondition")
@@ -94,7 +106,8 @@ object SplitDataset
     ProvenancePrediction
       .definitelyReads(arguments.get[String](PARAM_DATASET))
       .definitelyWrites((
-        Seq(arguments.get[String](PARAM_IF_TRUE)) ++ 
-          arguments.getOpt[String](PARAM_IF_FALSE)):_*)
+          arguments.getList(PARAM_PARTITIONS).map { _.get[String](PARAM_OUTPUT) } ++ 
+            arguments.getOpt[String](PARAM_OTHERWISE)
+        ):_*)
       .andNothingElse
 }
