@@ -3,7 +3,7 @@ package info.vizierdb.gis
 import org.locationtech.jts.geom.{ Geometry, Envelope, Polygon, Point }
 import play.api.libs.json._
 
-object GeoJSON
+object GeoJson
 {
   implicit val geometryFormat = Format[Geometry](
     new Reads[Geometry] { 
@@ -38,7 +38,7 @@ object GeoJSON
     }
   )
 }
-import GeoJSON.geometryFormat
+import GeoJson.geometryFormat
 
 case class FeatureCollection(
   features: Seq[Feature],
