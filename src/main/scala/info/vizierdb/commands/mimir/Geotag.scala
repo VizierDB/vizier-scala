@@ -69,7 +69,7 @@ object Geotag extends Command
           column = schema.size,
           row = None,
           value = Some(JsString(
-            s"=ST_POINT(CAST(`${lon.name}` AS DECIMAL(24,20)), CAST(`${lat.name}` AS DECIMAL(24,20)))"
+            s"=CASE WHEN `${lon.name}` IS NULL OR `${lat.name}` IS NULL THEN NULL ELSE ST_POINT(CAST(`${lon.name}` AS DECIMAL(24,20)), CAST(`${lat.name}` AS DECIMAL(24,20))) END"
           )),
           comment = None
         )

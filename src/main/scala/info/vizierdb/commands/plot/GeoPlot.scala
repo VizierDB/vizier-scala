@@ -79,7 +79,9 @@ object GeoPlot extends Command
         val shapeColumn = df.schema.fields(shapeColumnIdx)
         val weightColumn = layer.getOpt[Int](PARAM_WEIGHT_COL).map { df.schema.fields(_) }
 
-        val boundsTable = df.agg(shapeColumn.name -> "st_envelope_aggr")
+        val nullSafeDF = df.filter(df(shapeColumn.name).isNotNull)
+
+        val boundsTable = nullSafeDF.agg(shapeColumn.name -> "st_envelope_aggr")
         val envelope = boundsTable.take(1).head.get(0).asInstanceOf[Geometry].getEnvelopeInternal()
         if(bounds == null){
           bounds = envelope
@@ -89,14 +91,15 @@ object GeoPlot extends Command
 
         val features =
           FeatureCollection( 
-            df.take(POINT_LIMIT_THRESHOLD + 1)
+            nullSafeDF.take(POINT_LIMIT_THRESHOLD + 1)
               .map { row => 
                 Feature(
                   geometry = row.getAs[Geometry](shapeColumnIdx),
                   properties = Json.obj(
                     "popup" -> (
                       "<table>"+
-                      df.columns
+                      nullSafeDF
+                        .columns
                         .zipWithIndex
                         .filterNot { _._2 == shapeColumnIdx }
                         .map { case (field, idx) => 
