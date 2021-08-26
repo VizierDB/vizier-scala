@@ -95,13 +95,18 @@ object Query extends Command
   }
 
   def predictProvenance(arguments: Arguments) =
-    ProvenancePrediction
-      .definitelyReads(
-        computeDependencies(arguments.get[String]("source")):_*
-      )
-      .definitelyWrites(
-        arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
-      )
-      .andNothingElse
+    try {
+      ProvenancePrediction
+        .definitelyReads(
+          computeDependencies(arguments.get[String]("source")):_*
+        )
+        .definitelyWrites(
+          arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
+        )
+        .andNothingElse
+    } catch {
+      case t:Throwable => 
+        ProvenancePrediction.default
+    }
 }
 
