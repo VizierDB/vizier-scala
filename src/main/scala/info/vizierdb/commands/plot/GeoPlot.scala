@@ -37,6 +37,7 @@ import java.util.Base64
 import info.vizierdb.viztrails.ProvenancePrediction
 import java.io.FileOutputStream
 import info.vizierdb.gis._
+import info.vizierdb.util.StringUtils
 
 object GeoPlot extends Command
   with LazyLogging
@@ -52,29 +53,38 @@ object GeoPlot extends Command
 
   def name: String = "Plot Data on Map"
   def parameters: Seq[Parameter] = Seq(
-    DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
     ListParameter(id = PARAM_LAYERS, name = "Layers", components = Seq(
+      DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
       StringParameter(id = PARAM_NAME, name = "Layer Name", required = false),
       EnumerableParameter(id = PARAM_FORMAT, name = "Layer Type", values = EnumerableValue.withNames(
         "Vector (standard)" -> "vector",
         "Raster Heat Map" -> "heat_map",
       ), default = Some(0)),
       ColIdParameter(id = PARAM_SHAPE_COL, name = "Feature Column"),
-      ColIdParameter(id = PARAM_WEIGHT_COL, name = "Weight", required = false),
     ))
   )
   def format(arguments: Arguments): String = 
-    s"PLOT MAP DATA FROM ${arguments.pretty(PARAM_DATASET)}"
+  {
+    val columns = arguments.getList(PARAM_LAYERS)
+                            .map { a => a.pretty(PARAM_DATASET) + "." +
+                                          a.pretty(PARAM_SHAPE_COL) }
+    s"PLOT MAP DATA FROM ${StringUtils.oxfordComma(columns)}"
+  }
   def title(arguments: Arguments): String = 
-    s"Plot ${arguments.pretty(PARAM_DATASET)} on map"
+  {
+    val columns = arguments.getList(PARAM_LAYERS)
+                            .map { a => a.pretty(PARAM_DATASET) + "." +
+                                          a.pretty(PARAM_SHAPE_COL) }
+    s"Plot ${StringUtils.oxfordComma(StringUtils.ellipsize(columns, 2))} on map"
+  }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    val datasetName = arguments.get[String](PARAM_DATASET)
-    val df = context.dataframe(datasetName)
     var bounds: Envelope = null
 
     val layers = 
       arguments.getList(PARAM_LAYERS).zipWithIndex.map { case (layer, idx) =>
+        val datasetName = layer.get[String](PARAM_DATASET)
+        val df = context.dataframe(datasetName)
         val shapeColumnIdx = layer.get[Int](PARAM_SHAPE_COL)
         val shapeColumn = df.schema.fields(shapeColumnIdx)
         val weightColumn = layer.getOpt[Int](PARAM_WEIGHT_COL).map { df.schema.fields(_) }
@@ -251,7 +261,8 @@ object GeoPlot extends Command
 
   def predictProvenance(arguments: Arguments) = 
     ProvenancePrediction
-      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyReads(arguments.getList(PARAM_LAYERS)
+                                .map { _.get[String](PARAM_DATASET)}:_*)
       .andNothingElse
 }
 

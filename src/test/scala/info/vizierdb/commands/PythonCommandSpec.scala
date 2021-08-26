@@ -231,7 +231,7 @@ print(df['A'].sum())
            .getDataset()
            .data(0)(0) must beEqualTo("3")
   }
-
+    
   "Export types properly" >>
   {
     project.script("""

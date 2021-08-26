@@ -34,6 +34,9 @@ import info.vizierdb.commands.python.PythonProcess
 import py4j.reflection.PythonProxyHandler
 import info.vizierdb.catalog.Doctor
 import info.vizierdb.commands.python.SparkPythonUDFRelay
+import org.apache.spark.UDTRegistrationProxy
+import java.awt.image.BufferedImage
+import org.apache.spark.sql.types.ImageUDT
 import scala.sys.process.Process
 import org.mimirdb.caveats.Caveat
 import info.vizierdb.util.StringUtils
@@ -93,6 +96,7 @@ object Vizier
       ),
       MimirAPI.sparkSession
     )
+    UDTRegistrationProxy.register(classOf[BufferedImage].getName, classOf[ImageUDT].getName)
     MimirAPI.blobs = info.vizierdb.commands.python.SparkPythonUDFRelay
     MimirAPI.pythonUDF = info.vizierdb.commands.python.PythonProcess.udfBuilder
     val geocoders = 

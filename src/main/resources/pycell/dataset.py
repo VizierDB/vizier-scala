@@ -33,6 +33,8 @@ DATATYPE_LONG = 'long'
 DATATYPE_REAL = 'real'
 DATATYPE_VARCHAR = 'varchar'
 DATATYPE_GEOMETRY = "geometry"
+DATATYPE_BINARY = 'binary'
+DATATYPE_IMAGE = 'image/png'
 
 
 VIZUAL_DELETE_COLUMN  = "deletecolumn"
@@ -416,6 +418,7 @@ class DatasetClient(object):
     Raises ValueError if the length of the values list does not match the
     number of columns in the dataset.
     """
+    import base64
     # Ensure that there is exactly one value for each column in the dataset
     if values is not None:
       if len(values) != len(self.columns):
@@ -659,6 +662,9 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
   elif data_type == DATATYPE_GEOMETRY:
     from shapely import wkt  # type: ignore[import]
     return wkt.loads(value)
+  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+    import base64
+    return base64.b64decode(value.encode('utf-8'))
   elif data_type == DATATYPE_DATETIME:
     from datetime import datetime
     return datetime.fromisoformat(value)
@@ -676,6 +682,9 @@ def export_from_native_type(value: Any, data_type: str, context = "the value") -
   elif data_type == DATATYPE_GEOMETRY:
     from shapely.geometry import asShape
     return asShape(value).wkt
+  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+    import base64
+    return base64.b64encode(bytes(value)).decode('utf-8')
   elif data_type == DATATYPE_DATETIME or data_type == DATATYPE_DATE:
     return value.isoformat()
   else:
@@ -711,6 +720,9 @@ def assert_type(value: Any, data_type: str, context = "the value") -> Any:
     if not hasattr(value, "__geo_interface__"):
       raise ValueError(f"{context} ({value}) is a {type(value)}, and not a type that supports the geometry interface")
     # Not sure how to validate this...
+    return value
+  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+    assert(isinstance(value, bytes))
     return value
   else:
     return value

@@ -101,6 +101,7 @@ case class Message(
   extends LazyLogging
 {
   def dataString: String = new String(data)
+  def dataJson: JsValue = Json.parse(data)
 
   def describe(implicit session: DBSession): MessageDescription = 
     try { 
