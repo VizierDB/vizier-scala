@@ -23,7 +23,7 @@ import info.vizierdb.filestore.Filestore
 import org.mimirdb.api.request.CreateViewRequest
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.{ Row, Column, DataFrame }
-import org.apache.spark.sql.functions.{ expr, first }
+import org.apache.spark.sql.functions.{ expr, first, lit, count }
 import org.apache.spark.sql.catalyst.analysis.{ UnresolvedFunction, UnresolvedAttribute }
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.catalyst.expressions.{ Literal, Cast, Subtract }
@@ -49,6 +49,9 @@ object GeoPlot extends Command
   val PARAM_SHAPE_COL = "shape_column"
   val PARAM_WEIGHT_COL = "weight_column"
 
+  val LAYER_VECTOR = "vector"
+  val LAYER_HEATMAP = "heat_map"
+
   val POINT_LIMIT_THRESHOLD = 500
 
   def name: String = "Plot Data on Map"
@@ -57,8 +60,8 @@ object GeoPlot extends Command
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
       StringParameter(id = PARAM_NAME, name = "Layer Name", required = false),
       EnumerableParameter(id = PARAM_FORMAT, name = "Layer Type", values = EnumerableValue.withNames(
-        "Vector (standard)" -> "vector",
-        "Raster Heat Map" -> "heat_map",
+        "Vector (standard)" -> LAYER_VECTOR,
+        "Raster Heat Map" -> LAYER_HEATMAP,
       ), default = Some(0)),
       ColIdParameter(id = PARAM_SHAPE_COL, name = "Feature Column"),
     ))
@@ -77,6 +80,9 @@ object GeoPlot extends Command
                                           a.pretty(PARAM_SHAPE_COL) }
     s"Plot ${StringUtils.oxfordComma(StringUtils.ellipsize(columns, 2))} on map"
   }
+
+  def fileNameForIndex(idx: Int) = s"geojson_$idx"
+
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     var bounds: Envelope = null
@@ -84,15 +90,20 @@ object GeoPlot extends Command
     val layers = 
       arguments.getList(PARAM_LAYERS).zipWithIndex.map { case (layer, idx) =>
         val datasetName = layer.get[String](PARAM_DATASET)
-        val df = context.dataframe(datasetName)
+        var df = context.dataframe(datasetName)
         val shapeColumnIdx = layer.get[Int](PARAM_SHAPE_COL)
         val shapeColumn = df.schema.fields(shapeColumnIdx)
-        val weightColumn = layer.getOpt[Int](PARAM_WEIGHT_COL).map { df.schema.fields(_) }
+        val weightColumnIdx: Option[Int] = None // layer.getOpt[Int](PARAM_WEIGHT_COL)
+
+        df = df.filter(df(shapeColumn.name).isNotNull)
+
 
         val nullSafeDF = df.filter(df(shapeColumn.name).isNotNull)
 
         val boundsTable = nullSafeDF.agg(shapeColumn.name -> "st_envelope_aggr")
         val envelope = boundsTable.take(1).head.get(0).asInstanceOf[Geometry].getEnvelopeInternal()
+        val localBounds = boundsTable.take(1).head.get(0).asInstanceOf[Geometry]
+        val envelope = localBounds.getEnvelopeInternal()
         if(bounds == null){
           bounds = envelope
         } else {
@@ -130,29 +141,15 @@ object GeoPlot extends Command
         val layerName = layer.getOpt[String](PARAM_NAME)
                              .getOrElse { shapeColumn.name.replaceAll("[^\"]", "") }
 
-        val layerFile =
-          context.outputFile(s"geojson_$idx", mimeType = MIME.JSON)
-        val f = new FileOutputStream(layerFile.absoluteFile)
-        f.write(Json.toJson(features).toString.getBytes)
-        f.close
+        layer.get[String](PARAM_FORMAT) match {
+          case LAYER_VECTOR => genVectorLayer(df, context, shapeColumnIdx, layerName, fileNameForIndex(idx))
+          case LAYER_HEATMAP => genRasterLayer(df, context, shapeColumnIdx, weightColumnIdx, localBounds, layerName, fileNameForIndex(idx))
 
-        s"""
-        |{
-        |  let layer = L.geoJson()
-        |  layers["${layerName}"] = layer
-        |  layer.bindPopup(function(layer) { return layer.feature.properties.popup; })
-        |  layer.addTo(theMap)
-        |  
-        |  let oReq = new XMLHttpRequest()
-        |  oReq.onload = function(response){
-        |    let data = JSON.parse(oReq.responseText)
-        |    layer.addData(data)
-        |  }
-        |  oReq.open("GET", "${layerFile.url}")
-        |  oReq.send()
-        |}
-        |""".stripMargin
+        }
+
       }
+
+    println(layers.mkString("\n"))
 
     if(bounds == null){
       context.error("No layers added")
@@ -191,18 +188,84 @@ object GeoPlot extends Command
     )
   } 
 
+  def genVectorLayer(
+    df: DataFrame,
+    context: ExecutionContext,
+    shapeColumnIdx: Int,
+    layerName: String,
+    layerFile: String
+  ): String = 
+  {
+    val features =
+      FeatureCollection( 
+        df.take(POINT_LIMIT_THRESHOLD + 1)
+          .map { row => 
+            Feature(
+              geometry = row.getAs[Geometry](shapeColumnIdx),
+              properties = Json.obj(
+                "popup" -> (
+                  "<table>"+
+                  df.columns
+                    .zipWithIndex
+                    .filterNot { _._2 == shapeColumnIdx }
+                    .map { case (field, idx) => 
+                      s"<tr><th>$field</th><td>${row.get(idx)}</td></tr>"
+                    }
+                    .mkString("\n")+
+                  "</table>"
+                )
+              )
+            )
+          }
+      )
+
+    if(features.features.length > POINT_LIMIT_THRESHOLD){
+      context.message(s"More than $POINT_LIMIT_THRESHOLD points for $layerName; Not showing all points.")
+    }
+
+    val layer =
+      context.outputFile(layerFile, mimeType = MIME.JSON) { 
+        _.write(Json.toJson(features).toString.getBytes)
+      }
+
+    s"""
+    |{
+    |  let layer = L.geoJson()
+    |  layers["${layerName}"] = layer
+    |  layer.bindPopup(function(layer) { return layer.feature.properties.popup; })
+    |  layer.addTo(theMap)
+    |  
+    |  let oReq = new XMLHttpRequest()
+    |  oReq.onload = function(response){
+    |    let data = JSON.parse(oReq.responseText)
+    |    layer.addData(data)
+    |  }
+    |  oReq.open("GET", "${layer.url}")
+    |  oReq.send()
+    |}
+    |""".stripMargin
+  }
+
+
   def genRasterLayer(
     df: DataFrame, 
-    shape_column: StructField, 
-    weight_column: StructField, 
-    bounds: Geometry
+    context: ExecutionContext,
+    shapeColumnIdx: Int, 
+    weightColumnIdx: Option[Int], 
+    bounds: Geometry,
+    layerName: String,
+    layerFile: String
   ): String =
   {
+
+    val shapeColumn = df.schema(shapeColumnIdx)
+    val weightColumn = weightColumnIdx.map { df.schema(_) }
+
     val pixelized = df.select(
         new Column(
           UnresolvedFunction("st_pixelize", Seq(
             /* Input attribute */
-            UnresolvedAttribute(shape_column.name),
+            UnresolvedAttribute(shapeColumn.name),
             /* width         x    height */
             Literal(256), /* x */ Literal(256),
             /* Bounds */
@@ -212,14 +275,16 @@ object GeoPlot extends Command
               
           ), false)
         ) as "pixel",
-        df(weight_column.name) as "weight"
       )
       .groupBy("pixel")
-      .agg( first("weight") as "weight" )
+      .agg( count(lit(1)) as "weight" )
+
+    import df.sparkSession.implicits._
 
     val weightBoundsTable = 
       pixelized
         .select( pixelized("weight").cast(LongType) as "weight" )
+        .union( Seq(0l).toDF("weight") )
         .agg("weight" -> "max", "weight" -> "min")
     val (highWeight, lowWeight) = {
       val b = weightBoundsTable.take(1).head
@@ -249,13 +314,21 @@ object GeoPlot extends Command
       .get(0)
       .asInstanceOf[ImageSerializableWrapper].getImage
 
-    val imageBuffer = new ByteArrayOutputStream()
-    ImageIO.write(rendered, "png", imageBuffer)
 
-    val imageURL = s"data:image/png;base64,${Base64.getEncoder.encodeToString(imageBuffer.toByteArray)}"
+
+    val layer = context.outputFile(layerFile, MIME.PNG) { 
+      ImageIO.write(rendered, "png", _)
+    }
+    context.message(MIME.HTML, s"<a href='${layer.url}>${layerName}</a>")
+
     val envelope = bounds.getEnvelopeInternal()
 
-    return s"L.imageOverlay('$imageURL', [[${envelope.getMinX()},${envelope.getMinY()}], [${envelope.getMaxX()},${envelope.getMaxY()}]])"
+    s"""
+    |{
+    |  let layer = L.imageOverlay('${layer.url}', [[${envelope.getMinX()},${envelope.getMinY()}], [${envelope.getMaxX()},${envelope.getMaxY()}]])
+    |  layer.addTo(theMap)
+    |}
+    """.stripMargin
   }
 
 
@@ -263,6 +336,9 @@ object GeoPlot extends Command
     ProvenancePrediction
       .definitelyReads(arguments.getList(PARAM_LAYERS)
                                 .map { _.get[String](PARAM_DATASET)}:_*)
+      .definitelyWrites(arguments.getList(PARAM_LAYERS)
+                                 .zipWithIndex
+                                 .map { x => fileNameForIndex(x._2) }:_*)
       .andNothingElse
 }
 

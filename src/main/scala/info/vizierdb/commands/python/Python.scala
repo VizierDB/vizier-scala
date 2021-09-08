@@ -271,7 +271,7 @@ object Python extends Command
             }
           case "create_file" =>
             {
-              val file:Artifact = context.outputFile(
+              val file:Artifact = context.outputFilePlaceholder(
                 (event \ "name").as[String],
                 (event \ "mime").asOpt[String].getOrElse { "application/octet-stream" },
                 JsObject(

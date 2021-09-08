@@ -19,7 +19,7 @@ import play.api.libs.json.Json
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
-import info.vizierdb.catalog.PublishedArtifact
+import info.vizierdb.catalog.{ Artifact, PublishedArtifact }
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File
@@ -109,9 +109,9 @@ object UnloadDataset extends Command
       case _                      => Some("application/octet-stream")
     }
 
-    val artifactIfNeeded = 
+    val artifactIfNeeded: Option[Artifact] = 
       mimeTypeForFile.map { mimeType => 
-        context.outputFile(
+        context.outputFilePlaceholder(
           name = "file_export", 
           properties = Json.obj(
             "filename" -> s"export_$datasetName"

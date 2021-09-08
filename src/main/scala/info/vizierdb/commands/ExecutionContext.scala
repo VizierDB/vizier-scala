@@ -36,6 +36,9 @@ import info.vizierdb.delta.DeltaBus
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.catalog.ArtifactRef
 import info.vizierdb.catalog.JavascriptMessage
+import java.io.FileOutputStream
+import java.io.BufferedOutputStream
+import java.io.OutputStream
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -277,13 +280,40 @@ class ExecutionContext(
     { val ds = output(name, ArtifactType.DATASET, Array[Byte](), MIME.DATASET_VIEW); (ds.nameInBackend, ds.id) }
 
   /**
-   * Allocate a new dataset object and register it as an output
+   * Allocate a new file artifact and register it as an output
    * 
-   * @param   name            The user-facing name of the dataset
+   * @param   name            The user-facing name of the file
+   * @param   mimeType        The MIME type of the file
+   * @param   properties      A key/value dictionary of properties for the file
    * @returns                 The newly allocated backend-facing name
    */
-  def outputFile(name: String, mimeType: String = MIME.TEXT, properties: JsObject = Json.obj()): Artifact =
+  def outputFilePlaceholder(name: String, mimeType: String = MIME.TEXT, properties: JsObject = Json.obj()): Artifact =
     output(name, ArtifactType.FILE, properties.toString.getBytes, mimeType)
+
+  /**
+   * Allocate a new dataset object and register it as an output
+   * 
+   * Allocate a new file artifact and register it as an output
+   * 
+   * @param   name            The user-facing name of the file
+   * @param   mimeType        The MIME type of the file
+   * @param   properties      A key/value dictionary of properties for the file
+   * @param   genFile         A block that generates the file
+   * @returns                 The newly allocated backend-facing name
+   */
+  def outputFile(name: String, mimeType: String = MIME.TEXT, properties: JsObject = Json.obj())
+                (genFile: OutputStream => Unit): Artifact =
+  {
+    val placeholder = outputFilePlaceholder(name, mimeType, properties)
+    val fout = new FileOutputStream(placeholder.absoluteFile)
+    try {
+      genFile(fout)
+      fout.flush()
+    } finally {
+      fout.close()
+    }
+    return placeholder
+  }
 
   /**
    * Record that this execution failed with the specified name

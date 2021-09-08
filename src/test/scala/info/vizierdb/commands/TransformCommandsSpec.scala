@@ -84,14 +84,18 @@ class TransformCommandsSpec
     project.load("test_data/r.csv","r")
     project.append("transform", "split")(
       SplitDataset.PARAM_DATASET -> "r",
-      SplitDataset.PARAM_CONDITION -> "cast(a as int) >= 2",
-      SplitDataset.PARAM_IF_TRUE -> "s"
+      SplitDataset.PARAM_PARTITIONS -> Map(
+        SplitDataset.PARAM_CONDITION -> "cast(a as int) >= 2",
+        SplitDataset.PARAM_OUTPUT -> "s"
+      )
     )
     project.append("transform", "split")(
       SplitDataset.PARAM_DATASET -> "r",
-      SplitDataset.PARAM_CONDITION -> "cast(a as int) >= 2",
-      SplitDataset.PARAM_IF_TRUE -> "t",
-      SplitDataset.PARAM_IF_FALSE -> "u"
+      SplitDataset.PARAM_PARTITIONS -> Map(
+        SplitDataset.PARAM_CONDITION -> "cast(a as int) >= 2",
+        SplitDataset.PARAM_OUTPUT -> "t",
+      ),
+      SplitDataset.PARAM_OTHERWISE -> "u"
     )
     project.waitUntilReadyAndThrowOnError
 
