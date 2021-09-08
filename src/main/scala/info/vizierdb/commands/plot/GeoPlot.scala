@@ -101,7 +101,6 @@ object GeoPlot extends Command
         val nullSafeDF = df.filter(df(shapeColumn.name).isNotNull)
 
         val boundsTable = nullSafeDF.agg(shapeColumn.name -> "st_envelope_aggr")
-        val envelope = boundsTable.take(1).head.get(0).asInstanceOf[Geometry].getEnvelopeInternal()
         val localBounds = boundsTable.take(1).head.get(0).asInstanceOf[Geometry]
         val envelope = localBounds.getEnvelopeInternal()
         if(bounds == null){
