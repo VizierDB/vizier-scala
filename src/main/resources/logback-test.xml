@@ -29,6 +29,9 @@
   <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
   <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="INFO" />
 
+  <!--+++++++++++++++++++++++ Garbage Collector  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.catalog.gc.DedupFiles"             level="TRACE" />
+
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.python.Python$"           level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
