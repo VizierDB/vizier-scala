@@ -160,6 +160,9 @@ class MutableDatasetRow(object):
   def __setitem__(self, key, value):
     return self.set_value(key, value)
 
+  def __contains__(self, key):
+    return self.dataset.__contains__(key)
+
   def get_value(self, column: Union[int, str]) -> Any:
     """Get the row value for the given column.
 
@@ -269,6 +272,9 @@ class DatasetClient(object):
       ", ".join(col.__repr__() for col in self.columns),
       len(self.rows)
     )
+
+  def __contains__(self, key):
+    return self.get_column(key) is not None
 
   def add_delta(self, id: str, **varargs) -> None:
     self.history.append({"id": id, **varargs})
