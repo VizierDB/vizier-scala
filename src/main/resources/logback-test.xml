@@ -52,6 +52,7 @@
                                                                  level="WARN" />
   <logger name="org.mimirdb.lenses.implementation.MissingValueLens$"
                                                                  level="WARN" />
+  <logger name="org.mimirdb.data.Catalog"                        level="DEBUG" />
 
   <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />

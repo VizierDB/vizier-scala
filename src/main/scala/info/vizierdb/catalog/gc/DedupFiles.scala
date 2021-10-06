@@ -20,6 +20,7 @@ import info.vizierdb.commands.Command
 import info.vizierdb.commands.Parameter
 import info.vizierdb.commands.FileArgument
 import info.vizierdb.commands.FileParameter
+import org.mimirdb.api.MimirAPI
 
 object DedupFiles 
   extends LazyLogging
@@ -73,22 +74,23 @@ object DedupFiles
 
     // Arbitrarily select the file with the lowest id to preserve
     val sorted = artifacts.sortBy { _.id }
-    val canonicalArtifactId = sorted.head.id
+    val canonicalArtifact = sorted.head
 
     // Coalesce the rest, replacing them with [[target]]
     val artifactsToRename = sorted.tail
     val artifactIdsToRename = artifactsToRename.map { _.id }
 
+    // File artifacts arise in the following contexts: 
+    //   InputArtifactRef
+    //   OutputArtifactRef
+    //   FileArgument (in modules)
+    //   Mimir
     DB.autoCommit { implicit s => 
-      // File artifacts arise in the following contexts: 
-      //   InputArtifactRef
-      //   OutputArtifactRef
-      //   FileArgument (in modules)
       withSQL { 
         val a = OutputArtifactRef.column
         update(OutputArtifactRef)
           .set(
-            a.artifactId -> canonicalArtifactId
+            a.artifactId -> canonicalArtifact.id
           ).where.in(
             a.artifactId, artifactIdsToRename
           ) 
@@ -97,7 +99,7 @@ object DedupFiles
         val a = InputArtifactRef.column
         update(InputArtifactRef)
           .set(
-            a.artifactId -> canonicalArtifactId
+            a.artifactId -> canonicalArtifact.id
           ).where.in(
             a.artifactId, artifactIdsToRename
           ) 
@@ -112,7 +114,7 @@ object DedupFiles
 
       for(m <- allModules){
         fixModuleFileArguments(
-          canonicalArtifactId, 
+          canonicalArtifact.id, 
           artifactIdsToRename.toSet,
           m.command.get, 
           m.arguments
@@ -124,6 +126,10 @@ object DedupFiles
           }
         }
       }
+    }
+    for(artifact <- artifactsToRename){
+      MimirAPI.catalog.replaceFile(artifact.relativeFile.toString, canonicalArtifact.relativeFile.toString)
+      MimirAPI.catalog.replaceFile(artifact.absoluteFile.toString, canonicalArtifact.relativeFile.toString)
     }
     for(file <- artifactsToRename){
       file.absoluteFile.delete()
