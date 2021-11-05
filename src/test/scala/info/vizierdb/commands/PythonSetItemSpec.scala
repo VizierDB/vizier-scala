@@ -12,19 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
+
 package info.vizierdb.commands
 
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import org.apache.spark.sql.types._
 
-
 import play.api.libs.json._
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.catalog.{ Message, DatasetMessage }
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.MutableProject
 import java.awt.image.BufferedImage
+
 
 class PythonSetItemSpec
   extends Specification
