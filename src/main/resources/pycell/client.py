@@ -22,7 +22,7 @@ import pandas  # type: ignore[import]
 import os
 import re
 from datetime import datetime
-from pycell.dataset import DatasetClient, import_to_native_type
+from pycell.dataset import DatasetClient, import_to_native_type,export_from_native_type
 from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
 from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
@@ -79,6 +79,10 @@ class ArtifactProxy(object):
   def __getattr__(self, name):
     self.load_if_needed()
     return self.__artifact.__getattribute__(name)
+  
+  def __setitem__(self,key,value):
+    self.load_if_needed()
+    return self.__artifact.__setitem__(key,value)
 
   def __setattr__(self, name, value):
     if name == "_ArtifactProxy__client" or name == "_ArtifactProxy__artifact" or name == "_ArtifactProxy__artifact_name":
@@ -152,6 +156,14 @@ class VizierDBClient(object):
                 artifact.mime_type
               ))
 
+  def __setitem__(self,key: str, updated_data: Any) -> Any:
+	
+	primitive_type = ('int', 'str', 'bool', 'float')
+	
+	if type(key) in primitive_type:
+	   self.export_parameter(key,updated_data)
+	
+  
   def vizier_request(self,
                      event: str,
                      has_response: bool = False,
@@ -488,11 +500,9 @@ class VizierDBClient(object):
                   errors: Any = None,
                   newline: Optional[str] = None,
                   closefd: bool = True,
-                  opener: Optional[Any] = None,
-                  ignore_warning: bool = False
+                  opener: Optional[Any] = None
                   ) -> IO:
-    if not ignore_warning:
-      print("***File access may not be reproducible because filesystem resources are transient***")
+    print("***File access may not be reproducible because filesystem resources are transient***")
     return open(file, mode, buffering, encoding, errors, newline, closefd, opener)
 
   def show(self,
@@ -568,6 +578,7 @@ class VizierDBClient(object):
       }), mime_type=OUTPUT_JAVASCRIPT)
 
   def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
+    
     if name_override is not None:
       exp_name = name_override
     elif inspect.isclass(exp):
@@ -620,6 +631,30 @@ class VizierDBClient(object):
     if exp_name in self.datasets:
       del self.datasets[exp_name]
 
+  def export_parameter(self, key: Any, value: Any ) -> None:
+  	
+  	
+  	value = export_from_native_type(value,type(value))
+  	
+  	
+  	response = self.vizier_request("save_artifact",
+        		name=key,
+        		data=value,
+        		mimeType=MIME_TYPE_PYTHON,
+        		artifactType=ARTIFACT_TYPE_PARAMETER,
+        		has_response=True
+      		)
+      	
+    	assert(response is not None)
+		
+	self.artifacts[key] = Artifact(
+      					   name=key,
+      					   artifact_type=ARTIFACT_TYPE_PARAMETER,
+      					   mime_type=MIME_TYPE_PYTHON,
+      					   artifact_id=response["artifactId"]
+    				      )
+	
+  
   def get_data_frame(self, name: str) -> pandas.DataFrame:
     """Get dataset with given name as a pandas dataframe.
 
