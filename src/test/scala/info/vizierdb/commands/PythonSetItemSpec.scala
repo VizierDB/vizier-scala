@@ -39,12 +39,12 @@ class PythonSetItemSpec
     val project = MutableProject("Display Artifacts Test")
 
     project.script("""
-      |ds = vizierdb.__setitem__('x',2)   
+      |vizierdb.__setitem__("x","2")   
     """.stripMargin)
     
     val artifact_setitem = project.artifact("x")
-    println (s"Read artifact #${project.artifact("x").id}")
-    
+    print(artifact_setitem)
+    ok
   
   }
 }
