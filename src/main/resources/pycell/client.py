@@ -79,7 +79,7 @@ class ArtifactProxy(object):
   def __getattr__(self, name):
     self.load_if_needed()
     return self.__artifact.__getattribute__(name)
-  
+
   def __setitem__(self,key,value):
     self.load_if_needed()
     return self.__artifact.__setitem__(key,value)
@@ -90,6 +90,8 @@ class ArtifactProxy(object):
     else:
       self.load_if_needed()
       return self.__artifact.__setattribute__(name, value)
+
+  
 
   def __call__(self, *args, **kwargs):
     self.load_if_needed()
@@ -155,15 +157,23 @@ class VizierDBClient(object):
                 artifact.artifact_type,
                 artifact.mime_type
               ))
-
-  def __setitem__(self,key: str, updated_data: Any) -> Any:
-	
-	primitive_type = ('int', 'str', 'bool', 'float')
-	
-	if type(key) in primitive_type:
-	   self.export_parameter(key,updated_data)
-	
+  def __setitem__(self,key: Any, updated_data: Any = None) -> Any:
   
+    primitive_type = (int, str, bool, float)
+    sequence_type  = (list,tuple,range)
+    mapping_type   = (dict)
+
+    if type(updated_data) in primitive_type or type(updated_data) in sequence_type or type(updated_data) in mapping_type:
+      self.export_parameter(key,updated_data)
+    elif type(updated_data) == ModuleType:
+      self.export_module(key)
+    elif type(updated_data) == pandas.core.frame.DataFrame:
+      self.save_data_frame(key,updated_data)
+    else:
+      raise ValueError('Type Not in any specified types supported by Python')
+  
+
+
   def vizier_request(self,
                      event: str,
                      has_response: bool = False,
@@ -500,9 +510,11 @@ class VizierDBClient(object):
                   errors: Any = None,
                   newline: Optional[str] = None,
                   closefd: bool = True,
-                  opener: Optional[Any] = None
+                  opener: Optional[Any] = None,
+                  ignore_warning: bool = False
                   ) -> IO:
-    print("***File access may not be reproducible because filesystem resources are transient***")
+    if not ignore_warning:
+      print("***File access may not be reproducible because filesystem resources are transient***")
     return open(file, mode, buffering, encoding, errors, newline, closefd, opener)
 
   def show(self,
@@ -578,7 +590,6 @@ class VizierDBClient(object):
       }), mime_type=OUTPUT_JAVASCRIPT)
 
   def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
-    
     if name_override is not None:
       exp_name = name_override
     elif inspect.isclass(exp):
@@ -631,30 +642,31 @@ class VizierDBClient(object):
     if exp_name in self.datasets:
       del self.datasets[exp_name]
 
-  def export_parameter(self, key: Any, value: Any ) -> None:
-  	
-  	
-  	value = export_from_native_type(value,type(value))
-  	
-  	
-  	response = self.vizier_request("save_artifact",
-        		name=key,
-        		data=value,
-        		mimeType=MIME_TYPE_PYTHON,
-        		artifactType=ARTIFACT_TYPE_PARAMETER,
-        		has_response=True
-      		)
-      	
-    	assert(response is not None)
-		
-	self.artifacts[key] = Artifact(
-      					   name=key,
-      					   artifact_type=ARTIFACT_TYPE_PARAMETER,
-      					   mime_type=MIME_TYPE_PYTHON,
-      					   artifact_id=response["artifactId"]
-    				      )
-	
-  
+  def export_parameter(self, key:str, value: Any ) -> None:
+    
+    value = export_from_native_type(value,type(value))	
+    
+    print(value)
+
+    response = self.vizier_request("save_artifact",
+      name=key,
+      data=value,
+      mimeType=MIME_TYPE_PYTHON,
+      artifactType=ARTIFACT_TYPE_PARAMETER,
+      has_response=True
+    )
+    assert(response is not None)
+    
+    #print("ArtifactId",response["artifactId"])
+    self.artifacts[key] = Artifact(
+      name=key,
+      artifact_type=ARTIFACT_TYPE_PARAMETER,
+      mime_type=MIME_TYPE_PYTHON,
+      artifact_id=response["artifactId"]
+    )
+
+
+
   def get_data_frame(self, name: str) -> pandas.DataFrame:
     """Get dataset with given name as a pandas dataframe.
 

@@ -33,18 +33,81 @@ class PythonSetItemSpec
 {
   def beforeAll = SharedTestResources.init
 
-  "Display the items set" >> 
+  "Variables with primitive Data type" >> 
   {
     
     val project = MutableProject("Display Artifacts Test")
 
     project.script("""
-      |vizierdb.__setitem__("x","2")   
+      |x = 2
+      |vizierdb.__setitem__("x",x)   
     """.stripMargin)
     
     val artifact_setitem = project.artifact("x")
-    print(artifact_setitem)
-    ok
+    artifact_setitem.t must beEqualTo(ArtifactType.PARAMETER) 
   
   }
+
+/*
+
+  "Variables with sequence data type" >> {
+
+    val project = MutableProject("Display Artifacts Test - sequence variable")
+
+    project.script("""
+      |x_data = [2,3,4]
+      |vizierdb.__setitem__("x_data",x_data)   
+    """.stripMargin)
+    
+    val artifact_setitem = project.artifact("x_data")
+    artifact_setitem.t must beEqualTo(ArtifactType.PARAMETER) 
+
+  }
+
+  "Variables with mapping data type" >> {
+
+    val project = MutableProject("Display Artifacts Test - Mapping variable")
+
+    project.script("""
+      |x_dict = {1:'Nachiket'}
+      |vizierdb.__setitem__("x_dict",x_dict)   
+    """.stripMargin)
+    
+    val artifact_setitem = project.artifact("x_dict")
+    artifact_setitem.t must beEqualTo(ArtifactType.PARAMETER) 
+    ok
+  }
+  
+  "Variables with function def" >> {
+
+    val project = MutableProject("Display Artifacts Test - module")
+
+    project.script("""
+      |def add(x,y):
+      | return x+y
+      |vizierdb.__setitem__("add",add)   
+    """.stripMargin)
+    
+    val artifact_setitem = project.artifact("add")
+    //print(artifact_setitem.t)
+    artifact_setitem.t must beEqualTo(ArtifactType.FUNCTION) 
+    ok
+  }
+
+  "Variables with Pandas dataframe" >> {
+
+    val project = MutableProject("Display Artifacts Test - Dataframe")
+
+    project.script("""
+      |import pandas as pd
+      |df = pd.DataFrame([1,2,3])
+      |vizierdb.__setitem__("df",df)   
+    """.stripMargin)
+    
+    val artifactItem = project.artifact("df")
+    //print(artifactItem.t)
+    artifactItem.t must beEqualTo(ArtifactType.DATASET)     
+    ok
+  }
+*/
 }
