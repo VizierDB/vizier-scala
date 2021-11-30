@@ -31,7 +31,6 @@ import info.vizierdb.catalog.ArtifactSummary
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{ StructField, DataType }
-import info.vizierdb.catalog.serialized.ParameterArtifact
 import info.vizierdb.delta.DeltaBus
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.catalog.ArtifactRef
@@ -39,6 +38,7 @@ import info.vizierdb.catalog.JavascriptMessage
 import java.io.FileOutputStream
 import java.io.BufferedOutputStream
 import java.io.OutputStream
+import org.mimirdb.spark.{ SparkPrimitive, Schema => SparkSchema }
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -167,7 +167,7 @@ class ExecutionContext(
    *
    * Parameters should be valid spark data values of the type provided.
    */
-  def parameter(name: String): Option[ParameterArtifact] =
+  def parameter(name: String): Option[Any] =
   {
     artifact(name)
       .filter { _.t == ArtifactType.PARAMETER }
@@ -188,7 +188,10 @@ class ExecutionContext(
     output(
       name, 
       ArtifactType.PARAMETER, 
-      Json.toJson(ParameterArtifact(value, dataType)).toString.getBytes
+      Json.toJson(
+        SparkPrimitive.encode(value, dataType)
+      ).toString.getBytes,
+      mimeType = SparkSchema.encodeType(dataType)
     )
   }
 

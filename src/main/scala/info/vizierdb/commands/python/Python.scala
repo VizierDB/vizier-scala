@@ -132,6 +132,7 @@ object Python extends Command
             withArtifact { artifact => 
               python.send("parameter",
                 "data" -> artifact.json,
+                "dataType" -> JsString(artifact.mimeType),
                 "artifactId" -> JsNumber(artifact.id)
               )
             }
@@ -229,11 +230,19 @@ object Python extends Command
             }
           case "save_artifact" =>
             {
+              val t = ArtifactType.withName( (event\"artifactType").as[String] )
               val artifact = context.output(
                 name = (event\"name").as[String],
-                t = ArtifactType.withName( (event\"artifactType").as[String] ),
+                t = t,
                 mimeType = (event\"mimeType").as[String],
-                data = (event\"data").as[String].getBytes
+                data = 
+                  t match { 
+                    case ArtifactType.PARAMETER => 
+                      // Parameters are just raw JSON data that gets saved as-is
+                      (event\"data").as[JsValue].toString.getBytes
+                    case _ => 
+                      (event\"data").as[String].getBytes
+                  }
               )
               python.send("artifactId","artifactId" -> JsNumber(artifact.id))
             }

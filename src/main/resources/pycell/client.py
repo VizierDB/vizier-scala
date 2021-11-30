@@ -22,7 +22,7 @@ import pandas  # type: ignore[import]
 import os
 import re
 from datetime import datetime
-from pycell.dataset import DatasetClient, import_to_native_type,export_from_native_type
+from pycell.dataset import DatasetClient, import_to_native_type, export_from_native_type, PYTHON_TO_VIZIER_TYPES
 from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
 from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
@@ -217,8 +217,8 @@ class VizierDBClient(object):
       )
     assert(response is not None)
     return import_to_native_type(
-      response["data"]["value"],
-      response["data"]["dataType"]
+      response["data"],
+      response["dataType"]
     )
 
   def get_module(self, name: str) -> Any:
@@ -642,30 +642,34 @@ class VizierDBClient(object):
     if exp_name in self.datasets:
       del self.datasets[exp_name]
 
-  def export_parameter(self, key:str, value: Any ) -> None:
-    
-    value = export_from_native_type(value,type(value))	
+  def export_parameter(self, key: str, value: Any) -> None:
+
+    python_data_type = type(value)
+    if python_data_type not in PYTHON_TO_VIZIER_TYPES:
+      raise ValueError(f"{value} is not a valid parameter")
+
+    vizier_data_type = PYTHON_TO_VIZIER_TYPES[python_data_type]
+
+    value = export_from_native_type(value, vizier_data_type)	
     
     print(value)
 
     response = self.vizier_request("save_artifact",
       name=key,
       data=value,
-      mimeType=MIME_TYPE_PYTHON,
+      mimeType=vizier_data_type,
       artifactType=ARTIFACT_TYPE_PARAMETER,
       has_response=True
     )
     assert(response is not None)
     
-    #print("ArtifactId",response["artifactId"])
+    # print("ArtifactId",response["artifactId"])
     self.artifacts[key] = Artifact(
       name=key,
       artifact_type=ARTIFACT_TYPE_PARAMETER,
-      mime_type=MIME_TYPE_PYTHON,
+      mime_type=vizier_data_type,
       artifact_id=response["artifactId"]
     )
-
-
 
   def get_data_frame(self, name: str) -> pandas.DataFrame:
     """Get dataset with given name as a pandas dataframe.
