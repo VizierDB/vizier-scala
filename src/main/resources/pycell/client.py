@@ -22,7 +22,7 @@ import pandas  # type: ignore[import]
 import os
 import re
 from datetime import datetime
-from pycell.dataset import DatasetClient, import_to_native_type
+from pycell.dataset import DatasetClient, import_to_native_type,export_from_native_type
 from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
 from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
@@ -80,12 +80,18 @@ class ArtifactProxy(object):
     self.load_if_needed()
     return self.__artifact.__getattribute__(name)
 
+  def __setitem__(self,key,value):
+    self.load_if_needed()
+    return self.__artifact.__setitem__(key,value)
+
   def __setattr__(self, name, value):
     if name == "_ArtifactProxy__client" or name == "_ArtifactProxy__artifact" or name == "_ArtifactProxy__artifact_name":
       super(ArtifactProxy, self).__setattr__(name, value)
     else:
       self.load_if_needed()
       return self.__artifact.__setattribute__(name, value)
+
+  
 
   def __call__(self, *args, **kwargs):
     self.load_if_needed()
@@ -151,6 +157,22 @@ class VizierDBClient(object):
                 artifact.artifact_type,
                 artifact.mime_type
               ))
+  def __setitem__(self,key: Any, updated_data: Any = None) -> Any:
+  
+    primitive_type = (int, str, bool, float)
+    sequence_type  = (list,tuple,range)
+    mapping_type   = (dict)
+
+    if type(updated_data) in primitive_type or type(updated_data) in sequence_type or type(updated_data) in mapping_type:
+      self.export_parameter(key,updated_data)
+    elif type(updated_data) == ModuleType:
+      self.export_module(key)
+    elif type(updated_data) == pandas.core.frame.DataFrame:
+      self.save_data_frame(key,updated_data)
+    else:
+      raise ValueError('Type Not in any specified types supported by Python')
+  
+
 
   def vizier_request(self,
                      event: str,
@@ -619,6 +641,31 @@ class VizierDBClient(object):
     )
     if exp_name in self.datasets:
       del self.datasets[exp_name]
+
+  def export_parameter(self, key:str, value: Any ) -> None:
+    
+    value = export_from_native_type(value,type(value))	
+    
+    print(value)
+
+    response = self.vizier_request("save_artifact",
+      name=key,
+      data=value,
+      mimeType=MIME_TYPE_PYTHON,
+      artifactType=ARTIFACT_TYPE_PARAMETER,
+      has_response=True
+    )
+    assert(response is not None)
+    
+    #print("ArtifactId",response["artifactId"])
+    self.artifacts[key] = Artifact(
+      name=key,
+      artifact_type=ARTIFACT_TYPE_PARAMETER,
+      mime_type=MIME_TYPE_PYTHON,
+      artifact_id=response["artifactId"]
+    )
+
+
 
   def get_data_frame(self, name: str) -> pandas.DataFrame:
     """Get dataset with given name as a pandas dataframe.
