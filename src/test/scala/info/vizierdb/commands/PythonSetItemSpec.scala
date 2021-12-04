@@ -33,6 +33,7 @@ class PythonSetItemSpec
 {
   def beforeAll = SharedTestResources.init
 
+  
   "Variables with primitive Data type" >> 
   {
     
@@ -44,11 +45,12 @@ class PythonSetItemSpec
     """.stripMargin)
     
     val artifact_setitem = project.artifact("x")
+    print(artifact_setitem.data)
     artifact_setitem.t must beEqualTo(ArtifactType.PARAMETER) 
   
   }
+  
 
-/*
 
   "Variables with sequence data type" >> {
 
@@ -60,7 +62,7 @@ class PythonSetItemSpec
     """.stripMargin)
     
     val artifact_setitem = project.artifact("x_data")
-    artifact_setitem.t must beEqualTo(ArtifactType.PARAMETER) 
+    artifact_setitem.t must beEqualTo(ArtifactType.BLOB) 
 
   }
 
@@ -74,7 +76,7 @@ class PythonSetItemSpec
     """.stripMargin)
     
     val artifact_setitem = project.artifact("x_dict")
-    artifact_setitem.t must beEqualTo(ArtifactType.PARAMETER) 
+    artifact_setitem.t must beEqualTo(ArtifactType.BLOB) 
     ok
   }
   
@@ -106,8 +108,8 @@ class PythonSetItemSpec
     
     val artifactItem = project.artifact("df")
     //print(artifactItem.t)
-    artifactItem.t must beEqualTo(ArtifactType.DATASET)     
+    artifactItem.t must beEqualTo(ArtifactType.BLOB)     
     ok
   }
-*/
+
 }

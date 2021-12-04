@@ -30,6 +30,7 @@ from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
 from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
 import pickle
 import base64
+from types import FunctionType
 
 ARTIFACT_TYPE_DATASET   = "Dataset"
 MIME_TYPE_DATASET       = "dataset/view"
@@ -159,16 +160,18 @@ class VizierDBClient(object):
               ))
   def __setitem__(self,key: Any, updated_data: Any = None) -> Any:
   
-    primitive_type = (int, str, bool, float)
-    sequence_type  = (list,tuple,range)
-    mapping_type   = (dict)
+    primitive_type = [int, str, bool, float]
+    sequence_type  = [list,tuple,range]
+    mapping_type   = [dict]
 
-    if type(updated_data) in primitive_type or type(updated_data) in sequence_type or type(updated_data) in mapping_type:
+    if type(updated_data) in primitive_type: 
       self.export_parameter(key,updated_data)
-    elif type(updated_data) == ModuleType:
-      self.export_module(key)
-    elif type(updated_data) == pandas.core.frame.DataFrame:
-      self.save_data_frame(key,updated_data)
+    
+    elif isinstance(updated_data, FunctionType): 
+      self.export_module(exp = updated_data)
+    
+    elif (mapping_type.count(type(updated_data)) > 0) or (sequence_type.count(type(updated_data)) > 0) or (type(updated_data) == pandas.core.frame.DataFrame):
+      self.export_pickle(key,updated_data)
     else:
       raise ValueError('Type Not in any specified types supported by Python')
   
