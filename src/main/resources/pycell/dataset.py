@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Optional, Union, Dict, Any, List, cast
 if TYPE_CHECKING:
     from pycell.client import VizierDBClient
 
+import datetime
 from bokeh.models.sources import ColumnDataSource  # type: ignore[import]
 
 """Identifier for column data types. By now the following data types are
@@ -675,12 +676,12 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
     return value
 
 
-def export_from_native_type(value: Any, data_type: str, context = "the value") -> Any:
+def export_from_native_type(value: Any, data_type: str, context="the value") -> Any:
   assert_type(value, data_type, context)
   if value is None:
     return None
   elif data_type == DATATYPE_GEOMETRY:
-    from shapely.geometry import asShape
+    from shapely.geometry import asShape  # type: ignore[import]
     return asShape(value).wkt
   elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
     import base64
@@ -691,38 +692,33 @@ def export_from_native_type(value: Any, data_type: str, context = "the value") -
     return value
 
 
-def assert_type(value: Any, data_type: str, context = "the value") -> Any:
+TYPE_MAPPINGS = [
+  (datetime.date, [DATATYPE_DATE]),
+  (datetime.datetime, [DATATYPE_DATETIME]),
+  (int, [DATATYPE_INT, DATATYPE_SHORT, DATATYPE_LONG]),
+  (float, [DATATYPE_REAL]),
+  (str, [DATATYPE_VARCHAR]),
+  (bytes, [DATATYPE_BINARY, DATATYPE_IMAGE]),
+]
+
+PYTHON_TO_VIZIER_TYPES = {p: tlist[0] for (p, tlist) in TYPE_MAPPINGS}
+VIZIER_TO_PYTHON_TYPES = {t: p for (p, tlist) in TYPE_MAPPINGS for t in tlist}
+
+
+def assert_type(value: Any, data_type: str, context="the value") -> Any:
   if value is None:
     return value
-  elif data_type == DATATYPE_DATE:
-    import datetime
-    if not isinstance(value, datetime.date):
-      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a date")
-    return value
-  elif data_type == DATATYPE_DATETIME:
-    import datetime
-    if not isinstance(value, datetime.datetime):
-      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a datetime")
-    return value
-  elif data_type == DATATYPE_INT or data_type == DATATYPE_SHORT or data_type == DATATYPE_LONG:
-    if not isinstance(value, int):
-      raise ValueError(f"{context} ({value}) is a {type(value)} but should be an int")
-    return value
-  elif data_type == DATATYPE_REAL:
-    if not isinstance(value, float):
-      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a float")
-    return value
-  elif data_type == DATATYPE_VARCHAR:
-    if not isinstance(value, str):
-      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a str")
-    return value
+  elif data_type in VIZIER_TO_PYTHON_TYPES:
+    python_type = VIZIER_TO_PYTHON_TYPES[data_type]
+    if isinstance(value, python_type):
+      return value
+    else:
+      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a {data_type}")
+    # Special-case handling for Geometry types
   elif data_type == DATATYPE_GEOMETRY:
     if not hasattr(value, "__geo_interface__"):
       raise ValueError(f"{context} ({value}) is a {type(value)}, and not a type that supports the geometry interface")
     # Not sure how to validate this...
-    return value
-  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
-    assert(isinstance(value, bytes))
     return value
   else:
     return value
