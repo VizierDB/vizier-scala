@@ -9,7 +9,7 @@ import info.vizierdb.api.handler._
 import info.vizierdb.api._
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
-import org.mimirdb.api.request.DataContainer
+import info.vizierdb.spark.caveats.DataContainer
 
 abstract class BranchWatcherAPIRoutes
 {

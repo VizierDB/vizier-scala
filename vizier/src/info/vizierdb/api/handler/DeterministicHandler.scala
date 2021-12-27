@@ -15,7 +15,7 @@
 package info.vizierdb.api.handler
 
 import play.api.libs.json._
-import org.mimirdb.api.{ Request, Response }
+import info.vizierdb.api.Response
 
 abstract class DeterministicHandler extends Handler
 {

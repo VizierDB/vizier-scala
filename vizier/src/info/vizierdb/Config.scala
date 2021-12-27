@@ -18,13 +18,12 @@ import java.util.Properties
 import java.io.File
 import org.rogach.scallop._
 import com.typesafe.scalalogging.LazyLogging
-import org.mimirdb.api.{ MimirAPI, MimirConfig }
 
 class Config(arguments: Seq[String]) 
   extends ScallopConf(arguments)
   with LazyLogging
 {
-  version("Vizier-Scala 1.1.0 (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
+  version("Vizier-Scala 2.0.0-SNAPSHOT (c) 2021 U. Buffalo, NYU, Ill. Inst. Tech., and Breadcrumb Analytics")
   banner("""Docs: https://github.com/VizierDB/vizier-scala/wiki
            |Usage: vizier [OPTIONS]
            |    or vizier import [OPTIONS] export
@@ -90,15 +89,28 @@ class Config(arguments: Seq[String])
     noshort = true
   )
 
+  val sparkHost = opt[String]("spark-host",
+    descr = "Spark master node",
+    default = Some("local")
+  )
+
+  // Aliases for later use
+  lazy val dataDir = basePath().toString + File.separator + "data"
+  val stagingDir = "staging"
+  val stagingDirIsRelativeToDataDir = true
+  lazy val dataDirFile = new File(dataDir)
+
+
+  ////////////////////////// Ingest //////////////////////////
   object ingest extends Subcommand("import", "ingest") {
     val execute = toggle("execute", default = Some(true))
     val file = trailArg[File]("export", 
       descr = "The exported vizier file"
     )
   }
-
   addSubcommand(ingest)
   
+  ////////////////////////// Export //////////////////////////
   object export extends Subcommand("export") {
     val projectId = trailArg[Long]("project-id",
       descr = "The identifier of the project to export"
@@ -109,25 +121,16 @@ class Config(arguments: Seq[String])
   }
   addSubcommand(export)
 
+  ////////////////////////// Doctor //////////////////////////
   object doctor extends Subcommand("doctor") {
 
   }
   addSubcommand(doctor)
 
+
+  ////////////////////////////////////////////////////////////
+
   verify()
-
-  def getMimirConfig: MimirConfig =
-  {
-    val config = 
-      new MimirConfig(Seq(
-        "--python", pythonPath(),
-        "--data-dir", basePath().toString,
-      ))
-    config.verify()
-    return config
-  }
-  def setMimirConfig = { MimirAPI.conf = getMimirConfig }
-
 }
 
 object Config

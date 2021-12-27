@@ -14,7 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.api.response
 
-import org.mimirdb.api.Response
+import info.vizierdb.api.Response
 import javax.servlet.http.HttpServletResponse
 import java.io.OutputStream
 

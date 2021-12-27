@@ -18,13 +18,12 @@ import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow, Artifact, ArtifactSummary }
-import org.mimirdb.api.{Request, Response}
 import info.vizierdb.types.{ Identifier, ArtifactType }
-import org.mimirdb.api.request.QueryMimirRequest
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
-import org.mimirdb.api.request.DataContainer
+import info.vizierdb.spark.caveats.{ QueryWithCaveats, DataContainer }
+import info.vizierdb.Vizier
 
 object WorkflowSQL
   extends Object
@@ -37,6 +36,12 @@ object WorkflowSQL
     workflowId: Option[Identifier] = None
   ): DataContainer =
   {
+    if(Vizier.config.serverMode()){
+      ErrorResponse.invalidRequest(
+        "Workflow SQL is disabled in server mode.",
+      )
+    }
+
     val (datasets, functions) = 
       DB.readOnly { implicit session => 
         val workflow: Workflow = 
@@ -59,24 +64,25 @@ object WorkflowSQL
         val datasets = 
           artifacts.filter { _._2.t.equals(ArtifactType.DATASET) }
                    .toMap
-                   .mapValues { _.nameInBackend }
 
         val functions = 
           artifacts.filter { _._2.t.equals(ArtifactType.FUNCTION) } 
                    .toMap
-                   .mapValues { _.nameInBackend }
 
         /* return */ (datasets, functions)
       }
 
     logger.trace(s"Query Tail: ${query.get}")
-    return QueryMimirRequest(
-      input = None,
-      views = Some(datasets),
+
+    QueryWithCaveats(
       query = query.get,
-      includeUncertainty = Some(true),
-      includeReasons = None
-    ).handle
+      views = 
+        DB.readOnly { implicit s => 
+          datasets.mapValues { a => Artifact.get(a.id) }
+                  .mapValues { a => val df = a.dataframe; { () => df } }
+        },
+      includeCaveats = true,
+    )
   } 
 }
 

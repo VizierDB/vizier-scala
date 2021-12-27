@@ -14,16 +14,16 @@
  * -- copyright-header:end -- */
 package info.vizierdb.api
 
-import scalikejdbc.DB
+import scalikejdbc._
 import play.api.libs.json._
+import org.apache.spark.sql.DataFrame
+
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.Artifact
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.{ Identifier, ArtifactType }
-import org.mimirdb.api.request.Explain
-import org.mimirdb.api.CaveatFormat._
 import org.mimirdb.caveats.Caveat
-import org.mimirdb.api.MimirAPI
+import info.vizierdb.spark.caveats.CaveatFormat._
+import info.vizierdb.spark.caveats.ExplainCaveats
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.VizierException
@@ -53,11 +53,13 @@ object GetArtifact
     val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
-        artifact.describe(
-          offset = offset, 
-          limit = limit, 
-          forceProfiler = forceProfiler
-        )
+        DB.readOnly { implicit s => 
+          artifact.describe(
+            offset = offset, 
+            limit = limit, 
+            forceProfiler = forceProfiler
+          )
+        }
       case None => 
         ErrorResponse.noSuchEntity
     }
@@ -94,15 +96,12 @@ object GetArtifact
     {
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match { 
         case Some(artifact) => 
-          Explain(
-            s"SELECT * FROM ${artifact.nameInBackend}",
+          val df:DataFrame = DB.readOnly { implicit s => artifact.dataframe }
+          ExplainCaveats(
+            df,
             rows = row.map { Seq(_) }.getOrElse { null },
             cols = column.map { col => 
-                      Seq(
-                        MimirAPI.catalog.get(artifact.nameInBackend)
-                                .schema(col)
-                                .name
-                      )
+                      Seq( df.columns(col) )
                    }.getOrElse { null }
           )
       
@@ -121,7 +120,7 @@ object GetArtifact
     {
       getArtifact(projectId, artifactId, None) match {
         case Some(artifact) => 
-            artifact.summarize()
+          DB.readOnly { implicit s => artifact.summarize() }
         case None => 
           ErrorResponse.noSuchEntity
       }
@@ -143,11 +142,14 @@ object GetArtifact
             // exists
             tempFile.delete()
           }
-          MimirAPI.catalog.get(artifact.nameInBackend)
-                  .coalesce(1)
-                  .write
-                    .option("header", true)
-                    .csv(tempFile.toString())
+
+          val df:DataFrame = DB.readOnly { implicit s =>
+                                artifact.dataframe
+                              }
+          df.coalesce(1)
+            .write
+             .option("header", true)
+             .csv(tempFile.toString())
 
           val csvFile = 
             tempFile.listFiles
@@ -207,7 +209,7 @@ object GetArtifact
           return FileResponse(
             file = path, 
             contentType = artifact.mimeType, 
-            name = artifact.jsonData
+            name = artifact.json
                            .as[Map[String, JsValue]]
                            .get("filename")
                            .map { _ .as[String] }

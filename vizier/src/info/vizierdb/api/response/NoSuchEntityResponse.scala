@@ -16,7 +16,7 @@ package info.vizierdb.api.response
 
 import play.api.libs.json._
 import javax.servlet.http.HttpServletResponse
-import org.mimirdb.api.BytesResponse
+import info.vizierdb.api.BytesResponse
 
 case class NoSuchEntityResponse () extends BytesResponse
 {

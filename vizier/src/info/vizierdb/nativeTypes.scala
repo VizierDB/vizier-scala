@@ -2,7 +2,7 @@ package info.vizierdb
 
 import play.api.libs.json.{ JsValue => PlayJsValue, JsObject => PlayJsObject }
 import org.apache.spark.sql.types.{ StructField, DataType }
-import org.mimirdb.spark.{ SparkPrimitive }
+import info.vizierdb.spark.{ SparkPrimitive }
 
 object nativeTypes
 {

@@ -15,7 +15,6 @@
 package info.vizierdb.api
 
 import play.api.libs.json._
-import org.mimirdb.api.{ Request, JsonResponse }
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands.Commands

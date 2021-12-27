@@ -16,12 +16,17 @@ package info.vizierdb.commands
 
 object TemplateParameters
 {
+  val PARAM_DATATYPE = "schema_datatype"
+  val PARAM_SCHEMA = "schema"
+  val PARAM_SCHEMA_COLUMN = "schema_column"
+  val PARAM_SCHEMA_TYPE = PARAM_DATATYPE
+
   val COLUMN = 
     ColIdParameter(id = "column", name = "Column")
 
   val DATATYPE: EnumerableParameter = DATATYPE()
 
-  def DATATYPE(id:String = "schema_datatype", required: Boolean = false) =
+  def DATATYPE(id:String = PARAM_DATATYPE, required: Boolean = false) =
     EnumerableParameter(name = "Data Type", id = id, required = required, values = EnumerableValue.withNames(
       "String"                 -> "string",
       "Real"                   -> "real",
@@ -39,10 +44,10 @@ object TemplateParameters
     ))
 
   val SCHEMA = 
-    ListParameter(name = "Schema (leave blank to guess)", id = "schema", required = false, components = Seq(
-      StringParameter(name = "Column Name", id = "schema_column", required = false),
+    ListParameter(name = "Schema (leave blank to guess)", id = PARAM_SCHEMA, required = false, components = Seq(
+      StringParameter(name = "Column Name", id = PARAM_SCHEMA_COLUMN, required = false),
       DATATYPE
-    )),
+    ))
 
 }
 

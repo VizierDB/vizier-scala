@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import java.time.format.DateTimeFormatter
 import play.api.libs.json._
-import org.mimirdb.api.{ Request, JsonResponse, Response }
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import info.vizierdb.VizierAPI
 import info.vizierdb.shared.HATEOAS

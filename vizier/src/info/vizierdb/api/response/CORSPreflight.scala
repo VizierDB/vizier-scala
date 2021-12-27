@@ -15,7 +15,7 @@
 package info.vizierdb.api.response
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
-import org.mimirdb.api.Response
+import info.vizierdb.api.Response
 import java.io.OutputStream
 
 case class CORSPreflightResponse(methodStrings: String*)

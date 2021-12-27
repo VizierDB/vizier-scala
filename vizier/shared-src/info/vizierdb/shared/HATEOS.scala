@@ -22,7 +22,7 @@ object HATEOAS
   type T = JsArray
 
   def apply(links: (String, URL)*): T =
-    JsArray(build(links).map { v => JsObject(v.mapValues{ JsString(_) }) })
+    JsArray(build(links).map { v => JsObject(v.mapValues{ JsString(_) }.toMap) })
 
   def build(links: Seq[(String, URL)]): Seq[Map[String, String]] = 
     links.filter { _._2 != null }

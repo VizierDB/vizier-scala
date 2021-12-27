@@ -20,7 +20,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
 import java.net.URL
 import java.nio.file.{ Files, Paths }
-import org.mimirdb.api.FormattedError
+import info.vizierdb.api.FormattedError
 
 
 object UnloadFile extends Command

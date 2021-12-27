@@ -2,7 +2,7 @@ package info.vizierdb
 
 import play.api.libs.json._
 import info.vizierdb.api.AppendModule
-import org.mimirdb.spark.{ Schema => SparkSchema, SparkPrimitive }
+import info.vizierdb.spark.{ SparkSchema, SparkPrimitive }
 import java.time.format.{ DateTimeFormatter, DateTimeParseException }
 import java.time.{ ZonedDateTime, LocalDateTime, ZoneId }
 

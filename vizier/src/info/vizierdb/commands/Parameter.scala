@@ -280,6 +280,23 @@ case class FileParameter(
     })
 }
 
+case class CachedStateParameter(
+  id: String,
+  name: String,
+  default: Option[Int] = None,
+  required: Boolean = true,
+  hidden: Boolean = false
+) extends Parameter with IntegerEncoder
+{
+  def datatype = "cache"
+  def doStringify(j: JsValue): String = j.as[Int].toString
+  def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
+                               else { Some(s"Expected a number for $name") }
+  override def getDefault: JsValue = 
+    default.map { JsNumber(_) }.getOrElse { JsNull }
+}
+
 case class IntParameter(
   id: String,
   name: String,

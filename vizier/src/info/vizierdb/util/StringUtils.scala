@@ -25,5 +25,18 @@ object StringUtils
       .r
       .replaceAllIn(str, { m => m.group(1) + " " + m.group(2) })
   }
+
+  def oxfordComma(elems: Seq[String], sep: String = "and"): String = 
+    elems match {
+      case Seq() => ""
+      case Seq(a) => a
+      case Seq(a, b) => s"$a $sep $b"
+      case _ => 
+        {
+          val rest = elems.reverse.tail.reverse
+          val last = elems.last
+          s"${rest.mkString(", ")}, $sep $last"
+        }
+    }
 }
 

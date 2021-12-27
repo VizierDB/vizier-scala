@@ -16,10 +16,10 @@ package info.vizierdb.artifacts
 
 import play.api.libs.json._
 import org.apache.spark.sql.{ DataFrame, Row }
-import org.mimirdb.api.request.ResultTooBig
-import org.mimirdb.api.request.Query
 import org.apache.spark.unsafe.types.UTF8String
 import org.mimirdb.caveats.implicits._
+import info.vizierdb.api.response.ErrorResponse
+import info.vizierdb.spark.caveats.QueryWithCaveats
 
 
 case class ChartSeries(
@@ -74,10 +74,10 @@ case class Chart(
     val result = 
       query.trackCaveats
             .stripCaveats
-            .take(Query.RESULT_THRESHOLD+1)
+            .take(QueryWithCaveats.RESULT_THRESHOLD+1)
 
-    if(result.size >= Query.RESULT_THRESHOLD){
-      throw new ResultTooBig()
+    if(result.size >= QueryWithCaveats.RESULT_THRESHOLD){
+      throw new QueryWithCaveats.ResultTooBig
     }
 
 

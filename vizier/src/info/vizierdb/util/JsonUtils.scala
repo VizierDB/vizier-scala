@@ -32,8 +32,12 @@ object JsonUtils
   }
 
   def prettyJsonParseError(exc: JsResultException): Seq[String] =
-  {
-    exc.errors.flatMap { 
+    prettyJsonParseError(exc.errors.map { 
+      case (path, errors) => (path, errors.toSeq)
+    }.toSeq)
+
+  def prettyJsonParseError(errors: Seq[(JsPath, Seq[JsonValidationError])]): Seq[String] =
+    errors.flatMap { 
       case (path, errors) => 
         val prettyPath = s"At ${prettyJsPath(path)}: "
         errors.flatMap { err => 
@@ -42,6 +46,5 @@ object JsonUtils
           }
         }
     }
-  }
 }
 

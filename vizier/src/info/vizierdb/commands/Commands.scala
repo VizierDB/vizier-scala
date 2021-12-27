@@ -36,10 +36,11 @@ object Commands
   {
     val pkg = Package(packageId, name, category)
     packages.put(packageId, pkg)
-    for((commandId, command) <- commands){
-      pkg.register(commandId, command)
-    }
+    pkg.register(commands:_*)
   } 
+
+  def apply(packageId: String): Package = packages(packageId)
+
 
   def describe: Seq[serialized.PackageDescription] =
   {
@@ -121,12 +122,14 @@ object Commands
     "repair_key"     -> info.vizierdb.commands.mimir.RepairKey,
     "missing_value"  -> info.vizierdb.commands.mimir.MissingValue,
     "missing_key"    -> info.vizierdb.commands.mimir.RepairSequence,
-    "picker"         -> info.vizierdb.commands.mimir.MergeColumns,
+    // Dec 18, 2021 by OK: Merge columns isn't really used and is pretty heavyweight.  
+    // Proposal: Add a new "Vertical Merge" datasets lens.
+    // "picker"         -> info.vizierdb.commands.mimir.MergeColumns,
     "type_inference" -> info.vizierdb.commands.mimir.TypeInference,
     "shape_watcher"  -> info.vizierdb.commands.mimir.ShapeWatcher,
     "comment"        -> info.vizierdb.commands.mimir.Comment,
     "pivot"          -> info.vizierdb.commands.mimir.Pivot,
-    "geocode"        -> info.vizierdb.commands.mimir.Geocode
+    // geocoder lens gets initialized by Geocoder.init
   )
 }
 

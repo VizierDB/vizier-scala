@@ -6,10 +6,10 @@ package info.vizierdb.api.servlet
 import play.api.libs.json._
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import java.net.URLDecoder
-import org.mimirdb.api.Response
-import org.mimirdb.api.request.DataContainer
+import info.vizierdb.api.Response
+import info.vizierdb.spark.caveats.DataContainer
+import info.vizierdb.spark.caveats.CaveatFormat._
 import org.mimirdb.caveats.Caveat
-import org.mimirdb.api.CaveatFormat._
 import info.vizierdb.types._
 import info.vizierdb.api._
 import info.vizierdb.api.response.{ CORSPreflightResponse, RawJsonResponse, NoContentResponse }

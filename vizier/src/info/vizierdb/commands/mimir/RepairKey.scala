@@ -17,7 +17,6 @@ package info.vizierdb.commands.mimir
 import play.api.libs.json._
 import info.vizierdb.commands._
 import org.apache.spark.sql.types.StructField
-import org.mimirdb.lenses.Lenses
 
 object RepairKey 
   extends LensCommand

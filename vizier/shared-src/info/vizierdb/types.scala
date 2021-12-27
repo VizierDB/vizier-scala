@@ -173,6 +173,22 @@ object types
     val DATASET_VIEW  = "dataset/view"
     val PYTHON        = "application/python"
     val JAVASCRIPT    = "text/javascript"
+    val RAW           = "application/octet-stream"
+  }
+
+  object DatasetFormat
+  {
+    type T = String
+    val CSV     = "csv"
+    val JSON    = "json"
+    val PDF     = "mimir.exec.spark.datasource.pdf"
+    val GSheet  = "mimir.exec.spark.datasource.google.spreadsheet"
+    val XML     = "com.databricks.spark.xml"
+    val Excel   = "com.crealytics.spark.excel"
+    val JDBC    = "jdbc"
+    val Text    = "text"
+    val Parquet = "parquet"
+    val ORC     = "orc"
   }
 }
 

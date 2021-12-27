@@ -21,6 +21,7 @@ import info.vizierdb.serialized.{
 
 }
 import info.vizierdb.nativeTypes.JsValue
+import scala.util.Success
 
 class ModuleEditor(
   val packageId: String, 
@@ -55,16 +56,17 @@ class ModuleEditor(
                   arguments = arguments
                 )
             }
-          response.onSuccess { case workflow =>
-            logger.trace("SUCCESS!")
-            if(workflow.actionModule.isDefined){
-              logger.trace(s"has action module: ${workflow.actionModule}")
-              module.id = workflow.actionModule
-            } else {
-              logger.debug(s"no action module... falling back: ${workflow.modules.size}")
-              module.id = Some(workflow.modules(module.position).moduleId)
-            }
-            logger.debug(s"New module id is... ${module.id}")
+          response.onComplete { 
+            case Success(workflow) =>
+              logger.trace("SUCCESS!")
+              if(workflow.actionModule.isDefined){
+                logger.trace(s"has action module: ${workflow.actionModule}")
+                module.id = workflow.actionModule
+              } else {
+                logger.debug(s"no action module... falling back: ${workflow.modules.size}")
+                module.id = Some(workflow.modules(module.position).moduleId)
+              }
+              logger.debug(s"New module id is... ${module.id}")
           }
       }
   }

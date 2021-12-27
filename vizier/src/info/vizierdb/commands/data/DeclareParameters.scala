@@ -15,16 +15,14 @@
 package info.vizierdb.commands.data
 
 import play.api.libs.json.JsValue
-import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
-import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
-import org.mimirdb.spark.Schema.decodeType
-import org.mimirdb.spark.SparkPrimitive.{ encode => sparkToJs }
+import info.vizierdb.spark.SparkSchema.decodeType
+import info.vizierdb.spark.SparkPrimitive.{ encode => sparkToJs }
 import org.apache.spark.sql.catalyst.expressions.{Cast, Literal}
 
 object DeclareParameters extends Command

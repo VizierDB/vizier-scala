@@ -14,16 +14,18 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
+import scalikejdbc._
 import play.api.libs.json.JsValue
-import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
-import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File
-import info.vizierdb.types.ArtifactType
+import info.vizierdb.types._
 import info.vizierdb.VizierException
-import org.mimirdb.api.request.MaterializeRequest
+import org.apache.spark.sql.types.StructField
+import info.vizierdb.spark.MaterializeConstructor
+import info.vizierdb.Vizier
+import info.vizierdb.filestore.Staging
 
 object CheckpointDataset extends Command
 {
@@ -43,11 +45,34 @@ object CheckpointDataset extends Command
                             context.error(s"Dataset $datasetName does not exist"); return
                           }
 
-    val (matName, matIdentifier) = context.outputDataset(datasetName)
-    val response = MaterializeRequest(
-      table = artifact.nameInBackend,
-      resultName = Some(matName)
-    ).handle
+    val df = DB.readOnly { implicit s => artifact.dataframe }
+
+    context.message("Checkpointing data...")
+
+    val staged = context.outputFile(
+      "datasetName",
+      mimeType = MIME.RAW,
+    )
+    Staging.stage( 
+            input = df, 
+            format = MaterializeConstructor.DEFAULT_FORMAT,
+            projectId = context.projectId,
+            artifactId = staged.id,
+          ) 
+    context.message("Dataset written, registering file...")
+
+    context.outputDataset(
+      datasetName,
+      new MaterializeConstructor(
+        input = artifact.id,
+        schema = df.schema,
+        url = if(Staging.stagingDefaultsToRelative) { staged.relativeFile.toString } 
+              else { staged.absoluteFile.toString },
+        format = MaterializeConstructor.DEFAULT_FORMAT,
+        options = Map.empty,
+        urlIsRelative = Some(Staging.stagingDefaultsToRelative)
+      )
+    )
     context.message("Dataset Checkpointed")
   }
   def predictProvenance(arguments: Arguments) = 

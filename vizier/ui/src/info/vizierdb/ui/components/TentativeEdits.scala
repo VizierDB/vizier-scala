@@ -70,7 +70,7 @@ class TentativeEdits(val project: Project)
           val oldArtifacts = artifacts
 
           val insertions: Rx[Map[String, serialized.ArtifactSummary]] = 
-            outputs.map { _.filter { _._2.isDefined }.mapValues { _.get } }
+            outputs.map { _.filter { _._2.isDefined }.mapValues { _.get }.toMap }
           val deletions: Rx[Set[String]] = 
             outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
 

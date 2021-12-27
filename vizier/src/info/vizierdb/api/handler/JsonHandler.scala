@@ -15,15 +15,15 @@
 package info.vizierdb.api.handler
 
 import play.api.libs.json._
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.api.response.VizierErrorResponse
 import info.vizierdb.util.StringUtils.ellipsize
 import com.typesafe.scalalogging.LazyLogging
-import org.mimirdb.util.JsonUtils.stringifyJsonParseErrors
+import info.vizierdb.util.JsonUtils.prettyJsonParseError
 import info.vizierdb.util.StringUtils
 import scala.reflect.runtime.universe._
 import json.Json.{ schema => jsonSchemaOf }
 import json.{ Schema => JsonSchema }
+import info.vizierdb.api.{ Request, Response }
 
 class JsonHandler[R <: Request]()(
   implicit val format: Format[R],
@@ -55,7 +55,7 @@ class JsonHandler[R <: Request]()(
           logger.error(e.getMessage + "\n" + e.getStackTrace.map(_.toString).mkString("\n"))
           Right(VizierErrorResponse(
             e.getClass().getCanonicalName(),
-            s"Error(s) parsing API request\n"+stringifyJsonParseErrors(errors).mkString("\n")
+            s"Error(s) parsing API request\n"+prettyJsonParseError(e).mkString("\n")
           ))
         }
         case e:Throwable => {
