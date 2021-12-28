@@ -195,8 +195,8 @@ object GetArtifactHandler
     {
       val projectId = pathParameters("projectId").as[Long]
       val artifactId = pathParameters("artifactId").as[Long]
-      val subpathElements = pathParameters.get("subpath").map { _.as[Seq[String]] }
-      val subpath = subpathElements.map { _.mkString("/") }
+      val subpath = pathParameters.get("tail").map { _.as[String] }
+      val subpathElements = subpath.map { _.split("/") }
       for(element <- subpathElements.toSeq.flatten) { 
         element match {
           case "." | ".." => 
