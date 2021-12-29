@@ -15,15 +15,17 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.{ Expression, PlanExpression }
 import org.apache.spark.sql.catalyst.analysis.UnresolvedFunction
 
-import info.vizierdb.api.{ FormattedError, ErrorResponse }
+import info.vizierdb.api.FormattedError
+import info.vizierdb.Vizier
 
 /**
  * Utilities for running Spark SQL queries with a post-processing step injected between
  * the parser and the analysis phase.
  */
-case class InjectedSparkSQL(spark: SparkSession)
+object InjectedSparkSQL
   extends LazyLogging
 {
+  lazy val spark = Vizier.sparkSession
 
   object GetViewReferences extends GetDependencies[String]
   {
@@ -132,11 +134,7 @@ case class InjectedSparkSQL(spark: SparkSession)
             // If we only allow mapped tables, throw a nice user-friendly error
             case None if allowMappedTablesOnly => 
               throw new FormattedError(
-                ErrorResponse(
-                  "org.apache.spark.sql.AnalysisException",
-                  s"Unknown table $identifier (Available tables: ${tableMappings.keys.mkString(", ")})",
-                  ""
-                )
+                s"Unknown table $identifier (Available tables: ${tableMappings.keys.mkString(", ")})",
               )
 
             // If we allow any tables, pass through and let spark catch any problems

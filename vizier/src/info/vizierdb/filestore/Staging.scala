@@ -1,20 +1,20 @@
 package info.vizierdb.filestore
 
-import java.io.InputStream
-import java.net.URL
+import java.io.{ InputStream, OutputStream, FileOutputStream }
+import java.net.{ URL, URI }
 import org.apache.spark.sql.DataFrame
 import info.vizierdb.commands.FileArgument
 import info.vizierdb.types._
+import info.vizierdb.Vizier
 
 object Staging
 {
   val safeForRawStaging = Set(
-    FileFormat.CSV ,
-    FileFormat.CSV_WITH_ERRORCHECKING,
-    FileFormat.JSON,
-    FileFormat.EXCEL,
-    FileFormat.XML,
-    FileFormat.TEXT
+    DatasetFormat.CSV ,
+    DatasetFormat.JSON,
+    DatasetFormat.Excel,
+    DatasetFormat.XML,
+    DatasetFormat.Text
   )
   
   val stagingExemptProtocols = Set(
@@ -22,6 +22,8 @@ object Staging
   )
 
   val stagingDefaultsToRelative = true
+
+  val bulkStorageFormat = "parquet"
 
   /**
    * Transfer an InputStream to an OutputStream
@@ -46,7 +48,7 @@ object Staging
     transferBytes(input, new FileOutputStream(file))
   }
   def stage(url: URL, projectId: Identifier, artifactId: Identifier): Unit =
-    stage(url.openStream(), extension, nameHint)
+    stage(url.openStream(), projectId, artifactId)
 
   def stage(input: DataFrame, format: String, projectId: Identifier, artifactId: Identifier): Unit =
   {
@@ -91,32 +93,32 @@ object Staging
   {
     if(stagingExemptProtocols(URI.create(url).getScheme)){
       return ( 
-        FileArgument(url = url)
+        FileArgument(url = Some(url)),
         sparkOptions,
         format
       )
     } else if(safeForRawStaging(format)){
       val artifactId = allocateArtifactId()
-      staging.stage(url, projectId, artifactId)
+      stage(new URL(url), projectId, artifactId)
       return ( 
-        FileArgument(id = artifactId),
+        FileArgument(fileid = Some(artifactId)),
         sparkOptions,
         format,
       )
     } else {
       val artifactId = allocateArtifactId()
-      var parser = spark.read.format(format)
+      var parser = Vizier.sparkSession.read.format(format)
       for((option, value) <- sparkOptions){
         parser = parser.option(option, value)
       }
-      staging.stage(
+      stage(
         parser.load(url),
         bulkStorageFormat,
         projectId = projectId,
         artifactId = artifactId
       )
       return (
-        FileArgument(id = artifactId),
+        FileArgument(fileid = Some(artifactId)),
         Map(),
         bulkStorageFormat
       )

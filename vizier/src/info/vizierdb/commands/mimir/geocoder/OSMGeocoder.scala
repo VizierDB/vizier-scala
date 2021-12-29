@@ -1,11 +1,13 @@
 package info.vizierdb.commands.mimir.geocoder
 
 import java.net.URLEncoder
+import play.api.libs.json._
 
-class OSMGeocoder(hostURL: String, name: String = "OSM") extends WebJsonGeocoder(
+class OSMGeocoder(hostURL: String, name: String = "OSM", label: String = "Open Street Maps") extends WebJsonGeocoder(
   JsPath \ 0 \ "lat",
   JsPath \ 0 \ "lon",
-  name
+  name,
+  label
 )
 {
   def url(house: String, street: String, city: String, state: String) = if(house.isEmpty() && street.isEmpty() && city.isEmpty() && !state.isEmpty()) 

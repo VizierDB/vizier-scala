@@ -40,12 +40,12 @@ object CheckpointDataset extends Command
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String]("dataset")
-    val artifact = context.artifact(datasetName)
+    val input = context.artifact(datasetName)
                           .getOrElse{ 
                             context.error(s"Dataset $datasetName does not exist"); return
                           }
 
-    val df = DB.readOnly { implicit s => artifact.dataframe }
+    val df = DB.readOnly { implicit s => input.dataframe }
 
     context.message("Checkpointing data...")
 
@@ -61,17 +61,17 @@ object CheckpointDataset extends Command
           ) 
     context.message("Dataset written, registering file...")
 
-    context.outputDataset(
+    context.outputDatasetWithFile(
       datasetName,
-      new MaterializeConstructor(
-        input = artifact.id,
-        schema = df.schema,
-        url = if(Staging.stagingDefaultsToRelative) { staged.relativeFile.toString } 
-              else { staged.absoluteFile.toString },
-        format = MaterializeConstructor.DEFAULT_FORMAT,
-        options = Map.empty,
-        urlIsRelative = Some(Staging.stagingDefaultsToRelative)
-      )
+      artifactId => 
+        new MaterializeConstructor(
+          input = input.id,
+          schema = df.schema,
+          artifactId = artifactId,
+          projectId = context.projectId,
+          format = MaterializeConstructor.DEFAULT_FORMAT,
+          options = Map.empty
+        )
     )
     context.message("Dataset Checkpointed")
   }

@@ -17,9 +17,9 @@ package info.vizierdb.commands.transform
 import info.vizierdb.commands._
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.types.ArtifactType
-import org.mimirdb.api.request.CreateViewRequest
 import info.vizierdb.commands.sql.Query
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.spark.ViewConstructor
 
 trait SQLTemplateCommand 
   extends Command
@@ -47,24 +47,25 @@ trait SQLTemplateCommand
     val (deps, sql)  = query(arguments, context)
     val outputDatasetName = arguments.getOpt[String](PARAM_OUTPUT_DATASET)
                                      .getOrElse { DEFAULT_DS_NAME }
-    val (dsName, dsId) = context.outputDataset(outputDatasetName)
     logger.debug(s"$sql")
 
     try { 
       logger.trace("Creating view")
-      val response = CreateViewRequest(
-        input = deps.mapValues { _.nameInBackend },
-        functions = None,
-        query = sql, 
-        resultName = Some(dsName),
-        properties = None
-      ).handle
+      context.outputDataset(
+        outputDatasetName,
+        ViewConstructor(
+          datasets = deps.mapValues { _.id },
+          functions = Map.empty,
+          query = sql, 
+          projectId = context.projectId
+        )
+      )
 
       logger.trace("Rendering dataset summary")
       context.displayDataset(outputDatasetName)
     } catch { 
-      case e: org.mimirdb.api.FormattedError => 
-        context.error(e.response.errorMessage)
+      case e: info.vizierdb.api.FormattedError => 
+        context.error(e.getMessage)
     }
   }
 }

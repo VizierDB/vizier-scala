@@ -14,17 +14,35 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.mimir.geocoder
 
+import java.io.File
+import scalikejdbc._
 import play.api.libs.json._
 import info.vizierdb.commands._
-import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.{ StructField, StringType }
+import org.apache.spark.sql.DataFrame
+import scala.util.Random
+import info.vizierdb.commands.mimir.LensCommand
+import info.vizierdb.commands.FileArgument
+import info.vizierdb.catalog.Artifact
+import info.vizierdb.util.FileUtils
+import info.vizierdb.spark.LoadConstructor
+import info.vizierdb.types._
+import org.apache.spark.sql.functions.{ 
+  udf, 
+  size => array_size, 
+  element_at, 
+  when,
+  col, 
+  concat, 
+  lit
+}
 
 class Geocode(
   geocoders: Map[String, Geocoder], 
-  cacheFormat:String
+  cacheFormat:String = "parquet"
 )
   extends LensCommand
 { 
-  def lens = Lenses.geocode
   def name: String = "Geocode"
 
   val PARA_HOUSE_NUMBER       = "strnumber"
@@ -32,8 +50,14 @@ class Geocode(
   val PARA_CITY               = "city"
   val PARA_STATE              = "state"
   val PARA_GEOCODER           = "geocoder"
-  val PARA_CACHE_CODE         = "cacheCode"
-  val PARA_RESET_CACHE        = "resetCache"
+  val PARA_CACHE              = "cache"
+
+  val HOUSE = "HOUSE"
+  val STREET = "STREET"
+  val CITY = "CITY"
+  val STATE = "STATE"
+  val COORDS = "COORDS"
+
 
   def lensParameters: Seq[Parameter] = Seq(
     ColIdParameter(id = PARA_HOUSE_NUMBER, name = "House Nr."),
@@ -41,38 +65,154 @@ class Geocode(
     ColIdParameter(id = PARA_CITY, name = "City"),
     ColIdParameter(id = PARA_STATE, name = "State"),
     EnumerableParameter(id = PARA_GEOCODER, name = "Geocoder", values = EnumerableValue.withNames(
-        "Google Maps" -> "GOOGLE",
-        "Open Street Maps" -> "OSM"
+        geocoders.values.map { g =>
+          g.label -> g.name
+        }.toSeq:_*
       ),
-      default = Some(1)
+      default = Some(1),
+      hidden = (geocoders.size == 1)
     ),
-    StringParameter(id = PARA_CACHE_CODE, name = "Cache Code", required = false, hidden = true),
-    BooleanParameter(id = PARA_RESET_CACHE, name = "Reset Cache", required = false, default = Some(false))
+    CachedStateParameter(id = PARA_CACHE, name = "Address Cache", required = false, hidden = true)
   )
-  def lensFormat(arguments: Arguments): String = 
+  def format(arguments: Arguments): String = 
     s"GEOCODE WITH ${arguments.get[String](PARA_GEOCODER)}"
 
-  def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue =
+  def title(arguments: Arguments): String =
+    s"GEOCODE ${arguments.pretty(PARAM_DATASET)}"
+
+  def train(df: DataFrame, arguments: Arguments, context: ExecutionContext): Map[String, Any] =
   {
-    Json.toJson(
-      GeocoderConfig(
-        houseColumn  = schema(arguments.get[Int](PARA_HOUSE_NUMBER)).name,
-        streetColumn = schema(arguments.get[Int](PARA_STREET)).name,
-        cityColumn   = schema(arguments.get[Int](PARA_CITY)).name,
-        stateColumn  = schema(arguments.get[Int](PARA_STATE)).name,
-        geocoder     = Some(arguments.get[String](PARA_GEOCODER)),
-        latitudeColumn = None,
-        longitudeColumn = None,
-        cacheCode = if(arguments.getOpt[Boolean](PARA_RESET_CACHE).getOrElse(false)){ None }
-                    else { arguments.getOpt[String](PARA_CACHE_CODE) }
-      )
+
+    val geocoder = arguments.getOpt[String](PARA_GEOCODER)
+                            .getOrElse { geocoders.head._1 }
+
+
+    val (cacheArtifact:Artifact, freshArtifact:Boolean) = 
+         // Discard the old model if we're asked to reset it.
+         // Otherwise, try to load the old model.
+      arguments.getOpt[Identifier](PARA_CACHE)
+               .map { id => 
+                  DB.readOnly { implicit s => 
+                    Artifact.get(id, Some(context.projectId))
+                  } -> false
+               }
+               .getOrElse { 
+         // If we don't have/can't use the old model, create a new one
+         // Don't go through context to create it so we don't pollute the namespace.
+                 DB.autoCommit { implicit s => 
+                   val artifact = 
+                     Artifact.make(
+                       projectId = context.projectId,
+                       t = ArtifactType.DATASET,
+                       data = Array[Byte](),
+                       mimeType = MIME.RAW
+                     )
+         // We use the ID of the artifact as the file location, so we're going to
+         // need to overwrite the data **after** we have the id itself.
+                   artifact.replaceData(
+                      Json.toJson(
+                        LoadConstructor(
+                          url = FileArgument( fileid = Some(artifact.id) ),
+                          format = cacheFormat,
+                          sparkOptions = Map.empty,
+                          projectId = context.projectId
+                        )
+                      )
+                    )
+                   artifact
+                 } -> true
+               }
+
+
+    /**
+     * The actual addresses in the dataset
+     */
+    val addresses = df.select(
+      df(arguments.get[String](PARA_HOUSE_NUMBER)) as HOUSE,
+      df(arguments.get[String](PARA_STREET      )) as STREET,
+      df(arguments.get[String](PARA_CITY        )) as CITY,
+      df(arguments.get[String](PARA_STATE       )) as STATE
+    )
+
+    /**
+     * The existing cache (if available)
+     */
+    val cache = 
+      if(freshArtifact){ null:DataFrame } else {
+        DB.autoCommit { implicit s => cacheArtifact.dataframe }
+      }
+
+    /**
+     * Addresses that we haven't geocoded yet.
+     */
+    val requiredAddresses = 
+      if(freshArtifact){ addresses } else {
+        addresses.except(
+          cache.select(
+            cache(HOUSE) as HOUSE,
+            cache(STREET) as STREET,
+            cache(CITY) as CITY,
+            cache(STATE) as STATE
+          )
+        )
+      }
+
+    // If this isn't the first pass AND we don't need to geocode anything, then
+    // we're done.  Nothing else to do here.
+    if(!freshArtifact || requiredAddresses.isEmpty){ return Map.empty }
+
+    val geocodeFn = geocoders(geocoder).apply _
+    val geocode = udf(geocodeFn)
+    
+    /**
+     * Addresses that we need to add to our geocoding set
+     */
+    var newGeocodedAddresses:DataFrame = 
+      requiredAddresses.select( 
+                          addresses(HOUSE),
+                          addresses(STREET),
+                          addresses(CITY),
+                          addresses(STATE),
+                          geocode(
+                            addresses(HOUSE).cast(StringType),
+                            addresses(STREET).cast(StringType),
+                            addresses(CITY).cast(StringType),
+                            addresses(STATE).cast(StringType)
+                          ) as COORDS
+                      )
+    
+    // If we have addresses from a previous geocoding pass, then make sure to 
+    // include them as well
+    if(!freshArtifact) { 
+      newGeocodedAddresses = cache union newGeocodedAddresses      
+    }
+
+
+    // Save all of the geocoded addresses in the cache file.  Since we're using
+    // the original cache file already, generate a new file and have it replace
+    // the original.
+    val cacheFile = 
+      cacheArtifact.relativeFile
+    val tempFile = 
+      new File(cacheFile.getParentFile, cacheFile.getName + ".temp")
+    newGeocodedAddresses.write
+                        .format(cacheFormat)
+                        .save(tempFile.toString)
+
+    if(cacheFile.exists){
+      FileUtils.recursiveDelete(cacheFile)
+    }
+    tempFile.renameTo(cacheFile)
+
+    Map(
+      PARA_CACHE -> cacheArtifact.id
     )
   }
-  def updateConfig(lensArgs: JsValue, schema: Seq[StructField], dataset: String): Map[String,JsValue] = 
-    lensArgs.as[GeocoderConfig]
-            .cacheCode
-            .map { code => PARA_CACHE_CODE -> JsString(code) }
-            .toMap ++ Map( PARA_RESET_CACHE -> JsBoolean(false) )
+  def build(dataset: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame =
+  {
+    ???
+  }
+
 }
 
 object Geocode
@@ -80,13 +220,13 @@ object Geocode
 
   def init(
     geocoders: Seq[Geocoder], 
-    cacheFormat:String = "json",
+    cacheFormat:String = "parquet",
     label:String = "geocode"
   )
   {
     Commands("mimir").register(
       label -> new Geocode(
-        geocoders =geocoders
+        geocoders = geocoders.map { g => g.name -> g }.toMap,
         cacheFormat = cacheFormat
       ),
     )

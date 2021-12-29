@@ -1,17 +1,26 @@
 package info.vizierdb.spark.caveats
 
+import scalikejdbc._
 import play.api.libs.json._
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.sql.{ SparkSession, DataFrame }
+import org.apache.spark.sql.{ SparkSession, DataFrame, Row }
 import org.apache.spark.sql.catalyst.expressions.Expression
 import info.vizierdb.util.TimerUtils
 import info.vizierdb.Vizier
+import info.vizierdb.spark.{ InjectedSparkSQL, SparkSchema, DataFrameCache }
+import info.vizierdb.spark.rowids.{ AnnotateWithRowIds, AnnotateWithSequenceNumber }
+import org.mimirdb.caveats.lifting.ResolveLifts
+import org.apache.spark.sql.execution.{ ExtendedMode => SelectedExplainMode }
+import org.mimirdb.caveats.implicits._
+import org.mimirdb.caveats.{ Constants => Caveats }
+import org.apache.spark.sql.types._
+import info.vizierdb.catalog.Artifact
 
 object QueryWithCaveats
   extends LazyLogging
   with TimerUtils
 {
-  class ResultTooBig extends Exception("The datsaet is too big to copy.  Try a sample or a LIMIT query instead.")
+  class ResultTooBig extends Exception("The dataset is too big to copy.  Try a sample or a LIMIT query instead.")
 
   val RESULT_THRESHOLD = 10000
 
@@ -25,7 +34,7 @@ object QueryWithCaveats
   ): DataContainer = 
   {
     apply(
-      InjectedSparkSQL(sparkSession)(
+      InjectedSparkSQL(
         sqlText = query, 
         tableMappings = views, 
         functionMappings = functions, 
@@ -76,7 +85,7 @@ object QueryWithCaveats
     df = ResolveLifts(df)
 
 
-    logger.trace(s"----------- RAW-QUERY-----------\nSCHEMA:{ ${Schema(df).mkString(", ")} }\n${df.queryExecution.explainString(SelectedExplainMode)}")
+    logger.trace(s"----------- RAW-QUERY-----------\nSCHEMA:{ ${SparkSchema(df).mkString(", ")} }\n${df.queryExecution.explainString(SelectedExplainMode)}")
 
     /////// Add a __MIMIR_ROWID attribute
     df = AnnotateWithRowIds(df)
@@ -142,7 +151,7 @@ object QueryWithCaveats
             cache(start, end)
           }
 
-          /* return */ (buffer, Schema(cache.df))
+          /* return */ (buffer, SparkSchema(cache.df))
         }
 
         /***************************************/
@@ -194,7 +203,7 @@ object QueryWithCaveats
               throw new ResultTooBig()
             }
 
-            /* return */ (buffer, Schema(df))
+            /* return */ (buffer, SparkSchema(df))
           } // logTime
         } // case None
       }// cacheIdentifier match { ... }
@@ -258,10 +267,14 @@ object QueryWithCaveats
 
   def getSchema(
     query: String,
-    sparkSession: SparkSession = MimirAPI.sparkSession
+    views: Map[String, () => DataFrame],
+    functions: Map[String, Seq[Expression] => Expression] = Map.empty
   ): Seq[StructField] = { 
-    val df = InjectedSparkSQL(sparkSession)(query, MimirAPI.catalog.allTableConstructors)
-    Schema(df)
+    val df = 
+      DB.readOnly { implicit s => 
+        InjectedSparkSQL(query, views, functionMappings = functions)
+      }
+    df.schema
   }
 
 }

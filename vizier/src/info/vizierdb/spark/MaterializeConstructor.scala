@@ -7,35 +7,31 @@ import org.apache.spark.sql.types.{ DataType, StructField }
 import info.vizierdb.spark.rowids.AnnotateWithRowIds
 import info.vizierdb.spark.caveats.AnnotateImplicitHeuristics
 import org.mimirdb.caveats.implicits._
-import info.vizierdb.spark.Schema.fieldFormat
+import info.vizierdb.spark.SparkSchema.fieldFormat
 import info.vizierdb.types._
+import info.vizierdb.filestore.Filestore
+import info.vizierdb.Vizier
 
 case class MaterializeConstructor(
   input: Identifier,
   schema: Seq[StructField], 
-  url: String,
+  artifactId: Identifier,
+  projectId: Identifier,
   format: String, 
   options: Map[String,String],
-  urlIsRelative: Option[Boolean]
 )
   extends DataFrameConstructor
 {
-
-  def absoluteUrl: String = 
-    if(urlIsRelative.getOrElse(false)) {
-      MimirAPI.conf.resolveToDataDir(url).toString
-    } else { url }
-
   def construct(
-    spark: SparkSession, 
-    context: Map[String,() => DataFrame]
+    context: Identifier => DataFrame
   ): DataFrame = 
   {
-    var parser = spark.read.format(format)
+    var parser = Vizier.sparkSession.read.format(format)
     for((option, value) <- options){
       parser = parser.option(option, value)
     }
-    var df = parser.load(absoluteUrl)
+    val materialized = Filestore.getRelative(artifactId, projectId)
+    var df = parser.load(materialized.toString)
 
     // println(absoluteUrl)
 
@@ -46,10 +42,11 @@ case class MaterializeConstructor(
   }
 
   def provenance(
-    spark: SparkSession, 
-    context: Map[String,() => DataFrame]
+    context: Identifier => DataFrame
   ): DataFrame = 
-    context(input)()
+    context(input)
+
+  def dependencies = Set(input)
 }
 
 object MaterializeConstructor

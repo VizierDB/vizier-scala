@@ -5,6 +5,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.types.UDTRegistration
+import info.vizierdb.spark.udt.ImageUDT
 
 object SparkSchema {
   def apply(df: DataFrame): Seq[StructField] =

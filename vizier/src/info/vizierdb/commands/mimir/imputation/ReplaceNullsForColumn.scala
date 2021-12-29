@@ -2,6 +2,11 @@ package info.vizierdb.commands.mimir.imputation
 
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
+import org.apache.spark.sql.{ DataFrame, Dataset }
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.functions.{ when, expr }
+import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.ml.param.Param
 
 
 class ReplaceNullsForColumn(override val uid: String) 
@@ -15,11 +20,11 @@ class ReplaceNullsForColumn(override val uid: String)
   def setOutputColumn(value: String): this.type = set(outputColumn, value)
   def setReplacementColumn(value: String): this.type = set(replacementColumn, value)
   def this() = this(Identifiable.randomUID("replacenullsforcolumn"))
-  def copy(extra: ParamMap): ReplaceNullsForCollumn = defaultCopy(extra)
+  def copy(extra: ParamMap): ReplaceNullsForColumn = defaultCopy(extra)
   override def transformSchema(schema: StructType): StructType = schema
   def transform(df: Dataset[_]): DataFrame = df.withColumn($(outputColumn), when(df($(inputColumn)).isNull.or(df($(inputColumn)).isNaN), expr($(replacementColumn))).otherwise(df($(inputColumn)))  )
 }
   
 object ReplaceNullsForColumn extends DefaultParamsReadable[ReplaceNullsForColumn] {
-  override def load(path: String): ReplaceNullsForCollumn = super.load(path)
+  override def load(path: String): ReplaceNullsForColumn = super.load(path)
 }

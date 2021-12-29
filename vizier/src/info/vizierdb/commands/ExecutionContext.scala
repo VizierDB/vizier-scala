@@ -273,7 +273,33 @@ class ExecutionContext(
         constructor,
         properties
       )).toString.getBytes,
+      mimeType = MIME.RAW
     )
+
+  def outputDatasetWithFile[T <: DataFrameConstructor](
+    name: String,
+    constructor: Identifier => T,
+    properties: Map[String, JsValue] = Map.empty
+  )(implicit writes: Writes[T]): Artifact =
+  {
+    DB.autoCommit { implicit s =>
+      val artifact = Artifact.make(
+        projectId,
+        ArtifactType.DATASET,
+        MIME.RAW,
+        Array[Byte]()
+      )
+      output(
+        name,
+        artifact.replaceData(
+          Json.toJson(Dataset(
+            constructor(artifact.id),
+            properties
+          )).toString.getBytes
+        )
+      )
+    }
+  }
 
   /**
    * Allocate a new dataset object and register it as an output

@@ -20,9 +20,10 @@ object TemplateParameters
   val PARAM_SCHEMA = "schema"
   val PARAM_SCHEMA_COLUMN = "schema_column"
   val PARAM_SCHEMA_TYPE = PARAM_DATATYPE
+  val PARAM_COLUMN = "column"
 
   val COLUMN = 
-    ColIdParameter(id = "column", name = "Column")
+    ColIdParameter(id = PARAM_COLUMN, name = "Column")
 
   val DATATYPE: EnumerableParameter = DATATYPE()
 

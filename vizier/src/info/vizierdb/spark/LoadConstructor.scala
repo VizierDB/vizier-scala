@@ -13,6 +13,11 @@ import org.apache.spark.sql.catalyst.csv.CSVOptions
 import org.apache.spark.sql.catalyst.csv.CSVHeaderChecker
 import org.apache.spark.sql.execution.datasources.csv.CSVUtils
 import info.vizierdb.commands.FileArgument
+import info.vizierdb.Vizier
+import info.vizierdb.types._
+import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
+import info.vizierdb.spark.SparkSchema.fieldFormat
+import org.mimirdb.caveats.implicits._
 
 case class LoadConstructor(
   url: FileArgument,
@@ -20,38 +25,34 @@ case class LoadConstructor(
   sparkOptions: Map[String, String],
   contextText: Option[String] = None,
   proposedSchema: Option[Seq[StructField]] = None,
-  urlIsRelativeToDataDir: Option[Boolean] = None
+  urlIsRelativeToDataDir: Option[Boolean] = None,
+  projectId: Identifier
 ) 
   extends DataFrameConstructor
   with LazyLogging
   with DefaultProvenance
 {
 
-  lazy val absoluteUrl: String = 
-    if((urlIsRelativeToDataDir.getOrElse { false })){
-      MimirAPI.conf.resolveToDataDir(url).toString
-    } else if( (url.charAt(0) != '/') && !url.contains(":/") 
-                && MimirAPI.conf.workingDirectory.isDefined) {
-      MimirAPI.conf.workingDirectory() + File.separator + url
-    } else { url }
+  lazy val (absoluteUrl: String, _) = 
+    url.getPath(
+      projectId = projectId,
+      noRelativePaths = !(urlIsRelativeToDataDir.getOrElse { true })
+    )
 
   def construct(
-    spark: SparkSession, 
-    context: Map[String, () => DataFrame] = Map()
+    context: Identifier => DataFrame
   ): DataFrame =
   {
     var df =
       format match {
-        case FileFormat.CSV => loadCSVWithCaveats(spark)
-        case _ => loadWithoutCaveats(spark)
+        case DatasetFormat.CSV => loadCSVWithCaveats()
+        case _ => loadWithoutCaveats()
       }
-
-    df = lenses.foldLeft(df) {
-      (df, lens) => Lenses(lens._1.toLowerCase()).create(df, lens._2, lens._3)
-    }
 
     return df
   }
+
+  def dependencies = Set.empty
 
   /**
    * Merge the proposed schema with the actual schema obtained from the
@@ -142,9 +143,9 @@ case class LoadConstructor(
 
   }
 
-  def loadWithoutCaveats(spark: SparkSession): DataFrame = 
+  def loadWithoutCaveats(): DataFrame = 
   {
-    var parser = spark.read.format(format)
+    var parser = Vizier.sparkSession.read.format(format)
     for((option, value) <- sparkOptions){
       parser = parser.option(option, value)
     }
@@ -164,9 +165,10 @@ case class LoadConstructor(
 
 
 
-  def loadCSVWithCaveats(spark: SparkSession): DataFrame =
+  def loadCSVWithCaveats(): DataFrame =
   {
     // based largely on Apache Spark's DataFrameReader's csv(Dataset[String]) method
+    val spark = Vizier.sparkSession
 
     logger.debug(s"LOADING CSV FILE: $url ($absoluteUrl)")
 

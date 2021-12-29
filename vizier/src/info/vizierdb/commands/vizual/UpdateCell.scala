@@ -16,7 +16,7 @@ package info.vizierdb.commands.vizual
 
 import play.api.libs.json._
 import info.vizierdb.commands._
-import org.mimirdb.vizual
+import info.vizierdb.spark.vizual
 
 object UpdateCell extends VizualCommand
 {

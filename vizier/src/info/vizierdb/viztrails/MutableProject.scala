@@ -26,10 +26,10 @@ import info.vizierdb.util.Streams
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import info.vizierdb.VizierException
-import org.mimirdb.vizual.{ Command => VizualCommand }
+import info.vizierdb.spark.vizual.VizualCommand
 import info.vizierdb.commands.vizual.{ Script => VizualScript }
 import org.apache.spark.sql.types._
-import org.mimirdb.spark.{ Schema => SparkSchema }
+import info.vizierdb.spark.SparkSchema
 import info.vizierdb.commands.data.DeclareParameters
 import info.vizierdb.delta.WorkflowState
 import info.vizierdb.delta.ComputeDelta
@@ -453,15 +453,12 @@ class MutableProject(
    */
   def show(artifactName: String, rows: Integer = null): Unit =
   {
-
     val artifact: Artifact = this.artifact(artifactName)
     artifact.t match {
       case ArtifactType.DATASET => {
-        import org.mimirdb.api.MimirAPI
         import org.mimirdb.caveats.implicits._
-        MimirAPI.catalog
-                .get(artifact.nameInBackend)
-                .showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
+        val df = DB.autoCommit { implicit s => artifact.dataframe }
+        df.showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
       }
       case _ => throw new VizierException(s"Show unsupported for ${artifact.t}")
     }

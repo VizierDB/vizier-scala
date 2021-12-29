@@ -291,19 +291,15 @@ class AnnotateWithRowIds(
       /*********************************************************/
       case View(
           desc: CatalogTable, 
-          output: Seq[Attribute], 
-          child: LogicalPlan) => {
+          isTempView: Boolean, 
+          child: LogicalPlan
+        ) => {
         // Since we're changing the logical definition of the expression,
         // we need to strip the view reference.
         // If the view was created with identifiers, the planIsAnnotated case
         // above will catch it.
         recur(child)
       }
-
-      /*********************************************************/
-      case With(
-          child: LogicalPlan, 
-          cteRelations: Seq[(String, SubqueryAlias)]) => ???
 
       /*********************************************************/
       case WithWindowDefinition(
@@ -362,13 +358,6 @@ class AnnotateWithRowIds(
         child: LogicalPlan) => ???
 
       /*********************************************************/
-      case GroupingSets(
-          selectedGroupByExprs: Seq[Seq[Expression]],
-          groupByExprs: Seq[Expression],
-          child: LogicalPlan,
-          aggregations: Seq[NamedExpression]) => ???
-
-      /*********************************************************/
       case Pivot(
           groupByExprsOpt: Option[Seq[NamedExpression]],
           pivotColumn: Expression,
@@ -415,12 +404,6 @@ class AnnotateWithRowIds(
           numPartitions: Int, 
           shuffle: Boolean, 
           child: LogicalPlan) => passthrough(plan)
-
-      /*********************************************************/
-      case RepartitionByExpression(
-          partitionExpressions: Seq[Expression],
-          child: LogicalPlan,
-          numPartitions: Int) => passthrough(plan)
 
       /*********************************************************/
       case OneRowRelation() => annotate(plan, Literal(1))

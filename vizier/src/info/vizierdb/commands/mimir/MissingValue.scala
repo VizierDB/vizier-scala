@@ -69,6 +69,13 @@ object MissingValue
     CachedStateParameter(id = PARAM_SAVED_MODEL, name = "Model", required = false, hidden = true)
   )
 
+  def format(arguments: Arguments): String = 
+    s"IMPUTE MISSING VALUES ON ${arguments.getList("columns").map { "COLUMN "+_.get[Int]("column") }.mkString(", ")}"
+
+  def title(arguments: Arguments): String =
+    s"IMPUTE ${arguments.pretty(PARAM_DATASET)}"
+
+
   val DEFAULT_MODEL = "MulticlassImputer"
   val DEFAULT_STRATEGY = "NaiveBayes"
 
@@ -109,10 +116,15 @@ object MissingValue
                }
                .getOrElse { 
          // If we don't have/can't use the old model, create a new one
-                 context.outputFile(
-                   name = arguments.pretty(PARAM_DATASET)+"-imputation.model", 
-                   mimeType = MIME.RAW
-                 )
+         // Don't go through context to create it so we don't pollute the namespace.
+                 DB.autoCommit { implicit s => 
+                   Artifact.make(
+                     projectId = context.projectId,
+                     t = ArtifactType.FILE,
+                     data = Array[Byte](),
+                     mimeType = MIME.RAW
+                   )
+                 }
                }
 
     val modelDir = modelArtifact.relativeFile
@@ -196,9 +208,6 @@ object MissingValue
             model.impute(df, new File(modelDir, modelConfig.file))
           }
   }
-
-  def format(arguments: Arguments): String = 
-    s"IMPUTE MISSING VALUES ON ${arguments.getList("columns").map { "COLUMN "+_.get[Int]("column") }.mkString(", ")}"
 
 }
 

@@ -5,6 +5,8 @@ import org.apache.spark.sql.types.{ StructType, StructField }
 import info.vizierdb.spark.caveats.CaveatFormat._
 import info.vizierdb.api.JsonResponse
 import org.mimirdb.caveats.Caveat
+import info.vizierdb.spark.SparkSchema.fieldFormat
+import info.vizierdb.spark.SparkPrimitive
 
 case class DataContainer (
                   schema: Seq[StructField],

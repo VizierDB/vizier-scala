@@ -243,7 +243,7 @@ case class Artifact(
    * lead to mutable artifacts; in such cases the artifact should be re-created entirely
    * from scratch.
    */
-  private def replaceData(updated: JsValue)(implicit session: DBSession): Unit =
+  def replaceData(updated: JsValue)(implicit session: DBSession): Artifact =
     replaceData(updated.toString)
   /**
    * DANGER DANGER DANGER DANGER
@@ -255,7 +255,7 @@ case class Artifact(
    * lead to mutable artifacts; in such cases the artifact should be re-created entirely
    * from scratch.
    */
-  private def replaceData(updated: String)(implicit session: DBSession): Unit =
+  def replaceData(updated: String)(implicit session: DBSession): Artifact =
     replaceData(updated.getBytes)
   /**
    * DANGER DANGER DANGER DANGER
@@ -267,7 +267,8 @@ case class Artifact(
    * lead to mutable artifacts; in such cases the artifact should be re-created entirely
    * from scratch.
    */
-  private def replaceData(updated: Array[Byte])(implicit session: DBSession): Unit =
+  def replaceData(updated: Array[Byte])(implicit session: DBSession): Artifact =
+  {
     withSQL {
       val a = Artifact.column
       update(Artifact)
@@ -276,6 +277,8 @@ case class Artifact(
         )
         .where.eq(a.id, id)
     }.update.apply()
+    copy(data = updated)
+  }
 
 }
 

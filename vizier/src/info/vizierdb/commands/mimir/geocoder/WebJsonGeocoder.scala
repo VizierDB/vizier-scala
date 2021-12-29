@@ -1,6 +1,8 @@
 package info.vizierdb.commands.mimir.geocoder
 
 import com.typesafe.scalalogging.LazyLogging
+import play.api.libs.json._
+import info.vizierdb.util.HttpUtils
 
 abstract class GeoValue(val value:Double) 
 
@@ -31,9 +33,10 @@ case class GeoDouble(d: Double) extends GeoValue(d)
 abstract class WebJsonGeocoder(
   getLat: JsPath, 
   getLon: JsPath,
-  name: String
+  name: String,
+  label: String
 ) 
-  extends Geocoder(name)
+  extends Geocoder(name, label)
   with LazyLogging
 {
 

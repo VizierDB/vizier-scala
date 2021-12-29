@@ -44,8 +44,11 @@ case class LensConstructor(
     return lens.build(
       context(target),
       Arguments(arguments, lens.parameters),
+      projectId
     )
   }
+
+  def dependencies = Set(target)
 }
 
 object LensConstructor
@@ -58,15 +61,13 @@ object LensConstructor
 
 trait LensCommand 
   extends Command
-  with DataFrameConstructor
-  with DefaultProvenance
   with LazyLogging
 {
   val PARAM_DATASET = "dataset"
 
   def lensParameters: Seq[Parameter]
   def train(dataset: DataFrame, arguments: Arguments, context: ExecutionContext): Map[String, Any]
-  def build(dataset: DataFrame, arguments: Arguments): DataFrame
+  def build(dataset: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame
 
   def parameters = Seq(
     ArtifactParameter(id = PARAM_DATASET, name = "Dataset", artifactType = ArtifactType.DATASET),
@@ -105,10 +106,15 @@ trait LensCommand
     )
     context.displayDataset(datasetName)
   }
-}
 
+  def predictProvenance(arguments: Arguments): Option[(Seq[String], Seq[String])] = 
+    Some(
+      Seq(arguments.get[String](PARAM_DATASET)),
+      Seq(arguments.get[String](PARAM_DATASET))
+    )
+}
 trait UntrainedLens
 {
-  def train(dataset: DataFrame, arguments: Arguments, context: ExecutionContext) = Map.empty
+  def train(dataset: DataFrame, arguments: Arguments, context: ExecutionContext) = Map[String,Any]()
 }
 

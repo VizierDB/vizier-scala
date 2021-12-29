@@ -2,7 +2,7 @@ package info.vizierdb.spark
 
 import play.api.libs.json._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.types.ImageUDT
+import info.vizierdb.spark.udt.ImageUDT
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.apache.spark.sql.catalyst.expressions.{ Literal, Cast }
 import java.util.{ Base64, Calendar }
@@ -201,7 +201,7 @@ object SparkPrimitive
     }
   }
 
-  implicit val dataTypeFormat = Schema.dataTypeFormat
+  implicit val dataTypeFormat = SparkSchema.dataTypeFormat
   // implicit def dataTypeFormat: Format[DataType] = Format(
   //   new Reads[DataType] { def reads(j: JsValue) = JsSuccess(DataType.fromJson(j.toString)) },
   //   new Writes[DataType] { def writes(t: DataType) = JsString(t.typeName) }

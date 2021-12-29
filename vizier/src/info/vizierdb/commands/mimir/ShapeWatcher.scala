@@ -17,40 +17,82 @@ package info.vizierdb.commands.mimir
 import play.api.libs.json._
 import info.vizierdb.commands._
 import org.apache.spark.sql.types.StructField
-import org.mimirdb.lenses.implementation.ShapeWatcherConfig
-import org.mimirdb.lenses.Lenses
+import info.vizierdb.commands.mimir.facets._
+import org.apache.spark.sql.DataFrame
+import info.vizierdb.types._
+import org.mimirdb.caveats.implicits._
 
 object ShapeWatcher
   extends LensCommand
 { 
-  def lens = Lenses.shapeWatcher
+  val PARAM_FACETS = "facets"
+  val PARAM_CONFIG = "config"
+
   def name: String = "Dataset Stabilizer"
+
   def lensParameters: Seq[Parameter] = Seq(
-    StringParameter(id = "config", name = "Output", required = false, hidden = true, default = Some("")),
-    BooleanParameter(id = "recompute", name = "Rediscover Parameters", required = true, default = Some(true))
+    ListParameter(id = PARAM_FACETS, name = "Facets (leave blank to guess)", required = false, components = Seq(
+      StringParameter(id = PARAM_CONFIG, name = "Configuration", hidden = false),
+    ))
   )
 
-  def config(arguments: Arguments):JsValue = 
-      arguments.getOpt[String]("config")
-               .map { Json.parse(_) }
-               .getOrElse { JsNull }
-  def lensFormat(arguments: Arguments): String = 
+  def config(arguments: Arguments):Seq[Facet] = 
+      arguments.getList(PARAM_FACETS)
+               .map { f => Json.parse(f.getOpt[String](PARAM_CONFIG)
+                                       .getOrElse { "[]" })
+                                       .as[Facet] }
+  def format(arguments: Arguments): String = 
     s"WATCH FOR CHANGES"+(
       config(arguments) match {
-        case JsNull => ""
+        case Seq() => ""
         case x => 
           " EXPECTING ("+
-            x.as[ShapeWatcherConfig]
-             .facets
-             .map { "\n  "+_.description }
+            x.map { "\n  "+_.description }
              .mkString(",")+"\n)"
       }
     )
 
-  def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue =
-    if(arguments.get[Boolean]("recompute")){ JsNull }
-    else { config(arguments) }
-  def updateConfig(lensArgs: JsValue, schema: Seq[StructField], dataset: String): Map[String,JsValue] = 
-    Map( "config" -> JsString(lensArgs.toString()), "recompute" -> JsBoolean(false) )
+  def title(arguments: Arguments): String =
+    s"WATCH ${arguments.pretty(PARAM_DATASET)}"
+
+  def train(df: DataFrame, arguments: Arguments, context: ExecutionContext): Map[String, Any] =
+  {
+    if(!arguments.getList(PARAM_FACETS).isEmpty){ return Map.empty }
+
+    val detectedFacets = Facet.detect(df)
+
+    Map(
+      PARAM_FACETS ->
+        detectedFacets
+             .map { f => Map(
+                PARAM_CONFIG -> Json.toJson(f) 
+              )}
+    )
+
+  }
+
+  def build(input: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame =
+  {
+    config(arguments).flatMap { facet => 
+      facet.test(input).map { _ -> facet.affectsColumn }
+    }.foldLeft(input){ (df:DataFrame, error:(String, Option[String])) => 
+      logger.debug(s"Building $df <- $error")
+      error match {
+        case (msg, None) => df.caveat(msg)
+        case (msg, Some(errorColumn)) => 
+          df.select(
+            df.columns.map { col =>
+              if(col.equalsIgnoreCase(errorColumn)){ 
+                df(col).caveat(msg).as(col)
+              } else { 
+                df(col)
+              }
+            }:_*
+          )
+      }
+    }
+
+  }
+
 }
 

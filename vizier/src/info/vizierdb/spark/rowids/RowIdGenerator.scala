@@ -15,6 +15,8 @@ case class RowIdGenerator(source: Generator) extends Generator
   def elementSchema: StructType = 
     StructType(source.elementSchema.fields :+ RowIdGenerator.FIELD)
 
+  protected def withNewChildrenInternal(newChildren: IndexedSeq[Expression]): Expression = this
+
   override def eval(input: InternalRow): TraversableOnce[InternalRow] = 
     source.eval(input)
           .toIterable

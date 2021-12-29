@@ -166,6 +166,7 @@ object LoadDataset
                                       )
                                    }
                         ),
+        projectId = context.projectId
       )
 
       val dataframe = loadConstructor.construct(_ => throw new VizierException("Internal error; Load Constructor should not be chaining dataframes"))

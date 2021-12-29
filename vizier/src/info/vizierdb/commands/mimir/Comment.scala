@@ -22,6 +22,7 @@ import org.apache.spark.sql.functions.when
 import info.vizierdb.spark.rowids.AnnotateWithRowIds
 import info.vizierdb.util.StringUtils
 import org.mimirdb.caveats.implicits._
+import info.vizierdb.types._
 
 object Comment
   extends LensCommand
@@ -54,7 +55,7 @@ object Comment
     s"Comment ${arguments.pretty(PARAM_DATASET)}"
 
 
-  def build(df: DataFrame, arguments: Arguments): DataFrame =
+  def build(df: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame =
   {
     val comments: Map[Int, Seq[(String, String)]] = 
       arguments.getList(PARAM_COMMENTS).map { comment =>

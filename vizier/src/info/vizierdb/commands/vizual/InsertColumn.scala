@@ -15,8 +15,8 @@
 package info.vizierdb.commands.vizual
 
 import info.vizierdb.commands._
-import org.mimirdb.vizual
-import org.mimirdb.spark.Schema
+import info.vizierdb.spark.vizual
+import info.vizierdb.spark.SparkSchema
 
 object InsertColumn extends VizualCommand
 {
@@ -38,7 +38,7 @@ object InsertColumn extends VizualCommand
       vizual.InsertColumn(
         position = arguments.getOpt[Int](PARA_POSITION),
         name = arguments.get[String](PARA_NAME),
-        dataType = arguments.getOpt[String](PARA_DATATYPE).map { Schema.decodeType(_) }
+        dataType = arguments.getOpt[String](PARA_DATATYPE).map { SparkSchema.decodeType(_) }
       )
     )
 }

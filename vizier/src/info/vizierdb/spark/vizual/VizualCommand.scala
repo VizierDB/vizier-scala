@@ -3,7 +3,7 @@ package info.vizierdb.spark.vizual
 import play.api.libs.json._
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.functions._
-import org.mimirdb.rowids.AnnotateWithRowIds
+import info.vizierdb.spark.rowids.AnnotateWithRowIds
 import org.apache.spark.sql.types.DataType
 import info.vizierdb.spark.SparkSchema.dataTypeFormat
 

@@ -100,6 +100,8 @@ class Config(arguments: Seq[String])
   val stagingDirIsRelativeToDataDir = true
   lazy val dataDirFile = new File(dataDir)
 
+  def resolveToDataDir(path: String) = { new File(dataDirFile, path).getAbsoluteFile }
+
 
   ////////////////////////// Ingest //////////////////////////
   object ingest extends Subcommand("import", "ingest") {

@@ -15,15 +15,14 @@
 package info.vizierdb.commands.plot
 
 import play.api.libs.json._
-import org.mimirdb.api.{ Tuple => MimirTuple, MimirAPI }
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.artifacts.{ Chart, ChartSeries }
 import org.apache.spark.sql.{ DataFrame, Row }
-import org.mimirdb.api.request.ResultTooBig
+import info.vizierdb.spark.caveats.QueryWithCaveats
+import info.vizierdb.spark.caveats.QueryWithCaveats.ResultTooBig
 import org.mimirdb.caveats.implicits._
-import org.mimirdb.api.request.Query
 import org.apache.spark.unsafe.types.UTF8String
 import info.vizierdb.VizierException
 
