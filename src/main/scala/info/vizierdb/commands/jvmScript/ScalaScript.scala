@@ -31,6 +31,7 @@ import scala.reflect.runtime._
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
 import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object ScalaScript extends Command
 {
@@ -94,7 +95,7 @@ object ScalaScript extends Command
     }
   }
 
-  def predictProvenance(arguments: Arguments) =
+  def predictProvenance(arguments: Arguments, properties: JsObject) =
     ProvenancePrediction.default
 
 

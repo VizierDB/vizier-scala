@@ -14,7 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
-import play.api.libs.json.JsValue
+import play.api.libs.json._
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
@@ -51,7 +51,7 @@ object CheckpointDataset extends Command
     ).handle
     context.message("Dataset Checkpointed")
   }
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String]("dataset"))
       .definitelyWrites(arguments.get[String]("dataset"))

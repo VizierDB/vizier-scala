@@ -16,6 +16,7 @@ package info.vizierdb.commands.vizual
 
 import info.vizierdb.commands._
 import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object DropDataset extends Command
 {
@@ -32,7 +33,7 @@ object DropDataset extends Command
     val datasetName = arguments.get[String]("dataset")
     context.delete(datasetName)
   }
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyDeletes(arguments.get[String]("dataset"))
       .andNothingElse

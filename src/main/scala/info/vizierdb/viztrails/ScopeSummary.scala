@@ -88,7 +88,7 @@ case class ScopeSummary(
     copyWithUpdatesFromCellMetadata(
       cell.state,
       cell.outputs,
-      module.command.map { _.predictProvenance(module.arguments) }
+      module.command.map { _.predictProvenance(module.arguments, module.properties) }
                     .getOrElse { ProvenancePrediction.default }
     )
   }

@@ -39,10 +39,15 @@ import org.mimirdb.util.UnsupportedFeature
 import org.mimirdb.vizual.{ Command => VizualCommand }
 import org.mimirdb.api.request.VizualRequest
 import info.vizierdb.viztrails.ProvenancePrediction
+import org.mimirdb.util.ExperimentalOptions
 
 object Python extends Command
   with LazyLogging
 {
+  val PROP_INPUT_PROVENANCE = "input_provenance"
+  val PROP_OUTPUT_PROVENANCE = "output_provenance"
+
+
   def name: String = "Python Script"
   def parameters: Seq[Parameter] = Seq(
     CodeParameter(id = "source", language = "python", name = "Python Code"),
@@ -323,7 +328,18 @@ object Python extends Command
     logger.debug("Done")
   }
 
-  def predictProvenance(arguments: Arguments) =
-    ProvenancePrediction.default
+  def predictProvenance(arguments: Arguments, properties: JsObject) =
+    if(ExperimentalOptions.enabled("PARALLEL-PYTHON")){
+      (
+        (properties \ PROP_INPUT_PROVENANCE).asOpt[Seq[String]],
+        (properties \ PROP_OUTPUT_PROVENANCE).asOpt[Seq[String]]
+      ) match {
+        case (Some(input), Some(output)) => 
+          ProvenancePrediction.definitelyReads(input:_*)
+                              .definitelyWrites(output:_*)
+                              .andNothingElse
+        case _ => ProvenancePrediction.default
+      }
+    } else { ProvenancePrediction.default }
 }
 

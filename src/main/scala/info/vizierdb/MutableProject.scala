@@ -15,7 +15,6 @@
 package info.vizierdb
 
 import play.api.libs.json._
-
 import scalikejdbc._
 import java.io.File
 import java.net.URLConnection
@@ -90,12 +89,12 @@ class MutableProject(
    * )
    * </pre>
    */
-  def append(packageId: String, commandId: String)
+  def append(packageId: String, commandId: String, properties: Map[String, JsValue] = Map.empty)
             (args: (String, Any)*): (Branch, Workflow) =
   {
     val (oldbranch, ret) = DB autoCommit { implicit s => 
       val oldbranch = activeBranch
-      (oldbranch, oldbranch.append(packageId, commandId)(args:_*)) 
+      (oldbranch, oldbranch.append(packageId, commandId, properties = JsObject(properties))(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
     Scheduler.schedule(ret._2)
@@ -121,12 +120,12 @@ class MutableProject(
    * )
    * </pre>
    */
-  def insert(position: Int, packageId: String, commandId: String)
+  def insert(position: Int, packageId: String, commandId: String, properties: Map[String, JsValue] = Map.empty)
             (args: (String, Any)*): (Branch, Workflow) =
   {
     val (oldbranch, ret) = DB autoCommit { implicit s => 
       val oldbranch = activeBranch
-      (oldbranch, oldbranch.insert(position, packageId, commandId)(args:_*)) 
+      (oldbranch, oldbranch.insert(position, packageId, commandId, properties = JsObject(properties))(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
     Scheduler.schedule(ret._2)
@@ -152,12 +151,12 @@ class MutableProject(
    * )
    * </pre>
    */
-  def update(position: Int, packageId: String, commandId: String)
+  def update(position: Int, packageId: String, commandId: String, properties: Map[String, JsValue] = Map.empty)
             (args: (String, Any)*): (Branch, Workflow) =
   {
     val (oldbranch, ret) = DB autoCommit { implicit s => 
       val oldbranch = activeBranch
-      (oldbranch, oldbranch.update(position, packageId, commandId)(args:_*)) 
+      (oldbranch, oldbranch.update(position, packageId, commandId, properties = JsObject(properties))(args:_*)) 
     }
     Scheduler.abort(oldbranch.headId)
     Scheduler.schedule(ret._2)
@@ -374,10 +373,11 @@ class MutableProject(
   def script(
     script: String, 
     language: String = "python", 
-    waitForResult: Boolean = true
+    waitForResult: Boolean = true,
+    properties: Map[String, JsValue] = Map.empty
   ) = 
   {
-    append("script", language)("source" -> script)
+    append("script", language, properties = properties)("source" -> script)
     if(waitForResult) { waitUntilReadyAndThrowOnError }
   }
 

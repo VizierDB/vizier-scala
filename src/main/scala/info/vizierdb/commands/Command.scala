@@ -242,7 +242,7 @@ trait Command
    * arguments.  Although not presently used anywhere, this information will be used to
    * allow concurrent execution of cells in the future
    */
-  def predictProvenance(arguments: Arguments): ProvenancePrediction
+  def predictProvenance(arguments: Arguments, properties: JsObject): ProvenancePrediction
 
   /**
    * Predict the provenance (inputs and outputs) of this command from arguments
@@ -254,8 +254,8 @@ trait Command
    * arguments.  Although not presently used anywhere, this information will be used to
    * allow concurrent execution of cells in the future
    */
-  def predictProvenance(arguments: JsObject): ProvenancePrediction =
-    predictProvenance(Arguments(arguments.as[Map[String, JsValue]], parameters))
+  def predictProvenance(arguments: JsObject, properties: JsObject): ProvenancePrediction =
+    predictProvenance(Arguments(arguments.as[Map[String, JsValue]], parameters), properties)
 
 }
 

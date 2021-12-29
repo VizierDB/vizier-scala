@@ -25,6 +25,7 @@ import info.vizierdb.filestore.Filestore
 import java.io.File
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object UnloadDataset extends Command
   with LazyLogging
@@ -148,7 +149,7 @@ object UnloadDataset extends Command
 
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String](PARAM_DATASET))
       .definitelyWrites("file_export")

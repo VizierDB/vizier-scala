@@ -22,6 +22,7 @@ import info.vizierdb.viztrails.ProvenancePrediction
 import org.mimirdb.api.request.CreateViewRequest
 import info.vizierdb.VizierException
 import info.vizierdb.util.StringUtils
+import play.api.libs.json.JsObject
 
 object SplitDataset 
   extends Command
@@ -102,7 +103,7 @@ object SplitDataset
     }
   }
 
-  def predictProvenance(arguments: Arguments): ProvenancePrediction = 
+  def predictProvenance(arguments: Arguments, properties: JsObject): ProvenancePrediction = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String](PARAM_DATASET))
       .definitelyWrites((

@@ -99,7 +99,7 @@ object ManualStratifiedSample extends Command
     context.message("Sample created")
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String](PAR_INPUT_DATASET))
       .definitelyWrites(

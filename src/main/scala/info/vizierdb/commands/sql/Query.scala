@@ -94,7 +94,7 @@ object Query extends Command
     return views.toSeq ++ functions.toSeq
   }
 
-  def predictProvenance(arguments: Arguments) =
+  def predictProvenance(arguments: Arguments, properties: JsObject) =
     try {
       ProvenancePrediction
         .definitelyReads(
