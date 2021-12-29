@@ -33,6 +33,7 @@ import info.vizierdb.commands.data.DeclareParameters
 import info.vizierdb.delta.WorkflowState
 import info.vizierdb.delta.ComputeDelta
 import info.vizierdb.catalog.serialized.Timestamps
+import info.vizierdb.commands.FileArgument
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -306,10 +307,17 @@ class MutableProject(
     format: String="csv", 
     inferTypes: Boolean = true,
     schema: Seq[(String, DataType)] = Seq.empty,
-    waitForResult: Boolean = true
+    waitForResult: Boolean = true,
+    copyFile: Boolean = false
   ){
     append("data", "load")(
-      "file" -> file,
+      "file" -> (
+        if(copyFile){
+          FileArgument( fileid = Some(addFile(file = new File(file), name = Some(name)).id) )
+        } else {
+          FileArgument( url = Some(file) )
+        }
+      ),
       "name" -> name,
       "loadFormat" -> format,
       "loadInferTypes" -> inferTypes,

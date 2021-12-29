@@ -204,6 +204,35 @@ trait Command
   }
 
   /**
+   * Apply a mapping to replace a specific parameter in the argument list
+   * @param  arguments  The arguments to replace
+   * @param  rule       A partial function from ([[Parameter]], [[JsObject]]) to the new value, 
+   *                    or None if no replacement is needed
+   * @return            Some(the new arguments), or None if no replacements were made
+   */
+  def replaceArguments(arguments: JsObject)(rule: PartialFunction[(Parameter, JsValue),JsValue]): Option[JsValue] =
+  {
+    val base = arguments.as[Map[String, JsValue]]
+    val lineReplacements = 
+      parameters.map { param =>
+        param.name -> 
+          param.replaceParameterValue(base.getOrElse(param.name, JsNull), rule)
+      }.filter { _._2.isDefined }
+       .map { x => x._1 -> x._2.get }
+       .toMap
+    if(lineReplacements.isEmpty) { None }
+    else {
+      Some(
+        JsObject(
+          base.map { case (k, v) => 
+            k -> lineReplacements.getOrElse(k, v)
+          }.toMap
+        )
+      )
+    }
+  }
+
+  /**
    * Predict the provenance (inputs and outputs) of this command from arguments
    * 
    * @param   arguments      The encoded argument object
