@@ -168,6 +168,9 @@ object LoadDataset
                         ),
         projectId = context.projectId
       )
+      if(arguments.get[Boolean](PARAM_GUESS_TYPES)){
+        loadConstructor = loadConstructor.withInferredTypes
+      }
 
       val dataframe = loadConstructor.construct(_ => throw new VizierException("Internal error; Load Constructor should not be chaining dataframes"))
 

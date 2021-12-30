@@ -18,6 +18,7 @@ import info.vizierdb.types._
 import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import org.mimirdb.caveats.implicits._
+import org.mimirdb.lenses.inference.InferTypes
 
 case class LoadConstructor(
   url: FileArgument,
@@ -163,7 +164,33 @@ case class LoadConstructor(
         .replaceAll(INVALID_LEADING_CHARS, "_")
         .replaceAll(INVALID_INNER_CHARS, "_")
 
+  def withInferredTypes: LoadConstructor =
+  {
+    val df = construct(_ => ???)
+    val unproposedSchema = 
+      df.schema.drop(proposedSchema.map { _.size }.getOrElse(0))
+    
+    if(unproposedSchema.isEmpty){ return this }
 
+    val columnsToGuess = 
+      unproposedSchema.filter { _.dataType == StringType }
+                      .map { _.name }
+
+    val inferred = 
+      InferTypes(df, attributes = columnsToGuess)
+        .map { c => c.name -> c }
+        .toMap
+
+    return copy(
+      proposedSchema = 
+        Some(
+          proposedSchema.getOrElse(Seq.empty) ++ 
+            unproposedSchema.map { c => 
+              inferred.getOrElse(c.name, c)
+            }
+        )
+    )
+  }
 
   def loadCSVWithCaveats(): DataFrame =
   {
@@ -178,6 +205,7 @@ case class LoadConstructor(
       "mode" -> "PERMISSIVE",
       "columnNameOfCorruptRecord" -> ERROR_COL
     )
+
     val options = 
       new CSVOptions(
         extraOptions ++ sparkOptions,

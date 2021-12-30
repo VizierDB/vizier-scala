@@ -84,6 +84,11 @@ The UI test cases require `node`.  Install it and then
 npm install jsdom
 ```
 
+To run a single test case:
+```
+mill vizier.test.testOnly [classname]
+```
+
 ##### Run Vizier
 ```
 mill vizier.run [vizier arguments]

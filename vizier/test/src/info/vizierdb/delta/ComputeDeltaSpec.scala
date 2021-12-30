@@ -19,7 +19,7 @@ import org.specs2.specification.BeforeAll
 
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.viztrails.MutableProject
-import org.mimirdb.vizual
+import info.vizierdb.spark.vizual
 
 class ComputeDeltaSpec 
   extends Specification

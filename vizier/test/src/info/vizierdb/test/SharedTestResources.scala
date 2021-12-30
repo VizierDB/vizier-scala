@@ -49,7 +49,7 @@ object SharedTestResources
 
         // Normal initialization
         Vizier.initSQLite()
-        Vizier.initMimir()
+        Vizier.initSpark()
         VizierAPI.urls = 
           new VizierURLs(
             new URL(s"http://localhost:5000/"), 
