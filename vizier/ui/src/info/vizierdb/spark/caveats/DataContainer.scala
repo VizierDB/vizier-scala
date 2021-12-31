@@ -1,4 +1,4 @@
-package org.mimirdb.api.request
+package info.vizierdb.spark.caveats
 
 import info.vizierdb.serialized.DatasetColumn
 import info.vizierdb.nativeTypes.{ JsValue, Caveat }

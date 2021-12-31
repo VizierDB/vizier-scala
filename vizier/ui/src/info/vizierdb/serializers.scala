@@ -2,7 +2,7 @@ package info.vizierdb
 
 import play.api.libs.json._
 import scala.scalajs.js
-import org.mimirdb.api.request.DataContainer
+import info.vizierdb.spark.caveats.DataContainer
 
 object serializers
 {

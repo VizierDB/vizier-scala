@@ -21,7 +21,7 @@ import info.vizierdb.serialized.{
 
 }
 import info.vizierdb.nativeTypes.JsValue
-import scala.util.Success
+import scala.util.{ Success, Failure }
 
 class ModuleEditor(
   val packageId: String, 
@@ -67,6 +67,8 @@ class ModuleEditor(
                 module.id = Some(workflow.modules(module.position).moduleId)
               }
               logger.debug(s"New module id is... ${module.id}")
+            case f:Failure[_] =>
+              logger.trace("REQUEST FAILED!")
           }
       }
   }
