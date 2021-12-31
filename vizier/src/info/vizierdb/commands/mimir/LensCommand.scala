@@ -14,72 +14,107 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.mimir
 
+import scalikejdbc._
 import play.api.libs.json._
 import info.vizierdb.commands._
-import org.mimirdb.lenses.Lens
+import info.vizierdb.types._
 import com.typesafe.scalalogging.LazyLogging
-import org.mimirdb.api.request.CreateLensRequest
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructField
+import info.vizierdb.spark.{DataFrameConstructor, DataFrameConstructorCodec, DefaultProvenance}
+
+case class LensConstructor(
+  lensClassName: String,
+  target: Identifier,
+  arguments: JsObject,
+  projectId: Identifier
+) extends DataFrameConstructor
+  with DefaultProvenance
+{
+  def construct(context: Identifier => DataFrame): DataFrame =
+  {
+    val lensClazz = 
+      Class.forName(lensClassName)
+    val lens = 
+      lensClazz
+           .getField("MODULE$")
+           .get(lensClazz)
+           .asInstanceOf[LensCommand]
+
+    return lens.build(
+      context(target),
+      Arguments(arguments, lens.parameters),
+      projectId
+    )
+  }
+
+  def dependencies = Set(target)
+}
+
+object LensConstructor
+  extends DataFrameConstructorCodec
+{
+  implicit val format: Format[LensConstructor] = Json.format
+  def apply(j: JsValue) = j.as[LensConstructor]
+}
+
 
 trait LensCommand 
   extends Command
   with LazyLogging
 {
+  val PARAM_DATASET = "dataset"
+
   def lensParameters: Seq[Parameter]
-  def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue
-  def updateConfig(lensArgs: JsValue, schema: Seq[StructField], dataset: String): Map[String, JsValue]
-  def lens: String
-  def lensFormat(arguments: Arguments): String
+  def train(dataset: DataFrame, arguments: Arguments, context: ExecutionContext): Map[String, Any]
+  def build(dataset: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame
 
-  def parameters: Seq[Parameter] = Seq(
-    DatasetParameter(id = "dataset", name = "Dataset")
+  def parameters = Seq(
+    ArtifactParameter(id = PARAM_DATASET, name = "Dataset", artifactType = ArtifactType.DATASET),
   ) ++ lensParameters
-
-  def format(arguments: Arguments): String =
-    s"CREATE LENS ON ${arguments.get[String]("dataset")} ${lensFormat(arguments)}"
-  def title(arguments: Arguments): String =
-    s"$lens on ${arguments.pretty("dataset")}"
-
-  def process(arguments: Arguments, context: ExecutionContext)
+  def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    val datasetName = arguments.get[String]("dataset")
-
-    logger.debug(s"${lens}($arguments) <- $datasetName")
-    
-
-    val input = context.dataset(datasetName)
-                         .getOrElse { 
-                            throw new IllegalArgumentException(s"No such dataset '$datasetName'")
+    val datasetName = arguments.get[String](PARAM_DATASET)
+    val dataset = context.artifact(datasetName)
+                         .getOrElse{ 
+                           context.error(s"Dataset $datasetName does not exist"); return
                          }
 
-    val schema = context.datasetSchema(datasetName).get
-    val config = lensConfig(arguments, schema, datasetName, context)
+    logger.debug(s"${name}($arguments) <- $datasetName")
+    context.message(s"Building $name lens on $datasetName...")
 
-    val (output, _) = context.outputDataset(datasetName)
+    context.message(s"Saving results...")
+    
+    val updatesFromTraining = 
+      train(
+        DB.autoCommit { implicit s => dataset.dataframe },
+        arguments,
+        context
+      )
+    val updatedArguments = 
+      if(updatesFromTraining.isEmpty){ arguments }
+      else { context.updateArguments(updatesFromTraining.toSeq:_*) }
 
-    logger.debug(s"${this.getClass().getName()} -> $input -> $output")
-
-    val response = CreateLensRequest(
-      input = input,
-      `type` = lens,
-      params = config,
-      resultName = Some(output),
-      materialize = false,
-      humanReadableName = Some(datasetName),
-      properties = None
-    ).handle
-
-    val updates = updateConfig(response.config, schema, datasetName)
-    if( !updates.isEmpty ){
-      context.updateJsonArguments(updates.toSeq:_*)
-    }
-
-    context.message(s"Created $name Lens on $datasetName")
+    val output = context.outputDataset(
+      datasetName,
+      new LensConstructor(
+        lensClassName = this.getClass.getName, 
+        target = dataset.id,
+        arguments = updatedArguments.asJson,
+        projectId = context.projectId,
+      )
+    )
+    context.displayDataset(datasetName)
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), 
-           Seq(arguments.get[String]("dataset"))) )
-
+  def predictProvenance(arguments: Arguments): Option[(Seq[String], Seq[String])] = 
+    Some(
+      Seq(arguments.get[String](PARAM_DATASET)),
+      Seq(arguments.get[String](PARAM_DATASET))
+    )
+}
+trait UntrainedLens
+{
+  def train(dataset: DataFrame, arguments: Arguments, context: ExecutionContext) = Map[String,Any]()
 }
 

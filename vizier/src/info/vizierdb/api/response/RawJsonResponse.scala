@@ -15,7 +15,7 @@
 package info.vizierdb.api.response
 
 import play.api.libs.json._
-import org.mimirdb.api.JsonResponse
+import info.vizierdb.api.JsonResponse
 import javax.servlet.http.HttpServletResponse
 
 case class RawJsonResponse(

@@ -20,24 +20,16 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.types._
 import info.vizierdb.filestore.Filestore
-import org.mimirdb.api.request.{ 
-  CreateViewRequest, 
-  LoadInlineRequest, 
-  LoadRequest, 
-  QueryTableRequest,
-  QueryDataFrameRequest,
-  DataContainer
-}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.types.StructField
-import org.mimirdb.spark.SparkPrimitive
-import org.mimirdb.spark.Schema.fieldFormat
+import info.vizierdb.spark.{ SparkPrimitive, LoadConstructor, InlineDataConstructor }
+import info.vizierdb.spark.arrow.ArrowQuery
+import info.vizierdb.spark.SparkSchema.fieldFormat
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.catalog.ArtifactRef
 import info.vizierdb.catalog.ArtifactSummary
-import org.mimirdb.util.UnsupportedFeature
-import org.mimirdb.vizual.{ Command => VizualCommand }
-import org.mimirdb.api.request.VizualRequest
+import info.vizierdb.spark.vizual.{ VizualCommand, VizualScriptConstructor }
+import info.vizierdb.spark.caveats.QueryWithCaveats
 
 object Python extends Command
   with LazyLogging
@@ -107,7 +99,9 @@ object Python extends Command
             withArtifact { artifact => 
               python.send("dataset",
                 "data" -> Json.toJson(
-                  artifact.getDataset(includeUncertainty = true)
+                  DB.autoCommit { implicit s => 
+                    artifact.datasetData(includeCaveats = true)
+                  }
 
                 ),
                 "artifactId" -> JsNumber(artifact.id)
@@ -138,39 +132,35 @@ object Python extends Command
             }
           case "save_dataset" =>
             {
-              val (nameInBackend, id) = 
-                context.outputDataset( (event\"name").as[String] )
-
               val ds = (event\"dataset")
-              LoadInlineRequest(
-                schema = (ds\"schema").as[Seq[StructField]],
-                data = (ds\"data").as[Seq[Seq[JsValue]]],
-                dependencies = None,
-                resultName = Some(nameInBackend),
-                properties = Some( (ds\"properties").as[Map[String,JsValue]] ),
-                humanReadableName = Some( (event\"name").as[String] )
-              ).handle
+              val artifact = context.outputDataset( 
+                (event\"name").as[String],
+                InlineDataConstructor(
+                  schema = (ds\"schema").as[Seq[StructField]],
+                  data = (ds\"data").as[Seq[Seq[JsValue]]],
+                ),
+                properties = (ds\"properties").as[Map[String,JsValue]],
+              )
 
               python.send("datasetId",
-                "artifactId" -> JsNumber(id)
+                "artifactId" -> JsNumber(artifact.id)
               )
             }
           case "vizual_script" => 
-            def handler(inputNameInBackend: Option[String]): Unit = {
+            def handler(inputId: Option[Identifier]): Unit = {
               val output = (event\"output").as[String]
-              val (nameInBackend, id) = 
-                context.outputDataset( output )
-              logger.trace(s"Visual being used to create dataset: $output (artifact $id)")
 
-              val response = VizualRequest(
-                input = inputNameInBackend,
-                script = (event\"script").as[Seq[VizualCommand]],
-                resultName = Some(nameInBackend),
-                compile = None
-              ).handle
+              val artifact = context.outputDataset( 
+                name = output,
+                constructor = VizualScriptConstructor(
+                  script = (event\"script").as[Seq[VizualCommand]],
+                  input = inputId
+                )
+              )
+              logger.trace(s"Visual being used to create dataset: $output (artifact ${artifact.id})")
 
               python.send("datasetId",
-                "artifactId" -> JsNumber(id)
+                "artifactId" -> JsNumber(artifact.id)
               )
             }
             ((event\"name").asOpt[String]:Option[String]) match {
@@ -182,41 +172,28 @@ object Python extends Command
                     (event\"identifier").as[Long] == existingDs.id,
                     s"Vizual script for ${(event\"output")} with out-of-sync identifier (Python has ${(event\"identifier")}; Spark has ${existingDs.id})"
                   )
-                  handler(Some(existingDs.nameInBackend)) 
+                  handler(Some(existingDs.id)) 
                 }
             }
 
           case "create_dataset" => 
             {
-              val fileId = (event \ "file").as[String].toLong
-              val filePath = Filestore.getRelative(context.projectId, fileId).toString
-              val (nameInBackend, id) = 
-                context.outputDataset( (event\"name").as[String] )
-
-
-              val result = LoadRequest(
-                file = filePath,
-                format = "parquet",
-                inferTypes = false,
-                detectHeaders = false,
-                humanReadableName = Some( (event \ "name").as[String] ),
-                backendOption = Seq(),
-                dependencies = 
-                  Some(
-                    DB.readOnly { implicit s => 
-                      Artifact.lookupSummaries(
-                        context.inputs.values.toSeq
-                      )
-                    }.map { _.nameInBackend }
-                  ),
-                resultName = Some(nameInBackend),
-                properties = None,
-                proposedSchema = None,
-                urlIsRelativeToDataDir = Some(true)
-              ).handle
+              val artifact = 
+                context.outputDataset( 
+                  (event\"name").as[String],
+                  LoadConstructor(
+                    url = FileArgument( fileid = Some((event \ "file").as[String].toLong) ),
+                    format = (event\"format").asOpt[String].getOrElse("parquet"),
+                    sparkOptions = Map.empty,
+                    contextText = Some( (event \ "name").as[String] ),
+                    proposedSchema = None,
+                    urlIsRelativeToDataDir = None,
+                    projectId = context.projectId
+                  )
+                )
 
               python.send("datasetId",
-                "artifactId" -> JsNumber(id)
+                "artifactId" -> JsNumber(artifact.id)
               )
             }
           case "save_artifact" =>
@@ -249,15 +226,17 @@ object Python extends Command
           case "get_data_frame" => 
             {
               withArtifact { artifact => 
-                val response = QueryDataFrameRequest(
-                  input = None,
-                  query = s"SELECT * FROM ${artifact.nameInBackend}",
-                  includeUncertainty = Some(true),
-                  includeReasons = Some(false)
-                ).handle
+
+                val connection = ArrowQuery(
+                  QueryWithCaveats.build(
+                    DB.autoCommit { implicit s => artifact.dataframe },
+                    true
+                  )
+                )
+
                 python.send("data_frame",
-                  "port" -> JsNumber(response.port),
-                  "secret" -> JsString(response.secret)
+                  "port" -> JsNumber(connection.port),
+                  "secret" -> JsString(connection.secret)
                 )
               }
             }
@@ -287,7 +266,7 @@ object Python extends Command
         case e: Exception => 
           {
             e match {
-              case m:UnsupportedFeature => 
+              case m:UnsupportedOperationException => 
                 context.error(m.getMessage())
               case _ => 
                 e.printStackTrace()

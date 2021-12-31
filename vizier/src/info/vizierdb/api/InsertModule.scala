@@ -19,14 +19,12 @@ import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow, Module }
 import info.vizierdb.commands.Commands
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
-import org.apache.spark.deploy.rest.ErrorResponse
 
 object InsertModule
 {

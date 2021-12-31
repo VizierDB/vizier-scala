@@ -14,6 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.transform
 
+import scalikejdbc._
 import info.vizierdb.commands._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
@@ -89,7 +90,7 @@ object AggregateDataset
     if(dataset.t != ArtifactType.DATASET){
       throw new RuntimeException(s"$datasetName is not a dataset")
     }
-    val datasetSchema = dataset.getSchema(false).schema
+    val datasetSchema = DB.autoCommit { implicit s => dataset.datasetSchema }
     def col(idx: Int) = s"`${datasetSchema(idx).name}`"
     def as(in: Option[String]) = in match { case None => "" 
                                             case Some(x) => s" AS `${x.replaceAll("[^a-zA-Z_0-9]", "")}`" }

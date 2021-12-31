@@ -18,14 +18,15 @@ import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Project, Artifact }
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types._
 import info.vizierdb.serialized.{ DatasetColumn, DatasetRow, DatasetAnnotation }
 import info.vizierdb.serializers._
 import info.vizierdb.nativeTypes.datasetColumnToStructField
-import org.mimirdb.api.request.LoadInlineRequest
 import info.vizierdb.api.response._
 import info.vizierdb.serialized
+import info.vizierdb.spark.InlineDataConstructor
+import info.vizierdb.artifacts.Dataset
+import info.vizierdb.catalog.Artifact
 
 object CreateDataset
 {
@@ -48,17 +49,13 @@ object CreateDataset
         project.id, 
         ArtifactType.DATASET,
         MIME.DATASET_VIEW,
-        Array[Byte]()
+        Json.toJson(Dataset(
+          InlineDataConstructor(
+            schema = columns.map { datasetColumnToStructField(_) },
+            data = rows.map { _.values }
+          )
+        )).toString.getBytes
       )
-
-      LoadInlineRequest(
-        schema = columns.map { datasetColumnToStructField(_) },
-        data = rows.map { _.values },
-        dependencies = None,
-        resultName = Some(artifact.nameInBackend),
-        properties = properties.map { serialized.PropertyList.toMap(_) },
-        humanReadableName = name
-      ).handle
 
       artifact.summarize(name.getOrElse { null })
     }

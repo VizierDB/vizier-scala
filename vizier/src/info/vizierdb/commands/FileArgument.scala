@@ -64,6 +64,13 @@ case class FileArgument(
          throw new IllegalArgumentException("Need at least one of fileid or url")
        }
 
+  def needsStaging: Boolean =
+    url.map { 
+      case u if u.startsWith("http://") 
+             || u.startsWith("https://") => true
+      case _ => false
+    }.getOrElse { false }
+
   def guessFilename(projectId: Option[Identifier] = None)(implicit session:DBSession) =
     filename.getOrElse {
       url.map { _.split("/").last }

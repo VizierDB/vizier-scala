@@ -16,60 +16,84 @@ package info.vizierdb.commands.mimir
 
 import play.api.libs.json._
 import info.vizierdb.commands._
+import info.vizierdb.types._
 import org.apache.spark.sql.types.StructField
-import org.mimirdb.lenses.implementation.MergeAttributesLensConfig
-import org.mimirdb.lenses.Lenses
-import org.mimirdb.spark.Schema
-import org.mimirdb.spark.SparkPrimitive.dataTypeFormat
+import info.vizierdb.spark.SparkSchema
+import info.vizierdb.spark.SparkPrimitive.dataTypeFormat
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.{ DataType, StringType }
+import org.mimirdb.lenses.inference.InferTypes
 
 object TypeInference
   extends LensCommand
 { 
-  def lens = Lenses.typeInference
-  def name: String = "Assign Datatypes"
+  val PARAM_SCHEMA = "schema"
+  val PARAM_COLUMN = "schema_column"
+  val PARAM_DATATYPE = TemplateParameters.PARAM_DATATYPE
+
+  val name: String = "Assign Datatypes"
+
   def lensParameters: Seq[Parameter] = Seq(
-    ListParameter(name = "Schema (leave blank to guess)", id = "schema", required = false, components = Seq(
-      ColIdParameter(name = "Column Name", id = "schema_column", required = false),
+    ListParameter(id = PARAM_SCHEMA, name = "Schema (leave blank to guess)", required = false, components = Seq(
+      ColIdParameter(id = PARAM_COLUMN, name = "Column Name", required = false),
       TemplateParameters.DATATYPE
     )),
   )
-  def lensFormat(arguments: Arguments): String = 
+  def format(arguments: Arguments): String = 
     // "CAST TYPES"
-    s"CAST TYPES TO (${arguments.getList("schema").map { col => 
-      s"${col.get[Int]("schema_column")} ${col.get[String]("schema_datatype")}"
+    s"CAST TYPES TO (${arguments.getList(PARAM_SCHEMA).map { col => 
+      s"${col.get[Int](PARAM_COLUMN)} ${col.get[String](PARAM_DATATYPE)}"
     }.mkString(", ")})"
 
+  def title(arguments: Arguments): String =
+    s"ASSIGN TYPES ${arguments.pretty(PARAM_DATASET)}"
 
-  def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue =
+  def train(df: DataFrame, arguments: Arguments, context: ExecutionContext): Map[String, Any] =
   {
-    JsObject(
-      arguments.getList("schema")
-               .filter { _.get[Int]("schema_column") >= 0 }
-               .map { col =>
-                 schema(col.get[Int]("schema_column")).name -> 
-                   JsString(col.get[String]("schema_datatype"))
-               }
-               .toMap
+    var targets = arguments.getList(PARAM_SCHEMA).map { col =>
+                    StructField(
+                      df.columns(col.get[Int](PARAM_COLUMN)),
+                      SparkSchema.decodeType(col.get[String](PARAM_DATATYPE))
+                    )
+                  }
+    
+    if(!targets.isEmpty) { return Map.empty }
+    context.message("No target columns specified.  Taking all string columns.")
+
+    targets = df.schema.filter { _.dataType == StringType }
+
+    val inferred = 
+      InferTypes(df, attributes = targets.map { _.name }.toSeq)
+        .map { field => field.name -> SparkSchema.encodeType(field.dataType) }
+        .toMap
+    Map(
+      PARAM_SCHEMA -> Seq(
+        df.schema.zipWithIndex.map { case (col, idx) => 
+          Map(
+            PARAM_COLUMN -> idx, 
+            PARAM_DATATYPE -> inferred.getOrElse(col.name, SparkSchema.encodeType(col.dataType))
+          )
+        }
+      )
     )
   }
-  def updateConfig(lensArgs: JsValue, schema: Seq[StructField], dataset: String): Map[String,JsValue] =
+  def build(df: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame =
   {
-    val trained = lensArgs.as[Map[String, String]]
-                          .mapValues { 
-                            case "integer" => "int"
-                            case x => x
-                          }
-    Map(
-      "schema" -> 
-        JsArray(
-          schema.zipWithIndex.map { case (col, idx) =>
-            Json.obj(
-              "schema_column" -> idx,
-              "schema_datatype" -> trained(col.name)
-            )
-          }
-        )
-    )
-  }  
+    val targets = arguments.getList(PARAM_SCHEMA).map { col =>
+                    df.columns(col.get[Int](PARAM_COLUMN)) -> 
+                      SparkSchema.decodeType(col.get[String](PARAM_DATATYPE))
+                  }
+                  .toMap
+
+    val columns = df.columns
+                    .map { 
+                      case col if targets contains col => 
+                        df(col).cast(targets(col))
+                      case col => 
+                        df(col)
+                    }
+
+    df.select(columns:_*)
+  }
 }
 

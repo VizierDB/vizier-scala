@@ -26,13 +26,15 @@ import info.vizierdb.util.Streams
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import info.vizierdb.VizierException
-import org.mimirdb.vizual.{ Command => VizualCommand }
+import info.vizierdb.spark.vizual.VizualCommand
 import info.vizierdb.commands.vizual.{ Script => VizualScript }
 import org.apache.spark.sql.types._
-import org.mimirdb.spark.{ Schema => SparkSchema }
+import org.apache.spark.sql.DataFrame
+import info.vizierdb.spark.SparkSchema
 import info.vizierdb.commands.data.DeclareParameters
 import info.vizierdb.delta.WorkflowState
 import info.vizierdb.delta.ComputeDelta
+import info.vizierdb.spark.caveats.DataContainer
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -416,6 +418,18 @@ class MutableProject(
   }
 
   /**
+   * Retrieve the [[ArtifactRef]] for a specific name
+   * @param  artifactName  The name of an artifact output by the workflow
+   * @return               The [[ArtifactRef]] for the specified artifact
+   */
+  def artifactRef(artifactName: String): ArtifactRef =
+    artifactRefs.find { _.userFacingName.equalsIgnoreCase(artifactName) }
+            .getOrElse { 
+              throw new VizierException(s"No Such Artifact $artifactName")
+            }
+
+
+  /**
    * Retrieve all [[Artifact]]s output by the entire workflow (the scope)
    * @return              A collection of [[Artifact]]s in the final cell's output scope.
    */
@@ -434,13 +448,26 @@ class MutableProject(
    */
   def artifact(artifactName: String): Artifact = 
   {
-    val ref = (
-      artifactRefs.find { _.userFacingName.equalsIgnoreCase(artifactName) }
-                  .getOrElse { 
-                    throw new VizierException(s"No Such Artifact $artifactName")
-                  }
-    )
+    val ref = artifactRef(artifactName)
     return DB.readOnly { implicit s => ref.get.get }
+  }
+
+  /**
+   * Retrieve the spark dataframe corresponding to a specific artifact
+   */
+  def dataframe(artifactName: String): DataFrame =
+  {
+    val ref = artifactRef(artifactName)
+    return DB.autoCommit { implicit s => ref.get.get.dataframe }
+  }
+
+  /**
+   * Retrieve the spark dataframe corresponding to a specific artifact
+   */
+  def datasetData(artifactName: String): DataContainer =
+  {
+    val ref = artifactRef(artifactName)
+    return DB.autoCommit { implicit s => ref.get.get.datasetData() }
   }
 
   /**
@@ -453,15 +480,12 @@ class MutableProject(
    */
   def show(artifactName: String, rows: Integer = null): Unit =
   {
-
     val artifact: Artifact = this.artifact(artifactName)
     artifact.t match {
       case ArtifactType.DATASET => {
-        import org.mimirdb.api.MimirAPI
         import org.mimirdb.caveats.implicits._
-        MimirAPI.catalog
-                .get(artifact.nameInBackend)
-                .showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
+        val df = DB.autoCommit { implicit s => artifact.dataframe }
+        df.showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
       }
       case _ => throw new VizierException(s"Show unsupported for ${artifact.t}")
     }

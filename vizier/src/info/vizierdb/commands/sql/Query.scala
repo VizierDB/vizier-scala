@@ -14,18 +14,18 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.sql
 
+import scalikejdbc._
 import play.api.libs.json._
-import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
-import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
 import info.vizierdb.types._
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
-import org.mimirdb.api.request.CreateViewRequest
 import com.typesafe.scalalogging.LazyLogging
-import org.mimirdb.spark.InjectedSparkSQL
-import org.mimirdb.api.MimirAPI
+import info.vizierdb.spark.{ InjectedSparkSQL, ViewConstructor }
 import info.vizierdb.catalog.ArtifactSummary
+import info.vizierdb.Vizier
+import org.apache.spark.sql.{ DataFrame, SparkSession, AnalysisException }
+import info.vizierdb.catalog.Artifact
 
 object Query extends Command
   with LazyLogging
@@ -54,42 +54,71 @@ object Query extends Command
                            .map { case (name, summary:ArtifactSummary) => name -> summary.id }
                            .toMap
     val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
-    val (dsName, dsId) = context.outputDataset(datasetName)
     val query = arguments.get[String]("source")
 
     logger.debug(s"$scope : $query")
 
     try { 
       logger.trace("Creating view")
-      val response = CreateViewRequest(
-        input = scope.mapValues { _.nameInBackend }, 
-        functions = Some(functions.mapValues { _.toString }),
-        query = query, 
-        resultName = Some(dsName),
-        properties = None
-      ).handle
+
+      val fnDeps: Map[String, (Identifier, String, String)] = 
+        InjectedSparkSQL.getDependencies(query)
+                        ._2.toSeq
+                        .collect { case f if functions contains f => 
+                                      f -> functions(f) }
+                        .toMap
+                        .mapValues { id =>  
+                          DB.autoCommit { implicit s => 
+                            val a = Artifact.get(id, Some(context.projectId))
+                            (
+                              a.id,
+                              a.mimeType,
+                              a.string
+                            )
+                          }
+                        }
+
+      val view = 
+        ViewConstructor(
+          datasets = scope.mapValues { _.id },
+          functions = fnDeps,
+          query = query,
+          projectId = context.projectId
+        )
+
+      val output = context.outputDataset(datasetName, view)
+      val df = DB.autoCommit { implicit s => output.dataframe }
+      // df.explain()
 
       logger.trace("View created; Gathering dependencies")
-      for(dep <- response.dependencies){
+      for(dep <- view.viewDeps){
         context.inputs.put(dep, scope(dep).id)
       }
-      for(dep <- response.functions){
-        context.inputs.put(dep, functions(dep))
+      for(dep <- view.fnDeps){
+        // view.functions includes all functions referenced by the query,
+        // including those supplied by spark/plugins, etc...  We only
+        // want to register dependencies on functions explicitly in the
+        // context's scope.
+        if(functions contains dep){
+          context.inputs.put(dep, functions(dep))
+        }
       }
 
       logger.trace("Rendering dataset summary")
       context.displayDataset(datasetName)
     } catch { 
-      case e: org.mimirdb.api.FormattedError => 
-        context.error(e.response.errorMessage)
+      case e: info.vizierdb.api.FormattedError => 
+        context.error(e.getMessage)
+      case e:AnalysisException => {
+        e.printStackTrace()
+        context.error(prettyAnalysisError(e, query))
+      }
     }
   }
 
-  lazy val parser = InjectedSparkSQL(MimirAPI.sparkSession)
-
   def computeDependencies(sql: String): Seq[String] =
   {
-    val (views, functions) = parser.getDependencies(sql)
+    val (views, functions) = InjectedSparkSQL.getDependencies(sql)
     return views.toSeq
   }
 
@@ -100,5 +129,53 @@ object Query extends Command
         arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
       )
     ) )
+  def prettyAnalysisError(e: AnalysisException, query: String): String =
+    prettySQLError(e.message, query, e.line, e.startPosition.getOrElse(0))
+
+  def prettySQLError(
+    message: String, 
+    query: String, 
+    targetLine: Option[Int] = None, 
+    startPosition: Int = 0
+  ): String = {
+    val sb = new StringBuilder(message+"\n")
+    sb.append("in\n")
+    
+    def normalLine(l: String)    { sb.append(s"    $l\n") }
+    def highlightLine(l: String) { sb.append(s">>> $l\n") }
+    
+    val queryLines = query.split("\n")
+    
+    targetLine match { 
+      case None => queryLines.foreach { normalLine(_) }
+      case Some(lineNo) => {
+        // The line number we get is 1-based.  query's lines are 0-based.
+        if(lineNo > queryLines.size){ 
+          sb.append(s"Query Trace Error: Got Line #$lineNo out of ${queryLines.size}")
+          queryLines.foreach { normalLine(_) }
+        } else {
+          if(lineNo > 2){
+            normalLine(queryLines(lineNo - 3))
+          }
+          if(lineNo > 1){
+            normalLine(queryLines(lineNo - 2))
+          }
+          highlightLine(queryLines(lineNo - 1))
+          sb.append("    ")
+          (0 until (startPosition-2)).foreach { sb.append(' ') }
+          sb.append("^\n")
+
+          if(queryLines.size > lineNo + 0){
+            normalLine(queryLines(lineNo))
+          }
+          if(queryLines.size > lineNo + 1){
+            normalLine(queryLines(lineNo+1))
+          }
+        }
+      }
+    }
+
+    sb.toString()
+  }
 }
 

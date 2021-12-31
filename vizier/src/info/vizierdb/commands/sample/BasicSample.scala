@@ -16,9 +16,7 @@ package info.vizierdb.commands.sample
 
 import info.vizierdb.commands._
 import com.typesafe.scalalogging.LazyLogging
-import org.mimirdb.api.request.CreateSampleRequest
-import org.mimirdb.api.request.Sample.Uniform
-import org.mimirdb.api.request.MaterializeRequest
+import scala.util.Random
 
 object BasicSample extends Command
   with LazyLogging
@@ -27,7 +25,6 @@ object BasicSample extends Command
   val PAR_SAMPLE_RATE = "sample_rate"
   val PAR_OUTPUT_DATASET = "output_dataset"
   val PAR_SEED = "seed"
-  val PAR_MATERIALIZE = "materialize"
 
   def name: String = "Basic Sample"
   def parameters: Seq[Parameter] = Seq(
@@ -35,7 +32,6 @@ object BasicSample extends Command
     DecimalParameter(id = PAR_SAMPLE_RATE, default = Some(0.1), required = false, name = "Sampling Rate (0.0-1.0)"),
     StringParameter(id = PAR_OUTPUT_DATASET, required = false, name = "Output Dataset"),
     StringParameter(id = PAR_SEED, hidden = true, required = false, default = None, name = "Sample Seed"),
-    BooleanParameter(id = PAR_MATERIALIZE, name = "Materialize", required = false, default = Some(true))
   )
   def format(arguments: Arguments): String = 
     s"CREATE ${arguments.pretty(PAR_SAMPLE_RATE)} SAMPLE OF ${arguments.get[String](PAR_INPUT_DATASET)}"+
@@ -52,30 +48,24 @@ object BasicSample extends Command
     val outputName = arguments.getOpt[String](PAR_OUTPUT_DATASET)
                               .getOrElse { inputName }
     val probability = arguments.get[Float](PAR_SAMPLE_RATE)
-    val seed = arguments.getOpt[String](PAR_SEED).map { _.toLong }
+    val seedMaybe = arguments.getOpt[String](PAR_SEED).map { _.toLong }
+    val seed = seedMaybe.getOrElse { Random.nextLong }
 
-    val input = context.dataset(inputName)
+    val input = context.artifact(inputName)
                        .getOrElse { throw new IllegalArgumentException(s"No such dataset $inputName")}
-    val (output, _) = context.outputDataset(outputName)
 
     context.message("Registering sample...")
-    val response = CreateSampleRequest(
-      source = input,
-      samplingMode = Uniform(probability),
-      seed = seed,
-      resultName = Some(output),
-      properties = None
-    ).handle
+    context.outputDataset(
+      outputName,
+      SampleConstructor(
+        seed = seed,
+        Uniform(probability),
+        input = input.id
+      )
+    )
 
-    context.updateArguments(PAR_SEED -> response.seed.toString)
-
-    if(arguments.get[Boolean](PAR_MATERIALIZE)){
-      context.message("Materializing sample...")
-      val (materialized, _) = context.outputDataset(outputName)
-      val response = MaterializeRequest(
-        table = output,
-        resultName = Some(materialized)
-      ).handle
+    if(seedMaybe.isEmpty) { 
+      context.updateArguments(PAR_SEED -> seed.toString)
     }
 
     context.message("Sample created")

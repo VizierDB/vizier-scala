@@ -21,8 +21,8 @@ import org.specs2.specification.BeforeAll
 
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.viztrails.MutableProject
-import org.mimirdb.vizual._
 import org.apache.spark.sql.types._
+import info.vizierdb.spark.vizual._
 
 class VizualCommandSpec
   extends Specification
@@ -38,7 +38,7 @@ class VizualCommandSpec
     project.load("test_data/explosions.csv", "R")
     // project.show("R")
     
-    val rowids = project.artifact("R").getDataset().prov
+    val rowids = project.datasetData("R").prov
     
     project.sql("""
       SELECT A, explode(split(B, '/')) AS grade FROM R
@@ -64,10 +64,9 @@ class VizualCommandSpec
     """ -> "S")
     // project.show("S")
 
-    project.artifact("S")
-           .getDataset()
-           .data
-           .map { _(2) must not beNull }
+    project.dataframe("S")
+           .collect
+           .filter { _.isNullAt(2) } must beEmpty
     
   }
 }

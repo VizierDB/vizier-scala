@@ -18,7 +18,6 @@ import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Project, Branch, Workflow }
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
@@ -48,7 +47,7 @@ object CreateBranch
                  fromBranch = source.map { _.branchId },
                  fromWorkflow = source.flatMap { _.workflowId }
                )
-      branch.summarize,
+      branch.summarize
     }
   } 
 }

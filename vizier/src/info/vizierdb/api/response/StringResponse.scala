@@ -15,7 +15,7 @@
 package info.vizierdb.api.response
 
 import play.api.libs.json._
-import org.mimirdb.api.BytesResponse
+import info.vizierdb.api.BytesResponse
 import javax.servlet.http.HttpServletResponse
 
 case class StringResponse(

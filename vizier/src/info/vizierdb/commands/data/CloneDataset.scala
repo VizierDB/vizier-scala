@@ -15,8 +15,6 @@
 package info.vizierdb.commands.data
 
 import play.api.libs.json.JsValue
-import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
-import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore

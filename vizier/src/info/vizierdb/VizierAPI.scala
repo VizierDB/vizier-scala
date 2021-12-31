@@ -39,8 +39,7 @@ import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 import info.vizierdb.api.servlet.{ VizierAPIServlet, VizierUIServlet }
 
-import org.mimirdb.api.{ Request, Response }
-import org.mimirdb.api.request.Query
+import info.vizierdb.api.{ Request, Response }
 import java.net.{ URL, URI }
 import java.sql.Time
 import java.time.ZonedDateTime
@@ -51,7 +50,9 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import info.vizierdb.util.Streams
 import scala.io.Source
 import java.net.InetSocketAddress
-import org.mimirdb.util.ExperimentalOptions
+import info.vizierdb.util.ExperimentalOptions
+import info.vizierdb.spark.caveats.QueryWithCaveats
+
 
 object VizierAPI
 {
@@ -60,10 +61,10 @@ object VizierAPI
   val DEFAULT_PORT = 5000
   val NAME = "vizier"
   val BACKEND = "SCALA"
-  val SERVICE_NAME = s"MIMIR ($BACKEND)"
+  val SERVICE_NAME = s"Vizier ($BACKEND)"
   val MAX_UPLOAD_SIZE = 1024*1024*100 // 100MB
   val MAX_FILE_MEMORY = 1024*1024*10  // 10MB
-  val MAX_DOWNLOAD_ROW_LIMIT = Query.RESULT_THRESHOLD
+  val MAX_DOWNLOAD_ROW_LIMIT = QueryWithCaveats.RESULT_THRESHOLD
   val VERSION="1.0.0"
   val DEFAULT_DISPLAY_ROWS = 20
 

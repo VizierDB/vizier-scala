@@ -24,9 +24,11 @@ case class Package(id: String, name: String, category: String)
   def get(commandId: String): Command =
     commands(commandId)
 
-  def register(commandId: String, command: Command)
+  def register(toRegister: (String, Command)*)
   {
-    commands.put(commandId, command)
+    for((commandId, command) <- toRegister){
+      commands.put(commandId, command)
+    }
   }
 }
 

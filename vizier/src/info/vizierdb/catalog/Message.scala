@@ -18,7 +18,7 @@ import scalikejdbc._
 import play.api.libs.json._
 import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
-import org.mimirdb.api.request.DataContainer
+import info.vizierdb.spark.caveats.DataContainer
 import java.time.ZonedDateTime
 import info.vizierdb.serializers._
 import info.vizierdb.serialized

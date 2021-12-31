@@ -19,7 +19,6 @@ import play.api.libs.json._
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.Project
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.api.response._
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler

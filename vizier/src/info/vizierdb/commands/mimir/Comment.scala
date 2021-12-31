@@ -17,40 +17,71 @@ package info.vizierdb.commands.mimir
 import play.api.libs.json._
 import info.vizierdb.commands._
 import org.apache.spark.sql.types.StructField
-import org.mimirdb.lenses.Lenses
-import org.mimirdb.lenses.implementation.{ CommentLensConfig, CommentParams }
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.functions.when
+import info.vizierdb.spark.rowids.AnnotateWithRowIds
+import info.vizierdb.util.StringUtils
+import org.mimirdb.caveats.implicits._
+import info.vizierdb.types._
 
 object Comment
   extends LensCommand
+  with UntrainedLens
 { 
-  def lens = Lenses.comment
+  val PARAM_COMMENTS = "comments"
+  val PARAM_COLUMN = "expression"
+  val PARAM_ROW = "rowid"
+  val PARAM_COMMENT = "comment"
+
   def name: String = "Comment"
   def lensParameters: Seq[Parameter] = Seq(
-    ListParameter(id = "comments", name = "Comments", components = Seq(
-      ColIdParameter(id = "expression", name = "Column"),
-      RowIdParameter(id = "rowid", name = "Row"),
-      StringParameter(id = "comment", name = "Comment")
+    ListParameter(id = PARAM_COMMENTS, name = "Comments", components = Seq(
+      ColIdParameter(id = PARAM_COLUMN, name = "Column"),
+      RowIdParameter(id = PARAM_ROW, name = "Row"),
+      StringParameter(id = PARAM_COMMENT, name = "Comment")
     ))
   )
-  def lensFormat(arguments: Arguments): String = 
-    s"ADD COMMENTS"
 
-  def lensConfig(arguments: Arguments, schema: Seq[StructField], dataset: String, context: ExecutionContext): JsValue =
+  def format(arguments: Arguments): String =
   {
-    Json.toJson(
-      CommentLensConfig(
-        comments = 
-          arguments.getList("comments")
-                   .map { comment => 
-                      CommentParams(
-                        comment   = comment.get[String]("comment"),
-                        target    = Some(schema(comment.get[Int]("expression")).name),
-                        rows      = Some(Seq(comment.get[String]("rowid").toInt)),
-                        condition = None
+    val dataset = arguments.pretty(PARAM_DATASET)
+    val columns = arguments.getList(PARAM_COMMENTS)
+                           .map { _.get[Int](PARAM_ROW) }
+                           .map { dataset + "." + _ }
+    s"Apply comments to ${StringUtils.oxfordComma(columns)}"
+  }
+
+  def title(arguments: Arguments): String =
+    s"Comment ${arguments.pretty(PARAM_DATASET)}"
+
+
+  def build(df: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame =
+  {
+    val comments: Map[Int, Seq[(String, String)]] = 
+      arguments.getList(PARAM_COMMENTS).map { comment =>
+        comment.get[Int](PARAM_COLUMN) -> (
+          comment.get[String](PARAM_ROW),
+          comment.get[String](PARAM_COMMENT)
+        )
+      }.groupBy(_._1)
+       .mapValues { _.map { _._2 } }
+
+    AnnotateWithRowIds.withRowId(df) { df => 
+      df.select(
+        df.schema.fieldNames.zipWithIndex.map { case (col, idx) =>
+          {
+            val rowIdCol = df(AnnotateWithRowIds.ATTRIBUTE)
+            comments.getOrElse(idx, Seq.empty)
+                    .foldLeft(df(col)) { case (expr, (row, comment)) =>
+                      expr.caveatIf(
+                        comment,
+                        rowIdCol.eqNullSafe(row)
                       )
-                   }
+                    }
+          }
+        }:_*
       )
-    )
+    }
   }
   def updateConfig(lensArgs: JsValue, schema: Seq[StructField], dataset: String): Map[String,JsValue] = Map.empty
 }

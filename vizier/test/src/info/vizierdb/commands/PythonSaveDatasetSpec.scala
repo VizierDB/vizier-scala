@@ -48,13 +48,17 @@ class PythonSaveDatasetSpec
         |ds.save(use_deltas = $use_deltas)
         """.stripMargin)
       project.waitUntilReadyAndThrowOnError
-      val ds = project.artifact("R").getDataset()
+      val df = project.dataframe("R")
+      val data = df.collect.toSeq
       println(s"Read artifact #${project.artifact("R").id}")
-      ds.data.map { _(1) } must contain(42)
-      ds.data.filter { _ != null } must haveSize(ds.data.size)
-      ds.schema(3).name must beEqualTo("D")
-      ds.schema(3).dataType must beEqualTo(FloatType)
-      ds.data.map { _(3) } must contain(14.0)
+      data.map { _.getShort(1) } must contain(42)
+      data.filterNot { _.isNullAt(1) } must haveSize(data.size)
+      df.schema(3).name must beEqualTo("D")
+      df.schema(3).dataType must beEqualTo(FloatType)
+      data.map { x => 
+        if(x.isNullAt(3)){ null } 
+        else { x.getFloat(3) } 
+      } must contain(14.0)
     }
   }
 
@@ -71,9 +75,9 @@ class PythonSaveDatasetSpec
         """.stripMargin
     )
     project.waitUntilReadyAndThrowOnError
-    val ds = project.artifact("Moo").getDataset()
-    ds.schema(0).name must beEqualTo("A")
-    ds.schema(1).name must beEqualTo("B")
-    ds.data.map { _(0) } must contain("a1", "a2")
+    val df = project.dataframe("Moo")
+    df.schema(0).name must beEqualTo("A")
+    df.schema(1).name must beEqualTo("B")
+    df.collect.map { _.getString(0) }.toSeq must contain("a1", "a2")
   }
 }

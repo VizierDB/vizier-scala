@@ -16,29 +16,36 @@ package info.vizierdb
 
 import scalikejdbc._
 import java.sql.DriverManager
-
-import org.mimirdb.api.{ MimirAPI, InitSpark, MimirConfig }
-import org.mimirdb.data.{ JDBCMetadataBackend => MimirJDBC, Catalog => MimirCatalog }
-
-import info.vizierdb.types._
-import info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyDriver
-import info.vizierdb.catalog.{ Project, Schema, Cell }
-import org.mimirdb.data.LocalFSStagingProvider
 import java.io._
 import java.util.Properties
+
 import com.typesafe.scalalogging.LazyLogging
-import info.vizierdb.export.{ ExportProject, ImportProject }
-import info.vizierdb.util.Streams
-import org.mimirdb.util.ExperimentalOptions
+import org.apache.spark.sql.SparkSession
+
+import info.vizierdb.catalog.{
+  Doctor,
+  Project, 
+  Schema, 
+  Cell,
+}
+import info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyDriver
 import info.vizierdb.commands.python.PythonProcess
-import py4j.reflection.PythonProxyHandler
-import info.vizierdb.catalog.Doctor
-import info.vizierdb.commands.python.SparkPythonUDFRelay
+import info.vizierdb.export.{ 
+  ExportProject, 
+  ImportProject,
+}
+import info.vizierdb.spark.InitSpark
+import info.vizierdb.types._
+import info.vizierdb.util.{
+  ExperimentalOptions,
+  Streams,
+}
 
 object Vizier
   extends LazyLogging
 {
   var config: Config = null
+  var sparkSession: SparkSession = null
 
   def initSQLite(db: String = "Vizier.db") = 
   {
@@ -72,42 +79,27 @@ object Vizier
     )
   }
 
-  def initMimir(
-    db: String = "Mimir.db", 
-    stagingDirectory: String = "staging", 
-    runServer: Boolean = true
-  ) =
+  def initSpark() =
   {
-    config.setMimirConfig
-    MimirAPI.sparkSession = InitSpark.local
-    InitSpark.initPlugins(MimirAPI.sparkSession)
-    MimirAPI.metadata = new MimirJDBC("sqlite", new File(config.basePath(), db).toString)
-    MimirAPI.catalog = new MimirCatalog(
-      MimirAPI.metadata,
-      new LocalFSStagingProvider(
-        basePath = stagingDirectory, 
-        basePathIsRelativeToDataDir = true
-      ),
-      MimirAPI.sparkSession
-    )
-    MimirAPI.blobs = info.vizierdb.commands.python.SparkPythonUDFRelay
-    MimirAPI.pythonUDF = info.vizierdb.commands.python.PythonProcess.udfBuilder
+    sparkSession = InitSpark.local
+    InitSpark.initPlugins(sparkSession)
+
+    // MimirAPI.blobs = info.vizierdb.commands.python.SparkPythonUDFRelay
+    // MimirAPI.pythonUDF = info.vizierdb.commands.python.PythonProcess.udfBuilder
+
     val geocoders = 
       Seq(
         config.googleAPIKey.map { k =>
           logger.debug("Google Services Will Be Available")
-          new org.mimirdb.lenses.implementation.GoogleGeocoder(k) 
+          new info.vizierdb.commands.mimir.geocoder.GoogleGeocoder(k) 
         }.toOption,
         config.osmServer.map { k =>
           logger.debug("OSM Services Will Be Available")
-          new org.mimirdb.lenses.implementation.OSMGeocoder(k) 
+          new info.vizierdb.commands.mimir.geocoder.OSMGeocoder(k) 
         }.toOption
       ).flatten
     if(!geocoders.isEmpty){ 
-      org.mimirdb.lenses.Lenses.initGeocoding(geocoders, MimirAPI.catalog) 
-    }
-    if(runServer){
-      MimirAPI.runServer(MimirAPI.DEFAULT_API_PORT) // Starts the Mimir server **in the background**
+      info.vizierdb.commands.mimir.geocoder.Geocode.init(geocoders) 
     }
   }
 
@@ -160,10 +152,8 @@ object Vizier
     bringDatabaseToSaneState()
 
     // Set up Mimir
-    println("Starting Mimir...")
-    initMimir(
-      runServer = !config.subcommand.isDefined
-    )
+    println("Starting Spark...")
+    initSpark()
 
     config.subcommand match {
       //////////////// HANDLE SPECIAL COMMANDS //////////////////

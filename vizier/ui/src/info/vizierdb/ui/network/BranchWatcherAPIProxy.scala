@@ -8,7 +8,7 @@ import info.vizierdb.types._
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import scala.concurrent.Future
-import org.mimirdb.api.request.DataContainer
+import info.vizierdb.spark.caveats.DataContainer
 import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class BranchWatcherAPIProxy

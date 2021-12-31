@@ -19,7 +19,6 @@ import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow, Module }
 import info.vizierdb.commands.Commands
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._

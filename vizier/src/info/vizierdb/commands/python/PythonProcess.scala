@@ -27,7 +27,6 @@ import info.vizierdb.commands.ExecutionContext
 // in livelocks when we try to do bi-directional communication.  As a result
 // we're going to use the lower level Java process builder here.
 import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder}
-import org.mimirdb.spark.PythonUDFBuilder
 
 class PythonProcess(python: JProcess)
   extends LazyLogging

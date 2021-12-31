@@ -44,7 +44,7 @@ class DataCommandsSpec
       "loadInferTypes" -> true,
       "loadDetectHeaders" -> true
     )
-    project.waitUntilReady
+    project.waitUntilReadyAndThrowOnError
     
     {
       val workflow = project.head
@@ -60,24 +60,30 @@ class DataCommandsSpec
       "dataset" -> "test_r",
       "name" -> "clone_r",
     )
-    project.waitUntilReady
+    project.waitUntilReadyAndThrowOnError
 
     project.append("data", "unload")(
       "dataset" -> "clone_r",
       "unloadFormat" -> "csv"
     )
-    project.waitUntilReady
+    project.waitUntilReadyAndThrowOnError
 
     project.append("data", "empty")(
       "name" -> "empty_ds"
     )
-    project.waitUntilReady
+    project.waitUntilReadyAndThrowOnError
+
+    project.append("sql", "query")(
+      "source" -> "SELECT * FROM test_r",
+      "output_dataset" -> "query_result"
+    )
+    project.waitUntilReadyAndThrowOnError
 
     project.append("sql", "query")(
       "source" -> "SELECT * FROM empty_ds, test_r",
       "output_dataset" -> "query_result"
     )
-    project.waitUntilReady
+    project.waitUntilReadyAndThrowOnError
 
     ok
   }
@@ -91,7 +97,7 @@ class DataCommandsSpec
       |  f.write("3,4\n")
       """.stripMargin)
 
-    project.waitUntilReady
+    project.waitUntilReadyAndThrowOnError
     project.artifactRefs.map { _.userFacingName } must contain("test.csv")
 
     val f = File.createTempFile("test", ".csv")
@@ -104,7 +110,7 @@ class DataCommandsSpec
       "file" -> "test.csv",
       "path" -> f.toString
     )
-    project.waitUntilReady
+    project.waitUntilReadyAndThrowOnError
     f.exists must beTrue
   }
 
@@ -123,7 +129,7 @@ class DataCommandsSpec
       |print(vizierdb["baz"])
     """.stripMargin)
 
-    project.waitUntilReady
+    project.waitUntilReadyAndThrowOnError
 
     project.lastOutput.map { _.dataString } must contain(exactly("floop", "23.7", "999"))
   }

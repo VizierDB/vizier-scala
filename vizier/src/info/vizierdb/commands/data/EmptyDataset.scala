@@ -14,17 +14,15 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
-import play.api.libs.json.JsValue
-import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
-import org.mimirdb.api.{ Tuple => MimirTuple }
+import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
-import org.mimirdb.api.request.QueryMimirRequest
-import org.mimirdb.api.request.CreateViewRequest
+import info.vizierdb.spark.InlineDataConstructor
+import org.apache.spark.sql.types.{ StructField, StringType }
 
 object EmptyDataset extends Command
 {
@@ -38,14 +36,13 @@ object EmptyDataset extends Command
     s"Initialize ${arguments.pretty("name")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    val (dsName, dsId) = context.outputDataset(arguments.get[String]("name"))
-    CreateViewRequest(
-      input = Map.empty,
-      functions = None,
-      query = "SELECT '' AS unnamed_column",
-      resultName = Some(dsName),
-      properties = None
-    ).handle
+    context.outputDataset(
+      arguments.get[String]("name"),
+      InlineDataConstructor(
+        schema = Seq(StructField("unnamed_column", StringType)),
+        data = Seq(Seq(JsString("")))
+      )
+    )
     context.message("Empty Dataset Created")
   }
   def predictProvenance(arguments: Arguments) = 

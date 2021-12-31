@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types.Identifier
 import info.vizierdb.catalog.Branch
 import javax.servlet.http.HttpServletResponse

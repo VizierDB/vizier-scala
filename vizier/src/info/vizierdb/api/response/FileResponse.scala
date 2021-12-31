@@ -15,7 +15,7 @@
 package info.vizierdb.api.response
 
 import java.io._
-import org.mimirdb.api.Response
+import info.vizierdb.api.Response
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.util.Streams
 

@@ -16,15 +16,15 @@ package info.vizierdb.commands.vizual
 
 import play.api.libs.json._
 import info.vizierdb.commands._
-import org.mimirdb.vizual
-import org.mimirdb.spark.Schema
+import info.vizierdb.spark.vizual
+import info.vizierdb.spark.SparkSchema
 import org.apache.spark.sql.types.{ StructType, StringType } 
 import info.vizierdb.VizierException
-import org.mimirdb.spark.SparkPrimitive
+import info.vizierdb.spark.SparkPrimitive
 
 object Script extends VizualCommand
 {
-  val commands = Seq[(String, String, (Arguments => vizual.Command))](
+  val commands = Seq[(String, String, (Arguments => vizual.VizualCommand))](
     ("Delete Column", "delete_column", { args => 
         vizual.DeleteColumn(args.get[Int]("column")) 
     }),
@@ -37,7 +37,7 @@ object Script extends VizualCommand
       vizual.InsertColumn(
         position = args.getOpt[Int]("position"),
         name = args.get[String]("name"),
-        dataType = args.getOpt[String]("dataType").map { Schema.decodeType(_) }
+        dataType = args.getOpt[String]("dataType").map { SparkSchema.decodeType(_) }
       )
     }),
 
@@ -112,14 +112,14 @@ object Script extends VizualCommand
              .map { args => constructor(args.get[String]("command"))(args) }
 
 
-  def encode(script: Seq[vizual.Command]): Seq[Map[String, Any]] =
+  def encode(script: Seq[vizual.VizualCommand]): Seq[Map[String, Any]] =
     script.map { 
       case vizual.DeleteColumn(column) => 
         Map("command" -> "delete_column", "column" -> column)
       case vizual.DeleteRow(row) => 
         Map("command" -> "delete_row", "row" -> row)
       case vizual.InsertColumn(position, name, dataType) => 
-        Map("command" -> "insert_column", "position" -> position, "name" -> name, "dataType" -> Schema.encodeType(dataType.getOrElse { StringType }))
+        Map("command" -> "insert_column", "position" -> position, "name" -> name, "dataType" -> SparkSchema.encodeType(dataType.getOrElse { StringType }))
       case vizual.InsertRow(position, values) => 
         Map("command" -> "insert_row", "position" -> position, "values" -> None) 
       case vizual.MoveColumn(column, position) => 

@@ -59,9 +59,9 @@ class TransformCommandsSpec
       )
     )
     project.waitUntilReadyAndThrowOnError
-    val ds = project.artifact("s").getDataset()
-    ds.schema.map { _.name } must beEqualTo(Seq("C", "biz", "foo", "bar"))
-    ds.data must haveSize(5)
+    val df = project.dataframe("s")
+    df.schema.map { _.name } must beEqualTo(Seq("C", "biz", "foo", "bar"))
+    df.collect must haveSize(5)
   }
 
   "filter datasets" >> {
@@ -73,9 +73,10 @@ class TransformCommandsSpec
       FilterDataset.PARAM_FILTER -> "cast(a as int) > 1"
     )
     project.waitUntilReadyAndThrowOnError
-    val ds = project.artifact("s").getDataset()
-    ds.data.map { _(0) } must not contain("1")
-    ds.data must haveSize(3)
+    val df = project.datasetData("s")
+    val data = df.data.map { _(1) }
+    data must not contain(1)
+    data must haveSize(3)
   }
 
 }

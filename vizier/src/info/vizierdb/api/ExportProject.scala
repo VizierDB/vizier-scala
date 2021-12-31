@@ -19,7 +19,6 @@ import play.api.libs.json._
 import java.io.File
 import info.vizierdb.types._
 import info.vizierdb.export.{ ExportProject => DoExport }
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.util.Streams
 import info.vizierdb.catalog.Project
 import java.io.FileOutputStream

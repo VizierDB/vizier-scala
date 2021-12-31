@@ -20,24 +20,20 @@ import scalikejdbc._
 import play.api.libs.json._
 import info.vizierdb.types._
 import java.time.ZonedDateTime
+import info.vizierdb.artifacts.Dataset
 import info.vizierdb.catalog.binders._
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
-import org.mimirdb.api.request.DataContainer
-import org.mimirdb.api.request.QueryTableRequest
-import org.mimirdb.api.MimirAPI
-import org.mimirdb.spark.SparkPrimitive
+import info.vizierdb.spark.SparkPrimitive
 import info.vizierdb.filestore.Filestore
-import org.mimirdb.api.request.SchemaForTableRequest
-import org.mimirdb.api.request.SchemaList
-import org.mimirdb.spark.{ Schema => SparkSchema }
 import info.vizierdb.util.StupidReactJsonMap
-import org.locationtech.jts.geom.Geometry
-import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructField
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.spark.caveats.{ QueryWithCaveats, DataContainer }
+import info.vizierdb.spark.SparkSchema.fieldFormat
 
 case class Artifact(
   id: Identifier,
@@ -55,7 +51,11 @@ case class Artifact(
   def file = absoluteFile
   def parameter = json.as[serialized.ParameterArtifact]
   def json = Json.parse(string)
-  def summarize(name: String = null): serialized.ArtifactSummary = 
+  def datasetDescriptor = json.as[Dataset]
+  def dataframe(implicit session:DBSession) = 
+    datasetDescriptor.construct(Artifact.dataframeContext)
+
+  def summarize(name: String = null)(implicit session: DBSession): serialized.ArtifactSummary = 
   {
     val extras:Map[String,JsValue] = t match {
       case _ => Map.empty
@@ -71,8 +71,7 @@ case class Artifact(
     t match {
       case ArtifactType.DATASET => 
         base.toDatasetSummary(
-          columns = getSchema()
-                     .schema
+          columns = datasetSchema
                      .zipWithIndex
                      .map { case (field, idx) => 
                               serialized.DatasetColumn(
@@ -86,15 +85,13 @@ case class Artifact(
 
     }
   }
-  def jsonData = Json.parse(data)
-
 
   def describe(
     name: String = null, 
     offset: Option[Long] = None, 
     limit: Option[Int] = None, 
     forceProfiler: Boolean = false
-  ): serialized.ArtifactDescription = 
+  )(implicit session: DBSession): serialized.ArtifactDescription = 
   {
     val base = 
       Artifact.summarize(
@@ -111,19 +108,17 @@ case class Artifact(
           val actualLimit = 
             limit.getOrElse { VizierAPI.MAX_DOWNLOAD_ROW_LIMIT }
 
-          val data =  getDataset(
+          val data =  datasetData(
                         offset = offset, 
                         limit = Some(actualLimit), 
                         forceProfiler = forceProfiler, 
-                        includeUncertainty = true
+                        includeCaveats = true
                       )
           val rowCount: Long = 
               data.properties
                   .get("count")
                   .map { _.as[Long] }
-                  .getOrElse { MimirAPI.catalog
-                                       .get(nameInBackend)
-                                       .count() }
+                  .getOrElse { dataframe.count() }
 
           Artifact.translateDatasetContainerToVizierClassic(
             projectId = projectId,
@@ -141,29 +136,86 @@ case class Artifact(
 
   }
 
-  def getDataset(
+
+  def datasetData(
     offset: Option[Long] = None, 
     limit: Option[Int] = None,
     forceProfiler: Boolean = false,
-    includeUncertainty: Boolean = false
-  ) : DataContainer = 
+    includeCaveats: Boolean = false
+  )(implicit session:DBSession): DataContainer = 
   {
     assert(t.equals(ArtifactType.DATASET))
-    QueryTableRequest(
-      table = nameInBackend,
-      columns = None,
-      offset = offset,
+    val descriptor = datasetDescriptor
+    QueryWithCaveats(
+      query = descriptor.construct(Artifact.dataframeContext),
+      includeCaveats = includeCaveats,
       limit = limit,
-      profile = Some(forceProfiler),
-      includeUncertainty = includeUncertainty
-    ).handle
+      offset = offset,
+      computedProperties = descriptor.properties,
+      cacheAs = None,
+      columns = None
+    )
   }
 
-  def getSchema(profile: Boolean = false): SchemaList =
-    SchemaForTableRequest(
-      table = nameInBackend,
-      profile = Some(profile)
-    ).handle
+  def datasetPropertyOpt(name: String): Option[JsValue] = 
+  {
+    assert(t.equals(ArtifactType.FILE))
+    datasetDescriptor.properties.get(name)
+  }
+  def datasetProperty(name: String)(construct: Dataset => JsValue)(implicit session: DBSession): JsValue = 
+  {
+    assert(t.equals(ArtifactType.DATASET))
+    val descriptor = datasetDescriptor
+    if(descriptor.properties contains name){
+      descriptor.properties(name)
+    } else {
+      val propValue:JsValue = construct(descriptor)
+
+      // Cache the result
+      replaceData(Json.toJson(descriptor.withProperty(name -> propValue)))
+      propValue      
+    }
+  }
+  def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Unit =
+  {
+    assert(t.equals(ArtifactType.FILE))
+    replaceData(Json.toJson(datasetDescriptor.withProperty(name -> value)))
+  }
+
+  def filePropertyOpt(name: String): Option[JsValue] = 
+  {
+    assert(t.equals(ArtifactType.FILE))
+    if(data.isEmpty) { None }
+    else { (json \ name).asOpt[JsValue] }
+  }
+  def fileProperty(name: String)(construct: File => JsValue)(implicit session: DBSession): JsValue = 
+  {
+    filePropertyOpt(name)
+      .getOrElse {
+        val prop = construct(relativeFile)
+        updateFileProperty(name, prop)
+        prop
+      }
+  }
+  def updateFileProperty(name: String, value: JsValue)(implicit session: DBSession): Unit =
+  {
+    assert(t.equals(ArtifactType.FILE))
+    val old = if(data.isEmpty) { Map.empty } 
+              else { json.as[Map[String, JsValue]] }
+    replaceData(
+      Json.toJson(
+         old ++ Map(name -> value)
+      )
+    )
+  }
+
+  def datasetSchema(implicit session: DBSession):Seq[StructField] =
+    datasetProperty("schema") { descriptor =>
+      Json.toJson(
+        descriptor.construct(Artifact.dataframeContext)
+                  .schema:Seq[StructField]
+      )
+    }.as[Seq[StructField]]
 
   def deleteArtifact(implicit session: DBSession) =
   {
@@ -183,6 +235,54 @@ case class Artifact(
   }
 
   def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
+
+  /**
+   * DANGER DANGER DANGER DANGER
+   * Replace the data segment of this artifact
+   * DANGER DANGER DANGER DANGER
+   * 
+   * The one situation where this function should ever be used is to add new properties
+   * to a file or dataset object.  All other use cases are almost certainly going to 
+   * lead to mutable artifacts; in such cases the artifact should be re-created entirely
+   * from scratch.
+   */
+  def replaceData(updated: JsValue)(implicit session: DBSession): Artifact =
+    replaceData(updated.toString)
+  /**
+   * DANGER DANGER DANGER DANGER
+   * Replace the data segment of this artifact
+   * DANGER DANGER DANGER DANGER
+   * 
+   * The one situation where this function should ever be used is to add new properties
+   * to a file or dataset object.  All other use cases are almost certainly going to 
+   * lead to mutable artifacts; in such cases the artifact should be re-created entirely
+   * from scratch.
+   */
+  def replaceData(updated: String)(implicit session: DBSession): Artifact =
+    replaceData(updated.getBytes)
+  /**
+   * DANGER DANGER DANGER DANGER
+   * Replace the data segment of this artifact
+   * DANGER DANGER DANGER DANGER
+   * 
+   * The one situation where this function should ever be used is to add new properties
+   * to a file or dataset object.  All other use cases are almost certainly going to 
+   * lead to mutable artifacts; in such cases the artifact should be re-created entirely
+   * from scratch.
+   */
+  def replaceData(updated: Array[Byte])(implicit session: DBSession): Artifact =
+  {
+    withSQL {
+      val a = Artifact.column
+      update(Artifact)
+        .set(
+          a.data -> updated
+        )
+        .where.eq(a.id, id)
+    }.update.apply()
+    copy(data = updated)
+  }
+
 }
 
 case class ArtifactSummary(
@@ -194,7 +294,7 @@ case class ArtifactSummary(
 )
 {
   def nameInBackend = Artifact.nameInBackend(t, id)
-  def summarize(name: String = null): serialized.ArtifactSummary = 
+  def summarize(name: String = null)(implicit session: DBSession): serialized.ArtifactSummary = 
   {
     val extras:Map[String,JsValue] = t match {
       case _ => Map.empty
@@ -210,8 +310,7 @@ case class ArtifactSummary(
     t match {
       case ArtifactType.DATASET => 
         base.toDatasetSummary(
-          columns = getSchema()
-                     .schema
+          columns = materialize.datasetSchema
                      .zipWithIndex
                      .map { case (field, idx) => 
                               serialized.DatasetColumn(
@@ -228,14 +327,9 @@ case class ArtifactSummary(
   def absoluteFile: File = Filestore.getAbsolute(projectId, id)
   def relativeFile: File = Filestore.getRelative(projectId, id)
   def file = absoluteFile
-  def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
   def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
 
-  def getSchema(profile: Boolean = false): SchemaList =
-    SchemaForTableRequest(
-      table = nameInBackend,
-      profile = Some(profile)
-    ).handle
+  def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
 }
 object ArtifactSummary
   extends SQLSyntaxSupport[ArtifactSummary]
@@ -413,5 +507,11 @@ object Artifact
       )
     )
   }
+
+  /**
+   * Retrieve a mapping of dataframe constructors
+   */
+  def dataframeContext(implicit session:DBSession): (Identifier => DataFrame) =
+    get(_).dataframe
 }
 

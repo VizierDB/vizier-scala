@@ -15,12 +15,9 @@
 package info.vizierdb.commands.plot
 
 import play.api.libs.json._
-import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
-import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
-import org.mimirdb.api.request.CreateViewRequest
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.{ Row, Column }
 import org.apache.spark.sql.functions.{ expr, first }

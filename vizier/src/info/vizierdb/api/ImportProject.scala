@@ -20,9 +20,7 @@ import play.api.libs.json._
 import java.io.InputStream
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Project, Artifact }
-import org.mimirdb.api.{ Request, Response }
 import info.vizierdb.types._
-import org.mimirdb.api.request.LoadInlineRequest
 import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
 import java.io.FileOutputStream
 import info.vizierdb.util.Streams

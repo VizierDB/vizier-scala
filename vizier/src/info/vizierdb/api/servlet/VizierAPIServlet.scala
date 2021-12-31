@@ -16,7 +16,7 @@ package info.vizierdb.api.servlet
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import com.typesafe.scalalogging.LazyLogging
-import org.mimirdb.api.Response
+import info.vizierdb.api.Response
 import info.vizierdb.api.response.{ VizierErrorResponse, ErrorResponse }
 import info.vizierdb.{ Vizier, VizierAPI }
 import play.api.libs.json.JsResultException

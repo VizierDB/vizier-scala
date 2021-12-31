@@ -20,12 +20,10 @@ import scalikejdbc._
 import info.vizierdb.types._
 import info.vizierdb.Vizier
 import info.vizierdb.catalog.{ Artifact, Workflow, Module, Cell, Result }
-import org.mimirdb.api.request.QueryTableRequest
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
 import info.vizierdb.artifacts.Chart
 import info.vizierdb.VizierAPI
-import org.mimirdb.api.MimirAPI
 import info.vizierdb.catalog.DatasetMessage
 import info.vizierdb.catalog.ArtifactSummary
 import com.typesafe.scalalogging.LazyLogging
@@ -34,6 +32,8 @@ import org.apache.spark.sql.types.{ StructField, DataType }
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.delta.DeltaBus
+import info.vizierdb.spark.DataFrameConstructor
+import info.vizierdb.artifacts.Dataset
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -83,16 +83,24 @@ class ExecutionContext(
   }
 
   /**
-   * Retrieve the specified dataset
+   * Retrieve the identifier of the specified artifact
    *
-   * @param   name            The user-facing name of the dataset (relative to the scope)
-   * @returns                 The backend name corresponding to the specified dataset
+   * @param   name            The user-facing name of the artifact
+   * @returns                 The Identifier object for the artifact associated with this name
    */
-  def dataset(name: String, registerInput: Boolean = true): Option[DatasetIdentifier] = 
-    artifact(name, registerInput)
-      .map { a => if(a.t != ArtifactType.DATASET) { 
-                    throw new VizierException(s"$name is not a dataset (it's actually a ${a.t})" )
-                  } else { a.nameInBackend } }
+  def artifactId(name: String, registerInput: Boolean = true): Option[Identifier] = 
+  {
+    logger.debug(s"Retrieving $name id")
+    if(outputs contains name.toLowerCase()){
+      val ret = outputs(name.toLowerCase())
+      return Some(ret.getOrElse {
+        throw new VizierException(s"$name was already deleted.")
+      }.id)
+    }
+    val ret = scope.get(name.toLowerCase()).map { _.id }
+    if(registerInput){ ret.foreach { a => inputs.put(name.toLowerCase(), a) } }
+    return ret
+  }
 
   /** 
    * Retrieve the spark dataframe for the specified dataset
@@ -112,7 +120,8 @@ class ExecutionContext(
    * @returns                 The spark dataframe for the specified datset
    */
   def dataframeOpt(name: String, registerInput: Boolean = true): Option[DataFrame] =
-    dataset(name, registerInput).map { MimirAPI.catalog.get(_) }
+    artifact(name, registerInput)
+      .map { a => DB.readOnly { implicit s => a.dataframe } }
 
   /** 
    * Retrieve the schema for the specified dataset
@@ -121,7 +130,8 @@ class ExecutionContext(
    * @returns                 The spark dataframe for the specified datset
    */
   def datasetSchema(name: String, registerInput: Boolean = true): Option[Seq[StructField]] =
-    dataframeOpt(name, registerInput).map { _.schema.fields } 
+    artifact(name, registerInput)
+      .map { a => DB.autoCommit { implicit s => a.datasetSchema }}
 
   /**
    * Retrieve all datasets in scope
@@ -185,17 +195,8 @@ class ExecutionContext(
    */
   def chart(chart: Chart, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
   {
-    val dataset = artifact(chart.dataset)
-                             .getOrElse{ 
-                               error(s"Dataset ${chart.dataset} does not exist")
-                               return false
-                             }
-    val df = 
-      MimirAPI.catalog.getOption(dataset.nameInBackend)
-                      .getOrElse {
-                        error(s"Dataset ${chart.dataset} [id:${dataset.nameInBackend}] does not exist")
-                        return false
-                      }
+    val df = dataframe(chart.dataset)
+
     val encoded = 
       chart.render(df).toString.getBytes
 
@@ -260,8 +261,45 @@ class ExecutionContext(
    * @param   name            The user-facing name of the dataset
    * @return                  The newly allocated backend-facing name and its identifier
    */
-  def outputDataset(name: String): (String, Identifier) =
-    { val ds = output(name, ArtifactType.DATASET, Array[Byte](), MIME.DATASET_VIEW); (ds.nameInBackend, ds.id) }
+  def outputDataset[T <: DataFrameConstructor](
+    name: String, 
+    constructor: T,
+    properties: Map[String, JsValue] = Map.empty
+  )(implicit writes: Writes[T]): Artifact =
+    output(
+      name, 
+      ArtifactType.DATASET,
+      Json.toJson(Dataset(
+        constructor,
+        properties
+      )).toString.getBytes,
+      mimeType = MIME.RAW
+    )
+
+  def outputDatasetWithFile[T <: DataFrameConstructor](
+    name: String,
+    constructor: Identifier => T,
+    properties: Map[String, JsValue] = Map.empty
+  )(implicit writes: Writes[T]): Artifact =
+  {
+    DB.autoCommit { implicit s =>
+      val artifact = Artifact.make(
+        projectId,
+        ArtifactType.DATASET,
+        MIME.RAW,
+        Array[Byte]()
+      )
+      output(
+        name,
+        artifact.replaceData(
+          Json.toJson(Dataset(
+            constructor(artifact.id),
+            properties
+          )).toString.getBytes
+        )
+      )
+    }
+  }
 
   /**
    * Allocate a new dataset object and register it as an output
@@ -319,27 +357,27 @@ class ExecutionContext(
   /**
    * Communicate a dataset to the end user.
    * 
-   * @param   artifactId      The artifact identifier of the dataset to display 
+   * @param   name      The name of the dataset to display 
+   * @param   offset    (optional) The position to start the display at
+   * @param   limit     (optional) The maximum number of rows to show
    */
   def displayDataset(name: String, offset: Long = 0l, limit: Int = VizierAPI.DEFAULT_DISPLAY_ROWS) = 
   {
     val dataset = artifact(name).get
 
-    val data =  dataset.getDataset(
-                  offset = Some(offset),
-                  limit  = Some(limit),
-                  includeUncertainty = true
-                )
+    val data =  DB.readOnly { implicit s => 
+                  dataset.datasetData(
+                    offset = Some(offset),
+                    limit  = Some(limit),
+                    includeCaveats = true
+                  )
+                }
     val rowCount: Long = 
-        data.properties
-            .get("count")
-            .map { _.as[Long] }
-            .getOrElse { MimirAPI.catalog
-                                 .get(Artifact.nameInBackend(
-                                          ArtifactType.DATASET, 
-                                          dataset.id
-                                      ))
-                                 .count() }
+        DB.autoCommit { implicit s => 
+          dataset.datasetProperty("count") { descriptor => 
+            JsNumber(dataset.dataframe.count())
+          }
+        }.as[Long]
 
     message(MIME.DATASET_VIEW, 
       Json.toJson(
@@ -380,13 +418,14 @@ class ExecutionContext(
    * be registered as an argument to make subsequent calls 
    * deterministic.
    */
-  def updateArguments(args: (String, Any)*)
+  def updateArguments(args: (String, Any)*): Arguments =
   {
     val command = Commands.get(module.packageId, module.commandId)
     val newArgs = command.encodeArguments(args.toMap, module.arguments.value.toMap)
     DB.autoCommit { implicit s => 
       cell.replaceArguments(newArgs)
     }
+    return Arguments(newArgs, command.parameters)
   }
 
   /**

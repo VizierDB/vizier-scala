@@ -15,9 +15,9 @@
 package info.vizierdb.commands.vizual
 
 import info.vizierdb.commands._
-import org.mimirdb.vizual
-import org.mimirdb.api.request.VizualRequest
+import info.vizierdb.spark.vizual
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.spark.vizual.VizualScriptConstructor
 
 trait VizualCommand 
   extends Command
@@ -27,7 +27,7 @@ trait VizualCommand
   val PARA_DATASET = "dataset"
 
   def vizualParameters: Seq[Parameter]
-  def script(arguments: Arguments, context: ExecutionContext): Seq[vizual.Command]
+  def script(arguments: Arguments, context: ExecutionContext): Seq[vizual.VizualCommand]
 
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = PARA_DATASET, name = "Dataset")
@@ -43,23 +43,19 @@ trait VizualCommand
 
     logger.debug(s"${this.getClass().getName()}($arguments) <- $datasetName")
 
-    val input = context.dataset(datasetName)
+    val input = context.artifact(datasetName)
                          .getOrElse { 
                             throw new IllegalArgumentException(s"No such dataset '$datasetName'")
                          }
 
-    val vizualScript = script(arguments, context)
-
-    val (output, _) = context.outputDataset(datasetName)
-
+    val output = context.outputDataset(
+      datasetName,
+      VizualScriptConstructor(
+        script(arguments, context),
+        Some(input.id),
+      )
+    )
     logger.debug(s"${this.getClass().getName()} -> $input -> $output")
-
-    VizualRequest(
-      input = Some(input),
-      script = vizualScript,
-      resultName = Some(output),
-      compile = Some(false)
-    ).handle
 
     context.message(s"Updated $datasetName")
   }
