@@ -366,7 +366,7 @@ case class ListParameter(
           }
         return Json.toJson(ret)
       }
-      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Seq)")
+      case _ => throw new VizierException(s"Invalid Parameter to $name (got ${v.getClass.getSimpleName}, but expected Seq)")
     }
   override def convertToProperty(j: JsValue): JsValue = 
   {

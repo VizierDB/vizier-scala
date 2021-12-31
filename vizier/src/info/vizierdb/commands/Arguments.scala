@@ -82,8 +82,8 @@ class Arguments(values: Map[String, (JsValue, Parameter)])
 
     }
 
-  def encoded: JsObject =
-    JsObject(values.mapValues { case (v, param) => param.encode(v) })
+  def asJson: JsObject =
+    JsObject(values.mapValues { case (v, param) => v })
 
   override def toString = 
     values.map { x => s"${x._1}: ${x._2._2.stringify(x._2._1)}" }.mkString(", ")

@@ -185,7 +185,8 @@ case class Artifact(
   def filePropertyOpt(name: String): Option[JsValue] = 
   {
     assert(t.equals(ArtifactType.FILE))
-    (json \ name).asOpt[JsValue]
+    if(data.isEmpty) { None }
+    else { (json \ name).asOpt[JsValue] }
   }
   def fileProperty(name: String)(construct: File => JsValue)(implicit session: DBSession): JsValue = 
   {
@@ -199,9 +200,11 @@ case class Artifact(
   def updateFileProperty(name: String, value: JsValue)(implicit session: DBSession): Unit =
   {
     assert(t.equals(ArtifactType.FILE))
+    val old = if(data.isEmpty) { Map.empty } 
+              else { json.as[Map[String, JsValue]] }
     replaceData(
       Json.toJson(
-        json.as[Map[String, JsValue]] ++ Map(name -> value)
+         old ++ Map(name -> value)
       )
     )
   }

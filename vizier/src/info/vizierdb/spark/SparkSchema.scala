@@ -6,6 +6,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.types.UDTRegistration
 import info.vizierdb.spark.udt.ImageUDT
+import org.apache.spark.mllib.linalg.VectorUDT
 
 object SparkSchema {
   def apply(df: DataFrame): Seq[StructField] =
@@ -48,12 +49,15 @@ object SparkSchema {
     }
   )
 
+  lazy val vectorSingleton = new VectorUDT
+
   def decodeType(t: String): DataType =
     t match  {
       case "varchar" => StringType
       case "int" => IntegerType
       case "real" => DoubleType
       case "geometry" => GeometryUDT
+      case "vector" => vectorSingleton
       case "binary" => BinaryType
       case "image/png" => ImageUDT
       case _ if t.startsWith("[") || t.startsWith("{") => 
@@ -69,9 +73,13 @@ object SparkSchema {
       case (_:ArrayType) | (_:StructType) => Json.toJson(t).toString
       case DoubleType => "real"
       case IntegerType => "int"
-      case GeometryUDT => "geometry"
       case BinaryType => "binary"
-      case ImageUDT => "image/png"
+        // Something changed in a recent version of spark/scala and now
+        // any subclass of UserDefinedType seems to match any other
+        // subclass of the same.  Need to use an explicit isInstanceOf
+      case _ if t.isInstanceOf[GeometryUDT] => "geometry"
+      case _ if t.isInstanceOf[VectorUDT] => "vector"
+      case _ if t.isInstanceOf[ImageUDT] => "image/png"
       case _ => t.typeName
     }
 

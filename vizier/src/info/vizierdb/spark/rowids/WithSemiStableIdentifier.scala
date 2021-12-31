@@ -27,14 +27,14 @@ object WithSemiStableIdentifier
     val planWithPartitionedIdentifierAttributes =
       Project(
         plan.output ++ Seq(
-          ResolvedAlias(SparkPartitionID(), PARTITION_ID),
-          ResolvedAlias(MonotonicallyIncreasingID(), INTERNAL_ID)
+          ResolvedAlias(Cast(SparkPartitionID(), LongType), PARTITION_ID),
+          ResolvedAlias(Cast(MonotonicallyIncreasingID(), LongType), INTERNAL_ID)
         ),
         plan
       )
 
     /**
-     * id offset for input rows for a given session (Seq of Integers)
+     * id offset for input rows for a given session (Seq of Longs)
      *
      * For each partition, determine the difference between the identifier
      * assigned to elements of the partition, and the true ROWID. This
@@ -97,7 +97,7 @@ object WithSemiStableIdentifier
         )
       )
 
-    val firstPerPartitionIdentifierMap =
+    val firstPerPartitionIdentifierMap:Map[Long,Long] =
       new DataFrame(
         session,
         planToComputeFirstPerPartitionIdentifier,
@@ -124,15 +124,18 @@ object WithSemiStableIdentifier
 
     Project(
       plan.output :+ ResolvedAlias(MergeRowIds(
-        (If(
-          IsNull(PARTITION_ID),
-          INTERNAL_ID,
-          Add(
-            INTERNAL_ID,
-            lookupFirstIdentifier(new Column(PARTITION_ID).expr)
+      (
+        (
+          If(
+            IsNull(PARTITION_ID),
+            Cast(INTERNAL_ID,LongType),
+            Add(
+              Cast(INTERNAL_ID, LongType),
+              Cast(lookupFirstIdentifier(Cast(new Column(PARTITION_ID).expr, IntegerType)), LongType)
+            )
           )
-        ) +: plan.output):_*
-      ), attribute),
+        ) +: plan.output
+      ):_*), attribute),
       planWithPartitionedIdentifierAttributes
     )
   }

@@ -19,6 +19,8 @@ import org.apache.sedona.core.formatMapper.FormatMapper
 import org.apache.sedona.core.enums.FileDataSplitter
 import java.awt.image.BufferedImage
 import java.nio.charset.StandardCharsets
+import org.apache.spark.sql.catalyst.util.ArrayData
+import org.apache.sedona.sql.utils.GeometrySerializer
 
 object SparkPrimitive
 {
@@ -111,36 +113,38 @@ object SparkPrimitive
 
   def encode(k: Any, t: DataType): JsValue =
   {
-    print(k, t)
-    t match {
-      case _ if k == null           => JsNull
-      case StringType               => JsString(k.toString)
-      case BinaryType               => JsString(base64Encode(k.asInstanceOf[Array[Byte]]))
-      case ImageUDT                 => JsString(base64Encode(ImageUDT.serialize(k.asInstanceOf[BufferedImage]).asInstanceOf[Array[Byte]]))
-      case BooleanType              => JsBoolean(k.asInstanceOf[Boolean])
-      case DateType                 => JsString(formatDate(k.asInstanceOf[Date]))
-      case TimestampType            => JsString(formatTimestamp(k.asInstanceOf[Timestamp]))
-      case CalendarIntervalType     => Json.obj(
-                                      "months"       -> k.asInstanceOf[CalendarInterval].months,
-                                      "days"         -> k.asInstanceOf[CalendarInterval].days,
-                                      "microseconds" -> k.asInstanceOf[CalendarInterval].microseconds
-                                    )
-      case DoubleType               => JsNumber(k.asInstanceOf[Double])
-      case FloatType                => JsNumber(k.asInstanceOf[Float])
-      case ByteType                 => JsNumber(k.asInstanceOf[Byte])
-      case IntegerType              => JsNumber(k.asInstanceOf[Integer]:Int)
-      case LongType                 => JsNumber(k.asInstanceOf[Long])
-      case ShortType                => JsNumber(k.asInstanceOf[Short])
-      case NullType                 => JsNull
-      case ArrayType(element,_)     => JsArray(k.asInstanceOf[Seq[_]].map { encode(_, element) })
-      case s:StructType             => encodeStruct(k, s)
+    // print(k, t)
+    (t, k) match {
+      case (_, null)                   => JsNull
+      case (StringType, _)             => JsString(k.toString)
+      case (BinaryType, _)             => JsString(base64Encode(k.asInstanceOf[Array[Byte]]))
+      case (ImageUDT, _)               => JsString(base64Encode(ImageUDT.serialize(k.asInstanceOf[BufferedImage]).asInstanceOf[Array[Byte]]))
+      case (BooleanType, _)            => JsBoolean(k.asInstanceOf[Boolean])
+      case (DateType, _)               => JsString(formatDate(k.asInstanceOf[Date]))
+      case (TimestampType, _)          => JsString(formatTimestamp(k.asInstanceOf[Timestamp]))
+      case (CalendarIntervalType, _)   => Json.obj(
+                                            "months"       -> k.asInstanceOf[CalendarInterval].months,
+                                            "days"         -> k.asInstanceOf[CalendarInterval].days,
+                                            "microseconds" -> k.asInstanceOf[CalendarInterval].microseconds
+                                          )
+      case (DoubleType,_)              => JsNumber(k.asInstanceOf[Double])
+      case (FloatType,_)               => JsNumber(k.asInstanceOf[Float])
+      case (ByteType,_)                => JsNumber(k.asInstanceOf[Byte])
+      case (IntegerType,_)             => JsNumber(k.asInstanceOf[Integer]:Int)
+      case (LongType,_)                => JsNumber(k.asInstanceOf[Long])
+      case (ShortType,_)               => JsNumber(k.asInstanceOf[Short])
+      case (NullType,_)                => JsNull
+      case (ArrayType(element,_),_)    => JsArray(k.asInstanceOf[Seq[_]].map { encode(_, element) })
+      case (s:StructType,_)            => encodeStruct(k, s)
                                        // Encode Geometry as WKT
-      case GeometryUDT              => JsString(k.asInstanceOf[Geometry].toText)
-      case DecimalType()            => k match { 
-                                        case d:BigDecimal => JsNumber(d)
-                                        case d:Decimal =>    JsNumber(d.toBigDecimal)
-                                        case d:java.math.BigDecimal => JsNumber(d)
-                                      }
+      case (GeometryUDT,geom:Geometry) => JsString(geom.toText)
+      case (GeometryUDT,enc:ArrayData) => JsString(GeometrySerializer.deserialize(enc)
+                                                              .toText)
+
+      case (DecimalType(),d:BigDecimal)=> JsNumber(d)
+      case (DecimalType(),d:Decimal)   => JsNumber(d.toBigDecimal)
+      case (DecimalType(),d:java.math.BigDecimal)
+                                       => JsNumber(d)
       case _ if k != null           => JsString(k.toString)
       case _                        => JsNull
     }

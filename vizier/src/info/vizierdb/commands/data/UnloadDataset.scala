@@ -75,6 +75,7 @@ object UnloadDataset extends Command
                          }
     val format = arguments.get[String](PARAM_FORMAT)
 
+
     val mimeTypeForFile = format match {
       case DatasetFormat.GSheet   => None
       case DatasetFormat.JDBC     => None
@@ -142,9 +143,8 @@ object UnloadDataset extends Command
     val (file, tempDir:Option[File]) = 
       if(url.isDefined) { (url.get, None) }
       else if(TEMPFILE_FORMATS(format)) {
-        val tempDir = File.createTempFile("temp_", format.split(".").last)
+        val tempDir = File.createTempFile("temp_", "."+format.split("\\.").last)
         tempDir.delete
-        tempDir.mkdir
         (tempDir.toString, Some(tempDir))
       } else {
         (

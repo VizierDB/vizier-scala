@@ -25,6 +25,9 @@ import java.util.UUID
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.{ DataFrame, Column }
 import java.io.File
+import java.io.FileOutputStream
+import scala.io.Source
+import info.vizierdb.filestore.Filestore
 
 case class ModelConfiguration(
   column: String,
@@ -47,6 +50,7 @@ object MissingValue
   val PARAM_SAVED_MODEL = "uuid"
 
   val PROP_MODELS = "models"
+  val MODEL_SUMMARY_FILE = "summary.json"
 
   def name = "Impute Missing Values"
 
@@ -97,11 +101,10 @@ object MissingValue
     var columns: Seq[(String, MissingValueImputer)] = 
       arguments.getList(PARAM_COLUMNS)
                .map { config =>
-                  val col = df.schema(config.get[Int](TemplateParameters.PARAM_SCHEMA_COLUMN)).name
+                  val col = df.schema(config.get[Int](TemplateParameters.PARAM_COLUMN)).name
                   
                   col -> getImputer( col, config.get[String](PARAM_MODEL) )
                }
-
 
     assert(columns.map { _._1 }.toSet.size == columns.size, "Column names must be unique")
     
@@ -127,7 +130,7 @@ object MissingValue
                  }
                }
 
-    val modelDir = modelArtifact.relativeFile
+    val modelDir = modelArtifact.absoluteFile
     if(!modelDir.isDirectory){ modelDir.mkdir() }
 
     // Figure out what models we need
@@ -145,7 +148,7 @@ object MissingValue
           
           // If we don't have anything for the column, we need one
           case None => 
-            false
+            true
         }
       }
 
@@ -157,7 +160,7 @@ object MissingValue
           ModelConfiguration(
             column = column,
             model = model.name,
-            file =
+            file = 
               (idx+existingModels.size).toString + "-" +
               column.replaceAll("[^a-zA-Z0-9]+", "_") + "-" +
               model.name.replaceAll("[^a-zA-Z]+", "_")
@@ -170,6 +173,14 @@ object MissingValue
 
         modelConfig
       }}
+
+    val updatedModelSummary = Json.toJson(existingModels ++ newModels)
+
+    val summaryFile = new File(modelDir, MODEL_SUMMARY_FILE)
+    val summary = new FileOutputStream(summaryFile)
+    summary.write(updatedModelSummary.toString.getBytes())
+    summary.close()
+    assert(summaryFile.exists())
 
     DB.autoCommit { implicit s => 
       modelArtifact.updateFileProperty(
@@ -186,27 +197,39 @@ object MissingValue
 
   def build(df: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame =
   {
-    val modelArtifact:Artifact = 
-      DB.readOnly { implicit s => 
-        Artifact.get(arguments.get[Identifier](PARAM_SAVED_MODEL), Some(projectId))
-      }
-    val models = 
-      modelArtifact.filePropertyOpt(PROP_MODELS)
-                   .get
-                   .as[Seq[ModelConfiguration]]
-                   .groupBy { _.column }
 
-    val modelDir = 
-      modelArtifact.relativeFile
+    val modelDir =
+      Filestore.getAbsolute(
+        projectId,
+        arguments.get[Identifier](PARAM_SAVED_MODEL)
+      )
 
-    arguments.getList(PARAM_COLUMNS)
-         .foldLeft(df) { (imputedDf, config) =>
-            val col = df.schema(config.get[Int](TemplateParameters.PARAM_SCHEMA_COLUMN)).name
-            val model = getImputer( col, config.get[String](PARAM_MODEL) )
-            val modelConfig = models(col).find { _.model == model.name }.get
+    val summary = 
+        Source.fromFile(new File(modelDir, MODEL_SUMMARY_FILE))
+              .mkString
 
-            model.impute(df, new File(modelDir, modelConfig.file))
-          }
+    val models:Map[String,Seq[ModelConfiguration]] = 
+      Json.parse(summary)
+          .as[Seq[ModelConfiguration]]
+          .groupBy { _.column }
+
+    val output = 
+      arguments.getList(PARAM_COLUMNS)
+           .foldLeft(df) { (imputedDf, config) =>
+              val col = df.schema(config.get[Int](TemplateParameters.PARAM_COLUMN)).name
+              val model = getImputer( col, config.get[String](PARAM_MODEL) )
+              val modelConfig = models.get(col)
+                                      .getOrElse { 
+                                        throw new RuntimeException(s"Missing models for $col from ${models.keys.mkString(", ")}")
+                                      }
+                                      .find { _.model == model.name }
+                                      .getOrElse { 
+                                        throw new RuntimeException(s"Missing models for ${model.name} from ${models(col).map { _.model }.mkString(", ")}")
+                                      }
+
+              model.impute(df, new File(modelDir, modelConfig.file))
+            }
+    return output
   }
 
 }

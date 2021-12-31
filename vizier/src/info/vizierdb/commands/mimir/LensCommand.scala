@@ -100,7 +100,7 @@ trait LensCommand
       new LensConstructor(
         lensClassName = this.getClass.getName, 
         target = dataset.id,
-        arguments = updatedArguments.encoded,
+        arguments = updatedArguments.asJson,
         projectId = context.projectId,
       )
     )
