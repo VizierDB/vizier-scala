@@ -168,7 +168,7 @@ object PythonProcess
         |  try:
         |    importlib.import_module(mod)
         |  except:
-        |    print(lib + "\n")
+        |    print(lib)
         |""".stripMargin
     val tests =
       REQUIRED_PACKAGES.map { 
