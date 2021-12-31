@@ -4,18 +4,22 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{ Expression, Generator }
 import org.apache.spark.sql.catalyst.expressions.codegen.{ CodegenContext, ExprCode }
 import org.apache.spark.sql.types.{ StructType, StructField, LongType }
+import org.apache.spark.sql.catalyst.expressions.UserDefinedExpression
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
 
-case class RowIdGenerator(source: Generator) extends Generator
+case class RowIdGenerator(source: Generator) 
+  extends Generator
+  with UserDefinedExpression
+  with CodegenFallback
 {
-  // Members declared in org.apache.spark.sql.catalyst.expressions.Expression
-  protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = 
-    throw new UnsupportedOperationException(s"Cannot generate code for expression: $this")
+  def name = "RowIdGenerator"
 
   // Members declared in org.apache.spark.sql.catalyst.expressions.Generator
   def elementSchema: StructType = 
     StructType(source.elementSchema.fields :+ RowIdGenerator.FIELD)
 
-  protected def withNewChildrenInternal(newChildren: IndexedSeq[Expression]): Expression = this
+  protected def withNewChildrenInternal(newChildren: IndexedSeq[Expression]): Expression = 
+    RowIdGenerator(newChildren(0).asInstanceOf[Generator])
 
   override def eval(input: InternalRow): TraversableOnce[InternalRow] = 
     source.eval(input)

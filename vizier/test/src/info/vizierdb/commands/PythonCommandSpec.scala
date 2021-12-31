@@ -225,11 +225,7 @@ print(df['A'].sum())
     """.stripMargin)
     project.sql("SELECT addOne(2)" -> "functionTest")
     project.waitUntilReadyAndThrowOnError
-    DB.autoCommit { implicit s => 
-      project.artifact("functionTest")
-             .datasetData()
-     
-    }.data(0)(0)  must beEqualTo("3")
+    project.datasetData("functionTest").data(0)(0) must beEqualTo("3")
   }
 
 }

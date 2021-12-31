@@ -25,6 +25,7 @@ import info.vizierdb.spark.{ InjectedSparkSQL, ViewConstructor }
 import info.vizierdb.catalog.ArtifactSummary
 import info.vizierdb.Vizier
 import org.apache.spark.sql.{ DataFrame, SparkSession, AnalysisException }
+import info.vizierdb.catalog.Artifact
 
 object Query extends Command
   with LazyLogging
@@ -59,26 +60,48 @@ object Query extends Command
 
     try { 
       logger.trace("Creating view")
-      val output = context.outputDataset(
-        datasetName,
+
+      val fnDeps: Map[String, (Identifier, String, String)] = 
+        InjectedSparkSQL.getDependencies(query)
+                        ._2.toSeq
+                        .collect { case f if functions contains f => 
+                                      f -> functions(f) }
+                        .toMap
+                        .mapValues { id =>  
+                          DB.autoCommit { implicit s => 
+                            val a = Artifact.get(id, Some(context.projectId))
+                            (
+                              a.id,
+                              a.mimeType,
+                              a.string
+                            )
+                          }
+                        }
+
+      val view = 
         ViewConstructor(
           datasets = scope.mapValues { _.id },
-          functions = functions,
+          functions = fnDeps,
           query = query,
           projectId = context.projectId
         )
-      )
-      val df = DB.autoCommit { implicit s => output.dataframe }
 
-      val (viewRefs, functionRefs) = 
-        InjectedSparkSQL.getDependencies(query)
+      val output = context.outputDataset(datasetName, view)
+      val df = DB.autoCommit { implicit s => output.dataframe }
+      // df.explain()
 
       logger.trace("View created; Gathering dependencies")
-      for(dep <- viewRefs){
+      for(dep <- view.viewDeps){
         context.inputs.put(dep, scope(dep).id)
       }
-      for(dep <- functionRefs){
-        context.inputs.put(dep, functions(dep))
+      for(dep <- view.fnDeps){
+        // view.functions includes all functions referenced by the query,
+        // including those supplied by spark/plugins, etc...  We only
+        // want to register dependencies on functions explicitly in the
+        // context's scope.
+        if(functions contains dep){
+          context.inputs.put(dep, functions(dep))
+        }
       }
 
       logger.trace("Rendering dataset summary")

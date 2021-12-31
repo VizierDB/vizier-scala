@@ -33,11 +33,10 @@ case class LoadConstructor(
   with LazyLogging
   with DefaultProvenance
 {
-
   lazy val (absoluteUrl: String, _) = 
     url.getPath(
       projectId = projectId,
-      noRelativePaths = !(urlIsRelativeToDataDir.getOrElse { true })
+      noRelativePaths = true
     )
 
   def construct(

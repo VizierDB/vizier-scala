@@ -116,6 +116,11 @@ class AnnotateWithRowIds(
         val generatorAnnotation = annotationAttribute(name = RowIdGenerator.ATTRIBUTE)
         val newAnnotation = annotationAttribute()
         // Wrap the generator in one that adds a RowId Attribute.
+        // Some generators already do this 
+        // e.g., see sql.catalyst.expressions.CollectionGenerator
+        // It might be useful to automatically fall through to one of these
+        // to make things faster.  However, we can't assume that we're 
+        // getting one of them, and so need a more generic generator first.
         (
           annotate(
             Generate(

@@ -51,11 +51,14 @@ class PythonSaveDatasetSpec
       val df = project.dataframe("R")
       val data = df.collect.toSeq
       println(s"Read artifact #${project.artifact("R").id}")
-      data must contain(42)
-      data.filterNot { _.isNullAt(0) } must haveSize(data.size)
+      data.map { _.getShort(1) } must contain(42)
+      data.filterNot { _.isNullAt(1) } must haveSize(data.size)
       df.schema(3).name must beEqualTo("D")
       df.schema(3).dataType must beEqualTo(FloatType)
-      data.map { _.getFloat(0) } must contain(14.0)
+      data.map { x => 
+        if(x.isNullAt(3)){ null } 
+        else { x.getFloat(3) } 
+      } must contain(14.0)
     }
   }
 

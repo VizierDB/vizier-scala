@@ -41,6 +41,9 @@ class PythonUDFBuilder(val pythonPath: String)
   def apply(a: Artifact, name: String): (Seq[Expression] => PythonUDF) = 
     apply(pickled = pickle(a), name = Some(name))
 
+  def apply(aId: Identifier, script: String, name: String): (Seq[Expression] => PythonUDF) = 
+    apply(pickled = pickle(aId, script), name = Some(name))
+
   def apply(
     pickled: Array[Byte], 
     name: Option[String] = None,
@@ -69,6 +72,10 @@ class PythonUDFBuilder(val pythonPath: String)
   def pickle(a: Artifact): Array[Byte] = 
     udfCache.getOrElseUpdate(a.id, { 
       pickle(a.string)
+    })
+  def pickle(aId: Identifier, script: String): Array[Byte] = 
+    udfCache.getOrElseUpdate(aId, { 
+      pickle(script)
     })
 
   def pickle(vizierFunctionScript: String): Array[Byte] = 

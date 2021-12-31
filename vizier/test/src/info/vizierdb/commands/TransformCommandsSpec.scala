@@ -73,9 +73,9 @@ class TransformCommandsSpec
       FilterDataset.PARAM_FILTER -> "cast(a as int) > 1"
     )
     project.waitUntilReadyAndThrowOnError
-    val df = project.dataframe("s")
-    val data = df.collect.map { _.getString(1) }.toSeq
-    data must not contain("1")
+    val df = project.datasetData("s")
+    val data = df.data.map { _(1) }
+    data must not contain(1)
     data must haveSize(3)
   }
 
