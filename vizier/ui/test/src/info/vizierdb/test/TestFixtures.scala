@@ -57,9 +57,9 @@ trait TestFixtures
   }
 
 
-  def pushResponse[T, M](response: M)(op: => T)(implicit writes: Writes[M]): (MockBranchSubscription.Client.Request, T) =
+  def pushResponse[T, M](response: M)(op: => T)(implicit writes: Writes[M]): (Seq[String], T) =
   {
-    var request: MockBranchSubscription.Client.Request = null
+    var request: Seq[String] = null
     val height = MockBranchSubscription.expectedMessages.size
     MockBranchSubscription.expectedMessages.push( 
       actualRequest => {
@@ -80,14 +80,14 @@ trait TestFixtures
     extends BranchSubscription(1, 1, Vizier.api)
   {
 
-    val expectedMessages = mutable.Stack[Client.Request => JsValue]()
+    val expectedMessages = mutable.Stack[Seq[String] => JsValue]()
 
     override def getSocket(): dom.WebSocket =
     {
       return null
     }
 
-    override def makeRequest(request: Client.Request): Promise[JsValue] =
+    override def makeRequest(request: Seq[String]): Promise[JsValue] =
     {
       assert(expectedMessages.size > 0, "Unexpected message sent")
       val handleRequest = expectedMessages.pop()
@@ -151,6 +151,7 @@ object TestFixtures
       tableOfContents = None,
       createdAt = new js.Date(),
       action = "create",
+      actionModule = None,
       packageId = None,
       commandId = None,
       links = HATEOAS()
