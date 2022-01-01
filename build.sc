@@ -5,6 +5,8 @@ import mill.scalalib._
 import mill.scalalib.publish._
 import mill.scalajslib._
 import coursier.maven.{ MavenRepository }
+import mill.util.Ctx
+import mill.api.{ Result, PathRef }
 
 object upstream extends Module {
 
@@ -26,6 +28,8 @@ object vizier extends ScalaModule with PublishModule {
     MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
   )}
 
+  def mainClass = Some("info.vizierdb.Vizier")
+
   override def compile = T {
     routes()
     super.compile()
@@ -34,6 +38,10 @@ object vizier extends ScalaModule with PublishModule {
   def sources = T.sources(
     millSourcePath / "src",
     millSourcePath / "shared-src"
+  )
+  def resources = T.sources(
+    millSourcePath / "resources",
+    ui.resourceDir()
   )
 
   def ivyDeps = Agg(
@@ -74,7 +82,10 @@ object vizier extends ScalaModule with PublishModule {
     ivy"ch.qos.logback:logback-classic:1.2.3",
   )
 
-  object test extends Tests with TestModule.Specs2 {
+  object test 
+    extends Tests 
+    with TestModule.Specs2 
+  {
 
     def scalacOptions = Seq("-Yrangepos")
       def ivyDeps = Agg(
@@ -143,6 +154,69 @@ object vizier extends ScalaModule with PublishModule {
         T { JsEnvConfig.JsDom() }
 
     }
+    
+    def vendor = T.sources(
+      os.walk(millSourcePath / "vendor")
+        .filter { _.ext == "js" }
+        .map { PathRef(_) }
+    )
+
+    def vendorLicense = T.source(millSourcePath / "vendor" / "LICENSE.txt")
+
+    def html = T.sources(
+      os.walk(millSourcePath / "html")
+        .map { PathRef(_) }
+    )
+  
+    def resourceDir = T { 
+      buildUIResourceDir(
+        uiBinary = fastOpt().path,
+        vendor = ( vendor().map { _.path }, os.read(vendorLicense().path) ),
+        assets = html().map { x => (x.path -> os.rel / x.path.segments.toSeq.last) }
+      )
+    }
+  
+    def buildUIResourceDir(
+      uiBinary: os.Path,
+      vendor: (Seq[os.Path], String),
+      assets: Seq[(os.Path, os.RelPath)]
+    )(implicit ctx: Ctx): Result[os.Path] =
+    {
+      val target = ctx.dest
+
+      // Vizier UI binary
+      os.copy.over(
+        uiBinary,
+        target / "ui" / "vizier.js",
+        createFolders = true
+      )
+
+      // Vendor JS
+      for(source <- vendor._1){
+        os.copy.over(
+          source,
+          target / "ui" / "vendor" / source.segments.toSeq.last,
+          createFolders = true
+        )
+      }
+      os.write(
+        target / "ui" / "vendor" / "LICENSE.txt",
+        vendor._2 + "\n"
+      )
+
+      // Assets
+      for((asset, assetTarget) <- assets){
+        os.copy.over(
+          asset,
+          target / "ui" / assetTarget,
+          createFolders = true
+        )
+      }
+
+      println(s"Generated UI resource dir: $target")
+      return target
+    }
   }
+
 }
 
