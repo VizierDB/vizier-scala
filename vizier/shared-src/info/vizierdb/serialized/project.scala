@@ -3,6 +3,7 @@ package info.vizierdb.serialized
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.types.Identifier
 import info.vizierdb.nativeTypes.DateTime
+import info.vizierdb.nativeTypes
 
 case class ProjectSummary(
   id: Identifier,
@@ -23,6 +24,10 @@ case class ProjectSummary(
       links = links,
       branches = branches
     )
+
+  def apply(key: String): Option[nativeTypes.JsValue] = 
+    properties.find { _.key == key }
+              .map { _.value }
 }
 
 case class ProjectDescription(
@@ -34,6 +39,11 @@ case class ProjectDescription(
   links: HATEOAS.T,
   branches: Seq[BranchSummary]
 )
+{
+    def apply(key: String): Option[nativeTypes.JsValue] = 
+    properties.find { _.key == key }
+              .map { _.value }
+}
 
 case class ProjectList(
   projects: Seq[ProjectSummary],

@@ -108,7 +108,7 @@ object Vizier
     GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
       enabled = true,
       singleLineMode = true,
-      logLevel = 'trace,
+      logLevel = "trace",
     ) 
   }
 

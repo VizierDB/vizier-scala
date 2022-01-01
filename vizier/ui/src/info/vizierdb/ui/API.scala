@@ -38,6 +38,17 @@ case class API(baseUrl: String)
       }
   }
 
+  def listProjects(): Future[serialized.ProjectList] =
+  {
+    Ajax.get(
+      urls.listProjects.toString
+    ).map { xhr =>
+      Json.parse(
+        xhr.responseText
+      ).as[serialized.ProjectList]
+    }
+  }
+
   def project(
     projectId: Identifier
   ): Future[serialized.ProjectDescription] =
@@ -64,6 +75,5 @@ case class API(baseUrl: String)
       ).as[serialized.BranchDescription]
     }
   }
-
 
 }

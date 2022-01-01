@@ -72,7 +72,11 @@ object VizierUIServlet
       } else {
         val content = Streams.readAll(data)
         val f = new File(resourcePath)
-        val mime = URLConnection.guessContentTypeFromName(f.getName())
+        val mime = 
+          f.getName().split("\\.").last match {
+            case "js" => "application/javascript"
+            case _ => URLConnection.guessContentTypeFromName(f.getName())
+          }
         output.setContentType(mime)
         output.setContentLength(content.length)
         output.getOutputStream().write(content)

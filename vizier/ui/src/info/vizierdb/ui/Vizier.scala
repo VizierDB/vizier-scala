@@ -1,6 +1,7 @@
 package info.vizierdb.ui
 
 import org.scalajs.dom.document
+import scala.scalajs.js.annotation._
 import scalatags.JsDom.all._
 import org.scalajs.dom
 import rx._
@@ -14,7 +15,9 @@ import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
+import info.vizierdb.serialized.ProjectList
 
+@JSExportTopLevel("Vizier")
 object Vizier 
   extends Object
   with Logging
@@ -43,20 +46,27 @@ object Vizier
 
   def main(args: Array[String]): Unit = 
   {
+
+  }
+
+  @JSExport("project_view")
+  def projectView(): Unit = 
+  {
+    val projectId = 
+      arguments.get("project")
+               .getOrElse { error("No Project ID specified") }
+               .toLong
+    val projectRequest = api.project(projectId)
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       try {
-        val projectId = 
-          arguments.get("project")
-                   .getOrElse { error("No Project ID specified") }
-                   .toLong
-        api.project(projectId)
-              .onComplete { 
-                case Success(response) => 
-                  project() = Some(new Project(projectId, api).load(response))
-                  logger.debug(s"Project: ${project.now.get}")
-                case Failure(ex) => 
-                  error(ex.toString)
-              }
+        projectRequest
+            .onComplete { 
+              case Success(response) => 
+                project() = Some(new Project(projectId, api).load(response))
+                logger.debug(s"Project: ${project.now.get}")
+              case Failure(ex) => 
+                error(ex.toString)
+            }
 
         document.body.appendChild(
           div(id := "content",
@@ -79,6 +89,55 @@ object Vizier
       } catch {
         case t: Throwable => logger.error(t.toString)
       }
+    })
+  }
+
+  @JSExport("project_list")
+  def projectList(): Unit = 
+  {
+    val projectListRequest = 
+      api.listProjects()
+    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
+      var projects = Var[Option[ProjectList]](None)
+      projectListRequest
+        .onComplete {
+          case Success(result) => 
+            projects() = Some(result)
+          case Failure(ex) =>
+            error(ex.toString())
+        }
+      document.body.appendChild(
+        div(id := "content",
+            Rx { projects
+              projects() match {
+                case Some(ProjectList(projects, _)) => 
+                  ul(
+                    projects.map { projectRef =>
+                      li(
+                        a(
+                          href := s"project.html?project=${projectRef.id}",
+                          span(
+                            `class` := "project_name",
+                            (
+                              projectRef("name")
+                                .flatMap { _.asOpt[String] }
+                                .getOrElse { "Untitled Project" }
+                            ):String
+                          ),
+                          span(
+                            `class` := "project_date",
+                            s"(${projectRef.lastModifiedAt})"
+                          )
+                        )
+                      )
+                    }
+                  )
+                case None => 
+                  div("Loading project list...")
+              }
+            }
+        )
+      )
     })
   }
 

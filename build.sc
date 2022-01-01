@@ -48,25 +48,31 @@ object vizier extends ScalaModule with PublishModule {
     ////////////////////// Mimir ///////////////////////////
     ivy"org.mimirdb::mimir-caveats::${upstream.caveats.VERSION}"
       .exclude(
-        "org.slf4j" -> "slf4j-log4j12",
-        "org.mortbay.jetty" -> "*"
+        "org.slf4j" -> "*",
+        "org.mortbay.jetty" -> "*",
+        "com.typesafe.play" -> "*",
+        "log4j" -> "*",
       ),
 
     ////////////////////// Catalog Management //////////////
-    ivy"org.scalikejdbc::scalikejdbc::3.4.2",
-    ivy"org.scalikejdbc::scalikejdbc-syntax-support-macro::3.4.2",
-    ivy"org.xerial:sqlite-jdbc:3.32.3",
+    ivy"org.scalikejdbc::scalikejdbc::4.0.0",
+    ivy"org.scalikejdbc::scalikejdbc-syntax-support-macro::4.0.0",
+    ivy"org.xerial:sqlite-jdbc:3.36.0.3",
 
 
     ////////////////////// Import/Export Support ///////////
     ivy"org.apache.commons:commons-compress:1.20",
+    ivy"com.typesafe.play::play-json:2.9.2"
+      .exclude(
+        "com.fasterxml.jackson.core" -> "*",
+      ),
 
     ////////////////////// Interfacing /////////////////////
     ivy"org.rogach::scallop:3.4.0",
 
     ////////////////////// API Support /////////////////////
     ivy"javax.servlet:javax.servlet-api:3.1.0",
-    ivy"org.eclipse.jetty.websocket:websocket-server:9.4.10.v20180503",
+    ivy"org.eclipse.jetty.websocket:websocket-server:9.4.44.v20210927",
 
     ////////////////////// Command-Specific Libraries //////
     ivy"com.github.andyglow::scala-jsonschema::0.7.1",
@@ -78,8 +84,10 @@ object vizier extends ScalaModule with PublishModule {
     ivy"org.scala-lang:scala-compiler:${scalaVersion}",
 
     ////////////////////// Logging /////////////////////////
-    ivy"com.typesafe.scala-logging::scala-logging::3.9.2",
-    ivy"ch.qos.logback:logback-classic:1.2.3",
+    ivy"com.typesafe.scala-logging::scala-logging::3.9.4",
+    ivy"ch.qos.logback:logback-classic:1.2.10",
+    ivy"org.apache.logging.log4j:log4j-core:2.17.1",
+    ivy"org.apache.logging.log4j:log4j-1.2-api:2.17.1",
   )
 
   object test 
@@ -157,7 +165,7 @@ object vizier extends ScalaModule with PublishModule {
     
     def vendor = T.sources(
       os.walk(millSourcePath / "vendor")
-        .filter { _.ext == "js" }
+        .filter { f => f.ext == "js" || f.ext == "css" }
         .map { PathRef(_) }
     )
 

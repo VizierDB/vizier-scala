@@ -87,7 +87,7 @@ trait TestFixtures
       return null
     }
 
-    override def makeRequest(request: Seq[String]): Promise[JsValue] =
+    def makeRequest(request: Seq[String]): Promise[JsValue] =
     {
       assert(expectedMessages.size > 0, "Unexpected message sent")
       val handleRequest = expectedMessages.pop()

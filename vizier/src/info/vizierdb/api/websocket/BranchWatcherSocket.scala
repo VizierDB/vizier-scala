@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.servlet.{
   WebSocketServlet,
   WebSocketServletFactory
 }
+import org.eclipse.jetty.websocket.server.WebSocketServerFactory
 import scalikejdbc.DB
 import scala.collection.mutable
 import play.api.libs.json._
@@ -35,7 +36,6 @@ import info.vizierdb.types._
 import info.vizierdb.catalog._
 import info.vizierdb.delta.{ DeltaBus, WorkflowDelta }
 import com.typesafe.scalalogging.LazyLogging
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -60,6 +60,7 @@ class BranchWatcherSocket
   private var session: Session = null
   var subscription: DeltaBus.Subscription = null
   lazy val client = session.getRemoteAddress.toString
+
 
   def registerSubscription(projectId: Identifier, branchId: Identifier): Unit = 
   {
@@ -181,12 +182,17 @@ class BranchWatcherSocket
     def ping() = System.currentTimeMillis()
 
     override def route(path: Seq[String], args: Map[String, JsValue]) =
+    {
+      logger.trace(s"Request for ${path.mkString("/")}")
       path.last match {
         case "subscribe" => Json.toJson(subscribe(args("projectId").as[Identifier], args("branchId").as[Identifier]))
         case "ping" => Json.toJson(ping())
         case _ => super.route(path, args)
       }
+    }
   }
+
+  logger.trace("Websocket prepared")
 }
 
 object BranchWatcherSocket

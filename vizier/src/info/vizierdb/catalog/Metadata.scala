@@ -28,7 +28,6 @@ object Metadata extends SQLSyntaxSupport[Metadata]
     sql"SELECT value FROM Metadata WHERE key = $key"
       .map { _.string(1) }
       .single()
-      .apply()
 
   def get(key: String)(implicit session: DBSession): String = getOption(key).get
 

@@ -94,6 +94,11 @@ class Module(
                           logger.trace(s"Looking up artifact ${ref.userFacingName} -> ${ref.artifactId}")
                           ref.userFacingName -> Artifact.lookupSummary(ref.artifactId.get).get 
                         }
+                        // toIndexedSeq forces a materialization **right now**, i.e., 
+                        // while the DBConnection is still live.  If you delete the 
+                        // following line, references to the artifacts will crash, since
+                        // the DB connection may already be closed.
+                        .toIndexedSeq
 
     val datasets    = artifactSummaries.filter { _._2.t.equals(ArtifactType.DATASET) }
     val charts      = artifactSummaries.filter { _._2.t.equals(ArtifactType.CHART) }
