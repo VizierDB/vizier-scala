@@ -49,6 +49,23 @@ case class API(baseUrl: String)
     }
   }
 
+  def createProject(
+    properties: serialized.PropertyList.T
+  ): Future[serialized.ProjectSummary] =
+  {
+    Ajax.post(
+      urls.createProject.toString,
+      data = Json.obj(
+        "properties" -> properties
+      ).toString
+    ).map { xhr => 
+      Json.parse(
+        xhr.responseText
+      ).as[serialized.ProjectSummary]
+    }
+  }
+
+
   def project(
     projectId: Identifier
   ): Future[serialized.ProjectDescription] =

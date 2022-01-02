@@ -122,7 +122,7 @@ class ModuleEditor(
       h4(command.name),
       parameters.filter { !_.hidden }.map { param => div(param.root) },
       div(
-        button("Cancel", onclick := { (e: dom.MouseEvent) => module.cancelEditor() }),
+        button("Back", onclick := { (e: dom.MouseEvent) => module.cancelEditor() }),
         button("Save", onclick := { (e: dom.MouseEvent) => saveState() })
       )
     )

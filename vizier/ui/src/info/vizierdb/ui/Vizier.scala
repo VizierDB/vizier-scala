@@ -7,6 +7,7 @@ import org.scalajs.dom
 import rx._
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.net.URLDecoder
+import play.api.libs.json._
 
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.OnMount
@@ -16,6 +17,7 @@ import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized.ProjectList
+import info.vizierdb.serialized.PropertyList
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -92,6 +94,20 @@ object Vizier
     })
   }
 
+  def createProject(name: String): Unit =
+  {
+    api.createProject(
+      PropertyList(
+        "name" -> JsString(name)
+      )
+    ) .onComplete {
+        case Success(result) => 
+          dom.window.location.href = s"project.html?project=${result.id}"
+        case Failure(ex) =>
+          error(ex.toString())
+      }
+  }
+
   @JSExport("project_list")
   def projectList(): Unit = 
   {
@@ -99,6 +115,7 @@ object Vizier
       api.listProjects()
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       var projects = Var[Option[ProjectList]](None)
+      var projectNameField = Var[Option[dom.Node]](None)
       projectListRequest
         .onComplete {
           case Success(result) => 
@@ -111,26 +128,47 @@ object Vizier
             Rx { projects
               projects() match {
                 case Some(ProjectList(projects, _)) => 
-                  ul(
-                    projects.map { projectRef =>
-                      li(
-                        a(
-                          href := s"project.html?project=${projectRef.id}",
-                          span(
-                            `class` := "project_name",
-                            (
-                              projectRef("name")
-                                .flatMap { _.asOpt[String] }
-                                .getOrElse { "Untitled Project" }
-                            ):String
-                          ),
-                          span(
-                            `class` := "project_date",
-                            s"(${projectRef.lastModifiedAt})"
+                  div(
+                    ul(
+                      projects.map { projectRef =>
+                        li(
+                          a(
+                            href := s"project.html?project=${projectRef.id}",
+                            span(
+                              `class` := "project_name",
+                              (
+                                projectRef("name")
+                                  .flatMap { _.asOpt[String] }
+                                  .getOrElse { "Untitled Project" }
+                              ):String
+                            ),
+                            span(
+                              `class` := "project_modified",
+                              s"(${projectRef.lastModifiedAt.toLocaleDateString()} ${projectRef.lastModifiedAt.toLocaleTimeString()})"
+                            )
                           )
                         )
+                      }
+                    ),
+                    div(
+                      Rx { 
+                        projectNameField() match {
+                          case None => span():dom.Node
+                          case Some(f) => f
+                        }
+                      },
+                      button(
+                        onclick := { (_:dom.MouseEvent) => 
+                          projectNameField.now match {
+                            case None => projectNameField() = Some(input(`type` := "text"):dom.Node)
+                            case Some(nameField) => 
+                              createProject(projectNameField.now.get.asInstanceOf[dom.html.Input].value)
+                              projectNameField() = None
+                          }
+                        },
+                        "Create Project"
                       )
-                    }
+                    )
                   )
                 case None => 
                   div("Loading project list...")
@@ -138,6 +176,7 @@ object Vizier
             }
         )
       )
+      OnMount.trigger(document.body)
     })
   }
 

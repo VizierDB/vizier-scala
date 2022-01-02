@@ -180,7 +180,7 @@ object vizier extends ScalaModule with PublishModule {
       buildUIResourceDir(
         uiBinary = fastOpt().path,
         vendor = ( vendor().map { _.path }, os.read(vendorLicense().path) ),
-        assets = html().map { x => (x.path -> os.rel / x.path.segments.toSeq.last) }
+        assets = html().map { x => (x.path -> os.rel / x.path.last) }
       )
     }
   
@@ -196,6 +196,11 @@ object vizier extends ScalaModule with PublishModule {
       os.copy.over(
         uiBinary,
         target / "ui" / "vizier.js",
+        createFolders = true
+      )
+      os.copy.over(
+        uiBinary / os.up / (uiBinary.last+".map"),
+        target / "ui" / (uiBinary.last+".map"),
         createFolders = true
       )
 
