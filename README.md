@@ -12,6 +12,7 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 * **No-code**: Use a spreadsheet-style interface, or Vizier's "data lenses" to work with your data, code optional!
 * **Workflow Snapshots**: Vizier automatically keeps a record of how you edit your workflow so you can always go back to an earlier version.
 * **Scalable**: Vizier datasets are backed by Spark and Apache Arrow, allowing you to make big changes fast.
+* **Reactive**: Changes are reflected immediately.
 
 ---
 
@@ -36,6 +37,7 @@ And open up http://localhost:5000 in your web browser.
 ### More Info
 
 * [Project Website (w/ screenshots)](https://vizierdb.info)
+* [Vizier for Jupyter Users](https://github.com/VizierDB/vizier-scala/wiki/Migrating-from-Jupyter)
 * [User Documentation](https://github.com/VizierDB/vizier-scala/wiki)
 * [Developer Documentation](https://github.com/VizierDB/vizier-scala/blob/master/docs/DEVELOPER.md)
 
@@ -94,20 +96,17 @@ mill vizier.test.testOnly [classname]
 mill vizier.run [vizier arguments]
 ```
 
-##### Build the UI (fast)
-```
-mill vizier.ui.fastOpt
-mill vizier.run --connect-from-any-host
-```
-And load `debug.html` in the browser
+Vizier defaults to running on port 5000 on localhost.
 
-Compiled JS outputs will be in `out/ui/fastOpt/dest`
+##### Hack on the UI
 
-##### Deploy the UI into Vizier
+Vizier takes a few seconds to start.  If you're only editing the UI, you can get a faster development cycle by only rebuilding and reloading the resources directory
+
 ```
-mill vizier.ui.fullOpt
-cp out/vizier/ui/fullOpt/dest/out.js vizier/resources/ui/vizier.js
+mill -w vizier.ui.resourceDir
 ```
+
+Mill's `-w` flag watches for changes to files in the UI directory.  Any changes will trigger a recompile.  Vizier uses the generated resources directory in-situ, so reloading the UI in your web browser will load the updated version.
 
 ##### Publish the Repo
 ```
