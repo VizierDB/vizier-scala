@@ -8,6 +8,7 @@ import info.vizierdb.serialized
 import info.vizierdb.ui.facades.Marked
 import info.vizierdb.types.MessageType
 import info.vizierdb.serializers._
+import info.vizierdb.ui.components.dataset.Dataset
 
 sealed trait Message
   { def root: dom.Node }

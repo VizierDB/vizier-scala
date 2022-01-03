@@ -18,6 +18,7 @@ import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized.ProjectList
 import info.vizierdb.serialized.PropertyList
+import info.vizierdb.ui.widgets.TableView
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -178,6 +179,28 @@ object Vizier
       )
       OnMount.trigger(document.body)
     })
+  }
+
+  @JSExport("spreadsheet")
+  def spreadsheet(): Unit =
+  {
+    val table = new TableView(
+      numRows = 500000,
+      rowDimensions = (780, 30),
+      outerDimensions = (800, 400),
+      getRow = { x => 
+                  div(height := 30, 
+                      backgroundColor := (if(x % 2 == 0) { "red" } else { "blue" }),
+                      x.toString
+                  ).render
+                }
+    )
+    document.body.appendChild(
+      div(id := "content",
+        table.root
+      )
+    )
+    OnMount.trigger(document.body)
   }
 
 }  

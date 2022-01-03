@@ -1,4 +1,4 @@
-package info.vizierdb.ui.components
+package info.vizierdb.ui.components.dataset
 
 import rx._
 import org.scalajs.dom
@@ -10,11 +10,18 @@ import info.vizierdb.types._
 import info.vizierdb.serialized.{ DatasetDescription, DatasetColumn, DatasetRow }
 import info.vizierdb.nativeTypes.JsValue
 
-class Dataset(id: Identifier)
+class Dataset(
+  id: Identifier,
+)
              (implicit val owner: Ctx.Owner)
 {
   val columns = RxBuffer[Column]()
-  val rows = RxBuffer[Row]()
+  val size = Var[Long](0)
+  val firstVisible = Var[Long](0)
+  val rows = new RowCache(
+                    fetchRowsWithAPI, 
+                    _.maxBy { pageIdx => math.abs(pageIdx - firstVisible.now) }
+                  )
   val name = Var[String]("unnamed")
 
   def this(description: DatasetDescription)
@@ -36,12 +43,17 @@ class Dataset(id: Identifier)
 
   def loadRows(serializedRows: Seq[DatasetRow]) =
   {
-    rows.clear()
-    for(row <- serializedRows){
-      rows.append(new Row(row))
-    }
+    ???
+    // rows.clear()
+    // for(row <- serializedRows){
+    //   rows.append(new Row(row))
+    // }
   }
 
+  def fetchRowsWithAPI(offset: Long, limit: Int) = 
+  {
+    ???
+  }
 
   class Column(
     id: Identifier,
@@ -100,14 +112,14 @@ class Dataset(id: Identifier)
   }
 
   private val columnView = RxBufferView(tr(), columns.rxMap { _.root })
-  private val rowView = RxBufferView(tbody(), rows.rxMap { _.root })
+  // private val rowView = RxBufferView(tbody(), rows.rxMap { _.root })
 
   lazy val root = div(
     `class` := "dataset",
     Rx { h3(name()) },
     table(
       thead(columnView.root),
-      rowView.root
+      // rowView.root
     )
   )
 
