@@ -127,6 +127,21 @@ object GetArtifact
     } 
   }
 
+  def Dataset(
+    projectId: Identifier,
+    artifactId: Identifier,
+    offset: Option[Long] = None,
+    limit: Option[Int] = None,
+    profile: Option[String] = None,
+  ): serialized.DatasetDescription =
+    typed(ArtifactType.DATASET)(
+      projectId = projectId,
+      artifactId = artifactId,
+      offset = offset,
+      limit = limit,
+      profile = profile,
+    ).asInstanceOf[serialized.DatasetDescription]
+
   object CSV
   {
     def apply(

@@ -6,9 +6,8 @@ import scala.scalajs.js
 import rx._
 import scala.concurrent.{ Promise, Future }
 import info.vizierdb.serialized
-import info.vizierdb.ui.network.BranchSubscription
+import info.vizierdb.ui.network.{ API, BranchSubscription }
 import info.vizierdb.ui.rxExtras.implicits._
-import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging

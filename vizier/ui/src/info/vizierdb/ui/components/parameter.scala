@@ -222,7 +222,7 @@ class BooleanParameter(
   val root = 
     input(`type` := "checkbox").render
   def value = 
-    JsBoolean(inputNode[dom.html.Input].value.toBoolean)
+    JsBoolean(inputNode[dom.html.Input].value == "on")
 
   override def set(v: JsValue): Unit =
     inputNode[dom.html.Input].value = v.as[Boolean].toString

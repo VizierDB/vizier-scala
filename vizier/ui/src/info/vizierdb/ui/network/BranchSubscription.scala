@@ -2,7 +2,6 @@ package info.vizierdb.ui.network
 
 import play.api.libs.json._
 import org.scalajs.dom
-import info.vizierdb.ui.API
 import rx._
 import scala.scalajs.js
 import scala.scalajs.js.JSON
@@ -32,8 +31,8 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
 
   protected[ui] def getSocket(): dom.WebSocket =
   {
-    logger.info(s"Connecting to ${api.urls.websocket}")
-    val s = new dom.WebSocket(api.urls.websocket)
+    logger.info(s"Connecting to ${api.websocket}")
+    val s = new dom.WebSocket(api.websocket)
     s.onopen = onConnected
     s.onclose = onClosed
     s.onerror = onError

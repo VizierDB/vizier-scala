@@ -12,12 +12,13 @@ import play.api.libs.json._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.ui.rxExtras.RxBufferView
-import info.vizierdb.ui.network.BranchSubscription
+import info.vizierdb.ui.network.{ API, BranchSubscription }
 import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized.ProjectList
 import info.vizierdb.serialized.PropertyList
+import info.vizierdb.ui.widgets.TableView
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -58,7 +59,7 @@ object Vizier
       arguments.get("project")
                .getOrElse { error("No Project ID specified") }
                .toLong
-    val projectRequest = api.project(projectId)
+    val projectRequest = api.projectGet(projectId)
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       try {
         projectRequest
@@ -96,7 +97,7 @@ object Vizier
 
   def createProject(name: String): Unit =
   {
-    api.createProject(
+    api.projectCreate(
       PropertyList(
         "name" -> JsString(name)
       )
@@ -112,7 +113,7 @@ object Vizier
   def projectList(): Unit = 
   {
     val projectListRequest = 
-      api.listProjects()
+      api.projectList()
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       var projects = Var[Option[ProjectList]](None)
       var projectNameField = Var[Option[dom.Node]](None)
@@ -178,6 +179,12 @@ object Vizier
       )
       OnMount.trigger(document.body)
     })
+  }
+
+  @JSExport("spreadsheet")
+  def spreadsheet(): Unit =
+  {
+    ???
   }
 
 }  
