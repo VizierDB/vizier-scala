@@ -12,7 +12,7 @@ import play.api.libs.json._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.ui.rxExtras.RxBufferView
-import info.vizierdb.ui.network.BranchSubscription
+import info.vizierdb.ui.network.{ API, BranchSubscription }
 import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
@@ -59,7 +59,7 @@ object Vizier
       arguments.get("project")
                .getOrElse { error("No Project ID specified") }
                .toLong
-    val projectRequest = api.project(projectId)
+    val projectRequest = api.projectGet(projectId)
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       try {
         projectRequest
@@ -97,7 +97,7 @@ object Vizier
 
   def createProject(name: String): Unit =
   {
-    api.createProject(
+    api.projectCreate(
       PropertyList(
         "name" -> JsString(name)
       )
@@ -113,7 +113,7 @@ object Vizier
   def projectList(): Unit = 
   {
     val projectListRequest = 
-      api.listProjects()
+      api.projectList()
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       var projects = Var[Option[ProjectList]](None)
       var projectNameField = Var[Option[dom.Node]](None)
@@ -184,23 +184,7 @@ object Vizier
   @JSExport("spreadsheet")
   def spreadsheet(): Unit =
   {
-    val table = new TableView(
-      numRows = 500000,
-      rowDimensions = (780, 30),
-      outerDimensions = (800, 400),
-      getRow = { x => 
-                  div(height := 30, 
-                      backgroundColor := (if(x % 2 == 0) { "red" } else { "blue" }),
-                      x.toString
-                  ).render
-                }
-    )
-    document.body.appendChild(
-      div(id := "content",
-        table.root
-      )
-    )
-    OnMount.trigger(document.body)
+    ???
   }
 
 }  

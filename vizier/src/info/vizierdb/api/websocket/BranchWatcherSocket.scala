@@ -120,7 +120,7 @@ class BranchWatcherSocket
    */
   def send(message: WebsocketResponse) =
   {
-    logger.trace(s"SEND: $message")
+    logger.trace(s"SEND: ${message.toString.take(200)}")
     session.getRemote.sendString(Json.stringify(Json.toJson(message)))
   }
 

@@ -9,16 +9,25 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types._
 import info.vizierdb.serialized.{ DatasetDescription, DatasetColumn, DatasetRow }
 import info.vizierdb.nativeTypes.JsValue
+import scala.concurrent.Future
+import info.vizierdb.ui.widgets.TableView
+import scala.concurrent.Promise
+import info.vizierdb.ui.widgets.Spinner
+import info.vizierdb.ui.Vizier
 
 class Dataset(
-  id: Identifier,
-)
-             (implicit val owner: Ctx.Owner)
+  datasetId: Identifier,
+)(implicit val owner: Ctx.Owner)
 {
-  val columns = RxBuffer[Column]()
+  val ROW_HEIGHT = 30
+  val CELL_WIDTH = 100
+  val GUTTER_WIDTH = 40
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  val columns = Var[Seq[Column]](Seq.empty)
   val size = Var[Long](0)
   val firstVisible = Var[Long](0)
-  val rows = new RowCache(
+  val rows = new RowCache[DatasetRow] (
                     fetchRowsWithAPI, 
                     _.maxBy { pageIdx => math.abs(pageIdx - firstVisible.now) }
                   )
@@ -29,30 +38,26 @@ class Dataset(
   {
     this(description.id)
     loadColumns(description.columns)
-    loadRows(description.rows)
+    rows.preload(description.rows)
     name() = description.name
+    size() = description.rowCount
+    println(s"Dataset size: ${description.rowCount}")
   }
 
   def loadColumns(serializedColumns: Seq[DatasetColumn]) =
   {
-    columns.clear()
-    for(col <- serializedColumns){
-      columns.append(new Column(col))
-    }
+    columns() = serializedColumns.map { new Column(_) }
   }
 
-  def loadRows(serializedRows: Seq[DatasetRow]) =
+  def fetchRowsWithAPI(offset: Long, limit: Int): Future[Seq[DatasetRow]] = 
   {
-    ???
-    // rows.clear()
-    // for(row <- serializedRows){
-    //   rows.append(new Row(row))
-    // }
-  }
-
-  def fetchRowsWithAPI(offset: Long, limit: Int) = 
-  {
-    ???
+    println(s"Fetch Dataset Rows @ $offset -> ${offset+limit}")
+    Vizier.api.artifactGetDataset(
+      artifactId = datasetId,
+      projectId = Vizier.project.now.get.projectId,
+      offset = Some(offset),
+      limit = Some(limit)
+    ).map { _.rows }
   }
 
   class Column(
@@ -61,8 +66,9 @@ class Dataset(
     dataType: JsValue
   ){
     val root = th(
-      `class` := "column_header",
+      `class` := "table_column_header",
       name,
+      width := s"${CELL_WIDTH}px",
       span(`class` := "column_type", s"($dataType)")
     )
     def this(encoded: DatasetColumn){
@@ -70,57 +76,62 @@ class Dataset(
     }
   }
 
-  class Row(
-    id: RowIdentifier,
-  ){
-    val values = RxBuffer[Cell]()
-    val isAnnotated = Var[Boolean](false)
+  def Gutter(index: Long) =
+    td(`class` := "table_row_id", float := "left", width := s"${GUTTER_WIDTH}px", (index+1))
 
-    private val view = RxBufferView(tr(), values.rxMap { _.root })
-    def root:dom.Node = view.root
-    
-    def this(encoded: DatasetRow){
-      this(encoded.id)
-      val inputs = 
-        encoded.values.zip(
-          encoded.rowAnnotationFlags
-                 .getOrElse { encoded.values.map { _ => false }}
-        )
-      for( (value, isCaveatted) <- inputs ){
-        values.append( new Cell(value, isCaveatted) )
-      }
-      isAnnotated() = encoded.rowIsAnnotated.getOrElse { false }
-    }
-
-  }
-
-  class Cell(
-    value: JsValue,
-    isCaveatted: Boolean
-  ){
-    def valueString: String = 
-      if(value == null) { "" }
-      else if(value.equals(js.undefined)){ "" }
-      else { value.toString }
-
-    lazy val root:dom.Node = 
-      td(
-        `class` := "dataset_value "+
-          (if(isCaveatted){ "caveatted" } else { "not_caveatted" }),
-        valueString
+  def Cell(value: JsValue, isCaveatted: Boolean) = 
+    td(
+      `class` := "dataset_value "+
+        (if(isCaveatted){ "caveatted" } else { "not_caveatted" }),
+      width := s"${CELL_WIDTH}px",
+      (
+        if(value == null) { "" }
+        else if(value.equals(js.undefined)){ "" }
+        else { value.toString }
       )
-  }
 
-  private val columnView = RxBufferView(tr(), columns.rxMap { _.root })
-  // private val rowView = RxBufferView(tbody(), rows.rxMap { _.root })
+    )
+  def Row(encoded: DatasetRow, index: Long) = 
+    tr(
+      `class` := "table_row " + 
+                 (if(encoded.rowIsAnnotated.getOrElse(false)){ "caveatted" } else { "" }),
+      Gutter(index),
+      encoded.values.zip(
+        encoded.rowAnnotationFlags
+               .getOrElse { encoded.values.map { _ => false }}
+      ).map { case (value, isCaveatted) => Cell(value, isCaveatted) }
+    )
+  
+
+  private val tableView = 
+    new TableView(
+      numRows = size.now.toInt, 
+      rowDimensions = (780, ROW_HEIGHT),
+      outerDimensions = (800, 400),
+      headerHeight = 50,
+      headers = Rx { th(width := s"${GUTTER_WIDTH}px").render +: columns().map { _.root.render }},
+      getRow = { (position: Long) => 
+        div(
+          padding := "0px",
+          margin := "0px",
+          Rx { rows(position)() match {
+            case None => tr(Gutter(position),
+                            div(
+                              width := "100%",
+                              textAlign := "center", 
+                              Spinner()
+                          ))
+            case Some(row) => Row(row,position)
+          } }
+        ).render
+      }
+    )
+  size.triggerLater { tableView.setNumRows(_) }
 
   lazy val root = div(
     `class` := "dataset",
     Rx { h3(name()) },
-    table(
-      thead(columnView.root),
-      // rowView.root
-    )
+    tableView.root
   )
 
 }

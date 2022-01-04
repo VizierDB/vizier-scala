@@ -9,19 +9,23 @@ import dom.html
 
 package object implicits {
 
-
-  implicit def rxFrag[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner): Frag = {
-    def rSafe: dom.Node = span(r.now).render
+  def replaceNodeOnUpdate[T <% Frag](r: Rx[T], wrap: Frag => Frag = span(_))(implicit ctx: Ctx.Owner): Frag = {
+    def rSafe: dom.Node = wrap(r.now).render
     var last = rSafe
 
     r.triggerLater {  
-      val newLast = span(r.now).render
+      val newLast = wrap(r.now).render
       last.parentNode.replaceChild(newLast, last)
       last = newLast
       OnMount.trigger(newLast)
     }
+    OnMount.trigger(last)
     last
   }
+
+
+  implicit def rxFrag[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner): Frag =
+    replaceNodeOnUpdate(r)
   
   implicit def renderFrag[T <% Frag](f: T): dom.Node = 
     f.render

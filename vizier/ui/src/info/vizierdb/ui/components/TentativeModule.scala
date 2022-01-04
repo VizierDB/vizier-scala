@@ -4,7 +4,6 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import rx._
-import info.vizierdb.ui.API
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.serialized
