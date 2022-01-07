@@ -78,6 +78,8 @@ class TentativeEdits(val project: Project)
             val ret = (artifacts() -- deletions()) ++ insertions()
             ret
           }
+          module.visibleArtifacts.now.kill()
+          module.visibleArtifacts() = artifacts
           /* return */ updatedArtifacts
         case (artifacts, (Right(tentative), idx)) => 
           tentative.visibleArtifacts.now.kill()

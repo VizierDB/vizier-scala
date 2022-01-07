@@ -20,13 +20,16 @@ import info.vizierdb.serialized.{
   DatasetColumn
 
 }
+import info.vizierdb.types._
 import info.vizierdb.nativeTypes.JsValue
 import scala.util.{ Success, Failure }
+import info.vizierdb.ui.network.BranchSubscription
+import info.vizierdb.ui.network.BranchWatcherAPIProxy
 
 class ModuleEditor(
   val packageId: String, 
   val command: serialized.PackageCommand, 
-  val module: TentativeModule
+  val delegate: ModuleEditorDelegate
 )(implicit owner: Ctx.Owner) 
   extends Object 
   with Logging
@@ -34,43 +37,42 @@ class ModuleEditor(
 
   def saveState()
   {
-    module
-      .editList
-      .project
-      .branchSubscription match {
-        case None => logger.error("No connection!")
-        case Some(s) => 
-          val response = 
-            if(module.isLast){
-               s.Client.workflowAppend(
-                  packageId = packageId,
-                  commandId = command.id,
-                  arguments = arguments
-                )
-            } else {
-              s.Client
-                .workflowInsert(
-                  modulePosition = module.position,
-                  packageId = packageId,
-                  commandId = command.id,
-                  arguments = arguments
-                )
-            }
-          response.onComplete { 
-            case Success(workflow) =>
-              logger.trace("SUCCESS!")
-              if(workflow.actionModule.isDefined){
-                logger.trace(s"has action module: ${workflow.actionModule}")
-                module.id = workflow.actionModule
-              } else {
-                logger.debug(s"no action module... falling back: ${workflow.modules.size}")
-                module.id = Some(workflow.modules(module.position).moduleId)
-              }
-              logger.debug(s"New module id is... ${module.id}")
-            case f:Failure[_] =>
-              logger.trace("REQUEST FAILED!")
-          }
+    val response = 
+      if(delegate.realModuleId.isDefined) {
+        delegate.client.workflowReplace(
+          modulePosition = delegate.position,
+          packageId = packageId,
+          commandId = command.id,
+          arguments = arguments
+        )
+      } else if(delegate.isLast){
+        delegate.client.workflowAppend(
+          packageId = packageId,
+          commandId = command.id,
+          arguments = arguments
+        )
+      } else {
+        delegate.client.workflowInsert(
+          modulePosition = delegate.position,
+          packageId = packageId,
+          commandId = command.id,
+          arguments = arguments
+        )
       }
+    response.onComplete { 
+      case Success(workflow) =>
+        logger.trace("SUCCESS!")
+        if(workflow.actionModule.isDefined){
+          logger.trace(s"has action module: ${workflow.actionModule}")
+          delegate.setTentativeModuleId(workflow.actionModule.get)
+        } else {
+          logger.debug(s"no action module... falling back: ${workflow.modules.size}")
+          delegate.setTentativeModuleId(workflow.modules(delegate.position).moduleId)
+        }
+        logger.debug(s"New module id is... ${delegate.tentativeModuleId}")
+      case f:Failure[_] =>
+        logger.trace("REQUEST FAILED!")
+    }
   }
 
   def loadState(arguments: Seq[CommandArgument])
@@ -122,8 +124,20 @@ class ModuleEditor(
       h4(command.name),
       parameters.filter { !_.hidden }.map { param => div(param.root) },
       div(
-        button("Back", onclick := { (e: dom.MouseEvent) => module.cancelEditor() }),
+        button("Back", onclick := { (e: dom.MouseEvent) => delegate.cancelEditor() }),
         button("Save", onclick := { (e: dom.MouseEvent) => saveState() })
       )
     )
+}
+
+trait ModuleEditorDelegate
+{
+  def client: BranchWatcherAPIProxy
+  def cancelEditor(): Unit
+  def realModuleId: Option[Identifier]
+  def tentativeModuleId: Option[Identifier]
+  def setTentativeModuleId(newId: Identifier): Unit
+  def position: Int
+  def isLast: Boolean
+  def visibleArtifacts: Var[Rx[Map[String, serialized.ArtifactSummary]]]
 }

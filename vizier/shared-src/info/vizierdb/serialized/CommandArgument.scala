@@ -23,6 +23,15 @@ object CommandArgumentList
   implicit def toPropertyList(map: Map[String, nativeTypes.JsValue]): T =
     map.toSeq.map { CommandArgument(_) }
 
+  def decode(js: nativeTypes.JsValue): T =
+  {
+    js.as[Seq[Map[String, nativeTypes.JsValue]]]
+      .map { j => CommandArgument(j("id").as[String], j("value")) }
+  }
+
+  def decodeAsMap(js: nativeTypes.JsValue): Map[String, nativeTypes.JsValue] =
+    decode(js)
+
   def apply(args: (String, nativeTypes.JsValue)*) =
     args.map  { CommandArgument(_) }
 }

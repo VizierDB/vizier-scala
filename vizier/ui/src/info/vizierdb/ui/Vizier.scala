@@ -18,7 +18,7 @@ import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized.ProjectList
 import info.vizierdb.serialized.PropertyList
-import info.vizierdb.ui.widgets.TableView
+import info.vizierdb.ui.components.dataset.Dataset
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -45,7 +45,9 @@ object Vizier
   val project = Var[Option[Project]](None)
 
   def error(message: String) =
+  {
     throw new Exception(message)
+  }
 
   def main(args: Array[String]): Unit = 
   {
@@ -184,7 +186,26 @@ object Vizier
   @JSExport("spreadsheet")
   def spreadsheet(): Unit =
   {
-    ???
+    val projectId = arguments.get("project").get.toLong
+    val datasetFuture = 
+      api.artifactGetDataset(
+        projectId = projectId,
+        artifactId = arguments.get("artifact").get.toLong,
+        limit = Some(20),
+      )
+    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
+      document.body.style.background = "#ccf"
+      datasetFuture.onComplete {
+        case Failure(e) => error(e.toString())
+        case Success(description) => 
+        {
+          val dataset = new Dataset(description, projectId)
+          document.body.appendChild(dataset.root)
+
+        }
+        OnMount.trigger(document.body)
+      }
+    })
   }
 
 }  

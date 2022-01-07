@@ -101,10 +101,10 @@ trait TestFixtures
     override def packages(): Future[Seq[serialized.PackageDescription]] =
       MockFuture(TestFixtures.defaultPackages)
 
-    override def project(projectId: Identifier): Future[serialized.ProjectDescription] =
+    def project(projectId: Identifier): Future[serialized.ProjectDescription] =
       ???
 
-    override def branch(projectId: Identifier, branchId: Identifier): Future[serialized.BranchDescription] =
+    def branch(projectId: Identifier, branchId: Identifier): Future[serialized.BranchDescription] =
       ???
   }
 }

@@ -16,7 +16,7 @@ class Logger(loggerName: String)
   private def log(at: Int, msg: => String)
   {
     if(level <= at){
-      println(s"[$at] ${loggerName}: $msg")
+      println(s"[${fromIdx(at)}] ${loggerName}: $msg")
     }
   }
   @inline
@@ -28,12 +28,23 @@ class Logger(loggerName: String)
       case Logging.WARN => 3
       case Logging.ERROR => 4
     }
+  @inline
+  private def fromIdx(idx: Int): Logging.Level =
+    idx match {
+      case 0 => Logging.TRACE
+      case 1 => Logging.DEBUG
+      case 2 => Logging.INFO 
+      case 3 => Logging.WARN 
+      case _ => Logging.ERROR
+    }
 
   def trace(msg: => String) = log(idx(Logging.TRACE), msg)
   def debug(msg: => String) = log(idx(Logging.DEBUG), msg)
   def info(msg: => String)  = log(idx(Logging.INFO), msg)
   def warn(msg: => String)  = log(idx(Logging.WARN), msg)
   def error(msg: => String) = log(idx(Logging.ERROR), msg)
+
+  override def toString = s"$loggerName -> $level"
 }
 
 object Logging extends Enumeration
@@ -49,7 +60,8 @@ object Logging extends Enumeration
 
   val levels = mutable.Map[String, Level](
     "info.vizierdb.ui.network.BranchSubscription" -> INFO,
-    "info.vizierdb.test.TestFixtures$MockBranchSubscription$" -> INFO
+    "info.vizierdb.test.TestFixtures$MockBranchSubscription$" -> INFO,
+    "info.vizierdb.ui.components.dataset.TableView" -> INFO,
   )
 
   def get(logger: String) = 

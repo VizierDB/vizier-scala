@@ -4,23 +4,9 @@
     <meta charset="UTF-8">
     <title>Vizier</title>
     <link rel="icon" href="favicon.svg">
-    <style type="text/css">
-      @keyframes spinner-rotate {
-        0% { 
-          transform-origin: center, center;
-          transform: rotate(0);
-        }
-        100% { 
-          transform-origin: center, center;
-          transform: rotate(360deg);
-        }
-      }
-
-    </style>
-  </head>
-  <body>
     <!-- Dependencies -->
     <link rel="stylesheet" href="vendor/codemirror.css"/>
+    <link rel="stylesheet" href="vizier.css"/>
     <script type="text/javascript" src="vendor/codemirror.js"></script>
     <script type="text/javascript" src="vendor/codemirror-clike.js"></script>
     <script type="text/javascript" src="vendor/codemirror-python.js"></script>
@@ -32,5 +18,7 @@
     <script type="text/javascript">
       Vizier.project_view()
     </script>
+  </head>
+  <body>
   </body>
 </html>

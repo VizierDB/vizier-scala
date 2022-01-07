@@ -9,12 +9,14 @@ import info.vizierdb.types.ArtifactType
 import info.vizierdb.serialized
 import scala.concurrent.{ Future, Promise }
 import info.vizierdb.types.Identifier
+import info.vizierdb.ui.Vizier
 
 class TentativeModule(
   var position: Int, 
   val editList: TentativeEdits, 
   defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
 )(implicit owner: Ctx.Owner)
+  extends ModuleEditorDelegate
 {
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)
@@ -22,6 +24,10 @@ class TentativeModule(
   val selectedDataset = Var[Option[String]](None)
   var id: Option[Identifier] = None
   def isLast = position >= editList.size - 1
+
+  def setTentativeModuleId(newId: Identifier) = id = Some(newId)
+  def tentativeModuleId = id
+  def realModuleId = None
 
   loadPackages()
 
@@ -55,6 +61,14 @@ class TentativeModule(
           }
     }
   }
+
+  def client = 
+    editList
+      .project
+      .branchSubscription
+      .getOrElse { Vizier.error("No Connection!") }
+      .Client
+
 
   // def nextModule(): Option[Identifier] =
   // {

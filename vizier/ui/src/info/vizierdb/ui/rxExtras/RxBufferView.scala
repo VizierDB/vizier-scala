@@ -21,6 +21,7 @@ class RxBufferView(val root: dom.Node)
     val node: dom.Node = elem
     nodes += node
     root.appendChild(node)
+    OnMount.trigger(node)
   }
 
   def onClear(): Unit = 
@@ -42,6 +43,7 @@ class RxBufferView(val root: dom.Node)
     } else {
       root.appendChild(node)
     }
+    OnMount.trigger(node)
   }
 
   def onRemove(n: Int): Unit = 
@@ -59,6 +61,7 @@ class RxBufferView(val root: dom.Node)
     val oldNode = nodes(n)
     root.replaceChild(node, oldNode)
     nodes.update(n, node)
+    OnMount.trigger(node)
   }
 
   def onInsert(n: Int, elem: dom.Node): Unit = 
@@ -73,6 +76,7 @@ class RxBufferView(val root: dom.Node)
       root.insertBefore(node, children(n))
     }
     nodes.insert(n, node)
+    OnMount.trigger(node)
   }
 }
 

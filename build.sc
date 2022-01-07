@@ -175,12 +175,19 @@ object vizier extends ScalaModule with PublishModule {
       os.walk(millSourcePath / "html")
         .map { PathRef(_) }
     )
+
+    def css = T.sources {
+      os.walk(millSourcePath / "css")
+        .map { PathRef(_) }
+    }
   
     def resourceDir = T { 
       buildUIResourceDir(
         uiBinary = fastOpt().path,
         vendor = ( vendor().map { _.path }, os.read(vendorLicense().path) ),
-        assets = html().map { x => (x.path -> os.rel / x.path.last) }
+        assets = html().map { x => (x.path -> os.rel / x.path.last) } ++
+                 css().map { x => (x.path -> os.rel / x.path.last) }
+
       )
     }
   

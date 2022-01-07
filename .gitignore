@@ -14,3 +14,4 @@ __pycache__
 .coursier
 /vizier/src/info/vizierdb/api/servlet/VizierAPIServletRoutes.scala
 /vizier/src/info/vizierdb/api/websocket/BranchWatcherAPIRoutes.scala
+/mill.*

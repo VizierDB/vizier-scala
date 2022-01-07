@@ -18,7 +18,7 @@ import info.vizierdb.delta
 import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
 
-class BranchSubscription(branchId: Identifier, projectId: Identifier, api: API)
+class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: API)
   extends Object
   with Logging
 {

@@ -33,7 +33,7 @@ object SharedTestResources
         GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
           enabled = true,
           singleLineMode = true,
-          logLevel = 'trace,
+          logLevel = "trace",
         ) 
         Vizier.config = Config(Seq())
 

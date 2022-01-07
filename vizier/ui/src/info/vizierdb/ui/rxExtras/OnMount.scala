@@ -13,6 +13,7 @@ object OnMount
 
   def trigger(node: dom.Node)
   {
+    // println(s"Trigger: $node")
     for(child <- node.childNodes.asInstanceOf[js.Array[dom.Node]]) { 
       trigger(child) 
     }

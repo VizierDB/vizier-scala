@@ -473,7 +473,7 @@ object Artifact
                         case (col, v) => SparkPrimitive.encode(v, col.dataType) 
                       },
                 rowAnnotationFlags =
-                  Some(attrCaveats.map { c => !c }),
+                  Some(attrCaveats.map { c => c }),
                 rowIsAnnotated = 
                   Some(rowCaveatted)
               ) 

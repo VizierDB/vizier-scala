@@ -1,0 +1,70 @@
+@keyframes spinner-rotate {
+  0% { 
+    transform-origin: center, center;
+    transform: rotate(0);
+  }
+  100% { 
+    transform-origin: center, center;
+    transform: rotate(360deg);
+  }
+}
+
+/************ Data Tables ************/
+
+
+.data_table
+{
+  /*background-color: #cfc;*/
+}
+
+.data_table table td.gutter 
+{
+  width: 30px;
+  font-size: 70%;
+  padding: 0px;
+  margin: 0px;
+}
+
+.data_table table thead th .title
+{
+  display: block;
+  font-weight: bold;
+  text-align: center;
+}
+.data_table table thead th .datatype
+{
+  display: block;
+  font-weight: lighter;
+  font-size: 70%;
+  text-align: center;
+}
+
+.data_table table tbody tr.even_row
+{
+  background-color: #fff;
+}
+
+.data_table table tbody tr.odd_row
+{
+  background-color: #eee;
+}
+
+.data_table table tbody tr td
+{
+  text-align: center;
+}
+
+.data_table table tbody tr td.caveatted
+{
+  color: red;
+}
+
+.data_table table tbody tr.even_row.caveatted
+{
+  background-color: #fee;
+}
+
+.data_table table tbody tr.odd_row.caveatted
+{
+  background-color: #edd;
+}

@@ -7,7 +7,7 @@ import rx._
 import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
-import info.vizierdb.types.ArtifactType
+import info.vizierdb.types._
 import info.vizierdb.ui.facades.{ CodeMirror, CodeMirrorEditor }
 import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
 import info.vizierdb.util.{ Logger, Logging }
@@ -157,13 +157,13 @@ object Parameter
   def apply(tree: serialized.ParameterDescriptionTree, editor: ModuleEditor)
            (implicit owner: Ctx.Owner): Parameter =
   {
-    def visibleArtifactsByType = editor.module
+    def visibleArtifactsByType = editor.delegate
                                        .visibleArtifacts
                                        .map { _().mapValues { _.t } }
     tree.parameter match {
       case param: serialized.SimpleParameterDescription =>
         param.datatype match {
-          case "colid"   => new ColIdParameter(param, editor.module.visibleArtifacts.flatMap { x => x }, editor.selectedDataset)
+          case "colid"   => new ColIdParameter(param, editor.delegate.visibleArtifacts.flatMap { x => x }, editor.selectedDataset)
           case "list"    => new ListParameter(param, tree.children, this.apply(_, editor))
           case "record"  => new RecordParameter(param, tree.children, this.apply(_, editor))
           case "string"  => new StringParameter(param)
@@ -492,7 +492,7 @@ class FileParameter(
   val DEFAULT_BODY_TEXT = "Drop a file here"
   val bodyText = Var(span(DEFAULT_BODY_TEXT))
 
-  var uploadedFileId = "no-file-uploaded"
+  var uploadedFileId: Identifier = -1
   var uploadedFileName = "not-a-file"
 
   val dragAndDropField:dom.Node = 
@@ -563,7 +563,22 @@ class FileParameter(
       case _ => JsNull
     }
   def set(v: JsValue): Unit = 
-    ???
+  {
+    val url = (v \ "url").asOpt[String]
+    val fileid = (v \ "fileid").asOpt[Identifier]
+    val filename = (v \ "filename").asOpt[String]
+
+    if(url.isDefined){
+      mode() = 1
+      inputNode[dom.html.Input].value = url.get 
+    } else if(fileid.isDefined) {
+      mode() = 0
+      uploadedFileId = fileid.get
+      uploadedFileName = filename.getOrElse { "uploaded-file" }
+    } else {
+      println("Received invalid file parameter... leaving the upload space blank.")
+    }
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -684,7 +699,21 @@ class ListParameter(
           }
     )
   def set(v: JsValue): Unit = 
-    ???
+  {
+    rows.clear()
+    println(s"All Data: ${v}")
+    for(rowArguments <- v.as[Seq[JsValue]]){
+      val row = tentativeRow()
+      val rowData = serialized.CommandArgumentList.decodeAsMap(rowArguments)
+      println(s"Got: $rowData")
+      for(field <- row){
+        println(s"Setting ${field.id}")
+        field.set(rowData.getOrElse(field.id, JsNull))
+      }
+      rows.append(row)
+    }
+    rows.append(tentativeRow())
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////

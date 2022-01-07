@@ -16,7 +16,7 @@ import info.vizierdb.ui.components.Workflow
 
 class ModuleSubscription(
   initial: serialized.ModuleDescription, 
-  branch: BranchSubscription,
+  val branch: BranchSubscription,
   var position: Int
 )
   extends Object
@@ -68,13 +68,13 @@ class ModuleSubscription(
     branch.Client.workflowThawUpto(position)
 
   /**
-   * Thaw all cells upto current cell
+   * Add a new cell above this one
    */
   def addCellAbove(workflow: Workflow): Unit = 
     workflow.moduleViewsWithEdits.insertTentative(position)
   
   /**
-   * Thaw all cells upto current cell
+   * Add a new cell below this one
    */
   def addCellBelow(workflow: Workflow): Unit = 
     workflow.moduleViewsWithEdits.insertTentative(position+1)
