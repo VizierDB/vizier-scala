@@ -25,6 +25,13 @@ class TentativeModule(
   var id: Option[Identifier] = None
   def isLast = position >= editList.size - 1
 
+  val editor: Rx[Option[ModuleEditor]] = 
+    Rx { activeView() match {
+      case None => None
+      case Some(Left(_)) => None
+      case Some(Right(ed)) => Some(ed)
+    } }
+
   def setTentativeModuleId(newId: Identifier) = id = Some(newId)
   def tentativeModuleId = id
   def realModuleId = None

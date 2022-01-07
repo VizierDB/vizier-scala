@@ -9,6 +9,90 @@
   }
 }
 
+/************ Menu bar ************/
+
+div.content {
+  padding-top: 30px;
+}
+
+ul.menu_bar
+{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  height: 35px;
+  width: 100%;
+  margin: 0px;
+  padding: 0px;
+  background-color: #ccc;
+}
+ul.menu_bar > li
+{
+  display: inline-block;
+  margin-top: 0px;
+  height: 28px;
+  padding-top: 7px;
+  margin-left: 10px;
+  padding-left: 20px;
+  padding-right: 20px;
+  vertical-align: middle;
+  background-color: #336;
+  color: #ccc;
+  font-weight: bold;
+}
+ul.menu_bar > li ul
+{
+  position: absolute;
+  top: 35px;
+  background: #336;
+  padding: 0px;
+}
+ul.menu_bar > li ul > li
+{
+  list-style: none;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+ul.menu_bar > li ul > li.menu_separator
+{
+  border-bottom: 2px solid darkgrey;
+}
+ul.menu_bar > li ul > li.highlight
+{
+  font-weight: bolder;
+  color: #eee;
+}
+
+
+
+/************ Table of Contents ************/
+
+div.contents 
+{
+  position: fixed;
+  top: 50px;
+  right: 0px;
+  float: right;
+  width: 300px;
+  overflow-y: auto;
+}
+div.contents ul
+{  
+  margin-left: 0px;
+  padding-left: 0px;
+}
+div.contents li
+{
+  list-style: none;
+  margin-top: 10px;
+}
+div.contents li.tentative
+{
+  opacity: 0.5;
+}
+
 /************ Data Tables ************/
 
 

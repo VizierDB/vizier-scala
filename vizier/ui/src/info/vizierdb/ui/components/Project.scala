@@ -22,11 +22,19 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
   val properties = Var[Map[String, JsValue]](Map.empty)
   val projectName = Rx { 
     properties().get("name")
-                .map { _.toString}
+                .map { _.as[String] }
                 .getOrElse { "Untitled Project" } }
 
   val branches = Var[Map[Identifier, serialized.BranchSummary]](Map.empty)
   val activeBranch = Var[Option[Identifier]](None)
+  val activeBranchName = Rx {
+    activeBranch() match {
+      case None => "Unknown Branch"
+      case Some(id) => branches().get(id)
+                                 .map { _.name }
+                                 .getOrElse("Unknown Branch")
+    }
+  }
 
   def load(project: serialized.ProjectDescription): Project =
   {
@@ -47,6 +55,8 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
 
   var branchSubscription: Option[BranchSubscription] = None
   val workflow = Var[Option[Workflow]](None) 
+  val tableOfContents:Rx[Option[TableOfContents]] = 
+    Rx { workflow().map { wf => new TableOfContents(wf) }}
 
   if(autosubscribe){
     activeBranch.trigger { 
@@ -62,38 +72,10 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
 
   val root = 
     div(id := "project",
-      h2(id := "name",
-        Rx { projectName }
-      ),
-      div(id := "branches",
-        h3("Branches"),
-        ul( 
-          Rx {
-            branches.map { _.map { case (_, branch) => 
-              li(
-                span(branch.properties
-                           .find { x => x.key.equals("name") }
-                           .map { _.value.toString:String }
-                           .getOrElse { "Unnamed Branch" }:String
-                ),
-                span(
-                  { 
-                    if(activeBranch().isDefined && 
-                        activeBranch().get == branch.id){
-                      " (active)"
-                    } else { "" }
-                  }
-                )
-              )
-            }.toSeq }
-          }
-        )
-      ),
-      tag("nav")(
-        h3("Table of Contents"),
-        div(id := "table_of_contents", `class` := "contents"),
-        "Table of Contents goes here"
-      ),
+      Rx { tag("nav")(
+              tableOfContents.map { _.map { _.root } 
+                                     .getOrElse { span("Loading....") } }
+      ) },
       div(id := "workflow", 
         h3("Workflow"),
         Rx { workflow.map { _.map { _.root }

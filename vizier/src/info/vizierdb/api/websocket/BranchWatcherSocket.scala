@@ -109,7 +109,7 @@ class BranchWatcherSocket
     } catch {
       case error: Throwable =>
         logger.warn(s"Websocket error: $error")
-        send(ErrorWebsocketResponse(request.id, error.getMessage))
+        send(ErrorWebsocketResponse(request.id, error.getMessage.toString()))
     }
   }
 

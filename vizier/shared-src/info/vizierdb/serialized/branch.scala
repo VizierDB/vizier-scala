@@ -29,6 +29,11 @@ case class BranchSummary(
       links = links,
       workflows = workflows
     )
+
+  def name: String =
+    properties.find { _.key == "name" }
+              .map { _.value.as[String] }
+              .getOrElse { "Untitled Branch" }
 }
 
 case class BranchDescription(
@@ -43,6 +48,12 @@ case class BranchDescription(
   links: HATEOAS.T,
   workflows: Seq[WorkflowSummary]
 )
+{
+  def name: String =
+    properties.find { _.key == "name" }
+              .map { _.value.as[String] }
+              .getOrElse { "Untitled Branch" }
+}
 
 case class BranchList(
   branches: Seq[BranchSummary],

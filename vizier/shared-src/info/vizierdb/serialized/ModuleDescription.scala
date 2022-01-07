@@ -12,6 +12,7 @@ case class ModuleDescription(
   statev2: ExecutionState.T,
   command: CommandDescription,
   text: String,
+  toc: Option[TableOfContentsEntry],
   timestamps: Timestamps,
   datasets: Seq[ArtifactSummary],
   charts: Seq[ArtifactSummary],

@@ -21,7 +21,6 @@ case class WorkflowSummary(
     datasets: Seq[ArtifactSummary],
     dataobjects: Seq[ArtifactSummary],
     readOnly: Boolean,
-    tableOfContents: Option[Seq[TableOfContentsEntry]],
     newLinks: HATEOAS.T
   ): WorkflowDescription =
     WorkflowDescription(
@@ -37,7 +36,6 @@ case class WorkflowSummary(
       datasets = datasets,
       dataobjects = dataobjects,
       readOnly = readOnly,
-      tableOfContents = tableOfContents,
       links = HATEOAS.merge(links, newLinks)
     )
 }
@@ -55,7 +53,6 @@ case class WorkflowDescription(
   datasets: Seq[ArtifactSummary],
   dataobjects: Seq[ArtifactSummary],
   readOnly: Boolean,
-  tableOfContents: Option[Seq[TableOfContentsEntry]],
   links: HATEOAS.T
 )
 

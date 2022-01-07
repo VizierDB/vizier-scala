@@ -27,6 +27,7 @@ class ModuleSubscription(
   def command = initial.command
   def text = Var(initial.text)
   def links = initial.links
+  def toc = initial.toc
   val outputs = Var[Map[String,Option[serialized.ArtifactSummary]]](
     initial.artifacts.map { x => x.name -> Some(x) }.toMap
   )

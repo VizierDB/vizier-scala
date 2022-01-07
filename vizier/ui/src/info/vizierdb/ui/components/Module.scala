@@ -13,7 +13,7 @@ import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.serialized.ArtifactSummary
 
-class Module(subscription: ModuleSubscription, workflow: Workflow)
+class Module(val subscription: ModuleSubscription, workflow: Workflow)
             (implicit owner: Ctx.Owner)
   extends Object
   with Logging
@@ -32,6 +32,12 @@ class Module(subscription: ModuleSubscription, workflow: Workflow)
   val visibleArtifacts = Var[Rx[Map[String, ArtifactSummary]]](Var(Map.empty))
 
   val outputs = subscription.outputs
+
+  def command = subscription.command
+
+  def toc = subscription.toc
+
+  def id_attr = s"module_$id"
 
   logger.trace(s"creating module view: $this")
   val messages = 
@@ -83,6 +89,7 @@ class Module(subscription: ModuleSubscription, workflow: Workflow)
     subscription.position
 
   val root = li(
+    attr("id") := id_attr,
     div(Rx { 
       editor().map { _.root }.getOrElse { pre(subscription.text()) }
     }),

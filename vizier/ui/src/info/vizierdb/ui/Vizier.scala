@@ -19,6 +19,7 @@ import info.vizierdb.util.Logging
 import info.vizierdb.serialized.ProjectList
 import info.vizierdb.serialized.PropertyList
 import info.vizierdb.ui.components.dataset.Dataset
+import info.vizierdb.ui.components.MenuBar
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -43,6 +44,7 @@ object Vizier
        .toMap
 
   val project = Var[Option[Project]](None)
+  val menu = project.map { _.map { new MenuBar(_) } }
 
   def error(message: String) =
   {
@@ -74,20 +76,13 @@ object Vizier
             }
 
         document.body.appendChild(
-          div(id := "content",
-            tag("nav")(
-              ul(id := "main_menu", `class` := "menu",
-                li("menu 1", ul(
-                  li("menu item 1.1"),
-                  li("menu item 1.2"),
-                )),
-                li("menu 2", ul(
-                  li("menu item 2.1"),
-                ))
-              )
-            ),
-            Rx { project().map { _.root }
-                          .getOrElse { div("loading...") } }
+          div(`class` := "viewport",
+            Rx { menu().map { _.root }
+                       .getOrElse { div("loading...") } },
+            div(`class` := "content",
+              Rx { project().map { _.root }
+                            .getOrElse { div("loading...") } }
+            )
           )
         )
         OnMount.trigger(document.body)

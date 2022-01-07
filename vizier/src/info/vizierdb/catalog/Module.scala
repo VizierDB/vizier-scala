@@ -72,6 +72,52 @@ class Module(
         s"Error formatting command: [$e]"
     }
 
+  val TOC_HEADER = "(#+) *(.+)".r
+
+  def toc(cell: Cell)(implicit session:DBSession): Option[serialized.TableOfContentsEntry] =
+  {
+    packageId match {
+      case "docs" => 
+      {
+        cell.messages
+            .collect { 
+              case message if message.mimeType.equals(MIME.MARKDOWN) => 
+                new String(message.data)
+                  .split("\n")
+                  .filter { _ startsWith "#" }
+                  .collect { 
+                    case TOC_HEADER(levelPrefix, title) => 
+                      (levelPrefix.length, title)
+                  }
+                  .headOption
+            }
+            .headOption.flatten
+            .map { case (level, title) => 
+              serialized.TableOfContentsEntry(
+                            title = title, 
+                            titleLevel = Some(level),
+                            moduleId = id
+              )
+            }
+      }
+      case _ => 
+        {
+          val blurb: String =  
+            command.map { _.title(arguments) }
+                   .getOrElse { s"${packageId}.${commandId}" }
+          Some(
+            serialized.TableOfContentsEntry(
+              blurb,
+              None,
+              id
+            )
+          )
+        }
+    }
+  }
+
+
+
   def describe(
     cell: Cell, 
     projectId: Identifier, 
@@ -124,6 +170,7 @@ class Module(
           }):serialized.CommandArgumentList.T
       ),
       text = description,
+      toc = toc(cell),
       timestamps = timestamps,
       datasets  = datasets    .map { case (name, d) => d.summarize(name) },
       charts    = charts      .map { case (name, d) => d.summarize(name) },

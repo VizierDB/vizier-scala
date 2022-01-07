@@ -234,43 +234,6 @@ case class Workflow(
       else { curr._1.state }
     }
 
-    val TOC_HEADER = "(#+) *(.+)".r
-
-    val tableOfContents: Seq[serialized.TableOfContentsEntry] = 
-      cellsAndModules.flatMap { case (cell, module) => 
-        if(module.packageId.equals("docs")){
-          cell.messages
-              .collect { 
-                case message if message.mimeType.equals(MIME.MARKDOWN) => 
-                  new String(message.data)
-                    .split("\n")
-                    .filter { _ startsWith "#" }
-                    .collect { 
-                      case TOC_HEADER(levelPrefix, title) => 
-                        (levelPrefix.length, title)
-                    }
-                    .headOption
-              }
-              .headOption.flatten
-              .map { case (level, title) => 
-                serialized.TableOfContentsEntry(title, Some(level), cell.position, module.id)
-              }
-        } else {
-          val blurb: String =  
-            module.command
-                  .map { _.title(module.arguments) }
-                  .getOrElse { s"${module.packageId}.${module.commandId}" }
-          Seq(
-            serialized.TableOfContentsEntry(
-              blurb,
-              None,
-              cell.position,
-              module.id
-            )
-          )
-        }
-      }
-
     summary.toDescription(
       state = state,
       modules = Module.describeAll(
@@ -282,7 +245,6 @@ case class Workflow(
       datasets = datasets.map { d => d._1.summarize(name = d._2) },
       dataobjects = dataobjects.map { d => d._1.summarize(name = d._2) },
       readOnly = !branch.headId.equals(id),
-      tableOfContents = Some(tableOfContents),
       newLinks = HATEOAS(
         HATEOAS.WORKFLOW_CANCEL -> (
           if(isRunning) { 

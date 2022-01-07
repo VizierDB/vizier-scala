@@ -94,9 +94,9 @@ object serializers
     }
   )
   implicit val messageDescriptionFormat: Format[serialized.MessageDescription] = Json.format
+  implicit val tableOfContentsEntryFormat: Format[serialized.TableOfContentsEntry] = Json.format
   implicit val moduleOutputDescriptionFormat: Format[serialized.ModuleOutputDescription] = Json.format
   implicit val moduleDescriptionFormat: Format[serialized.ModuleDescription] = Json.format
-  implicit val tableOfContentsEntryFormat: Format[serialized.TableOfContentsEntry] = Json.format
 
 
   implicit val datasetColumnFormat: Format[serialized.DatasetColumn] = Json.format
