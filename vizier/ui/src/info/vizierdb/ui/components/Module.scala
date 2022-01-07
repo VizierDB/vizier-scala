@@ -88,7 +88,6 @@ class Module(subscription: ModuleSubscription, workflow: Workflow)
     }),
     div(Rx { "State: " + subscription.state() }),
     div("Outputs: ", Rx { outputs.map { _.keys.mkString(", ") }}),
-    div("Messages: ", messageView.root),
     div("Menu: ", 
       button("Add Cell Above", onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) }),
       button("Add Cell Below", onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) }),
@@ -109,6 +108,7 @@ class Module(subscription: ModuleSubscription, workflow: Workflow)
       },
       button("Delete Cell", 
         onclick := { (_:dom.MouseEvent) => subscription.delete() })
-    )
+    ),
+    div("Messages: ", messageView.root),
   )
 }

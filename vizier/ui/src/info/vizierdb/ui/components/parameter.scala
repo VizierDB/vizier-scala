@@ -225,7 +225,7 @@ class BooleanParameter(
     JsBoolean(inputNode[dom.html.Input].value == "on")
 
   override def set(v: JsValue): Unit =
-    inputNode[dom.html.Input].value = v.as[Boolean].toString
+    inputNode[dom.html.Input].checked = v.as[Boolean]
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -650,6 +650,7 @@ class ListParameter(
         row.map { _.root }.map { td(_) } ,
         button(
           "X",
+          `class` := "delete_row",
           onclick := { e:dom.MouseEvent => 
             val idx = rows.indexOf(row)
             if(idx < rows.length - 1 && idx >= 0){
@@ -681,6 +682,7 @@ class ListParameter(
     fieldset(
       legend(name),
       table(
+        `class` := "parameter_list",
         thead(
           tr(
             titles.map { th(_) },
@@ -690,6 +692,7 @@ class ListParameter(
         rowView.root,
       )
     )
+
   def value = 
     JsArray(
       rows.toSeq
@@ -701,13 +704,10 @@ class ListParameter(
   def set(v: JsValue): Unit = 
   {
     rows.clear()
-    println(s"All Data: ${v}")
     for(rowArguments <- v.as[Seq[JsValue]]){
       val row = tentativeRow()
       val rowData = serialized.CommandArgumentList.decodeAsMap(rowArguments)
-      println(s"Got: $rowData")
       for(field <- row){
-        println(s"Setting ${field.id}")
         field.set(rowData.getOrElse(field.id, JsNull))
       }
       rows.append(row)

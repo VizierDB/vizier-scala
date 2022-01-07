@@ -86,7 +86,6 @@ class Dataset(
   }
 
   val root:dom.html.Div = div(
-    OnMount { _ => table.updateScroller() },
     `class` := "dataset",
     Rx { h3(name()) },
   ).render

@@ -53,10 +53,10 @@ class TableView(
    * @param   position    The position, in pixels, of the top of the scroll view
    * @param   height      The position, in pixels, of the bottom of the scroll view
    */
-  def updateScroller(position: Double = root.scrollTop, height: Double = root.offsetHeight): Unit =
+  def updateScroller(position: Double = root.scrollTop, height: Double = root.clientHeight): Unit =
   {
     val minRow = math.max(0, ((position) / rowHeight).toLong - 2)
-    val maxRow = math.min(data.rowCount, ((position + height - headerHeight) / rowHeight).toLong + 3)
+    val maxRow = math.min(data.rowCount, ((position + height) / rowHeight).toLong + 3)
 
     logger.trace(s"Range ${root.scrollTop} to ${root.scrollTop + root.offsetHeight}")
     logger.trace(s"With rows from $minRow to $maxRow @ $firstRowIndex")
@@ -118,7 +118,7 @@ class TableView(
           (if(row % 2 == 0) { "even_row" } else { "odd_row" }),
         ) ++ data.rowClasses(row)).mkString(" "),
         position := "absolute",
-        top := s"${row * rowHeight + headerHeight}px",
+        top := s"${row * rowHeight}px",
         left := "0px",
         height := s"${rowHeight}px",
         width := s"${rowWidth}px",
@@ -138,13 +138,11 @@ class TableView(
    * The header row
    */
   val header = thead(
-    position := "absolute",
-    zIndex := "10",
-    backgroundColor := "#fff",
     width := s"${rowWidth}px",
-    height := s"${headerHeight}px",
-
-    tr()
+    tr(
+      width := s"100%",
+      height := s"${headerHeight}px",
+    )
   ).render
   rebuildHeaderRow()
 
@@ -163,17 +161,21 @@ class TableView(
    */
   val root = 
     div(
-      `class` := "data_table",
+      OnMount { _ => updateScroller() },
+      `class` := "data_table_wrapper",
       width := outerDimensions._1,
       height := outerDimensions._2,
       onscroll := { _:dom.Node => requestScrollUpdate() },
-      overflow := "auto",
+      overflowY := "scroll",
+      overflowX := "auto",
       table(
+        `class` := "data_table",
+        overflow := "visible",
+        position := "static",
         header,
         body
       )
     ).render
-  updateScroller()
   /**
    * Rebuild the header row, e.g., in response to added columns
    */

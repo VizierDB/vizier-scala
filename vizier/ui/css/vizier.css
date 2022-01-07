@@ -17,21 +17,53 @@
   /*background-color: #cfc;*/
 }
 
-.data_table table td.gutter 
+table.data_table 
+{
+  border-collapse: collapse;
+}
+
+table.data_table thead tr th 
+{
+  border-left: 2px solid #aaa;  
+}
+table.data_table tbody tr td 
+{
+  border-left: 2px solid #aaa;  
+  height: 30px;
+}
+
+table.data_table td.gutter 
 {
   width: 30px;
   font-size: 70%;
   padding: 0px;
   margin: 0px;
+  border-left: none;
 }
 
-.data_table table thead th .title
+table.data_table thead
+{
+  /*zIndex: 10;*/
+  width: 100%;
+  display: block;
+  background-color: #ddd;
+  top: 0px;
+  left: 0px;
+  position: -webkit-sticky;
+  position: sticky;
+}
+
+table.data_table thead tr
+{
+}
+
+table.data_table thead th .title
 {
   display: block;
   font-weight: bold;
   text-align: center;
 }
-.data_table table thead th .datatype
+table.data_table thead th .datatype
 {
   display: block;
   font-weight: lighter;
@@ -39,32 +71,47 @@
   text-align: center;
 }
 
-.data_table table tbody tr.even_row
+table.data_table tbody tr.even_row
 {
   background-color: #fff;
 }
 
-.data_table table tbody tr.odd_row
+table.data_table tbody tr.odd_row
 {
   background-color: #eee;
 }
 
-.data_table table tbody tr td
+table.data_table tbody tr td
 {
   text-align: center;
 }
 
-.data_table table tbody tr td.caveatted
+table.data_table tbody tr td.caveatted
 {
   color: red;
 }
 
-.data_table table tbody tr.even_row.caveatted
+table.data_table tbody tr.even_row.caveatted
 {
   background-color: #fee;
 }
 
-.data_table table tbody tr.odd_row.caveatted
+table.data_table tbody tr.odd_row.caveatted
 {
   background-color: #edd;
+}
+
+
+/************ Parameters ************/
+
+/* The last child of a parameter list is a "template" placeholder to allow
+   adding more records by just typing */
+table.parameter_list tbody tr:last-child
+{
+  opacity: 0.6;
+}
+
+table.parameter_list tbody tr:last-child button.delete_row
+{
+  visibility: hidden;
 }

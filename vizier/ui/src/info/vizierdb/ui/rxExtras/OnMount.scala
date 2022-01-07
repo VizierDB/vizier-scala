@@ -13,9 +13,24 @@ object OnMount
 
   def trigger(node: dom.Node)
   {
+    if(isActuallyMounted(node)){ traverse(node) }
+  }
+
+  def isActuallyMounted(node: dom.Node): Boolean =
+  {
+    var curr = node
+    while(curr != null){
+      if(dom.document.body == curr){ return true }
+      curr = curr.parentNode
+    }
+    return false
+  }
+
+  def traverse(node: dom.Node)
+  {
     // println(s"Trigger: $node")
     for(child <- node.childNodes.asInstanceOf[js.Array[dom.Node]]) { 
-      trigger(child) 
+      traverse(child) 
     }
     if(!node.attributes.equals(js.undefined)){
       // println(s"Checking attributes: ${node.attributes} (${node.attributes.length} elems)")
