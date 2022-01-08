@@ -19,6 +19,7 @@ sealed trait ArtifactDescription extends ArtifactSummary
 case class StandardArtifact(
   key: Identifier,
   id: Identifier,
+  projectId: Identifier,
   objType: String,
   category: ArtifactType.T,
   name: String,
@@ -31,6 +32,7 @@ case class StandardArtifact(
     DatasetSummary(
       key = key,
       id = id,
+      projectId = projectId,
       objType = objType,
       category = category,
       name = name,
@@ -49,6 +51,7 @@ case class StandardArtifact(
     DatasetDescription(
       key = key,
       id = id,
+      projectId = projectId,
       objType = objType,
       category = category,
       name = name,
@@ -64,6 +67,7 @@ case class StandardArtifact(
 case class DatasetSummary(
   key: Identifier,
   id: Identifier,
+  projectId: Identifier,
   objType: String,
   category: ArtifactType.T,
   name: String,
@@ -74,6 +78,7 @@ case class DatasetSummary(
 case class DatasetDescription(
   key: Identifier,
   id: Identifier,
+  projectId: Identifier,
   objType: String,
   category: ArtifactType.T,
   name: String,

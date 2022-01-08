@@ -10,6 +10,7 @@ object Spinner
 {
   def apply(size: Int = 15): dom.Node =
     span(
+      `class` := "spinner",
       width  := s"${size}px",
       height := s"${size}px",
       marginLeft := "auto",

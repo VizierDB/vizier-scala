@@ -16,16 +16,22 @@ object RenderCell
   def apply(
     value: JsValue, 
     dataType: CellDataType, 
-    caveatted: Boolean = false
+    caveatted: Option[dom.html.Button => Unit] = None
   ): Frag =
   {
     td(
-      `class` := (if(caveatted) { "caveatted" } else { "cell" }),
+      `class` := (if(caveatted.isDefined) { "caveatted" } else { "cell" }),
       width := s"${defaultWidthForType(dataType)}px",
       (value match {
         case JsNull => "null"
         case _ => value.toString()
-      }).toString
+      }).toString,
+      (if(caveatted.isDefined){
+        val callback = caveatted.get
+        val node:dom.html.Button = button(`class` := "show_caveat", "(?)").render
+        node.onclick = { _:dom.Event => callback(node) }
+        span(node)
+      }else{span(`class` := "placeholder", visibility := "hidden")})
     )
   }
 
@@ -49,6 +55,23 @@ object RenderCell
       width := s"${defaultWidthForType(dataType)}px"
     )
   }
+
+  def gutter(
+    row: Long,
+    caveatted: Option[() => Unit] = None
+  ): Frag =
+    td(
+      `class` := "gutter", 
+      (caveatted match { 
+        case None => span((row+1).toString)
+        case Some(handler) => 
+          a(
+            `class` := "show_caveat",
+            onclick := { _:dom.Event => handler() },
+            (row+1).toString
+          )
+      })
+    )
 
   /**
    * The default size for a column of this type in pixels

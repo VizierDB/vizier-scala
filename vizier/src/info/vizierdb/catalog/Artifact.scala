@@ -421,6 +421,7 @@ object Artifact
     serialized.StandardArtifact(
       key = artifactId,
       id = artifactId,
+      projectId = projectId,
       objType = mimeType,
       category = t,
       name = name.getOrElse { s"$t $artifactId" },

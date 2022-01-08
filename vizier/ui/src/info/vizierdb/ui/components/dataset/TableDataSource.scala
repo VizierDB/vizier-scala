@@ -22,4 +22,6 @@ trait TableDataSource
     (0 until columnCount).map { headerAt(_) }
 
   def rowClasses(row: Long): Seq[String]
+
+  def rowGutter(row: Long): Frag
 }

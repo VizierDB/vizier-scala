@@ -122,7 +122,7 @@ class TableView(
         left := "0px",
         height := s"${rowHeight}px",
         width := s"${rowWidth}px",
-        td(`class` := "gutter", (row+1).toString)
+        data.rowGutter(row)
       ).render
     refresh()
 

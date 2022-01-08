@@ -96,6 +96,7 @@ case class Message(
           case MessageType.JAVASCRIPT => Json.parse(data)
           case MessageType.HTML => JsString(new String(data))
           case MessageType.TEXT => JsString(new String(data))
+          case MessageType.MARKDOWN => JsString(new String(data))
         })
       )
     } catch {

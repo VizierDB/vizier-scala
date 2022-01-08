@@ -148,7 +148,6 @@ object TestFixtures
       datasets = Seq(),
       dataobjects = Seq(),
       readOnly = false,
-      tableOfContents = None,
       createdAt = new js.Date(),
       action = "create",
       actionModule = None,

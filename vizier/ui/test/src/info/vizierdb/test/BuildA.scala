@@ -69,6 +69,7 @@ object BuildA
         stdout = Seq.empty,
         stderr = Seq.empty,
       ),
+      toc = None,
       timestamps = serialized.Timestamps(new js.Date()),
       datasets = Seq.empty, // Technically this should be a subset of the below, but we want to deprecate it
       charts = Seq.empty, // Technically this should be a subset of the below, but we want to deprecate it

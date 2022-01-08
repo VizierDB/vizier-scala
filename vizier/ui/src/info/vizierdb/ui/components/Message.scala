@@ -61,9 +61,9 @@ object Message
            (implicit owner: Ctx.Owner): Message =
   {
     message.t match {
-      case MessageType.TEXT => TextMessage(message.value.toString)
-      case MessageType.HTML => HtmlMessage(message.value.toString)
-      case MessageType.MARKDOWN => MarkdownMessage(message.value.toString)
+      case MessageType.TEXT => TextMessage(message.value.as[String])
+      case MessageType.HTML => HtmlMessage(message.value.as[String])
+      case MessageType.MARKDOWN => MarkdownMessage(message.value.as[String])
       case MessageType.JAVASCRIPT => TextMessage.error(s"Javascript messages not supported yet")
       case MessageType.DATASET => DatasetMessage(new Dataset(message.value.as[serialized.DatasetDescription]))
       case MessageType.CHART => TextMessage.error(s"Chart messages not supported yet")

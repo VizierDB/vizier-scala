@@ -5,6 +5,7 @@ import info.vizierdb.serialized.{
   DatasetColumn
 }
 import info.vizierdb.nativeTypes.CellDataType
+import info.vizierdb.types._
 import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.widgets.Spinner
@@ -13,7 +14,9 @@ import info.vizierdb.serialized.DatasetDescription
 class StaticDataSource(
   val rowCount: Long,
   cache: RowCache[DatasetRow], 
-  schema: Seq[DatasetColumn]
+  schema: Seq[DatasetColumn],
+  projectId: Identifier,
+  datasetId: Identifier,
 )
   extends TableDataSource
 {
@@ -23,9 +26,21 @@ class StaticDataSource(
     this(
       description.rowCount,
       cache,
-      description.columns
+      description.columns,
+      projectId = description.projectId,
+      datasetId = description.id,
     )
     cache.preload(description.rows)
+  }
+
+  def displayCaveat(row: String, column: Option[Int])
+  {
+    CaveatModal(
+      projectId = projectId,
+      datasetId = datasetId,
+      row = Some(row), 
+      column = column
+    ).show
   }
 
   override def columnCount: Int = 
@@ -49,11 +64,14 @@ class StaticDataSource(
           width := RenderCell.defaultWidthForType(columnDataType(column)),
           Spinner(15)
         ).render
-      case Some(DatasetRow(id, values, cellCaveats, _)) => 
+      case Some(DatasetRow(rowId, values, cellCaveats, _)) => 
         RenderCell(
           values(column), 
           columnDataType(column),
-          caveatted = cellCaveats.map { _(column) }.getOrElse { false }
+          caveatted = 
+            if(cellCaveats.map { _(column) }.getOrElse { false }){
+              Some( (trigger: dom.html.Button) => displayCaveat(rowId, Some(column)) )
+            } else { None }
         )
     }
   }
@@ -66,6 +84,17 @@ class StaticDataSource(
       Seq("caveatted")
     } else { Seq.empty }
 
-
+  override def rowGutter(row: Long): Frag =
+    RenderCell.gutter(
+      row = row, 
+      caveatted = 
+        cache(row) match {
+          case None => None
+          case Some(data) => 
+            if(data.rowIsAnnotated.getOrElse { false }){
+              Some( () => displayCaveat(data.id, None) )
+            } else { None }
+        }
+    )
 
 }

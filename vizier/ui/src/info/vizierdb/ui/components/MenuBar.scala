@@ -15,7 +15,7 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
     val active:Option[Identifier] = project.activeBranch();
     Seq(
       Menu(s"Project [${project.projectName()}]").items(
-        Item("Project List", () => println("Clicked Project List")),
+        Item("Project List", () => dom.window.location.href = "index.html"),
         Item("Rename...", () => println("Clicked Rename")),
         Item("Export...", () => println("Clicked Export")),
       ),
