@@ -87,7 +87,7 @@ class RunningWorkflow(workflow: Workflow)
       var updatedState = 
         cell.state
       val predictedProvenance = 
-        module.command.map { _.predictProvenance(module.arguments) }
+        module.command.map { _.predictProvenance(module.arguments, module.properties) }
                       .getOrElse { ProvenancePrediction.default }
 
       def transitionToState(newState: ExecutionState.T)

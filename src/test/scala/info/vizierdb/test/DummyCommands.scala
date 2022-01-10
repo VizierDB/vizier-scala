@@ -52,7 +52,7 @@ object DummyPrint extends Command with LazyLogging
     logger.debug(s"Printing: $v")
     context.message(v)
   }
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction.empty
 }
 
@@ -74,7 +74,7 @@ object DummyCreate extends Command with LazyLogging
     logger.debug(s"Creating: $dataset -> ${artifact.id}")
     context.message(s"Created artifact $dataset -> ${artifact.id} ")
   }
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyWrites(arguments.get[String]("dataset"))
       .andNothingElse
@@ -101,7 +101,7 @@ object DummyConsume extends Command with LazyLogging
       datasets.map { context.artifact(_).get.string }  
     context.message(results.mkString)
   }
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(
         arguments.getList("datasets").map { _.get[String]("dataset") }:_*
@@ -149,7 +149,7 @@ object DummyWait extends Command with LazyLogging
                context.output(name, ArtifactType.BLOB, message.getBytes())
              }
   }
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(
         arguments.getList("reads").map { _.get[String]("dataset") }:_*

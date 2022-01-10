@@ -85,7 +85,7 @@ object SimpleChart extends Command
     )
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String]("dataset"))
       .andNothingElse

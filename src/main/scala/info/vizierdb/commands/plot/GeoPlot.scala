@@ -331,7 +331,7 @@ object GeoPlot extends Command
   }
 
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.getList(PARAM_LAYERS)
                                 .map { _.get[String](PARAM_DATASET)}:_*)

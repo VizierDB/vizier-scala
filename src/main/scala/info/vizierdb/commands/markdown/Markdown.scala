@@ -36,7 +36,7 @@ object Markdown extends Command
     context.message(MIME.MARKDOWN, arguments.get[String]("source"))
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction.empty
 
 }

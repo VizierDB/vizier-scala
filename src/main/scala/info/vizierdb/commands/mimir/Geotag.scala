@@ -22,6 +22,7 @@ import org.mimirdb.api.request.VizualRequest
 import org.mimirdb.vizual
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import play.api.libs.json.JsString
+import play.api.libs.json.JsObject
 
 object Geotag extends Command
 {
@@ -80,7 +81,7 @@ object Geotag extends Command
 
 
   }
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String](PARAM_DATASET))
       .definitelyWrites(arguments.get[String](PARAM_DATASET))

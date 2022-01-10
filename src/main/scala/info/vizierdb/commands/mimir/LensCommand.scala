@@ -78,7 +78,7 @@ trait LensCommand
     context.message(s"Created $name Lens on $datasetName")
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String]("dataset"))
       .definitelyWrites(arguments.get[String]("dataset"))

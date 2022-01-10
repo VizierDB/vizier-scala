@@ -19,6 +19,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object AggregateDataset 
   extends SQLTemplateCommand
@@ -117,7 +118,7 @@ object AggregateDataset
     return (deps, query)
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String](PARAM_DATASET))
       .definitelyWrites(

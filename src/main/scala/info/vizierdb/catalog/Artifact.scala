@@ -256,6 +256,20 @@ object Artifact
     Artifact.get(artifactId)
   }
 
+  def all(projectId: Option[Identifier] = None)(implicit session: DBSession): Iterable[Artifact] =
+  {
+    withSQL { 
+      val b = Artifact.syntax 
+      select
+        .from(Artifact as b)
+        .where(
+          sqls.toAndConditionOpt(
+            projectId.map { sqls.eq(b.projectId, _) }
+          )
+        )
+    }.map { apply(_) }.iterable.apply()    
+  }
+
   def get(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Artifact = getOption(target, projectId).get
   def getOption(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Option[Artifact] = 
     withSQL { 

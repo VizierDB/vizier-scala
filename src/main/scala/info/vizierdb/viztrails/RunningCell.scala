@@ -60,7 +60,7 @@ class RunningCell(
     // 
     // Let's start by checking whether we need the complete scope
     val predictedProvenance =
-      module.command.map { _.predictProvenance(module.arguments) }
+      module.command.map { _.predictProvenance(module.arguments, module.properties) }
                     .getOrElse { ProvenancePrediction.default }
 
     if(predictedProvenance.openWorldReads){

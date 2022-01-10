@@ -22,6 +22,7 @@ import org.mimirdb.api.MimirAPI
 import org.mimirdb.spark.SparkPrimitive
 import org.mimirdb.api.request.MaterializeRequest
 import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object AutomaticStratifiedSample extends Command
   with LazyLogging
@@ -119,7 +120,7 @@ object AutomaticStratifiedSample extends Command
     context.message("Sample created")
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String](PAR_INPUT_DATASET))
       .definitelyWrites(

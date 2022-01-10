@@ -53,13 +53,14 @@ case class Branch(
    * 
    * @param packageId       The package id of the module's command
    * @param commandId       The command id of the module's command
+   * @param properties      Initial properties for the newly created module
    * @param args            The module's arguments
    * @return                The updated Branch object and the new head [[Workflow]]
    */
-  def append(packageId: String, commandId: String)
+  def append(packageId: String, commandId: String, properties: JsObject = Json.obj())
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
-    append(Module.make(packageId, commandId)(args:_*))
+    append(Module.make(packageId, commandId, properties = properties)(args:_*))
 
   /**
    * Update the branch head by creating a module and inserting it into the workflow
@@ -67,13 +68,14 @@ case class Branch(
    * @param position        The position of the newly inserted cell
    * @param packageId       The package id of the module's command
    * @param commandId       The command id of the module's command
+   * @param properties      Initial properties for the newly created module
    * @param args            The module's arguments
    * @return                The updated Branch object and the new head [[Workflow]]
    */
-  def insert(position: Int, packageId: String, commandId: String)
+  def insert(position: Int, packageId: String, commandId: String, properties: JsObject = Json.obj())
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
-    insert(position, Module.make(packageId, commandId)(args:_*))
+    insert(position, Module.make(packageId, commandId, properties = properties)(args:_*))
 
   /**
    * Update the branch head by creating a module and replacing an existing cell with it
@@ -81,13 +83,14 @@ case class Branch(
    * @param position        The position of the cell to modify
    * @param packageId       The package id of the module's command
    * @param commandId       The command id of the module's command
+   * @param properties      Initial properties for the newly created module
    * @param args            The module's arguments
    * @return                The updated Branch object and the new head [[Workflow]]
    */
-  def update(position: Int, packageId: String, commandId: String)
+  def update(position: Int, packageId: String, commandId: String, properties: JsObject = Json.obj())
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
-    update(position, Module.make(packageId, commandId)(args:_*))
+    update(position, Module.make(packageId, commandId, properties = properties)(args:_*))
 
   /**
    * Update the branch head by appending a module to the workflow

@@ -151,6 +151,13 @@ class Config(arguments: Seq[String])
 
   //////////////////////////////////////////////////////
 
+  object garbageCollect extends Subcommand("gc") {
+
+  }
+  addSubcommand(garbageCollect)
+
+  //////////////////////////////////////////////////////
+
   verify()
 
   def getMimirConfig: MimirConfig =

@@ -14,6 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.vizual
 
+import play.api.libs.json._
 import info.vizierdb.commands._
 import org.mimirdb.vizual
 import org.mimirdb.api.request.VizualRequest
@@ -65,7 +66,7 @@ trait VizualCommand
     context.message(s"Updated $datasetName")
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String](PARA_DATASET))
       .definitelyWrites(arguments.get[String](PARA_DATASET))

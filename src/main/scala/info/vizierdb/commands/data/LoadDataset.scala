@@ -28,6 +28,7 @@ import org.mimirdb.api.FormattedError
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.PublishedArtifact
 import org.mimirdb.api.request.CreateViewRequest
+import play.api.libs.json.JsObject
 
 object LoadDataset
   extends Command
@@ -174,7 +175,7 @@ object LoadDataset
     }
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyWrites(arguments.get[String]("name"))
       .andNothingElse

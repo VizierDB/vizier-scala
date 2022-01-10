@@ -62,6 +62,15 @@ sealed trait Parameter
     j: JsValue,
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
   ): JsValue = j
+
+  /**
+   * Recursively replace the specified parameter
+   */
+  def replaceParameterValue( 
+    arg: JsValue, 
+    rule: PartialFunction[(Parameter, JsValue),JsValue]
+  ): Option[JsValue] =
+    rule.lift.apply(this, arg)
 }
 
 object Parameter
@@ -388,6 +397,48 @@ case class ListParameter(
     )
   }
   override def getDefault: JsValue = JsArray(Seq())
+  override def replaceParameterValue( 
+    arg: JsValue, 
+    rule: PartialFunction[(Parameter, JsValue),JsValue]
+  ): Option[JsValue] =
+  {
+    var forceNonNoneReturn = false
+    val base: Seq[Map[String, JsValue]] = 
+      super.replaceParameterValue(arg, rule)
+           .flatMap { x => forceNonNoneReturn = true;
+                       x.asOpt[Seq[Map[String, JsValue]]] }
+           .getOrElse { Seq.empty }
+    val listReplacements: Seq[Option[JsObject]] = 
+      base.map { lineArgs =>
+        val lineReplacements = 
+          components.map { param =>
+            param.name -> 
+              param.replaceParameterValue(lineArgs.getOrElse(param.name, JsNull), rule)
+          }.filter { _._2.isDefined }
+           .map { x => x._1 -> x._2.get }
+           .toMap
+        if(lineReplacements.isEmpty) { None }
+        else {
+          Some(
+            JsObject(
+              lineArgs.map { case (k, v) => 
+                k -> lineReplacements.getOrElse(k, v)
+              }.toMap
+            )
+          )
+        }
+      }
+    if(listReplacements.flatten.isEmpty || !forceNonNoneReturn){ None }
+    else {
+      Some(
+        JsArray(
+          listReplacements.zip(base).map { case (replacement, original) => 
+            replacement.getOrElse(JsObject(original))
+          }.toSeq
+        )
+      )
+    }
+  }
 }
 
 case class RecordParameter(
@@ -466,6 +517,35 @@ case class RecordParameter(
       }
       .toMap
     )
+  }
+  override def replaceParameterValue(
+    arg: JsValue, 
+    rule: PartialFunction[(Parameter, JsValue),JsValue]
+  ): Option[JsValue] =
+  {
+    var forceNonNoneReturn = false
+    val base = 
+      super.replaceParameterValue(arg, rule)
+           .flatMap { x => forceNonNoneReturn = true; 
+                           x.asOpt[Map[String, JsValue]] }
+           .getOrElse { Map.empty }
+    val lineReplacements = 
+      components.map { param =>
+        param.name -> 
+          param.replaceParameterValue(base.getOrElse(param.name, JsNull), rule)
+      }.filter { _._2.isDefined }
+       .map { x => x._1 -> x._2.get }
+       .toMap
+    if(lineReplacements.isEmpty || !forceNonNoneReturn) { None }
+    else {
+      Some(
+        JsObject(
+          base.map { case (k, v) => 
+            k -> lineReplacements.getOrElse(k, v)
+          }.toMap
+        )
+      )
+    }
   }
 }
 

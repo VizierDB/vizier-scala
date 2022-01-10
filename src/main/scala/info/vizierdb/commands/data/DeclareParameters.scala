@@ -27,6 +27,7 @@ import org.mimirdb.spark.Schema.decodeType
 import org.mimirdb.spark.SparkPrimitive.{ encode => sparkToJs }
 import org.apache.spark.sql.catalyst.expressions.{Cast, Literal}
 import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object DeclareParameters extends Command
 {
@@ -68,7 +69,7 @@ object DeclareParameters extends Command
       context.message(s"val $name:${dataType.sql.toLowerCase} = ${sparkToJs(sparkValue, dataType)}")
     }
   }
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyWrites(
         arguments.getList(PARAM_LIST)

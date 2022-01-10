@@ -22,6 +22,7 @@ import java.net.URL
 import java.nio.file.{ Files, Paths }
 import org.mimirdb.api.FormattedError
 import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 
 object UnloadFile extends Command
@@ -87,7 +88,7 @@ object UnloadFile extends Command
     }
   }
 
-  def predictProvenance(arguments: Arguments) = 
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction
       .definitelyReads(arguments.get[String](FILE))
       .andNothingElse
