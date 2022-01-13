@@ -10,6 +10,7 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.serialized.DatasetDescription
+import info.vizierdb.util.RowCache
 
 class StaticDataSource(
   val rowCount: Long,

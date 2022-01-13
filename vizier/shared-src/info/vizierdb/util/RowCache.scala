@@ -1,4 +1,4 @@
-package info.vizierdb.ui.components.dataset
+package info.vizierdb.util
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -43,10 +43,8 @@ import scala.reflect.ClassTag
 class RowCache[T](
   var fetchRows: (Long, Int) => Future[Seq[T]],
   selectForInvalidation: Seq[Long] => Long
-)(implicit tag: ClassTag[T])
+)(implicit tag: ClassTag[T], ec: scala.concurrent.ExecutionContext)
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-  
   /**
    * The maximum number of records per page.  
    */
@@ -59,7 +57,7 @@ class RowCache[T](
   /**
    * The actual cache
    */
-  private val cache = mutable.Map[Long, CachePage]()
+  private val cache = mutable.LinkedHashMap[Long, CachePage]()
 
   /**
    * Refresh callbacks.

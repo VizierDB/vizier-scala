@@ -3,15 +3,15 @@
 ## Views 
 
 ### Project View
-- [ ] Menu Bar
+- [x] Menu Bar
 - [ ] History View
 - [ ] Project Overview
-  - [ ] Display a Summary of the Workflow
+  - [x] Display a Summary of the Workflow
   - [ ] Mouseover Provenance Info
 - [ ] Improve Dataset Display
   - [ ] Edit Button
   - [ ] Download Button
-  - [ ] Scroll to view more <- making this efficient will be tricky
+  - [x] Scroll to view more <- making this efficient will be tricky
 - [ ] Override Cell Editor / Display
   - [ ] Add support for overriding cell displays based on cell type
   - [ ] Override Markdown cells to support click-to-edit
@@ -25,12 +25,12 @@
 
 ### Spreadsheet View
 
-- [ ] Basic data viewing in an infinite scrolling list
-  - [ ] Find a way to do partial display of scrolling lists w/o giant piles of HTML (p)
-  - [ ] Add caching to the existing dataset retrieval code
-  - [ ] Dynamic caching of parts of the data in the frontend
-    - [ ] Spinners on cells not loaded yet
-  - [ ] Provide a way to prefill data that's been cached in the dataset message
+- [x] Basic data viewing in an infinite scrolling list
+  - [x] Find a way to do partial display of scrolling lists w/o giant piles of HTML (p)
+  - [x] Add caching to the existing dataset retrieval code
+  - [x] Dynamic caching of parts of the data in the frontend
+    - [x] Spinners on cells not loaded yet
+  - [x] Provide a way to prefill data that's been cached in the dataset message
 - [ ] Basic editing in-situ
   - [ ] Add a websocket-based interface for spreadsheet sessions
   - [ ] Add an "editor" mode for spreadsheets that connects to the websocket instead of the REST API.
