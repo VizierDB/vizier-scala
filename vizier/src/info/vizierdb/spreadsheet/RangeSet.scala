@@ -36,6 +36,8 @@ class RangeSet(ranges: Seq[(Long, Long)])
     ranges.find { x => x._1 <= point && x._2 >= point }
   }
 
+  def apply(point: Long): Boolean = get(point).isDefined
+
   def offset(amount: Long): RangeSet = 
   {
     new RangeSet(
@@ -107,10 +109,91 @@ class RangeSet(ranges: Seq[(Long, Long)])
     )
   }
 
+  def supset(other: RangeSet) =
+    (other -- this).isEmpty
+
+  def --(other: RangeSet): RangeSet =
+  {
+    val otherElements = other.iterator.buffered
+    new RangeSet(
+      new Iterator[(Long, Long)]() {
+        var myElements = ranges.toList
+        def bufferOne: Boolean = 
+        {
+          while(true){
+            if(myElements.isEmpty){ return false }
+            if(otherElements.head._1 > myElements.head._2) { return true }
+            if(otherElements.head._1 <= myElements.head._1) {
+              if(otherElements.head._2 >= myElements.head._2){
+                myElements = myElements.tail
+              } else {
+                myElements = (otherElements.next._2+1, myElements.head._2) :: myElements.tail
+              }
+            } else {
+              myElements = (myElements.head._1, otherElements.head._1-1) ::
+                           (otherElements.head._1, myElements.head._2) :: 
+                           myElements.tail
+              otherElements.next
+              return true
+            }
+          }
+          return false
+        }
+
+        def hasNext = bufferOne
+        def next: (Long, Long) = { 
+          bufferOne; 
+          val ret = myElements.head
+          myElements = myElements.tail
+          return ret
+        }
+      }.toSeq
+    )
+  }
+
+  def collapse(target: Long, count: Int): RangeSet = 
+  {
+    RangeSet(
+      ranges.flatMap {
+        case (from, to) if to < target => 
+          Seq( (from, to) )
+        case (from, to) if from < target && to < target + count => 
+          Seq( (from, target-1) )
+        case (from, to) if from < target => 
+          Seq( (from, target-1), (target, to - count) )
+        case (from, to) if to < target + count => 
+          None
+        case (from, to) if from < target + count => 
+          Seq( (target, to - count) )
+        case (from, to) => 
+          Seq( (from - count, to - count) )
+      }
+    )
+  }
+
+  def inject(target: Long, count: Int): RangeSet = 
+  {
+    RangeSet(
+      ranges.flatMap {
+        case (from, to) if to < target => 
+          Seq{ (from, to) }
+        case (from, to) if from < target && to >= target => 
+          Seq( (from, target-1), (target+count, to+count) )
+        case (from, to) => 
+          Seq( (from + count, to + count) )
+      }
+    )
+  }
+
   override def toString(): String = 
     "RangeSet( " + toSeq.map { case (from, to) => s"[$from, $to]" }.mkString(", ") + " )"
 
   def iterator = ranges.iterator
+
+  def indices = 
+    ranges.iterator
+          .flatMap { case (from, to) => from.to(to).iterator }
+
   override def isEmpty: Boolean = ranges.isEmpty
 }
 
@@ -131,5 +214,14 @@ object RangeSet
                   elem :: ret
                 }
             }
+    )
+  def ofIndices(indices: Seq[Long]) =
+    new RangeSet(
+      indices.sorted
+             .foldRight(Nil:List[(Long, Long)]) { 
+                case (a, Nil) => (a, a) :: Nil
+                case (a, (b, c) :: rest) if a+1 == b => (a, c) :: rest
+                case (a, rest) => (a, a) :: rest
+              }
     )
 }

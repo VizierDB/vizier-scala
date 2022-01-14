@@ -333,6 +333,11 @@ class RangeMap[T]()
    */
   def max: Long = data.last._2._1
 
+  def iterator: Iterator[(Long, Long, T)] =
+    data.iterator
+        .map { case (from, (to, element)) => (from, to, element) }
+
+
   /**
    * Pretty print
    */

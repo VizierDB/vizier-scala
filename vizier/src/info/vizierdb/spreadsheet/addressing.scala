@@ -6,7 +6,6 @@ case class ColumnRef(id: Long)
 {
   def apply(row: Long) = SingleCell(this, row)
   def apply(from: Long, to: Long) = ColumnRange(this, from, to)
-  def all = FullColumn(this)
   def offsetBy(by: Int) = OffsetCell(this, by)
 }
 
@@ -22,15 +21,7 @@ sealed trait LValue
 {
   def column: ColumnRef
   def toRangeSet: RangeSet
-}
-
-/**
- * An LValue that refers to a specific set of rows.  Specifically excludes
- * FullColumn
- */
-sealed trait TargettedLValue extends LValue
-{
-  def offsetLBy(offset: Long): TargettedLValue
+  def offsetLBy(offset: Long): LValue
 }
 
 /**
@@ -47,20 +38,16 @@ sealed trait RValue
   def expr = UnresolvedRValueExpression(this)
   def ref = new Column(expr)
 }
-case class SingleCell(column: ColumnRef, row: Long) extends TargettedLValue with RValue
+case class SingleCell(column: ColumnRef, row: Long) extends LValue with RValue
 {
-  def offsetLBy(offset: Long): TargettedLValue = 
+  def offsetLBy(offset: Long): LValue = 
     copy(row = row + offset)
   def toRangeSet: RangeSet = RangeSet(row, row)
 }
-case class ColumnRange(column: ColumnRef, from: Long, to: Long) extends TargettedLValue
+case class ColumnRange(column: ColumnRef, from: Long, to: Long) extends LValue
 {
-  def offsetLBy(offset: Long): TargettedLValue = 
+  def offsetLBy(offset: Long): LValue = 
     copy(from = from + offset, to = to + offset)
   def toRangeSet: RangeSet = RangeSet(from, to)
-}
-case class FullColumn(column: ColumnRef) extends LValue
-{
-  def toRangeSet: RangeSet = RangeSet(0, Long.MaxValue)
 }
 case class OffsetCell(column: ColumnRef, rowOffset: Int) extends RValue

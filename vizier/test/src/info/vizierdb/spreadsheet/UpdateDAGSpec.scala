@@ -29,14 +29,6 @@ class UpdateDAGSpec
 
   // def beforeAll = SharedTestResources.init
 
-  class UpdateDAGTester extends UpdateDAG
-  {
-    var lastTrigger: Seq[(Long, Long, CellUpdate)] = Seq.empty
-
-    def triggerReexecution(ranges: Iterable[(Long, Long, CellUpdate)]): Unit = 
-      lastTrigger = ranges.toSeq
-  }
-
   val A = ColumnRef(1)
   val B = ColumnRef(2)
   val C = ColumnRef(3)
@@ -47,23 +39,17 @@ class UpdateDAGSpec
     new Column( RValueExpression(SingleCell(column, row), IntegerType) )
 
   def beUpdateLiteral(l: Any) =
-    { x:CellUpdate => x.expression must beEqualTo(Literal(l)) }
+    { x:UpdateRule => x.expression must beEqualTo(Literal(l)) }
 
 
   "Static Insertions" >> {
-    val dag = new UpdateDAGTester
+    val dag = new UpdateDAG
 
     dag.addColumn(A)
     dag.addColumn(B)
 
     // If we insert...
-    dag.update(B(2), lit(1))
-    
-    // It should trigger a re-execution
-    dag.lastTrigger must haveSize(1)
-    dag.lastTrigger(0)._1 must beEqualTo(2)
-    dag.lastTrigger(0)._2 must beEqualTo(2)
-    dag.lastTrigger(0)._3.expression must beEqualTo(Literal(1))
+    dag.update(B(2), lit(1), 1)
 
     // And the new record should be retrievable
     dag.get(B, 2) must beSome( beUpdateLiteral(1) )
@@ -75,13 +61,7 @@ class UpdateDAGSpec
     dag.get(A, 1) must beNone
 
     //If we overwrite the insertions
-    dag.update(B.all, lit(2))
-
-    //It should trigger a flurry of updates
-    dag.lastTrigger must haveSize(1)
-    dag.lastTrigger(0)._1 must beEqualTo(0)
-    dag.lastTrigger(0)._2 must beGreaterThan(20l)
-    dag.lastTrigger(0)._3.expression must beEqualTo(Literal(2))
+    dag.update(B(1,20), lit(2), 2)
 
     //We should see this update
     dag.get(B, 1) must beSome( beUpdateLiteral(2) )
@@ -91,7 +71,7 @@ class UpdateDAGSpec
     dag.get(A, 2) must beNone
 
     // And if we overwrite the default update
-    dag.update(B(2), lit(3))
+    dag.update(B(2), lit(3), 3)
 
     // We should see the default for other cells
     dag.get(B, 1) must beSome( beUpdateLiteral(2) )
@@ -104,7 +84,7 @@ class UpdateDAGSpec
 
 
     // And now ranges
-    dag.update(A(2, 4), lit(4))
+    dag.update(A(2, 4), lit(4), 4)
 
     for(i <- 2 to 4)
       { dag.get(A, i) must beSome( beUpdateLiteral(4) ) }
@@ -112,7 +92,7 @@ class UpdateDAGSpec
     dag.get(A, 5) must beNone
 
     // println(dag.lvalueIndex(A))
-    dag.update(A(0, 2), lit(5))
+    dag.update(A(0, 2), lit(5), 5)
     // println(dag.lvalueIndex(A))
 
     for(i <- 0 to 2)
@@ -122,7 +102,7 @@ class UpdateDAGSpec
 
     dag.get(A, 5) must beNone
 
-    dag.update(A(1, 5), lit(6))
+    dag.update(A(1, 5), lit(6), 6)
     // println(dag.lvalueIndex(A))
     dag.get(A, 0) must beSome( beUpdateLiteral(5) )
 
@@ -134,19 +114,19 @@ class UpdateDAGSpec
 
   "Row Deletion" >> 
   {
-    val dag = new UpdateDAGTester
+    val dag = new UpdateDAG
 
     dag.addColumn(A)
     dag.addColumn(B)
     dag.addColumn(C)
 
-    dag.update(A(2, 5), lit(1))
-    dag.update(A(10, 15), lit(2))
+    dag.update(A(2, 5), lit(1), 1)
+    dag.update(A(10, 15), lit(2), 2)
 
-    dag.update(B(3,7), lit(3))
-    dag.update(B(8,20), lit(4))
+    dag.update(B(3,7), lit(3), 3)
+    dag.update(B(8,20), lit(4), 4)
 
-    dag.update(C(7,20), lit(5))
+    dag.update(C(7,20), lit(5), 5)
     
     dag.deleteRows(8, 3) // Delete rows 8, 9, 10
 
@@ -177,7 +157,7 @@ class UpdateDAGSpec
     dag.get(C, 17) must beSome( beUpdateLiteral(5) )
     dag.get(C, 18) must beNone
 
-    dag.update(A(4, 10), lit(6))
+    dag.update(A(4, 10), lit(6), 6)
 
     dag.get(A, 3) must beSome( beUpdateLiteral(1) )
     dag.get(A, 4) must beSome( beUpdateLiteral(6) )
@@ -190,13 +170,13 @@ class UpdateDAGSpec
 
   "Row Insertions" >>
   {
-    val dag = new UpdateDAGTester
+    val dag = new UpdateDAG
 
     dag.addColumn(A)
 
-    dag.update(A(1, 3), lit(1))
-    dag.update(A(4, 7), lit(2))
-    dag.update(A(8, 10), lit(3))
+    dag.update(A(1, 3), lit(1), 1)
+    dag.update(A(4, 7), lit(2), 2)
+    dag.update(A(8, 10), lit(3), 3)
 
     // println(dag.lvalueIndex(A))
     dag.insertRows(5, 3)
@@ -219,13 +199,13 @@ class UpdateDAGSpec
 
   "Row Moves" >> 
   {
-    val dag = new UpdateDAGTester
+    val dag = new UpdateDAG
 
     dag.addColumn(A)
 
-    dag.update(A(1, 3), lit(1))
-    dag.update(A(4, 7), lit(2))
-    dag.update(A(8, 10), lit(3))
+    dag.update(A(1, 3), lit(1), 1)
+    dag.update(A(4, 7), lit(2), 2)
+    dag.update(A(8, 10), lit(3), 3)
 
     // println("BEFORE MOVE")
     // println(dag.lvalueIndex(A))
@@ -248,14 +228,13 @@ class UpdateDAGSpec
 
   "Static Dependencies" >> 
   {
-    val dag = new UpdateDAGTester
+    val dag = new UpdateDAG
 
     dag.addColumn(A)
 
-    dag.update(A(2), A(1).ref + 1)
-    dag.lastTrigger = Seq.empty
+    dag.update(A(2), A(1).ref + 1, 1)
 
-    dag.update(A(1), lit(1))
+    dag.update(A(1), lit(1), 2)
     
     { 
       val deps = dag.getFlatDependents(A, RangeSet(1))
@@ -271,39 +250,39 @@ class UpdateDAGSpec
     // println(dag.rvalueIndex(A))
 
     dag.addColumn(B)
-    dag.update(B(1, 2), (A offsetBy 0).ref)
+    dag.update(B(1, 2), (A offsetBy 0).ref, 3)
 
     // println(dag.rvalueIndex(A))
 
     //coalesce dependents
     dag.getDependents(A, RangeSet(1,2))
-       .filter { _._2.target.column == B }
-       .map { _._1 }
+       .filter { _._1 == B }
+       .map { _._2 }
        .foldLeft(RangeSet()) { _ ++ _ }
        .toSeq must contain(exactly((1l, 2l)))
 
     dag.addColumn(C)
-    dag.update(C(1, 2), (A offsetBy 0).ref + (B offsetBy 1).ref)
+    dag.update(C(1, 2), (A offsetBy 0).ref + (B offsetBy 1).ref, 4)
 
     // If A(1, 2) is invalidated, it should trigger an update to C(1,2)
     dag.getDependents(A, RangeSet(1,2))
-       .filter { _._2.target.column == C }
-       .map { _._1 }
+       .filter { _._1 == C }
+       .map { _._2 }
        .foldLeft(RangeSet()) { _ ++ _ }
        .toSeq must contain(exactly((1l, 2l)))
 
     // If B(1, 2) is invalidated, it should trigger an update to C(1)
     // (since C(2) depends on B(3))
     dag.getDependents(B, RangeSet(1,2))
-       .filter { _._2.target.column == C }
-       .map { _._1 }
+       .filter { _._1 == C }
+       .map { _._2 }
        .foldLeft(RangeSet()) { _ ++ _ }
        .toSeq must contain(exactly((1l, 1l)))
 
     // If B(1,3) is invalidated, it should trigger an update to C(1,2)
     dag.getDependents(B, RangeSet(1,3))
-       .filter { _._2.target.column == C }
-       .map { _._1 }
+       .filter { _._1 == C }
+       .map { _._2 }
        .foldLeft(RangeSet()) { _ ++ _ }
        .toSeq must contain(exactly((1l, 2l)))
   }

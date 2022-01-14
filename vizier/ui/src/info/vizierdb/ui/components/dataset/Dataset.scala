@@ -13,6 +13,7 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.Vizier
+import info.vizierdb.util.RowCache
 
 /**
  * A representation of a dataset artifact
