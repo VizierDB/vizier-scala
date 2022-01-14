@@ -42,7 +42,7 @@ import scala.reflect.ClassTag
  */
 class RowCache[T](
   var fetchRows: (Long, Int) => Future[Seq[T]],
-  selectForInvalidation: Seq[Long] => Long
+  var selectForInvalidation: (Seq[Long], Int) => Long
 )(implicit tag: ClassTag[T], ec: scala.concurrent.ExecutionContext)
 {
   /**
@@ -78,7 +78,7 @@ class RowCache[T](
     assert(pageIdx % BUFFER_PAGE == 0, "Start index not aligned on a buffer page")
     if(!cache.contains(pageIdx)){
       if(cache.size >= BUFFER_SIZE) {
-        invalidate(selectForInvalidation(cache.keys.toSeq))
+        invalidate(selectForInvalidation(cache.keys.toSeq, BUFFER_PAGE))
       }
       cache(pageIdx) = 
         new CachePage(
@@ -110,7 +110,7 @@ class RowCache[T](
     val pages = data.grouped(BUFFER_PAGE)
 
     while(cache.size + pages.size >= BUFFER_SIZE){
-      invalidate(selectForInvalidation(cache.keys.toSeq))
+      invalidate(selectForInvalidation(cache.keys.toSeq, BUFFER_PAGE))
     }
 
     for((pageData, idx) <- data.grouped(BUFFER_PAGE).zipWithIndex){

@@ -120,7 +120,7 @@ class RangeSet(ranges: Seq[(Long, Long)])
         var myElements = ranges.toList
         def bufferOne: Boolean = 
         {
-          while(true){
+          while(otherElements.hasNext){
             if(myElements.isEmpty){ return false }
             if(otherElements.head._1 > myElements.head._2) { return true }
             if(otherElements.head._1 <= myElements.head._1) {
@@ -137,7 +137,7 @@ class RangeSet(ranges: Seq[(Long, Long)])
               return true
             }
           }
-          return false
+          return !myElements.isEmpty
         }
 
         def hasNext = bufferOne
@@ -186,7 +186,7 @@ class RangeSet(ranges: Seq[(Long, Long)])
   }
 
   override def toString(): String = 
-    "RangeSet( " + toSeq.map { case (from, to) => s"[$from, $to]" }.mkString(", ") + " )"
+    "RangeSet( " + toSeq.map { case (from, to) => s"[$from-$to]" }.mkString(", ") + " )"
 
   def iterator = ranges.iterator
 

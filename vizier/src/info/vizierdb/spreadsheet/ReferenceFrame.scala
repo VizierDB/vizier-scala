@@ -13,13 +13,20 @@ case class ReferenceFrame(transformations: Seq[RowTransformation] = Seq.empty)
       case (None, _) => None
     }
 
-  def backward(sourceRow: RowReference): RowReference = 
-    transformations.foldRight(sourceRow) { _.backward(_) }
-
   def forward(sourceRows: RangeSet): RangeSet = 
     transformations.foldLeft(sourceRows) { 
       (rows, xform) => xform.forward(rows)
     }
+
+  def forward(row: Long): Option[Long] =
+    transformations.foldLeft(Some(row):Option[Long]) {
+      case (Some(row), xform) => xform.forward(row)
+      case (None, _) => None
+    }
+
+  def backward(sourceRow: RowReference): RowReference = 
+    transformations.foldRight(sourceRow) { _.backward(_) }
+
   def backward(sourceRows: RangeSet): RangeSet = 
     transformations.foldRight(sourceRows) { 
       (xform, rows) => xform.backward(rows)

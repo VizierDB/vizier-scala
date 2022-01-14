@@ -17,7 +17,7 @@ sealed trait RowTransformation
    */
   def forward(row: RowReference): Option[RowReference] = 
     row match {
-      case SourceRowByIndex(idx) => forward(idx).map { SourceRowByIndex(_) }
+      case RowByIndex(idx) => forward(idx).map { RowByIndex(_) }
       case _ => Some(row)
     }
   /**
@@ -40,7 +40,7 @@ sealed trait RowTransformation
    */
   def backward(row: RowReference): RowReference =
     row match {
-      case SourceRowByIndex(idx) => backward(idx)
+      case RowByIndex(idx) => backward(idx)
       case _ => row
     }
   /**
@@ -62,7 +62,7 @@ case class InsertRows(position: Long, count: Int, insertId: Identifier) extends 
 {
   override def forward(row: RowReference): Option[RowReference] = 
     row match {
-      case InsertedRow(insertedId, idx) if insertedId == insertId => Some(SourceRowByIndex(position + idx))
+      case InsertedRow(insertedId, idx) if insertedId == insertId => Some(RowByIndex(position + idx))
       case _ => super.forward(row)
     }
 
@@ -75,9 +75,9 @@ case class InsertRows(position: Long, count: Int, insertId: Identifier) extends 
   }
 
   def backward(row: Long): RowReference =
-    if(row < position) { return SourceRowByIndex(row) }
+    if(row < position) { return RowByIndex(row) }
     else if(row < position + count) { return InsertedRow(insertId, (row - position).toInt) }
-    else { return SourceRowByIndex(row - count) }
+    else { return RowByIndex(row - count) }
 
   def backward(rows: RangeSet): RangeSet = 
   {
@@ -98,8 +98,8 @@ case class DeleteRows(position: Long, count: Int) extends RowTransformation
     low ++ high.remove(position, position+count-1).offset(-count)
   }
   def backward(row: Long): RowReference = 
-    if(row < position) { SourceRowByIndex(row) }
-    else { SourceRowByIndex(row + count) }
+    if(row < position) { RowByIndex(row) }
+    else { RowByIndex(row + count) }
   def backward(rows: RangeSet): RangeSet = 
   {
     val (low, high) = rows.split(position)
@@ -112,13 +112,15 @@ case class MoveRows(from: Long, to: Long, count: Int) extends RowTransformation
 {
   def forward(row: Long): Option[Long] =
   {
-    val rowAfterDelete: Long = 
-      if(row < from) { row }
-      else if(row < from + count) { return Some(to + (row - from)) }
-      else { row - count }
-
-    if(rowAfterDelete < to){ Some(rowAfterDelete) }
-    else { Some(rowAfterDelete + count) }
+    if(from < to){
+      if(row < from || row >= to){ return Some(row) }
+      else if(row < from + count) { return Some(row + to - from - count) }
+      else { return Some(row - count) }
+    } else {
+      if(row < to || row >= from + count){ return Some(row) }
+      else if(row < from) { return Some(row + count) }
+      else { return Some(row + to - from - count) }
+    }
   }
   def forward(rows: RangeSet) = 
   {
@@ -138,13 +140,15 @@ case class MoveRows(from: Long, to: Long, count: Int) extends RowTransformation
 
   def backward(row: Long): RowReference = 
   {
-    val rowBeforeInsert: Long =
-      if(row < to) { row }
-      else if(row < to + count) { return SourceRowByIndex(from + (row - to)) }
-      else { row - count }
-
-    if(rowBeforeInsert < from){ SourceRowByIndex(rowBeforeInsert) }
-    else { SourceRowByIndex(rowBeforeInsert + count) }
+    if(from < to){
+      if(row < from || row >= to){ return RowByIndex(row) }
+      else if(row < to - count) { return RowByIndex(row + from - to - count) }
+      else { return RowByIndex(row + count) }
+    } else {
+      if(row < to || row >= from + count){ return RowByIndex(row) }
+      else if(row >= to + count) { return RowByIndex(row - count) }
+      else { return RowByIndex(row + from - to - count) }
+    }
   }
 
   def backward(rows: RangeSet) = 

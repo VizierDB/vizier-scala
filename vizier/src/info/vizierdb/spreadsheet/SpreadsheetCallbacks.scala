@@ -25,10 +25,10 @@ trait SpreadsheetCallbacks
   /**
    * Indicates that the specified rows have (potentially) changed content
    */
-  def refreshRows(from: Long, count: Int)
+  def refreshRows(from: Long, count: Long)
 
   /**
    * Indicates that the specified cells (row, column) have potentially changed content
    */
-  def refreshCells(cells: Seq[(Long, Int)])
+  def refreshCell(column: Int, row: Long)
 }

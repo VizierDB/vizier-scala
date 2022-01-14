@@ -1,6 +1,7 @@
 package info.vizierdb.spreadsheet
 
 import org.apache.spark.sql.catalyst.expressions.Expression
+import com.fasterxml.jackson.module.scala.deser.overrides
 
 case class UpdateRule(
   expression: Expression,
@@ -8,10 +9,20 @@ case class UpdateRule(
   id: Long
 )
 {
+  /**
+   * Returns true if this cell's expression involves exclusively references
+   * to the local row
+   */
+  def isLocal = 
+    rvalues.forall { 
+      case _:SingleCell => true
+      case OffsetCell(_, 0) => true
+      case OffsetCell(_, _) => false
+    }
+
   def rvalues: Seq[RValue] =
     expression.collect {
-      case RValueExpression(rvalue, _) => rvalue
-      case UnresolvedRValueExpression(rvalue) => rvalue
+      case RValueExpression(rvalue) => rvalue
     }
 
   /**
@@ -53,20 +64,22 @@ case class UpdateRule(
   def triggeringCells(target: Long, targetFrame: ReferenceFrame = frame): Seq[SingleCell] =
   {
     val offsetFrame = targetFrame.relativeTo(frame)
-    val baseTarget = offsetFrame.backward(SourceRowByIndex(target))
-                                // We should never update a cell **prior**
-                                // to it being inserted.
-                                .asInstanceOf[SourceRowByIndex]
-                                .idx
+    val baseTarget = offsetFrame.backward(RowByIndex(target))
+
     rvalues.flatMap { 
       case SingleCell(col, row) => 
-        offsetFrame.forward(SourceRowByIndex(row))
-                   .map { _.asInstanceOf[SourceRowByIndex].idx }
-                   .map { SingleCell(col, _) }
+        offsetFrame.forward(RowByIndex(row))
+                   .collect { 
+                      case RowByIndex(idx) => SingleCell(col, idx)
+                    }
+      case OffsetCell(col, 0) => 
+        Some(SingleCell(col, target))
       case OffsetCell(col, rowOffset) => 
-        offsetFrame.forward(SourceRowByIndex(baseTarget+rowOffset))
-                   .map { _.asInstanceOf[SourceRowByIndex].idx }
-                   .map { SingleCell(col, _) }
+        assert(baseTarget.isInstanceOf[RowByIndex], "Ambiguous reference to offset row")
+        offsetFrame.forward(RowByIndex(baseTarget.asInstanceOf[RowByIndex].idx+rowOffset))
+                   .collect { 
+                      case RowByIndex(idx) => SingleCell(col, idx)
+                    }
     }
   }
 
@@ -93,4 +106,6 @@ case class UpdateRule(
              .foldLeft(RangeSet()) { _ ++ _ }
     )
   }
+
+  override def toString = s"{${expression.toString}}[$id]"
 }

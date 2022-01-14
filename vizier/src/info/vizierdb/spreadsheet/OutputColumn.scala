@@ -2,17 +2,21 @@ package info.vizierdb.spreadsheet
 
 import org.apache.spark.sql.types.StructField
 
-class OutputColumn(source: ColumnSource, var output: StructField)
+class OutputColumn(val source: ColumnSource, var output: StructField, val id: Long, var position: Int)
 {
   def rename(name: String) = 
   {
     output = output.copy(name = name)
   }
+
+  def ref = ColumnRef(id, output.name)
 }
 object OutputColumn
 {
-  def mapFrom(idx: Int, field: StructField) = new OutputColumn(SourceDataset(idx, field), field)
-  def withDefaultValue(field: StructField, defaultValue: Any) = new OutputColumn(DefaultValue(defaultValue), field)
+  def mapFrom(idx: Int, field: StructField, id: Long, position: Int) = 
+    new OutputColumn(SourceDataset(idx, field), field, id, position)
+  def withDefaultValue(field: StructField, defaultValue: Any, id: Long, position: Int) = 
+    new OutputColumn(DefaultValue(defaultValue), field, id, position)
 }
 
 

@@ -11,12 +11,18 @@ import info.vizierdb.VizierException
 import scala.concurrent.ExecutionContext
 import scala.util.Failure
 import scala.util.Success
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import com.typesafe.scalalogging.LazyLogging
 
 /**
  * This class acts as a sort of 
  */
-class Executor(sourceValue: (ColumnRef, Long) => Any)
-              (implicit ec: ExecutionContext)
+class UpdateOverlay(
+  sourceValue: (ColumnRef, Long) => Any,
+  cellModified: (ColumnRef, Long) => Unit = {(_,_) => ()}
+)(implicit ec: ExecutionContext)
+  extends LazyLogging
 {
   type UpdateID = Long
   type RowIndex = Long
@@ -53,6 +59,24 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
   def cellNeeded(column: ColumnRef, row: RowIndex): Boolean =
     (subscriptions(row)) || (!triggers(column)(row).isEmpty)
 
+  def requiredSourceRows: RangeSet =
+  {
+    triggers.foldLeft(subscriptions) { 
+      case (accum, (column, triggers)) =>
+        val lvalues = dag(column)
+        RangeSet.ofIndices(
+          triggers.keys
+              // we only care about triggers going back to the base data
+                  .filter { lvalues(_).isEmpty }
+              // and we want these relative to the source frame
+                  .map { row => frame.backward(RowByIndex(row)) }
+              // ignore inserted rows
+                  .collect { case RowByIndex(row) => row }
+                  .toSeq
+        ) ++ accum
+    }
+  }
+
   def update(target: LValue, col: Column): Unit =
     update(target, col.expr)
 
@@ -61,6 +85,7 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
     val rule = UpdateRule(expression, frame, nextUpdate);
     nextUpdate += 1
     updates.put(rule.id, rule)
+    logger.trace(s"Inserting $rule @ $target")
     for( (from, to) <- target.toRangeSet )
     {
       for( (oldFrom, oldTo, oldRule) <- dag(target.column)(from, to) )
@@ -74,18 +99,23 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
       }
       dag(target.column).insert(from, to, rule)
     }
+    // logger.trace(dag(target.column).toString())
 
     // Since we're inserting a range of updates, figure out which of these
-    // could potentially require a deletion
+    // could potentially require re-execution
     val requiredTriggers = 
       (activeTriggers(target.column) ++ subscriptions) intersect target.toRangeSet
+
+    logger.debug(s"Update requires triggers on rows $requiredTriggers")
 
     for(row <- requiredTriggers.indices)
     {
       addTriggerFor(target.column, row, rule)
     }
 
-    triggerReexecution(target.column -> requiredTriggers)
+    triggerReexecution(
+      requiredTriggers.indices.map { SingleCell(target.column, _) }.toSeq
+    )
   }
 
   /**
@@ -131,11 +161,9 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
 
   }
 
-  def triggerReexecution(targets: (ColumnRef, RangeSet)*): Unit = 
+  def triggerReexecution(targets: Seq[SingleCell]): Unit = 
   {
-    val targetCells = 
-      targets.flatMap { case (col, rows) => rows.indices.map { SingleCell(col, _) } }
-    val workQueue = Queue[SingleCell]()
+    logger.debug(s"Starting re-execution pass with targets: $targets")
 
     def collectUpstream(accum: Set[SingleCell], cell: SingleCell): Set[SingleCell] = 
       // simple memoization.  Don't recur to the cell if we've already visited it
@@ -148,7 +176,6 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
             .iterator(frame)
             .foldLeft(accum + cell) { collectUpstream(_, _) }
         } else {
-          workQueue.enqueue(cell)
           accum + cell
         }
       }
@@ -164,26 +191,31 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
         }
       }
 
+    val cellPromises =
+      targets.foldLeft(Set[SingleCell]()) { (deps, cell) =>
+          collectDownstream(
+            collectUpstream(deps, cell),
+            cell
+          )
+        }.toSeq
+         .map { cell => cell -> Promise[Any]() }
+         .toMap
+
+    logger.debug(s"Final invalidated cells = ${cellPromises.keys.mkString(", ")}")
+
+    for( (cell, promise) <- cellPromises )
+    {
+      data(cell.column)(cell.row) = promise.future
+      cellModified(cell.column, cell.row)
+    }
 
     Future {
-      val cellPromises =
-        targetCells.foldLeft(Set[SingleCell]()) { (deps, cell) =>
-            collectDownstream(
-              collectUpstream(deps, cell),
-              cell
-            )
-          }.toSeq
-           .map { cell => cell -> Promise[Any]() }
-           .toMap
+      logger.debug(s"Starting evaluation pass for ${cellPromises.keys.mkString(", ")}")
 
-      for( (cell, promise) <- cellPromises )
+      def compute(cell: SingleCell, promise: Promise[Any], blockedCells: Set[SingleCell] = Set.empty): Unit =
       {
-        data(cell.column)(cell.row) = promise.future
-      }
-
-
-      def compute(cell: SingleCell, blockedCells: Set[SingleCell] = Set.empty): Unit =
-      {
+        logger.trace(s"Compute $cell (completed = ${promise.isCompleted})")
+        if(promise.isCompleted) { return }
         val rule = dag(cell.column)(cell.row).get
         try {
           for(dependency <- rule.triggeringCells(cell.row, frame)){
@@ -191,17 +223,19 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
 
             cellPromises.get(dependency) match {
               case None => () // dependency didn't need recomputation
-              case Some(promise) => 
+              case Some(depPromise) => 
                 // compute dependency first
-                if(!promise.isCompleted){ compute(cell, blockedCells + cell) }
+                if(!promise.isCompleted){ compute(dependency, depPromise, blockedCells + cell) }
             }
           }
+          promise.success(eval(cell.row, rule))
+          cellModified(cell.column, cell.row)
         } catch {
           case e: Throwable => cellPromises(cell).failure(e)
         }
       }
 
-      cellPromises.keys.foreach { compute(_) }
+      cellPromises.foreach { case (cell, promise) => compute(cell, promise) }
     }.onComplete { 
       case Success(_) => println("Finished processing cells")
       case Failure(err) => println(s"Error: $err")
@@ -209,47 +243,101 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
 
   }
 
-  def get(cell: SingleCell, targetFrame: ReferenceFrame): Any =
+  def getFuture(cell: SingleCell, targetFrame: ReferenceFrame = frame): Future[Any] =
   {
+    assert(subscriptions(cell.row), "Reading from unsubscribed cell")
+    logger.trace(s"Read from $cell")
     assert(data contains cell.column, "The cell ${cell}'s column was deleted")
     val rowInCurrentFrame = 
       targetFrame.relativeTo(frame)
-                 .forward(SourceRowByIndex(cell.row))
+                 .forward(RowByIndex(cell.row))
                  .getOrElse {
                     assert(false, "The cell ${cell}'s row was deleted")
-                 }.asInstanceOf[SourceRowByIndex].idx
+                 }.asInstanceOf[RowByIndex].idx
+
+    // logger.trace(dag(cell.column).toString())
+    // logger.trace(s"Available: [${cell.column}:${data(cell.column).keys.mkString(",")}]")
 
     data(cell.column).get(rowInCurrentFrame) match {
       case None => // the cell comes from the source
-        frame.backward(SourceRowByIndex(rowInCurrentFrame)) match {
+        frame.backward(RowByIndex(rowInCurrentFrame)) match {
           case _:InsertedRow => 
             return null
-          case SourceRowByIndex(rowInOriginalFrame) => 
-            return sourceValue(cell.column, rowInOriginalFrame)
+          case RowByIndex(rowInOriginalFrame) => 
+            return Future.successful(sourceValue(cell.column, rowInOriginalFrame))
         }
       case Some(future) => 
-        assert(future.isCompleted, s"Trying to read pending cell $cell")
-        return future.value
+        return future
     }
- }
+  }
 
-  def compute(targetRow: RowIndex, rule: UpdateRule): Any =
+  def get(cell: SingleCell, targetFrame: ReferenceFrame = frame): Any =
   {
-    rule.expression.transform { 
-      case UnresolvedRValueExpression(cell:SingleCell) => 
-        lit(get(cell, rule.frame)).expr
-      case UnresolvedRValueExpression(cell:OffsetCell) =>
-        lit(get(SingleCell(
-          cell.column,
-          rule.frame.relativeTo(frame)
-                    .backward( SourceRowByIndex(targetRow) )
-                    .asInstanceOf[SourceRowByIndex].idx
-        ), rule.frame)).expr
-    }.eval(null)
+    getFuture(cell, targetFrame).value match {
+              case None => assert(false, s"Trying to read pending cell $cell")
+              case Some(Success(result)) => result
+              case Some(Failure(err)) => 
+                logger.error(err.toString())
+                throw new Exception(s"Error while computing $cell", err)
+           }
+  }
+
+  def getExpression(cell: SingleCell): Option[Expression] =
+  {
+    dag(cell.column)(cell.row)
+      .map { rule =>
+        if(rule.isLocal || (rule.frame eq frame)){ rule.expression }
+        else {
+          val frameOffset = rule.frame.relativeTo(frame)
+          rule.expression.transform {
+            case RValueExpression(OffsetCell(col, rowOffset)) if rowOffset != 0 =>
+              val originalRow = frameOffset.backward(RowByIndex(cell.row))
+                                           .asInstanceOf[RowByIndex].idx
+              frameOffset.forward(originalRow + rowOffset) match {
+                case None => 
+                  InvalidRValue(s"${SingleCell(col, originalRow)} was deleted")
+                case Some(newOffsetRow) => 
+                  RValueExpression(OffsetCell(col, (newOffsetRow - cell.row).toInt))
+              }
+
+          }
+        }
+      }
+  }
+
+  def await(cell: SingleCell, targetFrame: ReferenceFrame = frame, duration: Duration = Duration.Inf): Any =
+  {
+    Await.result(getFuture(cell, targetFrame), duration)
+  }
+
+  def eval(targetRow: RowIndex, rule: UpdateRule): Any =
+  {
+    val offset = rule.frame.relativeTo(frame)
+    val expr = 
+      rule.expression.transform { 
+        case RValueExpression(cell:SingleCell) => 
+          logger.trace(s"Fetch $cell")
+          lit(get(cell, rule.frame)).expr
+        case RValueExpression(cell:OffsetCell) =>
+          logger.trace(s"Fetch [${cell.column}:${cell.rowOffset}] @ $targetRow")
+          lit(get(SingleCell(
+            cell.column,
+            offset.forward(
+              offset.backward( RowByIndex(targetRow) )
+                    .asInstanceOf[RowByIndex].idx 
+                      + cell.rowOffset
+            ).getOrElse {
+              throw new AssertionError(s"Reading from deleted cell $cell")
+            }
+          ), rule.frame)).expr
+      }
+    logger.trace(s"Eval {$expr} @ $targetRow")
+    return expr.eval(null)
   }
 
   def unsubscribe(rows: RangeSet): Unit =
   {
+    logger.debug(s"Drpping subscriptions for $rows")
     subscriptions = subscriptions -- rows
     for( (column, lvalues) <- dag )
     {
@@ -272,6 +360,7 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
 
   def subscribe(rows: RangeSet, forceCells: Set[SingleCell] = Set.empty): Unit =
   {
+    logger.debug(s"Adding subscriptions for $rows")
     subscriptions = subscriptions ++ rows
     val needsExecution = mutable.ArrayBuffer(forceCells.toSeq:_*)
     for( (column, lvalues) <- dag )
@@ -280,17 +369,21 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
       {
         for( (from, to, rule) <- lvalues(searchFrom, searchTo) )
         {
+          logger.trace(s"Checking range: $from-$to")
           for( row <- from.to(to) )
           {
+            logger.trace(s"Checking if $column:$row is needed")
             if( !(data(column) contains row) )
             {
               addTriggerFor(column, row, rule)
-              data(column).remove(row)
+              needsExecution.append(SingleCell(column, row))
             }
           }
         }
       }
     }
+    logger.debug(s"Triggering re-execution for $needsExecution")
+    triggerReexecution(needsExecution)
   }
 
   def updateSubscription(newSubscriptions: RangeSet, forceCells: Set[SingleCell] = Set.empty): Unit =
@@ -355,7 +448,30 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
         case DeleteRows(position, count) =>
           lvalues.collapse(position, count)
         case InsertRows(position, count, _) =>
-          lvalues.expand(position, count)
+          // If we're inserting a sequence of rows at this point, the
+          // question arises of whether we want to fill in fields of the
+          // inserted rows.  We have two strategies here:
+          //   inject: insert blank cells
+          //   expand: whatever update rule appears at position gets
+          //           replicated to the newly created cells.
+          // Note: the 'expand' strategy ony works if the cell's rule makes
+          //       no references to offset rows, otherwise the values for those 
+          //       inputs are ambiguous.
+
+          // Our heuristic looks at position and the immediately preceding
+          // position:
+          (lvalues(position-1), lvalues(position)) match {
+            // If a single update spans both positions, and the rule can be
+            // safely expanded, then do that
+            case (Some(lrule), Some(hrule)) if lrule.id == hrule.id && lrule.isLocal =>
+              lvalues.expand(position, count)
+
+            // If different rules appear at both positions, if either
+            // position lacks a rule, or if the rule makes offset 
+            // references, then fall back to injecting
+            case _ => 
+              lvalues.inject(position, count)
+          }
         case MoveRows(from, to, count) =>
           lvalues.move(from, to, count)
       }
@@ -363,7 +479,7 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
 
     // Step 3
     // Remap data values
-    for( (_, cells) <- data)
+    for( (col, cells) <- data)
     {
       val original = cells.toIndexedSeq
       cells.clear
@@ -371,8 +487,11 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
       for( (row, rule) <- original ) 
       { 
         op.forward(row) match {
-          case None => // deleted
-          case Some(newRow) => cells.put(newRow, rule)
+          case None => 
+            // logger.trace(s"$op deleted $col:$row")
+          case Some(newRow) => 
+            // logger.trace(s"$op moved $col:$row to $col:$newRow")
+            cells.put(newRow, rule)
         }
       }
     }
@@ -411,6 +530,8 @@ class Executor(sourceValue: (ColumnRef, Long) => Any)
           (subscriptionSnapshot intersect RangeSet(from, from+count-1))
             .offset(if(from < to){ to - from - count} else { to - from })
       }
+
+    logger.trace(s"After $op: \nSubscriptions: $subscriptions\nBut want: $desiredSubscription")
 
     updateSubscription(
       desiredSubscription, 
@@ -455,9 +576,9 @@ class TriggerSet(var frame: ReferenceFrame)
     val oldTriggers = triggers.toIndexedSeq
     triggers.clear
     for(trigger <- oldTriggers){
-      offset.forward(SourceRowByIndex(trigger.row)) match {
+      offset.forward(RowByIndex(trigger.row)) match {
         case None => // row deleted.  Ignore!
-        case Some(SourceRowByIndex(idx)) => 
+        case Some(RowByIndex(idx)) => 
           triggers.add(SingleCell(trigger.column, idx))
         case Some(InsertedRow(_, _)) => //should never happen
       }

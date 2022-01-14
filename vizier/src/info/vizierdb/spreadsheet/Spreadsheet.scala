@@ -8,36 +8,61 @@ import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
 import org.apache.spark.sql.types._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
-import _root_.com.esotericsoftware.kryo.io.Output
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
+import org.apache.spark.sql.catalyst.expressions.Expression
+import scala.util.Random
+import com.typesafe.scalalogging.LazyLogging
 
-class Spreadsheet(base: DataFrame)(implicit ec: ExecutionContext)
+class Spreadsheet(data: SpreadsheetDataSource)
+                 (implicit ec: ExecutionContext)
+  extends LazyLogging
 {
-  assert(base.schema(0).name == AnnotateWithRowIds.ATTRIBUTE)
-  assert(base.schema(1).name == AnnotateWithSequenceNumber.ATTRIBUTE)
+  var size: Future[Long] = data.size
 
-  var size = Future { base.count() }
+  var nextColumnId = 0l
+  def getColumnId(): Long = 
+    { val id = nextColumnId; nextColumnId += 1; id }
 
   val schema: mutable.ArrayBuffer[OutputColumn] =
-    mutable.ArrayBuffer(base.schema.drop(2)
-                                   .zipWithIndex
-                                   .map { case (field, idx) => OutputColumn.mapFrom(idx + 2, field) }:_*)
+    mutable.ArrayBuffer(
+      data.schema
+          .zipWithIndex
+          .map { case (field, idx) => 
+                  OutputColumn.mapFrom(idx, field, getColumnId(), idx) 
+          }:_*)
 
-  var rf = ReferenceFrame(Seq.empty)
+  def columns = mutable.Map[Long, OutputColumn](
+    schema.map { col => col.id -> col }:_*)
 
-  val rows = new RowCache[Seq[Any]](
-    fetchRows = { (offset, limit) => 
-      Future { 
-        base.filter {
-          base(AnnotateWithSequenceNumber.ATTRIBUTE).between(offset, offset+limit)
-        }.collect()
-         .map { _.toSeq }
+  val overlay = 
+    new UpdateOverlay(
+      sourceValue = { (column, row) => 
+        columns(column.id).source match {
+          case SourceDataset(idx, _) => Await.result(data(idx, row), Duration.Inf)
+          case DefaultValue(v) => v
+        }
+      },
+      cellModified = { (column, row) =>
+        callback { _.refreshCell(columns(column.id).position, row) }
       }
-    },
-    selectForInvalidation = { _.head }
-  )
-  rows.onRefresh.append { (limit, offset) => callback { _.refreshRows(limit, offset) }}
+    )
 
-  val insertedRows = mutable.TreeMap[(Long, Int), Array[Any]]()
+  def pickCachePageToDiscard(candidates: Seq[Long], pageSize: Int): Long =
+  {
+    val criticalRows = overlay.requiredSourceRows
+    val nonCriticalCandidates = 
+      candidates.filter { start => (criticalRows intersect RangeSet(start, start+pageSize-1)).isEmpty }
+    if(nonCriticalCandidates.isEmpty){
+      logger.warn("Warning: Row cache is full.  Performance may degrade noticeably.")
+      return candidates(Random.nextInt % candidates.size)
+    } else {
+      return nonCriticalCandidates(Random.nextInt % nonCriticalCandidates.size)
+    }
+  }
 
   val callbacks = mutable.ArrayBuffer[SpreadsheetCallbacks]()
 
@@ -49,6 +74,59 @@ class Spreadsheet(base: DataFrame)(implicit ec: ExecutionContext)
     val idx = schema.indexWhere { _.output.name == col }
     assert(idx >= 0, s"Column $col does not exist")
     return idx
+  }
+
+  def getRow(row: Long): Array[Option[Try[Any]]] =
+  {
+    schema.map { col => 
+            overlay.getFuture(SingleCell(col.ref, row)).value
+          }
+          .toArray
+  }
+
+  def getExpression(column: String, row: Long): Option[Expression] =
+  {
+    val columnIndex = indexOfColumn(column)
+    overlay.getExpression(SingleCell(columns(columnIndex).ref, row))
+  }
+
+  def subscribe(start: Long, count: Int): Unit =
+  {
+    overlay.subscribe(RangeSet(start, start+count-1))
+  }
+
+  def unsubscribe(start: Long, count: Int): Unit =
+  {
+    overlay.unsubscribe(RangeSet(start, start+count-1))
+  }
+
+  def deleteRows(start: Long, count: Int): Unit =
+  {
+    assert(size.isCompleted, "Table not fully loaded yet")
+    assert(size.value.get.get >= start + count, "Those rows don't exist")
+    overlay.deleteRows(start,count)
+    size = size.map { _ - count }
+    callback { _.refreshRows(start, start - size.value.get.get) }
+  }
+
+  def insertRows(start: Long, count: Int): Unit =
+  {
+    assert(size.isCompleted, "Table not fully loaded yet")
+    assert(size.value.get.get >= start, "Can't insert there")
+    overlay.insertRows(start,count)
+    size = size.map { _ + count }
+    callback { _.refreshRows(start, start - size.value.get.get) }
+  }
+
+  def moveRows(from: Long, to: Long, count: Int): Unit =
+  {
+    assert(to < from || from + count <= to, "Trying to move a group of rows to within itself")
+    assert(size.value.get.get >= from+count, "Source rows don't exist")
+    assert(size.value.get.get >= to, "Destination rows don't exist")
+    overlay.moveRows(from, to, count)
+    val start = math.min(from, to)
+    val end = math.max(from+count, to)
+    callback { _.refreshRows(start, end - start+1) }
   }
 
   /**
@@ -81,16 +159,10 @@ class Spreadsheet(base: DataFrame)(implicit ec: ExecutionContext)
       val fromValue = schema(fromIdx)
       for(idx <- fromIdx.until(toIdx, offset)){
         schema(idx) = schema(idx+offset)
+        schema(idx).position = idx
       }
       schema(toIdx) = fromValue
-    }
-
-    insertedRows.mapValues { row =>
-      val fromValue = row(fromIdx)
-      for(idx <- fromIdx.until(toIdx, offset)){
-        row(idx) = row(idx+offset)
-      }
-      row(toIdx) = fromValue
+      schema(toIdx).position = toIdx
     }
 
     callback(_.refreshEverything())
@@ -105,19 +177,20 @@ class Spreadsheet(base: DataFrame)(implicit ec: ExecutionContext)
    */
   def insertColumn(name: String, before: Option[String], dataType: DataType = StringType): Unit =
   {
-    val newCol = OutputColumn.withDefaultValue(StructField(name, dataType), null)
+    def newCol(position: Int) = 
+      OutputColumn.withDefaultValue(StructField(name, dataType), null, getColumnId(), position)
     val idx = before match {
       case None => {
-        schema.append(newCol)
+        schema.append(newCol(schema.size))
         schema.size - 1
       }
       case Some(name) => {
         val idx = indexOfColumn(name)
-        schema.insert(idx, newCol)
+        schema.insert(idx, newCol(idx))
+        for(i <- idx+1 until schema.size){ schema(i).position = i }
         idx
       }
     }
-    insertedRows.mapValues { row => (row.take(idx) ++ Seq(null) ++ row.drop(idx)).toArray }
     callback(_.refreshEverything())
   }
 
@@ -128,9 +201,8 @@ class Spreadsheet(base: DataFrame)(implicit ec: ExecutionContext)
   def deleteColumn(name: String): Unit = 
   {
     val idx = indexOfColumn(name)
-    schema.remove(idx)
-
-    insertedRows.mapValues { row => (row.take(idx) ++ row.drop(idx+1)).toArray }
+    columns.remove(schema.remove(idx).id)
+    for(i <- idx until schema.size) { schema(i).position = i }
 
     callback(_.refreshEverything())
   }
@@ -140,21 +212,45 @@ class Spreadsheet(base: DataFrame)(implicit ec: ExecutionContext)
 
 object Spreadsheet
 {
-
-
   def apply(base: DataFrame)(implicit ec: ExecutionContext) = 
   {
     val annotated = 
-      AnnotateWithSequenceNumber(AnnotateWithRowIds(base))
-    new Spreadsheet(
+      AnnotateWithSequenceNumber(base)
+    val df = 
       annotated.select(
         (
           annotated(AnnotateWithSequenceNumber.ATTRIBUTE) +:
-          annotated(AnnotateWithRowIds.ATTRIBUTE) +:
           base.columns.map { annotated(_) }
         ):_*
       )
-    )
+    val seqNo = df(AnnotateWithSequenceNumber.ATTRIBUTE)
+    val baseCols = base.columns.map { df(_) }
+
+    val cache = 
+      new RowCache[Array[Any]](
+        fetchRows = { (offset, limit) =>
+          Future {
+            df.filter { (seqNo >= offset) and (seqNo < (offset+limit)) }
+              .orderBy(seqNo.asc)
+              .select(baseCols:_*)
+              .collect()
+              .map { _.toSeq.toArray }
+          }
+        },
+        selectForInvalidation = { (candidates, pageSize) => candidates.head }
+      )
+
+    val spreadsheet =
+      new Spreadsheet(
+        new CachedSource(
+          base.schema.fields,
+          cache,
+          Future { df.count() }
+        )
+      )
+    cache.selectForInvalidation = spreadsheet.pickCachePageToDiscard _
+
+    /* return */ spreadsheet
   }
   // def apply() = new Spreadsheet(base)
 }

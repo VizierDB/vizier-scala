@@ -4,9 +4,21 @@ import org.apache.spark.sql.Column
 
 case class ColumnRef(id: Long)
 {
+  var label: String = null
   def apply(row: Long) = SingleCell(this, row)
   def apply(from: Long, to: Long) = ColumnRange(this, from, to)
   def offsetBy(by: Int) = OffsetCell(this, by)
+
+  override def toString = Option(label).getOrElse { id.toString }
+}
+object ColumnRef
+{
+  def apply(id: Long, label: String): ColumnRef = 
+  {
+    val ret = ColumnRef(id)
+    ret.label = label
+    return ret
+  }
 }
 
 /**
@@ -35,7 +47,7 @@ sealed trait RValue
 { 
   def column: ColumnRef 
 
-  def expr = UnresolvedRValueExpression(this)
+  def expr = RValueExpression(this)
   def ref = new Column(expr)
 }
 case class SingleCell(column: ColumnRef, row: Long) extends LValue with RValue
@@ -43,6 +55,8 @@ case class SingleCell(column: ColumnRef, row: Long) extends LValue with RValue
   def offsetLBy(offset: Long): LValue = 
     copy(row = row + offset)
   def toRangeSet: RangeSet = RangeSet(row, row)
+  override def toString =
+    s"[${column}:$row]"
 }
 case class ColumnRange(column: ColumnRef, from: Long, to: Long) extends LValue
 {

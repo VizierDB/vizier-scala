@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types.DataType
 import org.apache.spark.sql.catalyst.analysis.UnresolvedException
 
-case class UnresolvedRValueExpression(rvalue: RValue)
+case class RValueExpression(rvalue: RValue)
   extends Expression with Unevaluable
 {
   def children: Seq[Expression] = Seq.empty
@@ -19,7 +19,7 @@ case class UnresolvedRValueExpression(rvalue: RValue)
     throw new UnresolvedException("RValueExpression")
 }
 
-case class RValueExpression(rvalue: RValue, dataType: DataType)
+case class InvalidRValue(msg: String)
   extends Expression with Unevaluable
 {
   def children: Seq[Expression] = Seq.empty
@@ -27,4 +27,7 @@ case class RValueExpression(rvalue: RValue, dataType: DataType)
   protected def withNewChildrenInternal(newChildren: IndexedSeq[Expression]): Expression = this
 
   def nullable: Boolean = true
+
+  def dataType: DataType = 
+    throw new UnresolvedException("InvalidRValue")  
 }
