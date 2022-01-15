@@ -91,9 +91,12 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
     send(SubscribeRows(start, BUFFER_PAGE))
   }
 
-  def unsubscribe()
+  def unsubscribe(start: Long): Unit =
+  {
+    send(UnsubscribeRows(start, BUFFER_PAGE))
+  }
 
-  def prefill(source: RowCache[DatasetRow]): Unit = 
+  def prefill(schema: Seq[DatasetColumn], source: RowCache[DatasetRow]): Unit = 
   {
     // There's a bunch of messy state involving subscriptions, page sizes, etc...
     // I'm not going to deal with it right now.  If you hit the following assertion
@@ -105,7 +108,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
         case None       => rows.put(start, new RowBatch(start)) // still waiting on data,  set up a placeholder
         case Some(data) => rows.put(start, new RowBatch(start, data))
       }
-      subscrbe(start)
+      subscribe(start)
     }
   }
 
@@ -126,8 +129,39 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
 
   class RowBatch(val start: Long, val data: Array[Array[SpreadsheetCell]])
   {
-    def this(start: Long) = ???
-    def this(start: Long, data: Seq[DatasetColumn])
+    def this(start: Long) =
+      this(start, 
+        (0 until BUFFER_PAGE).map { _ => 
+          (0 until schema.size).map { _ => 
+            ValueInProgress 
+          }.toArray[SpreadsheetCell]
+        }.toArray
+      )
+
+    def this(start: Long, data: Seq[DatasetRow]) = 
+      this(start, 
+        (
+          data.map { row =>
+            row.values.take(schema.size)
+                      .map { NormalValue(_) }
+                      .padTo(schema.size, ValueInProgress)
+                      .toArray[SpreadsheetCell]
+          } ++ (data.size until BUFFER_PAGE).map { _ =>
+            (0 until schema.size).map { _ => 
+              ValueInProgress 
+            }.toArray[SpreadsheetCell]
+          }
+        ).toArray
+      )
   }
 
+  def cellAt(row: Long,column: Int): scalatags.JsDom.all.Frag = ???
+  def columnCount: Int = ???
+  def columnDataType(column: Int): info.vizierdb.nativeTypes.CellDataType = ???
+  def columnTitle(column: Int): String = ???
+  def columnWidthInPixels(column: Int): Int = ???
+  def headerAt(column: Int): scalatags.JsDom.all.Frag = ???
+  def rowClasses(row: Long): Seq[String] = ???
+  def rowCount: Long = ???
+  def rowGutter(row: Long): scalatags.JsDom.all.Frag = ???
 }

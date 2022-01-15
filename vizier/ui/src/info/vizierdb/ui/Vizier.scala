@@ -183,7 +183,7 @@ object Vizier
   {
     val projectId = arguments.get("project").get.toLong
     val datasetId = arguments.get("dataset").get.toLong
-    SpreadsheetClient(projectId, datasetId, api)
+    new SpreadsheetClient(projectId, datasetId, api)
 
     // val datasetFuture = 
     //   api.artifactGetDataset(
