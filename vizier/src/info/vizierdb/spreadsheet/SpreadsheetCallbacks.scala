@@ -31,4 +31,9 @@ trait SpreadsheetCallbacks
    * Indicates that the specified cells (row, column) have potentially changed content
    */
   def refreshCell(column: Int, row: Long)
+
+  /**
+   * Indicates that the specified cells (row, column) have potentially changed content
+   */
+  def sizeChanged(newSize: Long)
 }

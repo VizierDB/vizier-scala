@@ -103,7 +103,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
   implicit val websocketResponseFormat = Json.format[websocket.WebsocketResponse]
   def onMessage(message: dom.MessageEvent) =
   {
-    logger.trace(s"Got: ${message.data}")
+    logger.trace(s"Got: ${message.data.asInstanceOf[String].take(20)}")
     Json.parse(message.data.asInstanceOf[String])
         .as[websocket.WebsocketResponse] match {
 

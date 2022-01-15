@@ -19,7 +19,10 @@ trait APIExtras
 
   def websocket =
     makeUrl("/websocket").replaceAll("http://", "ws://")
-                        .replaceAll("https://", "wss://")
+                         .replaceAll("https://", "wss://")
 
+  def spreadsheet =
+    makeUrl("/spreadsheet").replaceAll("http://", "ws://")
+                           .replaceAll("https://", "wss://")
 }
 

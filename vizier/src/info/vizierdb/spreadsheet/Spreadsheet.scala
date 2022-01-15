@@ -50,6 +50,7 @@ class Spreadsheet(data: SpreadsheetDataSource)
         callback { _.refreshCell(columns(column.id).position, row) }
       }
     )
+  for(col <- schema) { overlay.addColumn(col.ref) }
 
   def pickCachePageToDiscard(candidates: Seq[Long], pageSize: Int): Long =
   {
@@ -66,8 +67,11 @@ class Spreadsheet(data: SpreadsheetDataSource)
 
   val callbacks = mutable.ArrayBuffer[SpreadsheetCallbacks]()
 
-  def callback(op: SpreadsheetCallbacks => Unit) = 
+  private def callback(op: SpreadsheetCallbacks => Unit) = 
     callbacks.foreach(op)
+
+  def subscriptions: Iterator[(Long, Long)] = 
+    overlay.subscriptions.iterator
 
   def indexOfColumn(col: String): Int =
   {
@@ -82,6 +86,10 @@ class Spreadsheet(data: SpreadsheetDataSource)
             overlay.getFuture(SingleCell(col.ref, row)).value
           }
           .toArray
+  }
+  def getCell(column: Int, row: Long): Option[Try[Any]] =
+  {
+    overlay.getFuture(SingleCell(schema(column).ref, row)).value
   }
 
   def getExpression(column: String, row: Long): Option[Expression] =

@@ -42,7 +42,7 @@ class Dataset(
 
   val cache = new RowCache[DatasetRow] (
                     fetchRowsWithAPI, 
-                    _.maxBy { pageIdx => math.abs(pageIdx - table.firstRowIndex) }
+                    (candidates, pageSize) => candidates.maxBy { pageIdx => math.abs(pageIdx - table.firstRowIndex) }
                   )
   var table: TableView = null
 
@@ -88,7 +88,7 @@ class Dataset(
 
   val root:dom.html.Div = div(
     `class` := "dataset",
-    Rx { h3(name()) },
+    Rx { h3(a(href := s"spreadsheet.html?project=$projectId&dataset=$datasetId", name())) },
   ).render
 
 }

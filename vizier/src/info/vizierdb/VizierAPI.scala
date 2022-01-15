@@ -52,6 +52,7 @@ import scala.io.Source
 import java.net.InetSocketAddress
 import info.vizierdb.util.ExperimentalOptions
 import info.vizierdb.spark.caveats.QueryWithCaveats
+import info.vizierdb.api.spreadsheet.SpreadsheetSocket
 
 
 object VizierAPI
@@ -107,6 +108,11 @@ object VizierAPI
     {
       val websocket = new ServletHolder(BranchWatcherSocket.Servlet)
       context.addServlet(websocket, "/vizier-db/api/v1/websocket")
+    }
+    /////////////// Spreadsheet Websocket API ///////////////
+    {
+      val websocket = new ServletHolder(SpreadsheetSocket.Servlet)
+      context.addServlet(websocket, "/vizier-db/api/v1/spreadsheet")
     }
 
     /////////////// Transactional API ///////////////

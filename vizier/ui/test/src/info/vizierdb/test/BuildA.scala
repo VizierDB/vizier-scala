@@ -77,6 +77,7 @@ object BuildA
         val id = getNextArtifactId
         serialized.StandardArtifact(
           id = id,
+          projectId = 1,
           key = id,
           name = name,
           category = t,

@@ -12,7 +12,7 @@ import play.api.libs.json._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.ui.rxExtras.RxBufferView
-import info.vizierdb.ui.network.{ API, BranchSubscription }
+import info.vizierdb.ui.network.{ API, BranchSubscription, SpreadsheetClient }
 import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
@@ -182,25 +182,28 @@ object Vizier
   def spreadsheet(): Unit =
   {
     val projectId = arguments.get("project").get.toLong
-    val datasetFuture = 
-      api.artifactGetDataset(
-        projectId = projectId,
-        artifactId = arguments.get("artifact").get.toLong,
-        limit = Some(20),
-      )
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      document.body.style.background = "#ccf"
-      datasetFuture.onComplete {
-        case Failure(e) => error(e.toString())
-        case Success(description) => 
-        {
-          val dataset = new Dataset(description, projectId)
-          document.body.appendChild(dataset.root)
+    val datasetId = arguments.get("dataset").get.toLong
+    SpreadsheetClient(projectId, datasetId, api)
 
-        }
-        OnMount.trigger(document.body)
-      }
-    })
+    // val datasetFuture = 
+    //   api.artifactGetDataset(
+    //     projectId = projectId,
+    //     artifactId = arguments.get("artifact").get.toLong,
+    //     limit = Some(20),
+    //   )
+    // document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
+    //   document.body.style.background = "#ccf"
+    //   datasetFuture.onComplete {
+    //     case Failure(e) => error(e.toString())
+    //     case Success(description) => 
+    //     {
+    //       val dataset = new Dataset(description, projectId)
+    //       document.body.appendChild(dataset.root)
+
+    //     }
+    //     OnMount.trigger(document.body)
+    //   }
+    // })
   }
 
 }  

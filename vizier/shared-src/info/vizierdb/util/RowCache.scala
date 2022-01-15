@@ -57,7 +57,7 @@ class RowCache[T](
   /**
    * The actual cache
    */
-  private val cache = mutable.LinkedHashMap[Long, CachePage]()
+  val cache = mutable.LinkedHashMap[Long, CachePage]()
 
   /**
    * Refresh callbacks.
