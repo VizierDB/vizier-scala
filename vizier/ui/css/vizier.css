@@ -170,9 +170,19 @@ table.data_table tbody tr td
   text-align: center;
 }
 
-table.data_table tbody tr td.caveatted
+table.data_table tbody tr td.cell.caveatted
 {
   color: red;
+}
+table.data_table tbody tr td.cell.null
+{
+  background-color: #e9dfdf;
+}
+
+table.data_table tbody tr td.error
+{
+  background-color : #611;
+  color : #ccc;
 }
 
 table.data_table tbody tr.even_row.caveatted

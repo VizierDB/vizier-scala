@@ -36,3 +36,8 @@ object UnsubscribeRows
   implicit val format: Format[UnsubscribeRows] = Json.format
 }
 
+case class EditCell(column: Int, row: Long, value: JsValue) extends SpreadsheetRequest
+object EditCell
+{
+  implicit val format: Format[EditCell] = Json.format
+}

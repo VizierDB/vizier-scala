@@ -45,6 +45,9 @@ class TableView(
    */
   def rowHeight = rowDimensions._2
 
+  val PREFIX_ROWS = 10
+  val SUFFIX_ROWS = 10
+
   ///// Update Logic
 
   /**
@@ -55,8 +58,8 @@ class TableView(
    */
   def updateScroller(position: Double = root.scrollTop, height: Double = root.clientHeight): Unit =
   {
-    val minRow = math.max(0, ((position) / rowHeight).toLong - 2)
-    val maxRow = math.min(data.rowCount, ((position + height) / rowHeight).toLong + 3)
+    val minRow = math.max(0, ((position) / rowHeight).toLong - PREFIX_ROWS)
+    val maxRow = math.min(data.rowCount, ((position + height) / rowHeight).toLong + SUFFIX_ROWS)
 
     logger.trace(s"Range ${root.scrollTop} to ${root.scrollTop + root.offsetHeight}")
     logger.trace(s"With rows from $minRow to $maxRow @ $firstRowIndex")
@@ -105,8 +108,26 @@ class TableView(
     updateScroller()
   }
 
+  def refreshCell(row: Long, column: Int) =
+  {
+    refresh(row, 1)
+  }
+
+  def refreshSize() =
+  {
+    body.style.height = s"${rowHeight * data.rowCount + headerHeight}px"
+  }
+
+
   def setData(data: TableDataSource, invalidate: Boolean = true) =
-    ???
+  {
+    this.data = data
+    if(invalidate) { 
+      rebuildHeaderRow()
+      refreshSize()
+      refresh(firstRowIndex, visibleRows.size)
+    }
+  }
 
   ///// DOM structures
 

@@ -86,9 +86,10 @@ class SpreadsheetSocket
                   .dataframe
               }
             )
+            spreadsheet.callbacks += this
             logger.trace("Spreadsheet initialized!")
           }.onComplete {
-            case Success(_) => refreshEverything()
+            case Success(_) => send(Connected("Test Dataset")); refreshEverything()
             case Failure(err) => send(ReportError(err))
           }
         }
@@ -97,11 +98,19 @@ class SpreadsheetSocket
           spreadsheet.subscribe(row, count)
           refreshRows(row, count)
         }
-        case UnsubscribeRows(row, count) => ???
+        case UnsubscribeRows(row, count) => 
+        {
+          spreadsheet.unsubscribe(row, count)
+        }
+        case EditCell(column, row, v) => 
+        {
+          spreadsheet.editCell(column, row, v)
+        }
         case Ping(id) => send(Pong(id))
       }
     } catch {
       case e: Throwable => 
+        e.printStackTrace()
         send(ReportError(e))
     }
   }
@@ -120,15 +129,9 @@ class SpreadsheetSocket
   def refreshEverything(): Unit = 
   {
     logger.trace("Refreshing Everything")
-    spreadsheet.size.onComplete {
-      case Success(size) => 
-        logger.trace("Size is ready; Sending refresh messages")
-        sizeChanged(size)
-        refreshHeaders()
-        refreshData()
-      case Failure(err) =>
-        ReportError(err)
-    }
+    sizeChanged(spreadsheet.size)
+    refreshHeaders()
+    refreshData()
   }
   
   def refreshHeaders(): Unit =   
@@ -139,23 +142,30 @@ class SpreadsheetSocket
   def refreshData(): Unit = 
   {
     val t = spreadsheet.schema.map { _.output.dataType }
+    val sizeBound = spreadsheet.size
     for( (low, high) <- spreadsheet.subscriptions ){
-      send(DeliverRows(low, 
-        (low to high).map { rowIndex => 
-          spreadsheet.getRow(rowIndex)
-                     .zip(t)
-                     .map { case (v, t) => SpreadsheetCell(v, t) }
-                     .toArray[SpreadsheetCell]
-        }.toArray
-      ))
+      if(low < sizeBound){
+        val boundHigh = math.min(sizeBound-1, high)
+        logger.trace(s"Refreshing [$low,$boundHigh]")
+        send(DeliverRows(low, 
+          (low to boundHigh).map { rowIndex => 
+            spreadsheet.getRow(rowIndex)
+                       .zip(t)
+                       .map { case (v, t) => SpreadsheetCell(v, t) }
+                       .toArray[SpreadsheetCell]
+          }.toArray
+        ))
+      }
     }
   }  
 
   def refreshRows(from: Long, count: Long): Unit = 
   {
     val t = spreadsheet.schema.map { _.output.dataType }
+    val cappedUntil = math.min(spreadsheet.size, from+count)
+    logger.trace(s"Refreshing $from+$count -> [$from,$cappedUntil]")
     send(DeliverRows(from, 
-      (from until (from + count)).map { rowIndex => 
+      (from until cappedUntil).map { rowIndex => 
         spreadsheet.getRow(rowIndex)
                    .zip(t)
                    .map { case (v, t) => SpreadsheetCell(v, t) }
@@ -165,9 +175,20 @@ class SpreadsheetSocket
   }
   def refreshCell(column: Int, row: Long): Unit = 
   {
+    logger.trace(s"Cell invalidated: $column:$row")
     // These can come in bursts, so make notification delivery asynchronous
     Future {
-      send(DeliverCell(column, row, SpreadsheetCell(spreadsheet.getCell(column, row), spreadsheet.schema(column).output.dataType)))
+      try {
+        logger.trace(s"Constructing invalidation message for $column:$row")
+        val message = DeliverCell(column, row, SpreadsheetCell(spreadsheet.getCell(column, row), spreadsheet.schema(column).output.dataType))
+        logger.trace(s"Sending invalidation message $message")
+        send(message)
+        logger.trace(s"sent invalidation message")
+      } catch {
+        case t: Throwable => 
+          logger.error(s"Error refreshing cell $column:$row: ${t.getMessage()}")
+          t.printStackTrace()
+      }
     }
   }
 

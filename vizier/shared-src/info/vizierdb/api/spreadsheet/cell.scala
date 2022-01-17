@@ -10,7 +10,7 @@ object SpreadsheetCell
   implicit val format = Format[SpreadsheetCell](
     new Reads[SpreadsheetCell] { def reads(j: JsValue) =
       (j \ "status").as[String] match {
-        case "ready"   => JsSuccess(NormalValue((j \ "value").get))
+        case "ready"   => JsSuccess(NormalValue((j \ "value").get, (j \ "caveat").as[Boolean]))
         case "running" => JsSuccess(ValueInProgress)
         case "error"   => JsSuccess(ErrorValue((j \ "message").as[String], (j \ "detail").as[String]))
         case _ => JsError()
@@ -18,7 +18,7 @@ object SpreadsheetCell
     },
     new Writes[SpreadsheetCell] { def writes(j: SpreadsheetCell) =
       j match {
-        case NormalValue(value)          => Json.obj("status" -> "ready", "value" -> value)
+        case NormalValue(value, caveat)  => Json.obj("status" -> "ready", "value" -> value, "caveat" -> caveat)
         case ValueInProgress             => Json.obj("status" -> "running")
         case ErrorValue(message, detail) => Json.obj("status" -> "error", "message" -> message, "detail" -> "detail")
       }
@@ -29,13 +29,13 @@ object SpreadsheetCell
   {
     v match {
       case None => ValueInProgress
-      case Some(Success(v)) => NormalValue(jsonFromNative(v, dataType))
+      case Some(Success(v)) => NormalValue(jsonFromNative(v, dataType), false)
       case Some(Failure(err)) => ErrorValue(err)
     }
   }
 }
 
-case class NormalValue(value: JsValue) extends SpreadsheetCell
+case class NormalValue(value: JsValue, caveat: Boolean) extends SpreadsheetCell
 {
   def as(dataType: CellDataType) = nativeFromJson(value, dataType)
 }

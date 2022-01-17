@@ -12,6 +12,12 @@ object SpreadsheetResponse
   implicit val format: Format[SpreadsheetResponse] = Json.format
 }
 
+case class Connected(name: String) extends SpreadsheetResponse
+object Connected
+{
+  implicit val format: Format[Connected] = Json.format
+}
+
 case class UpdateSize(rows: Long) extends SpreadsheetResponse
 object UpdateSize
 {
@@ -35,7 +41,10 @@ object ReportError
 {
   implicit val format: Format[ReportError] = Json.format
   def apply(e: Throwable): ReportError = 
-    ReportError(e.getMessage(), e.getStackTrace.map { _.toString() }.mkString("\n"))
+    ReportError(
+      e.getClass.getSimpleName + Option(e.getMessage()).map { ": " + _ }.getOrElse { "" }, 
+      e.getStackTrace.map { _.toString() }.mkString("\n")
+    )
 }
 
 case class DeliverRows(row: Long, data: Array[Array[SpreadsheetCell]]) extends SpreadsheetResponse

@@ -60,11 +60,7 @@ class StaticDataSource(
   {
     cache(row) match {
       case None => 
-        td(
-          textAlign := "center", 
-          width := RenderCell.defaultWidthForType(columnDataType(column)),
-          Spinner(15)
-        ).render
+        RenderCell.spinner(columnDataType(column))
       case Some(DatasetRow(rowId, values, cellCaveats, _)) => 
         RenderCell(
           values(column), 

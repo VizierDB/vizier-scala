@@ -214,11 +214,12 @@ class UpdateOverlay(
 
       def compute(cell: SingleCell, promise: Promise[Any], blockedCells: Set[SingleCell] = Set.empty): Unit =
       {
-        logger.trace(s"Compute $cell (completed = ${promise.isCompleted})")
+        logger.debug(s"Compute $cell (completed = ${promise.isCompleted})")
         if(promise.isCompleted) { return }
         val rule = dag(cell.column)(cell.row).get
         try {
           for(dependency <- rule.triggeringCells(cell.row, frame)){
+            logger.trace(s"Following up on dependency $dependency for $cell")
             assert(!blockedCells(dependency), "Recursive dependency")
 
             cellPromises.get(dependency) match {
@@ -228,16 +229,21 @@ class UpdateOverlay(
                 if(!promise.isCompleted){ compute(dependency, depPromise, blockedCells + cell) }
             }
           }
+          logger.debug(s"All dependencies computed, starting evaluation of $cell\n${rule.expression}")
           promise.success(eval(cell.row, rule))
+          logger.trace("Evaluation pass complete")
           cellModified(cell.column, cell.row)
         } catch {
-          case e: Throwable => cellPromises(cell).failure(e)
+          case e: Throwable => 
+            logger.error(s"Error while processing $cell: ${e.getMessage()}")
+            e.printStackTrace()
+            cellPromises(cell).failure(e)
         }
       }
 
       cellPromises.foreach { case (cell, promise) => compute(cell, promise) }
     }.onComplete { 
-      case Success(_) => println("Finished processing cells")
+      case Success(_) => logger.debug("Finished processing cells")
       case Failure(err) => println(s"Error: $err")
     }
 

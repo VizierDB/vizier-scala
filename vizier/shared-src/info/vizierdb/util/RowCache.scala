@@ -136,7 +136,7 @@ class RowCache[T](
    * loaded yet.
    */
   def apply(idx: Long): Option[T] = 
-    cache(pageOf(idx))(idx)
+    page(pageOf(idx))(idx)
 
   /**
    * A wrapper around one page of cached data

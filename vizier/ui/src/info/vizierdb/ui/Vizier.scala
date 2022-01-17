@@ -20,6 +20,7 @@ import info.vizierdb.serialized.ProjectList
 import info.vizierdb.serialized.PropertyList
 import info.vizierdb.ui.components.dataset.Dataset
 import info.vizierdb.ui.components.MenuBar
+import info.vizierdb.ui.components.dataset.TableView
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -183,7 +184,16 @@ object Vizier
   {
     val projectId = arguments.get("project").get.toLong
     val datasetId = arguments.get("dataset").get.toLong
-    new SpreadsheetClient(projectId, datasetId, api)
+    val cli = new SpreadsheetClient(projectId, datasetId, api)
+    cli.connected.trigger { connected => 
+      if(connected){ cli.subscribe(0) }
+    }
+    val table = new TableView(cli, 
+        rowDimensions = (780, 30),
+        outerDimensions = ("800px", "400px"),
+        headerHeight = 40
+    )
+    cli.table = Some(table)
 
     // val datasetFuture = 
     //   api.artifactGetDataset(
@@ -191,7 +201,10 @@ object Vizier
     //     artifactId = arguments.get("artifact").get.toLong,
     //     limit = Some(20),
     //   )
-    // document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
+    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
+      document.body.appendChild(table.root)
+      OnMount.trigger(document.body)
+    })
     //   document.body.style.background = "#ccf"
     //   datasetFuture.onComplete {
     //     case Failure(e) => error(e.toString())

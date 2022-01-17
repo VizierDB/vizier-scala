@@ -88,7 +88,13 @@ class Dataset(
 
   val root:dom.html.Div = div(
     `class` := "dataset",
-    Rx { h3(a(href := s"spreadsheet.html?project=$projectId&dataset=$datasetId", name())) },
+    Rx { h3(
+      (if(name().isEmpty()) { "Untitled Dataset "} else { name() }),
+      a(
+        href := s"spreadsheet.html?project=$projectId&dataset=$datasetId", 
+        target := "_blank",
+        "[edit]"
+      )) },
   ).render
 
 }

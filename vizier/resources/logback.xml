@@ -25,7 +25,7 @@
   <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
   <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
   <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="TRACE" />
-  <logger name="info.vizierdb.spreadsheet.UpdateOverlay"         level="TRACE" />
+  <logger name="info.vizierdb.spreadsheet.UpdateOverlay"         level="DEBUG" />
   <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="TRACE" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->

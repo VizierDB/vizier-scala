@@ -16,12 +16,20 @@ import scala.util.Failure
 import org.apache.spark.sql.catalyst.expressions.Expression
 import scala.util.Random
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.spark.SparkPrimitive
+import play.api.libs.json._
+import org.apache.spark.sql.catalyst.expressions.{
+  Literal,
+  Cast
+}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 
 class Spreadsheet(data: SpreadsheetDataSource)
                  (implicit ec: ExecutionContext)
   extends LazyLogging
 {
-  var size: Future[Long] = data.size
+  var size: Long = Await.result(data.size, Duration.Inf)
 
   var nextColumnId = 0l
   def getColumnId(): Long = 
@@ -108,29 +116,82 @@ class Spreadsheet(data: SpreadsheetDataSource)
     overlay.unsubscribe(RangeSet(start, start+count-1))
   }
 
+  def attrToRValue(attr: String, exprRow: Long): RValue =
+  {
+    // This is presently SUUUUUPER hacky
+    // TODO: Replace me after discussing
+
+    // all of the non-digit chars
+    val columnString = 
+      attr.takeWhile { case x if x >= 48 && x <= 57 => false; case _ => true}
+          .toLowerCase()
+    val column =
+      schema.find { _.output.name.toLowerCase == columnString }.get
+    var rowString = 
+      attr.drop(columnString.size)
+    val row =
+      try { rowString.toLong-1 } catch { case _:NumberFormatException => exprRow }
+
+    SingleCell(column.ref, row)
+  }
+
+  def parse(expression: String, row: Long): Expression =
+  {
+    expr(expression).expr.transform {
+      case UnresolvedAttribute(Seq(attr)) => 
+        RValueExpression(attrToRValue(attr, row))
+    }
+  }
+
+  def editCell(column: Int, row: Long, value: JsValue): Unit =
+  {
+    assert(0 <= row && row < size, "That row doesn't exist")
+    assert(0 <= column && column < schema.size, "That row doesn't exist")
+    val decoded: Expression =
+      value match {
+        case JsString(s) if s(0) == '=' => 
+          Cast(parse(s.drop(1), row), schema(column).output.dataType)
+        case _ => try {
+          Literal(
+            SparkPrimitive.decode(value, schema(column).output.dataType, castStrings = true), 
+            schema(column).output.dataType
+          )
+        } catch {
+          case t: Throwable => 
+            logger.warn(s"Difficulty parsing $value (${t.getMessage()}); falling back to spark")
+            Cast(
+              Literal(
+                value match { case JsString(s) => s; case _ => value.toString },
+                StringType
+              ),
+              schema(column).output.dataType
+            )
+        }
+      }
+    overlay.update(SingleCell(columns(column).ref, row), decoded)
+  }
+
   def deleteRows(start: Long, count: Int): Unit =
   {
-    assert(size.isCompleted, "Table not fully loaded yet")
-    assert(size.value.get.get >= start + count, "Those rows don't exist")
+    assert(size >= start + count, "Those rows don't exist")
     overlay.deleteRows(start,count)
-    size = size.map { _ - count }
-    callback { _.refreshRows(start, start - size.value.get.get) }
+    size = size - count
+    callback { _.refreshRows(start, start - size) }
   }
 
   def insertRows(start: Long, count: Int): Unit =
   {
-    assert(size.isCompleted, "Table not fully loaded yet")
-    assert(size.value.get.get >= start, "Can't insert there")
+    assert(size >= start, "Can't insert there")
     overlay.insertRows(start,count)
-    size = size.map { _ + count }
-    callback { _.refreshRows(start, start - size.value.get.get) }
+    size = size + count
+    callback { _.refreshRows(start, start - size) }
   }
 
   def moveRows(from: Long, to: Long, count: Int): Unit =
   {
     assert(to < from || from + count <= to, "Trying to move a group of rows to within itself")
-    assert(size.value.get.get >= from+count, "Source rows don't exist")
-    assert(size.value.get.get >= to, "Destination rows don't exist")
+    assert(size >= from+count, "Source rows don't exist")
+    assert(size >= to, "Destination rows don't exist")
     overlay.moveRows(from, to, count)
     val start = math.min(from, to)
     val end = math.max(from+count, to)
