@@ -255,6 +255,7 @@ case class CodeParameter(
   }
 
   var editor: CodeMirrorEditor = null
+  var initialValue: String = null
 
   val root = 
     div(
@@ -263,11 +264,11 @@ case class CodeParameter(
         OnMount { (n: dom.Node) => 
           editor = CodeMirror.fromTextArea(n,
             js.Dictionary(
-              "value" -> "this is a test",
               "mode" -> CodeParameter.CODEMIRROR_FORMAT.getOrElse(language, "text/plain"),
               "lineNumbers" -> true
             )
           ) 
+          if(initialValue != null) { editor.setValue(initialValue) }
         }
       )
     )
@@ -277,7 +278,10 @@ case class CodeParameter(
                     .getOrElse { "" }
     )
   override def set(v: JsValue): Unit = 
-    Option(editor).map { _.setValue(v.as[String]) }
+  {
+    initialValue = v.as[String]
+    Option(editor).map { _.setValue(initialValue) }
+  }
 }
 object CodeParameter
 {

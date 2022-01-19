@@ -83,6 +83,7 @@
     - Want to gate updates by which cells are (a) visible, (b) cached.
   - [x] Add support for row-level formulas
   - [X] Add support for arbitrary formulas
+  - [ ] Add support for registering an invalid formula so that the user can revisit it to continue editing.
   - [ ] Add support for editing existing formulas
   - [ ] Add UX for selecting rows/multiple cells/columns (#54)
   - [ ] Add UX for copy/pasting formulas

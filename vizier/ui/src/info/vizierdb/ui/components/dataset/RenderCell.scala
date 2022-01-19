@@ -19,7 +19,7 @@ object RenderCell
     value: JsValue, 
     dataType: CellDataType, 
     caveatted: Option[dom.html.Button => Unit] = None,
-    onclick: (dom.Event => Unit) = null
+    onclick: (dom.Event => Unit) = (_ => ())
   ): Frag =
   {
     td(
