@@ -26,7 +26,8 @@ import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.catalog.{ Project, Module }
-import info.vizierdb.viztrails.{ Scheduler, MutableProject }
+import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.MutableProject
 
 class DataCommandsSpec
   extends Specification
@@ -132,6 +133,19 @@ class DataCommandsSpec
     project.waitUntilReadyAndThrowOnError
 
     project.lastOutput.map { _.dataString } must contain(exactly("floop", "23.7", "999"))
+  }
+
+  "load json data" >> {
+    val project = MutableProject("Load JSON")
+
+    project.load(
+      file = "test_data/simple.json",
+      name = "test",
+      format = "json",
+      inferTypes = false,
+    )
+
+    project.dataframe("test").count() must beGreaterThan(1l)
   }
 }
 

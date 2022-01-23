@@ -20,7 +20,7 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Branch, Workflow, Cell }
 import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
-import info.vizierdb.viztrails.Provenance
+import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
@@ -51,7 +51,7 @@ object GetModule
               projectId = projectId, 
               branchId = branchId, 
               workflowId = workflowMaybe.get.id,
-              artifacts = Provenance.getRefScope(cell).values.toSeq
+              artifacts = ScopeSummary(cell)
             )
         case None => ErrorResponse.noSuchEntity
       }

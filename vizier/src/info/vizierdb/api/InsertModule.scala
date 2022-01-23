@@ -67,7 +67,7 @@ object InsertModule
         /* return */ branch.insert(cell.position, module)._2
       }
 
-    Scheduler.schedule(workflow.id)
+    Scheduler.schedule(workflow)
 
     DB.readOnly { implicit s => 
       workflow.describe

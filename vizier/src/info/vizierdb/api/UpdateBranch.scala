@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.util.StupidReactJsonMap
 
 object UpdateBranch
 {

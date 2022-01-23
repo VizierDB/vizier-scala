@@ -22,6 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.{DataFrameConstructor, DataFrameConstructorCodec, DefaultProvenance}
+import info.vizierdb.viztrails.ProvenancePrediction
 
 case class LensConstructor(
   lensClassName: String,
@@ -107,11 +108,12 @@ trait LensCommand
     context.displayDataset(datasetName)
   }
 
-  def predictProvenance(arguments: Arguments): Option[(Seq[String], Seq[String])] = 
-    Some(
-      Seq(arguments.get[String](PARAM_DATASET)),
-      Seq(arguments.get[String](PARAM_DATASET))
-    )
+
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PARAM_DATASET))
+      .definitelyWrites(arguments.get[String](PARAM_DATASET))
+      .andNothingElse
 }
 trait UntrainedLens
 {

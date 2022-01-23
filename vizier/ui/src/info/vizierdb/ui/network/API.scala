@@ -881,6 +881,20 @@ case class API(baseUrl: String)
     }
   }
 
+  /** GET /published/{artifactName:string} **/
+  def fileDownloadPublished(
+    artifactName:String,
+  ):Future[serialized.ArtifactDescription] =
+  {
+    val url = makeUrl(s"/published/${artifactName}")
+    Ajax.get(
+      url = url,
+    ).map { xhr => 
+      Json.parse(xhr.responseText)
+          .as[serialized.ArtifactDescription]
+    }
+  }
+
   /** GET /tasks **/
   def taskList(
   ):Future[Seq[serialized.WorkflowSummary]] =

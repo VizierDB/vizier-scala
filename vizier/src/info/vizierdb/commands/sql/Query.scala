@@ -26,6 +26,7 @@ import info.vizierdb.catalog.ArtifactSummary
 import info.vizierdb.Vizier
 import org.apache.spark.sql.{ DataFrame, SparkSession, AnalysisException }
 import info.vizierdb.catalog.Artifact
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object Query extends Command
   with LazyLogging
@@ -122,13 +123,21 @@ object Query extends Command
     return views.toSeq
   }
 
-  def predictProvenance(arguments: Arguments) =
-    Some( (
-      computeDependencies(arguments.get[String]("source")),
-      Seq(
-        arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
-      )
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) =
+    try {
+      ProvenancePrediction
+        .definitelyReads(
+          computeDependencies(arguments.get[String]("source")):_*
+        )
+        .definitelyWrites(
+          arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
+        )
+        .andNothingElse
+    } catch {
+      case t:Throwable => 
+        ProvenancePrediction.default
+    }
+  
   def prettyAnalysisError(e: AnalysisException, query: String): String =
     prettySQLError(e.message, query, e.line, e.startPosition.getOrElse(0))
 

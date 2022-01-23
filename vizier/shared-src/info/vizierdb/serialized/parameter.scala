@@ -95,5 +95,6 @@ case class EnumerableParameterDescription(
   parent: Option[String],
   index: Int,
   default: Option[JsValue],
-  values: Seq[EnumerableValueDescription]
+  values: Seq[EnumerableValueDescription],
+  allowOther: Boolean
 ) extends ParameterDescription

@@ -151,7 +151,10 @@ case class Project(
       val p = Project.column
       scalikejdbc.update(Project)
         .set(p.name       -> Option(name).getOrElse { this.name },
-             p.properties -> Option(properties).getOrElse { this.properties }.toString,
+             p.properties -> Option(properties)
+                                  .map { JsObject(_) }
+                                  .getOrElse { this.properties }
+                                  .toString,
              p.modified   -> now)
         .where.eq(p.id, id)
     }.update.apply()
@@ -249,6 +252,13 @@ object Project
         .from(Project as p)
         .where.eq(p.id, target) 
     }.map { apply(_) }.single.apply()
+  def withName(name: String)(implicit session:DBSession): Option[Project] = 
+    withSQL {
+      val p = Project.syntax
+      select
+        .from(Project as p)
+        .where.eq(p.name, name)
+    }.map { apply(_) }.list.apply().headOption
   def list(implicit session:DBSession): Seq[Project] = 
     withSQL { 
       val p = Project.syntax 

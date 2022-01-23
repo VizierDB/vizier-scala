@@ -14,13 +14,14 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
-import play.api.libs.json.JsValue
+import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object SetIndex extends Command
 {
@@ -47,7 +48,10 @@ object SetIndex extends Command
 
 
   }
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("dataset"))) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("dataset"))
+      .andNothingElse
 }
 

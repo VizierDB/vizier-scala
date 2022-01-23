@@ -54,6 +54,9 @@ object types
   {
     type T = Value
 
+    // Note that WAITING and STALE states are primarily for the user's benefit
+    // In general, we can compute these directly from the provenance.
+
     val DONE      = Value(1, "DONE")     /* The referenced execution is correct and up-to-date */
     val ERROR     = Value(2, "ERROR")    /* The cell or a cell preceding it is affected by a notebook 
                                             error */
@@ -174,6 +177,8 @@ object types
     val PYTHON        = "application/python"
     val JAVASCRIPT    = "text/javascript"
     val RAW           = "application/octet-stream"
+    val JSON          = "text/json"
+    val PNG           = "image/png"
   }
 
   object DatasetFormat

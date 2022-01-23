@@ -25,6 +25,7 @@ import info.vizierdb.types._
 import info.vizierdb.catalog._
 import info.vizierdb.test.SharedTestResources
 import org.slf4j.LoggerFactory
+import info.vizierdb.MutableProject
 
 class SchedulerSpec
   extends Specification
@@ -47,7 +48,7 @@ class SchedulerSpec
         activeBranch.append(packageId, commandId)(args:_*)._2
       }
     // The workflow must be scheduled AFTER the enclosing transaction finishes
-    Scheduler.schedule(workflow.id)
+    Scheduler.schedule(workflow)
     return workflow
   }
 
@@ -58,7 +59,7 @@ class SchedulerSpec
         activeBranch.insert(position, packageId, commandId)(args:_*)._2
       }
     // The workflow must be scheduled AFTER the enclosing transaction finishes
-    Scheduler.schedule(workflow.id)
+    Scheduler.schedule(workflow)
     return workflow
   }
   def testCells[T](op: (Seq[Cell] => T)): T =

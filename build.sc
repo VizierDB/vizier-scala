@@ -26,6 +26,7 @@ object vizier extends ScalaModule with PublishModule {
     MavenRepository("https://maven.mimirdb.org/"),
     MavenRepository("https://oss.sonatype.org/content/repositories/releases"),
     MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
+    MavenRepository("https://repo.osgeo.org/repository/release/"),
   )}
 
   def mainClass = Some("info.vizierdb.Vizier")
@@ -48,7 +49,7 @@ object vizier extends ScalaModule with PublishModule {
     ////////////////////// Mimir ///////////////////////////
     ivy"org.mimirdb::mimir-caveats::${upstream.caveats.VERSION}"
       .exclude(
-        "org.slf4j" -> "*",
+        // "org.slf4j" -> "*",
         "org.mortbay.jetty" -> "*",
         "com.typesafe.play" -> "*",
         "log4j" -> "*",
@@ -75,12 +76,21 @@ object vizier extends ScalaModule with PublishModule {
     ivy"org.eclipse.jetty.websocket:websocket-server:9.4.44.v20210927",
 
     ////////////////////// Command-Specific Libraries //////
+    // Json Import
     ivy"com.github.andyglow::scala-jsonschema::0.7.1",
     ivy"com.github.andyglow::scala-jsonschema-play-json::0.7.1",
+
+    // GIS
     ivy"org.apache.sedona::sedona-core-3.0:1.1.1-incubating",
     ivy"org.apache.sedona::sedona-sql-3.0:1.1.1-incubating",
     ivy"org.apache.sedona::sedona-viz-3.0:1.1.1-incubating",
     ivy"org.locationtech.jts:jts-core:1.18.2",
+    ivy"org.wololo:jts2geojson:0.14.3",
+    ivy"org.geotools:gt-main:24.0",
+    ivy"org.geotools:gt-referencing:24.0",
+    ivy"org.geotools:gt-epsg-hsql:24.0",
+
+    // Scala Cell
     ivy"org.scala-lang:scala-compiler:${scalaVersion}",
 
     ////////////////////// Logging /////////////////////////

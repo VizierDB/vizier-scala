@@ -18,9 +18,9 @@ import scalikejdbc.DBSession
 import scala.collection.mutable
 import info.vizierdb.types._
 import com.typesafe.scalalogging.LazyLogging
-import info.vizierdb.viztrails.Provenance
 import info.vizierdb.catalog.{ Workflow, Module, Cell, ArtifactRef, Message }
 import scalikejdbc.interpolation.SQLSyntax
+import info.vizierdb.viztrails.ScopeSummary
 
 /**
  * A central hub for notifications about state changes on branches.  
@@ -131,9 +131,9 @@ object DeltaBus
   )(implicit session: DBSession)
   {
     val projectId = workflow.projectId
-    var scope = Map[String, ArtifactRef]()
+    var scope = ScopeSummary.empty
     for( (cell, module) <- workflow.cellsAndModulesInOrder ){
-      scope = Provenance.updateRefScope(cell, scope)
+      scope = scope.copyWithUpdatesForCell(cell)
       if(include(cell, module)){
         DeltaBus.notify(
           workflow.branchId,
@@ -143,7 +143,7 @@ object DeltaBus
               projectId = projectId,
               branchId = workflow.branchId,
               workflowId = workflow.id,
-              artifacts = scope.values.toSeq
+              artifacts = ScopeSummary.empty
             ),
             cell.position
           )
@@ -166,9 +166,9 @@ object DeltaBus
   )(implicit session: DBSession)
   {
     val projectId = workflow.projectId
-    var scope = Map[String, ArtifactRef]()
+    var scope = ScopeSummary.empty
     for( (cell, module) <- workflow.cellsAndModulesInOrder ){
-      scope = Provenance.updateRefScope(cell, scope)
+      scope = scope.copyWithUpdatesForCell(cell)
       if(include(cell, module)){
         DeltaBus.notify(
           workflow.branchId,
@@ -178,7 +178,7 @@ object DeltaBus
               projectId = projectId,
               branchId = workflow.branchId,
               workflowId = workflow.id,
-              artifacts = scope.values.toSeq
+              artifacts = scope
             ),
             cell.position
           )
@@ -199,10 +199,10 @@ object DeltaBus
   )(implicit session: DBSession)
   {
     val projectId = workflow.projectId
-    var scope = Map[String, ArtifactRef]()
+    var scope = ScopeSummary.empty
     val cellsAndModules = workflow.cellsAndModulesInOrder
     for( (cell, module) <- cellsAndModules ){
-      scope = Provenance.updateRefScope(cell, scope)
+      scope = scope.copyWithUpdatesForCell(cell)
     }
     val (cell, module) = cellsAndModules.last
     DeltaBus.notify(
@@ -213,7 +213,7 @@ object DeltaBus
           projectId = projectId,
           branchId = workflow.branchId,
           workflowId = workflow.id,
-          artifacts = scope.values.toSeq
+          artifacts = scope
         ),
         cell.position
       )

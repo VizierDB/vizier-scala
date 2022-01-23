@@ -27,6 +27,8 @@ import java.io.IOException
 import info.vizierdb.api.FormattedError
 import info.vizierdb.filestore.Staging
 import info.vizierdb.spark.LoadConstructor
+import info.vizierdb.catalog.PublishedArtifact
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object LoadDataset
   extends Command
@@ -49,16 +51,17 @@ object LoadDataset
     FileParameter(name = "Source File", id = PARAM_FILE),
     StringParameter(name = "Dataset Name", id = PARAM_NAME),
     EnumerableParameter(name = "Load Format", id = PARAM_FORMAT, values = EnumerableValue.withNames(
-      "CSV"          -> DatasetFormat.CSV,
-      "JSON"         -> DatasetFormat.JSON,
-      "PDF"          -> DatasetFormat.PDF,
-      "Google Sheet" -> DatasetFormat.GSheet,
-      "XML"          -> DatasetFormat.XML,
-      "Excel"        -> DatasetFormat.Excel,
-      "JDBC Source"  -> DatasetFormat.JDBC,
-      "Text"         -> DatasetFormat.Text,
-      "Parquet"      -> DatasetFormat.Parquet,
-      "ORC"          -> DatasetFormat.ORC,
+      "CSV"               -> DatasetFormat.CSV,
+      "JSON"              -> DatasetFormat.JSON,
+      "PDF"               -> DatasetFormat.PDF,
+      "Google Sheet"      -> DatasetFormat.GSheet,
+      "XML"               -> DatasetFormat.XML,
+      "Excel"             -> DatasetFormat.Excel,
+      "JDBC Source"       -> DatasetFormat.JDBC,
+      "Text"              -> DatasetFormat.Text,
+      "Parquet"           -> DatasetFormat.Parquet,
+      "ORC"               -> DatasetFormat.ORC,
+      "Locally Published" -> "publish_local",
     ), default = Some(0)),
     TemplateParameters.SCHEMA,
     BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(false)),
@@ -76,6 +79,8 @@ object LoadDataset
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String](PARAM_NAME).toLowerCase()
+    var storageFormat = arguments.get[String](PARAM_FORMAT)
+
     if(context.artifactExists(datasetName))
     {
       throw new VizierException("Dataset $name already exists.")
@@ -83,6 +88,37 @@ object LoadDataset
     val file = arguments.get[FileArgument](PARAM_FILE)
 
     logger.trace(arguments.yaml())
+
+    // Special-Case publish local
+    if(storageFormat.equals("publish_local") || file.url.map { _.startsWith("vizier://") }.getOrElse(false)){
+      val url = file.url.map { _.replace("vizier://", "http://").replace("viziers://", "https://")}
+                        .getOrElse{
+                          context.error("No URL provided")
+                          return
+                        }
+      val exportName = 
+        if(url.startsWith("http://") || url.startsWith("https://")){
+          PublishedArtifact.nameFromURL(url)
+                           .getOrElse {
+                             context.error(s"${file.url.get} is not a valid local dataset url")
+                             return
+                            }
+        } else { url }
+      val published: PublishedArtifact = 
+        DB.readOnly { implicit s => 
+          PublishedArtifact.getOption(exportName)
+        }.getOrElse {
+          context.error(s"No published dataset named ${exportName} exists")
+          return
+        }
+
+      val source = DB.readOnly { implicit s => published.artifact }
+
+      context.output(datasetName, source)
+      context.displayDataset(datasetName)
+      return
+    }
+
 
     val proposedSchema =
       arguments.getList("schema").map { arg => 
@@ -99,7 +135,6 @@ object LoadDataset
 
 
     var actualFile = file
-    var storageFormat = arguments.get[String](PARAM_FORMAT)
     var finalSparkOptions = 
       defaultLoadOptions(
         storageFormat, 
@@ -142,7 +177,7 @@ object LoadDataset
                                           format = storageFormat, 
                                           projectId = context.projectId, 
                                           allocateArtifactId = () => {
-                                            context.outputFile(datasetName, MIME.RAW)
+                                            context.outputFilePlaceholder(datasetName, MIME.RAW)
                                                    .id
                                           })
         actualFile        = stagedConfig._1
@@ -194,22 +229,24 @@ object LoadDataset
       )
     } catch {
       case e: FileNotFoundException => 
-        throw FormattedError(e, s"Can't Load URL [Not Found]: $file")
+        context.error(s"Can't Load URL [Not Found]: $file")
+        return
       case e: IOException => 
-        throw FormattedError(e, s"Error Loading $file (${e.getMessage()}")
+        context.error(s"Error Loading $file (${e.getMessage()}")
+        return
       case e: IllegalStateException if 
                 storageFormat.equals(DatasetFormat.Excel) => 
-        throw FormattedError(e, e.getMessage() + "\nThis can happen due to an upstream bug.  Try unchecking 'File has headers'")
+        context.error(e.getMessage() + "\nThis can happen due to an upstream bug.  Try unchecking 'File has headers'")
+        return
     }
 
     context.displayDataset(datasetName)
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq.empty,
-      Seq(arguments.get[String]("name"))
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 
 
   private val defaultLoadCSVOptions = Map(

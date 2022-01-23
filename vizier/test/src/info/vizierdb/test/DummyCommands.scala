@@ -19,6 +19,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.commands._
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.types.ArtifactType
+import info.vizierdb.viztrails.ProvenancePrediction
 
 
 object DummyCommands 
@@ -28,7 +29,8 @@ object DummyCommands
     Commands.register("dummy", "Testing Commands", "dummy")(
       "print" -> DummyPrint,
       "create" -> DummyCreate,
-      "consume" -> DummyConsume
+      "consume" -> DummyConsume,
+      "wait" -> DummyWait
     )
   }
 
@@ -50,7 +52,8 @@ object DummyPrint extends Command with LazyLogging
     logger.debug(s"Printing: $v")
     context.message(v)
   }
-  def predictProvenance(arguments: Arguments) = None
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction.empty
 }
 
 object DummyCreate extends Command with LazyLogging
@@ -71,7 +74,10 @@ object DummyCreate extends Command with LazyLogging
     logger.debug(s"Creating: $dataset -> ${artifact.id}")
     context.message(s"Created artifact $dataset -> ${artifact.id} ")
   }
-  def predictProvenance(arguments: Arguments) = None
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyWrites(arguments.get[String]("dataset"))
+      .andNothingElse
 }
 
 object DummyConsume extends Command with LazyLogging
@@ -95,6 +101,61 @@ object DummyConsume extends Command with LazyLogging
       datasets.map { context.artifact(_).get.string }  
     context.message(results.mkString)
   }
-  def predictProvenance(arguments: Arguments) = None
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(
+        arguments.getList("datasets").map { _.get[String]("dataset") }:_*
+      )
+      .andNothingElse
 }
 
+object DummyWait extends Command with LazyLogging
+{
+  def name: String = "Dummy Wait"
+  def parameters: Seq[Parameter] = Seq(
+    ListParameter("reads", "Artifacts", components = Seq(
+      StringParameter("dataset", "Name")
+    ), required = false),
+    ListParameter("writes", "Artifacts", components = Seq(
+      StringParameter("dataset", "Name")
+    ), required = false),
+    IntParameter("msec", "Milliseconds", default = Some(1000)),
+    StringParameter("message", "Message", required = false)
+  )
+  def format(arguments: Arguments): String =
+    s"READ ${arguments.pretty("reads")}, WAIT ${arguments.pretty("seconds")}, WRITE  ${arguments.pretty("writes")}"
+  def title(arguments: Arguments): String = 
+    format(arguments)
+  def process(arguments: Arguments, context: ExecutionContext): Unit = 
+  {
+    val datasets = arguments.get[Seq[Map[String, JsValue]]]("reads")
+                            .map { _("dataset").as[String] }
+    if(!datasets.isEmpty){
+      logger.debug(s"Consuming Datasets ${datasets.mkString(", ")} with context $context")
+    }
+    val results =  datasets.map { context.artifact(_).get.string }  
+    val sleepTime = arguments.get[Int]("msec")
+    logger.debug(s"Sleeping for ${sleepTime}ms")
+    Thread.sleep(sleepTime)
+    logger.debug(s"Done sleeping")
+    val message = 
+      (results ++ arguments.getOpt[String]("message")).mkString(", ")
+    if(arguments.contains("message")){
+      context.message(message)
+    }
+    arguments.getList("writes")
+             .map { _.get[String]("dataset") }
+             .foreach { name => 
+               context.output(name, ArtifactType.BLOB, message.getBytes())
+             }
+  }
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(
+        arguments.getList("reads").map { _.get[String]("dataset") }:_*
+      )
+      .definitelyWrites(
+        arguments.getList("writes").map { _.get[String]("dataset") }:_*
+      )
+      .andNothingElse
+}
