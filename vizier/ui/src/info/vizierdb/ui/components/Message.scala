@@ -15,6 +15,7 @@ sealed trait Message
 
 case class TextMessage(text: String, clazz: String = "message") extends Message
 {
+  // println(s"Text Message of type $clazz\n${text.take(200)}")
   val root = 
     div(
       `class` := clazz,
@@ -48,6 +49,7 @@ case class MarkdownMessage(content: String) extends Message
 
 case class HtmlMessage(content: String) extends Message
 {
+  // println(s"Allocating HtmlMessage\n$content")
   val root:dom.html.Div = (div(""):dom.Node).asInstanceOf[dom.html.Div]
   root.innerHTML = content
 }
