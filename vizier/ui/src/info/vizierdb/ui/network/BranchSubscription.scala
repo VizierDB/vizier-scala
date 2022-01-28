@@ -28,7 +28,13 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
   val connected = Var(false)
   val awaitingReSync = Var(false)
   val modules = new RxBufferVar[ModuleSubscription]()
-
+  val maxTimeWithoutNotification: Float = 5000000000F
+<<<<<<< HEAD
+  var executionStartTime: Float = 0
+=======
+  var executionStartTime: Float = -1
+>>>>>>> notification-on-task-completion
+  
   protected[ui] def getSocket(): dom.WebSocket =
   {
     logger.info(s"Connecting to ${api.websocket}")
@@ -153,6 +159,20 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
 
               case delta.UpdateCellState(position, state) =>
                 logger.debug(s"State Update: ${state} @ ${position}")
+                if(s"${state}" == "RUNNING"){
+                  executionStartTime =  java.lang.System.nanoTime()
+                } else if(s"${state}" == "DONE" && executionStartTime != -1) {
+                  val executionEndTime = java.lang.System.nanoTime()
+                  val timeToExecute = executionEndTime - executionStartTime
+                  logger.debug(s"Cell @ ${position} executed in ${timeToExecute / 1000000000} seconds")
+                  if(timeToExecute > maxTimeWithoutNotification) {
+                    dom.window.alert("Cell ready")
+                  }
+                  executionStartTime = -1
+                } else {
+                  executionStartTime = -1
+                }
+
                 modules(position).state() = state
              
               /////////////////////////////////////////////////
