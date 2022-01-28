@@ -29,17 +29,8 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
   val awaitingReSync = Var(false)
   val modules = new RxBufferVar[ModuleSubscription]()
   val maxTimeWithoutNotification: Float = 5000000000F
-<<<<<<< HEAD
-<<<<<<< HEAD
-  var executionStartTime: Float = 0
-=======
   var executionStartTime: Float = -1
->>>>>>> notification-on-task-completion
   
-=======
-  var executionStartTime: Float = -1
-
->>>>>>> Notification on long-running task completion #39 typo fix
   protected[ui] def getSocket(): dom.WebSocket =
   {
     logger.info(s"Connecting to ${api.websocket}")
