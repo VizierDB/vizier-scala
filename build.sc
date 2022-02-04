@@ -17,6 +17,10 @@ object upstream extends Module {
   }
 }
 
+
+/*************************************************
+ *** The Vizier Backend 
+ *************************************************/
 object vizier extends ScalaModule with PublishModule {
   val VERSION = "1.2.0-SNAPSHOT"
 
@@ -45,6 +49,9 @@ object vizier extends ScalaModule with PublishModule {
     ui.resourceDir()
   )
 
+/*************************************************
+ *** Backend Dependencies
+ *************************************************/
   def ivyDeps = Agg(
     ////////////////////// Mimir ///////////////////////////
     ivy"org.mimirdb::mimir-caveats::${upstream.caveats.VERSION}"
@@ -100,6 +107,9 @@ object vizier extends ScalaModule with PublishModule {
     ivy"org.apache.logging.log4j:log4j-1.2-api:2.17.1",
   )
 
+/*************************************************
+ *** Backend Tests
+ *************************************************/
   object test 
     extends Tests 
     with TestModule.Specs2 
@@ -115,6 +125,9 @@ object vizier extends ScalaModule with PublishModule {
 
   }
 
+/*************************************************
+ *** Backend Resources
+ *************************************************/
   def buildRoutesScript = T.sources { os.pwd / "scripts" / "build_routes.py" }
   def routesFile        = T.sources { millSourcePath / "resources" / "vizier-routes.txt" }
 
@@ -140,11 +153,19 @@ object vizier extends ScalaModule with PublishModule {
     )
   )
 
+///////////////////////////////////////////////////////////////////////////
+
+/*************************************************
+ *** The Vizier Frontend / User Interface
+ *************************************************/
   object ui extends ScalaJSModule { 
 
     def scalaVersion = vizier.scalaVersion
     def scalaJSVersion = "1.7.1"
 
+/*************************************************
+ *** Frontend Dependencies
+ *************************************************/
     def ivyDeps = Agg(
       ivy"org.scala-js::scalajs-dom::1.0.0",
       ivy"com.lihaoyi::scalarx::0.4.3",
@@ -162,6 +183,9 @@ object vizier extends ScalaModule with PublishModule {
       super.compile()
     }
 
+/*************************************************
+ *** Frontend Tests
+ *************************************************/
     object test extends Tests with TestModule.Utest {
       def testFramework = "utest.runner.Framework"
       def ivyDeps = Agg(
@@ -173,24 +197,39 @@ object vizier extends ScalaModule with PublishModule {
 
     }
     
+/*************************************************
+ *** Frontend Resources
+ *************************************************/
+    // Vendor Javascript
+    //   Javascript libraries that vizier depends on are cloned into the
+    //   repository and kept in vizier/ui/vendor
     def vendor = T.sources(
       os.walk(millSourcePath / "vendor")
         .filter { f => f.ext == "js" || f.ext == "css" }
         .map { PathRef(_) }
     )
 
+    //   We keep a record of the licensing for all vendored libraries
     def vendorLicense = T.source(millSourcePath / "vendor" / "LICENSE.txt")
 
+    // HTML pages
+    //   Take all of the files in vizier/ui/html and put them into the 
+    //   resource directory webroot
     def html = T.sources(
       os.walk(millSourcePath / "html")
         .map { PathRef(_) }
     )
 
+    // CSS files
+    //   Take all of the files in vizier/ui/css and put them into the resource
+    //   directory webroot
     def css = T.sources {
       os.walk(millSourcePath / "css")
         .map { PathRef(_) }
     }
-  
+
+    // The following rule and function actually build the resources directory
+    //     
     def resourceDir = T { 
       buildUIResourceDir(
         uiBinary = fastOpt().path,
