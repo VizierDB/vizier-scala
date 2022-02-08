@@ -18,7 +18,16 @@ object upstream extends Module {
 }
 
 object vizier extends ScalaModule with PublishModule {
-  val VERSION = "1.2.0-SNAPSHOT"
+  val VERSION       = "1.2.0-SNAPSHOT"
+  val PLAY_JS       = ivy"com.typesafe.play::play-json:2.9.2"
+                           
+  val MIMIR_CAVEATS = ivy"org.mimirdb::mimir-caveats::0.3.5"
+                          .exclude(
+                            "org.slf4j" -> "*",
+                            "org.mortbay.jetty" -> "*",
+                            "com.typesafe.play" -> "*",
+                            "log4j" -> "*",
+                          )
 
   def scalaVersion = "2.12.15"
 
@@ -44,15 +53,10 @@ object vizier extends ScalaModule with PublishModule {
     ui.resourceDir()
   )
 
+
   def ivyDeps = Agg(
     ////////////////////// Mimir ///////////////////////////
-    ivy"org.mimirdb::mimir-caveats::${upstream.caveats.VERSION}"
-      .exclude(
-        "org.slf4j" -> "*",
-        "org.mortbay.jetty" -> "*",
-        "com.typesafe.play" -> "*",
-        "log4j" -> "*",
-      ),
+    MIMIR_CAVEATS,
 
     ////////////////////// Catalog Management //////////////
     ivy"org.scalikejdbc::scalikejdbc::4.0.0",
@@ -62,10 +66,9 @@ object vizier extends ScalaModule with PublishModule {
 
     ////////////////////// Import/Export Support ///////////
     ivy"org.apache.commons:commons-compress:1.20",
-    ivy"com.typesafe.play::play-json:2.9.2"
-      .exclude(
-        "com.fasterxml.jackson.core" -> "*",
-      ),
+    PLAY_JS.exclude(
+               "com.fasterxml.jackson.core" -> "*",
+             ),
 
     ////////////////////// Interfacing /////////////////////
     ivy"org.rogach::scallop:3.4.0",
@@ -238,5 +241,27 @@ object vizier extends ScalaModule with PublishModule {
     }
   }
 
+  object vega extends ScalaModule with PublishModule {
+    def publishVersion = vizier.VERSION
+    def scalaVersion = vizier.scalaVersion
+
+    def sources = T.sources(
+      vizier.millSourcePath / "vega-src"
+    )
+
+    override def pomSettings = PomSettings(
+      description = "Vizier Vega/Vega-Lite Support",
+      organization = "info.vizierdb",
+      url = "http://vizierdb.info",
+      licenses = Seq(License.`Apache-2.0`),
+      versionControl = VersionControl.github("vizierdb", "vizier-scala"),
+      developers = Seq(
+        Developer("okennedy", "Oliver Kennedy", "https://odin.cse.buffalo.edu"),
+      )
+    )
+    def ivyDeps = Agg(
+      vizier.PLAY_JS
+    )
+  }
 }
 
