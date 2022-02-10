@@ -47,6 +47,7 @@ object Query extends Command
              .getOrElse { "SQL Query" }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
+    logger.trace(s"Available artifacts: \n${context.scope.map { case (name, summary) => s"$name -> ${summary.t}" }.mkString("\n")}")
     val scope = context.allDatasets
     val functions = context.scope
                            .toSeq
@@ -60,8 +61,7 @@ object Query extends Command
     logger.debug(s"$scope : $query")
 
     try { 
-      logger.trace("Creating view")
-
+      logger.trace(s"Creating view for \n$query\nAvailable functions: ${functions.map { _._1 }.mkString(", ")}")
       val fnDeps: Map[String, (Identifier, String, String)] = 
         InjectedSparkSQL.getDependencies(query)
                         ._2.toSeq
@@ -78,6 +78,7 @@ object Query extends Command
                             )
                           }
                         }
+      logger.trace(s"${fnDeps.keys.size} function dependencies: ${fnDeps.keys.mkString(", ")}")
 
       val view = 
         ViewConstructor(
@@ -120,7 +121,11 @@ object Query extends Command
   def computeDependencies(sql: String): Seq[String] =
   {
     val (views, functions) = InjectedSparkSQL.getDependencies(sql)
-    return views.toSeq
+
+            // Include all views
+    return views.toSeq++
+            // Include only non-built in functions
+            functions.toSeq.filterNot { Vizier.sparkSession.catalog.functionExists(_) }
   }
 
   def predictProvenance(arguments: Arguments, properties: JsObject) =

@@ -37,7 +37,7 @@ case class ReferenceFrame(transformations: Seq[RowTransformation] = Seq.empty)
     if(other.transformations.isEmpty){ return this }
     assert(
       transformations.take(other.transformations.size) == other.transformations,
-      "relativeTo on a divergent history"
+      s"relativeTo on a divergent history:\nThis: ${transformations.map { "\n   "+_ }.mkString }\nOther: ${other.transformations.map { "\n   "+_ }.mkString }"
     )
     ReferenceFrame(transformations.drop(other.transformations.size))
   }

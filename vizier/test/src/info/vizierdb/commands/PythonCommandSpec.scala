@@ -224,6 +224,7 @@ print(df['A'].sum())
       |  return x + 1
       |vizierdb.export_module(addOne)
     """.stripMargin)
+    project.artifactSummaries.keys must contain("addone")
     project.sql("SELECT addOne(2)" -> "functionTest")
     project.waitUntilReadyAndThrowOnError
     project.datasetData("functionTest").data(0)(0) must beEqualTo("3")

@@ -318,7 +318,7 @@ class UpdateOverlay(
 
   def eval(targetRow: RowIndex, rule: UpdateRule): Any =
   {
-    val offset = rule.frame.relativeTo(frame)
+    val offset = frame.relativeTo(rule.frame)
     val expr = 
       rule.expression.transform { 
         case RValueExpression(cell:SingleCell) => 

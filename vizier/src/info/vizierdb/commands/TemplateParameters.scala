@@ -25,24 +25,25 @@ object TemplateParameters
   val COLUMN = 
     ColIdParameter(id = PARAM_COLUMN, name = "Column")
 
-  val DATATYPE: EnumerableParameter = DATATYPE()
+  val DATATYPE: DataTypeParameter = DATATYPE()
 
   def DATATYPE(id:String = PARAM_DATATYPE, required: Boolean = false, allowOther: Boolean = false) =
-    EnumerableParameter(name = "Data Type", id = id, required = required, values = EnumerableValue.withNames(
-      "String"                 -> "string",
-      "Real"                   -> "real",
-      "Float"                  -> "float",
-      "Double Precision Float" -> "double",
-      "Bool"                   -> "boolean",
-      "16-bit Integer"         -> "short",
-      "32-bit Integer"         -> "int",
-      "64-bit Integer"         -> "long",
-      "1 Byte"                 -> "byte",
-      "Date"                   -> "date",
-      "Date+Time"              -> "timestamp",
-    ), default = Some(0), allowOther = allowOther, aliases = Map(
-      "integer" -> "int",
-    ))
+    DataTypeParameter(id = id, name = "Data Type", required = required, hidden = false)
+    // EnumerableParameter(name = "Data Type", id = id, required = required, values = EnumerableValue.withNames(
+    //   "String"                 -> "string",
+    //   "Real"                   -> "real",
+    //   "Float"                  -> "float",
+    //   "Double Precision Float" -> "double",
+    //   "Bool"                   -> "boolean",
+    //   "16-bit Integer"         -> "short",
+    //   "32-bit Integer"         -> "int",
+    //   "64-bit Integer"         -> "long",
+    //   "1 Byte"                 -> "byte",
+    //   "Date"                   -> "date",
+    //   "Date+Time"              -> "timestamp",
+    // ), default = Some(0), allowOther = allowOther, aliases = Map(
+    //   "integer" -> "int",
+    // ))
 
   val SCHEMA = 
     ListParameter(name = "Schema (leave blank to guess)", id = PARAM_SCHEMA, required = false, components = Seq(

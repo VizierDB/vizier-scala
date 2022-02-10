@@ -20,6 +20,8 @@ import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.spark.SparkSchema
+import org.apache.spark.sql.types.DataType
 
 sealed trait Parameter
 {
@@ -164,6 +166,28 @@ case class BooleanParameter(
       case x:Boolean => JsBoolean(x)
       case _ => throw new VizierException("Invalid Parameter to $name (expected Boolean)")
     }
+}
+
+case class DataTypeParameter(
+  id: String,
+  name: String,
+  required: Boolean = true,
+  hidden: Boolean = false  
+) extends Parameter
+{
+  def datatype = "datatype"
+  def doStringify(j: JsValue): String = j.as[DataType].toString()
+  def doValidate(j: JsValue) = 
+    if(j.asOpt[DataType].isDefined) { None }
+    else { Some("Expected a datatype for $name")}
+  def encode(v: Any): JsValue = 
+    v match {
+      case j: JsValue => j
+      case s: String => Json.toJson(SparkSchema.decodeType(s))
+      case Some(x) => encode(x)
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Datatype, but got $v)")
+    }
+
 }
 
 case class CodeParameter(

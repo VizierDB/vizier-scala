@@ -15,7 +15,7 @@ object InitSpark
   def local: SparkSession =
   {
     SparkSession.builder
-      .appName("Mimir-Caveat-Test")
+      .appName("Vizier")
       //.config("spark.ui.port", "4041")
       //.config("spark.eventLog.enabled", "true")
       //.config("spark.eventLog.longForm.enabled", "true")
