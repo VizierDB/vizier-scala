@@ -18,7 +18,7 @@ import info.vizierdb.delta
 import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
 
-class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: API)
+class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: API)
   extends Object
   with Logging
 {
@@ -28,7 +28,9 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
   val connected = Var(false)
   val awaitingReSync = Var(false)
   val modules = new RxBufferVar[ModuleSubscription]()
-
+  val maxTimeWithoutNotification: Long = 5000L
+  var executionStartTime: Long = -1
+  
   protected[ui] def getSocket(): dom.WebSocket =
   {
     logger.info(s"Connecting to ${api.websocket}")
@@ -79,7 +81,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
     connected() = true
     logger.debug("Connected!")
     awaitingReSync() = true
-
+    
     Client.subscribe(projectId, branchId)
           .onSuccess { case workflow => onSync(workflow) } 
   }
@@ -153,6 +155,21 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
 
               case delta.UpdateCellState(position, state) =>
                 logger.debug(s"State Update: ${state} @ ${position}")
+                if(state == ExecutionState.RUNNING){
+                  executionStartTime =  java.lang.System.currentTimeMillis()
+                } else if(state == ExecutionState.DONE && executionStartTime != -1) {
+                  val executionEndTime = java.lang.System.currentTimeMillis()
+                  val timeToExecute = executionEndTime - executionStartTime
+                  logger.debug(s"Cell @ ${position} executed in ${timeToExecute / 1000.0} seconds")
+                  if(timeToExecute > maxTimeWithoutNotification && dom.experimental.Notification.permission == "granted") {
+                    val notificationBody: js.UndefOr[String] = s"${(modules(position).toc).get.title} DONE"
+                    val notification = new dom.experimental.Notification("VizierDB", dom.experimental.NotificationOptions(notificationBody))
+                  }
+                  executionStartTime = -1
+                } else {
+                  executionStartTime = -1
+                }
+
                 modules(position).state() = state
              
               /////////////////////////////////////////////////

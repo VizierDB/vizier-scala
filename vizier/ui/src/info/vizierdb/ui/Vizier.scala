@@ -57,6 +57,8 @@ object Vizier
 
   }
 
+  dom.experimental.Notification.requestPermission((x: String) => Unit)
+  
   @JSExport("project_view")
   def projectView(): Unit = 
   {
