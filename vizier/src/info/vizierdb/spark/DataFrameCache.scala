@@ -112,6 +112,9 @@ object DataFrameCache
     ((end - start) / BUFFER_PAGE) + 
       (if((end-start) % BUFFER_PAGE > 0) { 1 } else { 0 })
   }
+
+  def invalidate(): Unit =
+    cache.clear()
 }
 
 

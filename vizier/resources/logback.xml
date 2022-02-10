@@ -50,6 +50,7 @@
 
   <!--+++++++++++++++++++++++  Import/Export  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.export.ImportProject$"             level="DEBUG" />
+  <logger name="info.vizierdb.catalog.gc.DedupFiles$"            level="WARN" />
 
   <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
   <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />

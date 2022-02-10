@@ -204,8 +204,8 @@ trait Command
     val base = arguments.as[Map[String, JsValue]]
     val lineReplacements = 
       parameters.map { param =>
-        param.name -> 
-          param.replaceParameterValue(base.getOrElse(param.name, JsNull), rule)
+        param.id -> 
+          param.replaceParameterValue(base.getOrElse(param.id, JsNull), rule)
       }.filter { _._2.isDefined }
        .map { x => x._1 -> x._2.get }
        .toMap

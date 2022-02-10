@@ -39,7 +39,7 @@ import info.vizierdb.serialized
  * execution results (since it only describes the configuration of a step), or any workflow (since
  * it may appear in multiple workflows)
  */
-class Module(
+case class Module(
   val id: Identifier,
   val packageId: String,
   val commandId: String,

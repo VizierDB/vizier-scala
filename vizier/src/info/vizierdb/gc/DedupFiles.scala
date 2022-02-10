@@ -20,6 +20,8 @@ import info.vizierdb.commands.Command
 import info.vizierdb.commands.Parameter
 import info.vizierdb.commands.FileArgument
 import info.vizierdb.commands.FileParameter
+import info.vizierdb.spark.DataFrameCache
+import info.vizierdb.spark.LoadConstructor
 
 object DedupFiles 
   extends LazyLogging
@@ -57,10 +59,12 @@ object DedupFiles
     arguments: JsObject
   ): Option[JsObject] =
   {
+    logger.trace(s"Fixing File {${fileIdsToReplace.mkString(", ")}} -> $canonicalFileId in ${command.name}($arguments)")
     command.replaceArguments(arguments){
       case (_:FileParameter, arg: JsObject)
-        if(fileIdsToReplace.intersect(arg.as[FileArgument].fileid.toSet).size > 0)
-          => Json.toJson(
+        if(fileIdsToReplace.intersect(arg.as[FileArgument].fileid.toSet).size > 0) => 
+            logger.debug(s"Found matching file parameter in $arg; Replacing id ${arg.as[FileArgument].fileid.get} with $canonicalFileId")
+            Json.toJson(
                arg.as[FileArgument].copy(fileid = Some(canonicalFileId))
              )
     }.map { _.as[JsObject] }
@@ -83,7 +87,7 @@ object DedupFiles
     //   InputArtifactRef
     //   OutputArtifactRef
     //   FileArgument (in modules)
-    //   Mimir
+    //   Artifacts
     DB.autoCommit { implicit s => 
       withSQL { 
         val a = OutputArtifactRef.column
@@ -111,20 +115,61 @@ object DedupFiles
             .from(Module as m)
         }.map { Module(_) }.list.apply()
 
-      for(m <- allModules){
+      for(module <- allModules){
         fixModuleFileArguments(
           canonicalArtifact.id, 
           artifactIdsToRename.toSet,
-          m.command.get, 
-          m.arguments
+          module.command.get, 
+          module.arguments
         ) match { 
           case None => ()
           case Some(newArgs) => {
-            logger.trace(s"Updating File ID for $m")
-            m.replaceArguments(newArgs)
+            logger.trace(s"Updating File ID\n   from: $module \n   to ${module.copy(arguments = newArgs)}")
+            val m = Module.column
+            withSQL {
+              update(Module)
+                .set(m.arguments -> newArgs.toString)
+                .where.eq(m.id, module.id)
+            }.update.apply()
           }
         }
       }
+
+      withSQL { 
+        val a = Artifact.column
+        deleteFrom(Artifact)
+          .where.in(
+            a.id, artifactIdsToRename
+          ) 
+      }.update.apply()
+
+      val allDatasets = 
+        withSQL {
+          val a = Artifact.syntax
+          select
+            .from(Artifact as a)
+            .where.eq(a.t, ArtifactType.DATASET.id)
+        }.map { Artifact(_) }.list.apply()
+
+      for(a <- allDatasets){
+        val dataset = a.datasetDescriptor
+        dataset.constructor match {
+          case l@LoadConstructor(f@FileArgument(Some(fileid), _, _, _),_,_,_,_,_,_) 
+            if(artifactIdsToRename.contains(fileid)) =>
+            a.replaceData(Json.toJson(
+              dataset.copy(
+                parameters = Json.toJson(
+                  l.copy(
+                    url = f.copy(fileid = Some(canonicalArtifact.id))
+                  )
+                ).as[JsObject]
+              )
+            ))
+          case _ => /* only update matching constructors */
+        }
+      }
+
+
     }
     for(file <- artifactsToRename){
       file.absoluteFile.delete()
@@ -177,6 +222,7 @@ object DedupFiles
         }
       }
     }
+    DataFrameCache.invalidate()
 
   }
 
