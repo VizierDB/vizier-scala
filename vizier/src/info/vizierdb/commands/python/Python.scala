@@ -131,11 +131,11 @@ object Python extends Command
             withArtifact { artifact => 
               val json = artifact.json
               python.send("parameter",
-                "data" -> (json \ "value").as[JsValue],
-                "dataType" -> (json \ "dataType").as[JsValue],
+                "data" -> (json \ "value").asOpt[JsValue].getOrElse { JsNull },
+                "dataType" -> (json \ "dataType").asOpt[JsValue].getOrElse { JsNull },
                 "artifactId" -> JsNumber(artifact.id)
               )
-            }
+            } 
           case "get_file" => 
             withArtifact { artifact => 
               python.send("file",

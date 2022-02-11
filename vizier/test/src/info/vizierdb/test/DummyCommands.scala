@@ -123,7 +123,7 @@ object DummyWait extends Command with LazyLogging
     StringParameter("message", "Message", required = false)
   )
   def format(arguments: Arguments): String =
-    s"READ ${arguments.pretty("reads")}, WAIT ${arguments.pretty("seconds")}, WRITE  ${arguments.pretty("writes")}"
+    s"READ ${arguments.pretty("reads")}, WAIT ${arguments.pretty("msec")}, WRITE  ${arguments.pretty("writes")}"
   def title(arguments: Arguments): String = 
     format(arguments)
   def process(arguments: Arguments, context: ExecutionContext): Unit = 

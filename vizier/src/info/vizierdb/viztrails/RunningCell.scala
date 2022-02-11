@@ -10,6 +10,12 @@ import info.vizierdb.delta.{ DeltaBus, DeltaOutputArtifact }
 import info.vizierdb.commands.Commands
 import info.vizierdb.commands.Arguments
 import java.util.concurrent.ForkJoinTask
+import java.util.concurrent.atomic.AtomicBoolean
+import scala.util.Try
+import scala.util.Failure
+import scala.util.Success
+import info.vizierdb.api.FormattedError
+import info.vizierdb.VizierException
 
 class RunningCell(
   val cell: Cell, 
@@ -21,23 +27,58 @@ class RunningCell(
   with LazyLogging
 {
 
+  class CellCancelled() extends Exception
+
   var result: Option[Result] = None
+  var startedCell: Cell = null
+  var aborted = new AtomicBoolean(false)
 
   def cleanup() = 
   {
+    aborted.set(true)
     // Put code here to run in the main workflow thread
     logger.trace(s"Cleaning up after $cell")
   }
 
   def abort() =
   {
-    cancel(true)
+    try {
+      aborted.set(true)
+      // Under some circumstances this.cancel will not actually abort the running
+      // task.  If that happens, it returns false;  and we're now responsible for
+      // handling task cl
+      if(!this.cancel(true)){
+        logger.warn(s"The JVM refuses to abort the currently running cell $this;  The cancellation will be registered now and vizier-visible effects will be suppressed, although the cell will likely continue running in the background")
+      }
+      DB autoCommit { implicit session => 
+        errorResult(startedCell, ExecutionState.CANCELLED)
+      }
+    } finally {
+      logger.debug(s"Cell: $cell aborted.  Signalling workflow")
+      if(!aborted.get){
+        workflowTask.completionMessages.add(cell.position)
+      }
+    }
   }
 
   def exec(): Boolean =
   {
     try {
-      result = Some(processSynchronously)
+      processSynchronously match {
+        case _ if aborted.get => 
+          DB autoCommit { implicit session => 
+            errorResult(startedCell, ExecutionState.CANCELLED)
+          }
+        case Success(context) =>
+          DB autoCommit { implicit session => 
+            logger.trace(s"Emitting normal result for cell $this")
+            normalResult(startedCell, context)
+          }
+        case Failure(exc) => 
+          DB autoCommit { implicit session => 
+            errorResult(startedCell)
+          }
+      }
       return true
     } catch {
       case e: Throwable =>
@@ -46,7 +87,9 @@ class RunningCell(
         return false
     } finally {
       logger.debug(s"Cell: $cell complete.  Signalling workflow")
-      workflowTask.completionMessages.add(cell.position)
+      if(!aborted.get){
+        workflowTask.completionMessages.add(cell.position)
+      }
     }
   }
 
@@ -82,12 +125,13 @@ class RunningCell(
    * @argument   cell     The cell to process
    * @return              The Result object for the evaluated cell
    */
-  def processSynchronously: Result =
+  def processSynchronously: Try[ExecutionContext] =
   {
     logger.info(s"Processing $cell")
-    val (command, arguments, context, startedCell) =
+    val (command, arguments, context) =
       DB autoCommit { implicit session =>
-        val (startedCell, result) = cell.start
+        val (startedCellTemp, result) = cell.start
+        startedCell = startedCellTemp
         val workflow = startedCell.workflow
         val context = new ExecutionContext(
                             startedCell.projectId, 
@@ -96,33 +140,37 @@ class RunningCell(
                             startedCell, 
                             module, 
                             { (mimeType, data) => 
-                                DB.autoCommit { implicit s =>
-                                  result.addMessage( 
-                                    mimeType = mimeType, 
-                                    data = data 
-                                  )(s)
-                                  DeltaBus.notifyMessage(
-                                    workflow = workflow, 
-                                    position = cell.position, 
-                                    mimeType = mimeType, 
-                                    data = data,
-                                    stream = StreamType.STDOUT
-                                  )(s)
+                                if(!aborted.get){
+                                  DB.autoCommit { implicit s =>
+                                    result.addMessage( 
+                                      mimeType = mimeType, 
+                                      data = data 
+                                    )(s)
+                                    DeltaBus.notifyMessage(
+                                      workflow = workflow, 
+                                      position = cell.position, 
+                                      mimeType = mimeType, 
+                                      data = data,
+                                      stream = StreamType.STDOUT
+                                    )(s)
+                                  }
                                 }
                             },
                             { message =>
-                                DB.autoCommit { implicit s =>
-                                  result.addMessage( 
-                                    message = message,
-                                    stream = StreamType.STDERR
-                                  )(s)
-                                  DeltaBus.notifyMessage(
-                                    workflow = workflow, 
-                                    position = cell.position, 
-                                    mimeType = "text/plain", 
-                                    data = message.getBytes,
-                                    stream = StreamType.STDERR
-                                  )(s)
+                                if(!aborted.get){
+                                  DB.autoCommit { implicit s =>
+                                    result.addMessage( 
+                                      message = message,
+                                      stream = StreamType.STDERR
+                                    )(s)
+                                    DeltaBus.notifyMessage(
+                                      workflow = workflow, 
+                                      position = cell.position, 
+                                      mimeType = "text/plain", 
+                                      data = message.getBytes,
+                                      stream = StreamType.STDERR
+                                    )(s)
+                                  }
                                 }
                             }
                           )
@@ -130,7 +178,7 @@ class RunningCell(
           module.command
                 .getOrElse { 
                   context.error(s"Command ${module.packageId}.${module.commandId} does not exist")
-                  return errorResult(startedCell)
+                  return return Failure(new VizierException("Module does not exist"))
                 }
         val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
         val argumentErrors = arguments.validate
@@ -138,28 +186,23 @@ class RunningCell(
           val msg = "Error in module arguments:\n"+argumentErrors.mkString("\n")
           logger.warn(msg)
           context.error(msg)
-          return errorResult(startedCell)
+          return Failure(new VizierException(msg))
         }
         DeltaBus.notifyStateChange(workflow, startedCell.position, startedCell.state)
         DeltaBus.notifyAdvanceResultId(workflow, startedCell.position, startedCell.resultId.get)
-        /* return */ (command, arguments, context, startedCell)
+        /* return */ (command, arguments, context)
       }
     logger.debug(s"About to run code for [${command.name}]($arguments) <- ($context)")
-
     try {
       command.process(arguments, context)
     } catch {
       case e:Exception => {
         e.printStackTrace()
         context.error(s"An internal error occurred: ${e.getMessage()}")
-        return DB autoCommit { implicit session => 
-          errorResult(startedCell)
-        }
+        return Failure(e)
       }
     }
-    return DB autoCommit { implicit session => 
-      normalResult(startedCell, context)
-    }
+    return Success(context)
   }
   /**
    * Register an error result for the provided cell
@@ -168,9 +211,12 @@ class RunningCell(
    * @argument  message   The error messages
    * @return              The Result object for the cell
    */
-  private def errorResult(cell: Cell)(implicit session: DBSession): Result = 
+  private def errorResult(
+    cell: Cell, 
+    targetState: ExecutionState.T = ExecutionState.CANCELLED
+  )(implicit session: DBSession): Result = 
   {
-    val result = cell.finish(ExecutionState.ERROR)._2
+    val result = cell.finish(targetState)._2
     val position = cell.position
     val workflow = cell.workflow
 
@@ -179,7 +225,7 @@ class RunningCell(
         sqls"position > ${cell.position}", 
         ExecutionState.PENDING_STATES -> ExecutionState.CANCELLED 
       )
-    DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.ERROR)
+    DeltaBus.notifyStateChange(workflow, cell.position, targetState)
     for(cell <- workflow.cellsWhere(sqls"""position > ${cell.position}""")) {
       DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.CANCELLED)
     }
@@ -234,5 +280,8 @@ class RunningCell(
     }
     return result
   }
+
+  override def toString(): String = 
+    s"Task { $cell }"
 
 }

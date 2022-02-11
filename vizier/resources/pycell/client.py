@@ -656,8 +656,8 @@ class VizierDBClient(object):
 
     response = self.vizier_request("save_artifact",
       name=key,
-      data=value,
-      mimeType=vizier_data_type,
+      data={"value": value, "dataType": vizier_data_type},
+      mimeType="application/json",
       artifactType=ARTIFACT_TYPE_PARAMETER,
       has_response=True
     )

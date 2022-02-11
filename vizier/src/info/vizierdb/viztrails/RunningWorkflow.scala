@@ -24,7 +24,10 @@ class RunningWorkflow(workflow: Workflow)
   def abort()
   {
     cancel(true)
-    pendingTasks.values.foreach { _.abort() }
+    for(task <- pendingTasks.values){
+      logger.trace(s"Aborting task $task")
+      task.abort() 
+    }
   }
 
   def scheduleCell(cell: Cell, module: Module, scope: ScopeSummary)
@@ -50,10 +53,14 @@ class RunningWorkflow(workflow: Workflow)
             val otherCompletions = new java.util.ArrayList[Cell.Position]()
             completionMessages.drainTo(otherCompletions)
             for(position <- (x +: otherCompletions.asScala)){
-              logger.trace(s"Completing cell at position $position")
-              val cellTask = pendingTasks.remove(position).get
-              logger.info(s"Finished executing cell ${cellTask.cell} [${cellTask.module.packageId}.${cellTask.module.commandId}]")
-              cellTask.cleanup()
+              logger.trace(s"Workflow ${workflow.id}: Completing cell at position $position")
+              pendingTasks.remove(position) match {
+                case Some(cellTask) => 
+                  logger.info(s"Workflow ${workflow.id}: Finished executing cell ${cellTask.cell} [${cellTask.module.packageId}.${cellTask.module.commandId}]")
+                  cellTask.cleanup()
+                case None => 
+                  logger.info(s"Workflow ${workflow.id}: Spurious completion notification (an abort probably failed)")
+              }
             }
 
           }

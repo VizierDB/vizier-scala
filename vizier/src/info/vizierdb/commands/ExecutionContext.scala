@@ -198,8 +198,9 @@ class ExecutionContext(
   {
     output(
       name, 
-      ArtifactType.PARAMETER, 
-      Json.toJson(serialized.ParameterArtifact.fromNative(value, dataType)).toString.getBytes
+      t = ArtifactType.PARAMETER,
+      data = Json.toJson(serialized.ParameterArtifact.fromNative(value, dataType)).toString.getBytes,
+      mimeType = MIME.JSON
     )
   }
 

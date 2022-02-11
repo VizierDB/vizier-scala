@@ -29,7 +29,7 @@ import info.vizierdb.util.UnsupportedFeature
 object Scheduler
   extends LazyLogging
 {
-  val workflowWorkers = new ForkJoinPool(3)
+  val workflowWorkers = new ForkJoinPool(10)
   val cellWorkers     = new ForkJoinPool(30)
   val runningWorkflows = scala.collection.mutable.Map[Identifier,RunningWorkflow]()
 
