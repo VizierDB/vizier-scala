@@ -25,6 +25,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.viztrails.Provenance
+import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.serialized
 
 /**
@@ -38,7 +39,7 @@ import info.vizierdb.serialized
  * execution results (since it only describes the configuration of a step), or any workflow (since
  * it may appear in multiple workflows)
  */
-class Module(
+case class Module(
   val id: Identifier,
   val packageId: String,
   val commandId: String,
@@ -123,7 +124,7 @@ class Module(
     projectId: Identifier, 
     branchId: Identifier, 
     workflowId: Identifier, 
-    artifacts: Seq[ArtifactRef]
+    artifacts: ScopeSummary
   )(implicit session:DBSession): serialized.ModuleDescription = 
   {
     val result = cell.result
@@ -133,18 +134,7 @@ class Module(
       finishedAt = result.flatMap { _.finished }
     )
 
-    val artifactSummaries = 
-                      artifacts
-                        .filter { !_.artifactId.isEmpty }
-                        .map { ref => 
-                          logger.trace(s"Looking up artifact ${ref.userFacingName} -> ${ref.artifactId}")
-                          ref.userFacingName -> Artifact.lookupSummary(ref.artifactId.get).get 
-                        }
-                        // toIndexedSeq forces a materialization **right now**, i.e., 
-                        // while the DBConnection is still live.  If you delete the 
-                        // following line, references to the artifacts will crash, since
-                        // the DB connection may already be closed.
-                        .toIndexedSeq
+    val artifactSummaries = artifacts.allArtifactSummaries.toSeq
 
     val datasets    = artifactSummaries.filter { _._2.t.equals(ArtifactType.DATASET) }
     val charts      = artifactSummaries.filter { _._2.t.equals(ArtifactType.CHART) }
@@ -282,16 +272,16 @@ object Module
     cells: Seq[(Cell, Module)]
   )(implicit session: DBSession): Seq[serialized.ModuleDescription] =
   { 
-    var scope = Map[String,ArtifactRef]()
+    var scope = ScopeSummary.empty
     cells.sortBy { _._1.position }
          .map { case (cell, module) => 
-           scope = Provenance.updateRefScope(cell, scope)
+           scope = scope.copyWithUpdatesForCell(cell)
            module.describe(
              cell = cell, 
              projectId = projectId,
              branchId = branchId,
              workflowId = workflowId,
-             artifacts = scope.values.toSeq
+             artifacts = scope
            )
          }
   }

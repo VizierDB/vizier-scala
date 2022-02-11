@@ -18,7 +18,7 @@ import info.vizierdb.delta
 import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
 
-class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: API)
+class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: API)
   extends Object
   with Logging
 {
@@ -81,7 +81,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
     connected() = true
     logger.debug("Connected!")
     awaitingReSync() = true
-
+    
     Client.subscribe(projectId, branchId)
           .onSuccess { case workflow => onSync(workflow) } 
   }

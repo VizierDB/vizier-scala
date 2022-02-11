@@ -18,6 +18,7 @@ import java.util.Properties
 import java.io.File
 import org.rogach.scallop._
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.catalog.Cell
 
 class Config(arguments: Seq[String]) 
   extends ScallopConf(arguments)
@@ -77,6 +78,11 @@ class Config(arguments: Seq[String])
                 .orElse { Some(false) }
   )
 
+  val noUI = opt[Boolean]("no-ui",
+    descr = "Don't auto-launch the UI on startup",
+    default = Some(false)
+  )
+
   val connectFromAnyHost = opt[Boolean]("connect-from-any-host",
     descr = "Allow connections from any IP (WARNING: this will let anyone on your network run code on your machine)",
     default = Option(false),
@@ -87,6 +93,11 @@ class Config(arguments: Seq[String])
     descr = "Disable features that assume Vizier is running under the account of the user interacting with it",
     default = Option(false),
     noshort = true
+  )
+
+  val workingDirectory = opt[String]("working-directory",
+    descr = "Override the current working directory for relative file paths",
+    default = None
   )
 
   val sparkHost = opt[String]("spark-host",
@@ -104,6 +115,7 @@ class Config(arguments: Seq[String])
 
 
   ////////////////////////// Ingest //////////////////////////
+
   object ingest extends Subcommand("import", "ingest") {
     val execute = toggle("execute", default = Some(true))
     val file = trailArg[File]("export", 
@@ -122,6 +134,27 @@ class Config(arguments: Seq[String])
     )
   }
   addSubcommand(export)
+  
+  //////////////////////////////////////////////////////
+  
+  object run extends Subcommand("run") {
+    val project = trailArg[String]("project",
+      descr = "The name or identifier of the project run"
+    )
+    val branch = opt[String]("branch", short = 'b',
+      descr = "The branch to re-execute (default = head)"
+    )
+    val cells = opt[List[Cell.Position]]("cell", short = 'c',
+      descr = "One or more cells to force re-execution on (default = all)",
+      default = Some(List.empty)
+    )
+    val showCaveats = toggle("show-caveats", noshort = true, default = Some(true),
+      descrYes = "Compute and print caveats for every dataset artifact at the end of the trace.  Return an error code if any exist."
+    )
+  }
+  addSubcommand(run)
+
+  //////////////////////////////////////////////////////
 
   ////////////////////////// Doctor //////////////////////////
   object doctor extends Subcommand("doctor") {
@@ -129,10 +162,24 @@ class Config(arguments: Seq[String])
   }
   addSubcommand(doctor)
 
+  //////////////////////////////////////////////////////
 
-  ////////////////////////////////////////////////////////////
+  object garbageCollect extends Subcommand("gc") {
+
+  }
+  addSubcommand(garbageCollect)
+
+  //////////////////////////////////////////////////////
 
   verify()
+
+  def commandOrSubcommandNeedsMimir: Boolean =
+  {
+    if(!subcommand.isDefined){ return true }
+    else if(subcommand.equals(run)){ return true }
+    else { return false }
+  }
+
 }
 
 object Config

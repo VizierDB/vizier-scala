@@ -24,7 +24,8 @@ import scala.collection.mutable.HashMap
 import info.vizierdb.types._
 import info.vizierdb.VizierException
 import info.vizierdb.util.Streams
-import info.vizierdb.viztrails.{ MutableProject, Scheduler }
+import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.MutableProject
 import info.vizierdb.catalog._
 import info.vizierdb.commands.Commands
 import java.io.FileOutputStream
@@ -73,7 +74,7 @@ object ImportProject
         packageId = command.sanitizedPackageId,
         commandId = command.sanitizedCommandId,
         properties = JsObject(command.properties.getOrElse { Map() }),
-        revisionOfId = command.revisionOfId.map { cache(_).id },
+        revisionOfId = command.revisionOfId.flatMap { cache.get(_) }.map { _.id },
         arguments = arguments
       )
     })
@@ -208,7 +209,7 @@ object ImportProject
             val (updatedBranch, updatedWorkflow) = branch.initWorkflow(
               prevId = Some(workflow.id),
               action = exportedWorkflow.decodedAction,
-              actionModuleId = exportedWorkflow.actionModule.map { modules(_).id },
+              actionModuleId = exportedWorkflow.actionModule.flatMap { modules.get(_) }.map { _.id  },
               setHead = false,
               createdAt = Some(exportedWorkflow.createdAt)
             )
@@ -264,7 +265,7 @@ object ImportProject
         val mutableProject = MutableProject(project.id)
         val head = mutableProject.head
         DB.autoCommit { implicit s => head.discardResults() }
-        Scheduler.schedule(head.id)
+        Scheduler.schedule(head)
         if(blockOnExecution){
           mutableProject.waitUntilReadyAndThrowOnError
         }

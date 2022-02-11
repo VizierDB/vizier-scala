@@ -15,7 +15,7 @@
 package info.vizierdb.catalog.migrations
 
 import scalikejdbc.DBSession
-import scalikejdbc.metadata.Table
+import scalikejdbc.metadata.{ Table, Column }
 
 trait Migration
 {
@@ -27,3 +27,16 @@ trait Migration
 
 }
 
+object Migration
+{
+  def columnSql(column: Column, ignorePrimaryKey: Boolean = false) = 
+    Seq(
+      Some(column.name),
+      Some(column.typeName),
+      if(column.isRequired) { Some("NOT NULL") } else { None },
+      if(column.isPrimaryKey && !ignorePrimaryKey) { Some("PRIMARY KEY") } else { None },
+      if(column.isAutoIncrement) { Some("AUTOINCREMENT") } else { None },
+      Option(column.defaultValue).map { "DEFAULT "+_  }
+    ).flatten.mkString(" ")
+
+}

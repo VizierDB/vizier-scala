@@ -93,6 +93,22 @@ div.contents li.tentative
   opacity: 0.5;
 }
 
+/************ Messages ************/
+
+div.message
+{
+  font-family: monospace;
+}
+
+div.message.error
+{
+  color: #c00;
+  padding: 10px;
+  border: 1px solid #c00;
+  border-radius: 5px;
+  background-color: #fcc;
+}
+
 /************ Data Tables ************/
 
 

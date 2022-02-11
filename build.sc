@@ -17,6 +17,10 @@ object upstream extends Module {
   }
 }
 
+
+/*************************************************
+ *** The Vizier Backend 
+ *************************************************/
 object vizier extends ScalaModule with PublishModule {
   val VERSION       = "1.2.0-SNAPSHOT"
   val PLAY_JS       = ivy"com.typesafe.play::play-json:2.9.2"
@@ -35,6 +39,7 @@ object vizier extends ScalaModule with PublishModule {
     MavenRepository("https://maven.mimirdb.org/"),
     MavenRepository("https://oss.sonatype.org/content/repositories/releases"),
     MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
+    MavenRepository("https://repo.osgeo.org/repository/release/"),
   )}
 
   def mainClass = Some("info.vizierdb.Vizier")
@@ -53,7 +58,9 @@ object vizier extends ScalaModule with PublishModule {
     ui.resourceDir()
   )
 
-
+/*************************************************
+ *** Backend Dependencies
+ *************************************************/
   def ivyDeps = Agg(
     ////////////////////// Mimir ///////////////////////////
     MIMIR_CAVEATS,
@@ -78,12 +85,21 @@ object vizier extends ScalaModule with PublishModule {
     ivy"org.eclipse.jetty.websocket:websocket-server:9.4.44.v20210927",
 
     ////////////////////// Command-Specific Libraries //////
+    // Json Import
     ivy"com.github.andyglow::scala-jsonschema::0.7.1",
     ivy"com.github.andyglow::scala-jsonschema-play-json::0.7.1",
+
+    // GIS
     ivy"org.apache.sedona::sedona-core-3.0:1.1.1-incubating",
     ivy"org.apache.sedona::sedona-sql-3.0:1.1.1-incubating",
     ivy"org.apache.sedona::sedona-viz-3.0:1.1.1-incubating",
     ivy"org.locationtech.jts:jts-core:1.18.2",
+    ivy"org.wololo:jts2geojson:0.14.3",
+    ivy"org.geotools:gt-main:24.0",
+    ivy"org.geotools:gt-referencing:24.0",
+    ivy"org.geotools:gt-epsg-hsql:24.0",
+
+    // Scala Cell
     ivy"org.scala-lang:scala-compiler:${scalaVersion}",
 
     ////////////////////// Logging /////////////////////////
@@ -91,8 +107,12 @@ object vizier extends ScalaModule with PublishModule {
     ivy"ch.qos.logback:logback-classic:1.2.10",
     ivy"org.apache.logging.log4j:log4j-core:2.17.1",
     ivy"org.apache.logging.log4j:log4j-1.2-api:2.17.1",
+    ivy"org.apache.logging.log4j:log4j-jcl:2.17.1",
   )
 
+/*************************************************
+ *** Backend Tests
+ *************************************************/
   object test 
     extends Tests 
     with TestModule.Specs2 
@@ -108,6 +128,9 @@ object vizier extends ScalaModule with PublishModule {
 
   }
 
+/*************************************************
+ *** Backend Resources
+ *************************************************/
   def buildRoutesScript = T.sources { os.pwd / "scripts" / "build_routes.py" }
   def routesFile        = T.sources { millSourcePath / "resources" / "vizier-routes.txt" }
 
@@ -133,11 +156,19 @@ object vizier extends ScalaModule with PublishModule {
     )
   )
 
+///////////////////////////////////////////////////////////////////////////
+
+/*************************************************
+ *** The Vizier Frontend / User Interface
+ *************************************************/
   object ui extends ScalaJSModule { 
 
     def scalaVersion = vizier.scalaVersion
     def scalaJSVersion = "1.7.1"
 
+/*************************************************
+ *** Frontend Dependencies
+ *************************************************/
     def ivyDeps = Agg(
       ivy"org.scala-js::scalajs-dom::1.0.0",
       ivy"com.lihaoyi::scalarx::0.4.3",
@@ -155,6 +186,9 @@ object vizier extends ScalaModule with PublishModule {
       super.compile()
     }
 
+/*************************************************
+ *** Frontend Tests
+ *************************************************/
     object test extends Tests with TestModule.Utest {
       def testFramework = "utest.runner.Framework"
       def ivyDeps = Agg(
@@ -166,24 +200,39 @@ object vizier extends ScalaModule with PublishModule {
 
     }
     
+/*************************************************
+ *** Frontend Resources
+ *************************************************/
+    // Vendor Javascript
+    //   Javascript libraries that vizier depends on are cloned into the
+    //   repository and kept in vizier/ui/vendor
     def vendor = T.sources(
       os.walk(millSourcePath / "vendor")
         .filter { f => f.ext == "js" || f.ext == "css" }
         .map { PathRef(_) }
     )
 
+    //   We keep a record of the licensing for all vendored libraries
     def vendorLicense = T.source(millSourcePath / "vendor" / "LICENSE.txt")
 
+    // HTML pages
+    //   Take all of the files in vizier/ui/html and put them into the 
+    //   resource directory webroot
     def html = T.sources(
       os.walk(millSourcePath / "html")
         .map { PathRef(_) }
     )
 
+    // CSS files
+    //   Take all of the files in vizier/ui/css and put them into the resource
+    //   directory webroot
     def css = T.sources {
       os.walk(millSourcePath / "css")
         .map { PathRef(_) }
     }
-  
+
+    // The following rule and function actually build the resources directory
+    //     
     def resourceDir = T { 
       buildUIResourceDir(
         uiBinary = fastOpt().path,

@@ -106,6 +106,8 @@ class VizierURLs(
     compose(getBranchHeadModule(projectId, branchId, modulePosition), "/thaw_one")
   def thawOneWorkflowModule(projectId: Identifier, branchId: Identifier, workflowId: Identifier, modulePosition: Int) =
     compose(getWorkflowModule(projectId, branchId, workflowId, modulePosition), "/thaw_one")
+  def publishedArtifact(name: String) = 
+    url(s"published/$name")
 
 
   def getDataset(

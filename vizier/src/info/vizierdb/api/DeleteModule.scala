@@ -51,7 +51,7 @@ object DeleteModule
       }
 
     // The workflow must be scheduled AFTER the enclosing transaction finishes
-    Scheduler.schedule(workflow.id)
+    Scheduler.schedule(workflow)
 
     DB.readOnly { implicit s => 
       workflow.describe

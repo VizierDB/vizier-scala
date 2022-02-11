@@ -20,6 +20,8 @@ import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.spark.SparkSchema
+import org.apache.spark.sql.types.DataType
 
 sealed trait Parameter
 {
@@ -65,6 +67,15 @@ sealed trait Parameter
     j: JsValue,
     preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
   ): JsValue = j
+
+  /**
+   * Recursively replace the specified parameter
+   */
+  def replaceParameterValue( 
+    arg: JsValue, 
+    rule: PartialFunction[(Parameter, JsValue),JsValue]
+  ): Option[JsValue] =
+    rule.lift.apply(this, arg)
 }
 
 object Parameter
@@ -155,6 +166,28 @@ case class BooleanParameter(
       case x:Boolean => JsBoolean(x)
       case _ => throw new VizierException("Invalid Parameter to $name (expected Boolean)")
     }
+}
+
+case class DataTypeParameter(
+  id: String,
+  name: String,
+  required: Boolean = true,
+  hidden: Boolean = false  
+) extends Parameter
+{
+  def datatype = "datatype"
+  def doStringify(j: JsValue): String = j.as[DataType].toString()
+  def doValidate(j: JsValue) = 
+    if(j.asOpt[DataType].isDefined) { None }
+    else { Some("Expected a datatype for $name")}
+  def encode(v: Any): JsValue = 
+    v match {
+      case j: JsValue => j
+      case s: String => Json.toJson(SparkSchema.decodeType(s))
+      case Some(x) => encode(x)
+      case _ => throw new VizierException(s"Invalid Parameter to $name (expected Datatype, but got $v)")
+    }
+
 }
 
 case class CodeParameter(
@@ -409,6 +442,48 @@ case class ListParameter(
   }
 
   override def getDefault: JsValue = JsArray(Seq())
+  override def replaceParameterValue( 
+    arg: JsValue, 
+    rule: PartialFunction[(Parameter, JsValue),JsValue]
+  ): Option[JsValue] =
+  {
+    var forceNonNoneReturn = false
+    val base: Seq[Map[String, JsValue]] = 
+      super.replaceParameterValue(arg, rule)
+           .flatMap { x => forceNonNoneReturn = true;
+                       x.asOpt[Seq[Map[String, JsValue]]] }
+           .getOrElse { Seq.empty }
+    val listReplacements: Seq[Option[JsObject]] = 
+      base.map { lineArgs =>
+        val lineReplacements = 
+          components.map { param =>
+            param.name -> 
+              param.replaceParameterValue(lineArgs.getOrElse(param.name, JsNull), rule)
+          }.filter { _._2.isDefined }
+           .map { x => x._1 -> x._2.get }
+           .toMap
+        if(lineReplacements.isEmpty) { None }
+        else {
+          Some(
+            JsObject(
+              lineArgs.map { case (k, v) => 
+                k -> lineReplacements.getOrElse(k, v)
+              }.toMap
+            )
+          )
+        }
+      }
+    if(listReplacements.flatten.isEmpty || !forceNonNoneReturn){ None }
+    else {
+      Some(
+        JsArray(
+          listReplacements.zip(base).map { case (replacement, original) => 
+            replacement.getOrElse(JsObject(original))
+          }.toSeq
+        )
+      )
+    }
+  }
 }
 
 case class RecordParameter(
@@ -485,6 +560,36 @@ case class RecordParameter(
   {
     super.describe(parent, index) ++ Parameter.doDescribe(components, index+1, Some(id))._1
   }
+
+  override def replaceParameterValue(
+    arg: JsValue, 
+    rule: PartialFunction[(Parameter, JsValue),JsValue]
+  ): Option[JsValue] =
+  {
+    var forceNonNoneReturn = false
+    val base = 
+      super.replaceParameterValue(arg, rule)
+           .flatMap { x => forceNonNoneReturn = true; 
+                           x.asOpt[Map[String, JsValue]] }
+           .getOrElse { Map.empty }
+    val lineReplacements = 
+      components.map { param =>
+        param.name -> 
+          param.replaceParameterValue(base.getOrElse(param.name, JsNull), rule)
+      }.filter { _._2.isDefined }
+       .map { x => x._1 -> x._2.get }
+       .toMap
+    if(lineReplacements.isEmpty || !forceNonNoneReturn) { None }
+    else {
+      Some(
+        JsObject(
+          base.map { case (k, v) => 
+            k -> lineReplacements.getOrElse(k, v)
+          }.toMap
+        )
+      )
+    }
+  }
 }
 
 case class RowIdParameter(
@@ -546,7 +651,8 @@ case class EnumerableParameter(
   default: Option[Int] = None,
   required: Boolean = true,
   hidden: Boolean = false,
-  aliases: Map[String,String] = Map.empty
+  aliases: Map[String,String] = Map.empty,
+  allowOther: Boolean = false
 ) extends Parameter with StringEncoder
 {
   lazy val possibilities = Set(values.map { _.value }:_*) ++ aliases.keySet
@@ -554,7 +660,7 @@ case class EnumerableParameter(
   def doStringify(j: JsValue): String = j.as[String]
   def doValidate(j: JsValue) = 
     if(j.isInstanceOf[JsString]){ 
-      if(possibilities(j.as[String])){ None }
+      if(possibilities(j.as[String]) || allowOther){ None }
       else {
         Some(s"Expected $name to be one of ${possibilities.mkString(", ")}, but got $j")
       }
@@ -579,7 +685,8 @@ case class EnumerableParameter(
           text = v.text,
           value = v.value
         )
-      }
+      },
+      allowOther = allowOther
     ))
   override def convertFromProperty(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
   {

@@ -23,6 +23,7 @@ import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
 import info.vizierdb.spark.InlineDataConstructor
 import org.apache.spark.sql.types.{ StructField, StringType }
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object EmptyDataset extends Command
 {
@@ -45,10 +46,9 @@ object EmptyDataset extends Command
     )
     context.message("Empty Dataset Created")
   }
-  def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq.empty,
-      Seq(arguments.get[String]("name"))
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 }
 

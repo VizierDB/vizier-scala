@@ -28,24 +28,10 @@ case class CreateTableMigration(
   def drop(implicit session: DBSession) = 
     session.executeUpdate(s"DROP TABLE ${table.name}") 
 
-
-
-  def sql(column: Column): String = 
-  {
-    Seq(
-      Some(column.name),
-      Some(column.typeName),
-      if(column.isRequired) { Some("NOT NULL") } else { None },
-      if(column.isPrimaryKey && primaryKeys.size == 1) { Some("PRIMARY KEY") } else { None },
-      if(column.isAutoIncrement) { Some("AUTOINCREMENT") } else { None },
-      Option(column.defaultValue).map { "DEFAULT VALUE "+_  }
-    ).flatten.mkString(" ")
-  }
-
   def sql: String = 
   {
     val elements = Seq[Iterable[String]](
-      table.columns.map { sql(_) },
+      table.columns.map { Migration.columnSql(_, ignorePrimaryKey = (primaryKeys.size > 1)) },
       if(primaryKeys.size > 1){ Some("PRIMARY KEY("+primaryKeys.map { _.name }.mkString(", ")+")") }
                          else { None }
     ).flatten

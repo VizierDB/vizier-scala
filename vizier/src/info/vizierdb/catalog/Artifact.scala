@@ -44,17 +44,47 @@ case class Artifact(
   data: Array[Byte]
 )
 {
+  /**
+   * Interpret the artifact's value as a string
+   */
   def string = new String(data)
-  def nameInBackend = Artifact.nameInBackend(t, id)
+  // def nameInBackend = Artifact.nameInBackend(t, id)
+  /**
+   * The absolute path to the artifact's file (if it exists)
+   */
   def absoluteFile: File = Filestore.getAbsolute(projectId, id)
+  /**
+   * The relative (to the current WD) path to the artifact's file (if it exists)
+   */
   def relativeFile: File = Filestore.getRelative(projectId, id)
+  /**
+   * The path to the artifact's file (if it exists)
+   */
   def file = absoluteFile
+  /**
+   * Interpret the artifact's value as a parameter value
+   */
   def parameter = json.as[serialized.ParameterArtifact]
+  /**
+   * Interpret the artifact's value as JSON data
+   */
   def json = Json.parse(string)
+  /**
+   * Retrieve the dataset descriptor of a dataset artifact
+   */
   def datasetDescriptor = json.as[Dataset]
+  /**
+   * Retrieve a spark dataframe for a dataset artifact
+   * @param  session   Dataframe construction may need to retrieve a series of other, dependent
+   *                   artifacts, so the caller needs to provide a database session.
+   */
   def dataframe(implicit session:DBSession) = 
     datasetDescriptor.construct(Artifact.dataframeContext)
 
+  /**
+   * Retrieve a summary (an abbreviated [[description]]) of the specified artifact
+   * @param  name     (optional) The artifact name to include in the generated summary
+   */
   def summarize(name: String = null)(implicit session: DBSession): serialized.ArtifactSummary = 
   {
     val extras:Map[String,JsValue] = t match {
@@ -86,6 +116,20 @@ case class Artifact(
     }
   }
 
+  /**
+   * Retrieve a a full description of the specified artifact
+   * @param  name           (optional) The artifact name to include
+   * @param  offset         (optional) The index of the first row to include
+   * @param  limit          (optional) The number of rows of data to include
+   * @param  forceProfiler  (optional) True to ensure that the description includes profiler
+   *                        statistics.
+   * 
+   * The offset and limit arguments only make sense if the artifact is a dataset, and
+   * will be ignored otherwise.  
+   * 
+   * Currently, dataset is the only artifact type that supports profiling, and the
+   * forceProfiler argument is ignored for other artifact types.
+   */
   def describe(
     name: String = null, 
     offset: Option[Long] = None, 
@@ -136,7 +180,15 @@ case class Artifact(
 
   }
 
-
+  /**
+   * Retrieve the dataset as a classical data container.  Preserved for legacy reasons,
+   * and will probably be deprecated at some point.
+   * @param  offset         (optional) The index of the first row to include
+   * @param  limit          (optional) The number of rows of data to include
+   * @param  forceProfiler  (optional) True to ensure that result profiler
+   *                        statistics.
+   * @param  includeCaveats (optional) True to include caveats in the result
+   */
   def datasetData(
     offset: Option[Long] = None, 
     limit: Option[Int] = None,
@@ -157,11 +209,27 @@ case class Artifact(
     )
   }
 
+  /**
+   * Retrieve a cached dataset property, if it has been computed
+   * 
+   * This function will fail if the artifact is not a dataset.
+   */
   def datasetPropertyOpt(name: String): Option[JsValue] = 
   {
-    assert(t.equals(ArtifactType.FILE))
+    assert(t.equals(ArtifactType.DATASET))
     datasetDescriptor.properties.get(name)
   }
+
+  /**
+   * Retrieve or construct the specified dataset property.
+   * @param    name       The name of a dataset property.
+   * @param    construct  A rule for constructing the dataset property.
+   * @return              The value of the dataset property
+   * 
+   * This function is used to create/cache dataset properties.  The first time it is
+   * called with a specific name, the `construct` function will be called to generate
+   * a value.  The value will be cached for subsequent calls.
+   */
   def datasetProperty(name: String)(construct: Dataset => JsValue)(implicit session: DBSession): JsValue = 
   {
     assert(t.equals(ArtifactType.DATASET))
@@ -176,18 +244,38 @@ case class Artifact(
       propValue      
     }
   }
+  /**
+   * Update the specified dataset property
+   * @param    name       The name of a dataset property.
+   * @param    value      The value to assign to the dataset property.
+   */
   def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Unit =
   {
     assert(t.equals(ArtifactType.FILE))
     replaceData(Json.toJson(datasetDescriptor.withProperty(name -> value)))
   }
 
+  /**
+   * Retrieve a cached file property, if it has been computed
+   * 
+   * This function will fail if the artifact is not a file.
+   */
   def filePropertyOpt(name: String): Option[JsValue] = 
   {
     assert(t.equals(ArtifactType.FILE))
     if(data.isEmpty) { None }
     else { (json \ name).asOpt[JsValue] }
   }
+  /**
+   * Retrieve or construct the specified file property.
+   * @param    name       The name of a file property.
+   * @param    construct  A rule for constructing the file property.
+   * @return              The value of the file property
+   * 
+   * This function is used to create/cache file properties.  The first time it is
+   * called with a specific name, the `construct` function will be called to generate
+   * a value.  The value will be cached for subsequent calls.
+   */
   def fileProperty(name: String)(construct: File => JsValue)(implicit session: DBSession): JsValue = 
   {
     filePropertyOpt(name)
@@ -197,6 +285,11 @@ case class Artifact(
         prop
       }
   }
+  /**
+   * Update the specified file property
+   * @param    name       The name of a file property.
+   * @param    value      The value to assign to the file property.
+   */
   def updateFileProperty(name: String, value: JsValue)(implicit session: DBSession): Unit =
   {
     assert(t.equals(ArtifactType.FILE))
@@ -208,7 +301,9 @@ case class Artifact(
       )
     )
   }
-
+  /**
+   * Retrieve the schema of the specified dataset
+   */
   def datasetSchema(implicit session: DBSession):Seq[StructField] =
     datasetProperty("schema") { descriptor =>
       Json.toJson(
@@ -217,6 +312,11 @@ case class Artifact(
       )
     }.as[Seq[StructField]]
 
+  /**
+   * Delete this artifact.
+   * 
+   * This function is used exclusively during garbage collection.
+   */
   def deleteArtifact(implicit session: DBSession) =
   {
     withSQL { 
@@ -234,6 +334,9 @@ case class Artifact(
     }
   }
 
+  /**
+   * Retrieve the externally visible download url for this artifact 
+   */
   def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
 
   /**
@@ -361,6 +464,20 @@ object Artifact
     Artifact.get(artifactId)
   }
 
+  def all(projectId: Option[Identifier] = None)(implicit session: DBSession): Iterable[Artifact] =
+  {
+    withSQL { 
+      val b = Artifact.syntax 
+      select
+        .from(Artifact as b)
+        .where(
+          sqls.toAndConditionOpt(
+            projectId.map { sqls.eq(b.projectId, _) }
+          )
+        )
+    }.map { apply(_) }.iterable.apply()    
+  }
+
   def get(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Artifact = getOption(target, projectId).get
   def getOption(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Option[Artifact] = 
     withSQL { 
@@ -405,6 +522,8 @@ object Artifact
         VizierAPI.urls.getDataset(projectId, artifactId)
       case ArtifactType.CHART => 
         VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
+      case ArtifactType.FILE => 
+        VizierAPI.urls.downloadFile(projectId, artifactId)
       case _ => 
         VizierAPI.urls.getArtifact(projectId, artifactId)
     }

@@ -29,28 +29,29 @@ import info.vizierdb.util.UnsupportedFeature
 object Scheduler
   extends LazyLogging
 {
-  val workers = new ForkJoinPool(10)
-  val runningWorkflows = scala.collection.mutable.Map[Identifier,WorkflowExecution]()
+  val workflowWorkers = new ForkJoinPool(10)
+  val cellWorkers     = new ForkJoinPool(30)
+  val runningWorkflows = scala.collection.mutable.Map[Identifier,RunningWorkflow]()
 
   /**
    * Schedule a workflow for execution.  This should be automatically called from the branch
    * mutator operations.  <b>Do not call this from within a DB Session</b>
    */
-  def schedule(workflowId: Identifier) 
+  def schedule(workflow: Workflow) 
   {
-    logger.debug(s"Scheduling Workflow ${workflowId}")
+    logger.debug(s"Scheduling Workflow ${workflow.id}")
     this.synchronized {
-      logger.trace(s"Acquired scheduler lock for ${workflowId}")
-      if(runningWorkflows contains workflowId){
-        logger.warn(s"Ignoring attempt to reschedule workflow ${workflowId}")
+      logger.trace(s"Acquired scheduler lock for ${workflow.id}")
+      if(runningWorkflows contains workflow.id){
+        logger.warn(s"Ignoring attempt to reschedule workflow ${workflow.id}")
         return
       }
-      logger.trace(s"Allocating execution manager for ${workflowId}")
-      val executor = new WorkflowExecution(workflowId)
-      runningWorkflows.put(workflowId, executor)
-      logger.trace(s"Starting execution manager for ${workflowId}")
-      workers.execute(executor)
-      logger.trace(s"Done scheduling ${workflowId}")
+      logger.trace(s"Allocating execution manager for ${workflow.id}")
+      val executor = new RunningWorkflow(workflow)
+      runningWorkflows.put(workflow.id, executor)
+      logger.trace(s"Starting execution manager for ${workflow.id}")
+      workflowWorkers.execute(executor)
+      logger.trace(s"Done scheduling ${workflow.id}")
     }
   }
 
@@ -65,28 +66,9 @@ object Scheduler
     this.synchronized {
       val executor = runningWorkflows.get(workflowId).getOrElse { return }
       logger.debug(s"Aborting Workflow ${workflowId}")
-      if(!executor.isDone){ executor.cancel(true) }
+      if(!executor.isDone){ executor.abort() }
       runningWorkflows.remove(workflowId)
     }
-  }
-
-  /**
-   * Initialize the scheduler after a from-scratch startup, starting execution for all non-aborted
-   * workflows with operations still pending.
-   */
-  def init(implicit session: DBSession)
-  {
-    logger.debug("Initalizing Viztrails scheduler")
-    this.synchronized {
-      sql"""
-        SELECT workflow.id
-        FROM workflow,
-             (SELECT DISTINCT workflowid 
-              FROM cell WHERE state = ${ExecutionState.STALE.id}) stale_cells
-        WHERE workflow.id = stale_cells.workflowid
-        """
-    } .map { _.int(1) }.list.apply()
-      .foreach { schedule(_) }
   }
 
   /**
@@ -97,7 +79,7 @@ object Scheduler
     logger.debug("Getting running workflows")
     this.synchronized {
       runningWorkflows
-        .filterNot { _._2.isDone() }
+        .filterNot { _._2.isDone }
         .map { _._1 }
         .toSeq
     }.map { 
@@ -114,7 +96,7 @@ object Scheduler
     logger.debug("Cleaning up workflows")
     this.synchronized {
       val executor = runningWorkflows.get(workflowId).getOrElse { return }
-      if(executor.isDone()) { runningWorkflows.remove(workflowId) }
+      if(executor.isDone) { runningWorkflows.remove(workflowId) }
     }
   }
 
@@ -136,7 +118,7 @@ object Scheduler
   def joinWorkflow(workflowId: Identifier, failIfNotRunning: Boolean = true)
   {
     logger.debug(s"Trying to join with Workflow ${workflowId}")
-    val executorMaybe:Option[WorkflowExecution] = this.synchronized { 
+    val executorMaybe:Option[RunningWorkflow] = this.synchronized { 
       runningWorkflows.get(workflowId)
     }
 
@@ -146,244 +128,50 @@ object Scheduler
           throw new RuntimeException(s"Workflow $workflowId is not running or has already been cleaned up")
         }
       case Some(executor) =>
+        logger.debug(s"Found a running workflow... blocking")
         executor.join() 
+        logger.debug(s"Workflow complete.  Returned from block")
         cleanup(workflowId)
       }
   }
-  /**
-   * Register an error result for the provided cell
-   *
-   * @argument  cell      The cell to register an error for
-   * @argument  message   The error messages
-   * @return              The Result object for the cell
-   */
-  private def errorResult(cell: Cell)(implicit session: DBSession): Result = 
-  {
-    val result = cell.finish(ExecutionState.ERROR)._2
-    val position = cell.position
-    val workflow = cell.workflow
 
-    val stateTransitions = 
-      StateTransition.forAll( 
-        sqls"position > ${cell.position}", 
-        ExecutionState.PENDING_STATES -> ExecutionState.CANCELLED 
-      )
-    DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.ERROR)
-    for(cell <- workflow.cellsWhere(sqls"""position > ${cell.position}""")) {
-      DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.CANCELLED)
-    }
-    withSQL {
-      val c = Cell.column
-      update(Cell)
-        .set(
-          c.state -> StateTransition.updateState(stateTransitions),
-          c.resultId -> StateTransition.updateResult(stateTransitions)
-        )
-        .where.eq(c.workflowId, workflow.id)
-          .and.gt(c.position, cell.position)
-    }.update.apply()
-    return result
-  }
-  /**
-   * Register a execution result for the provided cell based on the provided execution context.
-   * this may still trigger an error if one was registered during execution of the cell.
-   *
-   * @argument  cell      The cell to register an error for
-   * @argument  message   The error message
-   */
-  private def normalResult(cell: Cell, context: ExecutionContext)(implicit session: DBSession): Result = 
-  {
-    if(context.isError){ return errorResult(cell) }
-    val result = cell.finish(ExecutionState.DONE)._2
-    val workflow = cell.workflow
+  // class WorkflowExecution(workflowId: Identifier)
+  //   extends ForkJoinTask[Unit]
+  // {
+  //   var currentCellExecution = null
 
-    for((userFacingName, identifier) <- context.inputs) {
-      result.addInput( userFacingName, identifier )
-    }
-    for((userFacingName, artifact) <- context.outputs) {
-      result.addOutput( userFacingName, artifact.map { _.id } )
-    }
-    DeltaBus.notifyUpdateOutputs(
-      workflow = workflow,
-      position = cell.position,
-      outputs = context.outputs.map { 
-        case (name, None) => DeltaOutputArtifact.fromDeletion(name)
-        case (name, Some(a)) => DeltaOutputArtifact.fromArtifact(a.summarize(name))
-      }.toSeq
-    )
-    DeltaBus.notifyStateChange(cell.workflow, cell.position, ExecutionState.DONE)
+  //   // Workflow caches dependent cells, so this should be able to avoid going to the DB entirely
+  //   def nextTarget: Option[Cell] = 
+  //     DB readOnly { implicit session =>
+  //       val c = Cell.syntax
+  //       withSQL {
+  //         select
+  //           .from(Cell as c)
+  //           .where.eq(c.state, ExecutionState.STALE)
+  //             .and.eq(c.workflowId, workflowId)
+  //           .orderBy(c.position)
+  //           .limit(1)
+  //       }.map { Cell(_) }.single.apply()
+  //     }
 
-    Provenance.updateSuccessorState(cell, 
-      Provenance.updateScope(
-        context.outputs.mapValues { _.map { _.id } }.toSeq,
-        context.scope.mapValues { _.id }
-      )
-    )
-    for(cell <- workflow.cellsWhere(sqls"position > ${cell.position}")){
-      DeltaBus.notifyStateChange(
-        workflow = workflow,
-        position = cell.position,
-        newState = cell.state
-      )
-    }
-    return result
-  }
-
-  /**
-   * Evaluate a single cell synchronously.
-   *
-   * @argument   cell     The cell to process
-   * @return              The Result object for the evaluated cell
-   */
-  def processSynchronously(cell: Cell): Result =
-  {
-    logger.trace(s"Processing $cell")
-    val (command, arguments, context, startedCell) =
-      DB autoCommit { implicit session =>
-        val module = cell.module
-        val (startedCell, result) = cell.start
-        val refs = Provenance.getRefScope(startedCell)
-        val scope = Provenance.refScopeToSummaryScope(refs)
-        val workflow = startedCell.workflow
-        val context = new ExecutionContext(
-                            startedCell.projectId, 
-                            scope, 
-                            startedCell.workflow, 
-                            startedCell, 
-                            module, 
-                            { (mimeType, data) => 
-                                DB.autoCommit { implicit s =>
-                                  result.addMessage( 
-                                    mimeType = mimeType, 
-                                    data = data 
-                                  )(s)
-                                  DeltaBus.notifyMessage(
-                                    workflow = workflow, 
-                                    position = cell.position, 
-                                    mimeType = mimeType, 
-                                    data = data,
-                                    stream = StreamType.STDOUT
-                                  )(s)
-                                }
-                            },
-                            { message =>
-                                DB.autoCommit { implicit s =>
-                                  result.addMessage( 
-                                    message = message,
-                                    stream = StreamType.STDERR
-                                  )(s)
-                                  DeltaBus.notifyMessage(
-                                    workflow = workflow, 
-                                    position = cell.position, 
-                                    mimeType = "text/plain", 
-                                    data = message.getBytes,
-                                    stream = StreamType.STDERR
-                                  )(s)
-                                }
-                            }
-                          )
-        val command = 
-          Commands.getOption(module.packageId, module.commandId)
-                  .getOrElse { 
-                    context.error(s"Command ${module.packageId}.${module.commandId} does not exist")
-                    return errorResult(startedCell)
-                  }
-        val arguments = Arguments(module.arguments.as[Map[String, JsValue]], command.parameters)
-        val argumentErrors = arguments.validate
-        if(!argumentErrors.isEmpty){
-          val msg = "Error in module arguments:\n"+argumentErrors.mkString("\n")
-          logger.warn(msg)
-          context.error(msg)
-          return errorResult(startedCell)
-        }
-        DeltaBus.notifyStateChange(workflow, startedCell.position, startedCell.state)
-        DeltaBus.notifyAdvanceResultId(workflow, startedCell.position, startedCell.resultId.get)
-        /* return */ (command, arguments, context, startedCell)
-      }
-    logger.trace(s"About to Process [${command.name}]($arguments) <- ($context)")
-
-    try {
-      command.process(arguments, context)
-    } catch {
-      case e:Exception => {
-        e.printStackTrace()
-        context.error(s"An internal error occurred: ${e.getMessage()}")
-        return DB autoCommit { implicit session => 
-          errorResult(startedCell)
-        }
-      }
-    }
-    return DB autoCommit { implicit session => 
-      normalResult(startedCell, context)
-    }
-  }
-
-  class WorkflowExecution(workflowId: Identifier)
-    extends ForkJoinTask[Unit]
-  {
-    var currentCellExecution = null
-
-    // Workflow caches dependent cells, so this should be able to avoid going to the DB entirely
-    def nextTarget: Option[Cell] = 
-      DB readOnly { implicit session =>
-        val c = Cell.syntax
-        withSQL {
-          select
-            .from(Cell as c)
-            .where.eq(c.state, ExecutionState.STALE)
-              .and.eq(c.workflowId, workflowId)
-            .orderBy(c.position)
-            .limit(1)
-        }.map { Cell(_) }.single.apply()
-      }
-
-    def aborted: Boolean =
-      DB readOnly { implicit session =>
-        val w = Workflow.syntax
-        withSQL { 
-          select(w.aborted)
-            .from(Workflow as w)
-            .where.eq(w.id, workflowId)
-        }.map { _.int(1) > 0 }.single.apply().getOrElse { true }
-      }
-      // catalogTransaction {
-      //   workflow.cells.filter { cell => /* println(cell); */ cell.state == ExecutionState.STALE }
-      //                 .toIterator
-      //                 .foldLeft(None:Option[Cell]) { 
-      //                   case (None, y) => Some(y)
-      //                   case (Some(x), y) if y.position < x.position => Some(y)
-      //                   case (Some(x), _) => Some(x)
-      //                 }
-      // }
-
-    def exec(): Boolean = 
-    {
-      try { 
-        logger.debug(s"In executor for Workflow ${workflowId}")
-        if(aborted) {
-          logger.debug(s"Aborted processing of Workflow ${workflowId} before start")
-        }
-        logger.debug("Recomputing Cell States")
-        DB autoCommit { implicit session => 
-          Provenance.updateCellStates(Workflow.get(workflowId).cells, Map.empty)
-        }
-        logger.debug(s"Starting processing of Workflow ${workflowId}")
-        var cell: Option[Cell] = nextTarget
-        logger.debug(s"First target for Workflow ${workflowId}: $cell")
-        while( (!aborted) &&  (cell != None) ){
-          processSynchronously(cell.get)
-          cell = nextTarget
-        }
-      } catch {
-        case e: Exception => 
-          logger.error(s"Error processing: $e")
-          e.printStackTrace()
-      }
-      logger.debug(s"Done processing Workflow ${workflowId}")
-      return true
-    }
-    def setRawResult(x: Unit): Unit = {}
-    def getRawResult(): Unit = {}
-  }
+  //   def aborted: Boolean =
+  //     DB readOnly { implicit session =>
+  //       val w = Workflow.syntax
+  //       withSQL { 
+  //         select(w.aborted)
+  //           .from(Workflow as w)
+  //           .where.eq(w.id, workflowId)
+  //       }.map { _.int(1) > 0 }.single.apply().getOrElse { true }
+  //     }
+  //     // catalogTransaction {
+  //     //   workflow.cells.filter { cell => /* println(cell); */ cell.state == ExecutionState.STALE }
+  //     //                 .toIterator
+  //     //                 .foldLeft(None:Option[Cell]) { 
+  //     //                   case (None, y) => Some(y)
+  //     //                   case (Some(x), y) if y.position < x.position => Some(y)
+  //     //                   case (Some(x), _) => Some(x)
+  //     //                 }
+  //     // }
+  // }
 }
 

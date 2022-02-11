@@ -15,7 +15,7 @@
 package info.vizierdb.commands.data
 
 import scalikejdbc._
-import play.api.libs.json.JsValue
+import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
@@ -26,6 +26,7 @@ import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.MaterializeConstructor
 import info.vizierdb.Vizier
 import info.vizierdb.filestore.Staging
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object CheckpointDataset extends Command
 {
@@ -49,7 +50,7 @@ object CheckpointDataset extends Command
 
     context.message("Checkpointing data...")
 
-    val staged = context.outputFile(
+    val staged = context.outputFilePlaceholder(
       "datasetName",
       mimeType = MIME.RAW,
     )
@@ -75,7 +76,10 @@ object CheckpointDataset extends Command
     )
     context.message("Dataset Checkpointed")
   }
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), Seq.empty) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("dataset"))
+      .andNothingElse
 }
 

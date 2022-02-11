@@ -26,6 +26,7 @@ import info.vizierdb.catalog.ArtifactSummary
 import info.vizierdb.Vizier
 import org.apache.spark.sql.{ DataFrame, SparkSession, AnalysisException }
 import info.vizierdb.catalog.Artifact
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object Query extends Command
   with LazyLogging
@@ -46,6 +47,7 @@ object Query extends Command
              .getOrElse { "SQL Query" }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
+    logger.trace(s"Available artifacts: \n${context.scope.map { case (name, summary) => s"$name -> ${summary.t}" }.mkString("\n")}")
     val scope = context.allDatasets
     val functions = context.scope
                            .toSeq
@@ -59,8 +61,7 @@ object Query extends Command
     logger.debug(s"$scope : $query")
 
     try { 
-      logger.trace("Creating view")
-
+      logger.trace(s"Creating view for \n$query\nAvailable functions: ${functions.map { _._1 }.mkString(", ")}")
       val fnDeps: Map[String, (Identifier, String, String)] = 
         InjectedSparkSQL.getDependencies(query)
                         ._2.toSeq
@@ -77,6 +78,7 @@ object Query extends Command
                             )
                           }
                         }
+      logger.trace(s"${fnDeps.keys.size} function dependencies: ${fnDeps.keys.mkString(", ")}")
 
       val view = 
         ViewConstructor(
@@ -119,16 +121,28 @@ object Query extends Command
   def computeDependencies(sql: String): Seq[String] =
   {
     val (views, functions) = InjectedSparkSQL.getDependencies(sql)
-    return views.toSeq
+
+            // Include all views
+    return views.toSeq++
+            // Include only non-built in functions
+            functions.toSeq.filterNot { Vizier.sparkSession.catalog.functionExists(_) }
   }
 
-  def predictProvenance(arguments: Arguments) =
-    Some( (
-      computeDependencies(arguments.get[String]("source")),
-      Seq(
-        arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
-      )
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) =
+    try {
+      ProvenancePrediction
+        .definitelyReads(
+          computeDependencies(arguments.get[String]("source")):_*
+        )
+        .definitelyWrites(
+          arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
+        )
+        .andNothingElse
+    } catch {
+      case t:Throwable => 
+        ProvenancePrediction.default
+    }
+  
   def prettyAnalysisError(e: AnalysisException, query: String): String =
     prettySQLError(e.message, query, e.line, e.startPosition.getOrElse(0))
 

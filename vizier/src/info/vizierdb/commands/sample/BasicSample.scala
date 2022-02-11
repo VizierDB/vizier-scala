@@ -17,6 +17,8 @@ package info.vizierdb.commands.sample
 import info.vizierdb.commands._
 import com.typesafe.scalalogging.LazyLogging
 import scala.util.Random
+import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object BasicSample extends Command
   with LazyLogging
@@ -71,10 +73,14 @@ object BasicSample extends Command
     context.message("Sample created")
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String](PAR_INPUT_DATASET)), 
-           Seq(arguments.getOpt[String](PAR_OUTPUT_DATASET)
-                        .getOrElse { arguments.get[String](PAR_INPUT_DATASET) })) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PAR_INPUT_DATASET))
+      .definitelyWrites(
+        arguments.getOpt[String](PAR_OUTPUT_DATASET)
+                 .getOrElse { arguments.get[String](PAR_INPUT_DATASET) }
+      )
+      .andNothingElse
 
 
 }
