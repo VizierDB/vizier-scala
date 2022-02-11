@@ -129,9 +129,10 @@ object Python extends Command
             }
           case "get_parameter" => 
             withArtifact { artifact => 
+              val json = artifact.json
               python.send("parameter",
-                "data" -> artifact.json,
-                "dataType" -> JsString(artifact.mimeType),
+                "data" -> (json \ "value").as[JsValue],
+                "dataType" -> (json \ "dataType").as[JsValue],
                 "artifactId" -> JsNumber(artifact.id)
               )
             }

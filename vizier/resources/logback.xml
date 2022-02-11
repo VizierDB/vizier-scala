@@ -33,7 +33,7 @@
   <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonInterface"   level="WARN" />
-  <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="DEBUG" />
+  <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="INFO" />
   <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
   <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
