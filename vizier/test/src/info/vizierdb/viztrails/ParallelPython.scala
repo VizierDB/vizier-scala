@@ -86,7 +86,7 @@ class ParallelPythonSpec
       project.script(
         """import time
           |vizierdb["x"] = "johnny"
-          |time.sleep(2)
+          |time.sleep(4)
           """.stripMargin,
         waitForResult = false,
         properties = Map(
@@ -98,7 +98,7 @@ class ParallelPythonSpec
       project.script(
         """import time
           |vizierdb["y"] = 5
-          |time.sleep(2)
+          |time.sleep(4)
           """.stripMargin,
         waitForResult = false,
         properties = Map(
@@ -122,7 +122,7 @@ class ParallelPythonSpec
 
     println(s"Parallel w/ data: ${t / 1000000.0}ms (output = ${project.lastOutputString.trim()})")
     // The scripts should execute in parallel.
-    t must beLessThan(3900000000l)
+    t must beLessThan(7900000000l)
 
     project.lastOutputString must contain("johnny-5")
 
