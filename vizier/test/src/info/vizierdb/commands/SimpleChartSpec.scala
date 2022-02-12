@@ -21,28 +21,54 @@ import org.specs2.specification.BeforeAll
 
 import info.vizierdb.MutableProject
 import info.vizierdb.test.SharedTestResources
+import info.vizierdb.commands.plot.SimpleChart
 
-class PlotCommandSpec
+class SimpleChartSpec
   extends Specification
   with BeforeAll
 {
   def beforeAll = SharedTestResources.init
   
 
-  "Plot Nulls" >> {
+  // "Plot Nulls" >> {
+  //   val project = MutableProject("Plot commands")
+  //   project.load("test_data/r.csv", "r")
+  //   project.append("plot", "chart")(
+  //     "dataset" -> "r",
+  //     "series" -> Seq(Map(
+  //       "series_column" -> 2, 
+  //     )),
+  //     "xaxis" -> Map(
+  //       "xaxis_column" -> 1
+  //     ),
+  //     "chart" -> Map()
+  //   )
+  //   project.waitUntilReadyAndThrowOnError
+  //   ok
+  // }
+
+
+  "Bar Chart" >> {
     val project = MutableProject("Plot commands")
     project.load("test_data/r.csv", "r")
+    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
+
     project.append("plot", "chart")(
-      "dataset" -> "r",
-      "series" -> Seq(Map(
-        "series_column" -> 2, 
+      SimpleChart.PARAM_DATASET -> "r",
+      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_SERIES -> Seq(Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 1, 
+      // ),Map(
+      //   SimpleChart.PARAM_SERIES_COLUMN -> 2, 
       )),
-      "xaxis" -> Map(
-        "xaxis_column" -> 1
+      SimpleChart.PARAM_XAXIS -> Map(
+        SimpleChart.PARAM_XAXIS_COLUMN -> 0
       ),
-      "chart" -> Map()
+      SimpleChart.PARAM_CHART -> Map()
     )
     project.waitUntilReadyAndThrowOnError
+    val data = project.artifact("bar").json
+    println(data)
     ok
   }
 }

@@ -22,7 +22,7 @@ import info.vizierdb.Vizier
 import info.vizierdb.catalog.{ Artifact, Workflow, Module, Cell, Result }
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
-import info.vizierdb.artifacts.Chart
+import info.vizierdb.vega.Chart
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.DatasetMessage
 import info.vizierdb.catalog.ArtifactSummary
@@ -211,25 +211,21 @@ class ExecutionContext(
    * @param   withMessage     Include a message containing the chart
    * @param   withArtifact    Include an message containing the chart
    */
-  def chart(chart: Chart, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
+  def chart(chart: Chart, identifier: String, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
   {
-    val df = dataframe(chart.dataset)
-
-    val encoded = 
-      chart.render(df).toString.getBytes
-
+    val encoded = chart.export
     if(withMessage){
       message(
-        mimeType = MIME.CHART_VIEW, 
-        content = encoded
+        mimeType = MessageType.VEGALITE.toString, 
+        content = encoded.toString,
       )
     }
     if(withArtifact){
       output(
-        name = chart.name,
-        t = ArtifactType.CHART,
-        data = encoded,
-        mimeType = MIME.CHART_VIEW
+        name = identifier,
+        t = ArtifactType.VEGALITE,
+        data = encoded.toString.getBytes,
+        mimeType = MIME.JSON
       )
     }
 

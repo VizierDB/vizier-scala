@@ -92,6 +92,7 @@ object JavascriptMessage
 }
 
 
+/** Note: mimeType should actually be named messageType **/
 case class Message(
   val resultId: Identifier,
   val mimeType: String,
@@ -110,11 +111,12 @@ case class Message(
         `type` = t,
         value = (t match {
           case MessageType.DATASET => Json.toJson(Json.parse(data).as[DatasetMessage].describe)
-          case MessageType.CHART => Json.parse(data)
-          case MessageType.JAVASCRIPT => Json.parse(data)
+          case MessageType.CHART => dataJson
+          case MessageType.JAVASCRIPT => dataJson
           case MessageType.HTML => JsString(new String(data))
           case MessageType.TEXT => JsString(new String(data))
           case MessageType.MARKDOWN => JsString(new String(data))
+          case MessageType.VEGALITE => dataJson
         })
       )
     } catch {

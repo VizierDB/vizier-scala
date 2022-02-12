@@ -328,6 +328,14 @@ object SharedEncodingStrokeWidth {
 
 ////////////////////////////////////////////////////////////////////////
 
+// TopLevelRepeatSpecAsObject1ParamsElement (UnionType)
+
+sealed trait TopLevelRepeatSpecAsObject1ParamsElement 
+   // VariableParameter is defined elsewhere
+   // TopLevelSelectionParameter is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // OverlayMarkDefHeight (UnionType)
 
 sealed trait OverlayMarkDefHeight 
@@ -637,7 +645,7 @@ object TopLevelConcatSpec {
 
 // PrimitiveValue (UnionType)
 
-sealed trait PrimitiveValue extends SharedEncodingStrokeWidthDatum with SharedEncodingStrokeDatum with SharedEncodingY2Datum with SharedEncodingRadius2Datum with ScaleDatumDefDatum with DatumDefDatum with SharedEncodingAngleDatum with SharedEncodingStrokeOpacityDatum with SharedEncodingSizeDatum with SelectionInit with SharedEncodingOpacityDatum with PositionDatumDefDatum with FieldOrDatumDefWithConditionDatumDefGradientStringNullDatum with SharedEncodingLongitude2Datum with SharedEncodingLatitudeDatum with SharedEncodingStrokeDashDatum with SharedEncodingYOffsetDatum with SharedEncodingRadiusDatum with SharedEncodingLatitude2Datum with FieldOrDatumDefWithConditionStringDatumDefTextDatum with SharedEncodingXDatum with SharedEncodingThetaDatum with SharedEncodingFillOpacityDatum with SharedEncodingX2Datum with PositionDatumDefBaseDatum with FieldOrDatumDefWithConditionDatumDefNumberDatum with SharedEncodingYDatum with SharedEncodingFillDatum with SharedEncodingXOffsetDatum with SharedEncodingTheta2Datum with SharedEncodingTextDatum with SharedEncodingColorDatum with SharedEncodingLongitudeDatum with SharedEncodingShapeDatum with FieldOrDatumDefWithConditionDatumDefStringNullDatum
+sealed trait PrimitiveValue extends SharedEncodingStrokeWidthDatum with SharedEncodingStrokeDatum with SharedEncodingY2Datum with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum with SharedEncodingRadius2Datum with ScaleDatumDefDatum with DatumDefDatum with SharedEncodingAngleDatum with SharedEncodingStrokeOpacityDatum with ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum with SharedEncodingSizeDatum with SelectionInit with SharedEncodingOpacityDatum with PositionDatumDefDatum with FieldOrDatumDefWithConditionDatumDefGradientStringNullDatum with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum with SharedEncodingLongitude2Datum with SharedEncodingLatitudeDatum with SharedEncodingStrokeDashDatum with SharedEncodingYOffsetDatum with ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum with SharedEncodingRadiusDatum with SharedEncodingLatitude2Datum with FieldOrDatumDefWithConditionStringDatumDefTextDatum with SharedEncodingXDatum with SharedEncodingThetaDatum with SharedEncodingFillOpacityDatum with SharedEncodingX2Datum with PositionDatumDefBaseDatum with FieldOrDatumDefWithConditionDatumDefNumberDatum with SharedEncodingYDatum with SharedEncodingFillDatum with SharedEncodingXOffsetDatum with SharedEncodingTheta2Datum with SharedEncodingTextDatum with SharedEncodingColorDatum with SharedEncodingLongitudeDatum with SharedEncodingShapeDatum with FieldOrDatumDefWithConditionDatumDefStringNullDatum
    case class PrimitiveValueAsNumber(value: JsNumber) extends PrimitiveValue
    case class PrimitiveValueAsString(value: String) extends PrimitiveValue
    case class PrimitiveValueAsBool(value: Boolean) extends PrimitiveValue
@@ -935,6 +943,14 @@ sealed trait LegendConfigStrokeDash
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisLabelBaselineAsObject2Condition (UnionType)
+
+sealed trait ConditionalAxisLabelBaselineAsObject2Condition 
+   // ConditionalPredicateValueDefTextBaselineNullExprRef is defined elsewhere
+   case class ConditionalAxisLabelBaselineAsObject2ConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(value: Seq[ConditionalPredicateValueDefTextBaselineNullExprRef]) extends ConditionalAxisLabelBaselineAsObject2Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // OverlayMarkDefFontSizeAsNumber (ConstrainedType)
 /**
  * The font size, in pixels.
@@ -1003,8 +1019,9 @@ sealed trait TickConfigOrder
 
 // ConditionalPredicateValueDefTextBaselineNullExprRef (UnionType)
 
-sealed trait ConditionalPredicateValueDefTextBaselineNullExprRef extends ConditionalAxisLabelBaselineAsObjectCondition
-   // ConditionalPredicateValueDefTextBaselineNullExprRefAsObject is defined elsewhere
+sealed trait ConditionalPredicateValueDefTextBaselineNullExprRef extends ConditionalAxisLabelBaselineAsObject2Condition with ConditionalAxisLabelBaselineAsObject1Condition
+   // ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1 is defined elsewhere
+   // ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -1308,6 +1325,21 @@ sealed trait TitleConfigDx
 
 ////////////////////////////////////////////////////////////////////////
 
+// TopLevelRepeatSpecAsObject2Bounds (EnumType)
+/**
+ * The bounds calculation method to use for determining the extent of a sub-plot. One of `full` (the default) or `flush`.
+ * 
+ * - If set to `full`, the entire calculated bounds (including axes, title, and legend) will be used.
+ * - If set to `flush`, only the specified width and height values for the sub-view will be used. The `flush` setting can be useful when attempting to place sub-plots without axes or legends into a uniform grid structure.
+ * 
+ * __Default value:__ `"full"`
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Bounds  { val payload: JsValue }
+   case object TopLevelRepeatSpecAsObject2BoundsFull extends TopLevelRepeatSpecAsObject2Bounds { val payload = JsString("full") }
+   case object TopLevelRepeatSpecAsObject2BoundsFlush extends TopLevelRepeatSpecAsObject2Bounds { val payload = JsString("flush") }
+
+////////////////////////////////////////////////////////////////////////
+
 // FieldOrDatumDefWithConditionMarkPropFieldDefNumberCondition (UnionType)
 /**
  * One or more value definition(s) with [a parameter or a test predicate](https://vega.github.io/vega-lite/docs/condition.html).
@@ -1350,7 +1382,8 @@ sealed trait LayerSpecLayerElement
 // ConditionalAxisLabelBaseline (UnionType)
 
 sealed trait ConditionalAxisLabelBaseline extends AxisConfigLabelBaseline with AxisLabelBaseline
-   // ConditionalAxisLabelBaselineAsObject is defined elsewhere
+   // ConditionalAxisLabelBaselineAsObject1 is defined elsewhere
+   // ConditionalAxisLabelBaselineAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -1363,6 +1396,24 @@ sealed trait ConditionalAxisLabelBaseline extends AxisConfigLabelBaseline with A
 sealed trait BarConfigOpacity 
    case class BarConfigOpacityAsNumber(value: JsNumber) extends BarConfigOpacity
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject1Align (UnionType)
+/**
+ * The alignment to apply to grid rows and columns. The supported string values are `"all"`, `"each"`, and `"none"`.
+ * 
+ * - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed one after the other.
+ * - For `"each"`, subviews will be aligned into a clean grid structure, but each row or column may be of variable size.
+ * - For `"all"`, subviews will be aligned and each row or column will be sized identically based on the maximum observed size. String values for this property will be applied to both grid rows and columns.
+ * 
+ * Alternatively, an object value of the form `{"row": string, "column": string}` can be used to supply different alignments for rows and columns.
+ * 
+ * __Default value:__ `"all"`.
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Align 
+   // LayoutAlign is defined elsewhere
+   // RowColLayoutAlign is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -1857,9 +1908,9 @@ sealed trait ScaleConfigBandWithNestedOffsetPaddingOuter
 
 // Padding (ConstrainedType)
 
-sealed trait Padding extends TopLevelHConcatSpecPadding with TopLevelRepeatSpecAsObjectPadding with ConfigPadding with TopLevelLayerSpecPadding with TopLevelUnitSpecPadding with TopLevelFacetSpecPadding with TopLevelVConcatSpecPadding with TopLevelConcatSpecPadding
+sealed trait Padding extends TopLevelHConcatSpecPadding with ConfigPadding with TopLevelLayerSpecPadding with TopLevelUnitSpecPadding with TopLevelFacetSpecPadding with TopLevelRepeatSpecAsObject2Padding with TopLevelVConcatSpecPadding with TopLevelRepeatSpecAsObject1Padding with TopLevelConcatSpecPadding
    case class PaddingAsNumber(value: JsNumber) extends Padding
-   // PaddingAsObject is defined elsewhere
+   // PaddingAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -1927,7 +1978,7 @@ case class AutoSizeParams(
    * __Default value__: `"pad"`
    **/
   var `type` : Option[AutosizeType] = None
-) extends TopLevelVConcatSpecAutosize with TopLevelRepeatSpecAsObjectAutosize with TopLevelConcatSpecAutosize with ConfigAutosize with TopLevelFacetSpecAutosize with TopLevelLayerSpecAutosize with TopLevelUnitSpecAutosize with TopLevelHConcatSpecAutosize 
+) extends TopLevelVConcatSpecAutosize with TopLevelConcatSpecAutosize with ConfigAutosize with TopLevelRepeatSpecAsObject2Autosize with TopLevelFacetSpecAutosize with TopLevelLayerSpecAutosize with TopLevelUnitSpecAutosize with TopLevelHConcatSpecAutosize with TopLevelRepeatSpecAsObject1Autosize 
 {  }
 object AutoSizeParams {
   val definedFields = Set("contains", "resize", "type") 
@@ -2177,6 +2228,14 @@ sealed trait BarConfigAspect
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisColorAsObject1Condition (UnionType)
+
+sealed trait ConditionalAxisColorAsObject1Condition 
+   // ConditionalPredicateValueDefColorNullExprRef is defined elsewhere
+   case class ConditionalAxisColorAsObject1ConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(value: Seq[ConditionalPredicateValueDefColorNullExprRef]) extends ConditionalAxisColorAsObject1Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // FacetEncodingFieldDefCenter (UnionType)
 /**
  * Boolean flag indicating if subviews should be centered relative to their respective rows or columns.
@@ -2245,6 +2304,20 @@ sealed trait ViewBackgroundCornerRadius
 sealed trait ImputeTransformKeyvals 
    case class ImputeTransformKeyvalsAsArrayOfAny(value: Seq[JsValue]) extends ImputeTransformKeyvals
    // ImputeSequence is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// RangeSchemeAsObject3 (StructType)
+
+case class RangeSchemeAsObject3(
+  var `count` : Option[JsNumber] = None,
+  var `extent` : Option[Seq[JsNumber]] = None,
+  var `scheme` : RangeSchemeAsObject3Scheme
+) extends RangeScheme 
+{  }
+object RangeSchemeAsObject3 {
+  val definedFields = Set("count", "extent", "scheme") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -2511,6 +2584,18 @@ sealed trait BarConfigTheta
 
 sealed trait BarConfigFont 
    case class BarConfigFontAsString(value: String) extends BarConfigFont
+   // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject2Background (UnionType)
+/**
+ * CSS color property to use as the background of the entire view.
+ * 
+ * __Default value:__ `"white"`
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Background 
+   // Color is defined elsewhere
    // ExprRef is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
@@ -2833,6 +2918,16 @@ object ConditionalPredicateStringFieldDef {
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition (ConstrainedType)
+/**
+ * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+ **/
+case class ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition(value: JsNumber) 
+{ assert(value.value <= 1)
+  assert(value.value >= 0) }
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingRadiusStack (UnionType)
 /**
  * Type of stacking offset if the field should be stacked. `stack` is only applicable for `x`, `y`, `theta`, and `radius` channels with continuous domains. For example, `stack` of `y` can be used to customize stacking for a vertical bar chart.
@@ -3033,6 +3128,14 @@ sealed trait SharedEncodingRadiusType
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisLabelFontStyleAsObject1Condition (UnionType)
+
+sealed trait ConditionalAxisLabelFontStyleAsObject1Condition 
+   // ConditionalPredicateValueDefFontStyleNullExprRef is defined elsewhere
+   case class ConditionalAxisLabelFontStyleAsObject1ConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(value: Seq[ConditionalPredicateValueDefFontStyleNullExprRef]) extends ConditionalAxisLabelFontStyleAsObject1Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // OverlayMarkDefSmooth (UnionType)
 
 sealed trait OverlayMarkDefSmooth 
@@ -3193,7 +3296,7 @@ sealed trait AreaConfigCornerRadiusTopLeft
 
 // EventType (EnumType)
 
-sealed trait EventType  { val payload: JsValue }
+sealed trait EventType extends WindowEventType { val payload: JsValue }
    case object EventTypeClick extends EventType { val payload = JsString("click") }
    case object EventTypeDblclick extends EventType { val payload = JsString("dblclick") }
    case object EventTypeDragenter extends EventType { val payload = JsString("dragenter") }
@@ -3516,25 +3619,6 @@ sealed trait ScaleInterpolateEnum extends ScaleInterpolate { val payload: JsValu
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalPredicateValueDefFontWeightNullExprRefAsObject (StructType)
-
-case class ConditionalPredicateValueDefFontWeightNullExprRefAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[FontWeight] = None
-) extends ConditionalPredicateValueDefFontWeightNullExprRef 
-{  }
-object ConditionalPredicateValueDefFontWeightNullExprRefAsObject {
-  val definedFields = Set("test", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // MarkDefStrokeWidthAsNumber (ConstrainedType)
 /**
  * The stroke width, in pixels.
@@ -3597,7 +3681,8 @@ sealed trait AxisConfigTitleY
 // ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape (UnionType)
 
 sealed trait ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape extends ConditionalMarkPropFieldOrDatumDefTypeForShape
-   // ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject is defined elsewhere
+   // ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1 is defined elsewhere
+   // ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -3751,7 +3836,7 @@ case class TitleParams(
   var `fontSize` : Option[TitleParamsFontSize] = None,
   var `limit` : Option[TitleParamsLimit] = None,
   var `fontWeight` : Option[TitleParamsFontWeight] = None
-) extends UnitSpecWithFrameTitle with TopLevelLayerSpecTitle with LayerSpecTitle with TopLevelFacetSpecTitle with LayerRepeatSpecTitle with TopLevelUnitSpecTitle with TopLevelRepeatSpecAsObjectTitle with VConcatSpecGenericSpecTitle with UnitSpecTitle with HConcatSpecGenericSpecTitle with FacetSpecTitle with TopLevelHConcatSpecTitle with ConcatSpecGenericSpecTitle with TopLevelConcatSpecTitle with NonLayerRepeatSpecTitle with TopLevelVConcatSpecTitle with FacetedUnitSpecTitle 
+) extends UnitSpecWithFrameTitle with TopLevelLayerSpecTitle with LayerSpecTitle with TopLevelFacetSpecTitle with LayerRepeatSpecTitle with TopLevelUnitSpecTitle with TopLevelRepeatSpecAsObject1Title with VConcatSpecGenericSpecTitle with UnitSpecTitle with HConcatSpecGenericSpecTitle with FacetSpecTitle with TopLevelHConcatSpecTitle with TopLevelRepeatSpecAsObject2Title with ConcatSpecGenericSpecTitle with TopLevelConcatSpecTitle with NonLayerRepeatSpecTitle with TopLevelVConcatSpecTitle with FacetedUnitSpecTitle 
 {  }
 object TitleParams {
   val definedFields = Set("fontSize", "font", "subtitleLineHeight", "color", "anchor", "subtitlePadding", "frame", "dy", "dx", "style", "lineHeight", "subtitleFontSize", "offset", "subtitle", "subtitleFontStyle", "text", "fontStyle", "limit", "aria", "fontWeight", "zindex", "orient", "subtitleFontWeight", "baseline", "subtitleColor", "align", "subtitleFont", "angle") 
@@ -3764,25 +3849,11 @@ object TitleParams {
 case class RowColNumber(
   var `column` : Option[JsNumber] = None,
   var `row` : Option[JsNumber] = None
-) extends ConcatSpecGenericSpecSpacing with NonLayerRepeatSpecSpacing with FacetSpecSpacing with TopLevelUnitSpecSpacing with TopLevelRepeatSpecAsObjectSpacing with FacetEncodingFieldDefSpacing with LayerRepeatSpecSpacing with FacetedUnitSpecSpacing with TopLevelFacetSpecSpacing with TopLevelConcatSpecSpacing 
+) extends ConcatSpecGenericSpecSpacing with NonLayerRepeatSpecSpacing with FacetSpecSpacing with TopLevelUnitSpecSpacing with TopLevelRepeatSpecAsObject1Spacing with FacetEncodingFieldDefSpacing with LayerRepeatSpecSpacing with FacetedUnitSpecSpacing with TopLevelFacetSpecSpacing with TopLevelRepeatSpecAsObject2Spacing with TopLevelConcatSpecSpacing 
 {  }
 object RowColNumber {
   val definedFields = Set("column", "row") 
 }
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit (UnionType)
-/**
- * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
- * 
- * __Default value:__ `undefined` (None)
- * 
- * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
- **/
-sealed trait ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit 
-   // TimeUnit is defined elsewhere
-   // TimeUnitParams is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -4455,14 +4526,6 @@ sealed trait RectConfigSmooth
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisStringAsObjectCondition (UnionType)
-
-sealed trait ConditionalAxisStringAsObjectCondition 
-   // ConditionalPredicateValueDefStringNullExprRef is defined elsewhere
-   case class ConditionalAxisStringAsObjectConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(value: Seq[ConditionalPredicateValueDefStringNullExprRef]) extends ConditionalAxisStringAsObjectCondition
-
-////////////////////////////////////////////////////////////////////////
-
 // ProjectionSpacing (UnionType)
 
 sealed trait ProjectionSpacing 
@@ -4492,6 +4555,18 @@ sealed trait MarkDefFill
    // Gradient is defined elsewhere
    case object MarkDefFillAsNull extends MarkDefFill
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum (UnionType)
+/**
+ * A constant value in data domain.
+ **/
+sealed trait ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum 
+   // PrimitiveValue is defined elsewhere
+   // DateTime is defined elsewhere
+   // ExprRef is defined elsewhere
+   // RepeatRef is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -4552,7 +4627,8 @@ sealed trait RangeConfigHeatmap
 // ConditionalPredicateMarkPropFieldOrDatumDef (UnionType)
 
 sealed trait ConditionalPredicateMarkPropFieldOrDatumDef extends ConditionalMarkPropFieldOrDatumDef
-   // ConditionalPredicateMarkPropFieldOrDatumDefAsObject is defined elsewhere
+   // ConditionalPredicateMarkPropFieldOrDatumDefAsObject1 is defined elsewhere
+   // ConditionalPredicateMarkPropFieldOrDatumDefAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -4631,7 +4707,7 @@ case class TimeUnitParams(
    * True to use UTC timezone. Equivalent to using a `utc` prefixed `TimeUnit`.
    **/
   var `utc` : Option[Boolean] = None
-) extends SharedEncodingYError2TimeUnit with SharedEncodingThetaTimeUnit with SharedEncodingLongitude2TimeUnit with TimeUnitTransformTimeUnit with OrderFieldDefTimeUnit with ConditionalPredicateStringFieldDefTimeUnit with ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit with SharedEncodingXError2TimeUnit with ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit with SharedEncodingRadius2TimeUnit with SharedEncodingFillOpacityTimeUnit with FieldOrDatumDefWithConditionStringFieldDefTextTimeUnit with SharedEncodingRadiusTimeUnit with SharedEncodingYErrorTimeUnit with SharedEncodingLatitude2TimeUnit with SharedEncodingTheta2TimeUnit with StringFieldDefTimeUnit with FieldValidPredicateTimeUnit with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit with SharedEncodingOpacityTimeUnit with SharedEncodingYTimeUnit with SharedEncodingSizeTimeUnit with SharedEncodingLatitudeTimeUnit with FieldDefWithoutScaleTimeUnit with SharedEncodingLongitudeTimeUnit with SharedEncodingFillTimeUnit with FieldEqualPredicateTimeUnit with StringFieldDefWithConditionTimeUnit with SharedEncodingStrokeOpacityTimeUnit with LatLongFieldDefTimeUnit with FieldGTPredicateTimeUnit with SharedEncodingStrokeTimeUnit with SharedEncodingYOffsetTimeUnit with SharedEncodingAngleTimeUnit with FacetFieldDefTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefTypeForShapeStringNullTimeUnit with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit with SharedEncodingStrokeDashTimeUnit with SharedEncodingKeyTimeUnit with SharedEncodingUrlTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNullTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefNumberTimeUnit with SharedEncodingStrokeWidthTimeUnit with SharedEncodingY2TimeUnit with SharedEncodingXErrorTimeUnit with ScaleFieldDefTimeUnit with FieldGTEPredicateTimeUnit with PositionFieldDefBaseTimeUnit with FieldLTEPredicateTimeUnit with FieldLTPredicateTimeUnit with FacetEncodingFieldDefTimeUnit with SharedEncodingDescriptionTimeUnit with SharedEncodingHrefTimeUnit with SharedEncodingShapeTimeUnit with SharedEncodingXOffsetTimeUnit with SharedEncodingTextTimeUnit with SharedEncodingX2TimeUnit with RowColumnEncodingFieldDefTimeUnit with PositionFieldDefTimeUnit with FieldOneOfPredicateTimeUnit with SecondaryFieldDefTimeUnit with ConditionalParameterStringFieldDefTimeUnit with SharedEncodingXTimeUnit with SharedEncodingColorTimeUnit with FieldRangePredicateTimeUnit 
+) extends ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit with SharedEncodingYError2TimeUnit with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit with SharedEncodingThetaTimeUnit with SharedEncodingLongitude2TimeUnit with TimeUnitTransformTimeUnit with OrderFieldDefTimeUnit with ConditionalPredicateStringFieldDefTimeUnit with SharedEncodingXError2TimeUnit with SharedEncodingRadius2TimeUnit with SharedEncodingFillOpacityTimeUnit with FieldOrDatumDefWithConditionStringFieldDefTextTimeUnit with SharedEncodingRadiusTimeUnit with SharedEncodingYErrorTimeUnit with SharedEncodingLatitude2TimeUnit with SharedEncodingTheta2TimeUnit with StringFieldDefTimeUnit with FieldValidPredicateTimeUnit with SharedEncodingOpacityTimeUnit with SharedEncodingYTimeUnit with SharedEncodingSizeTimeUnit with SharedEncodingLatitudeTimeUnit with FieldDefWithoutScaleTimeUnit with SharedEncodingLongitudeTimeUnit with SharedEncodingFillTimeUnit with FieldEqualPredicateTimeUnit with StringFieldDefWithConditionTimeUnit with SharedEncodingStrokeOpacityTimeUnit with LatLongFieldDefTimeUnit with FieldGTPredicateTimeUnit with SharedEncodingStrokeTimeUnit with SharedEncodingYOffsetTimeUnit with SharedEncodingAngleTimeUnit with FacetFieldDefTimeUnit with ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefTypeForShapeStringNullTimeUnit with SharedEncodingStrokeDashTimeUnit with SharedEncodingKeyTimeUnit with SharedEncodingUrlTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNullTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefNumberTimeUnit with SharedEncodingStrokeWidthTimeUnit with SharedEncodingY2TimeUnit with SharedEncodingXErrorTimeUnit with ScaleFieldDefTimeUnit with FieldGTEPredicateTimeUnit with PositionFieldDefBaseTimeUnit with FieldLTEPredicateTimeUnit with FieldLTPredicateTimeUnit with FacetEncodingFieldDefTimeUnit with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit with SharedEncodingDescriptionTimeUnit with SharedEncodingHrefTimeUnit with SharedEncodingShapeTimeUnit with SharedEncodingXOffsetTimeUnit with SharedEncodingTextTimeUnit with SharedEncodingX2TimeUnit with RowColumnEncodingFieldDefTimeUnit with PositionFieldDefTimeUnit with FieldOneOfPredicateTimeUnit with SecondaryFieldDefTimeUnit with ConditionalParameterStringFieldDefTimeUnit with SharedEncodingXTimeUnit with SharedEncodingColorTimeUnit with FieldRangePredicateTimeUnit 
 {  }
 object TimeUnitParams {
   val definedFields = Set("maxbins", "step", "unit", "utc") 
@@ -4705,6 +4781,14 @@ sealed trait ConfigBackground
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisLabelAlignAsObject1Condition (UnionType)
+
+sealed trait ConditionalAxisLabelAlignAsObject1Condition 
+   // ConditionalPredicateValueDefAlignNullExprRef is defined elsewhere
+   case class ConditionalAxisLabelAlignAsObject1ConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(value: Seq[ConditionalPredicateValueDefAlignNullExprRef]) extends ConditionalAxisLabelAlignAsObject1Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // BarConfigCornerRadius (UnionType)
 
 sealed trait BarConfigCornerRadius 
@@ -4735,21 +4819,6 @@ sealed trait ProjectionRatio
 sealed trait LegendConfigGradientLength 
    // LegendConfigGradientLengthAsNumber is defined elsewhere
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// PaddingAsObject (StructType)
-
-case class PaddingAsObject(
-  var `bottom` : Option[JsNumber] = None,
-  var `left` : Option[JsNumber] = None,
-  var `right` : Option[JsNumber] = None,
-  var `top` : Option[JsNumber] = None
-) extends Padding 
-{  }
-object PaddingAsObject {
-  val definedFields = Set("bottom", "left", "right", "top") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -4879,6 +4948,16 @@ case class SharedEncodingYError2BandPosition(value: JsNumber)
 sealed trait TitleParamsAngle 
    case class TitleParamsAngleAsNumber(value: JsNumber) extends TitleParamsAngle
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition (ConstrainedType)
+/**
+ * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+ **/
+case class ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition(value: JsNumber) 
+{ assert(value.value <= 1)
+  assert(value.value >= 0) }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -5205,6 +5284,16 @@ sealed trait TickConfigX
    case class TickConfigXAsNumber(value: JsNumber) extends TickConfigX
    // Width is defined elsewhere
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject2Title (UnionType)
+/**
+ * Title for the plot.
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Title 
+   // Text is defined elsewhere
+   // TitleParams is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -5611,7 +5700,8 @@ object DatumDef {
 // ParameterExtent (UnionType)
 
 sealed trait ParameterExtent extends ScaleDomain with BinExtent
-   // ParameterExtentAsObject is defined elsewhere
+   // ParameterExtentAsObject1 is defined elsewhere
+   // ParameterExtentAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -5883,6 +5973,18 @@ sealed trait TickConfigEndAngle
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum (UnionType)
+/**
+ * A constant value in data domain.
+ **/
+sealed trait ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum 
+   // PrimitiveValue is defined elsewhere
+   // DateTime is defined elsewhere
+   // ExprRef is defined elsewhere
+   // RepeatRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // AxisZindex (ConstrainedType)
 /**
  * A non-negative integer indicating the z-index of the axis. If zindex is 0, axes should be drawn behind all chart elements. To put them in front, set `zindex` to `1` or more.
@@ -5970,22 +6072,6 @@ sealed trait LegendConfigLabelFontWeight
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisNumberAsObject (StructType)
-
-case class ConditionalAxisNumberAsObject(
-  var `condition` : ConditionalAxisNumberAsObjectCondition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : ConditionalAxisNumberAsObjectValue
-) extends ConditionalAxisNumber 
-{  }
-object ConditionalAxisNumberAsObject {
-  val definedFields = Set("condition", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // TickConfigCornerRadiusBottomLeft (UnionType)
 
 sealed trait TickConfigCornerRadiusBottomLeft 
@@ -6045,22 +6131,6 @@ sealed trait LookupTransformFrom
 sealed trait OverlayMarkDefStrokeJoin 
    // StrokeJoin is defined elsewhere
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalAxisLabelFontWeightAsObject (StructType)
-
-case class ConditionalAxisLabelFontWeightAsObject(
-  var `condition` : ConditionalAxisLabelFontWeightAsObjectCondition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[FontWeight] = None
-) extends ConditionalAxisLabelFontWeight 
-{  }
-object ConditionalAxisLabelFontWeightAsObject {
-  val definedFields = Set("condition", "value") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -6558,6 +6628,18 @@ sealed trait AxisLabelFontStyle
 
 ////////////////////////////////////////////////////////////////////////
 
+// ViewConfigDiscreteWidthAsObject2 (StructType)
+
+case class ViewConfigDiscreteWidthAsObject2(
+  var `step` : JsNumber
+) extends ViewConfigDiscreteWidth 
+{  }
+object ViewConfigDiscreteWidthAsObject2 {
+  val definedFields = Set("step") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // AreaConfigStroke (UnionType)
 /**
  * Default stroke color. This property has higher precedence than `config.color`. Set to `null` to remove stroke.
@@ -6730,20 +6812,6 @@ sealed trait FacetedEncodingDescription
 sealed trait LayerRepeatSpecSpec 
    // LayerSpec is defined elsewhere
    // UnitSpec is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// RangeSchemeAsObject (StructType)
-
-case class RangeSchemeAsObject(
-  var `count` : Option[JsNumber] = None,
-  var `extent` : Option[Seq[JsNumber]] = None,
-  var `scheme` : RangeSchemeAsObjectScheme
-) extends RangeScheme 
-{  }
-object RangeSchemeAsObject {
-  val definedFields = Set("count", "extent", "scheme") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -7117,6 +7185,14 @@ sealed trait OrderFieldDefTimeUnit
 sealed trait ConfigAutosize 
    // AutosizeType is defined elsewhere
    // AutoSizeParams is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// WindowEventType (UnionType)
+
+sealed trait WindowEventType 
+   // EventType is defined elsewhere
+   case class WindowEventTypeAsString(value: String) extends WindowEventType
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -7631,7 +7707,8 @@ object NumberLocale {
 // EventStream (UnionType)
 
 sealed trait EventStream extends Stream
-   // EventStreamAsObject is defined elsewhere
+   // EventStreamAsObject1 is defined elsewhere
+   // EventStreamAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -7766,16 +7843,6 @@ sealed trait ViewConfigOpacity
 sealed trait AxisDomainDashOffset 
    case class AxisDomainDashOffsetAsNumber(value: JsNumber) extends AxisDomainDashOffset
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// TopLevelRepeatSpecAsObjectRepeat (UnionType)
-/**
- * Definition for fields to be repeated. One of: 1) An array of fields to be repeated. If `"repeat"` is an array, the field can be referred to as `{"repeat": "repeat"}`. The repeated views are laid out in a wrapped row. You can set the number of columns to control the wrapping. 2) An object that maps `"row"` and/or `"column"` to the listed fields to be repeated along the particular orientations. The objects `{"repeat": "row"}` and `{"repeat": "column"}` can be used to refer to the repeated field respectively.
- **/
-sealed trait TopLevelRepeatSpecAsObjectRepeat 
-   case class TopLevelRepeatSpecAsObjectRepeatAsArrayOfString(value: Seq[String]) extends TopLevelRepeatSpecAsObjectRepeat
-   // RepeatMapping is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -8008,6 +8075,44 @@ case class LatLongFieldDefType()
 
 ////////////////////////////////////////////////////////////////////////
 
+// ParameterExtentAsObject1 (StructType)
+
+case class ParameterExtentAsObject1(
+  /**
+   * If a selection parameter is specified, the field name to extract selected values for when the selection is [projected](https://vega.github.io/vega-lite/docs/selection.html#project) over multiple fields or encodings.
+   **/
+  var `field` : Option[String] = None,
+  /**
+   * The name of a parameter.
+   **/
+  var `param` : String
+) extends ParameterExtent 
+{  }
+object ParameterExtentAsObject1 {
+  val definedFields = Set("field", "param") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ParameterExtentAsObject2 (StructType)
+
+case class ParameterExtentAsObject2(
+  /**
+   * If a selection parameter is specified, the encoding channel to extract selected values for when a selection is [projected](https://vega.github.io/vega-lite/docs/selection.html#project) over multiple fields or encodings.
+   **/
+  var `encoding` : Option[SingleDefUnitChannel] = None,
+  /**
+   * The name of a parameter.
+   **/
+  var `param` : String
+) extends ParameterExtent 
+{  }
+object ParameterExtentAsObject2 {
+  val definedFields = Set("encoding", "param") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // IntervalSelectionConfig (StructType)
 
 case class IntervalSelectionConfig(
@@ -8087,6 +8192,39 @@ sealed trait AxisConfigTickSize
    // AxisConfigTickSizeAsNumber is defined elsewhere
    // ExprRef is defined elsewhere
    // ConditionalAxisNumber is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2 (StructType)
+
+case class ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2(
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String,
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition
+) extends ConditionalPredicateValueDefTextBaselineNullExprRef 
+{  }
+object ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2 {
+  val definedFields = Set("expr", "test") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject1Center (UnionType)
+/**
+ * Boolean flag indicating if subviews should be centered relative to their respective rows or columns.
+ * 
+ * An object value of the form `{"row": boolean, "column": boolean}` can be used to supply different centering values for rows and columns.
+ * 
+ * __Default value:__ `false`
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Center 
+   case class TopLevelRepeatSpecAsObject1CenterAsBool(value: Boolean) extends TopLevelRepeatSpecAsObject1Center
+   // RowColBoolean is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -8199,6 +8337,25 @@ case class BoxPlotDefOpacity(value: JsNumber)
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1 (StructType)
+
+case class ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[TextBaseline] = None
+) extends ConditionalPredicateValueDefTextBaselineNullExprRef 
+{  }
+object ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1 {
+  val definedFields = Set("test", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingStrokeDashDatum (UnionType)
 /**
  * A constant value in data domain.
@@ -8287,6 +8444,16 @@ sealed trait FacetedEncodingXError
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPosition (ConstrainedType)
+/**
+ * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+ **/
+case class ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPosition(value: JsNumber) 
+{ assert(value.value <= 1)
+  assert(value.value >= 0) }
+
+////////////////////////////////////////////////////////////////////////
+
 // AreaConfigHeight (UnionType)
 
 sealed trait AreaConfigHeight 
@@ -8339,7 +8506,7 @@ sealed trait AreaConfigFill
 
 // AutosizeType (EnumType)
 
-sealed trait AutosizeType extends TopLevelVConcatSpecAutosize with TopLevelRepeatSpecAsObjectAutosize with TopLevelConcatSpecAutosize with ConfigAutosize with TopLevelFacetSpecAutosize with TopLevelLayerSpecAutosize with TopLevelUnitSpecAutosize with TopLevelHConcatSpecAutosize { val payload: JsValue }
+sealed trait AutosizeType extends TopLevelVConcatSpecAutosize with TopLevelConcatSpecAutosize with ConfigAutosize with TopLevelRepeatSpecAsObject2Autosize with TopLevelFacetSpecAutosize with TopLevelLayerSpecAutosize with TopLevelUnitSpecAutosize with TopLevelHConcatSpecAutosize with TopLevelRepeatSpecAsObject1Autosize { val payload: JsValue }
    case object AutosizeTypePad extends AutosizeType { val payload = JsString("pad") }
    case object AutosizeTypeNone extends AutosizeType { val payload = JsString("none") }
    case object AutosizeTypeFit extends AutosizeType { val payload = JsString("fit") }
@@ -8467,14 +8634,6 @@ sealed trait SharedEncodingStrokeTimeUnit
 sealed trait StackTransformAs 
    case class StackTransformAsAsString(value: String) extends StackTransformAs
    // StackTransformAsAsArray is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalPredicateValueDefStringNullExprRefAsObjectValue (UnionType)
-
-sealed trait ConditionalPredicateValueDefStringNullExprRefAsObjectValue 
-   case class ConditionalPredicateValueDefStringNullExprRefAsObjectValueAsString(value: String) extends ConditionalPredicateValueDefStringNullExprRefAsObjectValue
-   case object ConditionalPredicateValueDefStringNullExprRefAsObjectValueAsNull extends ConditionalPredicateValueDefStringNullExprRefAsObjectValue
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -8817,14 +8976,6 @@ sealed trait FacetedUnitSpecHeight
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisColorAsObjectCondition (UnionType)
-
-sealed trait ConditionalAxisColorAsObjectCondition 
-   // ConditionalPredicateValueDefColorNullExprRef is defined elsewhere
-   case class ConditionalAxisColorAsObjectConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(value: Seq[ConditionalPredicateValueDefColorNullExprRef]) extends ConditionalAxisColorAsObjectCondition
-
-////////////////////////////////////////////////////////////////////////
-
 // BarConfigStroke (UnionType)
 /**
  * Default stroke color. This property has higher precedence than `config.color`. Set to `null` to remove stroke.
@@ -8981,25 +9132,6 @@ object SharedEncodingTheta {
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalPredicateValueDefStringNullExprRefAsObject (StructType)
-
-case class ConditionalPredicateValueDefStringNullExprRefAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : ConditionalPredicateValueDefStringNullExprRefAsObjectValue
-) extends ConditionalPredicateValueDefStringNullExprRef 
-{  }
-object ConditionalPredicateValueDefStringNullExprRefAsObject {
-  val definedFields = Set("test", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // TitleConfigSubtitleFontStyle (UnionType)
 
 sealed trait TitleConfigSubtitleFontStyle 
@@ -9072,22 +9204,6 @@ sealed trait RectConfigX
 sealed trait ConditionalValueDefStringNullExprRef extends SharedEncodingHrefCondition with SharedEncodingUrlCondition with StringValueDefWithConditionCondition with SharedEncodingShapeCondition with ValueDefWithConditionMarkPropFieldOrDatumDefTypeForShapeStringNullCondition with FieldOrDatumDefWithConditionMarkPropFieldDefTypeForShapeStringNullCondition with SharedEncodingDescriptionCondition with FieldOrDatumDefWithConditionDatumDefStringNullCondition
    // ConditionalPredicateValueDefStringNullExprRef is defined elsewhere
    // ConditionalParameterValueDefStringNullExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalAxisStringAsObject (StructType)
-
-case class ConditionalAxisStringAsObject(
-  var `condition` : ConditionalAxisStringAsObjectCondition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : ConditionalAxisStringAsObjectValue
-) extends ConditionalAxisString 
-{  }
-object ConditionalAxisStringAsObject {
-  val definedFields = Set("condition", "value") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -9325,6 +9441,15 @@ sealed trait SharedEncodingXOffsetDatum
 
 ////////////////////////////////////////////////////////////////////////
 
+// RangeSchemeAsObject3Scheme (UnionType)
+
+sealed trait RangeSchemeAsObject3Scheme 
+   case class RangeSchemeAsObject3SchemeAsString(value: String) extends RangeSchemeAsObject3Scheme
+   case class RangeSchemeAsObject3SchemeAsArrayOfString(value: Seq[String]) extends RangeSchemeAsObject3Scheme
+   // ColorScheme is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // MarkDefXOffset (UnionType)
 /**
  * Offset for x-position.
@@ -9553,6 +9678,21 @@ sealed trait FieldOneOfPredicateOneOf
 
 ////////////////////////////////////////////////////////////////////////
 
+// PaddingAsObject2 (StructType)
+
+case class PaddingAsObject2(
+  var `bottom` : Option[JsNumber] = None,
+  var `left` : Option[JsNumber] = None,
+  var `right` : Option[JsNumber] = None,
+  var `top` : Option[JsNumber] = None
+) extends Padding 
+{  }
+object PaddingAsObject2 {
+  val definedFields = Set("bottom", "left", "right", "top") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // AxisConfigTitleAngle (UnionType)
 
 sealed trait AxisConfigTitleAngle 
@@ -9582,7 +9722,7 @@ case class VariableParameter(
    * __Default value:__ `undefined`
    **/
   var `value` : Option[JsValue] = None
-) extends UnitSpecWithFrameParamsElement with TopLevelLayerSpecParamsElement with TopLevelRepeatSpecAsObjectParamsElement with TopLevelConcatSpecParamsElement with ConfigParamsElement with FacetedUnitSpecParamsElement with TopLevelHConcatSpecParamsElement with UnitSpecParamsElement with TopLevelFacetSpecParamsElement with TopLevelUnitSpecParamsElement with TopLevelVConcatSpecParamsElement 
+) extends UnitSpecWithFrameParamsElement with TopLevelLayerSpecParamsElement with TopLevelConcatSpecParamsElement with TopLevelHConcatSpecParamsElement with UnitSpecParamsElement with TopLevelFacetSpecParamsElement with ConfigParamsElement with FacetedUnitSpecParamsElement with TopLevelUnitSpecParamsElement with TopLevelVConcatSpecParamsElement with TopLevelRepeatSpecAsObject1ParamsElement with TopLevelRepeatSpecAsObject2ParamsElement 
 {  }
 object VariableParameter {
   val definedFields = Set("bind", "expr", "name", "value") 
@@ -9900,6 +10040,38 @@ sealed trait AxisTitleFontWeight
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisLabelAlignAsObject2 (StructType)
+
+case class ConditionalAxisLabelAlignAsObject2(
+  var `condition` : ConditionalAxisLabelAlignAsObject2Condition,
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String
+) extends ConditionalAxisLabelAlign 
+{  }
+object ConditionalAxisLabelAlignAsObject2 {
+  val definedFields = Set("condition", "expr") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisLabelAlignAsObject1 (StructType)
+
+case class ConditionalAxisLabelAlignAsObject1(
+  var `condition` : ConditionalAxisLabelAlignAsObject1Condition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[Align] = None
+) extends ConditionalAxisLabelAlign 
+{  }
+object ConditionalAxisLabelAlignAsObject1 {
+  val definedFields = Set("condition", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // AxisConfigDomainCap (UnionType)
 
 sealed trait AxisConfigDomainCap 
@@ -9910,7 +10082,7 @@ sealed trait AxisConfigDomainCap
 
 // LayoutAlign (EnumType)
 
-sealed trait LayoutAlign extends TopLevelRepeatSpecAsObjectAlign with NonLayerRepeatSpecAlign with TopLevelUnitSpecAlign with TopLevelConcatSpecAlign with FacetedUnitSpecAlign with FacetEncodingFieldDefAlign with LegendConfigGridAlign with LayerRepeatSpecAlign with ConcatSpecGenericSpecAlign with FacetSpecAlign with TopLevelFacetSpecAlign { val payload: JsValue }
+sealed trait LayoutAlign extends TopLevelConcatSpecAlign with TopLevelRepeatSpecAsObject1Align with FacetedUnitSpecAlign with FacetEncodingFieldDefAlign with LegendConfigGridAlign with FacetSpecAlign with TopLevelRepeatSpecAsObject2Align with TopLevelFacetSpecAlign with NonLayerRepeatSpecAlign with TopLevelUnitSpecAlign with LayerRepeatSpecAlign with ConcatSpecGenericSpecAlign { val payload: JsValue }
    case object LayoutAlignAll extends LayoutAlign { val payload = JsString("all") }
    case object LayoutAlignEach extends LayoutAlign { val payload = JsString("each") }
    case object LayoutAlignNone extends LayoutAlign { val payload = JsString("none") }
@@ -9935,14 +10107,6 @@ sealed trait TickConfigDescription
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisLabelAlignAsObjectCondition (UnionType)
-
-sealed trait ConditionalAxisLabelAlignAsObjectCondition 
-   // ConditionalPredicateValueDefAlignNullExprRef is defined elsewhere
-   case class ConditionalAxisLabelAlignAsObjectConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(value: Seq[ConditionalPredicateValueDefAlignNullExprRef]) extends ConditionalAxisLabelAlignAsObjectCondition
-
-////////////////////////////////////////////////////////////////////////
-
 // TimeIntervalStep (StructType)
 
 case class TimeIntervalStep(
@@ -9952,6 +10116,136 @@ case class TimeIntervalStep(
 {  }
 object TimeIntervalStep {
   val definedFields = Set("interval", "step") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject1 (StructType)
+
+case class TopLevelRepeatSpecAsObject1(
+  /**
+   * Name of the visualization for later reference.
+   **/
+  var `name` : Option[String] = None,
+  /**
+   * Description of this mark for commenting purpose.
+   **/
+  var `description` : Option[String] = None,
+  /**
+   * Dynamic variables or selections that parameterize a visualization.
+   **/
+  var `params` : Option[Seq[TopLevelRepeatSpecAsObject1ParamsElement]] = None,
+  /**
+   * Vega-Lite configuration object. This property can only be defined at the top-level of a specification.
+   **/
+  var `config` : Option[Config] = None,
+  /**
+   * The bounds calculation method to use for determining the extent of a sub-plot. One of `full` (the default) or `flush`.
+   * 
+   * - If set to `full`, the entire calculated bounds (including axes, title, and legend) will be used.
+   * - If set to `flush`, only the specified width and height values for the sub-view will be used. The `flush` setting can be useful when attempting to place sub-plots without axes or legends into a uniform grid structure.
+   * 
+   * __Default value:__ `"full"`
+   **/
+  var `bounds` : Option[TopLevelRepeatSpecAsObject1Bounds] = None,
+  /**
+   * A global data store for named datasets. This is a mapping from names to inline datasets. This can be an array of objects or primitive values or a string. Arrays of primitive values are ingested as objects with a `data` property.
+   **/
+  var `datasets` : Option[Map[String,InlineDataset]] = None,
+  /**
+   * Optional metadata that will be passed to Vega. This object is completely ignored by Vega and Vega-Lite and can be used for custom metadata.
+   **/
+  var `usermeta` : Option[Map[String,JsValue]] = None,
+  /**
+   * The number of columns to include in the view composition layout.
+   * 
+   * __Default value__: `undefined` -- An infinite number of columns (a single row) will be assumed. This is equivalent to `hconcat` (for `concat`) and to using the `column` channel (for `facet` and `repeat`).
+   * 
+   * __Note__:
+   * 
+   * 1) This property is only for:
+   * - the general (wrappable) `concat` operator (not `hconcat`/`vconcat`)
+   * - the `facet` and `repeat` operator with one field/repetition definition (without row/column nesting)
+   * 
+   * 2) Setting the `columns` to `1` is equivalent to `vconcat` (for `concat`) and to using the `row` channel (for `facet` and `repeat`).
+   **/
+  var `columns` : Option[JsNumber] = None,
+  /**
+   * Scale, axis, and legend resolutions for view composition specifications.
+   **/
+  var `resolve` : Option[Resolve] = None,
+  /**
+   * A specification of the view that gets repeated.
+   **/
+  var `spec` : NonNormalizedSpec,
+  /**
+   * The default visualization padding, in pixels, from the edge of the visualization canvas to the data rectangle. If a number, specifies padding for all sides. If an object, the value should have the format `{"left": 5, "top": 5, "right": 5, "bottom": 5}` to specify padding for each side of the visualization.
+   * 
+   * __Default value__: `5`
+   **/
+  var `padding` : Option[TopLevelRepeatSpecAsObject1Padding] = None,
+  /**
+   * CSS color property to use as the background of the entire view.
+   * 
+   * __Default value:__ `"white"`
+   **/
+  var `background` : Option[TopLevelRepeatSpecAsObject1Background] = None,
+  /**
+   * Boolean flag indicating if subviews should be centered relative to their respective rows or columns.
+   * 
+   * An object value of the form `{"row": boolean, "column": boolean}` can be used to supply different centering values for rows and columns.
+   * 
+   * __Default value:__ `false`
+   **/
+  var `center` : Option[TopLevelRepeatSpecAsObject1Center] = None,
+  /**
+   * The alignment to apply to grid rows and columns. The supported string values are `"all"`, `"each"`, and `"none"`.
+   * 
+   * - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed one after the other.
+   * - For `"each"`, subviews will be aligned into a clean grid structure, but each row or column may be of variable size.
+   * - For `"all"`, subviews will be aligned and each row or column will be sized identically based on the maximum observed size. String values for this property will be applied to both grid rows and columns.
+   * 
+   * Alternatively, an object value of the form `{"row": string, "column": string}` can be used to supply different alignments for rows and columns.
+   * 
+   * __Default value:__ `"all"`.
+   **/
+  var `align` : Option[TopLevelRepeatSpecAsObject1Align] = None,
+  /**
+   * An object describing the data source. Set to `null` to ignore the parent's data source. If no data is set, it is derived from the parent.
+   **/
+  var `data` : Option[Data] = None,
+  /**
+   * Definition for fields to be repeated. One of: 1) An array of fields to be repeated. If `"repeat"` is an array, the field can be referred to as `{"repeat": "repeat"}`. The repeated views are laid out in a wrapped row. You can set the number of columns to control the wrapping. 2) An object that maps `"row"` and/or `"column"` to the listed fields to be repeated along the particular orientations. The objects `{"repeat": "row"}` and `{"repeat": "column"}` can be used to refer to the repeated field respectively.
+   **/
+  var `repeat` : TopLevelRepeatSpecAsObject1Repeat,
+  /**
+   * Title for the plot.
+   **/
+  var `title` : Option[TopLevelRepeatSpecAsObject1Title] = None,
+  /**
+   * The spacing in pixels between sub-views of the composition operator. An object of the form `{"row": number, "column": number}` can be used to set different spacing values for rows and columns.
+   * 
+   * __Default value__: Depends on `"spacing"` property of [the view composition configuration](https://vega.github.io/vega-lite/docs/config.html#view-config) (`20` by default)
+   **/
+  var `spacing` : Option[TopLevelRepeatSpecAsObject1Spacing] = None,
+  /**
+   * URL to [JSON schema](http://json-schema.org/) for a Vega-Lite specification. Unless you have a reason to change this, use `https://vega.github.io/schema/vega-lite/v5.json`. Setting the `$schema` property allows automatic validation and autocomplete in editors that support JSON schema.
+   **/
+  var `$schema` : Option[Uri] = None,
+  /**
+   * How the visualization size should be determined. If a string, should be one of `"pad"`, `"fit"` or `"none"`. Object values can additionally specify parameters for content sizing and automatic resizing.
+   * 
+   * __Default value__: `pad`
+   **/
+  var `autosize` : Option[TopLevelRepeatSpecAsObject1Autosize] = None,
+  /**
+   * An array of data transformations such as filter and new field calculation.
+   **/
+  var `transform` : Option[Seq[Transform]] = None
+) extends TopLevelRepeatSpec 
+{  }
+object TopLevelRepeatSpecAsObject1 {
+  val definedFields = Set("spacing", "padding", "config", "autosize", "datasets", "transform", "align", "$schema", "data", "repeat", "usermeta", "spec", "params", "description", "title", "resolve", "bounds", "background", "name", "columns", "center") 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -10007,6 +10301,136 @@ sealed trait StringFieldDefBin
    // BinParams is defined elsewhere
    // Binned is defined elsewhere
    case object StringFieldDefBinAsNull extends StringFieldDefBin
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject2 (StructType)
+
+case class TopLevelRepeatSpecAsObject2(
+  /**
+   * Name of the visualization for later reference.
+   **/
+  var `name` : Option[String] = None,
+  /**
+   * Description of this mark for commenting purpose.
+   **/
+  var `description` : Option[String] = None,
+  /**
+   * Dynamic variables or selections that parameterize a visualization.
+   **/
+  var `params` : Option[Seq[TopLevelRepeatSpecAsObject2ParamsElement]] = None,
+  /**
+   * Vega-Lite configuration object. This property can only be defined at the top-level of a specification.
+   **/
+  var `config` : Option[Config] = None,
+  /**
+   * The bounds calculation method to use for determining the extent of a sub-plot. One of `full` (the default) or `flush`.
+   * 
+   * - If set to `full`, the entire calculated bounds (including axes, title, and legend) will be used.
+   * - If set to `flush`, only the specified width and height values for the sub-view will be used. The `flush` setting can be useful when attempting to place sub-plots without axes or legends into a uniform grid structure.
+   * 
+   * __Default value:__ `"full"`
+   **/
+  var `bounds` : Option[TopLevelRepeatSpecAsObject2Bounds] = None,
+  /**
+   * A global data store for named datasets. This is a mapping from names to inline datasets. This can be an array of objects or primitive values or a string. Arrays of primitive values are ingested as objects with a `data` property.
+   **/
+  var `datasets` : Option[Map[String,InlineDataset]] = None,
+  /**
+   * Optional metadata that will be passed to Vega. This object is completely ignored by Vega and Vega-Lite and can be used for custom metadata.
+   **/
+  var `usermeta` : Option[Map[String,JsValue]] = None,
+  /**
+   * The number of columns to include in the view composition layout.
+   * 
+   * __Default value__: `undefined` -- An infinite number of columns (a single row) will be assumed. This is equivalent to `hconcat` (for `concat`) and to using the `column` channel (for `facet` and `repeat`).
+   * 
+   * __Note__:
+   * 
+   * 1) This property is only for:
+   * - the general (wrappable) `concat` operator (not `hconcat`/`vconcat`)
+   * - the `facet` and `repeat` operator with one field/repetition definition (without row/column nesting)
+   * 
+   * 2) Setting the `columns` to `1` is equivalent to `vconcat` (for `concat`) and to using the `row` channel (for `facet` and `repeat`).
+   **/
+  var `columns` : Option[JsNumber] = None,
+  /**
+   * Scale, axis, and legend resolutions for view composition specifications.
+   **/
+  var `resolve` : Option[Resolve] = None,
+  /**
+   * A specification of the view that gets repeated.
+   **/
+  var `spec` : TopLevelRepeatSpecAsObject2Spec,
+  /**
+   * The default visualization padding, in pixels, from the edge of the visualization canvas to the data rectangle. If a number, specifies padding for all sides. If an object, the value should have the format `{"left": 5, "top": 5, "right": 5, "bottom": 5}` to specify padding for each side of the visualization.
+   * 
+   * __Default value__: `5`
+   **/
+  var `padding` : Option[TopLevelRepeatSpecAsObject2Padding] = None,
+  /**
+   * CSS color property to use as the background of the entire view.
+   * 
+   * __Default value:__ `"white"`
+   **/
+  var `background` : Option[TopLevelRepeatSpecAsObject2Background] = None,
+  /**
+   * Boolean flag indicating if subviews should be centered relative to their respective rows or columns.
+   * 
+   * An object value of the form `{"row": boolean, "column": boolean}` can be used to supply different centering values for rows and columns.
+   * 
+   * __Default value:__ `false`
+   **/
+  var `center` : Option[TopLevelRepeatSpecAsObject2Center] = None,
+  /**
+   * The alignment to apply to grid rows and columns. The supported string values are `"all"`, `"each"`, and `"none"`.
+   * 
+   * - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed one after the other.
+   * - For `"each"`, subviews will be aligned into a clean grid structure, but each row or column may be of variable size.
+   * - For `"all"`, subviews will be aligned and each row or column will be sized identically based on the maximum observed size. String values for this property will be applied to both grid rows and columns.
+   * 
+   * Alternatively, an object value of the form `{"row": string, "column": string}` can be used to supply different alignments for rows and columns.
+   * 
+   * __Default value:__ `"all"`.
+   **/
+  var `align` : Option[TopLevelRepeatSpecAsObject2Align] = None,
+  /**
+   * An object describing the data source. Set to `null` to ignore the parent's data source. If no data is set, it is derived from the parent.
+   **/
+  var `data` : Option[Data] = None,
+  /**
+   * Definition for fields to be repeated. One of: 1) An array of fields to be repeated. If `"repeat"` is an array, the field can be referred to as `{"repeat": "repeat"}`. The repeated views are laid out in a wrapped row. You can set the number of columns to control the wrapping. 2) An object that maps `"row"` and/or `"column"` to the listed fields to be repeated along the particular orientations. The objects `{"repeat": "row"}` and `{"repeat": "column"}` can be used to refer to the repeated field respectively.
+   **/
+  var `repeat` : LayerRepeatMapping,
+  /**
+   * Title for the plot.
+   **/
+  var `title` : Option[TopLevelRepeatSpecAsObject2Title] = None,
+  /**
+   * The spacing in pixels between sub-views of the composition operator. An object of the form `{"row": number, "column": number}` can be used to set different spacing values for rows and columns.
+   * 
+   * __Default value__: Depends on `"spacing"` property of [the view composition configuration](https://vega.github.io/vega-lite/docs/config.html#view-config) (`20` by default)
+   **/
+  var `spacing` : Option[TopLevelRepeatSpecAsObject2Spacing] = None,
+  /**
+   * URL to [JSON schema](http://json-schema.org/) for a Vega-Lite specification. Unless you have a reason to change this, use `https://vega.github.io/schema/vega-lite/v5.json`. Setting the `$schema` property allows automatic validation and autocomplete in editors that support JSON schema.
+   **/
+  var `$schema` : Option[Uri] = None,
+  /**
+   * How the visualization size should be determined. If a string, should be one of `"pad"`, `"fit"` or `"none"`. Object values can additionally specify parameters for content sizing and automatic resizing.
+   * 
+   * __Default value__: `pad`
+   **/
+  var `autosize` : Option[TopLevelRepeatSpecAsObject2Autosize] = None,
+  /**
+   * An array of data transformations such as filter and new field calculation.
+   **/
+  var `transform` : Option[Seq[Transform]] = None
+) extends TopLevelRepeatSpec 
+{  }
+object TopLevelRepeatSpecAsObject2 {
+  val definedFields = Set("spacing", "padding", "config", "autosize", "datasets", "transform", "align", "$schema", "data", "repeat", "usermeta", "spec", "params", "description", "title", "resolve", "bounds", "background", "name", "columns", "center") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -10418,7 +10842,7 @@ case class LayerSpec(
    * __See also:__ [`width`](https://vega.github.io/vega-lite/docs/size.html) documentation.
    **/
   var `width` : Option[LayerSpecWidth] = None
-) extends NonNormalizedSpec with FacetSpecSpec with TopLevelFacetSpecSpec with TopLevelLayerSpecLayerElement with Spec with LayerRepeatSpecSpec with LayerSpecLayerElement 
+) extends NonNormalizedSpec with FacetSpecSpec with TopLevelRepeatSpecAsObject2Spec with TopLevelFacetSpecSpec with TopLevelLayerSpecLayerElement with Spec with LayerRepeatSpecSpec with LayerSpecLayerElement 
 {  }
 object LayerSpec {
   val definedFields = Set("projection", "layer", "data", "encoding", "view", "width", "resolve", "height", "transform", "name", "description", "title") 
@@ -10433,6 +10857,44 @@ object LayerSpec {
 sealed trait FacetedEncodingUrl 
    // StringFieldDefWithCondition is defined elsewhere
    // StringValueDefWithCondition is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefAlignNullExprRefAsObject1 (StructType)
+
+case class ConditionalPredicateValueDefAlignNullExprRefAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[Align] = None
+) extends ConditionalPredicateValueDefAlignNullExprRef 
+{  }
+object ConditionalPredicateValueDefAlignNullExprRefAsObject1 {
+  val definedFields = Set("test", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefAlignNullExprRefAsObject2 (StructType)
+
+case class ConditionalPredicateValueDefAlignNullExprRefAsObject2(
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String,
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition
+) extends ConditionalPredicateValueDefAlignNullExprRef 
+{  }
+object ConditionalPredicateValueDefAlignNullExprRefAsObject2 {
+  val definedFields = Set("expr", "test") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -10750,6 +11212,227 @@ sealed trait AxisConfigLabelFontStyle
    case class AxisConfigLabelFontStyleAsString(value: String) extends AxisConfigLabelFontStyle
    // ExprRef is defined elsewhere
    // ConditionalAxisLabelFontStyle is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1 (StructType)
+
+case class ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1(
+  /**
+   * For selection parameters, the predicate of empty selections returns true by default. Override this behavior, by setting this property `empty: false`.
+   **/
+  var `empty` : Option[Boolean] = None,
+  /**
+   * __Required.__ A string defining the name of the field from which to pull a data value or an object defining iterated values from the [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
+   * 
+   * __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
+   * 
+   * __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or brackets but are not nested, you can use `\\` to escape dots and brackets (e.g., `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not required if `aggregate` is `count`.
+   **/
+  var `field` : Option[Field] = None,
+  /**
+   * Filter using a parameter name.
+   **/
+  var `param` : String,
+  /**
+   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
+   * 
+   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+   * 
+   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+   * 
+   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+   **/
+  var `scale` : Option[Scale] = None,
+  /**
+   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
+   * 
+   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
+   * 
+   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
+   **/
+  var `legend` : Option[Legend] = None,
+  /**
+   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+   **/
+  var `bandPosition` : Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition] = None,
+  /**
+   * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
+   * 
+   * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
+   * 
+   * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+   * 
+   * __Default value:__ `false`
+   * 
+   * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+   **/
+  var `bin` : Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin] = None,
+  /**
+   * Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`, `"max"`, `"count"`).
+   * 
+   * __Default value:__ `undefined` (None)
+   * 
+   * __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html) documentation.
+   **/
+  var `aggregate` : Option[Aggregate] = None,
+  /**
+   * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+   * 
+   * __Default value:__ `undefined` (None)
+   * 
+   * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
+   **/
+  var `timeUnit` : Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit] = None,
+  /**
+   * A title for the field. If `null`, the title will be removed.
+   * 
+   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
+   * 
+   * __Notes__:
+   * 
+   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+   * 
+   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
+   **/
+  var `title` : Option[Text] = None,
+  /**
+   * Sort order for the encoded field.
+   * 
+   * For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or `"descending"`.
+   * 
+   * For discrete fields, `sort` can be one of the following:
+   * - `"ascending"` or `"descending"` -- for sorting by the values' natural order in JavaScript.
+   * - [A string indicating an encoding channel name to sort by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by x-field, descending). This channel string is short-form of [a sort-by-encoding definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order": "descending"}`.
+   * - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field) for sorting by another field.
+   * - [An array specifying the field values in preferred order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the sort order will obey the values in the array, followed by any unspecified values in their original order. For discrete time field, values in the sort array can be [date-time definition objects](types#datetime). In addition, for time units `"month"` and `"day"`, the values can be the month or day names (case insensitive) or their 3-letter initials (e.g., `"Mon"`, `"Tue"`).
+   * - `null` indicating no sort.
+   * 
+   * __Default value:__ `"ascending"`
+   * 
+   * __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
+   * 
+   * __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
+   **/
+  var `sort` : Option[Sort] = None,
+  /**
+   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+   * 
+   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
+   * 
+   * __Default value:__
+   * 
+   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
+   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
+   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
+   * 
+   * 2) For a constant value in data domain (`datum`):
+   * - `"quantitative"` if the datum is a number
+   * - `"nominal"` if the datum is a string
+   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
+   * 
+   * __Note:__
+   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
+   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
+   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
+   * 
+   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+   **/
+  var `type` : Option[TypeForShape] = None
+) extends ConditionalParameterMarkPropFieldOrDatumDefTypeForShape 
+{  }
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1 {
+  val definedFields = Set("bin", "type", "bandPosition", "param", "legend", "empty", "aggregate", "title", "scale", "timeUnit", "field", "sort") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2 (StructType)
+
+case class ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2(
+  /**
+   * For selection parameters, the predicate of empty selections returns true by default. Override this behavior, by setting this property `empty: false`.
+   **/
+  var `empty` : Option[Boolean] = None,
+  /**
+   * Filter using a parameter name.
+   **/
+  var `param` : String,
+  /**
+   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
+   * 
+   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+   * 
+   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+   * 
+   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+   **/
+  var `scale` : Option[Scale] = None,
+  /**
+   * A constant value in data domain.
+   **/
+  var `datum` : Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum] = None,
+  /**
+   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
+   * 
+   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
+   * 
+   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
+   **/
+  var `legend` : Option[Legend] = None,
+  /**
+   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+   **/
+  var `bandPosition` : Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition] = None,
+  /**
+   * A title for the field. If `null`, the title will be removed.
+   * 
+   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
+   * 
+   * __Notes__:
+   * 
+   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+   * 
+   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
+   **/
+  var `title` : Option[Text] = None,
+  /**
+   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+   * 
+   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
+   * 
+   * __Default value:__
+   * 
+   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
+   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
+   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
+   * 
+   * 2) For a constant value in data domain (`datum`):
+   * - `"quantitative"` if the datum is a number
+   * - `"nominal"` if the datum is a string
+   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
+   * 
+   * __Note:__
+   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
+   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
+   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
+   * 
+   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+   **/
+  var `type` : Option[Type] = None
+) extends ConditionalParameterMarkPropFieldOrDatumDefTypeForShape 
+{  }
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2 {
+  val definedFields = Set("type", "scale", "datum", "bandPosition", "param", "legend", "empty", "title") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -11371,146 +12054,6 @@ sealed trait TopLevelConcatSpecAlign
 
 ////////////////////////////////////////////////////////////////////////
 
-// TopLevelRepeatSpecAsObjectParamsElement (UnionType)
-
-sealed trait TopLevelRepeatSpecAsObjectParamsElement 
-   // VariableParameter is defined elsewhere
-   // TopLevelSelectionParameter is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalPredicateMarkPropFieldOrDatumDefAsObject (StructType)
-
-case class ConditionalPredicateMarkPropFieldOrDatumDefAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * __Required.__ A string defining the name of the field from which to pull a data value or an object defining iterated values from the [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
-   * 
-   * __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
-   * 
-   * __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or brackets but are not nested, you can use `\\` to escape dots and brackets (e.g., `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not required if `aggregate` is `count`.
-   **/
-  var `field` : Option[Field] = None,
-  /**
-   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
-   * 
-   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
-   * 
-   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
-   * 
-   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
-   **/
-  var `scale` : Option[Scale] = None,
-  /**
-   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
-   * 
-   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
-   * 
-   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
-   **/
-  var `legend` : Option[Legend] = None,
-  /**
-   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
-   **/
-  var `bandPosition` : Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPosition] = None,
-  /**
-   * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
-   * 
-   * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
-   * 
-   * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
-   * 
-   * __Default value:__ `false`
-   * 
-   * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
-   **/
-  var `bin` : Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin] = None,
-  /**
-   * Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`, `"max"`, `"count"`).
-   * 
-   * __Default value:__ `undefined` (None)
-   * 
-   * __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html) documentation.
-   **/
-  var `aggregate` : Option[Aggregate] = None,
-  /**
-   * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
-   * 
-   * __Default value:__ `undefined` (None)
-   * 
-   * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
-   **/
-  var `timeUnit` : Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit] = None,
-  /**
-   * A title for the field. If `null`, the title will be removed.
-   * 
-   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
-   * 
-   * __Notes__:
-   * 
-   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
-   * 
-   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
-   **/
-  var `title` : Option[Text] = None,
-  /**
-   * Sort order for the encoded field.
-   * 
-   * For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or `"descending"`.
-   * 
-   * For discrete fields, `sort` can be one of the following:
-   * - `"ascending"` or `"descending"` -- for sorting by the values' natural order in JavaScript.
-   * - [A string indicating an encoding channel name to sort by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by x-field, descending). This channel string is short-form of [a sort-by-encoding definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order": "descending"}`.
-   * - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field) for sorting by another field.
-   * - [An array specifying the field values in preferred order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the sort order will obey the values in the array, followed by any unspecified values in their original order. For discrete time field, values in the sort array can be [date-time definition objects](types#datetime). In addition, for time units `"month"` and `"day"`, the values can be the month or day names (case insensitive) or their 3-letter initials (e.g., `"Mon"`, `"Tue"`).
-   * - `null` indicating no sort.
-   * 
-   * __Default value:__ `"ascending"`
-   * 
-   * __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
-   * 
-   * __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
-   **/
-  var `sort` : Option[Sort] = None,
-  /**
-   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
-   * 
-   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
-   * 
-   * __Default value:__
-   * 
-   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
-   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
-   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
-   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
-   * 
-   * 2) For a constant value in data domain (`datum`):
-   * - `"quantitative"` if the datum is a number
-   * - `"nominal"` if the datum is a string
-   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
-   * 
-   * __Note:__
-   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
-   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
-   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
-   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
-   * 
-   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
-   **/
-  var `type` : Option[StandardType] = None
-) extends ConditionalPredicateMarkPropFieldOrDatumDef 
-{  }
-object ConditionalPredicateMarkPropFieldOrDatumDefAsObject {
-  val definedFields = Set("bin", "type", "test", "bandPosition", "legend", "aggregate", "title", "scale", "timeUnit", "field", "sort") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // SharedEncodingXType (UnionType)
 /**
  * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
@@ -11562,7 +12105,7 @@ sealed trait ScaleConfigRectBandPaddingInner
 sealed trait RangeScheme extends RangeConfigCategory with RangeConfigDiverging with RangeConfigRamp with RangeConfigHeatmap with RangeConfigOrdinal with RangeConfigOptional
    // RangeEnum is defined elsewhere
    case class RangeSchemeAsArrayOfRangeRawElement(value: Seq[RangeRawElement]) extends RangeScheme
-   // RangeSchemeAsObject is defined elsewhere
+   // RangeSchemeAsObject3 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -11642,11 +12185,23 @@ case class UnitSpec(
    * An array of data transformations such as filter and new field calculation.
    **/
   var `transform` : Option[Seq[Transform]] = None
-) extends TopLevelLayerSpecLayerElement with LayerRepeatSpecSpec with LayerSpecLayerElement 
+) extends TopLevelRepeatSpecAsObject2Spec with TopLevelLayerSpecLayerElement with LayerRepeatSpecSpec with LayerSpecLayerElement 
 {  }
 object UnitSpec {
   val definedFields = Set("projection", "data", "encoding", "mark", "transform", "name", "params", "description", "title") 
 }
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject2Spacing (UnionType)
+/**
+ * The spacing in pixels between sub-views of the composition operator. An object of the form `{"row": number, "column": number}` can be used to set different spacing values for rows and columns.
+ * 
+ * __Default value__: Depends on `"spacing"` property of [the view composition configuration](https://vega.github.io/vega-lite/docs/config.html#view-config) (`20` by default)
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Spacing 
+   case class TopLevelRepeatSpecAsObject2SpacingAsNumber(value: JsNumber) extends TopLevelRepeatSpecAsObject2Spacing
+   // RowColNumber is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -11693,6 +12248,22 @@ sealed trait NumericMarkPropDef
 sealed trait RectConfigLineBreak 
    case class RectConfigLineBreakAsString(value: String) extends RectConfigLineBreak
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisNumberArrayAsObject2 (StructType)
+
+case class ConditionalAxisNumberArrayAsObject2(
+  var `condition` : ConditionalAxisNumberArrayAsObject2Condition,
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String
+) extends ConditionalAxisNumberArray 
+{  }
+object ConditionalAxisNumberArrayAsObject2 {
+  val definedFields = Set("condition", "expr") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -11861,6 +12432,18 @@ sealed trait TopLevelLayerSpecLayerElement
 
 ////////////////////////////////////////////////////////////////////////
 
+// TopLevelRepeatSpecAsObject2Padding (UnionType)
+/**
+ * The default visualization padding, in pixels, from the edge of the visualization canvas to the data rectangle. If a number, specifies padding for all sides. If an object, the value should have the format `{"left": 5, "top": 5, "right": 5, "bottom": 5}` to specify padding for each side of the visualization.
+ * 
+ * __Default value__: `5`
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Padding 
+   // Padding is defined elsewhere
+   // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // TickConfigFontSize (UnionType)
 
 sealed trait TickConfigFontSize 
@@ -11899,21 +12482,18 @@ sealed trait TickConfigStartAngle
 
 ////////////////////////////////////////////////////////////////////////
 
-// ParameterExtentAsObject (StructType)
+// ConditionalAxisNumberArrayAsObject1 (StructType)
 
-case class ParameterExtentAsObject(
+case class ConditionalAxisNumberArrayAsObject1(
+  var `condition` : ConditionalAxisNumberArrayAsObject1Condition,
   /**
-   * If a selection parameter is specified, the field name to extract selected values for when the selection is [projected](https://vega.github.io/vega-lite/docs/selection.html#project) over multiple fields or encodings.
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
    **/
-  var `field` : Option[String] = None,
-  /**
-   * The name of a parameter.
-   **/
-  var `param` : String
-) extends ParameterExtent 
+  var `value` : Option[Seq[JsNumber]] = None
+) extends ConditionalAxisNumberArray 
 {  }
-object ParameterExtentAsObject {
-  val definedFields = Set("field", "param") 
+object ConditionalAxisNumberArrayAsObject1 {
+  val definedFields = Set("condition", "value") 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -12047,11 +12627,224 @@ sealed trait HeaderConfigFormat
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject1 (StructType)
+
+case class ConditionalPredicateMarkPropFieldOrDatumDefAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * __Required.__ A string defining the name of the field from which to pull a data value or an object defining iterated values from the [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
+   * 
+   * __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
+   * 
+   * __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or brackets but are not nested, you can use `\\` to escape dots and brackets (e.g., `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not required if `aggregate` is `count`.
+   **/
+  var `field` : Option[Field] = None,
+  /**
+   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
+   * 
+   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+   * 
+   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+   * 
+   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+   **/
+  var `scale` : Option[Scale] = None,
+  /**
+   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
+   * 
+   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
+   * 
+   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
+   **/
+  var `legend` : Option[Legend] = None,
+  /**
+   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+   **/
+  var `bandPosition` : Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPosition] = None,
+  /**
+   * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
+   * 
+   * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
+   * 
+   * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+   * 
+   * __Default value:__ `false`
+   * 
+   * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+   **/
+  var `bin` : Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin] = None,
+  /**
+   * Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`, `"max"`, `"count"`).
+   * 
+   * __Default value:__ `undefined` (None)
+   * 
+   * __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html) documentation.
+   **/
+  var `aggregate` : Option[Aggregate] = None,
+  /**
+   * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+   * 
+   * __Default value:__ `undefined` (None)
+   * 
+   * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
+   **/
+  var `timeUnit` : Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit] = None,
+  /**
+   * A title for the field. If `null`, the title will be removed.
+   * 
+   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
+   * 
+   * __Notes__:
+   * 
+   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+   * 
+   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
+   **/
+  var `title` : Option[Text] = None,
+  /**
+   * Sort order for the encoded field.
+   * 
+   * For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or `"descending"`.
+   * 
+   * For discrete fields, `sort` can be one of the following:
+   * - `"ascending"` or `"descending"` -- for sorting by the values' natural order in JavaScript.
+   * - [A string indicating an encoding channel name to sort by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by x-field, descending). This channel string is short-form of [a sort-by-encoding definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order": "descending"}`.
+   * - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field) for sorting by another field.
+   * - [An array specifying the field values in preferred order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the sort order will obey the values in the array, followed by any unspecified values in their original order. For discrete time field, values in the sort array can be [date-time definition objects](types#datetime). In addition, for time units `"month"` and `"day"`, the values can be the month or day names (case insensitive) or their 3-letter initials (e.g., `"Mon"`, `"Tue"`).
+   * - `null` indicating no sort.
+   * 
+   * __Default value:__ `"ascending"`
+   * 
+   * __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
+   * 
+   * __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
+   **/
+  var `sort` : Option[Sort] = None,
+  /**
+   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+   * 
+   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
+   * 
+   * __Default value:__
+   * 
+   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
+   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
+   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
+   * 
+   * 2) For a constant value in data domain (`datum`):
+   * - `"quantitative"` if the datum is a number
+   * - `"nominal"` if the datum is a string
+   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
+   * 
+   * __Note:__
+   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
+   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
+   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
+   * 
+   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+   **/
+  var `type` : Option[StandardType] = None
+) extends ConditionalPredicateMarkPropFieldOrDatumDef 
+{  }
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject1 {
+  val definedFields = Set("bin", "type", "test", "bandPosition", "legend", "aggregate", "title", "scale", "timeUnit", "field", "sort") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // MarkDefAngle (UnionType)
 
 sealed trait MarkDefAngle 
    // MarkDefAngleAsNumber is defined elsewhere
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject2 (StructType)
+
+case class ConditionalPredicateMarkPropFieldOrDatumDefAsObject2(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
+   * 
+   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+   * 
+   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+   * 
+   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+   **/
+  var `scale` : Option[Scale] = None,
+  /**
+   * A constant value in data domain.
+   **/
+  var `datum` : Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum] = None,
+  /**
+   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
+   * 
+   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
+   * 
+   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
+   **/
+  var `legend` : Option[Legend] = None,
+  /**
+   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+   **/
+  var `bandPosition` : Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPosition] = None,
+  /**
+   * A title for the field. If `null`, the title will be removed.
+   * 
+   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
+   * 
+   * __Notes__:
+   * 
+   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+   * 
+   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
+   **/
+  var `title` : Option[Text] = None,
+  /**
+   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+   * 
+   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
+   * 
+   * __Default value:__
+   * 
+   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
+   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
+   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
+   * 
+   * 2) For a constant value in data domain (`datum`):
+   * - `"quantitative"` if the datum is a number
+   * - `"nominal"` if the datum is a string
+   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
+   * 
+   * __Note:__
+   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
+   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
+   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
+   * 
+   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+   **/
+  var `type` : Option[Type] = None
+) extends ConditionalPredicateMarkPropFieldOrDatumDef 
+{  }
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject2 {
+  val definedFields = Set("type", "test", "scale", "datum", "bandPosition", "legend", "title") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -12214,16 +13007,6 @@ case class RegressionTransform(
 object RegressionTransform {
   val definedFields = Set("regression", "extent", "method", "groupby", "as", "params", "order", "on") 
 }
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition (ConstrainedType)
-/**
- * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
- **/
-case class ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition(value: JsNumber) 
-{ assert(value.value <= 1)
-  assert(value.value >= 0) }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -12603,25 +13386,6 @@ sealed trait AxisTitleFont
 sealed trait FieldOneOfPredicateTimeUnit 
    // TimeUnit is defined elsewhere
    // TimeUnitParams is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin (UnionType)
-/**
- * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
- * 
- * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
- * 
- * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
- * 
- * __Default value:__ `false`
- * 
- * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
- **/
-sealed trait ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin 
-   case class ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinAsBool(value: Boolean) extends ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin
-   // BinParams is defined elsewhere
-   case object ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinAsNull extends ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -13010,6 +13774,22 @@ sealed trait AxisOffset
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisColorAsObject2 (StructType)
+
+case class ConditionalAxisColorAsObject2(
+  var `condition` : ConditionalAxisColorAsObject2Condition,
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String
+) extends ConditionalAxisColor 
+{  }
+object ConditionalAxisColorAsObject2 {
+  val definedFields = Set("condition", "expr") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // ConditionalPredicateValueDefGradientStringNullExprRefValue (UnionType)
 /**
  * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
@@ -13031,6 +13811,22 @@ sealed trait ConditionalPredicateValueDefGradientStringNullExprRefValue
 sealed trait DateTimeDay 
    // Day is defined elsewhere
    case class DateTimeDayAsString(value: String) extends DateTimeDay
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisColorAsObject1 (StructType)
+
+case class ConditionalAxisColorAsObject1(
+  var `condition` : ConditionalAxisColorAsObject1Condition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[Color] = None
+) extends ConditionalAxisColor 
+{  }
+object ConditionalAxisColorAsObject1 {
+  val definedFields = Set("condition", "value") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -13186,6 +13982,25 @@ sealed trait SortByChannelDesc extends AllSortString { val payload: JsValue }
 sealed trait OverlayMarkDefHref 
    // UriReference is defined elsewhere
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefStringNullExprRefAsObject2 (StructType)
+
+case class ConditionalPredicateValueDefStringNullExprRefAsObject2(
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String,
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition
+) extends ConditionalPredicateValueDefStringNullExprRef 
+{  }
+object ConditionalPredicateValueDefStringNullExprRefAsObject2 {
+  val definedFields = Set("expr", "test") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -13399,16 +14214,6 @@ sealed trait AreaConfigY
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition (ConstrainedType)
-/**
- * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
- **/
-case class ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition(value: JsNumber) 
-{ assert(value.value <= 1)
-  assert(value.value >= 0) }
-
-////////////////////////////////////////////////////////////////////////
-
 // MarkDefOrder (UnionType)
 
 sealed trait MarkDefOrder 
@@ -13464,6 +14269,25 @@ sealed trait SharedEncodingFillValue
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateValueDefStringNullExprRefAsObject1 (StructType)
+
+case class ConditionalPredicateValueDefStringNullExprRefAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : ConditionalPredicateValueDefStringNullExprRefAsObject1Value
+) extends ConditionalPredicateValueDefStringNullExprRef 
+{  }
+object ConditionalPredicateValueDefStringNullExprRefAsObject1 {
+  val definedFields = Set("test", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // FacetedEncodingXError2 (UnionType)
 /**
  * Secondary error value of x coordinates for error specified `"errorbar"` and `"errorband"`.
@@ -13471,6 +14295,18 @@ sealed trait SharedEncodingFillValue
 sealed trait FacetedEncodingXError2 
    // SecondaryFieldDef is defined elsewhere
    // ValueDefNumber is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject1Background (UnionType)
+/**
+ * CSS color property to use as the background of the entire view.
+ * 
+ * __Default value:__ `"white"`
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Background 
+   // Color is defined elsewhere
+   // ExprRef is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -13486,8 +14322,9 @@ case class SharedEncodingLongitudeBandPosition(value: JsNumber)
 
 // ConditionalPredicateValueDefFontStyleNullExprRef (UnionType)
 
-sealed trait ConditionalPredicateValueDefFontStyleNullExprRef extends ConditionalAxisLabelFontStyleAsObjectCondition
-   // ConditionalPredicateValueDefFontStyleNullExprRefAsObject is defined elsewhere
+sealed trait ConditionalPredicateValueDefFontStyleNullExprRef extends ConditionalAxisLabelFontStyleAsObject1Condition with ConditionalAxisLabelFontStyleAsObject2Condition
+   // ConditionalPredicateValueDefFontStyleNullExprRefAsObject1 is defined elsewhere
+   // ConditionalPredicateValueDefFontStyleNullExprRefAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -13953,6 +14790,38 @@ sealed trait ProjectionConfigRatio
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisLabelBaselineAsObject1 (StructType)
+
+case class ConditionalAxisLabelBaselineAsObject1(
+  var `condition` : ConditionalAxisLabelBaselineAsObject1Condition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[TextBaseline] = None
+) extends ConditionalAxisLabelBaseline 
+{  }
+object ConditionalAxisLabelBaselineAsObject1 {
+  val definedFields = Set("condition", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisLabelBaselineAsObject2 (StructType)
+
+case class ConditionalAxisLabelBaselineAsObject2(
+  var `condition` : ConditionalAxisLabelBaselineAsObject2Condition,
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String
+) extends ConditionalAxisLabelBaseline 
+{  }
+object ConditionalAxisLabelBaselineAsObject2 {
+  val definedFields = Set("condition", "expr") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // UnitSpecTitle (UnionType)
 /**
  * Title for the plot.
@@ -14131,6 +15000,16 @@ case class AggregatedFieldDef(
 object AggregatedFieldDef {
   val definedFields = Set("as", "field", "op") 
 }
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition (ConstrainedType)
+/**
+ * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+ **/
+case class ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition(value: JsNumber) 
+{ assert(value.value <= 1)
+  assert(value.value >= 0) }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -14607,20 +15486,6 @@ sealed trait TickConfigTheta2
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit (UnionType)
-/**
- * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
- * 
- * __Default value:__ `undefined` (None)
- * 
- * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
- **/
-sealed trait ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit 
-   // TimeUnit is defined elsewhere
-   // TimeUnitParams is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
 // SampleTransform (StructType)
 
 case class SampleTransform(
@@ -14962,7 +15827,7 @@ object PositionFieldDefBase {
 case class RowColLayoutAlign(
   var `column` : Option[LayoutAlign] = None,
   var `row` : Option[LayoutAlign] = None
-) extends TopLevelRepeatSpecAsObjectAlign with NonLayerRepeatSpecAlign with TopLevelUnitSpecAlign with TopLevelConcatSpecAlign with FacetedUnitSpecAlign with FacetEncodingFieldDefAlign with LayerRepeatSpecAlign with ConcatSpecGenericSpecAlign with FacetSpecAlign with TopLevelFacetSpecAlign 
+) extends NonLayerRepeatSpecAlign with TopLevelUnitSpecAlign with TopLevelConcatSpecAlign with TopLevelRepeatSpecAsObject1Align with FacetedUnitSpecAlign with FacetEncodingFieldDefAlign with LayerRepeatSpecAlign with ConcatSpecGenericSpecAlign with FacetSpecAlign with TopLevelRepeatSpecAsObject2Align with TopLevelFacetSpecAlign 
 {  }
 object RowColLayoutAlign {
   val definedFields = Set("column", "row") 
@@ -15194,22 +16059,6 @@ object VConcatSpecGenericSpec {
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisLabelFontStyleAsObject (StructType)
-
-case class ConditionalAxisLabelFontStyleAsObject(
-  var `condition` : ConditionalAxisLabelFontStyleAsObjectCondition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[String] = None
-) extends ConditionalAxisLabelFontStyle 
-{  }
-object ConditionalAxisLabelFontStyleAsObject {
-  val definedFields = Set("condition", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // SharedEncodingY2Value (UnionType)
 /**
  * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
@@ -15301,6 +16150,16 @@ sealed trait PositionDef
    // PositionFieldDef is defined elsewhere
    // PositionDatumDef is defined elsewhere
    // PositionValueDef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject1Title (UnionType)
+/**
+ * Title for the plot.
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Title 
+   // Text is defined elsewhere
+   // TitleParams is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -15615,142 +16474,6 @@ case class ViewBackground(
 {  }
 object ViewBackground {
   val definedFields = Set("strokeDashOffset", "strokeWidth", "strokeCap", "strokeOpacity", "stroke", "fill", "opacity", "fillOpacity", "strokeJoin", "strokeDash", "cursor", "style", "cornerRadius", "strokeMiterLimit") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject (StructType)
-
-case class ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject(
-  /**
-   * For selection parameters, the predicate of empty selections returns true by default. Override this behavior, by setting this property `empty: false`.
-   **/
-  var `empty` : Option[Boolean] = None,
-  /**
-   * __Required.__ A string defining the name of the field from which to pull a data value or an object defining iterated values from the [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
-   * 
-   * __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
-   * 
-   * __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or brackets but are not nested, you can use `\\` to escape dots and brackets (e.g., `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not required if `aggregate` is `count`.
-   **/
-  var `field` : Option[Field] = None,
-  /**
-   * Filter using a parameter name.
-   **/
-  var `param` : String,
-  /**
-   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
-   * 
-   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
-   * 
-   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
-   * 
-   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
-   **/
-  var `scale` : Option[Scale] = None,
-  /**
-   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
-   * 
-   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
-   * 
-   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
-   **/
-  var `legend` : Option[Legend] = None,
-  /**
-   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
-   **/
-  var `bandPosition` : Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition] = None,
-  /**
-   * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
-   * 
-   * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
-   * 
-   * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
-   * 
-   * __Default value:__ `false`
-   * 
-   * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
-   **/
-  var `bin` : Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin] = None,
-  /**
-   * Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`, `"max"`, `"count"`).
-   * 
-   * __Default value:__ `undefined` (None)
-   * 
-   * __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html) documentation.
-   **/
-  var `aggregate` : Option[Aggregate] = None,
-  /**
-   * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
-   * 
-   * __Default value:__ `undefined` (None)
-   * 
-   * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
-   **/
-  var `timeUnit` : Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit] = None,
-  /**
-   * A title for the field. If `null`, the title will be removed.
-   * 
-   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
-   * 
-   * __Notes__:
-   * 
-   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
-   * 
-   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
-   **/
-  var `title` : Option[Text] = None,
-  /**
-   * Sort order for the encoded field.
-   * 
-   * For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or `"descending"`.
-   * 
-   * For discrete fields, `sort` can be one of the following:
-   * - `"ascending"` or `"descending"` -- for sorting by the values' natural order in JavaScript.
-   * - [A string indicating an encoding channel name to sort by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by x-field, descending). This channel string is short-form of [a sort-by-encoding definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order": "descending"}`.
-   * - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field) for sorting by another field.
-   * - [An array specifying the field values in preferred order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the sort order will obey the values in the array, followed by any unspecified values in their original order. For discrete time field, values in the sort array can be [date-time definition objects](types#datetime). In addition, for time units `"month"` and `"day"`, the values can be the month or day names (case insensitive) or their 3-letter initials (e.g., `"Mon"`, `"Tue"`).
-   * - `null` indicating no sort.
-   * 
-   * __Default value:__ `"ascending"`
-   * 
-   * __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
-   * 
-   * __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
-   **/
-  var `sort` : Option[Sort] = None,
-  /**
-   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
-   * 
-   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
-   * 
-   * __Default value:__
-   * 
-   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
-   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
-   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
-   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
-   * 
-   * 2) For a constant value in data domain (`datum`):
-   * - `"quantitative"` if the datum is a number
-   * - `"nominal"` if the datum is a string
-   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
-   * 
-   * __Note:__
-   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
-   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
-   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
-   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
-   * 
-   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
-   **/
-  var `type` : Option[TypeForShape] = None
-) extends ConditionalParameterMarkPropFieldOrDatumDefTypeForShape 
-{  }
-object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject {
-  val definedFields = Set("bin", "type", "bandPosition", "param", "legend", "empty", "aggregate", "title", "scale", "timeUnit", "field", "sort") 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -16174,16 +16897,6 @@ sealed trait SharedEncodingTextType
 
 ////////////////////////////////////////////////////////////////////////
 
-// TopLevelRepeatSpecAsObjectTitle (UnionType)
-/**
- * Title for the plot.
- **/
-sealed trait TopLevelRepeatSpecAsObjectTitle 
-   // Text is defined elsewhere
-   // TitleParams is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
 // Projection (StructType)
 /**
  * An object defining properties of geographic projection, which will be applied to `shape` path for `"geoshape"` marks and to `latitude` and `"longitude"` channels for other marks.
@@ -16349,6 +17062,14 @@ sealed trait TitleConfigAria
 case class ErrorBarDefOpacity(value: JsNumber) 
 { assert(value.value <= 1)
   assert(value.value >= 0) }
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisNumberArrayAsObject1Condition (UnionType)
+
+sealed trait ConditionalAxisNumberArrayAsObject1Condition 
+   // ConditionalPredicateValueDefNumberNullExprRef is defined elsewhere
+   case class ConditionalAxisNumberArrayAsObject1ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(value: Seq[ConditionalPredicateValueDefNumberNullExprRef]) extends ConditionalAxisNumberArrayAsObject1Condition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -16770,20 +17491,6 @@ sealed trait LegendConfigGradientLabelLimit
 
 ////////////////////////////////////////////////////////////////////////
 
-// TopLevelRepeatSpecAsObjectCenter (UnionType)
-/**
- * Boolean flag indicating if subviews should be centered relative to their respective rows or columns.
- * 
- * An object value of the form `{"row": boolean, "column": boolean}` can be used to supply different centering values for rows and columns.
- * 
- * __Default value:__ `false`
- **/
-sealed trait TopLevelRepeatSpecAsObjectCenter 
-   case class TopLevelRepeatSpecAsObjectCenterAsBool(value: Boolean) extends TopLevelRepeatSpecAsObjectCenter
-   // RowColBoolean is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
 // ProjectionConfigParallel (UnionType)
 
 sealed trait ProjectionConfigParallel 
@@ -17089,16 +17796,6 @@ case class ConditionalPredicateValueDefNumber(
 object ConditionalPredicateValueDefNumber {
   val definedFields = Set("test", "value") 
 }
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPosition (ConstrainedType)
-/**
- * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
- **/
-case class ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPosition(value: JsNumber) 
-{ assert(value.value <= 1)
-  assert(value.value >= 0) }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -17467,6 +18164,14 @@ object SharedEncodingHref {
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisStringAsObject1Value (UnionType)
+
+sealed trait ConditionalAxisStringAsObject1Value 
+   case class ConditionalAxisStringAsObject1ValueAsString(value: String) extends ConditionalAxisStringAsObject1Value
+   case object ConditionalAxisStringAsObject1ValueAsNull extends ConditionalAxisStringAsObject1Value
+
+////////////////////////////////////////////////////////////////////////
+
 // TitleParamsAria (UnionType)
 
 sealed trait TitleParamsAria 
@@ -17819,6 +18524,14 @@ sealed trait AxisTitleLimit
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisLabelFontWeightAsObject1Condition (UnionType)
+
+sealed trait ConditionalAxisLabelFontWeightAsObject1Condition 
+   // ConditionalPredicateValueDefFontWeightNullExprRef is defined elsewhere
+   case class ConditionalAxisLabelFontWeightAsObject1ConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(value: Seq[ConditionalPredicateValueDefFontWeightNullExprRef]) extends ConditionalAxisLabelFontWeightAsObject1Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // TopLevelFacetSpecParamsElement (UnionType)
 
 sealed trait TopLevelFacetSpecParamsElement 
@@ -17951,7 +18664,7 @@ case class RepeatMapping(
    * An array of fields to be repeated vertically.
    **/
   var `row` : Option[Seq[String]] = None
-) extends NonLayerRepeatSpecRepeat with TopLevelRepeatSpecAsObjectRepeat 
+) extends TopLevelRepeatSpecAsObject1Repeat with NonLayerRepeatSpecRepeat 
 {  }
 object RepeatMapping {
   val definedFields = Set("column", "row") 
@@ -18134,25 +18847,6 @@ sealed trait SharedEncodingFillTimeUnit
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin (UnionType)
-/**
- * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
- * 
- * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
- * 
- * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
- * 
- * __Default value:__ `false`
- * 
- * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
- **/
-sealed trait ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin 
-   case class ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsBool(value: Boolean) extends ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin
-   // BinParams is defined elsewhere
-   case object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsNull extends ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin
-
-////////////////////////////////////////////////////////////////////////
-
 // FacetSpecCenter (UnionType)
 /**
  * Boolean flag indicating if subviews should be centered relative to their respective rows or columns.
@@ -18169,8 +18863,9 @@ sealed trait FacetSpecCenter
 
 // ConditionalPredicateValueDefAlignNullExprRef (UnionType)
 
-sealed trait ConditionalPredicateValueDefAlignNullExprRef extends ConditionalAxisLabelAlignAsObjectCondition
-   // ConditionalPredicateValueDefAlignNullExprRefAsObject is defined elsewhere
+sealed trait ConditionalPredicateValueDefAlignNullExprRef extends ConditionalAxisLabelAlignAsObject2Condition with ConditionalAxisLabelAlignAsObject1Condition
+   // ConditionalPredicateValueDefAlignNullExprRefAsObject1 is defined elsewhere
+   // ConditionalPredicateValueDefAlignNullExprRefAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -18603,18 +19298,6 @@ sealed trait MarkConfigWidth
 
 ////////////////////////////////////////////////////////////////////////
 
-// ViewConfigDiscreteWidthAsObject (StructType)
-
-case class ViewConfigDiscreteWidthAsObject(
-  var `step` : JsNumber
-) extends ViewConfigDiscreteWidth 
-{  }
-object ViewConfigDiscreteWidthAsObject {
-  val definedFields = Set("step") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // PositionFieldDefBin (UnionType)
 /**
  * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
@@ -18771,22 +19454,6 @@ sealed trait MarkDefLineHeight
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisNumberArrayAsObject (StructType)
-
-case class ConditionalAxisNumberArrayAsObject(
-  var `condition` : ConditionalAxisNumberArrayAsObjectCondition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[Seq[JsNumber]] = None
-) extends ConditionalAxisNumberArray 
-{  }
-object ConditionalAxisNumberArrayAsObject {
-  val definedFields = Set("condition", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // SharedEncodingStrokeDashBin (UnionType)
 /**
  * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
@@ -18893,22 +19560,6 @@ sealed trait MarkConfigTooltip
    // TooltipContent is defined elsewhere
    case class MarkConfigTooltipAsBool(value: Boolean) extends MarkConfigTooltip
    case class MarkConfigTooltipAsNumber(value: JsNumber) extends MarkConfigTooltip
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalAxisLabelBaselineAsObject (StructType)
-
-case class ConditionalAxisLabelBaselineAsObject(
-  var `condition` : ConditionalAxisLabelBaselineAsObjectCondition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[TextBaseline] = None
-) extends ConditionalAxisLabelBaseline 
-{  }
-object ConditionalAxisLabelBaselineAsObject {
-  val definedFields = Set("condition", "value") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -19124,6 +19775,20 @@ case class LegendConfigTitleLimitAsNumber(value: JsNumber) extends LegendConfigT
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit (UnionType)
+/**
+ * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+ * 
+ * __Default value:__ `undefined` (None)
+ * 
+ * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
+ **/
+sealed trait ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit 
+   // TimeUnit is defined elsewhere
+   // TimeUnitParams is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingStrokeWidthDatum (UnionType)
 /**
  * A constant value in data domain.
@@ -19306,6 +19971,18 @@ sealed trait AxisGridDashOffset
 
 ////////////////////////////////////////////////////////////////////////
 
+// TopLevelRepeatSpecAsObject1Spacing (UnionType)
+/**
+ * The spacing in pixels between sub-views of the composition operator. An object of the form `{"row": number, "column": number}` can be used to set different spacing values for rows and columns.
+ * 
+ * __Default value__: Depends on `"spacing"` property of [the view composition configuration](https://vega.github.io/vega-lite/docs/config.html#view-config) (`20` by default)
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Spacing 
+   case class TopLevelRepeatSpecAsObject1SpacingAsNumber(value: JsNumber) extends TopLevelRepeatSpecAsObject1Spacing
+   // RowColNumber is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingLongitudeType (UnionType)
 /**
  * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
@@ -19371,6 +20048,22 @@ case class LegendConfigSymbolSizeAsNumber(value: JsNumber) extends LegendConfigS
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisNumberAsObject1 (StructType)
+
+case class ConditionalAxisNumberAsObject1(
+  var `condition` : ConditionalAxisNumberAsObject1Condition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : ConditionalAxisNumberAsObject1Value
+) extends ConditionalAxisNumber 
+{  }
+object ConditionalAxisNumberAsObject1 {
+  val definedFields = Set("condition", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // HeaderLabelFontWeight (UnionType)
 /**
  * The font weight of the header label.
@@ -19378,6 +20071,22 @@ case class LegendConfigSymbolSizeAsNumber(value: JsNumber) extends LegendConfigS
 sealed trait HeaderLabelFontWeight 
    // FontWeight is defined elsewhere
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisNumberAsObject2 (StructType)
+
+case class ConditionalAxisNumberAsObject2(
+  var `condition` : ConditionalAxisNumberAsObject2Condition,
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String
+) extends ConditionalAxisNumber 
+{  }
+object ConditionalAxisNumberAsObject2 {
+  val definedFields = Set("condition", "expr") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -19463,7 +20172,7 @@ case class SharedEncodingStrokeWidthBandPosition(value: JsNumber)
  **/
 sealed trait ViewConfigDiscreteWidth 
    case class ViewConfigDiscreteWidthAsNumber(value: JsNumber) extends ViewConfigDiscreteWidth
-   // ViewConfigDiscreteWidthAsObject is defined elsewhere
+   // ViewConfigDiscreteWidthAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -19532,7 +20241,8 @@ sealed trait MarkConfigDy
 // ConditionalAxisString (UnionType)
 
 sealed trait ConditionalAxisString extends AxisLabelFont with AxisConfigLabelFont
-   // ConditionalAxisStringAsObject is defined elsewhere
+   // ConditionalAxisStringAsObject1 is defined elsewhere
+   // ConditionalAxisStringAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -19902,7 +20612,8 @@ sealed trait NonLayerRepeatSpecSpacing
 // ConditionalAxisLabelFontWeight (UnionType)
 
 sealed trait ConditionalAxisLabelFontWeight extends AxisLabelFontWeight with AxisConfigLabelFontWeight
-   // ConditionalAxisLabelFontWeightAsObject is defined elsewhere
+   // ConditionalAxisLabelFontWeightAsObject1 is defined elsewhere
+   // ConditionalAxisLabelFontWeightAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -19927,18 +20638,6 @@ sealed trait TitleParamsOrient
 sealed trait LineConfigAriaRoleDescription 
    case class LineConfigAriaRoleDescriptionAsString(value: String) extends LineConfigAriaRoleDescription
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// TopLevelRepeatSpecAsObjectSpacing (UnionType)
-/**
- * The spacing in pixels between sub-views of the composition operator. An object of the form `{"row": number, "column": number}` can be used to set different spacing values for rows and columns.
- * 
- * __Default value__: Depends on `"spacing"` property of [the view composition configuration](https://vega.github.io/vega-lite/docs/config.html#view-config) (`20` by default)
- **/
-sealed trait TopLevelRepeatSpecAsObjectSpacing 
-   case class TopLevelRepeatSpecAsObjectSpacingAsNumber(value: JsNumber) extends TopLevelRepeatSpecAsObjectSpacing
-   // RowColNumber is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -19998,6 +20697,87 @@ case class GradientStop(
 {  }
 object GradientStop {
   val definedFields = Set("color", "offset") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2 (StructType)
+
+case class ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
+   * 
+   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+   * 
+   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+   * 
+   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+   **/
+  var `scale` : Option[Scale] = None,
+  /**
+   * A constant value in data domain.
+   **/
+  var `datum` : Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum] = None,
+  /**
+   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
+   * 
+   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
+   * 
+   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
+   **/
+  var `legend` : Option[Legend] = None,
+  /**
+   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+   **/
+  var `bandPosition` : Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition] = None,
+  /**
+   * A title for the field. If `null`, the title will be removed.
+   * 
+   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
+   * 
+   * __Notes__:
+   * 
+   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+   * 
+   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
+   **/
+  var `title` : Option[Text] = None,
+  /**
+   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+   * 
+   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
+   * 
+   * __Default value:__
+   * 
+   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
+   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
+   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
+   * 
+   * 2) For a constant value in data domain (`datum`):
+   * - `"quantitative"` if the datum is a number
+   * - `"nominal"` if the datum is a string
+   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
+   * 
+   * __Note:__
+   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
+   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
+   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
+   * 
+   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+   **/
+  var `type` : Option[Type] = None
+) extends ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape 
+{  }
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2 {
+  val definedFields = Set("type", "test", "scale", "datum", "bandPosition", "legend", "title") 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -20073,6 +20853,138 @@ case class PointSelectionConfigWithoutType(
 {  }
 object PointSelectionConfigWithoutType {
   val definedFields = Set("clear", "nearest", "encodings", "fields", "on", "resolve", "toggle") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1 (StructType)
+
+case class ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * __Required.__ A string defining the name of the field from which to pull a data value or an object defining iterated values from the [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
+   * 
+   * __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
+   * 
+   * __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or brackets but are not nested, you can use `\\` to escape dots and brackets (e.g., `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not required if `aggregate` is `count`.
+   **/
+  var `field` : Option[Field] = None,
+  /**
+   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
+   * 
+   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+   * 
+   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+   * 
+   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+   **/
+  var `scale` : Option[Scale] = None,
+  /**
+   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
+   * 
+   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
+   * 
+   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
+   **/
+  var `legend` : Option[Legend] = None,
+  /**
+   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+   **/
+  var `bandPosition` : Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition] = None,
+  /**
+   * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
+   * 
+   * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
+   * 
+   * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+   * 
+   * __Default value:__ `false`
+   * 
+   * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+   **/
+  var `bin` : Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin] = None,
+  /**
+   * Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`, `"max"`, `"count"`).
+   * 
+   * __Default value:__ `undefined` (None)
+   * 
+   * __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html) documentation.
+   **/
+  var `aggregate` : Option[Aggregate] = None,
+  /**
+   * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+   * 
+   * __Default value:__ `undefined` (None)
+   * 
+   * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
+   **/
+  var `timeUnit` : Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit] = None,
+  /**
+   * A title for the field. If `null`, the title will be removed.
+   * 
+   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
+   * 
+   * __Notes__:
+   * 
+   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+   * 
+   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
+   **/
+  var `title` : Option[Text] = None,
+  /**
+   * Sort order for the encoded field.
+   * 
+   * For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or `"descending"`.
+   * 
+   * For discrete fields, `sort` can be one of the following:
+   * - `"ascending"` or `"descending"` -- for sorting by the values' natural order in JavaScript.
+   * - [A string indicating an encoding channel name to sort by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by x-field, descending). This channel string is short-form of [a sort-by-encoding definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order": "descending"}`.
+   * - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field) for sorting by another field.
+   * - [An array specifying the field values in preferred order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the sort order will obey the values in the array, followed by any unspecified values in their original order. For discrete time field, values in the sort array can be [date-time definition objects](types#datetime). In addition, for time units `"month"` and `"day"`, the values can be the month or day names (case insensitive) or their 3-letter initials (e.g., `"Mon"`, `"Tue"`).
+   * - `null` indicating no sort.
+   * 
+   * __Default value:__ `"ascending"`
+   * 
+   * __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
+   * 
+   * __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
+   **/
+  var `sort` : Option[Sort] = None,
+  /**
+   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+   * 
+   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
+   * 
+   * __Default value:__
+   * 
+   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
+   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
+   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
+   * 
+   * 2) For a constant value in data domain (`datum`):
+   * - `"quantitative"` if the datum is a number
+   * - `"nominal"` if the datum is a string
+   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
+   * 
+   * __Note:__
+   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
+   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
+   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
+   * 
+   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+   **/
+  var `type` : Option[TypeForShape] = None
+) extends ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape 
+{  }
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1 {
+  val definedFields = Set("bin", "type", "test", "bandPosition", "legend", "aggregate", "title", "scale", "timeUnit", "field", "sort") 
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -20285,25 +21197,6 @@ sealed trait MarkDefSmooth
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalPredicateValueDefColorNullExprRefAsObject (StructType)
-
-case class ConditionalPredicateValueDefColorNullExprRefAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[Color] = None
-) extends ConditionalPredicateValueDefColorNullExprRef 
-{  }
-object ConditionalPredicateValueDefColorNullExprRefAsObject {
-  val definedFields = Set("test", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // OverlayMarkDefEllipsis (UnionType)
 
 sealed trait OverlayMarkDefEllipsis 
@@ -20393,6 +21286,44 @@ case class ViewConfigFillOpacityAsNumber(value: JsNumber) extends ViewConfigFill
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateValueDefFontStyleNullExprRefAsObject1 (StructType)
+
+case class ConditionalPredicateValueDefFontStyleNullExprRefAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[String] = None
+) extends ConditionalPredicateValueDefFontStyleNullExprRef 
+{  }
+object ConditionalPredicateValueDefFontStyleNullExprRefAsObject1 {
+  val definedFields = Set("test", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefFontStyleNullExprRefAsObject2 (StructType)
+
+case class ConditionalPredicateValueDefFontStyleNullExprRefAsObject2(
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String,
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition
+) extends ConditionalPredicateValueDefFontStyleNullExprRef 
+{  }
+object ConditionalPredicateValueDefFontStyleNullExprRefAsObject2 {
+  val definedFields = Set("expr", "test") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingLongitude2TimeUnit (UnionType)
 /**
  * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
@@ -20437,18 +21368,6 @@ sealed trait SharedEncodingHrefCondition
 case class FieldDefWithoutScaleBandPosition(value: JsNumber) 
 { assert(value.value <= 1)
   assert(value.value >= 0) }
-
-////////////////////////////////////////////////////////////////////////
-
-// TopLevelRepeatSpecAsObjectPadding (UnionType)
-/**
- * The default visualization padding, in pixels, from the edge of the visualization canvas to the data rectangle. If a number, specifies padding for all sides. If an object, the value should have the format `{"left": 5, "top": 5, "right": 5, "bottom": 5}` to specify padding for each side of the visualization.
- * 
- * __Default value__: `5`
- **/
-sealed trait TopLevelRepeatSpecAsObjectPadding 
-   // Padding is defined elsewhere
-   // ExprRef is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -20500,14 +21419,6 @@ object UrlData {
 sealed trait OverlayMarkDefCornerRadiusBottomRight 
    case class OverlayMarkDefCornerRadiusBottomRightAsNumber(value: JsNumber) extends OverlayMarkDefCornerRadiusBottomRight
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalAxisLabelBaselineAsObjectCondition (UnionType)
-
-sealed trait ConditionalAxisLabelBaselineAsObjectCondition 
-   // ConditionalPredicateValueDefTextBaselineNullExprRef is defined elsewhere
-   case class ConditionalAxisLabelBaselineAsObjectConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(value: Seq[ConditionalPredicateValueDefTextBaselineNullExprRef]) extends ConditionalAxisLabelBaselineAsObjectCondition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -20798,6 +21709,34 @@ sealed trait SharedEncodingAngleCondition
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPosition (ConstrainedType)
+/**
+ * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+ **/
+case class ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPosition(value: JsNumber) 
+{ assert(value.value <= 1)
+  assert(value.value >= 0) }
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject2Align (UnionType)
+/**
+ * The alignment to apply to grid rows and columns. The supported string values are `"all"`, `"each"`, and `"none"`.
+ * 
+ * - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed one after the other.
+ * - For `"each"`, subviews will be aligned into a clean grid structure, but each row or column may be of variable size.
+ * - For `"all"`, subviews will be aligned and each row or column will be sized identically based on the maximum observed size. String values for this property will be applied to both grid rows and columns.
+ * 
+ * Alternatively, an object value of the form `{"row": string, "column": string}` can be used to supply different alignments for rows and columns.
+ * 
+ * __Default value:__ `"all"`.
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Align 
+   // LayoutAlign is defined elsewhere
+   // RowColLayoutAlign is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // AxisDescription (UnionType)
 
 sealed trait AxisDescription 
@@ -20861,7 +21800,7 @@ sealed trait BarConfigFillOpacity
  **/
 case class RepeatRef(
   var `repeat` : RepeatRefRepeat
-) extends SharedEncodingStrokeWidthDatum with SharedEncodingStrokeDatum with SharedEncodingY2Datum with SharedEncodingRadius2Datum with ScaleDatumDefDatum with DatumDefDatum with SharedEncodingAngleDatum with SharedEncodingStrokeOpacityDatum with Field with SharedEncodingSizeDatum with SharedEncodingOpacityDatum with PositionDatumDefDatum with FieldOrDatumDefWithConditionDatumDefGradientStringNullDatum with SharedEncodingLongitude2Datum with SharedEncodingLatitudeDatum with SharedEncodingStrokeDashDatum with SharedEncodingYOffsetDatum with SharedEncodingRadiusDatum with SharedEncodingLatitude2Datum with FieldOrDatumDefWithConditionStringDatumDefTextDatum with SharedEncodingXDatum with SharedEncodingThetaDatum with SharedEncodingFillOpacityDatum with SharedEncodingX2Datum with PositionDatumDefBaseDatum with FieldOrDatumDefWithConditionDatumDefNumberDatum with SharedEncodingYDatum with SharedEncodingFillDatum with SharedEncodingXOffsetDatum with SharedEncodingTheta2Datum with SharedEncodingTextDatum with SharedEncodingColorDatum with SharedEncodingLongitudeDatum with SharedEncodingShapeDatum with FieldOrDatumDefWithConditionDatumDefStringNullDatum 
+) extends SharedEncodingStrokeWidthDatum with SharedEncodingStrokeDatum with SharedEncodingY2Datum with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum with SharedEncodingRadius2Datum with ScaleDatumDefDatum with DatumDefDatum with SharedEncodingAngleDatum with SharedEncodingStrokeOpacityDatum with ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum with Field with SharedEncodingSizeDatum with SharedEncodingOpacityDatum with PositionDatumDefDatum with FieldOrDatumDefWithConditionDatumDefGradientStringNullDatum with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum with SharedEncodingLongitude2Datum with SharedEncodingLatitudeDatum with SharedEncodingStrokeDashDatum with SharedEncodingYOffsetDatum with ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum with SharedEncodingRadiusDatum with SharedEncodingLatitude2Datum with FieldOrDatumDefWithConditionStringDatumDefTextDatum with SharedEncodingXDatum with SharedEncodingThetaDatum with SharedEncodingFillOpacityDatum with SharedEncodingX2Datum with PositionDatumDefBaseDatum with FieldOrDatumDefWithConditionDatumDefNumberDatum with SharedEncodingYDatum with SharedEncodingFillDatum with SharedEncodingXOffsetDatum with SharedEncodingTheta2Datum with SharedEncodingTextDatum with SharedEncodingColorDatum with SharedEncodingLongitudeDatum with SharedEncodingShapeDatum with FieldOrDatumDefWithConditionDatumDefStringNullDatum 
 {  }
 object RepeatRef {
   val definedFields = Set("repeat") 
@@ -21469,27 +22408,23 @@ sealed trait ScaleRangeAsArrayElement
 
 ////////////////////////////////////////////////////////////////////////
 
+// TopLevelRepeatSpecAsObject1Padding (UnionType)
+/**
+ * The default visualization padding, in pixels, from the edge of the visualization canvas to the data rectangle. If a number, specifies padding for all sides. If an object, the value should have the format `{"left": 5, "top": 5, "right": 5, "bottom": 5}` to specify padding for each side of the visualization.
+ * 
+ * __Default value__: `5`
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Padding 
+   // Padding is defined elsewhere
+   // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // TickConfigEllipsis (UnionType)
 
 sealed trait TickConfigEllipsis 
    case class TickConfigEllipsisAsString(value: String) extends TickConfigEllipsis
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalAxisColorAsObject (StructType)
-
-case class ConditionalAxisColorAsObject(
-  var `condition` : ConditionalAxisColorAsObjectCondition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[Color] = None
-) extends ConditionalAxisColor 
-{  }
-object ConditionalAxisColorAsObject {
-  val definedFields = Set("condition", "value") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -21649,26 +22584,6 @@ object MergedStream {
 case class AreaConfigAngleAsNumber(value: JsNumber) extends AreaConfigAngle
 { assert(value.value <= 360)
   assert(value.value >= 0) }
-
-////////////////////////////////////////////////////////////////////////
-
-// EventStreamAsObject (StructType)
-
-case class EventStreamAsObject(
-  var `source` : Option[EventStreamAsObjectSource] = None,
-  var `marktype` : Option[MarkType] = None,
-  var `filter` : Option[EventStreamAsObjectFilter] = None,
-  var `markname` : Option[String] = None,
-  var `consume` : Option[Boolean] = None,
-  var `type` : EventType,
-  var `debounce` : Option[JsNumber] = None,
-  var `between` : Option[Seq[Stream]] = None,
-  var `throttle` : Option[JsNumber] = None
-) extends EventStream 
-{  }
-object EventStreamAsObject {
-  val definedFields = Set("marktype", "type", "throttle", "debounce", "between", "source", "markname", "filter", "consume") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -22364,6 +23279,26 @@ object SharedEncodingText {
 
 ////////////////////////////////////////////////////////////////////////
 
+// EventStreamAsObject1 (StructType)
+
+case class EventStreamAsObject1(
+  var `source` : Option[EventStreamAsObject1Source] = None,
+  var `marktype` : Option[MarkType] = None,
+  var `filter` : Option[EventStreamAsObject1Filter] = None,
+  var `markname` : Option[String] = None,
+  var `consume` : Option[Boolean] = None,
+  var `type` : EventType,
+  var `debounce` : Option[JsNumber] = None,
+  var `between` : Option[Seq[Stream]] = None,
+  var `throttle` : Option[JsNumber] = None
+) extends EventStream 
+{  }
+object EventStreamAsObject1 {
+  val definedFields = Set("marktype", "type", "throttle", "debounce", "between", "source", "markname", "filter", "consume") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingSizeValue (UnionType)
 /**
  * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
@@ -22371,6 +23306,26 @@ object SharedEncodingText {
 sealed trait SharedEncodingSizeValue 
    case class SharedEncodingSizeValueAsNumber(value: JsNumber) extends SharedEncodingSizeValue
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// EventStreamAsObject2 (StructType)
+
+case class EventStreamAsObject2(
+  var `source` : EventStreamAsObject2Source,
+  var `marktype` : Option[MarkType] = None,
+  var `filter` : Option[EventStreamAsObject2Filter] = None,
+  var `markname` : Option[String] = None,
+  var `consume` : Option[Boolean] = None,
+  var `type` : WindowEventType,
+  var `debounce` : Option[JsNumber] = None,
+  var `between` : Option[Seq[Stream]] = None,
+  var `throttle` : Option[JsNumber] = None
+) extends EventStream 
+{  }
+object EventStreamAsObject2 {
+  val definedFields = Set("marktype", "type", "throttle", "debounce", "between", "source", "markname", "filter", "consume") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -22698,7 +23653,7 @@ sealed trait TopLevelFacetSpecSpacing
 /**
  * Placeholder text if the `text` channel is not specified
  **/
-sealed trait Text extends ConditionalPredicateValueDefTextExprRefValue with TopLevelLayerSpecTitle with LayerSpecTitle with RectConfigText with TopLevelFacetSpecTitle with TickConfigText with LineConfigText with TopLevelRepeatSpecAsObjectTitle with VConcatSpecGenericSpecTitle with TitleParamsText with ConditionalParameterValueDefTextExprRefValue with OverlayMarkDefText with ValueDefWithConditionStringFieldDefTextValue with FacetSpecTitle with TopLevelHConcatSpecTitle with AreaConfigText with TopLevelConcatSpecTitle with TopLevelVConcatSpecTitle with FacetedUnitSpecTitle with MarkDefText with UnitSpecWithFrameTitle with SharedEncodingTextValue with LayerRepeatSpecTitle with TopLevelUnitSpecTitle with UnitSpecTitle with HConcatSpecGenericSpecTitle with BarConfigText with MarkConfigText with ConcatSpecGenericSpecTitle with NonLayerRepeatSpecTitle
+sealed trait Text extends ConditionalPredicateValueDefTextExprRefValue with TopLevelLayerSpecTitle with LayerSpecTitle with RectConfigText with TopLevelFacetSpecTitle with TickConfigText with LineConfigText with TopLevelRepeatSpecAsObject1Title with VConcatSpecGenericSpecTitle with TitleParamsText with ConditionalParameterValueDefTextExprRefValue with OverlayMarkDefText with ValueDefWithConditionStringFieldDefTextValue with FacetSpecTitle with TopLevelHConcatSpecTitle with AreaConfigText with TopLevelConcatSpecTitle with TopLevelVConcatSpecTitle with FacetedUnitSpecTitle with MarkDefText with UnitSpecWithFrameTitle with SharedEncodingTextValue with LayerRepeatSpecTitle with TopLevelUnitSpecTitle with UnitSpecTitle with HConcatSpecGenericSpecTitle with TopLevelRepeatSpecAsObject2Title with BarConfigText with MarkConfigText with ConcatSpecGenericSpecTitle with NonLayerRepeatSpecTitle
    case class TextAsString(value: String) extends Text
    case class TextAsArrayOfString(value: Seq[String]) extends Text
 
@@ -22725,22 +23680,6 @@ sealed trait TopLevelSelectionParameterSelect
    // SelectionType is defined elsewhere
    // PointSelectionConfig is defined elsewhere
    // IntervalSelectionConfig is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalAxisLabelAlignAsObject (StructType)
-
-case class ConditionalAxisLabelAlignAsObject(
-  var `condition` : ConditionalAxisLabelAlignAsObjectCondition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[Align] = None
-) extends ConditionalAxisLabelAlign 
-{  }
-object ConditionalAxisLabelAlignAsObject {
-  val definedFields = Set("condition", "value") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -23143,6 +24082,14 @@ sealed trait FacetedEncodingYError
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisStringAsObject1Condition (UnionType)
+
+sealed trait ConditionalAxisStringAsObject1Condition 
+   // ConditionalPredicateValueDefStringNullExprRef is defined elsewhere
+   case class ConditionalAxisStringAsObject1ConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(value: Seq[ConditionalPredicateValueDefStringNullExprRef]) extends ConditionalAxisStringAsObject1Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // EncodingYError (UnionType)
 /**
  * Error value of y coordinates for error specified `"errorbar"` and `"errorband"`.
@@ -23150,21 +24097,6 @@ sealed trait FacetedEncodingYError
 sealed trait EncodingYError 
    // SecondaryFieldDef is defined elsewhere
    // ValueDefNumber is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// TopLevelRepeatSpecAsObjectBounds (EnumType)
-/**
- * The bounds calculation method to use for determining the extent of a sub-plot. One of `full` (the default) or `flush`.
- * 
- * - If set to `full`, the entire calculated bounds (including axes, title, and legend) will be used.
- * - If set to `flush`, only the specified width and height values for the sub-view will be used. The `flush` setting can be useful when attempting to place sub-plots without axes or legends into a uniform grid structure.
- * 
- * __Default value:__ `"full"`
- **/
-sealed trait TopLevelRepeatSpecAsObjectBounds  { val payload: JsValue }
-   case object TopLevelRepeatSpecAsObjectBoundsFull extends TopLevelRepeatSpecAsObjectBounds { val payload = JsString("full") }
-   case object TopLevelRepeatSpecAsObjectBoundsFlush extends TopLevelRepeatSpecAsObjectBounds { val payload = JsString("flush") }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -23268,6 +24200,25 @@ sealed trait LineConfigBaseline
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateValueDefColorNullExprRefAsObject1 (StructType)
+
+case class ConditionalPredicateValueDefColorNullExprRefAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[Color] = None
+) extends ConditionalPredicateValueDefColorNullExprRef 
+{  }
+object ConditionalPredicateValueDefColorNullExprRefAsObject1 {
+  val definedFields = Set("test", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // SelectionParameterBind (UnionType)
 /**
  * When set, a selection is populated by input elements (also known as dynamic query widgets) or by interacting with the corresponding legend. Direct manipulation interaction is disabled by default; to re-enable it, set the selection's [`on`](https://vega.github.io/vega-lite/docs/selection.html#common-selection-properties) property.
@@ -23303,6 +24254,25 @@ sealed trait SharedEncodingTextBin
    // BinParams is defined elsewhere
    // Binned is defined elsewhere
    case object SharedEncodingTextBinAsNull extends SharedEncodingTextBin
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefColorNullExprRefAsObject2 (StructType)
+
+case class ConditionalPredicateValueDefColorNullExprRefAsObject2(
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String,
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition
+) extends ConditionalPredicateValueDefColorNullExprRef 
+{  }
+object ConditionalPredicateValueDefColorNullExprRefAsObject2 {
+  val definedFields = Set("expr", "test") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -23359,6 +24329,16 @@ case class Transparent() extends LineConfigPoint with AreaConfigPoint with MarkD
 
 ////////////////////////////////////////////////////////////////////////
 
+// TopLevelRepeatSpecAsObject2Spec (UnionType)
+/**
+ * A specification of the view that gets repeated.
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Spec 
+   // LayerSpec is defined elsewhere
+   // UnitSpec is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // SphereGenerator (StructType)
 
 case class SphereGenerator(
@@ -23409,7 +24389,8 @@ sealed trait AxisConfigTitleBaseline
 // ConditionalAxisColor (UnionType)
 
 sealed trait ConditionalAxisColor extends AxisGridColor with AxisConfigTickColor with AxisLabelColor with AxisConfigLabelColor with AxisTickColor with AxisConfigGridColor
-   // ConditionalAxisColorAsObject is defined elsewhere
+   // ConditionalAxisColorAsObject1 is defined elsewhere
+   // ConditionalAxisColorAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -23579,11 +24560,11 @@ sealed trait AreaConfigHref
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisNumberAsObjectCondition (UnionType)
+// TopLevelRepeatSpecAsObject2ParamsElement (UnionType)
 
-sealed trait ConditionalAxisNumberAsObjectCondition 
-   // ConditionalPredicateValueDefNumberNullExprRef is defined elsewhere
-   case class ConditionalAxisNumberAsObjectConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(value: Seq[ConditionalPredicateValueDefNumberNullExprRef]) extends ConditionalAxisNumberAsObjectCondition
+sealed trait TopLevelRepeatSpecAsObject2ParamsElement 
+   // VariableParameter is defined elsewhere
+   // TopLevelSelectionParameter is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -23654,10 +24635,25 @@ case class FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNullBandPos
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit (UnionType)
+/**
+ * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+ * 
+ * __Default value:__ `undefined` (None)
+ * 
+ * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
+ **/
+sealed trait ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit 
+   // TimeUnit is defined elsewhere
+   // TimeUnitParams is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // ConditionalAxisLabelAlign (UnionType)
 
 sealed trait ConditionalAxisLabelAlign extends AxisConfigLabelAlign with AxisLabelAlign
-   // ConditionalAxisLabelAlignAsObject is defined elsewhere
+   // ConditionalAxisLabelAlignAsObject1 is defined elsewhere
+   // ConditionalAxisLabelAlignAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -23854,11 +24850,49 @@ sealed trait ColorName extends Color { val payload: JsValue }
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateValueDefFontWeightNullExprRefAsObject1 (StructType)
+
+case class ConditionalPredicateValueDefFontWeightNullExprRefAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[FontWeight] = None
+) extends ConditionalPredicateValueDefFontWeightNullExprRef 
+{  }
+object ConditionalPredicateValueDefFontWeightNullExprRefAsObject1 {
+  val definedFields = Set("test", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // LegendConfigTitleFontStyle (UnionType)
 
 sealed trait LegendConfigTitleFontStyle 
    case class LegendConfigTitleFontStyleAsString(value: String) extends LegendConfigTitleFontStyle
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefFontWeightNullExprRefAsObject2 (StructType)
+
+case class ConditionalPredicateValueDefFontWeightNullExprRefAsObject2(
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String,
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition
+) extends ConditionalPredicateValueDefFontWeightNullExprRef 
+{  }
+object ConditionalPredicateValueDefFontWeightNullExprRefAsObject2 {
+  val definedFields = Set("expr", "test") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -24106,25 +25140,6 @@ sealed trait MarkConfigX2
    case class MarkConfigX2AsNumber(value: JsNumber) extends MarkConfigX2
    // Width is defined elsewhere
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin (UnionType)
-/**
- * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
- * 
- * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
- * 
- * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
- * 
- * __Default value:__ `false`
- * 
- * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
- **/
-sealed trait ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin 
-   case class ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinAsBool(value: Boolean) extends ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin
-   // BinParams is defined elsewhere
-   case object ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinAsNull extends ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -24504,6 +25519,21 @@ case class ScaleDatumDef(
 object ScaleDatumDef {
   val definedFields = Set("type", "scale", "datum", "bandPosition", "title") 
 }
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject1Bounds (EnumType)
+/**
+ * The bounds calculation method to use for determining the extent of a sub-plot. One of `full` (the default) or `flush`.
+ * 
+ * - If set to `full`, the entire calculated bounds (including axes, title, and legend) will be used.
+ * - If set to `flush`, only the specified width and height values for the sub-view will be used. The `flush` setting can be useful when attempting to place sub-plots without axes or legends into a uniform grid structure.
+ * 
+ * __Default value:__ `"full"`
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Bounds  { val payload: JsValue }
+   case object TopLevelRepeatSpecAsObject1BoundsFull extends TopLevelRepeatSpecAsObject1Bounds { val payload = JsString("full") }
+   case object TopLevelRepeatSpecAsObject1BoundsFlush extends TopLevelRepeatSpecAsObject1Bounds { val payload = JsString("flush") }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -25346,6 +26376,14 @@ sealed trait TickConfigStrokeCap
 
 ////////////////////////////////////////////////////////////////////////
 
+// EventStreamAsObject1Filter (UnionType)
+
+sealed trait EventStreamAsObject1Filter 
+   case class EventStreamAsObject1FilterAsString(value: String) extends EventStreamAsObject1Filter
+   case class EventStreamAsObject1FilterAsArrayOfString(value: Seq[String]) extends EventStreamAsObject1Filter
+
+////////////////////////////////////////////////////////////////////////
+
 // MarkDefTooltip (UnionType)
 /**
  * The tooltip text string to show upon mouse hover or an object defining which fields should the tooltip be derived from.
@@ -25416,136 +26454,6 @@ sealed trait BinExtent
 sealed trait ConditionalParameterValueDefTextExprRefValue 
    // Text is defined elsewhere
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// TopLevelRepeatSpecAsObject (StructType)
-
-case class TopLevelRepeatSpecAsObject(
-  /**
-   * Name of the visualization for later reference.
-   **/
-  var `name` : Option[String] = None,
-  /**
-   * Description of this mark for commenting purpose.
-   **/
-  var `description` : Option[String] = None,
-  /**
-   * Dynamic variables or selections that parameterize a visualization.
-   **/
-  var `params` : Option[Seq[TopLevelRepeatSpecAsObjectParamsElement]] = None,
-  /**
-   * Vega-Lite configuration object. This property can only be defined at the top-level of a specification.
-   **/
-  var `config` : Option[Config] = None,
-  /**
-   * The bounds calculation method to use for determining the extent of a sub-plot. One of `full` (the default) or `flush`.
-   * 
-   * - If set to `full`, the entire calculated bounds (including axes, title, and legend) will be used.
-   * - If set to `flush`, only the specified width and height values for the sub-view will be used. The `flush` setting can be useful when attempting to place sub-plots without axes or legends into a uniform grid structure.
-   * 
-   * __Default value:__ `"full"`
-   **/
-  var `bounds` : Option[TopLevelRepeatSpecAsObjectBounds] = None,
-  /**
-   * A global data store for named datasets. This is a mapping from names to inline datasets. This can be an array of objects or primitive values or a string. Arrays of primitive values are ingested as objects with a `data` property.
-   **/
-  var `datasets` : Option[Map[String,InlineDataset]] = None,
-  /**
-   * Optional metadata that will be passed to Vega. This object is completely ignored by Vega and Vega-Lite and can be used for custom metadata.
-   **/
-  var `usermeta` : Option[Map[String,JsValue]] = None,
-  /**
-   * The number of columns to include in the view composition layout.
-   * 
-   * __Default value__: `undefined` -- An infinite number of columns (a single row) will be assumed. This is equivalent to `hconcat` (for `concat`) and to using the `column` channel (for `facet` and `repeat`).
-   * 
-   * __Note__:
-   * 
-   * 1) This property is only for:
-   * - the general (wrappable) `concat` operator (not `hconcat`/`vconcat`)
-   * - the `facet` and `repeat` operator with one field/repetition definition (without row/column nesting)
-   * 
-   * 2) Setting the `columns` to `1` is equivalent to `vconcat` (for `concat`) and to using the `row` channel (for `facet` and `repeat`).
-   **/
-  var `columns` : Option[JsNumber] = None,
-  /**
-   * Scale, axis, and legend resolutions for view composition specifications.
-   **/
-  var `resolve` : Option[Resolve] = None,
-  /**
-   * A specification of the view that gets repeated.
-   **/
-  var `spec` : NonNormalizedSpec,
-  /**
-   * The default visualization padding, in pixels, from the edge of the visualization canvas to the data rectangle. If a number, specifies padding for all sides. If an object, the value should have the format `{"left": 5, "top": 5, "right": 5, "bottom": 5}` to specify padding for each side of the visualization.
-   * 
-   * __Default value__: `5`
-   **/
-  var `padding` : Option[TopLevelRepeatSpecAsObjectPadding] = None,
-  /**
-   * CSS color property to use as the background of the entire view.
-   * 
-   * __Default value:__ `"white"`
-   **/
-  var `background` : Option[TopLevelRepeatSpecAsObjectBackground] = None,
-  /**
-   * Boolean flag indicating if subviews should be centered relative to their respective rows or columns.
-   * 
-   * An object value of the form `{"row": boolean, "column": boolean}` can be used to supply different centering values for rows and columns.
-   * 
-   * __Default value:__ `false`
-   **/
-  var `center` : Option[TopLevelRepeatSpecAsObjectCenter] = None,
-  /**
-   * The alignment to apply to grid rows and columns. The supported string values are `"all"`, `"each"`, and `"none"`.
-   * 
-   * - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed one after the other.
-   * - For `"each"`, subviews will be aligned into a clean grid structure, but each row or column may be of variable size.
-   * - For `"all"`, subviews will be aligned and each row or column will be sized identically based on the maximum observed size. String values for this property will be applied to both grid rows and columns.
-   * 
-   * Alternatively, an object value of the form `{"row": string, "column": string}` can be used to supply different alignments for rows and columns.
-   * 
-   * __Default value:__ `"all"`.
-   **/
-  var `align` : Option[TopLevelRepeatSpecAsObjectAlign] = None,
-  /**
-   * An object describing the data source. Set to `null` to ignore the parent's data source. If no data is set, it is derived from the parent.
-   **/
-  var `data` : Option[Data] = None,
-  /**
-   * Definition for fields to be repeated. One of: 1) An array of fields to be repeated. If `"repeat"` is an array, the field can be referred to as `{"repeat": "repeat"}`. The repeated views are laid out in a wrapped row. You can set the number of columns to control the wrapping. 2) An object that maps `"row"` and/or `"column"` to the listed fields to be repeated along the particular orientations. The objects `{"repeat": "row"}` and `{"repeat": "column"}` can be used to refer to the repeated field respectively.
-   **/
-  var `repeat` : TopLevelRepeatSpecAsObjectRepeat,
-  /**
-   * Title for the plot.
-   **/
-  var `title` : Option[TopLevelRepeatSpecAsObjectTitle] = None,
-  /**
-   * The spacing in pixels between sub-views of the composition operator. An object of the form `{"row": number, "column": number}` can be used to set different spacing values for rows and columns.
-   * 
-   * __Default value__: Depends on `"spacing"` property of [the view composition configuration](https://vega.github.io/vega-lite/docs/config.html#view-config) (`20` by default)
-   **/
-  var `spacing` : Option[TopLevelRepeatSpecAsObjectSpacing] = None,
-  /**
-   * URL to [JSON schema](http://json-schema.org/) for a Vega-Lite specification. Unless you have a reason to change this, use `https://vega.github.io/schema/vega-lite/v5.json`. Setting the `$schema` property allows automatic validation and autocomplete in editors that support JSON schema.
-   **/
-  var `$schema` : Option[Uri] = None,
-  /**
-   * How the visualization size should be determined. If a string, should be one of `"pad"`, `"fit"` or `"none"`. Object values can additionally specify parameters for content sizing and automatic resizing.
-   * 
-   * __Default value__: `pad`
-   **/
-  var `autosize` : Option[TopLevelRepeatSpecAsObjectAutosize] = None,
-  /**
-   * An array of data transformations such as filter and new field calculation.
-   **/
-  var `transform` : Option[Seq[Transform]] = None
-) extends TopLevelRepeatSpec 
-{  }
-object TopLevelRepeatSpecAsObject {
-  val definedFields = Set("spacing", "padding", "config", "autosize", "datasets", "transform", "align", "$schema", "data", "repeat", "usermeta", "spec", "params", "description", "title", "resolve", "bounds", "background", "name", "columns", "center") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -25745,7 +26653,7 @@ sealed trait ViewConfigCornerRadius
 case class RowColBoolean(
   var `column` : Option[Boolean] = None,
   var `row` : Option[Boolean] = None
-) extends ConcatSpecGenericSpecCenter with FacetedUnitSpecCenter with FacetSpecCenter with FacetEncodingFieldDefCenter with TopLevelUnitSpecCenter with TopLevelRepeatSpecAsObjectCenter with TopLevelFacetSpecCenter with TopLevelConcatSpecCenter with NonLayerRepeatSpecCenter with LayerRepeatSpecCenter 
+) extends ConcatSpecGenericSpecCenter with FacetedUnitSpecCenter with FacetSpecCenter with FacetEncodingFieldDefCenter with TopLevelUnitSpecCenter with TopLevelRepeatSpecAsObject1Center with TopLevelFacetSpecCenter with TopLevelConcatSpecCenter with NonLayerRepeatSpecCenter with LayerRepeatSpecCenter with TopLevelRepeatSpecAsObject2Center 
 {  }
 object RowColBoolean {
   val definedFields = Set("column", "row") 
@@ -25805,25 +26713,19 @@ sealed trait AxisConfigMinExtent
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisLabelAlignAsObject2Condition (UnionType)
+
+sealed trait ConditionalAxisLabelAlignAsObject2Condition 
+   // ConditionalPredicateValueDefAlignNullExprRef is defined elsewhere
+   case class ConditionalAxisLabelAlignAsObject2ConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(value: Seq[ConditionalPredicateValueDefAlignNullExprRef]) extends ConditionalAxisLabelAlignAsObject2Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // AreaConfigStartAngle (UnionType)
 
 sealed trait AreaConfigStartAngle 
    case class AreaConfigStartAngleAsNumber(value: JsNumber) extends AreaConfigStartAngle
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit (UnionType)
-/**
- * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
- * 
- * __Default value:__ `undefined` (None)
- * 
- * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
- **/
-sealed trait ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit 
-   // TimeUnit is defined elsewhere
-   // TimeUnitParams is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -25928,24 +26830,6 @@ case class OverlayMarkDefFillOpacityAsNumber(value: JsNumber) extends OverlayMar
 
 ////////////////////////////////////////////////////////////////////////
 
-// TopLevelRepeatSpecAsObjectAlign (UnionType)
-/**
- * The alignment to apply to grid rows and columns. The supported string values are `"all"`, `"each"`, and `"none"`.
- * 
- * - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed one after the other.
- * - For `"each"`, subviews will be aligned into a clean grid structure, but each row or column may be of variable size.
- * - For `"all"`, subviews will be aligned and each row or column will be sized identically based on the maximum observed size. String values for this property will be applied to both grid rows and columns.
- * 
- * Alternatively, an object value of the form `{"row": string, "column": string}` can be used to supply different alignments for rows and columns.
- * 
- * __Default value:__ `"all"`.
- **/
-sealed trait TopLevelRepeatSpecAsObjectAlign 
-   // LayoutAlign is defined elsewhere
-   // RowColLayoutAlign is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
 // IntervalSelectionConfigWithoutTypeZoom (UnionType)
 
 sealed trait IntervalSelectionConfigWithoutTypeZoom 
@@ -25992,7 +26876,8 @@ sealed trait OverlayMarkDefTheta2Offset
 // ConditionalAxisLabelFontStyle (UnionType)
 
 sealed trait ConditionalAxisLabelFontStyle extends AxisLabelFontStyle with AxisConfigLabelFontStyle
-   // ConditionalAxisLabelFontStyleAsObject is defined elsewhere
+   // ConditionalAxisLabelFontStyleAsObject1 is defined elsewhere
+   // ConditionalAxisLabelFontStyleAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -26055,6 +26940,14 @@ sealed trait AxisTickCap
 sealed trait ProjectionConfigReflectY 
    case class ProjectionConfigReflectYAsBool(value: Boolean) extends ProjectionConfigReflectY
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisNumberAsObject1Value (UnionType)
+
+sealed trait ConditionalAxisNumberAsObject1Value 
+   case class ConditionalAxisNumberAsObject1ValueAsNumber(value: JsNumber) extends ConditionalAxisNumberAsObject1Value
+   case object ConditionalAxisNumberAsObject1ValueAsNull extends ConditionalAxisNumberAsObject1Value
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -26370,7 +27263,7 @@ case class ExprRef(
    * Vega expression (which can refer to Vega-Lite parameters).
    **/
   var `expr` : String
-) extends SharedEncodingStrokeWidthDatum with HeaderConfigLabelPadding with LegendConfigTitleLineHeight with MarkDefStroke with SharedEncodingStrokeWidthValue with TitleParamsLimit with AxisGridDashOffset with FieldOrDatumDefWithConditionDatumDefGradientStringNullDatum with LineConfigDescription with HeaderLabelFontWeight with OverlayMarkDefHeight with ScaleAlign with BarConfigX2 with TickConfigX2 with ScaleNice with MarkConfigDx with TickConfigShape with LineConfigEllipsis with AxisGridDash with AxisConfigLabelColor with LegendConfigFillColor with HeaderTitleFontStyle with MarkConfigDy with MarkConfigHref with AxisConfigGridCap with AreaConfigAria with MarkConfigCursor with MarkDefUrl with BarConfigShape with LegendConfigSymbolDashOffset with LineConfigAriaRole with OverlayMarkDefDir with HeaderTitleFontWeight with LegendConfigColumns with RectConfigFontSize with BarConfigY2 with OverlayMarkDefStrokeDash with BarConfigAlign with OverlayMarkDefCornerRadiusBottomLeft with TickConfigAlign with OverlayMarkDefBaseline with SharedEncodingStrokeOpacityDatum with SharedEncodingStrokeOpacityValue with AxisConfigLabelFont with LegendConfigStrokeDash with TitleConfigSubtitlePadding with AreaConfigStrokeDash with ScaleBase with LegendConfigLabelPadding with TickConfigAriaRole with TitleParamsOrient with BarConfigTooltip with LineConfigAriaRoleDescription with LegendConfigLabelBaseline with BarConfigStartAngle with AxisConfigLabelOverlap with BarConfigLineBreak with OverlayMarkDefTheta2 with HeaderLabelAlign with AreaConfigStrokeOpacity with AxisLabelOverlap with TitleConfigDy with TitleConfigDx with AxisConfigDomainOpacity with LegendConfigLabelOffset with RectConfigTheta2 with MarkDefSmooth with BarConfigOpacity with OverlayMarkDefEllipsis with ViewConfigFill with ViewConfigStrokeMiterLimit with LineConfigWidth with AreaConfigLineBreak with MarkDefCornerRadiusEnd with TopLevelRepeatSpecAsObjectPadding with OverlayMarkDefCornerRadius with OverlayMarkDefCornerRadiusBottomRight with AxisConfigLabelAlign with TickConfigStrokeWidth with ProjectionCenter with LineConfigRadius with MarkConfigColor with HeaderLabelBaseline with LegendConfigGradientLabelOffset with ViewBackgroundStrokeDash with MarkDefCornerRadiusBottomLeft with AxisDescription with RectConfigDescription with LineConfigStroke with OverlayMarkDefAriaRole with BarConfigFillOpacity with AreaConfigDescription with AxisGridCap with ViewBackgroundOpacity with MarkConfigSmooth with TickConfigY2 with TitleConfigFontSize with BarConfigStrokeJoin with DatumDefDatum with AxisLabelAngle with LegendConfigTickCount with MarkConfigStrokeDash with AxisConfigGridWidth with LineConfigCursor with BarConfigEllipsis with LegendConfigSymbolOpacity with HeaderTitleFont with AxisTickWidth with ScaleConfigBandWithNestedOffsetPaddingOuter with MarkDefInnerRadius with ProjectionConfigScale with MarkDefWidth with TopLevelHConcatSpecBackground with LineConfigAria with LineConfigFontWeight with RectConfigAria with LineConfigCornerRadiusTopLeft with ScaleRangeAsArrayElement with TickConfigEllipsis with TickConfigCornerRadiusBottomRight with TickConfigUrl with MarkDefDescription with LegendConfigLabelColor with RectConfigStrokeOpacity with ScaleConfigOffsetBandPaddingOuter with HeaderConfigLabelLimit with AxisConfigOrient with TickConfigHref with MarkConfigStrokeMiterLimit with AxisTranslate with ViewBackgroundStrokeDashOffset with TopLevelFacetSpecPadding with RectConfigAspect with LineConfigLimit with TopLevelConcatSpecBackground with AxisConfigTitleFontStyle with BarConfigAspect with AreaConfigFillOpacity with HeaderTitleLimit with ViewBackgroundCornerRadius with OverlayMarkDefStrokeWidth with OverlayMarkDefStrokeMiterLimit with SharedEncodingLatitude2Datum with AxisConfigDomainWidth with TickConfigBaseline with ScaleConfigXReverse with HeaderLabelFontSize with MarkConfigShape with AreaConfigSize with ScalePadding with OverlayMarkDefAngle with RectConfigInterpolate with MarkConfigPadAngle with ConditionalPredicateValueDefNumberExprRefValue with LineConfigTension with BarConfigTheta with AreaConfigUrl with AreaConfigLineHeight with BarConfigFont with HeaderConfigLabelFontStyle with BarConfigTension with ScaleDomainMin with LegendConfigLabelAlign with ViewBackgroundStrokeWidth with AreaConfigOpacity with SharedEncodingSizeValue with AxisConfigLabelPadding with MarkConfigSize with AreaConfigTension with LegendConfigOffset with ScaleDomainMid with SharedEncodingX2Value with OverlayMarkDefSmooth with RectConfigLineHeight with ScaleZero with MarkConfigEllipsis with LineConfigStrokeOffset with MarkConfigBlend with BarConfigCornerRadiusBottomLeft with AreaConfigAriaRoleDescription with OverlayMarkDefAspect with LegendConfigTitleOrient with AreaConfigCornerRadiusTopLeft with MarkDefStrokeJoin with ScaleDatumDefDatum with ProjectionConfigTranslate with MarkDefStrokeMiterLimit with LineConfigX with TickConfigColor with LineConfigY with BarConfigColor with LineConfigTheta with TitleConfigOffset with BarConfigDir with LineConfigBaseline with RectConfigLimit with RectConfigStrokeDash with RectConfigEndAngle with TitleParamsSubtitleFont with HeaderConfigTitleFontSize with RectConfigHeight with FieldOrDatumDefWithConditionDatumDefNumberDatum with AxisLabelBound with RectConfigStrokeOffset with BarConfigText with AreaConfigCornerRadiusBottomRight with MarkDefCursor with ProjectionConfigTilt with MarkDefLimit with AreaConfigRadius2 with AxisConfigTitleBaseline with AxisConfigTickBand with HeaderConfigTitleFont with AxisConfigTitleX with OverlayMarkDefXOffset with AxisConfigTitleY with TickConfigTheta with ProjectionExtent with AreaConfigTooltip with AxisTitleFontStyle with ProjectionRotate with TickConfigDir with AreaConfigHref with MarkConfigAngle with ProjectionParallels with HeaderLabelColor with LegendConfigTitleFontStyle with BarConfigRadius2 with RectConfigOuterRadius with TopLevelLayerSpecBackground with BarConfigDx with MarkConfigX2 with BarConfigDy with RectConfigSmooth with LineConfigCornerRadiusBottomRight with ProjectionSpacing with TickConfigDy with MarkConfigFillOpacity with TickConfigDx with MarkDefTheta2 with MarkDefFill with LineConfigRadius2 with LineConfigStartAngle with AxisConfigTickCap with TopLevelLayerSpecPadding with AxisConfigLabelOpacity with OverlayMarkDefDy with SharedEncodingLongitude2Value with OverlayMarkDefDx with RectConfigBaseline with RectConfigTheta with LegendConfigRowPadding with OverlayMarkDefFontSize with ScaleExponent with ProjectionConfigCoefficient with ScaleDomain with ProjectionTilt with ConfigBackground with BarConfigCornerRadius with AxisLabelOpacity with SharedEncodingShapeValue with ProjectionRatio with LegendConfigGradientLength with TitleConfigSubtitleFont with AxisBandPosition with SharedEncodingShapeDatum with LineConfigHref with AxisConfigTickWidth with ProjectionConfigPointRadius with TickConfigWidth with TitleConfigSubtitleColor with ScaleRound with MarkDefTheta with TitleParamsAngle with ProjectionCoefficient with ProjectionPointRadius with SharedEncodingDescriptionValue with OverlayMarkDefAriaRoleDescription with RectConfigFillOpacity with LineConfigHeight with MarkDefText with MarkConfigAria with BarConfigOuterRadius with AxisConfigDomainColor with TitleConfigSubtitleFontSize with BarConfigWidth with BarConfigTheta2 with MarkConfigY2 with MarkConfigCornerRadiusBottomLeft with TickConfigFont with MarkConfigStrokeJoin with ProjectionConfigRotate with ScaleInterpolate with AxisTitleColor with StringValueDefWithConditionValue with AxisConfigTitleAlign with MarkDefLineBreak with TickConfigX with OverlayMarkDefLineBreak with TickConfigY with AreaConfigLimit with AxisGridOpacity with AreaConfigCornerRadiusTopRight with TopLevelVConcatSpecBackground with SharedEncodingColorDatum with TickConfigStrokeCap with MarkDefTooltip with OverlayMarkDefEndAngle with LegendConfigSymbolStrokeColor with MarkConfigStrokeWidth with LegendConfigGradientStrokeWidth with AxisTickOpacity with ConditionalParameterValueDefTextExprRefValue with AxisLabelOffset with BarConfigHeight with OverlayMarkDefWidth with OrderValueDefValue with AxisConfigLabelFontWeight with SharedEncodingYOffsetDatum with AreaConfigCornerRadius with TickConfigEndAngle with AxisLabelLineHeight with LineConfigPadAngle with ScaleRangeMin with ViewConfigCornerRadius with RectConfigStrokeWidth with LegendConfigLabelFontWeight with TickConfigCornerRadiusBottomLeft with LegendConfigLabelOverlap with AxisConfigMinExtent with OverlayMarkDefStrokeJoin with AreaConfigStartAngle with AxisLabelPadding with HeaderTitleLineHeight with LegendConfigTitleFont with AxisConfigTitleFontSize with AreaConfigStrokeMiterLimit with OverlayMarkDefBlend with MarkDefInterpolate with LegendConfigSymbolOffset with OverlayMarkDefTheta2Offset with ProjectionConfigRadius with AxisConfigBandPosition with OverlayMarkDefFontStyle with BarConfigStrokeDashOffset with ProjectionConfigReflectX with AxisTickCap with ProjectionConfigReflectY with OverlayMarkDefFillOpacity with ConfigPadding with MarkDefOpacity with AxisTitleAlign with HeaderConfigLabelFontSize with TitleParamsOffset with MarkDefAriaRole with AxisLabelFontStyle with AreaConfigStroke with RectConfigWidth with AxisConfigTitleColor with ProjectionReflectX with ProjectionReflectY with MarkConfigCornerRadiusBottomRight with ScaleScheme with TickConfigOpacity with TickConfigText with HeaderConfigLabelFontWeight with AxisLabelLimit with OverlayMarkDefAlign with MarkConfigRadius2 with LineConfigSize with HeaderConfigTitleAlign with RectConfigPadAngle with AxisConfigOffset with AxisConfigTickDash with TickConfigFillOpacity with RectConfigStartAngle with SharedEncodingLatitude2Value with LineConfigStrokeWidth with ScalePaddingOuter with BarConfigEndAngle with MarkDefAspect with ValueDefWithConditionMarkPropFieldOrDatumDefTypeForShapeStringNullValue with AxisLabelFlushOffset with MarkDefTension with SharedEncodingYValue with LegendConfigClipHeight with MarkDefFont with AxisTitleAngle with OverlayMarkDefPadAngle with ProjectionPrecision with TitleConfigFrame with AxisConfigTranslate with BarConfigCornerRadiusBottomRight with ConditionalPredicateValueDefTextExprRefValue with TickConfigTooltip with SharedEncodingY2Datum with TopLevelUnitSpecPadding with AxisConfigLabelFontSize with AreaConfigX2 with TitleParamsText with BarConfigAriaRole with RectConfigRadius2 with TopLevelHConcatSpecPadding with SharedEncodingSizeDatum with LegendConfigGradientThickness with AreaConfigAspect with ValueDefWithConditionMarkPropFieldOrDatumDefNumberValue with LineConfigSmooth with LegendConfigGradientStrokeColor with ViewConfigOpacity with SharedEncodingThetaValue with AxisDomainDashOffset with SharedEncodingX2Datum with TitleConfigLineHeight with MarkDefEllipsis with AxisConfigTickMinStep with HeaderConfigLabelLineHeight with MarkConfigRadius with TitleConfigFontStyle with AxisConfigLabelBaseline with LegendConfigSymbolStrokeWidth with MarkDefHeight with ProjectionConfigPrecision with ScaleRangeMax with LineConfigX2 with FieldRangePredicateRangeAsArrayElement with AxisConfigTickSize with MarkDefFontStyle with TickConfigStrokeMiterLimit with SharedEncodingStrokeDashDatum with ProjectionConfigFraction with ViewConfigStrokeOpacity with TickConfigRadius with MarkConfigCornerRadiusTopRight with AxisConfigAria with ProjectionFit with SharedEncodingHrefValue with LegendConfigAria with AreaConfigY2 with TickConfigFill with RectConfigCornerRadiusBottomLeft with AreaConfigHeight with AreaConfigFill with LineConfigY2 with MarkConfigY with MarkConfigX with SharedEncodingLongitudeDatum with RectConfigFont with MarkDefY2Offset with ProjectionFraction with OverlayMarkDefCornerRadiusTopLeft with BarConfigStrokeOffset with ProjectionConfigFit with OverlayMarkDefColor with MarkDefTheta2Offset with BarConfigInterpolate with AxisConfigLabelLimit with TitleParamsColor with AreaConfigText with TitleConfigFont with HeaderConfigTitleColor with LegendConfigLabelLimit with TitleConfigAngle with ProjectionClipExtent with MarkDefRadiusOffset with ScaleConfigContinuousPadding with OverlayMarkDefAria with LineConfigFillOpacity with ConditionalParameterValueDefNumberExprRefValue with OverlayMarkDefTheta with AreaConfigSmooth with LegendConfigLabelOpacity with SharedEncodingTheta2Value with TitleConfigFontWeight with OverlayMarkDefStrokeCap with RectConfigStrokeMiterLimit with HeaderTitlePadding with BarConfigInnerRadius with SharedEncodingAngleValue with RectConfigDir with BarConfigStroke with TitleConfigSubtitleFontStyle with SharedEncodingAngleDatum with RectConfigY with OverlayMarkDefTooltip with RectConfigX with MarkDefStrokeWidth with TitleParamsFont with AxisTickCount with MarkConfigFontSize with AreaConfigTheta2 with OverlayMarkDefThetaOffset with AxisConfigLabelLineHeight with LegendConfigTitlePadding with LineConfigBlend with LegendConfigTitleFontSize with ProjectionConfigType with SharedEncodingXOffsetDatum with AxisConfigTitleLineHeight with MarkDefXOffset with SharedEncodingStrokeValue with TopLevelRepeatSpecAsObjectBackground with TickConfigTension with FieldOrDatumDefWithConditionDatumDefStringNullDatum with OverlayMarkDefCornerRadiusTopRight with OverlayMarkDefDescription with MarkDefCornerRadiusBottomRight with HeaderLabelPadding with LineConfigText with RectConfigOpacity with RectConfigColor with OverlayMarkDefX2Offset with AxisConfigDomainDash with MarkConfigStrokeDashOffset with RectConfigDx with ViewBackgroundStrokeMiterLimit with RectConfigDy with LineConfigStrokeDashOffset with MarkDefStrokeDashOffset with HeaderConfigLabelFont with ViewBackgroundStrokeOpacity with AxisMaxExtent with MarkDefHref with HeaderLabelFont with LineConfigAspect with SharedEncodingLatitudeDatum with AxisConfigTitleAngle with TickConfigSmooth with TickConfigStroke with BarConfigSmooth with ViewConfigStroke with HeaderConfigTitleLineHeight with MarkConfigLineBreak with ScaleDomainAsArrayElement with AxisLabelFontWeight with ConditionalPredicateValueDefStringExprRefValue with ConditionalParameterValueDefStringNullExprRefValue with MarkConfigCornerRadiusTopLeft with AxisTitleFontWeight with AxisConfigDomainCap with MarkDefX2Offset with RectConfigAlign with TickConfigDescription with SharedEncodingRadius2Value with MarkDefSize with SharedEncodingRadius2Datum with AreaConfigStrokeWidth with AxisConfigTickColor with AxisPosition with TitleConfigZindex with MarkDefColor with ConditionalParameterValueDefGradientStringNullExprRefValue with AreaConfigStrokeOffset with LineConfigUrl with HeaderLabelLimit with AxisTitleBaseline with AxisLabelFontSize with LegendConfigStrokeWidth with ScaleConfigRound with TitleParamsSubtitlePadding with LegendConfigTitleOpacity with RectConfigTooltip with BarConfigCursor with BarConfigLineHeight with MarkConfigDescription with MarkConfigAspect with LineConfigAngle with LegendConfigTitleColor with TitleParamsSubtitleFontSize with OverlayMarkDefFontWeight with ProjectionConfigCenter with AreaConfigTheta with FieldGTPredicateGt with RectConfigText with OverlayMarkDefX2 with OverlayMarkDefRadiusOffset with TitleParamsSubtitleFontStyle with ViewBackgroundStrokeCap with AreaConfigFontWeight with MarkConfigAriaRoleDescription with AxisConfigLabelFontStyle with FieldLTPredicateLt with MarkDefAlign with OverlayMarkDefOpacity with AxisConfigDescription with LegendConfigLabelFontStyle with TitleConfigSubtitleLineHeight with ViewBackgroundFillOpacity with TickConfigLimit with ScaleConfigBandPaddingOuter with MarkConfigCornerRadius with OverlayMarkDefY2 with ProjectionScale with ViewConfigStrokeJoin with TopLevelFacetSpecBackground with BarConfigSize with AxisDomainDash with MarkDefStrokeCap with OverlayMarkDefSize with AxisTitleAnchor with ViewConfigStrokeCap with BarConfigLimit with OverlayMarkDefShape with ProjectionSize with ConditionalParameterValueDefStringExprRefValue with HeaderTitleFontSize with TickConfigLineBreak with MarkConfigFontStyle with AxisTickDashOffset with AreaConfigFont with ViewBackgroundStrokeJoin with TickConfigStrokeJoin with ScaleConfigRectBandPaddingInner with MarkConfigFont with ScaleConfigBandPaddingInner with AxisConfigLabelFlushOffset with TopLevelUnitSpecBackground with RectConfigLineBreak with ProjectionTranslate with SharedEncodingTextValue with OverlayMarkDefYOffset with TickConfigFontSize with HeaderTitleAlign with PositionDatumDefBaseDatum with TickConfigStartAngle with LegendConfigTitleAlign with SharedEncodingYDatum with AreaConfigEllipsis with AreaConfigPadAngle with BoxPlotDefColor with TitleParamsDx with HeaderTitleColor with TitleParamsDy with LegendConfigSymbolBaseStrokeColor with AreaConfigAriaRole with MarkDefAngle with RectConfigBlend with TickConfigCursor with OverlayMarkDefOuterRadius with BarConfigFontSize with LineConfigDir with LineConfigLineBreak with LegendConfigLabelSeparation with TickConfigInnerRadius with OverlayMarkDefY with AxisConfigTitleFont with OverlayMarkDefX with AxisTickOffset with RectConfigFill with RectConfigShape with AreaConfigDx with AreaConfigDy with MarkConfigFontWeight with LineConfigAlign with SharedEncodingThetaDatum with SharedEncodingFillOpacityDatum with AxisTickSize with LineConfigTheta2 with MarkConfigLimit with MarkConfigOuterRadius with RectConfigUrl with MarkDefShape with AxisTitleFont with OverlayMarkDefStartAngle with TitleConfigColor with LegendConfigColumnPadding with ProjectionConfigSpacing with ScaleConfigClamp with MarkDefDx with MarkDefDy with BarConfigStrokeMiterLimit with TitleConfigOrient with RectConfigFontWeight with LineConfigStrokeDash with OverlayMarkDefTension with HeaderConfigTitlePadding with TitleParamsFontStyle with LegendConfigTitleFontWeight with AxisConfigGridColor with AxisValues with PositionDatumDefDatum with AxisMinExtent with LineConfigFill with SharedEncodingStrokeDashValue with ProjectionDistance with TopLevelConcatSpecPadding with ProjectionConfigLobes with MarkConfigUrl with TitleParamsSubtitleColor with OverlayMarkDefInnerRadius with AxisOffset with ConditionalPredicateValueDefGradientStringNullExprRefValue with AreaConfigAlign with MarkDefBlend with MarkDefOuterRadius with LineConfigCornerRadius with HeaderLabelLineHeight with RectConfigRadius with SharedEncodingStrokeDatum with OverlayMarkDefHref with OverlayMarkDefRadius2 with OverlayMarkDefInterpolate with AxisDomainOpacity with AreaConfigWidth with ScaleConfigPointPadding with LegendConfigGradientDirection with AxisAria with MarkConfigLineHeight with MarkDefCornerRadiusTopRight with TickConfigCornerRadiusTopRight with TickConfigStrokeOffset with TickConfigCornerRadius with LegendConfigPadding with MarkConfigBaseline with LegendConfigSymbolLimit with RectConfigCornerRadius with AreaConfigX with AreaConfigY with LineConfigColor with ViewConfigStrokeWidth with HeaderConfigLabelBaseline with LineConfigDx with LineConfigDy with SharedEncodingFillValue with SharedEncodingTheta2Datum with SharedEncodingXValue with BarConfigAria with TickConfigOuterRadius with OverlayMarkDefRadius with AxisDomainCap with ScaleReverse with BarConfigAngle with MarkConfigHeight with AxisTitlePadding with BarConfigFontWeight with TitleParamsFrame with FieldGTEPredicateGte with RectConfigY2 with RectConfigX2 with LineConfigStrokeJoin with AreaConfigBaseline with SharedEncodingLongitude2Datum with ViewConfigStrokeDash with TickConfigAngle with LegendConfigStrokeColor with LineConfigInterpolate with AxisTitleFontSize with ErrorBarDefColor with ScaleConfigBandWithNestedOffsetPaddingInner with AxisConfigValues with AxisConfigLabelBound with AxisLabelBaseline with RectConfigStroke with SharedEncodingRadiusDatum with LegendConfigSymbolSize with AxisLabelFont with RectConfigInnerRadius with RectConfigAriaRoleDescription with ProjectionConfigRatio with RectConfigFontStyle with TickConfigSize with AreaConfigStrokeCap with MarkConfigText with OverlayMarkDefCursor with AreaConfigColor with LineConfigFontStyle with LineConfigLineHeight with MarkConfigStrokeOpacity with AxisLabelSeparation with MarkConfigTheta with HeaderConfigTitleBaseline with ScaleConstant with ScaleClamp with ScaleDomainMax with ViewConfigStrokeDashOffset with LegendConfigZindex with LineConfigFontSize with AreaConfigDir with TitleParamsLineHeight with SharedEncodingOpacityDatum with AxisConfigTickOpacity with ProjectionConfigDistance with ProjectionConfigParallels with SharedEncodingOpacityValue with SharedEncodingRadiusValue with OverlayMarkDefStrokeDashOffset with AxisConfigGridDashOffset with LineConfigCornerRadiusTopRight with BarConfigStrokeDash with ProjectionLobes with AxisConfigTitleOpacity with HeaderConfigTitleFontStyle with AxisConfigLabelOffset with OverlayMarkDefStroke with FieldEqualPredicateEqual with ProjectionConfigExtent with ScaleConfigOffsetBandPaddingInner with MarkDefAriaRoleDescription with TickConfigFontStyle with SharedEncodingColorValue with LineConfigEndAngle with BarConfigFill with MarkDefAria with ViewBackgroundFill with ProjectionConfigClipExtent with BarConfigBaseline with LegendConfigLabelFontSize with OverlayMarkDefFill with AxisConfigTickCount with LineConfigTooltip with TitleParamsSubtitleLineHeight with LineConfigOuterRadius with LegendConfigSymbolFillColor with RectConfigCornerRadiusTopRight with AxisDomainWidth with TickConfigBlend with ViewBackgroundStroke with RectConfigStrokeDashOffset with TickConfigTheta2 with LineConfigShape with FieldRangePredicateRange with LineConfigStrokeCap with LineConfigStrokeMiterLimit with ScaleConfigBarBandPaddingInner with RectConfigStrokeCap with AreaConfigFontStyle with OverlayMarkDefStrokeOffset with LineConfigCornerRadiusBottomLeft with AxisConfigLabelAngle with LegendConfigTitleBaseline with MarkConfigInterpolate with PositionValueDefValue with MarkDefFontSize with TickConfigInterpolate with LegendConfigSymbolDirection with MarkConfigTension with ScalePaddingInner with AxisConfigTickOffset with RectConfigAngle with ViewConfigFillOpacity with BarConfigAriaRoleDescription with AreaConfigInterpolate with SharedEncodingY2Value with LegendConfigSymbolDash with BarConfigUrl with MarkConfigDir with AxisTickDash with MarkConfigInnerRadius with MarkConfigStartAngle with AxisConfigMaxExtent with AreaConfigCursor with MarkDefThetaOffset with HeaderConfigTitleFontWeight with TickConfigLineHeight with TickConfigPadAngle with AxisConfigPosition with BarConfigRadius with MarkConfigFill with LegendConfigLabelFont with RectConfigHref with TitleParamsFontSize with OverlayMarkDefLineHeight with MarkDefCornerRadiusTopLeft with BarConfigY with TopLevelVConcatSpecPadding with LegendConfigSymbolType with LegendConfigDescription with BarConfigX with AxisConfigTitlePadding with BarConfigPadAngle with MarkConfigAriaRole with AxisTitleY with FieldLTEPredicateLte with AxisConfigTickDashOffset with ErrorBandDefColor with AxisTitleX with AreaConfigStrokeJoin with BarConfigFontStyle with ConfigLineBreak with BarConfigBlend with RectConfigCornerRadiusTopLeft with TickConfigAriaRoleDescription with MarkDefY with MarkDefX with MarkDefRadius2Offset with TickConfigCornerRadiusTopLeft with AxisConfigGridOpacity with AreaConfigStrokeDashOffset with AreaConfigRadius with AreaConfigBlend with LegendConfigTitleAnchor with MarkDefStrokeOpacity with LegendConfigLegendX with MarkDefStrokeDash with TickConfigRadius2 with TitleConfigAria with LegendConfigLegendY with AxisConfigTitleAnchor with TickConfigHeight with OverlayMarkDefFont with AxisTickBand with MarkDefY2 with MarkConfigStrokeOffset with FieldOrDatumDefWithConditionStringDatumDefTextDatum with LegendConfigGridAlign with LegendConfigGradientLabelLimit with ProjectionConfigParallel with TickConfigAria with ProjectionParallel with LineConfigInnerRadius with TitleConfigAnchor with LegendConfigGradientOpacity with AxisDomainColor with TitleParamsSubtitleFontWeight with AxisLabelAlign with AxisLabelColor with HeaderConfigTitleLimit with SharedEncodingTextDatum with OverlayMarkDefLimit with MarkDefX2 with OverlayMarkDefY2Offset with TickConfigFontWeight with AreaConfigEndAngle with MarkDefFontWeight with RectConfigAriaRole with HeaderLabelFontStyle with AreaConfigInnerRadius with AxisConfigDomainDashOffset with BarConfigCornerRadiusTopRight with SharedEncodingFillOpacityValue with LegendConfigTitleLimit with TitleConfigLimit with LegendConfigSymbolBaseFillColor with MarkDefPadAngle with TitleParamsAria with OverlayMarkDefUrl with LineConfigFont with OverlayMarkDefStrokeOpacity with ProjectionConfigSize with TickConfigStrokeOpacity with AxisGridColor with BarConfigCornerRadiusTopLeft with TitleConfigSubtitleFontWeight with AreaConfigCornerRadiusBottomLeft with ProjectionRadius with ProjectionClipAngle with TickConfigStrokeDashOffset with ValueDefWithConditionMarkPropFieldOrDatumDefGradientStringNullValue with MarkConfigTheta2 with AreaConfigAngle with MarkConfigOpacity with AxisTitleLimit with MarkDefCornerRadius with LineConfigOpacity with MarkConfigEndAngle with ValueDefWithConditionStringFieldDefTextValue with AxisTitleOpacity with MarkDefFillOpacity with MarkDefYOffset with MarkConfigStroke with RectConfigCornerRadiusBottomRight with AreaConfigFontSize with MarkDefStrokeOffset with AxisConfigLabelSeparation with BarConfigHref with AxisTickColor with HeaderConfigLabelAlign with AxisConfigGridDash with RectConfigCursor with OverlayMarkDefRadius2Offset with TitleParamsFontWeight with BarConfigDescription with MarkConfigStrokeCap with BarConfigStrokeCap with OverlayMarkDefText with LegendConfigCornerRadius with HeaderConfigLabelColor with RectConfigStrokeJoin with AreaConfigShape with MarkDefBaseline with SharedEncodingUrlValue with MarkDefRadius2 with MarkConfigWidth with TickConfigAspect with MarkDefDir with MarkConfigAlign with AxisTitleLineHeight with AxisConfigTitleLimit with AxisConfigTitleFontWeight with TickConfigStrokeDash with BarConfigStrokeOpacity with SharedEncodingXDatum with BarConfigCornerRadiusEnd with ProjectionConfigClipAngle with MarkDefLineHeight with BarConfigStrokeWidth with SharedEncodingFillDatum with AreaConfigOuterRadius with RectConfigEllipsis with RectConfigSize with HeaderTitleBaseline with RectConfigTension with AxisTickMinStep with MarkConfigTooltip with AxisGridWidth with LineConfigStrokeOpacity with MarkDefRadius 
+) extends SharedEncodingStrokeWidthDatum with HeaderConfigLabelPadding with LegendConfigTitleLineHeight with MarkDefStroke with SharedEncodingStrokeWidthValue with TitleParamsLimit with AxisGridDashOffset with FieldOrDatumDefWithConditionDatumDefGradientStringNullDatum with LineConfigDescription with HeaderLabelFontWeight with OverlayMarkDefHeight with ScaleAlign with BarConfigX2 with TickConfigX2 with ScaleNice with MarkConfigDx with TickConfigShape with LineConfigEllipsis with AxisGridDash with AxisConfigLabelColor with LegendConfigFillColor with HeaderTitleFontStyle with MarkConfigDy with MarkConfigHref with AxisConfigGridCap with AreaConfigAria with MarkConfigCursor with MarkDefUrl with BarConfigShape with LegendConfigSymbolDashOffset with LineConfigAriaRole with OverlayMarkDefDir with HeaderTitleFontWeight with LegendConfigColumns with RectConfigFontSize with BarConfigY2 with OverlayMarkDefStrokeDash with BarConfigAlign with OverlayMarkDefCornerRadiusBottomLeft with TickConfigAlign with OverlayMarkDefBaseline with SharedEncodingStrokeOpacityDatum with SharedEncodingStrokeOpacityValue with AxisConfigLabelFont with LegendConfigStrokeDash with TitleConfigSubtitlePadding with AreaConfigStrokeDash with ScaleBase with LegendConfigLabelPadding with TickConfigAriaRole with TitleParamsOrient with BarConfigTooltip with LineConfigAriaRoleDescription with LegendConfigLabelBaseline with BarConfigStartAngle with AxisConfigLabelOverlap with BarConfigLineBreak with OverlayMarkDefTheta2 with HeaderLabelAlign with AreaConfigStrokeOpacity with AxisLabelOverlap with TitleConfigDy with TitleConfigDx with AxisConfigDomainOpacity with LegendConfigLabelOffset with RectConfigTheta2 with MarkDefSmooth with BarConfigOpacity with OverlayMarkDefEllipsis with ViewConfigFill with ViewConfigStrokeMiterLimit with LineConfigWidth with AreaConfigLineBreak with MarkDefCornerRadiusEnd with OverlayMarkDefCornerRadius with OverlayMarkDefCornerRadiusBottomRight with AxisConfigLabelAlign with TickConfigStrokeWidth with ProjectionCenter with LineConfigRadius with MarkConfigColor with HeaderLabelBaseline with LegendConfigGradientLabelOffset with ViewBackgroundStrokeDash with MarkDefCornerRadiusBottomLeft with AxisDescription with RectConfigDescription with LineConfigStroke with OverlayMarkDefAriaRole with BarConfigFillOpacity with AreaConfigDescription with AxisGridCap with ViewBackgroundOpacity with MarkConfigSmooth with TickConfigY2 with TitleConfigFontSize with BarConfigStrokeJoin with DatumDefDatum with AxisLabelAngle with LegendConfigTickCount with MarkConfigStrokeDash with AxisConfigGridWidth with LineConfigCursor with BarConfigEllipsis with LegendConfigSymbolOpacity with HeaderTitleFont with AxisTickWidth with ScaleConfigBandWithNestedOffsetPaddingOuter with MarkDefInnerRadius with ProjectionConfigScale with MarkDefWidth with TopLevelHConcatSpecBackground with LineConfigAria with LineConfigFontWeight with RectConfigAria with LineConfigCornerRadiusTopLeft with ScaleRangeAsArrayElement with TopLevelRepeatSpecAsObject1Padding with TickConfigEllipsis with TickConfigCornerRadiusBottomRight with TickConfigUrl with MarkDefDescription with LegendConfigLabelColor with RectConfigStrokeOpacity with ScaleConfigOffsetBandPaddingOuter with HeaderConfigLabelLimit with AxisConfigOrient with TickConfigHref with MarkConfigStrokeMiterLimit with AxisTranslate with ViewBackgroundStrokeDashOffset with TopLevelFacetSpecPadding with RectConfigAspect with LineConfigLimit with TopLevelConcatSpecBackground with AxisConfigTitleFontStyle with BarConfigAspect with AreaConfigFillOpacity with HeaderTitleLimit with ViewBackgroundCornerRadius with OverlayMarkDefStrokeWidth with OverlayMarkDefStrokeMiterLimit with SharedEncodingLatitude2Datum with AxisConfigDomainWidth with TickConfigBaseline with ScaleConfigXReverse with HeaderLabelFontSize with MarkConfigShape with AreaConfigSize with ScalePadding with OverlayMarkDefAngle with RectConfigInterpolate with MarkConfigPadAngle with ConditionalPredicateValueDefNumberExprRefValue with LineConfigTension with BarConfigTheta with AreaConfigUrl with AreaConfigLineHeight with BarConfigFont with TopLevelRepeatSpecAsObject2Background with HeaderConfigLabelFontStyle with BarConfigTension with ScaleDomainMin with LegendConfigLabelAlign with ViewBackgroundStrokeWidth with AreaConfigOpacity with SharedEncodingSizeValue with AxisConfigLabelPadding with MarkConfigSize with AreaConfigTension with LegendConfigOffset with ScaleDomainMid with SharedEncodingX2Value with OverlayMarkDefSmooth with RectConfigLineHeight with ScaleZero with MarkConfigEllipsis with LineConfigStrokeOffset with MarkConfigBlend with BarConfigCornerRadiusBottomLeft with AreaConfigAriaRoleDescription with OverlayMarkDefAspect with LegendConfigTitleOrient with AreaConfigCornerRadiusTopLeft with MarkDefStrokeJoin with ScaleDatumDefDatum with ProjectionConfigTranslate with MarkDefStrokeMiterLimit with LineConfigX with TickConfigColor with LineConfigY with BarConfigColor with LineConfigTheta with TitleConfigOffset with BarConfigDir with LineConfigBaseline with RectConfigLimit with RectConfigStrokeDash with RectConfigEndAngle with TitleParamsSubtitleFont with HeaderConfigTitleFontSize with RectConfigHeight with FieldOrDatumDefWithConditionDatumDefNumberDatum with AxisLabelBound with RectConfigStrokeOffset with BarConfigText with AreaConfigCornerRadiusBottomRight with MarkDefCursor with ProjectionConfigTilt with MarkDefLimit with AreaConfigRadius2 with AxisConfigTitleBaseline with AxisConfigTickBand with HeaderConfigTitleFont with AxisConfigTitleX with OverlayMarkDefXOffset with AxisConfigTitleY with TickConfigTheta with ProjectionExtent with AreaConfigTooltip with AxisTitleFontStyle with ProjectionRotate with TickConfigDir with AreaConfigHref with MarkConfigAngle with ProjectionParallels with HeaderLabelColor with LegendConfigTitleFontStyle with BarConfigRadius2 with RectConfigOuterRadius with TopLevelLayerSpecBackground with BarConfigDx with MarkConfigX2 with BarConfigDy with RectConfigSmooth with LineConfigCornerRadiusBottomRight with ProjectionSpacing with TickConfigDy with MarkConfigFillOpacity with TickConfigDx with MarkDefTheta2 with MarkDefFill with ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum with LineConfigRadius2 with LineConfigStartAngle with AxisConfigTickCap with TopLevelLayerSpecPadding with AxisConfigLabelOpacity with OverlayMarkDefDy with SharedEncodingLongitude2Value with OverlayMarkDefDx with RectConfigBaseline with RectConfigTheta with LegendConfigRowPadding with OverlayMarkDefFontSize with ScaleExponent with ProjectionConfigCoefficient with ScaleDomain with ProjectionTilt with ConfigBackground with BarConfigCornerRadius with AxisLabelOpacity with SharedEncodingShapeValue with ProjectionRatio with LegendConfigGradientLength with TitleConfigSubtitleFont with AxisBandPosition with SharedEncodingShapeDatum with LineConfigHref with AxisConfigTickWidth with ProjectionConfigPointRadius with TickConfigWidth with TitleConfigSubtitleColor with ScaleRound with MarkDefTheta with TitleParamsAngle with ProjectionCoefficient with ProjectionPointRadius with SharedEncodingDescriptionValue with OverlayMarkDefAriaRoleDescription with RectConfigFillOpacity with LineConfigHeight with MarkDefText with MarkConfigAria with BarConfigOuterRadius with AxisConfigDomainColor with TitleConfigSubtitleFontSize with BarConfigWidth with BarConfigTheta2 with MarkConfigY2 with MarkConfigCornerRadiusBottomLeft with TickConfigFont with MarkConfigStrokeJoin with ProjectionConfigRotate with ScaleInterpolate with AxisTitleColor with StringValueDefWithConditionValue with AxisConfigTitleAlign with MarkDefLineBreak with TickConfigX with OverlayMarkDefLineBreak with TickConfigY with AreaConfigLimit with AxisGridOpacity with AreaConfigCornerRadiusTopRight with TopLevelVConcatSpecBackground with SharedEncodingColorDatum with TickConfigStrokeCap with MarkDefTooltip with OverlayMarkDefEndAngle with LegendConfigSymbolStrokeColor with MarkConfigStrokeWidth with LegendConfigGradientStrokeWidth with AxisTickOpacity with ConditionalParameterValueDefTextExprRefValue with AxisLabelOffset with BarConfigHeight with OverlayMarkDefWidth with OrderValueDefValue with AxisConfigLabelFontWeight with SharedEncodingYOffsetDatum with AreaConfigCornerRadius with TickConfigEndAngle with AxisLabelLineHeight with ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum with LineConfigPadAngle with ScaleRangeMin with ViewConfigCornerRadius with RectConfigStrokeWidth with LegendConfigLabelFontWeight with TickConfigCornerRadiusBottomLeft with LegendConfigLabelOverlap with AxisConfigMinExtent with OverlayMarkDefStrokeJoin with AreaConfigStartAngle with AxisLabelPadding with HeaderTitleLineHeight with LegendConfigTitleFont with AxisConfigTitleFontSize with AreaConfigStrokeMiterLimit with OverlayMarkDefBlend with MarkDefInterpolate with LegendConfigSymbolOffset with OverlayMarkDefTheta2Offset with ProjectionConfigRadius with AxisConfigBandPosition with OverlayMarkDefFontStyle with BarConfigStrokeDashOffset with ProjectionConfigReflectX with AxisTickCap with ProjectionConfigReflectY with OverlayMarkDefFillOpacity with ConfigPadding with MarkDefOpacity with AxisTitleAlign with HeaderConfigLabelFontSize with TitleParamsOffset with MarkDefAriaRole with AxisLabelFontStyle with AreaConfigStroke with RectConfigWidth with AxisConfigTitleColor with ProjectionReflectX with ProjectionReflectY with MarkConfigCornerRadiusBottomRight with ScaleScheme with TickConfigOpacity with TickConfigText with HeaderConfigLabelFontWeight with AxisLabelLimit with OverlayMarkDefAlign with MarkConfigRadius2 with LineConfigSize with HeaderConfigTitleAlign with RectConfigPadAngle with AxisConfigOffset with AxisConfigTickDash with TickConfigFillOpacity with RectConfigStartAngle with SharedEncodingLatitude2Value with LineConfigStrokeWidth with ScalePaddingOuter with BarConfigEndAngle with MarkDefAspect with ValueDefWithConditionMarkPropFieldOrDatumDefTypeForShapeStringNullValue with AxisLabelFlushOffset with MarkDefTension with SharedEncodingYValue with LegendConfigClipHeight with MarkDefFont with AxisTitleAngle with OverlayMarkDefPadAngle with ProjectionPrecision with TitleConfigFrame with AxisConfigTranslate with BarConfigCornerRadiusBottomRight with ConditionalPredicateValueDefTextExprRefValue with TickConfigTooltip with SharedEncodingY2Datum with TopLevelUnitSpecPadding with AxisConfigLabelFontSize with AreaConfigX2 with TitleParamsText with BarConfigAriaRole with RectConfigRadius2 with TopLevelHConcatSpecPadding with SharedEncodingSizeDatum with LegendConfigGradientThickness with AreaConfigAspect with ValueDefWithConditionMarkPropFieldOrDatumDefNumberValue with LineConfigSmooth with LegendConfigGradientStrokeColor with ViewConfigOpacity with SharedEncodingThetaValue with AxisDomainDashOffset with SharedEncodingX2Datum with TitleConfigLineHeight with MarkDefEllipsis with AxisConfigTickMinStep with HeaderConfigLabelLineHeight with MarkConfigRadius with TitleConfigFontStyle with AxisConfigLabelBaseline with LegendConfigSymbolStrokeWidth with MarkDefHeight with ProjectionConfigPrecision with ScaleRangeMax with LineConfigX2 with FieldRangePredicateRangeAsArrayElement with AxisConfigTickSize with MarkDefFontStyle with TickConfigStrokeMiterLimit with SharedEncodingStrokeDashDatum with ProjectionConfigFraction with ViewConfigStrokeOpacity with TickConfigRadius with MarkConfigCornerRadiusTopRight with AxisConfigAria with ProjectionFit with SharedEncodingHrefValue with LegendConfigAria with AreaConfigY2 with TickConfigFill with RectConfigCornerRadiusBottomLeft with AreaConfigHeight with AreaConfigFill with LineConfigY2 with MarkConfigY with MarkConfigX with SharedEncodingLongitudeDatum with RectConfigFont with MarkDefY2Offset with ProjectionFraction with OverlayMarkDefCornerRadiusTopLeft with BarConfigStrokeOffset with ProjectionConfigFit with OverlayMarkDefColor with MarkDefTheta2Offset with BarConfigInterpolate with AxisConfigLabelLimit with TitleParamsColor with AreaConfigText with TitleConfigFont with HeaderConfigTitleColor with LegendConfigLabelLimit with TitleConfigAngle with ProjectionClipExtent with MarkDefRadiusOffset with ScaleConfigContinuousPadding with OverlayMarkDefAria with LineConfigFillOpacity with ConditionalParameterValueDefNumberExprRefValue with OverlayMarkDefTheta with AreaConfigSmooth with LegendConfigLabelOpacity with SharedEncodingTheta2Value with TitleConfigFontWeight with OverlayMarkDefStrokeCap with RectConfigStrokeMiterLimit with HeaderTitlePadding with BarConfigInnerRadius with SharedEncodingAngleValue with RectConfigDir with BarConfigStroke with TitleConfigSubtitleFontStyle with SharedEncodingAngleDatum with RectConfigY with OverlayMarkDefTooltip with RectConfigX with MarkDefStrokeWidth with TitleParamsFont with AxisTickCount with MarkConfigFontSize with AreaConfigTheta2 with OverlayMarkDefThetaOffset with AxisConfigLabelLineHeight with LegendConfigTitlePadding with LineConfigBlend with LegendConfigTitleFontSize with ProjectionConfigType with SharedEncodingXOffsetDatum with AxisConfigTitleLineHeight with MarkDefXOffset with SharedEncodingStrokeValue with TickConfigTension with FieldOrDatumDefWithConditionDatumDefStringNullDatum with OverlayMarkDefCornerRadiusTopRight with OverlayMarkDefDescription with MarkDefCornerRadiusBottomRight with HeaderLabelPadding with LineConfigText with RectConfigOpacity with RectConfigColor with OverlayMarkDefX2Offset with AxisConfigDomainDash with MarkConfigStrokeDashOffset with RectConfigDx with ViewBackgroundStrokeMiterLimit with RectConfigDy with LineConfigStrokeDashOffset with MarkDefStrokeDashOffset with HeaderConfigLabelFont with ViewBackgroundStrokeOpacity with AxisMaxExtent with MarkDefHref with HeaderLabelFont with LineConfigAspect with SharedEncodingLatitudeDatum with AxisConfigTitleAngle with TickConfigSmooth with TickConfigStroke with BarConfigSmooth with ViewConfigStroke with HeaderConfigTitleLineHeight with MarkConfigLineBreak with ScaleDomainAsArrayElement with AxisLabelFontWeight with ConditionalPredicateValueDefStringExprRefValue with ConditionalParameterValueDefStringNullExprRefValue with MarkConfigCornerRadiusTopLeft with AxisTitleFontWeight with AxisConfigDomainCap with MarkDefX2Offset with RectConfigAlign with TickConfigDescription with SharedEncodingRadius2Value with MarkDefSize with SharedEncodingRadius2Datum with AreaConfigStrokeWidth with AxisConfigTickColor with AxisPosition with TitleConfigZindex with MarkDefColor with ConditionalParameterValueDefGradientStringNullExprRefValue with AreaConfigStrokeOffset with LineConfigUrl with HeaderLabelLimit with AxisTitleBaseline with AxisLabelFontSize with LegendConfigStrokeWidth with ScaleConfigRound with TitleParamsSubtitlePadding with LegendConfigTitleOpacity with RectConfigTooltip with BarConfigCursor with BarConfigLineHeight with MarkConfigDescription with MarkConfigAspect with LineConfigAngle with LegendConfigTitleColor with TitleParamsSubtitleFontSize with OverlayMarkDefFontWeight with ProjectionConfigCenter with AreaConfigTheta with FieldGTPredicateGt with RectConfigText with OverlayMarkDefX2 with OverlayMarkDefRadiusOffset with TitleParamsSubtitleFontStyle with ViewBackgroundStrokeCap with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum with AreaConfigFontWeight with MarkConfigAriaRoleDescription with AxisConfigLabelFontStyle with FieldLTPredicateLt with MarkDefAlign with OverlayMarkDefOpacity with AxisConfigDescription with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum with LegendConfigLabelFontStyle with TitleConfigSubtitleLineHeight with ViewBackgroundFillOpacity with TickConfigLimit with ScaleConfigBandPaddingOuter with MarkConfigCornerRadius with OverlayMarkDefY2 with ProjectionScale with ViewConfigStrokeJoin with TopLevelFacetSpecBackground with BarConfigSize with AxisDomainDash with MarkDefStrokeCap with OverlayMarkDefSize with AxisTitleAnchor with ViewConfigStrokeCap with BarConfigLimit with OverlayMarkDefShape with ProjectionSize with ConditionalParameterValueDefStringExprRefValue with HeaderTitleFontSize with TickConfigLineBreak with MarkConfigFontStyle with AxisTickDashOffset with AreaConfigFont with ViewBackgroundStrokeJoin with TickConfigStrokeJoin with ScaleConfigRectBandPaddingInner with MarkConfigFont with ScaleConfigBandPaddingInner with AxisConfigLabelFlushOffset with TopLevelUnitSpecBackground with RectConfigLineBreak with ProjectionTranslate with SharedEncodingTextValue with TopLevelRepeatSpecAsObject2Padding with OverlayMarkDefYOffset with TickConfigFontSize with HeaderTitleAlign with PositionDatumDefBaseDatum with TickConfigStartAngle with LegendConfigTitleAlign with SharedEncodingYDatum with AreaConfigEllipsis with AreaConfigPadAngle with BoxPlotDefColor with TitleParamsDx with HeaderTitleColor with TitleParamsDy with LegendConfigSymbolBaseStrokeColor with AreaConfigAriaRole with MarkDefAngle with RectConfigBlend with TickConfigCursor with OverlayMarkDefOuterRadius with BarConfigFontSize with LineConfigDir with LineConfigLineBreak with LegendConfigLabelSeparation with TickConfigInnerRadius with OverlayMarkDefY with AxisConfigTitleFont with OverlayMarkDefX with AxisTickOffset with RectConfigFill with RectConfigShape with AreaConfigDx with AreaConfigDy with MarkConfigFontWeight with LineConfigAlign with SharedEncodingThetaDatum with SharedEncodingFillOpacityDatum with AxisTickSize with LineConfigTheta2 with MarkConfigLimit with MarkConfigOuterRadius with RectConfigUrl with MarkDefShape with AxisTitleFont with OverlayMarkDefStartAngle with TitleConfigColor with LegendConfigColumnPadding with ProjectionConfigSpacing with ScaleConfigClamp with MarkDefDx with MarkDefDy with BarConfigStrokeMiterLimit with TitleConfigOrient with RectConfigFontWeight with LineConfigStrokeDash with OverlayMarkDefTension with HeaderConfigTitlePadding with TitleParamsFontStyle with LegendConfigTitleFontWeight with AxisConfigGridColor with AxisValues with PositionDatumDefDatum with AxisMinExtent with LineConfigFill with SharedEncodingStrokeDashValue with ProjectionDistance with TopLevelConcatSpecPadding with ProjectionConfigLobes with MarkConfigUrl with TitleParamsSubtitleColor with OverlayMarkDefInnerRadius with AxisOffset with ConditionalPredicateValueDefGradientStringNullExprRefValue with AreaConfigAlign with MarkDefBlend with MarkDefOuterRadius with LineConfigCornerRadius with HeaderLabelLineHeight with RectConfigRadius with SharedEncodingStrokeDatum with OverlayMarkDefHref with OverlayMarkDefRadius2 with OverlayMarkDefInterpolate with AxisDomainOpacity with AreaConfigWidth with ScaleConfigPointPadding with LegendConfigGradientDirection with AxisAria with MarkConfigLineHeight with MarkDefCornerRadiusTopRight with TickConfigCornerRadiusTopRight with TickConfigStrokeOffset with TickConfigCornerRadius with LegendConfigPadding with MarkConfigBaseline with LegendConfigSymbolLimit with RectConfigCornerRadius with AreaConfigX with AreaConfigY with LineConfigColor with ViewConfigStrokeWidth with HeaderConfigLabelBaseline with LineConfigDx with LineConfigDy with SharedEncodingFillValue with SharedEncodingTheta2Datum with SharedEncodingXValue with BarConfigAria with TickConfigOuterRadius with TopLevelRepeatSpecAsObject1Background with OverlayMarkDefRadius with AxisDomainCap with ScaleReverse with BarConfigAngle with MarkConfigHeight with AxisTitlePadding with BarConfigFontWeight with TitleParamsFrame with FieldGTEPredicateGte with RectConfigY2 with RectConfigX2 with LineConfigStrokeJoin with AreaConfigBaseline with SharedEncodingLongitude2Datum with ViewConfigStrokeDash with TickConfigAngle with LegendConfigStrokeColor with LineConfigInterpolate with AxisTitleFontSize with ErrorBarDefColor with ScaleConfigBandWithNestedOffsetPaddingInner with AxisConfigValues with AxisConfigLabelBound with AxisLabelBaseline with RectConfigStroke with SharedEncodingRadiusDatum with LegendConfigSymbolSize with AxisLabelFont with RectConfigInnerRadius with RectConfigAriaRoleDescription with ProjectionConfigRatio with RectConfigFontStyle with TickConfigSize with AreaConfigStrokeCap with MarkConfigText with OverlayMarkDefCursor with AreaConfigColor with LineConfigFontStyle with LineConfigLineHeight with MarkConfigStrokeOpacity with AxisLabelSeparation with MarkConfigTheta with HeaderConfigTitleBaseline with ScaleConstant with ScaleClamp with ScaleDomainMax with ViewConfigStrokeDashOffset with LegendConfigZindex with LineConfigFontSize with AreaConfigDir with TitleParamsLineHeight with SharedEncodingOpacityDatum with AxisConfigTickOpacity with ProjectionConfigDistance with ProjectionConfigParallels with SharedEncodingOpacityValue with SharedEncodingRadiusValue with OverlayMarkDefStrokeDashOffset with AxisConfigGridDashOffset with LineConfigCornerRadiusTopRight with BarConfigStrokeDash with ProjectionLobes with AxisConfigTitleOpacity with HeaderConfigTitleFontStyle with AxisConfigLabelOffset with OverlayMarkDefStroke with FieldEqualPredicateEqual with ProjectionConfigExtent with ScaleConfigOffsetBandPaddingInner with MarkDefAriaRoleDescription with TickConfigFontStyle with SharedEncodingColorValue with LineConfigEndAngle with BarConfigFill with MarkDefAria with ViewBackgroundFill with ProjectionConfigClipExtent with BarConfigBaseline with LegendConfigLabelFontSize with OverlayMarkDefFill with AxisConfigTickCount with LineConfigTooltip with TitleParamsSubtitleLineHeight with LineConfigOuterRadius with LegendConfigSymbolFillColor with RectConfigCornerRadiusTopRight with AxisDomainWidth with TickConfigBlend with ViewBackgroundStroke with RectConfigStrokeDashOffset with TickConfigTheta2 with LineConfigShape with FieldRangePredicateRange with LineConfigStrokeCap with LineConfigStrokeMiterLimit with ScaleConfigBarBandPaddingInner with RectConfigStrokeCap with AreaConfigFontStyle with OverlayMarkDefStrokeOffset with LineConfigCornerRadiusBottomLeft with AxisConfigLabelAngle with LegendConfigTitleBaseline with MarkConfigInterpolate with PositionValueDefValue with MarkDefFontSize with TickConfigInterpolate with LegendConfigSymbolDirection with MarkConfigTension with ScalePaddingInner with AxisConfigTickOffset with RectConfigAngle with ViewConfigFillOpacity with BarConfigAriaRoleDescription with AreaConfigInterpolate with SharedEncodingY2Value with LegendConfigSymbolDash with BarConfigUrl with MarkConfigDir with AxisTickDash with MarkConfigInnerRadius with MarkConfigStartAngle with AxisConfigMaxExtent with AreaConfigCursor with MarkDefThetaOffset with HeaderConfigTitleFontWeight with TickConfigLineHeight with TickConfigPadAngle with AxisConfigPosition with BarConfigRadius with MarkConfigFill with LegendConfigLabelFont with RectConfigHref with TitleParamsFontSize with OverlayMarkDefLineHeight with MarkDefCornerRadiusTopLeft with BarConfigY with TopLevelVConcatSpecPadding with LegendConfigSymbolType with LegendConfigDescription with BarConfigX with AxisConfigTitlePadding with BarConfigPadAngle with MarkConfigAriaRole with AxisTitleY with FieldLTEPredicateLte with AxisConfigTickDashOffset with ErrorBandDefColor with AxisTitleX with AreaConfigStrokeJoin with BarConfigFontStyle with ConfigLineBreak with BarConfigBlend with RectConfigCornerRadiusTopLeft with TickConfigAriaRoleDescription with MarkDefY with MarkDefX with MarkDefRadius2Offset with TickConfigCornerRadiusTopLeft with AxisConfigGridOpacity with AreaConfigStrokeDashOffset with AreaConfigRadius with AreaConfigBlend with LegendConfigTitleAnchor with MarkDefStrokeOpacity with LegendConfigLegendX with MarkDefStrokeDash with TickConfigRadius2 with TitleConfigAria with LegendConfigLegendY with AxisConfigTitleAnchor with TickConfigHeight with OverlayMarkDefFont with AxisTickBand with MarkDefY2 with MarkConfigStrokeOffset with FieldOrDatumDefWithConditionStringDatumDefTextDatum with LegendConfigGridAlign with LegendConfigGradientLabelLimit with ProjectionConfigParallel with TickConfigAria with ProjectionParallel with LineConfigInnerRadius with TitleConfigAnchor with LegendConfigGradientOpacity with AxisDomainColor with TitleParamsSubtitleFontWeight with AxisLabelAlign with AxisLabelColor with HeaderConfigTitleLimit with SharedEncodingTextDatum with OverlayMarkDefLimit with MarkDefX2 with OverlayMarkDefY2Offset with TickConfigFontWeight with AreaConfigEndAngle with MarkDefFontWeight with RectConfigAriaRole with HeaderLabelFontStyle with AreaConfigInnerRadius with AxisConfigDomainDashOffset with BarConfigCornerRadiusTopRight with SharedEncodingFillOpacityValue with LegendConfigTitleLimit with TitleConfigLimit with LegendConfigSymbolBaseFillColor with MarkDefPadAngle with TitleParamsAria with OverlayMarkDefUrl with LineConfigFont with OverlayMarkDefStrokeOpacity with ProjectionConfigSize with TickConfigStrokeOpacity with AxisGridColor with BarConfigCornerRadiusTopLeft with TitleConfigSubtitleFontWeight with AreaConfigCornerRadiusBottomLeft with ProjectionRadius with ProjectionClipAngle with TickConfigStrokeDashOffset with ValueDefWithConditionMarkPropFieldOrDatumDefGradientStringNullValue with MarkConfigTheta2 with AreaConfigAngle with MarkConfigOpacity with AxisTitleLimit with MarkDefCornerRadius with LineConfigOpacity with MarkConfigEndAngle with ValueDefWithConditionStringFieldDefTextValue with AxisTitleOpacity with MarkDefFillOpacity with MarkDefYOffset with MarkConfigStroke with RectConfigCornerRadiusBottomRight with AreaConfigFontSize with MarkDefStrokeOffset with AxisConfigLabelSeparation with BarConfigHref with AxisTickColor with HeaderConfigLabelAlign with AxisConfigGridDash with RectConfigCursor with OverlayMarkDefRadius2Offset with TitleParamsFontWeight with BarConfigDescription with MarkConfigStrokeCap with BarConfigStrokeCap with OverlayMarkDefText with LegendConfigCornerRadius with HeaderConfigLabelColor with RectConfigStrokeJoin with AreaConfigShape with MarkDefBaseline with SharedEncodingUrlValue with MarkDefRadius2 with MarkConfigWidth with TickConfigAspect with MarkDefDir with MarkConfigAlign with AxisTitleLineHeight with AxisConfigTitleLimit with AxisConfigTitleFontWeight with TickConfigStrokeDash with BarConfigStrokeOpacity with SharedEncodingXDatum with BarConfigCornerRadiusEnd with ProjectionConfigClipAngle with MarkDefLineHeight with BarConfigStrokeWidth with SharedEncodingFillDatum with AreaConfigOuterRadius with RectConfigEllipsis with RectConfigSize with HeaderTitleBaseline with RectConfigTension with AxisTickMinStep with MarkConfigTooltip with AxisGridWidth with LineConfigStrokeOpacity with MarkDefRadius 
 {  }
 object ExprRef {
   val definedFields = Set("expr") 
@@ -26862,6 +27755,20 @@ sealed trait SharedEncodingColorCondition
 
 ////////////////////////////////////////////////////////////////////////
 
+// TopLevelRepeatSpecAsObject2Center (UnionType)
+/**
+ * Boolean flag indicating if subviews should be centered relative to their respective rows or columns.
+ * 
+ * An object value of the form `{"row": boolean, "column": boolean}` can be used to supply different centering values for rows and columns.
+ * 
+ * __Default value:__ `false`
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Center 
+   case class TopLevelRepeatSpecAsObject2CenterAsBool(value: Boolean) extends TopLevelRepeatSpecAsObject2Center
+   // RowColBoolean is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // ConditionalPredicateValueDefTextExprRefValue (UnionType)
 /**
  * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
@@ -26902,7 +27809,7 @@ sealed trait TickConfigTooltip
  **/
 sealed trait ViewConfigDiscreteHeight 
    case class ViewConfigDiscreteHeightAsNumber(value: JsNumber) extends ViewConfigDiscreteHeight
-   // ViewConfigDiscreteHeightAsObject is defined elsewhere
+   // ViewConfigDiscreteHeightAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -27058,14 +27965,6 @@ sealed trait SharedEncodingX2Datum
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisLabelFontStyleAsObjectCondition (UnionType)
-
-sealed trait ConditionalAxisLabelFontStyleAsObjectCondition 
-   // ConditionalPredicateValueDefFontStyleNullExprRef is defined elsewhere
-   case class ConditionalAxisLabelFontStyleAsObjectConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(value: Seq[ConditionalPredicateValueDefFontStyleNullExprRef]) extends ConditionalAxisLabelFontStyleAsObjectCondition
-
-////////////////////////////////////////////////////////////////////////
-
 // SharedEncodingTextTimeUnit (UnionType)
 /**
  * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
@@ -27155,44 +28054,6 @@ sealed trait MarkConfigRadius
 sealed trait TitleConfigFontStyle 
    case class TitleConfigFontStyleAsString(value: String) extends TitleConfigFontStyle
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalPredicateValueDefAlignNullExprRefAsObject (StructType)
-
-case class ConditionalPredicateValueDefAlignNullExprRefAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[Align] = None
-) extends ConditionalPredicateValueDefAlignNullExprRef 
-{  }
-object ConditionalPredicateValueDefAlignNullExprRefAsObject {
-  val definedFields = Set("test", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalPredicateValueDefTextBaselineNullExprRefAsObject (StructType)
-
-case class ConditionalPredicateValueDefTextBaselineNullExprRefAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[TextBaseline] = None
-) extends ConditionalPredicateValueDefTextBaselineNullExprRef 
-{  }
-object ConditionalPredicateValueDefTextBaselineNullExprRefAsObject {
-  val definedFields = Set("test", "value") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -27506,6 +28367,25 @@ sealed trait MarkDefFontStyle
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin (UnionType)
+/**
+ * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
+ * 
+ * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
+ * 
+ * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+ * 
+ * __Default value:__ `false`
+ * 
+ * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+ **/
+sealed trait ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin 
+   case class ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsBool(value: Boolean) extends ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin
+   // BinParams is defined elsewhere
+   case object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsNull extends ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin
+
+////////////////////////////////////////////////////////////////////////
+
 // TickConfigStrokeMiterLimit (UnionType)
 
 sealed trait TickConfigStrokeMiterLimit 
@@ -27689,7 +28569,8 @@ sealed trait MarkConfigCornerRadiusTopRight
 // ConditionalParameterMarkPropFieldOrDatumDefTypeForShape (UnionType)
 
 sealed trait ConditionalParameterMarkPropFieldOrDatumDefTypeForShape extends ConditionalMarkPropFieldOrDatumDefTypeForShape
-   // ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject is defined elsewhere
+   // ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1 is defined elsewhere
+   // ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -27950,8 +28831,28 @@ sealed trait TickConfigFill
 
 // ConditionalPredicateValueDefStringNullExprRef (UnionType)
 
-sealed trait ConditionalPredicateValueDefStringNullExprRef extends ConditionalValueDefStringNullExprRef with ConditionalAxisStringAsObjectCondition
-   // ConditionalPredicateValueDefStringNullExprRefAsObject is defined elsewhere
+sealed trait ConditionalPredicateValueDefStringNullExprRef extends ConditionalValueDefStringNullExprRef with ConditionalAxisStringAsObject1Condition with ConditionalAxisStringAsObject2Condition
+   // ConditionalPredicateValueDefStringNullExprRefAsObject1 is defined elsewhere
+   // ConditionalPredicateValueDefStringNullExprRefAsObject2 is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin (UnionType)
+/**
+ * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
+ * 
+ * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
+ * 
+ * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+ * 
+ * __Default value:__ `false`
+ * 
+ * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+ **/
+sealed trait ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin 
+   case class ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinAsBool(value: Boolean) extends ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin
+   // BinParams is defined elsewhere
+   case object ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinAsNull extends ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -28009,18 +28910,6 @@ sealed trait MarkConfigY
    case class MarkConfigYAsNumber(value: JsNumber) extends MarkConfigY
    // Height is defined elsewhere
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ViewConfigDiscreteHeightAsObject (StructType)
-
-case class ViewConfigDiscreteHeightAsObject(
-  var `step` : JsNumber
-) extends ViewConfigDiscreteHeight 
-{  }
-object ViewConfigDiscreteHeightAsObject {
-  val definedFields = Set("step") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -28115,6 +29004,14 @@ sealed trait MarkDefY2Offset
 sealed trait ProjectionFraction 
    case class ProjectionFractionAsNumber(value: JsNumber) extends ProjectionFraction
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisLabelFontStyleAsObject2Condition (UnionType)
+
+sealed trait ConditionalAxisLabelFontStyleAsObject2Condition 
+   // ConditionalPredicateValueDefFontStyleNullExprRef is defined elsewhere
+   case class ConditionalAxisLabelFontStyleAsObject2ConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(value: Seq[ConditionalPredicateValueDefFontStyleNullExprRef]) extends ConditionalAxisLabelFontStyleAsObject2Condition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -28449,6 +29346,14 @@ case class Axis(
 object Axis {
   val definedFields = Set("labelBaseline", "titleBaseline", "titleFont", "labelFontStyle", "domainDash", "tickWidth", "tickMinStep", "labelAngle", "domainCap", "minExtent", "titlePadding", "labelBound", "labelFontWeight", "labelFont", "titleFontWeight", "labelPadding", "tickCount", "maxExtent", "titleLimit", "titleFontStyle", "tickRound", "labels", "gridCap", "labelOpacity", "grid", "tickOffset", "domainColor", "tickCap", "labelExpr", "domainDashOffset", "tickOpacity", "bandPosition", "titleColor", "tickDash", "labelFlushOffset", "format", "titleAnchor", "position", "labelSeparation", "aria", "zindex", "domain", "ticks", "tickDashOffset", "description", "labelFontSize", "title", "titleAngle", "titleOpacity", "labelAlign", "style", "gridDashOffset", "labelOverlap", "gridOpacity", "labelLimit", "gridDash", "labelFlush", "tickSize", "orient", "formatType", "tickExtra", "gridWidth", "labelOffset", "translate", "titleY", "tickColor", "values", "gridColor", "labelColor", "titleAlign", "domainOpacity", "titleFontSize", "titleX", "domainWidth", "titleLineHeight", "labelLineHeight", "offset", "tickBand") 
 }
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisNumberAsObject2Condition (UnionType)
+
+sealed trait ConditionalAxisNumberAsObject2Condition 
+   // ConditionalPredicateValueDefNumberNullExprRef is defined elsewhere
+   case class ConditionalAxisNumberAsObject2ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(value: Seq[ConditionalPredicateValueDefNumberNullExprRef]) extends ConditionalAxisNumberAsObject2Condition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -28788,14 +29693,6 @@ sealed trait ScaleInterpolateParamsType  { val payload: JsValue }
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisStringAsObjectValue (UnionType)
-
-sealed trait ConditionalAxisStringAsObjectValue 
-   case class ConditionalAxisStringAsObjectValueAsString(value: String) extends ConditionalAxisStringAsObjectValue
-   case object ConditionalAxisStringAsObjectValueAsNull extends ConditionalAxisStringAsObjectValue
-
-////////////////////////////////////////////////////////////////////////
-
 // BinParamsMaxbins (ConstrainedType)
 /**
  * Maximum number of bins.
@@ -28881,6 +29778,16 @@ sealed trait AreaConfigTheta2
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPosition (ConstrainedType)
+/**
+ * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+ **/
+case class ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPosition(value: JsNumber) 
+{ assert(value.value <= 1)
+  assert(value.value >= 0) }
+
+////////////////////////////////////////////////////////////////////////
+
 // PointSelectionConfigOn (UnionType)
 /**
  * A [Vega event stream](https://vega.github.io/vega/docs/event-streams/) (object or selector) that triggers the selection. For interval selections, the event stream must specify a [start and end](https://vega.github.io/vega/docs/event-streams/#between-filters).
@@ -28890,6 +29797,16 @@ sealed trait AreaConfigTheta2
 sealed trait PointSelectionConfigOn 
    // Stream is defined elsewhere
    case class PointSelectionConfigOnAsString(value: String) extends PointSelectionConfigOn
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPosition (ConstrainedType)
+/**
+ * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+ **/
+case class ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPosition(value: JsNumber) 
+{ assert(value.value <= 1)
+  assert(value.value >= 0) }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -29293,18 +30210,6 @@ object DsvDataFormat {
 
 ////////////////////////////////////////////////////////////////////////
 
-// TopLevelRepeatSpecAsObjectBackground (UnionType)
-/**
- * CSS color property to use as the background of the entire view.
- * 
- * __Default value:__ `"white"`
- **/
-sealed trait TopLevelRepeatSpecAsObjectBackground 
-   // Color is defined elsewhere
-   // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
 // TickConfigTension (UnionType)
 
 sealed trait TickConfigTension 
@@ -29473,7 +30378,20 @@ sealed trait HeaderLabelPadding
 // TopLevelRepeatSpec (UnionType)
 
 sealed trait TopLevelRepeatSpec extends TopLevelSpec
-   // TopLevelRepeatSpecAsObject is defined elsewhere
+   // TopLevelRepeatSpecAsObject1 is defined elsewhere
+   // TopLevelRepeatSpecAsObject2 is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ViewConfigDiscreteHeightAsObject2 (StructType)
+
+case class ViewConfigDiscreteHeightAsObject2(
+  var `step` : JsNumber
+) extends ViewConfigDiscreteHeight 
+{  }
+object ViewConfigDiscreteHeightAsObject2 {
+  val definedFields = Set("step") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -29523,10 +30441,19 @@ sealed trait ViewBackgroundStrokeMiterLimit
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisNumberArrayAsObject2Condition (UnionType)
+
+sealed trait ConditionalAxisNumberArrayAsObject2Condition 
+   // ConditionalPredicateValueDefNumberNullExprRef is defined elsewhere
+   case class ConditionalAxisNumberArrayAsObject2ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(value: Seq[ConditionalPredicateValueDefNumberNullExprRef]) extends ConditionalAxisNumberArrayAsObject2Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // ConditionalParameterMarkPropFieldOrDatumDef (UnionType)
 
 sealed trait ConditionalParameterMarkPropFieldOrDatumDef extends ConditionalMarkPropFieldOrDatumDef
-   // ConditionalParameterMarkPropFieldOrDatumDefAsObject is defined elsewhere
+   // ConditionalParameterMarkPropFieldOrDatumDefAsObject1 is defined elsewhere
+   // ConditionalParameterMarkPropFieldOrDatumDefAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -29765,14 +30692,6 @@ sealed trait MarkConfigCornerRadiusTopLeft
 
 ////////////////////////////////////////////////////////////////////////
 
-// EventStreamAsObjectSource (EnumType)
-
-sealed trait EventStreamAsObjectSource  { val payload: JsValue }
-   case object EventStreamAsObjectSourceView extends EventStreamAsObjectSource { val payload = JsString("view") }
-   case object EventStreamAsObjectSourceScope extends EventStreamAsObjectSource { val payload = JsString("scope") }
-
-////////////////////////////////////////////////////////////////////////
-
 // StringFieldDefBandPosition (ConstrainedType)
 /**
  * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
@@ -29869,6 +30788,14 @@ case class ImputeSequence(
 object ImputeSequence {
   val definedFields = Set("start", "step", "stop") 
 }
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefStringNullExprRefAsObject1Value (UnionType)
+
+sealed trait ConditionalPredicateValueDefStringNullExprRefAsObject1Value 
+   case class ConditionalPredicateValueDefStringNullExprRefAsObject1ValueAsString(value: String) extends ConditionalPredicateValueDefStringNullExprRefAsObject1Value
+   case object ConditionalPredicateValueDefStringNullExprRefAsObject1ValueAsNull extends ConditionalPredicateValueDefStringNullExprRefAsObject1Value
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -30085,7 +31012,7 @@ case class TopLevelSelectionParameter(
    * __See also:__ [`init`](https://vega.github.io/vega-lite/docs/value.html) documentation.
    **/
   var `value` : Option[TopLevelSelectionParameterValue] = None
-) extends TopLevelLayerSpecParamsElement with TopLevelRepeatSpecAsObjectParamsElement with TopLevelConcatSpecParamsElement with ConfigParamsElement with TopLevelHConcatSpecParamsElement with TopLevelFacetSpecParamsElement with TopLevelVConcatSpecParamsElement 
+) extends TopLevelLayerSpecParamsElement with TopLevelConcatSpecParamsElement with ConfigParamsElement with TopLevelHConcatSpecParamsElement with TopLevelFacetSpecParamsElement with TopLevelVConcatSpecParamsElement with TopLevelRepeatSpecAsObject1ParamsElement with TopLevelRepeatSpecAsObject2ParamsElement 
 {  }
 object TopLevelSelectionParameter {
   val definedFields = Set("name", "bind", "views", "value", "select") 
@@ -30128,6 +31055,227 @@ sealed trait MarkDefColor
    // Color is defined elsewhere
    // Gradient is defined elsewhere
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject1 (StructType)
+
+case class ConditionalParameterMarkPropFieldOrDatumDefAsObject1(
+  /**
+   * For selection parameters, the predicate of empty selections returns true by default. Override this behavior, by setting this property `empty: false`.
+   **/
+  var `empty` : Option[Boolean] = None,
+  /**
+   * __Required.__ A string defining the name of the field from which to pull a data value or an object defining iterated values from the [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
+   * 
+   * __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
+   * 
+   * __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or brackets but are not nested, you can use `\\` to escape dots and brackets (e.g., `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not required if `aggregate` is `count`.
+   **/
+  var `field` : Option[Field] = None,
+  /**
+   * Filter using a parameter name.
+   **/
+  var `param` : String,
+  /**
+   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
+   * 
+   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+   * 
+   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+   * 
+   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+   **/
+  var `scale` : Option[Scale] = None,
+  /**
+   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
+   * 
+   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
+   * 
+   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
+   **/
+  var `legend` : Option[Legend] = None,
+  /**
+   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+   **/
+  var `bandPosition` : Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPosition] = None,
+  /**
+   * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
+   * 
+   * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
+   * 
+   * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+   * 
+   * __Default value:__ `false`
+   * 
+   * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+   **/
+  var `bin` : Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin] = None,
+  /**
+   * Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`, `"max"`, `"count"`).
+   * 
+   * __Default value:__ `undefined` (None)
+   * 
+   * __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html) documentation.
+   **/
+  var `aggregate` : Option[Aggregate] = None,
+  /**
+   * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+   * 
+   * __Default value:__ `undefined` (None)
+   * 
+   * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
+   **/
+  var `timeUnit` : Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit] = None,
+  /**
+   * A title for the field. If `null`, the title will be removed.
+   * 
+   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
+   * 
+   * __Notes__:
+   * 
+   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+   * 
+   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
+   **/
+  var `title` : Option[Text] = None,
+  /**
+   * Sort order for the encoded field.
+   * 
+   * For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or `"descending"`.
+   * 
+   * For discrete fields, `sort` can be one of the following:
+   * - `"ascending"` or `"descending"` -- for sorting by the values' natural order in JavaScript.
+   * - [A string indicating an encoding channel name to sort by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by x-field, descending). This channel string is short-form of [a sort-by-encoding definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order": "descending"}`.
+   * - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field) for sorting by another field.
+   * - [An array specifying the field values in preferred order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the sort order will obey the values in the array, followed by any unspecified values in their original order. For discrete time field, values in the sort array can be [date-time definition objects](types#datetime). In addition, for time units `"month"` and `"day"`, the values can be the month or day names (case insensitive) or their 3-letter initials (e.g., `"Mon"`, `"Tue"`).
+   * - `null` indicating no sort.
+   * 
+   * __Default value:__ `"ascending"`
+   * 
+   * __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
+   * 
+   * __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
+   **/
+  var `sort` : Option[Sort] = None,
+  /**
+   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+   * 
+   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
+   * 
+   * __Default value:__
+   * 
+   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
+   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
+   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
+   * 
+   * 2) For a constant value in data domain (`datum`):
+   * - `"quantitative"` if the datum is a number
+   * - `"nominal"` if the datum is a string
+   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
+   * 
+   * __Note:__
+   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
+   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
+   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
+   * 
+   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+   **/
+  var `type` : Option[StandardType] = None
+) extends ConditionalParameterMarkPropFieldOrDatumDef 
+{  }
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject1 {
+  val definedFields = Set("bin", "type", "bandPosition", "param", "legend", "empty", "aggregate", "title", "scale", "timeUnit", "field", "sort") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject2 (StructType)
+
+case class ConditionalParameterMarkPropFieldOrDatumDefAsObject2(
+  /**
+   * For selection parameters, the predicate of empty selections returns true by default. Override this behavior, by setting this property `empty: false`.
+   **/
+  var `empty` : Option[Boolean] = None,
+  /**
+   * Filter using a parameter name.
+   **/
+  var `param` : String,
+  /**
+   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
+   * 
+   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+   * 
+   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+   * 
+   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+   **/
+  var `scale` : Option[Scale] = None,
+  /**
+   * A constant value in data domain.
+   **/
+  var `datum` : Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum] = None,
+  /**
+   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
+   * 
+   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
+   * 
+   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
+   **/
+  var `legend` : Option[Legend] = None,
+  /**
+   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+   **/
+  var `bandPosition` : Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPosition] = None,
+  /**
+   * A title for the field. If `null`, the title will be removed.
+   * 
+   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
+   * 
+   * __Notes__:
+   * 
+   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+   * 
+   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
+   **/
+  var `title` : Option[Text] = None,
+  /**
+   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+   * 
+   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
+   * 
+   * __Default value:__
+   * 
+   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
+   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
+   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
+   * 
+   * 2) For a constant value in data domain (`datum`):
+   * - `"quantitative"` if the datum is a number
+   * - `"nominal"` if the datum is a string
+   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
+   * 
+   * __Note:__
+   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
+   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
+   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
+   * 
+   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+   **/
+  var `type` : Option[Type] = None
+) extends ConditionalParameterMarkPropFieldOrDatumDef 
+{  }
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject2 {
+  val definedFields = Set("type", "scale", "datum", "bandPosition", "param", "legend", "empty", "title") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -30257,20 +31405,6 @@ object GraticuleParams {
 sealed trait AxisTitleBaseline 
    // TextBaseline is defined elsewhere
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit (UnionType)
-/**
- * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
- * 
- * __Default value:__ `undefined` (None)
- * 
- * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
- **/
-sealed trait ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit 
-   // TimeUnit is defined elsewhere
-   // TimeUnitParams is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -30523,7 +31657,7 @@ sealed trait FacetedUnitSpecAlign
 
 // Color (UnionType)
 
-sealed trait Color extends LegendConfigSymbolFillColor with LegendConfigSymbolStrokeColor with BarConfigStroke with TopLevelConcatSpecBackground with ViewConfigFill with MarkDefStroke with ViewBackgroundStroke with TickConfigColor with MarkDefFill with AxisConfigGridColor with AxisConfigTickColor with MarkDefColor with LineConfigFill with LegendConfigStrokeColor with ErrorBarDefColor with BarConfigColor with MarkConfigStroke with TopLevelUnitSpecBackground with MarkConfigColor with RectConfigStroke with TitleParamsSubtitleColor with TickConfigFill with ConfigBackground with AxisConfigLabelColor with AxisTickColor with LegendConfigFillColor with AreaConfigFill with LineConfigStroke with BoxPlotDefColor with AxisDomainColor with LegendConfigTitleColor with HeaderTitleColor with AreaConfigColor with TopLevelRepeatSpecAsObjectBackground with AxisLabelColor with LegendConfigSymbolBaseStrokeColor with RectConfigColor with TitleConfigSubtitleColor with OverlayMarkDefColor with HeaderConfigLabelColor with TitleParamsColor with HeaderConfigTitleColor with MarkConfigFill with LegendConfigSymbolBaseFillColor with LegendConfigGradientStrokeColor with AxisConfigDomainColor with TopLevelHConcatSpecBackground with TickConfigStroke with RectConfigFill with TopLevelFacetSpecBackground with ViewConfigStroke with AxisTitleColor with OverlayMarkDefStroke with LineConfigColor with HeaderLabelColor with LegendConfigLabelColor with AxisGridColor with AreaConfigStroke with BarConfigFill with AxisConfigTitleColor with TitleConfigColor with ErrorBandDefColor with TopLevelVConcatSpecBackground with ViewBackgroundFill with OverlayMarkDefFill with TopLevelLayerSpecBackground
+sealed trait Color extends LegendConfigSymbolFillColor with LegendConfigSymbolStrokeColor with BarConfigStroke with TopLevelConcatSpecBackground with ViewConfigFill with MarkDefStroke with ViewBackgroundStroke with TickConfigColor with MarkDefFill with AxisConfigGridColor with AxisConfigTickColor with MarkDefColor with LineConfigFill with LegendConfigStrokeColor with ErrorBarDefColor with BarConfigColor with MarkConfigStroke with TopLevelUnitSpecBackground with MarkConfigColor with RectConfigStroke with TitleParamsSubtitleColor with TickConfigFill with ConfigBackground with AxisConfigLabelColor with AxisTickColor with LegendConfigFillColor with AreaConfigFill with LineConfigStroke with BoxPlotDefColor with AxisDomainColor with LegendConfigTitleColor with HeaderTitleColor with AreaConfigColor with AxisLabelColor with LegendConfigSymbolBaseStrokeColor with RectConfigColor with TitleConfigSubtitleColor with OverlayMarkDefColor with HeaderConfigLabelColor with TopLevelRepeatSpecAsObject2Background with TitleParamsColor with HeaderConfigTitleColor with MarkConfigFill with LegendConfigSymbolBaseFillColor with LegendConfigGradientStrokeColor with AxisConfigDomainColor with TopLevelHConcatSpecBackground with TickConfigStroke with RectConfigFill with TopLevelFacetSpecBackground with ViewConfigStroke with AxisTitleColor with OverlayMarkDefStroke with LineConfigColor with HeaderLabelColor with LegendConfigLabelColor with AxisGridColor with AreaConfigStroke with BarConfigFill with AxisConfigTitleColor with TitleConfigColor with ErrorBandDefColor with TopLevelVConcatSpecBackground with ViewBackgroundFill with TopLevelRepeatSpecAsObject1Background with OverlayMarkDefFill with TopLevelLayerSpecBackground
    // ColorName is defined elsewhere
    // ColorHex is defined elsewhere
    case class ColorAsString(value: String) extends Color
@@ -30535,6 +31669,14 @@ sealed trait Color extends LegendConfigSymbolFillColor with LegendConfigSymbolSt
 sealed trait LegendConfigTitleOpacity 
    case class LegendConfigTitleOpacityAsNumber(value: JsNumber) extends LegendConfigTitleOpacity
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// EventStreamAsObject1Source (EnumType)
+
+sealed trait EventStreamAsObject1Source  { val payload: JsValue }
+   case object EventStreamAsObject1SourceView extends EventStreamAsObject1Source { val payload = JsString("view") }
+   case object EventStreamAsObject1SourceScope extends EventStreamAsObject1Source { val payload = JsString("scope") }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -30611,7 +31753,7 @@ case class BinParams(
    * __Default value:__ `true`
    **/
   var `nice` : Option[Boolean] = None
-) extends FieldDefWithoutScaleBin with PositionFieldDefBaseBin with SharedEncodingAngleBin with SharedEncodingSizeBin with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin with ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin with SharedEncodingThetaBin with SharedEncodingFillOpacityBin with SharedEncodingRadiusBin with SharedEncodingUrlBin with SharedEncodingShapeBin with FacetEncodingFieldDefBin with OrderFieldDefBin with SharedEncodingXOffsetBin with SharedEncodingColorBin with ConditionalPredicateStringFieldDefBin with FieldOrDatumDefWithConditionMarkPropFieldDefNumberBin with SharedEncodingDescriptionBin with SharedEncodingFillBin with StringFieldDefBin with SharedEncodingXBin with PositionFieldDefBin with SharedEncodingYOffsetBin with FacetFieldDefBin with SharedEncodingStrokeWidthBin with SharedEncodingStrokeBin with ConditionalParameterStringFieldDefBin with FieldOrDatumDefWithConditionStringFieldDefTextBin with SharedEncodingTextBin with SharedEncodingStrokeDashBin with SharedEncodingStrokeOpacityBin with StringFieldDefWithConditionBin with FieldOrDatumDefWithConditionMarkPropFieldDefTypeForShapeStringNullBin with ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin with SharedEncodingKeyBin with FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNullBin with SharedEncodingYBin with BinTransformBin with ScaleFieldDefBin with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin with RowColumnEncodingFieldDefBin with SharedEncodingOpacityBin with SharedEncodingHrefBin 
+) extends FieldDefWithoutScaleBin with PositionFieldDefBaseBin with SharedEncodingAngleBin with SharedEncodingSizeBin with SharedEncodingThetaBin with SharedEncodingFillOpacityBin with SharedEncodingRadiusBin with SharedEncodingUrlBin with SharedEncodingShapeBin with FacetEncodingFieldDefBin with OrderFieldDefBin with SharedEncodingXOffsetBin with SharedEncodingColorBin with ConditionalPredicateStringFieldDefBin with FieldOrDatumDefWithConditionMarkPropFieldDefNumberBin with SharedEncodingDescriptionBin with SharedEncodingFillBin with StringFieldDefBin with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin with SharedEncodingXBin with PositionFieldDefBin with SharedEncodingYOffsetBin with FacetFieldDefBin with SharedEncodingStrokeWidthBin with SharedEncodingStrokeBin with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin with ConditionalParameterStringFieldDefBin with FieldOrDatumDefWithConditionStringFieldDefTextBin with ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin with SharedEncodingTextBin with SharedEncodingStrokeDashBin with SharedEncodingStrokeOpacityBin with StringFieldDefWithConditionBin with FieldOrDatumDefWithConditionMarkPropFieldDefTypeForShapeStringNullBin with SharedEncodingKeyBin with FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNullBin with SharedEncodingYBin with BinTransformBin with ScaleFieldDefBin with RowColumnEncodingFieldDefBin with SharedEncodingOpacityBin with ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin with SharedEncodingHrefBin 
 {  }
 object BinParams {
   val definedFields = Set("step", "anchor", "steps", "minstep", "divide", "binned", "base", "nice", "extent", "maxbins") 
@@ -30765,6 +31907,18 @@ sealed trait ErrorBandDefBand
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum (UnionType)
+/**
+ * A constant value in data domain.
+ **/
+sealed trait ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum 
+   // PrimitiveValue is defined elsewhere
+   // DateTime is defined elsewhere
+   // ExprRef is defined elsewhere
+   // RepeatRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingStrokeOpacityTimeUnit (UnionType)
 /**
  * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
@@ -30856,6 +32010,18 @@ case class Number() extends ParseValue
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum (UnionType)
+/**
+ * A constant value in data domain.
+ **/
+sealed trait ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum 
+   // PrimitiveValue is defined elsewhere
+   // DateTime is defined elsewhere
+   // ExprRef is defined elsewhere
+   // RepeatRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // LegendConfigLabelFontStyle (UnionType)
 
 sealed trait LegendConfigLabelFontStyle 
@@ -30877,6 +32043,18 @@ sealed trait TickConfigLimit
 sealed trait AxisConfigLabelFlush 
    case class AxisConfigLabelFlushAsBool(value: Boolean) extends AxisConfigLabelFlush
    case class AxisConfigLabelFlushAsNumber(value: JsNumber) extends AxisConfigLabelFlush
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject1Autosize (UnionType)
+/**
+ * How the visualization size should be determined. If a string, should be one of `"pad"`, `"fit"` or `"none"`. Object values can additionally specify parameters for content sizing and automatic resizing.
+ * 
+ * __Default value__: `pad`
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Autosize 
+   // AutosizeType is defined elsewhere
+   // AutoSizeParams is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -30976,7 +32154,8 @@ sealed trait AxisTickDashOffset
 // ConditionalAxisNumber (UnionType)
 
 sealed trait ConditionalAxisNumber extends AxisConfigTickWidth with AxisLabelFontSize with AxisConfigLabelFontSize with AxisTickSize with AxisConfigLabelOffset with AxisConfigGridOpacity with AxisTickOpacity with AxisLabelOpacity with AxisLabelOffset with AxisConfigGridWidth with AxisConfigTickSize with AxisGridOpacity with AxisGridDashOffset with AxisConfigTickOpacity with AxisConfigTickDashOffset with AxisTickWidth with AxisConfigLabelOpacity with AxisConfigLabelPadding with AxisTickDashOffset with AxisGridWidth with AxisConfigGridDashOffset with AxisLabelPadding
-   // ConditionalAxisNumberAsObject is defined elsewhere
+   // ConditionalAxisNumberAsObject1 is defined elsewhere
+   // ConditionalAxisNumberAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -30989,6 +32168,14 @@ sealed trait ConditionalAxisNumber extends AxisConfigTickWidth with AxisLabelFon
 case class AreaConfigStrokeOpacityAsNumber(value: JsNumber) extends AreaConfigStrokeOpacity
 { assert(value.value <= 1)
   assert(value.value >= 0) }
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisColorAsObject2Condition (UnionType)
+
+sealed trait ConditionalAxisColorAsObject2Condition 
+   // ConditionalPredicateValueDefColorNullExprRef is defined elsewhere
+   case class ConditionalAxisColorAsObject2ConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(value: Seq[ConditionalPredicateValueDefColorNullExprRef]) extends ConditionalAxisColorAsObject2Condition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -31188,7 +32375,7 @@ case class DateTime(
    * One of: (1) integer value representing the month from `1`-`12`. `1` represents January; (2) case-insensitive month name (e.g., `"January"`); (3) case-insensitive, 3-character short month name (e.g., `"Jan"`).
    **/
   var `month` : Option[DateTimeMonth] = None
-) extends FieldGTPredicateGt with SharedEncodingStrokeWidthDatum with SharedEncodingStrokeDatum with SharedEncodingY2Datum with ScaleDomainMax with SharedEncodingRadius2Datum with ScaleDatumDefDatum with DatumDefDatum with FieldGTEPredicateGte with SharedEncodingAngleDatum with SharedEncodingStrokeOpacityDatum with FieldRangePredicateRangeAsArrayElement with FieldLTPredicateLt with SharedEncodingSizeDatum with SelectionInit with ScaleDomainMin with SharedEncodingOpacityDatum with PositionDatumDefDatum with FieldOrDatumDefWithConditionDatumDefGradientStringNullDatum with SharedEncodingLongitude2Datum with SharedEncodingLatitudeDatum with SharedEncodingStrokeDashDatum with SharedEncodingYOffsetDatum with SharedEncodingRadiusDatum with SharedEncodingLatitude2Datum with FieldOrDatumDefWithConditionStringDatumDefTextDatum with SharedEncodingXDatum with SharedEncodingThetaDatum with SharedEncodingFillOpacityDatum with SharedEncodingX2Datum with PositionDatumDefBaseDatum with FieldEqualPredicateEqual with FieldOrDatumDefWithConditionDatumDefNumberDatum with SharedEncodingYDatum with SharedEncodingFillDatum with SharedEncodingXOffsetDatum with ScaleDomainAsArrayElement with SharedEncodingTheta2Datum with FieldLTEPredicateLte with SharedEncodingTextDatum with SharedEncodingColorDatum with SharedEncodingLongitudeDatum with SharedEncodingShapeDatum with FieldOrDatumDefWithConditionDatumDefStringNullDatum 
+) extends SharedEncodingStrokeWidthDatum with SharedEncodingRadius2Datum with ScaleDatumDefDatum with FieldGTEPredicateGte with SharedEncodingAngleDatum with ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum with FieldRangePredicateRangeAsArrayElement with SelectionInit with PositionDatumDefDatum with FieldOrDatumDefWithConditionDatumDefGradientStringNullDatum with SharedEncodingLongitude2Datum with SharedEncodingStrokeDashDatum with SharedEncodingYOffsetDatum with ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum with SharedEncodingRadiusDatum with SharedEncodingLatitude2Datum with FieldOrDatumDefWithConditionStringDatumDefTextDatum with PositionDatumDefBaseDatum with FieldOrDatumDefWithConditionDatumDefNumberDatum with SharedEncodingYDatum with SharedEncodingXOffsetDatum with SharedEncodingTextDatum with SharedEncodingLongitudeDatum with SharedEncodingShapeDatum with FieldOrDatumDefWithConditionDatumDefStringNullDatum with FieldGTPredicateGt with SharedEncodingStrokeDatum with SharedEncodingY2Datum with ScaleDomainMax with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum with DatumDefDatum with SharedEncodingStrokeOpacityDatum with FieldLTPredicateLt with SharedEncodingSizeDatum with ScaleDomainMin with SharedEncodingOpacityDatum with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum with SharedEncodingLatitudeDatum with SharedEncodingXDatum with SharedEncodingThetaDatum with SharedEncodingFillOpacityDatum with SharedEncodingX2Datum with FieldEqualPredicateEqual with SharedEncodingFillDatum with ScaleDomainAsArrayElement with SharedEncodingTheta2Datum with FieldLTEPredicateLte with SharedEncodingColorDatum 
 {  }
 object DateTime {
   val definedFields = Set("month", "minutes", "year", "day", "hours", "milliseconds", "seconds", "utc", "date", "quarter") 
@@ -31374,18 +32561,6 @@ sealed trait AxisConfigLabelFlushOffset
 
 ////////////////////////////////////////////////////////////////////////
 
-// TopLevelRepeatSpecAsObjectAutosize (UnionType)
-/**
- * How the visualization size should be determined. If a string, should be one of `"pad"`, `"fit"` or `"none"`. Object values can additionally specify parameters for content sizing and automatic resizing.
- * 
- * __Default value__: `pad`
- **/
-sealed trait TopLevelRepeatSpecAsObjectAutosize 
-   // AutosizeType is defined elsewhere
-   // AutoSizeParams is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
 // TopLevelFacetSpecBounds (EnumType)
 /**
  * The bounds calculation method to use for determining the extent of a sub-plot. One of `full` (the default) or `flush`.
@@ -31498,25 +32673,6 @@ object WindowFieldDef {
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalPredicateValueDefFontStyleNullExprRefAsObject (StructType)
-
-case class ConditionalPredicateValueDefFontStyleNullExprRefAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[String] = None
-) extends ConditionalPredicateValueDefFontStyleNullExprRef 
-{  }
-object ConditionalPredicateValueDefFontStyleNullExprRefAsObject {
-  val definedFields = Set("test", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // AreaConfigPadAngle (UnionType)
 
 sealed trait AreaConfigPadAngle 
@@ -31601,25 +32757,6 @@ sealed trait ScaleFieldDefBin
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin (UnionType)
-/**
- * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
- * 
- * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
- * 
- * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
- * 
- * __Default value:__ `false`
- * 
- * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
- **/
-sealed trait ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin 
-   case class ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsBool(value: Boolean) extends ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin
-   // BinParams is defined elsewhere
-   case object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsNull extends ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin
-
-////////////////////////////////////////////////////////////////////////
-
 // AxisLabelAngleAsNumber (ConstrainedType)
 /**
  * The rotation angle of the axis labels.
@@ -31659,25 +32796,6 @@ sealed trait TickConfigCursor
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalPredicateValueDefNumberNullExprRefAsObject (StructType)
-
-case class ConditionalPredicateValueDefNumberNullExprRefAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
-   **/
-  var `value` : Option[Seq[JsNumber]] = None
-) extends ConditionalPredicateValueDefNumberNullExprRef 
-{  }
-object ConditionalPredicateValueDefNumberNullExprRefAsObject {
-  val definedFields = Set("test", "value") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // OverlayMarkDefOuterRadius (ConstrainedType)
 /**
  * The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
@@ -31687,14 +32805,6 @@ object ConditionalPredicateValueDefNumberNullExprRefAsObject {
 sealed trait OverlayMarkDefOuterRadius 
    case class OverlayMarkDefOuterRadiusAsNumber(value: JsNumber) extends OverlayMarkDefOuterRadius
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalAxisNumberArrayAsObjectCondition (UnionType)
-
-sealed trait ConditionalAxisNumberArrayAsObjectCondition 
-   // ConditionalPredicateValueDefNumberNullExprRef is defined elsewhere
-   case class ConditionalAxisNumberArrayAsObjectConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(value: Seq[ConditionalPredicateValueDefNumberNullExprRef]) extends ConditionalAxisNumberArrayAsObjectCondition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -31775,16 +32885,6 @@ sealed trait LineConfigLineBreak
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPosition (ConstrainedType)
-/**
- * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
- **/
-case class ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPosition(value: JsNumber) 
-{ assert(value.value <= 1)
-  assert(value.value >= 0) }
-
-////////////////////////////////////////////////////////////////////////
-
 // LegendConfigLabelSeparation (UnionType)
 
 sealed trait LegendConfigLabelSeparation 
@@ -31813,142 +32913,6 @@ sealed trait OverlayMarkDefY
    case class OverlayMarkDefYAsNumber(value: JsNumber) extends OverlayMarkDefY
    // Height is defined elsewhere
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalParameterMarkPropFieldOrDatumDefAsObject (StructType)
-
-case class ConditionalParameterMarkPropFieldOrDatumDefAsObject(
-  /**
-   * For selection parameters, the predicate of empty selections returns true by default. Override this behavior, by setting this property `empty: false`.
-   **/
-  var `empty` : Option[Boolean] = None,
-  /**
-   * __Required.__ A string defining the name of the field from which to pull a data value or an object defining iterated values from the [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
-   * 
-   * __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
-   * 
-   * __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or brackets but are not nested, you can use `\\` to escape dots and brackets (e.g., `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not required if `aggregate` is `count`.
-   **/
-  var `field` : Option[Field] = None,
-  /**
-   * Filter using a parameter name.
-   **/
-  var `param` : String,
-  /**
-   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
-   * 
-   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
-   * 
-   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
-   * 
-   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
-   **/
-  var `scale` : Option[Scale] = None,
-  /**
-   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
-   * 
-   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
-   * 
-   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
-   **/
-  var `legend` : Option[Legend] = None,
-  /**
-   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
-   **/
-  var `bandPosition` : Option[ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPosition] = None,
-  /**
-   * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
-   * 
-   * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
-   * 
-   * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
-   * 
-   * __Default value:__ `false`
-   * 
-   * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
-   **/
-  var `bin` : Option[ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin] = None,
-  /**
-   * Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`, `"max"`, `"count"`).
-   * 
-   * __Default value:__ `undefined` (None)
-   * 
-   * __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html) documentation.
-   **/
-  var `aggregate` : Option[Aggregate] = None,
-  /**
-   * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
-   * 
-   * __Default value:__ `undefined` (None)
-   * 
-   * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
-   **/
-  var `timeUnit` : Option[ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit] = None,
-  /**
-   * A title for the field. If `null`, the title will be removed.
-   * 
-   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
-   * 
-   * __Notes__:
-   * 
-   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
-   * 
-   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
-   **/
-  var `title` : Option[Text] = None,
-  /**
-   * Sort order for the encoded field.
-   * 
-   * For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or `"descending"`.
-   * 
-   * For discrete fields, `sort` can be one of the following:
-   * - `"ascending"` or `"descending"` -- for sorting by the values' natural order in JavaScript.
-   * - [A string indicating an encoding channel name to sort by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by x-field, descending). This channel string is short-form of [a sort-by-encoding definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order": "descending"}`.
-   * - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field) for sorting by another field.
-   * - [An array specifying the field values in preferred order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the sort order will obey the values in the array, followed by any unspecified values in their original order. For discrete time field, values in the sort array can be [date-time definition objects](types#datetime). In addition, for time units `"month"` and `"day"`, the values can be the month or day names (case insensitive) or their 3-letter initials (e.g., `"Mon"`, `"Tue"`).
-   * - `null` indicating no sort.
-   * 
-   * __Default value:__ `"ascending"`
-   * 
-   * __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
-   * 
-   * __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
-   **/
-  var `sort` : Option[Sort] = None,
-  /**
-   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
-   * 
-   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
-   * 
-   * __Default value:__
-   * 
-   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
-   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
-   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
-   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
-   * 
-   * 2) For a constant value in data domain (`datum`):
-   * - `"quantitative"` if the datum is a number
-   * - `"nominal"` if the datum is a string
-   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
-   * 
-   * __Note:__
-   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
-   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
-   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
-   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
-   * 
-   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
-   **/
-  var `type` : Option[StandardType] = None
-) extends ConditionalParameterMarkPropFieldOrDatumDef 
-{  }
-object ConditionalParameterMarkPropFieldOrDatumDefAsObject {
-  val definedFields = Set("bin", "type", "bandPosition", "param", "legend", "empty", "aggregate", "title", "scale", "timeUnit", "field", "sort") 
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -32791,6 +33755,14 @@ object SharedEncodingXError {
 
 ////////////////////////////////////////////////////////////////////////
 
+// EventStreamAsObject2Filter (UnionType)
+
+sealed trait EventStreamAsObject2Filter 
+   case class EventStreamAsObject2FilterAsString(value: String) extends EventStreamAsObject2Filter
+   case class EventStreamAsObject2FilterAsArrayOfString(value: Seq[String]) extends EventStreamAsObject2Filter
+
+////////////////////////////////////////////////////////////////////////
+
 // AxisMinExtent (UnionType)
 
 sealed trait AxisMinExtent 
@@ -32880,6 +33852,14 @@ sealed trait UtcSingleTimeUnit extends SingleTimeUnit { val payload: JsValue }
 sealed trait MarkConfigUrl 
    // UriReference is defined elsewhere
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisLabelFontWeightAsObject2Condition (UnionType)
+
+sealed trait ConditionalAxisLabelFontWeightAsObject2Condition 
+   // ConditionalPredicateValueDefFontWeightNullExprRef is defined elsewhere
+   case class ConditionalAxisLabelFontWeightAsObject2ConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(value: Seq[ConditionalPredicateValueDefFontWeightNullExprRef]) extends ConditionalAxisLabelFontWeightAsObject2Condition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -34166,8 +35146,9 @@ sealed trait TickConfigOuterRadius
 
 // ConditionalPredicateValueDefColorNullExprRef (UnionType)
 
-sealed trait ConditionalPredicateValueDefColorNullExprRef extends ConditionalAxisColorAsObjectCondition
-   // ConditionalPredicateValueDefColorNullExprRefAsObject is defined elsewhere
+sealed trait ConditionalPredicateValueDefColorNullExprRef extends ConditionalAxisColorAsObject1Condition with ConditionalAxisColorAsObject2Condition
+   // ConditionalPredicateValueDefColorNullExprRefAsObject1 is defined elsewhere
+   // ConditionalPredicateValueDefColorNullExprRefAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -34182,6 +35163,22 @@ sealed trait ConditionalPredicateValueDefColorNullExprRef extends ConditionalAxi
 sealed trait SharedEncodingXTimeUnit 
    // TimeUnit is defined elsewhere
    // TimeUnitParams is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisLabelFontWeightAsObject2 (StructType)
+
+case class ConditionalAxisLabelFontWeightAsObject2(
+  var `condition` : ConditionalAxisLabelFontWeightAsObject2Condition,
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String
+) extends ConditionalAxisLabelFontWeight 
+{  }
+object ConditionalAxisLabelFontWeightAsObject2 {
+  val definedFields = Set("condition", "expr") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -34283,6 +35280,22 @@ object TopLevelVConcatSpec {
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisLabelFontWeightAsObject1 (StructType)
+
+case class ConditionalAxisLabelFontWeightAsObject1(
+  var `condition` : ConditionalAxisLabelFontWeightAsObject1Condition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[FontWeight] = None
+) extends ConditionalAxisLabelFontWeight 
+{  }
+object ConditionalAxisLabelFontWeightAsObject1 {
+  val definedFields = Set("condition", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // OverlayMarkDefRadius (ConstrainedType)
 /**
  * For arc mark, the primary (outer) radius in pixels.
@@ -34294,6 +35307,25 @@ object TopLevelVConcatSpec {
 sealed trait OverlayMarkDefRadius 
    case class OverlayMarkDefRadiusAsNumber(value: JsNumber) extends OverlayMarkDefRadius
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin (UnionType)
+/**
+ * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
+ * 
+ * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
+ * 
+ * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+ * 
+ * __Default value:__ `false`
+ * 
+ * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+ **/
+sealed trait ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin 
+   case class ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinAsBool(value: Boolean) extends ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin
+   // BinParams is defined elsewhere
+   case object ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinAsNull extends ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -34371,6 +35403,20 @@ case class OrderValueDef(
 object OrderValueDef {
   val definedFields = Set("condition", "value") 
 }
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit (UnionType)
+/**
+ * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+ * 
+ * __Default value:__ `undefined` (None)
+ * 
+ * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
+ **/
+sealed trait ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit 
+   // TimeUnit is defined elsewhere
+   // TimeUnitParams is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -34549,14 +35595,6 @@ object TopLevelFacetSpec {
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalAxisNumberAsObjectValue (UnionType)
-
-sealed trait ConditionalAxisNumberAsObjectValue 
-   case class ConditionalAxisNumberAsObjectValueAsNumber(value: JsNumber) extends ConditionalAxisNumberAsObjectValue
-   case object ConditionalAxisNumberAsObjectValueAsNull extends ConditionalAxisNumberAsObjectValue
-
-////////////////////////////////////////////////////////////////////////
-
 // PointSelectionConfigType (ConstantType)
 /**
  * Determines the default event processing and data query for the selection. Vega-Lite currently supports two selection types:
@@ -34583,14 +35621,6 @@ case class SharedEncodingX2BandPosition(value: JsNumber)
 case class BinExtentAsArray(value: Seq[JsNumber]) extends BinExtent
 { assert(value.size >= 2)
   assert(value.size <= 2) }
-
-////////////////////////////////////////////////////////////////////////
-
-// EventStreamAsObjectFilter (UnionType)
-
-sealed trait EventStreamAsObjectFilter 
-   case class EventStreamAsObjectFilterAsString(value: String) extends EventStreamAsObjectFilter
-   case class EventStreamAsObjectFilterAsArrayOfString(value: Seq[String]) extends EventStreamAsObjectFilter
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -34631,7 +35661,7 @@ sealed trait SharedEncodingLongitude2Datum
 
 // TimeUnit (UnionType)
 
-sealed trait TimeUnit extends SharedEncodingYError2TimeUnit with SharedEncodingThetaTimeUnit with SharedEncodingLongitude2TimeUnit with TimeUnitTransformTimeUnit with OrderFieldDefTimeUnit with ConditionalPredicateStringFieldDefTimeUnit with ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit with SharedEncodingXError2TimeUnit with ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit with SharedEncodingRadius2TimeUnit with SharedEncodingFillOpacityTimeUnit with FieldOrDatumDefWithConditionStringFieldDefTextTimeUnit with SharedEncodingRadiusTimeUnit with SharedEncodingYErrorTimeUnit with SharedEncodingLatitude2TimeUnit with SharedEncodingTheta2TimeUnit with StringFieldDefTimeUnit with FieldValidPredicateTimeUnit with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit with SharedEncodingOpacityTimeUnit with SharedEncodingYTimeUnit with SharedEncodingSizeTimeUnit with SharedEncodingLatitudeTimeUnit with FieldDefWithoutScaleTimeUnit with SharedEncodingLongitudeTimeUnit with SharedEncodingFillTimeUnit with FieldEqualPredicateTimeUnit with StringFieldDefWithConditionTimeUnit with SharedEncodingStrokeOpacityTimeUnit with LatLongFieldDefTimeUnit with FieldGTPredicateTimeUnit with SharedEncodingStrokeTimeUnit with SharedEncodingYOffsetTimeUnit with SharedEncodingAngleTimeUnit with FacetFieldDefTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefTypeForShapeStringNullTimeUnit with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit with SharedEncodingStrokeDashTimeUnit with SharedEncodingKeyTimeUnit with SharedEncodingUrlTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNullTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefNumberTimeUnit with SharedEncodingStrokeWidthTimeUnit with SharedEncodingY2TimeUnit with SharedEncodingXErrorTimeUnit with ScaleFieldDefTimeUnit with FieldGTEPredicateTimeUnit with PositionFieldDefBaseTimeUnit with FieldLTEPredicateTimeUnit with FieldLTPredicateTimeUnit with FacetEncodingFieldDefTimeUnit with SharedEncodingDescriptionTimeUnit with SharedEncodingHrefTimeUnit with SharedEncodingShapeTimeUnit with SharedEncodingXOffsetTimeUnit with SharedEncodingTextTimeUnit with SharedEncodingX2TimeUnit with RowColumnEncodingFieldDefTimeUnit with PositionFieldDefTimeUnit with FieldOneOfPredicateTimeUnit with SecondaryFieldDefTimeUnit with ConditionalParameterStringFieldDefTimeUnit with SharedEncodingXTimeUnit with SharedEncodingColorTimeUnit with FieldRangePredicateTimeUnit
+sealed trait TimeUnit extends ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit with SharedEncodingYError2TimeUnit with ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit with SharedEncodingThetaTimeUnit with SharedEncodingLongitude2TimeUnit with TimeUnitTransformTimeUnit with OrderFieldDefTimeUnit with ConditionalPredicateStringFieldDefTimeUnit with SharedEncodingXError2TimeUnit with SharedEncodingRadius2TimeUnit with SharedEncodingFillOpacityTimeUnit with FieldOrDatumDefWithConditionStringFieldDefTextTimeUnit with SharedEncodingRadiusTimeUnit with SharedEncodingYErrorTimeUnit with SharedEncodingLatitude2TimeUnit with SharedEncodingTheta2TimeUnit with StringFieldDefTimeUnit with FieldValidPredicateTimeUnit with SharedEncodingOpacityTimeUnit with SharedEncodingYTimeUnit with SharedEncodingSizeTimeUnit with SharedEncodingLatitudeTimeUnit with FieldDefWithoutScaleTimeUnit with SharedEncodingLongitudeTimeUnit with SharedEncodingFillTimeUnit with FieldEqualPredicateTimeUnit with StringFieldDefWithConditionTimeUnit with SharedEncodingStrokeOpacityTimeUnit with LatLongFieldDefTimeUnit with FieldGTPredicateTimeUnit with SharedEncodingStrokeTimeUnit with SharedEncodingYOffsetTimeUnit with SharedEncodingAngleTimeUnit with FacetFieldDefTimeUnit with ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefTypeForShapeStringNullTimeUnit with SharedEncodingStrokeDashTimeUnit with SharedEncodingKeyTimeUnit with SharedEncodingUrlTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNullTimeUnit with FieldOrDatumDefWithConditionMarkPropFieldDefNumberTimeUnit with SharedEncodingStrokeWidthTimeUnit with SharedEncodingY2TimeUnit with SharedEncodingXErrorTimeUnit with ScaleFieldDefTimeUnit with FieldGTEPredicateTimeUnit with PositionFieldDefBaseTimeUnit with FieldLTEPredicateTimeUnit with FieldLTPredicateTimeUnit with FacetEncodingFieldDefTimeUnit with ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit with SharedEncodingDescriptionTimeUnit with SharedEncodingHrefTimeUnit with SharedEncodingShapeTimeUnit with SharedEncodingXOffsetTimeUnit with SharedEncodingTextTimeUnit with SharedEncodingX2TimeUnit with RowColumnEncodingFieldDefTimeUnit with PositionFieldDefTimeUnit with FieldOneOfPredicateTimeUnit with SecondaryFieldDefTimeUnit with ConditionalParameterStringFieldDefTimeUnit with SharedEncodingXTimeUnit with SharedEncodingColorTimeUnit with FieldRangePredicateTimeUnit
    // SingleTimeUnit is defined elsewhere
    // MultiTimeUnit is defined elsewhere
 
@@ -35061,7 +36091,8 @@ sealed trait PositionDatumDefBaseStack
 // ConditionalAxisNumberArray (UnionType)
 
 sealed trait ConditionalAxisNumberArray extends AxisTickDash with AxisConfigGridDash with AxisGridDash with AxisConfigTickDash
-   // ConditionalAxisNumberArrayAsObject is defined elsewhere
+   // ConditionalAxisNumberArrayAsObject1 is defined elsewhere
+   // ConditionalAxisNumberArrayAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -35120,6 +36151,14 @@ case class OrderFieldDefBandPosition(value: JsNumber)
 sealed trait ScaleClamp 
    case class ScaleClampAsBool(value: Boolean) extends ScaleClamp
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisNumberAsObject1Condition (UnionType)
+
+sealed trait ConditionalAxisNumberAsObject1Condition 
+   // ConditionalPredicateValueDefNumberNullExprRef is defined elsewhere
+   case class ConditionalAxisNumberAsObject1ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(value: Seq[ConditionalPredicateValueDefNumberNullExprRef]) extends ConditionalAxisNumberAsObject1Condition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -35442,8 +36481,9 @@ sealed trait PositionFieldDefBaseTimeUnit
 
 // ConditionalPredicateValueDefFontWeightNullExprRef (UnionType)
 
-sealed trait ConditionalPredicateValueDefFontWeightNullExprRef extends ConditionalAxisLabelFontWeightAsObjectCondition
-   // ConditionalPredicateValueDefFontWeightNullExprRefAsObject is defined elsewhere
+sealed trait ConditionalPredicateValueDefFontWeightNullExprRef extends ConditionalAxisLabelFontWeightAsObject2Condition with ConditionalAxisLabelFontWeightAsObject1Condition
+   // ConditionalPredicateValueDefFontWeightNullExprRefAsObject1 is defined elsewhere
+   // ConditionalPredicateValueDefFontWeightNullExprRefAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -35751,6 +36791,38 @@ case class MarkDefBandSize(value: JsNumber)
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisStringAsObject1 (StructType)
+
+case class ConditionalAxisStringAsObject1(
+  var `condition` : ConditionalAxisStringAsObject1Condition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : ConditionalAxisStringAsObject1Value
+) extends ConditionalAxisString 
+{  }
+object ConditionalAxisStringAsObject1 {
+  val definedFields = Set("condition", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisStringAsObject2 (StructType)
+
+case class ConditionalAxisStringAsObject2(
+  var `condition` : ConditionalAxisStringAsObject2Condition,
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String
+) extends ConditionalAxisString 
+{  }
+object ConditionalAxisStringAsObject2 {
+  val definedFields = Set("condition", "expr") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // ViewBackgroundStroke (UnionType)
 /**
  * The stroke color.
@@ -35820,8 +36892,9 @@ sealed trait FieldRangePredicateRange
 
 // ConditionalPredicateValueDefNumberNullExprRef (UnionType)
 
-sealed trait ConditionalPredicateValueDefNumberNullExprRef extends ConditionalAxisNumberArrayAsObjectCondition with ConditionalAxisNumberAsObjectCondition
-   // ConditionalPredicateValueDefNumberNullExprRefAsObject is defined elsewhere
+sealed trait ConditionalPredicateValueDefNumberNullExprRef extends ConditionalAxisNumberAsObject2Condition with ConditionalAxisNumberArrayAsObject2Condition with ConditionalAxisNumberAsObject1Condition with ConditionalAxisNumberArrayAsObject1Condition
+   // ConditionalPredicateValueDefNumberNullExprRefAsObject1 is defined elsewhere
+   // ConditionalPredicateValueDefNumberNullExprRefAsObject2 is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -36404,6 +37477,12 @@ sealed trait MarkConfigOrder
 
 ////////////////////////////////////////////////////////////////////////
 
+// EventStreamAsObject2Source (ConstantType)
+
+case class EventStreamAsObject2Source() 
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingThetaType (UnionType)
 /**
  * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
@@ -36546,138 +37625,6 @@ sealed trait LegendConfigDescription
 
 ////////////////////////////////////////////////////////////////////////
 
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject (StructType)
-
-case class ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject(
-  /**
-   * Predicate for triggering the condition
-   **/
-  var `test` : PredicateComposition,
-  /**
-   * __Required.__ A string defining the name of the field from which to pull a data value or an object defining iterated values from the [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
-   * 
-   * __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
-   * 
-   * __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or brackets but are not nested, you can use `\\` to escape dots and brackets (e.g., `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not required if `aggregate` is `count`.
-   **/
-  var `field` : Option[Field] = None,
-  /**
-   * An object defining properties of the channel's scale, which is the function that transforms values in the data domain (numbers, dates, strings, etc) to visual values (pixels, colors, sizes) of the encoding channels.
-   * 
-   * If `null`, the scale will be [disabled and the data value will be directly encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
-   * 
-   * __Default value:__ If undefined, default [scale properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
-   * 
-   * __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
-   **/
-  var `scale` : Option[Scale] = None,
-  /**
-   * An object defining properties of the legend. If `null`, the legend for the encoding channel will be removed.
-   * 
-   * __Default value:__ If undefined, default [legend properties](https://vega.github.io/vega-lite/docs/legend.html) are applied.
-   * 
-   * __See also:__ [`legend`](https://vega.github.io/vega-lite/docs/legend.html) documentation.
-   **/
-  var `legend` : Option[Legend] = None,
-  /**
-   * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
-   **/
-  var `bandPosition` : Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition] = None,
-  /**
-   * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
-   * 
-   * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
-   * 
-   * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
-   * 
-   * __Default value:__ `false`
-   * 
-   * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
-   **/
-  var `bin` : Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin] = None,
-  /**
-   * Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`, `"max"`, `"count"`).
-   * 
-   * __Default value:__ `undefined` (None)
-   * 
-   * __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html) documentation.
-   **/
-  var `aggregate` : Option[Aggregate] = None,
-  /**
-   * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
-   * 
-   * __Default value:__ `undefined` (None)
-   * 
-   * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
-   **/
-  var `timeUnit` : Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit] = None,
-  /**
-   * A title for the field. If `null`, the title will be removed.
-   * 
-   * __Default value:__  derived from the field's name and transformation function (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field name.
-   * 
-   * __Notes__:
-   * 
-   * 1) You can customize the default field title format by providing the [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config) property in the [config](https://vega.github.io/vega-lite/docs/config.html) or [`fieldTitle` function via the `compile` function's options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
-   * 
-   * 2) If both field definition's `title` and axis, header, or legend `title` are defined, axis/header/legend title will be used.
-   **/
-  var `title` : Option[Text] = None,
-  /**
-   * Sort order for the encoded field.
-   * 
-   * For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or `"descending"`.
-   * 
-   * For discrete fields, `sort` can be one of the following:
-   * - `"ascending"` or `"descending"` -- for sorting by the values' natural order in JavaScript.
-   * - [A string indicating an encoding channel name to sort by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by x-field, descending). This channel string is short-form of [a sort-by-encoding definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order": "descending"}`.
-   * - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field) for sorting by another field.
-   * - [An array specifying the field values in preferred order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the sort order will obey the values in the array, followed by any unspecified values in their original order. For discrete time field, values in the sort array can be [date-time definition objects](types#datetime). In addition, for time units `"month"` and `"day"`, the values can be the month or day names (case insensitive) or their 3-letter initials (e.g., `"Mon"`, `"Tue"`).
-   * - `null` indicating no sort.
-   * 
-   * __Default value:__ `"ascending"`
-   * 
-   * __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
-   * 
-   * __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
-   **/
-  var `sort` : Option[Sort] = None,
-  /**
-   * The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for the encoded field or constant value (`datum`). It can also be a `"geojson"` type for encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
-   * 
-   * Vega-Lite automatically infers data types in many cases as discussed below. However, type is required for a field if: (1) the field is not nominal and the field encoding has no specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort` order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin` or `timeUnit`.
-   * 
-   * __Default value:__
-   * 
-   * 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the following criteria:
-   * - `"quantitative"` is the default type if (1) the encoded field contains `bin` or `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or `longitude` channel or (3) if the specified scale type is [a quantitative scale](https://vega.github.io/vega-lite/docs/scale.html#type).
-   * - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2) the specified scale type is a time or utc scale
-   * - `ordinal""` is the default type if (1) the encoded field contains a [custom `sort` order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2) the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is `order`.
-   * 
-   * 2) For a constant value in data domain (`datum`):
-   * - `"quantitative"` if the datum is a number
-   * - `"nominal"` if the datum is a string
-   * - `"temporal"` if the datum is [a date time object](https://vega.github.io/vega-lite/docs/datetime.html)
-   * 
-   * __Note:__
-   * - Data `type` describes the semantics of the data rather than the primitive data types (number, string, etc.). The same primitive data type can have different types of measurement. For example, numeric data can represent quantitative, ordinal, or nominal data.
-   * - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g., `1552199579097`).
-   * - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type` property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"` (for using an ordinal bin scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-   * - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the `type` property can be either `"temporal"` (default, for using a temporal scale) or [`"ordinal"` (for using an ordinal scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-   * - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html), the `type` property refers to the post-aggregation data type. For example, we can calculate count `distinct` of a categorical field `"cat"` using `{"aggregate": "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
-   * - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they must have exactly the same type as their primary channels (e.g., `x`, `y`).
-   * 
-   * __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
-   **/
-  var `type` : Option[TypeForShape] = None
-) extends ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape 
-{  }
-object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject {
-  val definedFields = Set("bin", "type", "test", "bandPosition", "legend", "aggregate", "title", "scale", "timeUnit", "field", "sort") 
-}
-
-////////////////////////////////////////////////////////////////////////
-
 // ValueDefWithConditionMarkPropFieldOrDatumDefNumber (ConstrainedType)
 
 case class ValueDefWithConditionMarkPropFieldOrDatumDefNumber(
@@ -36703,6 +37650,16 @@ object ValueDefWithConditionMarkPropFieldOrDatumDefNumber {
 sealed trait MarkConfigAriaRole 
    case class MarkConfigAriaRoleAsString(value: String) extends MarkConfigAriaRole
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// TopLevelRepeatSpecAsObject1Repeat (UnionType)
+/**
+ * Definition for fields to be repeated. One of: 1) An array of fields to be repeated. If `"repeat"` is an array, the field can be referred to as `{"repeat": "repeat"}`. The repeated views are laid out in a wrapped row. You can set the number of columns to control the wrapping. 2) An object that maps `"row"` and/or `"column"` to the listed fields to be repeated along the particular orientations. The objects `{"repeat": "row"}` and `{"repeat": "column"}` can be used to refer to the repeated field respectively.
+ **/
+sealed trait TopLevelRepeatSpecAsObject1Repeat 
+   case class TopLevelRepeatSpecAsObject1RepeatAsArrayOfString(value: Seq[String]) extends TopLevelRepeatSpecAsObject1Repeat
+   // RepeatMapping is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -36732,14 +37689,6 @@ sealed trait ErrorBandDefColor
    // Color is defined elsewhere
    // Gradient is defined elsewhere
    // ExprRef is defined elsewhere
-
-////////////////////////////////////////////////////////////////////////
-
-// ConditionalAxisLabelFontWeightAsObjectCondition (UnionType)
-
-sealed trait ConditionalAxisLabelFontWeightAsObjectCondition 
-   // ConditionalPredicateValueDefFontWeightNullExprRef is defined elsewhere
-   case class ConditionalAxisLabelFontWeightAsObjectConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(value: Seq[ConditionalPredicateValueDefFontWeightNullExprRef]) extends ConditionalAxisLabelFontWeightAsObjectCondition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -36826,6 +37775,25 @@ sealed trait MarkDefRadius2Offset
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalPredicateValueDefNumberNullExprRefAsObject1 (StructType)
+
+case class ConditionalPredicateValueDefNumberNullExprRefAsObject1(
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[Seq[JsNumber]] = None
+) extends ConditionalPredicateValueDefNumberNullExprRef 
+{  }
+object ConditionalPredicateValueDefNumberNullExprRefAsObject1 {
+  val definedFields = Set("test", "value") 
+}
+
+////////////////////////////////////////////////////////////////////////
+
 // StringValueDefWithConditionCondition (UnionType)
 /**
  * A field definition or one or more value definition(s) with a parameter predicate.
@@ -36857,6 +37825,25 @@ sealed trait AxisConfigGridOpacity
 sealed trait SharedEncodingThetaTimeUnit 
    // TimeUnit is defined elsewhere
    // TimeUnitParams is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateValueDefNumberNullExprRefAsObject2 (StructType)
+
+case class ConditionalPredicateValueDefNumberNullExprRefAsObject2(
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String,
+  /**
+   * Predicate for triggering the condition
+   **/
+  var `test` : PredicateComposition
+) extends ConditionalPredicateValueDefNumberNullExprRef 
+{  }
+object ConditionalPredicateValueDefNumberNullExprRefAsObject2 {
+  val definedFields = Set("expr", "test") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -36915,6 +37902,25 @@ case class Vector2Boolean(value: Seq[Boolean]) extends SelectionInitInterval
 sealed trait LayerRepeatSpecCenter 
    case class LayerRepeatSpecCenterAsBool(value: Boolean) extends LayerRepeatSpecCenter
    // RowColBoolean is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin (UnionType)
+/**
+ * A flag for binning a `quantitative` field, [an object defining binning parameters](https://vega.github.io/vega-lite/docs/bin.html#params), or indicating that the data for `x` or `y` channel are binned before they are imported into Vega-Lite (`"binned"`).
+ * 
+ * - If `true`, default [binning parameters](https://vega.github.io/vega-lite/docs/bin.html) will be applied.
+ * 
+ * - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust the axis ticks based on the bin step, you can also set the axis's [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+ * 
+ * __Default value:__ `false`
+ * 
+ * __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+ **/
+sealed trait ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin 
+   case class ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsBool(value: Boolean) extends ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin
+   // BinParams is defined elsewhere
+   case object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsNull extends ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -37219,6 +38225,16 @@ sealed trait BarConfigCornerRadiusTopRight
 sealed trait SharedEncodingFillOpacityValue 
    case class SharedEncodingFillOpacityValueAsNumber(value: JsNumber) extends SharedEncodingFillOpacityValue
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition (ConstrainedType)
+/**
+ * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
+ **/
+case class ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition(value: JsNumber) 
+{ assert(value.value <= 1)
+  assert(value.value >= 0) }
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -37647,6 +38663,18 @@ object SharedEncodingLatitude {
 
 ////////////////////////////////////////////////////////////////////////
 
+// TopLevelRepeatSpecAsObject2Autosize (UnionType)
+/**
+ * How the visualization size should be determined. If a string, should be one of `"pad"`, `"fit"` or `"none"`. Object values can additionally specify parameters for content sizing and automatic resizing.
+ * 
+ * __Default value__: `pad`
+ **/
+sealed trait TopLevelRepeatSpecAsObject2Autosize 
+   // AutosizeType is defined elsewhere
+   // AutoSizeParams is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
 // AggregateTransform (StructType)
 
 case class AggregateTransform(
@@ -37672,6 +38700,22 @@ sealed trait Stream extends PointSelectionConfigOn with LegendStreamBindingLegen
    // EventStream is defined elsewhere
    // DerivedStream is defined elsewhere
    // MergedStream is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisLabelFontStyleAsObject1 (StructType)
+
+case class ConditionalAxisLabelFontStyleAsObject1(
+  var `condition` : ConditionalAxisLabelFontStyleAsObject1Condition,
+  /**
+   * A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values between `0` to `1` for opacity).
+   **/
+  var `value` : Option[String] = None
+) extends ConditionalAxisLabelFontStyle 
+{  }
+object ConditionalAxisLabelFontStyleAsObject1 {
+  val definedFields = Set("condition", "value") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -37704,12 +38748,19 @@ sealed trait ColorDef
 
 ////////////////////////////////////////////////////////////////////////
 
-// RangeSchemeAsObjectScheme (UnionType)
+// ConditionalAxisLabelFontStyleAsObject2 (StructType)
 
-sealed trait RangeSchemeAsObjectScheme 
-   case class RangeSchemeAsObjectSchemeAsString(value: String) extends RangeSchemeAsObjectScheme
-   case class RangeSchemeAsObjectSchemeAsArrayOfString(value: Seq[String]) extends RangeSchemeAsObjectScheme
-   // ColorScheme is defined elsewhere
+case class ConditionalAxisLabelFontStyleAsObject2(
+  var `condition` : ConditionalAxisLabelFontStyleAsObject2Condition,
+  /**
+   * Vega expression (which can refer to Vega-Lite parameters).
+   **/
+  var `expr` : String
+) extends ConditionalAxisLabelFontStyle 
+{  }
+object ConditionalAxisLabelFontStyleAsObject2 {
+  val definedFields = Set("condition", "expr") 
+}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -37820,6 +38871,14 @@ sealed trait StringFieldDefWithConditionCondition
 
 ////////////////////////////////////////////////////////////////////////
 
+// ConditionalAxisStringAsObject2Condition (UnionType)
+
+sealed trait ConditionalAxisStringAsObject2Condition 
+   // ConditionalPredicateValueDefStringNullExprRef is defined elsewhere
+   case class ConditionalAxisStringAsObject2ConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(value: Seq[ConditionalPredicateValueDefStringNullExprRef]) extends ConditionalAxisStringAsObject2Condition
+
+////////////////////////////////////////////////////////////////////////
+
 // SharedEncodingThetaBandPosition (ConstrainedType)
 /**
  * Relative position on a band of a stacked, binned, time unit, or band scale. For example, the marks will be positioned at the beginning of the band if set to `0`, and at the middle of the band if set to `0.5`.
@@ -37846,6 +38905,14 @@ case class AxisConfigTickWidthAsNumber(value: JsNumber) extends AxisConfigTickWi
 sealed trait RectConfigCursor 
    // Cursor is defined elsewhere
    // ExprRef is defined elsewhere
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalAxisLabelBaselineAsObject1Condition (UnionType)
+
+sealed trait ConditionalAxisLabelBaselineAsObject1Condition 
+   // ConditionalPredicateValueDefTextBaselineNullExprRef is defined elsewhere
+   case class ConditionalAxisLabelBaselineAsObject1ConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(value: Seq[ConditionalPredicateValueDefTextBaselineNullExprRef]) extends ConditionalAxisLabelBaselineAsObject1Condition
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -37921,7 +38988,7 @@ sealed trait FacetFieldDefSort
 
 // ColorScheme (UnionType)
 
-sealed trait ColorScheme extends RangeSchemeAsObjectScheme
+sealed trait ColorScheme extends RangeSchemeAsObject3Scheme
    // Cyclical is defined elsewhere
    // SequentialMultiHue is defined elsewhere
    // SequentialSingleHue is defined elsewhere
@@ -38011,6 +39078,20 @@ sealed trait FacetFieldDefTimeUnit
 case class FoldTransformAs(value: Seq[String]) 
 { assert(value.size >= 2)
   assert(value.size <= 2) }
+
+////////////////////////////////////////////////////////////////////////
+
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit (UnionType)
+/**
+ * Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a temporal field that gets casted as ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+ * 
+ * __Default value:__ `undefined` (None)
+ * 
+ * __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html) documentation.
+ **/
+sealed trait ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit 
+   // TimeUnit is defined elsewhere
+   // TimeUnitParams is defined elsewhere
 
 ////////////////////////////////////////////////////////////////////////
 

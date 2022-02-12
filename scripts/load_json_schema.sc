@@ -198,8 +198,8 @@ case class ArrayType(of: ScalaDataType) extends CompositeBaseType
        |  def decode(j: JsValue): $scalaType =
        |    decodeOpt(j).get
        |  def decodeOpt(j: JsValue): Option[$scalaType] =
-       |    Some(j.as[Seq[JsValue]].map { x => 
-       |      ${of.decodeJsonOpt("x")}.getOrElse { return None } })
+       |    j.asOpt[Seq[JsValue]].map { _.map { x => 
+       |      ${of.decodeJsonOpt("x")}.getOrElse { return None } } }
        |  def encode(j: $scalaType): JsArray =
        |      JsArray(j.map { x => ${of.encodeJson("x")} })
        |}""".stripMargin    
@@ -215,8 +215,8 @@ case class MapType(of: ScalaDataType) extends CompositeBaseType
        |  def decode(j: JsValue): $scalaType =
        |    decodeOpt(j).get
        |  def decodeOpt(j: JsValue): Option[$scalaType] =
-       |    Some(j.as[Map[String,JsValue]].mapValues { x => 
-       |      ${of.decodeJsonOpt("x")}.getOrElse { return None } })
+       |    j.asOpt[Map[String,JsValue]].map { _.mapValues { x => 
+       |      ${of.decodeJsonOpt("x")}.getOrElse { return None } } }
        |  def encode(j: $scalaType): JsObject =
        |      JsObject(j.mapValues { x => ${of.encodeJson("x")} })
        |}
@@ -740,11 +740,11 @@ class JsonSpec(val json: ujson.Value)
 
   def parseAnyOf(obj: ujson.Obj): ScalaDataType =
   {
-    println(obj)
+    // println(obj)
     assert( (obj.value.keySet -- SupportedAnyOfFields).isEmpty,
             s"Unsupported AnyOf fields in schema: ${(obj.value.keySet -- SupportedAnyOfFields).mkString(",")}\n${ujson.write(obj, indent=4)}")
     val name = stackTop()
-    def nameHint(optionObj: ujson.Obj): String =
+    def nameHint(optionObj: ujson.Obj, idx: Int): String =
     {
       if(optionObj.value.contains("$ref")){ null }
       else if(optionObj.value.contains("const")){ 
@@ -754,21 +754,30 @@ class JsonSpec(val json: ujson.Value)
         }
       }
       else if(optionObj.value.contains("format")){ optionObj("format").str }
-      else if(optionObj.value.contains("type")){ name+"As"+capitalize(optionObj("type").str) }
+      else if(optionObj.value.contains("type")){ 
+        name+"As"+(optionObj("type").str match {
+          case "object" => s"Object${idx+1}"
+          case t => capitalize(t) 
+        })
+      }
       else { 
         throw new IllegalArgumentException(s"Need to guess name for any type $optionObj")
       }
     }
     val options:Seq[BaseType] = 
-      obj("anyOf").arr.value.toSeq.flatMap { 
-        case optionObj:ujson.Obj if optionObj.value.contains("type") 
+      obj("anyOf").arr.value.toSeq.zipWithIndex.flatMap { 
+        case (optionObj:ujson.Obj, idx) if optionObj.value.contains("type") 
                                   && optionObj("type").isInstanceOf[ujson.Arr] =>
           optionObj("type").arr.value.map { dataType =>
             val component = ujson.Obj(optionObj.value ++ Map("type" -> dataType))
-            parseType(component, nameHint = "As"+capitalize(dataType.str)) 
+            val name = capitalize(dataType.str match {
+              case "object" => s"object$idx"
+              case x => x
+            })
+            parseType(component, nameHint = "As"+name) 
           }
-        case optionObj => 
-          Seq(parseType(optionObj, nameHint = nameHint(optionObj.obj)))
+        case (optionObj, idx) => 
+          Seq(parseType(optionObj, nameHint = nameHint(optionObj.obj, idx)))
       }.toSet.toSeq
 
     if(options.size == 2 && options.contains(NullType)){

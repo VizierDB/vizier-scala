@@ -121,8 +121,11 @@ object types
     val FUNCTION  = Value(2, "Function")
     val BLOB      = Value(3, "Blob")
     val FILE      = Value(4, "File")
-    val CHART     = Value(5, "Chart")
     val PARAMETER = Value(6, "Parameter")
+    val VEGALITE  = Value(7, "VegaLite Chart")
+    
+    @deprecated("Use ArtifactType.VEGALITE instead of ArtifactType.CHART")
+    val CHART     = Value(5, "Chart")
 
     implicit val format = Format[T](
       new Reads[T]{
@@ -164,12 +167,17 @@ object types
     val MARKDOWN    = Value(3, "text/markdown")
     val JAVASCRIPT  = Value(4, "text/javascript")
     val DATASET     = Value(5, "dataset/view")
+    val VEGALITE    = Value(7, "chart/vegalite")
+
+    @deprecated("Use MessageType.VEGALITE instead of MessageType.CHART")
     val CHART       = Value(6, "chart/view")
   }
 
   object MIME
   {
+    @deprecated("Use MIME.VEGALITE instead of MIME.CHART")
     val CHART_VIEW    = "chart/view"
+    val VEGALITE      = "chart/vegalite"
     val TEXT          = "text/plain"
     val HTML          = "text/html"
     val MARKDOWN      = "text/markdown"

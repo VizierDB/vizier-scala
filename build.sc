@@ -34,6 +34,7 @@ object vizier extends ScalaModule with PublishModule {
                           )
 
   def scalaVersion = "2.12.15"
+  def moduleDeps = Seq(vega)
 
   def repositoriesTask = T.task { super.repositoriesTask() ++ Seq(
     MavenRepository("https://maven.mimirdb.org/"),

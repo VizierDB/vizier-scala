@@ -156,30 +156,6 @@ object ProjectionConfigCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// ViewConfigDiscreteHeightAsObject (StructType)
-object ViewConfigDiscreteHeightAsObjectCodec {
-  def decode(j: JsValue): ViewConfigDiscreteHeightAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ViewConfigDiscreteHeightAsObject] =
-    {
-      val `step` = (j \ "step").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
-      if(`step`.isEmpty) { return None }
-      return Some(ViewConfigDiscreteHeightAsObject(
-        `step` = `step`.get,
-      ))
-    }
-
-  def encode(j: ViewConfigDiscreteHeightAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("step" -> Json.toJson(j.`step`)),
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // AxisLabelLimit (UnionType)
 object AxisLabelLimitCodec {
   def decode(j: JsValue): AxisLabelLimit =
@@ -409,8 +385,8 @@ object ArrayOfTopLevelFacetSpecParamsElementCodec {
   def decode(j: JsValue): Seq[TopLevelFacetSpecParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[TopLevelFacetSpecParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelFacetSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelFacetSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[TopLevelFacetSpecParamsElement]): JsArray =
       JsArray(j.map { x => TopLevelFacetSpecParamsElementCodec.encode(x) })
 }
@@ -531,6 +507,48 @@ object ConditionalPredicateStringFieldDefTimeUnitCodec {
       case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject2 (StructType)
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject2] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `datum` = (j \ "datum").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefAsObject2DatumCodec.decodeOpt(x) }
+      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPositionCodec.decodeOpt(x) }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => TypeCodec.decodeOpt(x) }
+      return Some(ConditionalPredicateMarkPropFieldOrDatumDefAsObject2(
+        `test` = `test`.get,
+        `scale` = `scale`,
+        `datum` = `datum`,
+        `legend` = `legend`,
+        `bandPosition` = `bandPosition`,
+        `title` = `title`,
+        `type` = `type`,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
+        j.`datum`.map { x => "datum" -> ConditionalPredicateMarkPropFieldOrDatumDefAsObject2DatumCodec.encode(x) },
+        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
+        j.`bandPosition`.map { x => "bandPosition" -> ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPositionCodec.encode(x) },
+        j.`title`.map { x => "title" -> TextCodec.encode(x) },
+        j.`type`.map { x => "type" -> TypeCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // BoxPlotConfigOutliers (UnionType)
@@ -858,8 +876,8 @@ object ArrayOfConditionalValueDefTextExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalValueDefTextExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalValueDefTextExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalValueDefTextExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalValueDefTextExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalValueDefTextExprRef]): JsArray =
       JsArray(j.map { x => ConditionalValueDefTextExprRefCodec.encode(x) })
 }
@@ -942,6 +960,21 @@ object BoxPlotConfigBoxCodec {
 ////////////////////////////////////////////////////////////////////////
 // ScaleConfigPointPadding (ConstrainedType)
 // see ScaleConfigPointPadding (UnionType)
+
+////////////////////////////////////////////////////////////////////////
+// Padding (UnionType)
+object PaddingCodec {
+  def decode(j: JsValue): Padding =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[Padding] =
+    j.asOpt[JsNumber].map { PaddingAsNumber(_) }.orElse {
+    PaddingAsObject2Codec.decodeOpt(j) } 
+  def encode(j: Padding): JsValue =
+    j match {
+      case PaddingAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:PaddingAsObject2 /* TypeRef */ => PaddingAsObject2Codec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // AxisConfig (StructType)
@@ -1154,63 +1187,6 @@ object AxisLabelColorCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject (StructType)
-object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject] =
-    {
-      val `empty` = (j \ "empty").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
-      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => FieldCodec.decodeOpt(x) }
-      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
-      if(`param`.isEmpty) { return None }
-      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPositionCodec.decodeOpt(x) }
-      val `bin` = (j \ "bin").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinCodec.decodeOpt(x) }
-      val `aggregate` = (j \ "aggregate").asOpt[JsValue].flatMap { x => AggregateCodec.decodeOpt(x) }
-      val `timeUnit` = (j \ "timeUnit").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnitCodec.decodeOpt(x) }
-      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `sort` = (j \ "sort").asOpt[JsValue].flatMap { x => SortCodec.decodeOpt(x) }
-      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => TypeForShapeCodec.decodeOpt(x) }
-      return Some(ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject(
-        `empty` = `empty`,
-        `field` = `field`,
-        `param` = `param`.get,
-        `scale` = `scale`,
-        `legend` = `legend`,
-        `bandPosition` = `bandPosition`,
-        `bin` = `bin`,
-        `aggregate` = `aggregate`,
-        `timeUnit` = `timeUnit`,
-        `title` = `title`,
-        `sort` = `sort`,
-        `type` = `type`,
-      ))
-    }
-
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        j.`empty`.map { x => "empty" -> Json.toJson(x) },
-        j.`field`.map { x => "field" -> FieldCodec.encode(x) },
-        Some("param" -> Json.toJson(j.`param`)),
-        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
-        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
-        j.`bandPosition`.map { x => "bandPosition" -> ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPositionCodec.encode(x) },
-        j.`bin`.map { x => "bin" -> ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinCodec.encode(x) },
-        j.`aggregate`.map { x => "aggregate" -> AggregateCodec.encode(x) },
-        j.`timeUnit`.map { x => "timeUnit" -> ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnitCodec.encode(x) },
-        j.`title`.map { x => "title" -> TextCodec.encode(x) },
-        j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
-        j.`type`.map { x => "type" -> TypeForShapeCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // TopLevelConcatSpecPadding (UnionType)
 object TopLevelConcatSpecPaddingCodec {
   def decode(j: JsValue): TopLevelConcatSpecPadding =
@@ -1286,6 +1262,34 @@ object TickConfigTensionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisStringAsObject2 (StructType)
+object ConditionalAxisStringAsObject2Codec {
+  def decode(j: JsValue): ConditionalAxisStringAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisStringAsObject2] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisStringAsObject2ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      return Some(ConditionalAxisStringAsObject2(
+        `condition` = `condition`.get,
+        `expr` = `expr`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisStringAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisStringAsObject2ConditionCodec.encode(j.`condition`)),
+        Some("expr" -> Json.toJson(j.`expr`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // AxisConfigLabelLimit (UnionType)
 object AxisConfigLabelLimitCodec {
   def decode(j: JsValue): AxisConfigLabelLimit =
@@ -1342,19 +1346,6 @@ object FacetedEncodingDetailCodec {
     j match {
       case x:FieldDefWithoutScale /* TypeRef */ => FieldDefWithoutScaleCodec.encode(x)
       case FacetedEncodingDetailAsArrayOfFieldDefWithoutScale(x) /* Base, ArrayType */ => ArrayOfFieldDefWithoutScaleCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelFontWeight (UnionType)
-object ConditionalAxisLabelFontWeightCodec {
-  def decode(j: JsValue): ConditionalAxisLabelFontWeight =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontWeight] =
-    ConditionalAxisLabelFontWeightAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalAxisLabelFontWeight): JsValue =
-    j match {
-      case x:ConditionalAxisLabelFontWeightAsObject /* TypeRef */ => ConditionalAxisLabelFontWeightAsObjectCodec.encode(x)
     }
 }
 
@@ -1506,11 +1497,39 @@ object ArrayOfTopLevelVConcatSpecParamsElementCodec {
   def decode(j: JsValue): Seq[TopLevelVConcatSpecParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[TopLevelVConcatSpecParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelVConcatSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelVConcatSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[TopLevelVConcatSpecParamsElement]): JsArray =
       JsArray(j.map { x => TopLevelVConcatSpecParamsElementCodec.encode(x) })
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefColorNullExprRefAsObject2 (StructType)
+object ConditionalPredicateValueDefColorNullExprRefAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefColorNullExprRefAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefColorNullExprRefAsObject2] =
+    {
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefColorNullExprRefAsObject2(
+        `expr` = `expr`.get,
+        `test` = `test`.get,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefColorNullExprRefAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("expr" -> Json.toJson(j.`expr`)),
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // AreaConfigTheta2 (UnionType)
@@ -1523,21 +1542,6 @@ object AreaConfigTheta2Codec {
   def encode(j: AreaConfigTheta2): JsValue =
     j match {
       case AreaConfigTheta2AsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectPadding (UnionType)
-object TopLevelRepeatSpecAsObjectPaddingCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectPadding =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectPadding] =
-    PaddingCodec.decodeOpt(j).orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectPadding): JsValue =
-    j match {
-      case x:Padding /* TypeRef */ => PaddingCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
@@ -1594,8 +1598,8 @@ object ArrayOfConditionalPredicateValueDefAlignNullExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalPredicateValueDefAlignNullExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalPredicateValueDefAlignNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalPredicateValueDefAlignNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalPredicateValueDefAlignNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalPredicateValueDefAlignNullExprRef]): JsArray =
       JsArray(j.map { x => ConditionalPredicateValueDefAlignNullExprRefCodec.encode(x) })
 }
@@ -1756,6 +1760,21 @@ object AxisLabelSeparationCodec {
   def encode(j: AxisLabelSeparation): JsValue =
     j match {
       case AxisLabelSeparationAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2Background (UnionType)
+object TopLevelRepeatSpecAsObject2BackgroundCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Background =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Background] =
+    ColorCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2Background): JsValue =
+    j match {
+      case x:Color /* TypeRef */ => ColorCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
@@ -1954,21 +1973,6 @@ object LegendConfigSymbolBaseFillColorCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// OverlayMarkDefStrokeDash (UnionType)
-object OverlayMarkDefStrokeDashCodec {
-  def decode(j: JsValue): OverlayMarkDefStrokeDash =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[OverlayMarkDefStrokeDash] =
-    ArrayOfNumberCodec.decodeOpt(j).map { OverlayMarkDefStrokeDashAsArrayOfNumber(_) }.orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: OverlayMarkDefStrokeDash): JsValue =
-    j match {
-      case OverlayMarkDefStrokeDashAsArrayOfNumber(x) /* Base, ArrayType */ => ArrayOfNumberCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // RepeatMapping (StructType)
 object RepeatMappingCodec {
   def decode(j: JsValue): RepeatMapping =
@@ -1989,6 +1993,21 @@ object RepeatMappingCodec {
     )
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// OverlayMarkDefStrokeDash (UnionType)
+object OverlayMarkDefStrokeDashCodec {
+  def decode(j: JsValue): OverlayMarkDefStrokeDash =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[OverlayMarkDefStrokeDash] =
+    ArrayOfNumberCodec.decodeOpt(j).map { OverlayMarkDefStrokeDashAsArrayOfNumber(_) }.orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: OverlayMarkDefStrokeDash): JsValue =
+    j match {
+      case OverlayMarkDefStrokeDashAsArrayOfNumber(x) /* Base, ArrayType */ => ArrayOfNumberCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Parity (ConstantType)
@@ -2050,21 +2069,6 @@ object OverlayMarkDefPadAngleCodec {
     j match {
       case OverlayMarkDefPadAngleAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelFontStyleAsObjectCondition (UnionType)
-object ConditionalAxisLabelFontStyleAsObjectConditionCodec {
-  def decode(j: JsValue): ConditionalAxisLabelFontStyleAsObjectCondition =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontStyleAsObjectCondition] =
-    ConditionalPredicateValueDefFontStyleNullExprRefCodec.decodeOpt(j).orElse {
-    ArrayOfConditionalPredicateValueDefFontStyleNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelFontStyleAsObjectConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(_) } } 
-  def encode(j: ConditionalAxisLabelFontStyleAsObjectCondition): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefFontStyleNullExprRef /* TypeRef */ => ConditionalPredicateValueDefFontStyleNullExprRefCodec.encode(x)
-      case ConditionalAxisLabelFontStyleAsObjectConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefFontStyleNullExprRefCodec.encode(x)
     }
 }
 
@@ -2182,6 +2186,34 @@ object LegendConfigCornerRadiusCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefFontWeightNullExprRefAsObject1 (StructType)
+object ConditionalPredicateValueDefFontWeightNullExprRefAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefFontWeightNullExprRefAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontWeightNullExprRefAsObject1] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => FontWeightCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefFontWeightNullExprRefAsObject1(
+        `test` = `test`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefFontWeightNullExprRefAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`value`.map { x => "value" -> FontWeightCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // RectConfigLineHeight (UnionType)
 object RectConfigLineHeightCodec {
   def decode(j: JsValue): RectConfigLineHeight =
@@ -2253,6 +2285,21 @@ object MarkConfigEndAngleCodec {
     j match {
       case MarkConfigEndAngleAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ViewConfigDiscreteHeight (UnionType)
+object ViewConfigDiscreteHeightCodec {
+  def decode(j: JsValue): ViewConfigDiscreteHeight =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ViewConfigDiscreteHeight] =
+    j.asOpt[JsNumber].map { ViewConfigDiscreteHeightAsNumber(_) }.orElse {
+    ViewConfigDiscreteHeightAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ViewConfigDiscreteHeight): JsValue =
+    j match {
+      case ViewConfigDiscreteHeightAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:ViewConfigDiscreteHeightAsObject2 /* TypeRef */ => ViewConfigDiscreteHeightAsObject2Codec.encode(x)
     }
 }
 
@@ -2812,6 +2859,34 @@ object SharedEncodingCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisStringAsObject1 (StructType)
+object ConditionalAxisStringAsObject1Codec {
+  def decode(j: JsValue): ConditionalAxisStringAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisStringAsObject1] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisStringAsObject1ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ConditionalAxisStringAsObject1ValueCodec.decodeOpt(x) }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalAxisStringAsObject1(
+        `condition` = `condition`.get,
+        `value` = `value`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisStringAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisStringAsObject1ConditionCodec.encode(j.`condition`)),
+        Some("value" -> ConditionalAxisStringAsObject1ValueCodec.encode(j.`value`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // ConditionalPredicateValueDefTextExprRef (StructType)
 object ConditionalPredicateValueDefTextExprRefCodec {
   def decode(j: JsValue): ConditionalPredicateValueDefTextExprRef =
@@ -2888,6 +2963,35 @@ object FieldDefWithoutScaleBandPositionCodec {
     }
   def encode(j: FieldDefWithoutScaleBandPosition): JsValue =
     Json.toJson(j.value)
+}
+
+////////////////////////////////////////////////////////////////////////
+// ArrayOfTopLevelRepeatSpecAsObject1ParamsElement (ArrayType)
+object ArrayOfTopLevelRepeatSpecAsObject1ParamsElementCodec {
+  def decode(j: JsValue): Seq[TopLevelRepeatSpecAsObject1ParamsElement] =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[Seq[TopLevelRepeatSpecAsObject1ParamsElement]] =
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelRepeatSpecAsObject1ParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
+  def encode(j: Seq[TopLevelRepeatSpecAsObject1ParamsElement]): JsArray =
+      JsArray(j.map { x => TopLevelRepeatSpecAsObject1ParamsElementCodec.encode(x) })
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin (UnionType)
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin] =
+    j.asOpt[Boolean].map { ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsBool(_) }.orElse {
+    BinParamsCodec.decodeOpt(j).orElse {
+    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsNull } } } 
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin): JsValue =
+    j match {
+      case ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
+      case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
+      case ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsNull /* Global, NullType$ */ => JsNull
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2975,6 +3079,34 @@ object FacetedUnitSpecBoundsCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefAlignNullExprRefAsObject2 (StructType)
+object ConditionalPredicateValueDefAlignNullExprRefAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefAlignNullExprRefAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefAlignNullExprRefAsObject2] =
+    {
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefAlignNullExprRefAsObject2(
+        `expr` = `expr`.get,
+        `test` = `test`.get,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefAlignNullExprRefAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("expr" -> Json.toJson(j.`expr`)),
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // SharedEncodingTextFormat (UnionType)
 object SharedEncodingTextFormatCodec {
   def decode(j: JsValue): SharedEncodingTextFormat =
@@ -3005,6 +3137,21 @@ object PrimitiveValueCodec {
       case PrimitiveValueAsString(x) /* Base, StringType$ */ => Json.toJson(x)
       case PrimitiveValueAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
       case PrimitiveValueAsNull /* Global, NullType$ */ => JsNull
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefFontWeightNullExprRef (UnionType)
+object ConditionalPredicateValueDefFontWeightNullExprRefCodec {
+  def decode(j: JsValue): ConditionalPredicateValueDefFontWeightNullExprRef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontWeightNullExprRef] =
+    ConditionalPredicateValueDefFontWeightNullExprRefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateValueDefFontWeightNullExprRefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateValueDefFontWeightNullExprRef): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefFontWeightNullExprRefAsObject1 /* TypeRef */ => ConditionalPredicateValueDefFontWeightNullExprRefAsObject1Codec.encode(x)
+      case x:ConditionalPredicateValueDefFontWeightNullExprRefAsObject2 /* TypeRef */ => ConditionalPredicateValueDefFontWeightNullExprRefAsObject2Codec.encode(x)
     }
 }
 
@@ -3368,8 +3515,8 @@ object ArrayOfConditionalPredicateValueDefTextBaselineNullExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalPredicateValueDefTextBaselineNullExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalPredicateValueDefTextBaselineNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalPredicateValueDefTextBaselineNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalPredicateValueDefTextBaselineNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalPredicateValueDefTextBaselineNullExprRef]): JsArray =
       JsArray(j.map { x => ConditionalPredicateValueDefTextBaselineNullExprRefCodec.encode(x) })
 }
@@ -3405,6 +3552,21 @@ object SharedEncodingYTypeCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberAsObject1Condition (UnionType)
+object ConditionalAxisNumberAsObject1ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisNumberAsObject1Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberAsObject1Condition] =
+    ConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).map { ConditionalAxisNumberAsObject1ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(_) } } 
+  def encode(j: ConditionalAxisNumberAsObject1Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefNumberNullExprRef /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
+      case ConditionalAxisNumberAsObject1ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // LatLongFieldDefBandPosition (ConstrainedType)
 object LatLongFieldDefBandPositionCodec {
   def decode(j: JsValue): LatLongFieldDefBandPosition =
@@ -3436,34 +3598,6 @@ object StandardTypeCodec {
     }
   def encode(j: StandardType): JsValue =
     j.payload
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefFontWeightNullExprRefAsObject (StructType)
-object ConditionalPredicateValueDefFontWeightNullExprRefAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefFontWeightNullExprRefAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontWeightNullExprRefAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => FontWeightCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalPredicateValueDefFontWeightNullExprRefAsObject(
-        `test` = `test`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateValueDefFontWeightNullExprRefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        j.`value`.map { x => "value" -> FontWeightCodec.encode(x) },
-      ).flatten.toMap
-    )
 }
 
 
@@ -3723,8 +3857,8 @@ object ArrayOfDictOfSelectionInitCodec {
   def decode(j: JsValue): Seq[Map[String,SelectionInit]] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[Map[String,SelectionInit]]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      DictOfSelectionInitCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      DictOfSelectionInitCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[Map[String,SelectionInit]]): JsArray =
       JsArray(j.map { x => DictOfSelectionInitCodec.encode(x) })
 }
@@ -3759,6 +3893,21 @@ object MarkConfigAngleAsNumberCodec {
     }
   def encode(j: MarkConfigAngleAsNumber): JsValue =
     Json.toJson(j.value)
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisStringAsObject2Condition (UnionType)
+object ConditionalAxisStringAsObject2ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisStringAsObject2Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisStringAsObject2Condition] =
+    ConditionalPredicateValueDefStringNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefStringNullExprRefCodec.decodeOpt(j).map { ConditionalAxisStringAsObject2ConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(_) } } 
+  def encode(j: ConditionalAxisStringAsObject2Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefStringNullExprRef /* TypeRef */ => ConditionalPredicateValueDefStringNullExprRefCodec.encode(x)
+      case ConditionalAxisStringAsObject2ConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefStringNullExprRefCodec.encode(x)
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3873,34 +4022,6 @@ object SharedEncodingTextCodec {
         j.`timeUnit`.map { x => "timeUnit" -> SharedEncodingTextTimeUnitCodec.encode(x) },
         j.`title`.map { x => "title" -> TextCodec.encode(x) },
         j.`type`.map { x => "type" -> SharedEncodingTextTypeCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefColorNullExprRefAsObject (StructType)
-object ConditionalPredicateValueDefColorNullExprRefAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefColorNullExprRefAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefColorNullExprRefAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ColorCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalPredicateValueDefColorNullExprRefAsObject(
-        `test` = `test`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateValueDefColorNullExprRefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        j.`value`.map { x => "value" -> ColorCodec.encode(x) },
       ).flatten.toMap
     )
 }
@@ -4029,10 +4150,6 @@ object LineBottomCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// MarkConfigOuterRadius (ConstrainedType)
-// see MarkConfigOuterRadius (UnionType)
-
-////////////////////////////////////////////////////////////////////////
 // RectConfigBlend (UnionType)
 object RectConfigBlendCodec {
   def decode(j: JsValue): RectConfigBlend =
@@ -4105,6 +4222,21 @@ object MarkDefYCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberArrayAsObject1Condition (UnionType)
+object ConditionalAxisNumberArrayAsObject1ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisNumberArrayAsObject1Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberArrayAsObject1Condition] =
+    ConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).map { ConditionalAxisNumberArrayAsObject1ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(_) } } 
+  def encode(j: ConditionalAxisNumberArrayAsObject1Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefNumberNullExprRef /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
+      case ConditionalAxisNumberArrayAsObject1ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // MarkConfigFillOpacity (UnionType)
 object MarkConfigFillOpacityCodec {
   def decode(j: JsValue): MarkConfigFillOpacity =
@@ -4139,6 +4271,67 @@ object AxisTickCountCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// MarkConfigOuterRadius (ConstrainedType)
+// see MarkConfigOuterRadius (UnionType)
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject1 (StructType)
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject1Codec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject1] =
+    {
+      val `empty` = (j \ "empty").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
+      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => FieldCodec.decodeOpt(x) }
+      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`param`.isEmpty) { return None }
+      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPositionCodec.decodeOpt(x) }
+      val `bin` = (j \ "bin").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinCodec.decodeOpt(x) }
+      val `aggregate` = (j \ "aggregate").asOpt[JsValue].flatMap { x => AggregateCodec.decodeOpt(x) }
+      val `timeUnit` = (j \ "timeUnit").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnitCodec.decodeOpt(x) }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `sort` = (j \ "sort").asOpt[JsValue].flatMap { x => SortCodec.decodeOpt(x) }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => StandardTypeCodec.decodeOpt(x) }
+      return Some(ConditionalParameterMarkPropFieldOrDatumDefAsObject1(
+        `empty` = `empty`,
+        `field` = `field`,
+        `param` = `param`.get,
+        `scale` = `scale`,
+        `legend` = `legend`,
+        `bandPosition` = `bandPosition`,
+        `bin` = `bin`,
+        `aggregate` = `aggregate`,
+        `timeUnit` = `timeUnit`,
+        `title` = `title`,
+        `sort` = `sort`,
+        `type` = `type`,
+      ))
+    }
+
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`empty`.map { x => "empty" -> Json.toJson(x) },
+        j.`field`.map { x => "field" -> FieldCodec.encode(x) },
+        Some("param" -> Json.toJson(j.`param`)),
+        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
+        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
+        j.`bandPosition`.map { x => "bandPosition" -> ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPositionCodec.encode(x) },
+        j.`bin`.map { x => "bin" -> ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinCodec.encode(x) },
+        j.`aggregate`.map { x => "aggregate" -> AggregateCodec.encode(x) },
+        j.`timeUnit`.map { x => "timeUnit" -> ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnitCodec.encode(x) },
+        j.`title`.map { x => "title" -> TextCodec.encode(x) },
+        j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
+        j.`type`.map { x => "type" -> StandardTypeCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // BarConfigStrokeJoin (UnionType)
 object BarConfigStrokeJoinCodec {
   def decode(j: JsValue): BarConfigStrokeJoin =
@@ -4167,60 +4360,6 @@ object TitleConfigZindexCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject (StructType)
-object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => FieldCodec.decodeOpt(x) }
-      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPositionCodec.decodeOpt(x) }
-      val `bin` = (j \ "bin").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinCodec.decodeOpt(x) }
-      val `aggregate` = (j \ "aggregate").asOpt[JsValue].flatMap { x => AggregateCodec.decodeOpt(x) }
-      val `timeUnit` = (j \ "timeUnit").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnitCodec.decodeOpt(x) }
-      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `sort` = (j \ "sort").asOpt[JsValue].flatMap { x => SortCodec.decodeOpt(x) }
-      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => TypeForShapeCodec.decodeOpt(x) }
-      return Some(ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject(
-        `test` = `test`.get,
-        `field` = `field`,
-        `scale` = `scale`,
-        `legend` = `legend`,
-        `bandPosition` = `bandPosition`,
-        `bin` = `bin`,
-        `aggregate` = `aggregate`,
-        `timeUnit` = `timeUnit`,
-        `title` = `title`,
-        `sort` = `sort`,
-        `type` = `type`,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        j.`field`.map { x => "field" -> FieldCodec.encode(x) },
-        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
-        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
-        j.`bandPosition`.map { x => "bandPosition" -> ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPositionCodec.encode(x) },
-        j.`bin`.map { x => "bin" -> ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinCodec.encode(x) },
-        j.`aggregate`.map { x => "aggregate" -> AggregateCodec.encode(x) },
-        j.`timeUnit`.map { x => "timeUnit" -> ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnitCodec.encode(x) },
-        j.`title`.map { x => "title" -> TextCodec.encode(x) },
-        j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
-        j.`type`.map { x => "type" -> TypeForShapeCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // IntervalSelectionConfigWithoutType (StructType)
@@ -4541,8 +4680,8 @@ object ArrayOfNonNormalizedSpecCodec {
   def decode(j: JsValue): Seq[NonNormalizedSpec] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[NonNormalizedSpec]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      NonNormalizedSpecCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      NonNormalizedSpecCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[NonNormalizedSpec]): JsArray =
       JsArray(j.map { x => NonNormalizedSpecCodec.encode(x) })
 }
@@ -4553,8 +4692,8 @@ object ArrayOfConditionalValueDefNumberCodec {
   def decode(j: JsValue): Seq[ConditionalValueDefNumber] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalValueDefNumber]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalValueDefNumberCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalValueDefNumberCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalValueDefNumber]): JsArray =
       JsArray(j.map { x => ConditionalValueDefNumberCodec.encode(x) })
 }
@@ -4704,34 +4843,6 @@ object PositionDefCodec {
       case x:PositionValueDef /* TypeRef */ => PositionValueDefCodec.encode(x)
     }
 }
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisStringAsObject (StructType)
-object ConditionalAxisStringAsObjectCodec {
-  def decode(j: JsValue): ConditionalAxisStringAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalAxisStringAsObject] =
-    {
-      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisStringAsObjectConditionCodec.decodeOpt(x) }
-      if(`condition`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ConditionalAxisStringAsObjectValueCodec.decodeOpt(x) }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalAxisStringAsObject(
-        `condition` = `condition`.get,
-        `value` = `value`.get,
-      ))
-    }
-
-  def encode(j: ConditionalAxisStringAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("condition" -> ConditionalAxisStringAsObjectConditionCodec.encode(j.`condition`)),
-        Some("value" -> ConditionalAxisStringAsObjectValueCodec.encode(j.`value`)),
-      ).flatten.toMap
-    )
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // RectConfigDiscreteBandSize (UnionType)
@@ -5014,8 +5125,8 @@ object ArrayOfFieldDefWithoutScaleCodec {
   def decode(j: JsValue): Seq[FieldDefWithoutScale] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[FieldDefWithoutScale]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      FieldDefWithoutScaleCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      FieldDefWithoutScaleCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[FieldDefWithoutScale]): JsArray =
       JsArray(j.map { x => FieldDefWithoutScaleCodec.encode(x) })
 }
@@ -5087,38 +5198,6 @@ object AxisConfigLabelFontSizeCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// RectConfigAngle (UnionType)
-object RectConfigAngleCodec {
-  def decode(j: JsValue): RectConfigAngle =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[RectConfigAngle] =
-    RectConfigAngleAsNumberCodec.decodeOpt(j).orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: RectConfigAngle): JsValue =
-    j match {
-      case x:RectConfigAngleAsNumber /* TypeRef */ => RectConfigAngleAsNumberCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPosition (ConstrainedType)
-object ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPositionCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPosition =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPosition] =
-    try {
-      j.asOpt[JsNumber]
-        .map { ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPosition(_) }
-    } catch {
-      case _:AssertionError => None
-    }
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPosition): JsValue =
-    Json.toJson(j.value)
-}
-
-////////////////////////////////////////////////////////////////////////
 // MarkDefFontStyle (UnionType)
 object MarkDefFontStyleCodec {
   def decode(j: JsValue): MarkDefFontStyle =
@@ -5129,6 +5208,21 @@ object MarkDefFontStyleCodec {
   def encode(j: MarkDefFontStyle): JsValue =
     j match {
       case MarkDefFontStyleAsString(x) /* Base, StringType$ */ => Json.toJson(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// RectConfigAngle (UnionType)
+object RectConfigAngleCodec {
+  def decode(j: JsValue): RectConfigAngle =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[RectConfigAngle] =
+    RectConfigAngleAsNumberCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: RectConfigAngle): JsValue =
+    j match {
+      case x:RectConfigAngleAsNumber /* TypeRef */ => RectConfigAngleAsNumberCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
@@ -5315,6 +5409,34 @@ object SharedEncodingDescriptionConditionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberAsObject2 (StructType)
+object ConditionalAxisNumberAsObject2Codec {
+  def decode(j: JsValue): ConditionalAxisNumberAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberAsObject2] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisNumberAsObject2ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      return Some(ConditionalAxisNumberAsObject2(
+        `condition` = `condition`.get,
+        `expr` = `expr`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisNumberAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisNumberAsObject2ConditionCodec.encode(j.`condition`)),
+        Some("expr" -> Json.toJson(j.`expr`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // BoxPlotConfigMedian (UnionType)
 object BoxPlotConfigMedianCodec {
   def decode(j: JsValue): BoxPlotConfigMedian =
@@ -5452,6 +5574,38 @@ object MarkConfigTheta2Codec {
     j match {
       case MarkConfigTheta2AsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition (ConstrainedType)
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPositionCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition] =
+    try {
+      j.asOpt[JsNumber]
+        .map { ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition(_) }
+    } catch {
+      case _:AssertionError => None
+    }
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition): JsValue =
+    Json.toJson(j.value)
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit (UnionType)
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnitCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit] =
+    TimeUnitCodec.decodeOpt(j).orElse {
+    TimeUnitParamsCodec.decodeOpt(j) } 
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObject1TimeUnit): JsValue =
+    j match {
+      case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
+      case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
     }
 }
 
@@ -5632,8 +5786,8 @@ object ArrayOfAggregatedFieldDefCodec {
   def decode(j: JsValue): Seq[AggregatedFieldDef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[AggregatedFieldDef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      AggregatedFieldDefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      AggregatedFieldDefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[AggregatedFieldDef]): JsArray =
       JsArray(j.map { x => AggregatedFieldDefCodec.encode(x) })
 }
@@ -5845,6 +5999,22 @@ object ValueDefWithConditionStringFieldDefTextValueCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// EventStreamAsObject1Source (EnumType)
+object EventStreamAsObject1SourceCodec {
+  def decode(j: JsValue): EventStreamAsObject1Source =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[EventStreamAsObject1Source] =
+    j match {
+      case JsString("view") => Some(EventStreamAsObject1SourceView)
+      case JsString("scope") => Some(EventStreamAsObject1SourceScope)
+      case _ => None
+    }
+  def encode(j: EventStreamAsObject1Source): JsValue =
+    j.payload
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // HeaderTitleFontSize (ConstrainedType)
 // see HeaderTitleFontSize (UnionType)
 
@@ -5883,6 +6053,34 @@ object LegendConfigLabelOffsetAsNumberCodec {
   def encode(j: LegendConfigLabelOffsetAsNumber): JsValue =
     Json.toJson(j.value)
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberArrayAsObject2 (StructType)
+object ConditionalAxisNumberArrayAsObject2Codec {
+  def decode(j: JsValue): ConditionalAxisNumberArrayAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberArrayAsObject2] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisNumberArrayAsObject2ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      return Some(ConditionalAxisNumberArrayAsObject2(
+        `condition` = `condition`.get,
+        `expr` = `expr`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisNumberArrayAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisNumberArrayAsObject2ConditionCodec.encode(j.`condition`)),
+        Some("expr" -> Json.toJson(j.`expr`)),
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // ProjectionConfigSize (UnionType)
@@ -6094,6 +6292,34 @@ object LegendConfigGradientLabelLimitCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelAlignAsObject1 (StructType)
+object ConditionalAxisLabelAlignAsObject1Codec {
+  def decode(j: JsValue): ConditionalAxisLabelAlignAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelAlignAsObject1] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelAlignAsObject1ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => AlignCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalAxisLabelAlignAsObject1(
+        `condition` = `condition`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalAxisLabelAlignAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisLabelAlignAsObject1ConditionCodec.encode(j.`condition`)),
+        j.`value`.map { x => "value" -> AlignCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // ScaleScheme (UnionType)
 object ScaleSchemeCodec {
   def decode(j: JsValue): ScaleScheme =
@@ -6165,21 +6391,6 @@ object StringFieldDefBinCodec {
 // see TickConfigInnerRadius (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
-// ViewConfigDiscreteWidth (UnionType)
-object ViewConfigDiscreteWidthCodec {
-  def decode(j: JsValue): ViewConfigDiscreteWidth =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ViewConfigDiscreteWidth] =
-    j.asOpt[JsNumber].map { ViewConfigDiscreteWidthAsNumber(_) }.orElse {
-    ViewConfigDiscreteWidthAsObjectCodec.decodeOpt(j) } 
-  def encode(j: ViewConfigDiscreteWidth): JsValue =
-    j match {
-      case ViewConfigDiscreteWidthAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case x:ViewConfigDiscreteWidthAsObject /* TypeRef */ => ViewConfigDiscreteWidthAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // Height (ConstantType)
 object HeightCodec {
   def decode(j: JsValue): Height =
@@ -6245,28 +6456,28 @@ object AxisConfigDescriptionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisColorAsObject (StructType)
-object ConditionalAxisColorAsObjectCodec {
-  def decode(j: JsValue): ConditionalAxisColorAsObject =
+// ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1 (StructType)
+object ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1 =
     decodeOpt(j).get
 
-  def decodeOpt(j: JsValue): Option[ConditionalAxisColorAsObject] =
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1] =
     {
-      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisColorAsObjectConditionCodec.decodeOpt(x) }
-      if(`condition`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ColorCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => TextBaselineCodec.decodeOpt(x).map { Some(_) }.flatten }
       if(`value`.isEmpty) { return None }
-      return Some(ConditionalAxisColorAsObject(
-        `condition` = `condition`.get,
+      return Some(ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1(
+        `test` = `test`.get,
         `value` = `value`,
       ))
     }
 
-  def encode(j: ConditionalAxisColorAsObject): JsObject =
+  def encode(j: ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1): JsObject =
     JsObject(
       Seq[Option[(String,JsValue)]](
-        Some("condition" -> ConditionalAxisColorAsObjectConditionCodec.encode(j.`condition`)),
-        j.`value`.map { x => "value" -> ColorCodec.encode(x) },
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`value`.map { x => "value" -> TextBaselineCodec.encode(x) },
       ).flatten.toMap
     )
 }
@@ -6393,8 +6604,8 @@ object DictOfAnyCodec {
   def decode(j: JsValue): Map[String,JsValue] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Map[String,JsValue]] =
-    Some(j.as[Map[String,JsValue]].mapValues { x => 
-      x.asOpt[JsValue].getOrElse { return None } })
+    j.asOpt[Map[String,JsValue]].map { _.mapValues { x => 
+      x.asOpt[JsValue].getOrElse { return None } } }
   def encode(j: Map[String,JsValue]): JsObject =
       JsObject(j.mapValues { x => Json.toJson(x) })
 }
@@ -6504,8 +6715,8 @@ object ArrayOfScaleRangeAsArrayElementCodec {
   def decode(j: JsValue): Seq[ScaleRangeAsArrayElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ScaleRangeAsArrayElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ScaleRangeAsArrayElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ScaleRangeAsArrayElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ScaleRangeAsArrayElement]): JsArray =
       JsArray(j.map { x => ScaleRangeAsArrayElementCodec.encode(x) })
 }
@@ -6633,17 +6844,17 @@ object LineConfigAngleCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ProjectionConfigDistance (UnionType)
-object ProjectionConfigDistanceCodec {
-  def decode(j: JsValue): ProjectionConfigDistance =
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit (UnionType)
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnitCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ProjectionConfigDistance] =
-    j.asOpt[JsNumber].map { ProjectionConfigDistanceAsNumber(_) }.orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: ProjectionConfigDistance): JsValue =
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit] =
+    TimeUnitCodec.decodeOpt(j).orElse {
+    TimeUnitParamsCodec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnit): JsValue =
     j match {
-      case ProjectionConfigDistanceAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+      case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
+      case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
     }
 }
 
@@ -6893,8 +7104,8 @@ object ArrayOfGradientStopCodec {
   def decode(j: JsValue): Seq[GradientStop] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[GradientStop]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      GradientStopCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      GradientStopCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[GradientStop]): JsArray =
       JsArray(j.map { x => GradientStopCodec.encode(x) })
 }
@@ -6947,23 +7158,6 @@ object ConditionalParameterStringFieldDefBandPositionCodec {
       case _:AssertionError => None
     }
   def encode(j: ConditionalParameterStringFieldDefBandPosition): JsValue =
-    Json.toJson(j.value)
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition (ConstrainedType)
-object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPositionCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition] =
-    try {
-      j.asOpt[JsNumber]
-        .map { ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition(_) }
-    } catch {
-      case _:AssertionError => None
-    }
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition): JsValue =
     Json.toJson(j.value)
 }
 
@@ -7053,21 +7247,6 @@ object SharedEncodingUrlConditionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectBackground (UnionType)
-object TopLevelRepeatSpecAsObjectBackgroundCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectBackground =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectBackground] =
-    ColorCodec.decodeOpt(j).orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectBackground): JsValue =
-    j match {
-      case x:Color /* TypeRef */ => ColorCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // ProjectionConfigClipAngle (UnionType)
 object ProjectionConfigClipAngleCodec {
   def decode(j: JsValue): ProjectionConfigClipAngle =
@@ -7098,17 +7277,47 @@ object TickConfigFontWeightCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit (UnionType)
-object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnitCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit =
+// ConditionalAxisLabelFontWeight (UnionType)
+object ConditionalAxisLabelFontWeightCodec {
+  def decode(j: JsValue): ConditionalAxisLabelFontWeight =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit] =
-    TimeUnitCodec.decodeOpt(j).orElse {
-    TimeUnitParamsCodec.decodeOpt(j) } 
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit): JsValue =
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontWeight] =
+    ConditionalAxisLabelFontWeightAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalAxisLabelFontWeightAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalAxisLabelFontWeight): JsValue =
     j match {
-      case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
-      case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
+      case x:ConditionalAxisLabelFontWeightAsObject1 /* TypeRef */ => ConditionalAxisLabelFontWeightAsObject1Codec.encode(x)
+      case x:ConditionalAxisLabelFontWeightAsObject2 /* TypeRef */ => ConditionalAxisLabelFontWeightAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ProjectionConfigDistance (UnionType)
+object ProjectionConfigDistanceCodec {
+  def decode(j: JsValue): ProjectionConfigDistance =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ProjectionConfigDistance] =
+    j.asOpt[JsNumber].map { ProjectionConfigDistanceAsNumber(_) }.orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: ProjectionConfigDistance): JsValue =
+    j match {
+      case ProjectionConfigDistanceAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2Align (UnionType)
+object TopLevelRepeatSpecAsObject2AlignCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Align =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Align] =
+    LayoutAlignCodec.decodeOpt(j).orElse {
+    RowColLayoutAlignCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2Align): JsValue =
+    j match {
+      case x:LayoutAlign /* TypeRef */ => LayoutAlignCodec.encode(x)
+      case x:RowColLayoutAlign /* TypeRef */ => RowColLayoutAlignCodec.encode(x)
     }
 }
 
@@ -7170,6 +7379,18 @@ object BarConfigCornerRadiusBottomLeftCodec {
       case BarConfigCornerRadiusBottomLeftAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ArrayOfTopLevelRepeatSpecAsObject2ParamsElement (ArrayType)
+object ArrayOfTopLevelRepeatSpecAsObject2ParamsElementCodec {
+  def decode(j: JsValue): Seq[TopLevelRepeatSpecAsObject2ParamsElement] =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[Seq[TopLevelRepeatSpecAsObject2ParamsElement]] =
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelRepeatSpecAsObject2ParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
+  def encode(j: Seq[TopLevelRepeatSpecAsObject2ParamsElement]): JsArray =
+      JsArray(j.map { x => TopLevelRepeatSpecAsObject2ParamsElementCodec.encode(x) })
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -7385,16 +7606,20 @@ object TimeUnitTransformCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelBaseline (UnionType)
-object ConditionalAxisLabelBaselineCodec {
-  def decode(j: JsValue): ConditionalAxisLabelBaseline =
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPosition (ConstrainedType)
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPositionCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPosition =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelBaseline] =
-    ConditionalAxisLabelBaselineAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalAxisLabelBaseline): JsValue =
-    j match {
-      case x:ConditionalAxisLabelBaselineAsObject /* TypeRef */ => ConditionalAxisLabelBaselineAsObjectCodec.encode(x)
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPosition] =
+    try {
+      j.asOpt[JsNumber]
+        .map { ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPosition(_) }
+    } catch {
+      case _:AssertionError => None
     }
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObject2BandPosition): JsValue =
+    Json.toJson(j.value)
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -7796,8 +8021,8 @@ object ArrayOfStringFieldDefCodec {
   def decode(j: JsValue): Seq[StringFieldDef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[StringFieldDef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      StringFieldDefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      StringFieldDefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[StringFieldDef]): JsArray =
       JsArray(j.map { x => StringFieldDefCodec.encode(x) })
 }
@@ -7893,6 +8118,23 @@ object BindDirectCodec {
     )
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// RangeSchemeAsObject3Scheme (UnionType)
+object RangeSchemeAsObject3SchemeCodec {
+  def decode(j: JsValue): RangeSchemeAsObject3Scheme =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[RangeSchemeAsObject3Scheme] =
+    j.asOpt[String].map { RangeSchemeAsObject3SchemeAsString(_) }.orElse {
+    ArrayOfStringCodec.decodeOpt(j).map { RangeSchemeAsObject3SchemeAsArrayOfString(_) }.orElse {
+    ColorSchemeCodec.decodeOpt(j) } } 
+  def encode(j: RangeSchemeAsObject3Scheme): JsValue =
+    j match {
+      case RangeSchemeAsObject3SchemeAsString(x) /* Base, StringType$ */ => Json.toJson(x)
+      case RangeSchemeAsObject3SchemeAsArrayOfString(x) /* Base, ArrayType */ => ArrayOfStringCodec.encode(x)
+      case x:ColorScheme /* TypeRef */ => ColorSchemeCodec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // LabelOverlap (UnionType)
@@ -8035,8 +8277,8 @@ object ArrayOfUnitSpecParamsElementCodec {
   def decode(j: JsValue): Seq[UnitSpecParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[UnitSpecParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      UnitSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      UnitSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[UnitSpecParamsElement]): JsArray =
       JsArray(j.map { x => UnitSpecParamsElementCodec.encode(x) })
 }
@@ -8078,17 +8320,17 @@ object OverlayMarkDefRadiusCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefStringNullExprRefAsObjectValue (UnionType)
-object ConditionalPredicateValueDefStringNullExprRefAsObjectValueCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefStringNullExprRefAsObjectValue =
+// TopLevelRepeatSpecAsObject1Title (UnionType)
+object TopLevelRepeatSpecAsObject1TitleCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Title =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefStringNullExprRefAsObjectValue] =
-    j.asOpt[String].map { ConditionalPredicateValueDefStringNullExprRefAsObjectValueAsString(_) }.orElse {
-    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalPredicateValueDefStringNullExprRefAsObjectValueAsNull } } 
-  def encode(j: ConditionalPredicateValueDefStringNullExprRefAsObjectValue): JsValue =
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Title] =
+    TextCodec.decodeOpt(j).orElse {
+    TitleParamsCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1Title): JsValue =
     j match {
-      case ConditionalPredicateValueDefStringNullExprRefAsObjectValueAsString(x) /* Base, StringType$ */ => Json.toJson(x)
-      case ConditionalPredicateValueDefStringNullExprRefAsObjectValueAsNull /* Global, NullType$ */ => JsNull
+      case x:Text /* TypeRef */ => TextCodec.encode(x)
+      case x:TitleParams /* TypeRef */ => TitleParamsCodec.encode(x)
     }
 }
 
@@ -8446,8 +8688,8 @@ object ArrayOfScaleDomainAsArrayElementCodec {
   def decode(j: JsValue): Seq[ScaleDomainAsArrayElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ScaleDomainAsArrayElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ScaleDomainAsArrayElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ScaleDomainAsArrayElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ScaleDomainAsArrayElement]): JsArray =
       JsArray(j.map { x => ScaleDomainAsArrayElementCodec.encode(x) })
 }
@@ -8522,8 +8764,8 @@ object DictOfInlineDatasetCodec {
   def decode(j: JsValue): Map[String,InlineDataset] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Map[String,InlineDataset]] =
-    Some(j.as[Map[String,JsValue]].mapValues { x => 
-      InlineDatasetCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Map[String,JsValue]].map { _.mapValues { x => 
+      InlineDatasetCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Map[String,InlineDataset]): JsObject =
       JsObject(j.mapValues { x => InlineDatasetCodec.encode(x) })
 }
@@ -8600,6 +8842,21 @@ object TitleConfigSubtitleFontSizeAsNumberCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDef (UnionType)
+object ConditionalParameterMarkPropFieldOrDatumDefCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDef] =
+    ConditionalParameterMarkPropFieldOrDatumDefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalParameterMarkPropFieldOrDatumDefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDef): JsValue =
+    j match {
+      case x:ConditionalParameterMarkPropFieldOrDatumDefAsObject1 /* TypeRef */ => ConditionalParameterMarkPropFieldOrDatumDefAsObject1Codec.encode(x)
+      case x:ConditionalParameterMarkPropFieldOrDatumDefAsObject2 /* TypeRef */ => ConditionalParameterMarkPropFieldOrDatumDefAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // FacetEncodingFieldDefTimeUnit (UnionType)
 object FacetEncodingFieldDefTimeUnitCodec {
   def decode(j: JsValue): FacetEncodingFieldDefTimeUnit =
@@ -8630,6 +8887,21 @@ object LegendBindingCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// EventStreamAsObject2Filter (UnionType)
+object EventStreamAsObject2FilterCodec {
+  def decode(j: JsValue): EventStreamAsObject2Filter =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[EventStreamAsObject2Filter] =
+    j.asOpt[String].map { EventStreamAsObject2FilterAsString(_) }.orElse {
+    ArrayOfStringCodec.decodeOpt(j).map { EventStreamAsObject2FilterAsArrayOfString(_) } } 
+  def encode(j: EventStreamAsObject2Filter): JsValue =
+    j match {
+      case EventStreamAsObject2FilterAsString(x) /* Base, StringType$ */ => Json.toJson(x)
+      case EventStreamAsObject2FilterAsArrayOfString(x) /* Base, ArrayType */ => ArrayOfStringCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // LineConfigAlign (UnionType)
 object LineConfigAlignCodec {
   def decode(j: JsValue): LineConfigAlign =
@@ -8641,6 +8913,21 @@ object LineConfigAlignCodec {
     j match {
       case x:Align /* TypeRef */ => AlignCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontWeightAsObject2Condition (UnionType)
+object ConditionalAxisLabelFontWeightAsObject2ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisLabelFontWeightAsObject2Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontWeightAsObject2Condition] =
+    ConditionalPredicateValueDefFontWeightNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefFontWeightNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelFontWeightAsObject2ConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(_) } } 
+  def encode(j: ConditionalAxisLabelFontWeightAsObject2Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefFontWeightNullExprRef /* TypeRef */ => ConditionalPredicateValueDefFontWeightNullExprRefCodec.encode(x)
+      case ConditionalAxisLabelFontWeightAsObject2ConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefFontWeightNullExprRefCodec.encode(x)
     }
 }
 
@@ -9074,10 +9361,6 @@ object ScaleConfigQuantileCountCodec {
   def encode(j: ScaleConfigQuantileCount): JsValue =
     Json.toJson(j.value)
 }
-
-////////////////////////////////////////////////////////////////////////
-// Padding (ConstrainedType)
-// see Padding (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
 // HeaderConfigTitleFontStyle (UnionType)
@@ -9702,21 +9985,6 @@ object LegendConfigGradientThicknessAsNumberCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelAlignAsObjectCondition (UnionType)
-object ConditionalAxisLabelAlignAsObjectConditionCodec {
-  def decode(j: JsValue): ConditionalAxisLabelAlignAsObjectCondition =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelAlignAsObjectCondition] =
-    ConditionalPredicateValueDefAlignNullExprRefCodec.decodeOpt(j).orElse {
-    ArrayOfConditionalPredicateValueDefAlignNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelAlignAsObjectConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(_) } } 
-  def encode(j: ConditionalAxisLabelAlignAsObjectCondition): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefAlignNullExprRef /* TypeRef */ => ConditionalPredicateValueDefAlignNullExprRefCodec.encode(x)
-      case ConditionalAxisLabelAlignAsObjectConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefAlignNullExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // TickConfigInnerRadius (UnionType)
 object TickConfigInnerRadiusCodec {
   def decode(j: JsValue): TickConfigInnerRadius =
@@ -9817,21 +10085,6 @@ object TickConfigShapeCodec {
     j match {
       case TickConfigShapeAsString(x) /* Base, StringType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisStringAsObjectCondition (UnionType)
-object ConditionalAxisStringAsObjectConditionCodec {
-  def decode(j: JsValue): ConditionalAxisStringAsObjectCondition =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisStringAsObjectCondition] =
-    ConditionalPredicateValueDefStringNullExprRefCodec.decodeOpt(j).orElse {
-    ArrayOfConditionalPredicateValueDefStringNullExprRefCodec.decodeOpt(j).map { ConditionalAxisStringAsObjectConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(_) } } 
-  def encode(j: ConditionalAxisStringAsObjectCondition): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefStringNullExprRef /* TypeRef */ => ConditionalPredicateValueDefStringNullExprRefCodec.encode(x)
-      case ConditionalAxisStringAsObjectConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefStringNullExprRefCodec.encode(x)
     }
 }
 
@@ -9955,6 +10208,21 @@ object FacetFieldDefCodec {
     )
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// ViewConfigDiscreteWidth (UnionType)
+object ViewConfigDiscreteWidthCodec {
+  def decode(j: JsValue): ViewConfigDiscreteWidth =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ViewConfigDiscreteWidth] =
+    j.asOpt[JsNumber].map { ViewConfigDiscreteWidthAsNumber(_) }.orElse {
+    ViewConfigDiscreteWidthAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ViewConfigDiscreteWidth): JsValue =
+    j match {
+      case ViewConfigDiscreteWidthAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:ViewConfigDiscreteWidthAsObject2 /* TypeRef */ => ViewConfigDiscreteWidthAsObject2Codec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // LayerRepeatSpecAlign (UnionType)
@@ -10087,6 +10355,51 @@ object ConditionalMarkPropFieldOrDatumDefTypeForShapeCodec {
       case x:ConditionalParameterMarkPropFieldOrDatumDefTypeForShape /* TypeRef */ => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject2 (StructType)
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject2Codec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject2] =
+    {
+      val `empty` = (j \ "empty").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
+      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`param`.isEmpty) { return None }
+      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `datum` = (j \ "datum").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefAsObject2DatumCodec.decodeOpt(x) }
+      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPositionCodec.decodeOpt(x) }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => TypeCodec.decodeOpt(x) }
+      return Some(ConditionalParameterMarkPropFieldOrDatumDefAsObject2(
+        `empty` = `empty`,
+        `param` = `param`.get,
+        `scale` = `scale`,
+        `datum` = `datum`,
+        `legend` = `legend`,
+        `bandPosition` = `bandPosition`,
+        `title` = `title`,
+        `type` = `type`,
+      ))
+    }
+
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`empty`.map { x => "empty" -> Json.toJson(x) },
+        Some("param" -> Json.toJson(j.`param`)),
+        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
+        j.`datum`.map { x => "datum" -> ConditionalParameterMarkPropFieldOrDatumDefAsObject2DatumCodec.encode(x) },
+        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
+        j.`bandPosition`.map { x => "bandPosition" -> ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPositionCodec.encode(x) },
+        j.`title`.map { x => "title" -> TextCodec.encode(x) },
+        j.`type`.map { x => "type" -> TypeCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // OverlayMarkDefStrokeDashOffset (UnionType)
@@ -10255,96 +10568,11 @@ object ArrayOfPredicateCompositionCodec {
   def decode(j: JsValue): Seq[PredicateComposition] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[PredicateComposition]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      PredicateCompositionCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      PredicateCompositionCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[PredicateComposition]): JsArray =
       JsArray(j.map { x => PredicateCompositionCodec.encode(x) })
 }
-
-////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObject (StructType)
-object TopLevelRepeatSpecAsObjectCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject] =
-    {
-      val `name` = (j \ "name").asOpt[JsValue].flatMap { x => x.asOpt[String] }
-      val `description` = (j \ "description").asOpt[JsValue].flatMap { x => x.asOpt[String] }
-      val `params` = (j \ "params").asOpt[JsValue].flatMap { x => ArrayOfTopLevelRepeatSpecAsObjectParamsElementCodec.decodeOpt(x) }
-      val `config` = (j \ "config").asOpt[JsValue].flatMap { x => ConfigCodec.decodeOpt(x) }
-      val `bounds` = (j \ "bounds").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectBoundsCodec.decodeOpt(x) }
-      val `datasets` = (j \ "datasets").asOpt[JsValue].flatMap { x => DictOfInlineDatasetCodec.decodeOpt(x) }
-      val `usermeta` = (j \ "usermeta").asOpt[JsValue].flatMap { x => DictOfAnyCodec.decodeOpt(x) }
-      val `columns` = (j \ "columns").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
-      val `resolve` = (j \ "resolve").asOpt[JsValue].flatMap { x => ResolveCodec.decodeOpt(x) }
-      val `spec` = (j \ "spec").asOpt[JsValue].flatMap { x => NonNormalizedSpecCodec.decodeOpt(x) }
-      if(`spec`.isEmpty) { return None }
-      val `padding` = (j \ "padding").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectPaddingCodec.decodeOpt(x) }
-      val `background` = (j \ "background").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectBackgroundCodec.decodeOpt(x) }
-      val `center` = (j \ "center").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectCenterCodec.decodeOpt(x) }
-      val `align` = (j \ "align").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectAlignCodec.decodeOpt(x) }
-      val `data` = (j \ "data").asOpt[JsValue].flatMap { x => DataCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `repeat` = (j \ "repeat").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectRepeatCodec.decodeOpt(x) }
-      if(`repeat`.isEmpty) { return None }
-      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectTitleCodec.decodeOpt(x) }
-      val `spacing` = (j \ "spacing").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectSpacingCodec.decodeOpt(x) }
-      val `$schema` = (j \ "$schema").asOpt[JsValue].flatMap { x => UriCodec.decodeOpt(x) }
-      val `autosize` = (j \ "autosize").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObjectAutosizeCodec.decodeOpt(x) }
-      val `transform` = (j \ "transform").asOpt[JsValue].flatMap { x => ArrayOfTransformCodec.decodeOpt(x) }
-      return Some(TopLevelRepeatSpecAsObject(
-        `name` = `name`,
-        `description` = `description`,
-        `params` = `params`,
-        `config` = `config`,
-        `bounds` = `bounds`,
-        `datasets` = `datasets`,
-        `usermeta` = `usermeta`,
-        `columns` = `columns`,
-        `resolve` = `resolve`,
-        `spec` = `spec`.get,
-        `padding` = `padding`,
-        `background` = `background`,
-        `center` = `center`,
-        `align` = `align`,
-        `data` = `data`,
-        `repeat` = `repeat`.get,
-        `title` = `title`,
-        `spacing` = `spacing`,
-        `$schema` = `$schema`,
-        `autosize` = `autosize`,
-        `transform` = `transform`,
-      ))
-    }
-
-  def encode(j: TopLevelRepeatSpecAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        j.`name`.map { x => "name" -> Json.toJson(x) },
-        j.`description`.map { x => "description" -> Json.toJson(x) },
-        j.`params`.map { x => "params" -> ArrayOfTopLevelRepeatSpecAsObjectParamsElementCodec.encode(x) },
-        j.`config`.map { x => "config" -> ConfigCodec.encode(x) },
-        j.`bounds`.map { x => "bounds" -> TopLevelRepeatSpecAsObjectBoundsCodec.encode(x) },
-        j.`datasets`.map { x => "datasets" -> DictOfInlineDatasetCodec.encode(x) },
-        j.`usermeta`.map { x => "usermeta" -> DictOfAnyCodec.encode(x) },
-        j.`columns`.map { x => "columns" -> Json.toJson(x) },
-        j.`resolve`.map { x => "resolve" -> ResolveCodec.encode(x) },
-        Some("spec" -> NonNormalizedSpecCodec.encode(j.`spec`)),
-        j.`padding`.map { x => "padding" -> TopLevelRepeatSpecAsObjectPaddingCodec.encode(x) },
-        j.`background`.map { x => "background" -> TopLevelRepeatSpecAsObjectBackgroundCodec.encode(x) },
-        j.`center`.map { x => "center" -> TopLevelRepeatSpecAsObjectCenterCodec.encode(x) },
-        j.`align`.map { x => "align" -> TopLevelRepeatSpecAsObjectAlignCodec.encode(x) },
-        j.`data`.map { x => "data" -> DataCodec.encode(x) },
-        Some("repeat" -> TopLevelRepeatSpecAsObjectRepeatCodec.encode(j.`repeat`)),
-        j.`title`.map { x => "title" -> TopLevelRepeatSpecAsObjectTitleCodec.encode(x) },
-        j.`spacing`.map { x => "spacing" -> TopLevelRepeatSpecAsObjectSpacingCodec.encode(x) },
-        j.`$schema`.map { x => "$schema" -> UriCodec.encode(x) },
-        j.`autosize`.map { x => "autosize" -> TopLevelRepeatSpecAsObjectAutosizeCodec.encode(x) },
-        j.`transform`.map { x => "transform" -> ArrayOfTransformCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // TickConfigStrokeWidthAsNumber (ConstrainedType)
@@ -10362,6 +10590,34 @@ object TickConfigStrokeWidthAsNumberCodec {
   def encode(j: TickConfigStrokeWidthAsNumber): JsValue =
     Json.toJson(j.value)
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefAlignNullExprRefAsObject1 (StructType)
+object ConditionalPredicateValueDefAlignNullExprRefAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefAlignNullExprRefAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefAlignNullExprRefAsObject1] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => AlignCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefAlignNullExprRefAsObject1(
+        `test` = `test`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefAlignNullExprRefAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`value`.map { x => "value" -> AlignCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // BarConfigCursor (UnionType)
@@ -10463,8 +10719,8 @@ object ArrayOfLayerSpecLayerElementCodec {
   def decode(j: JsValue): Seq[LayerSpecLayerElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[LayerSpecLayerElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      LayerSpecLayerElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      LayerSpecLayerElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[LayerSpecLayerElement]): JsArray =
       JsArray(j.map { x => LayerSpecLayerElementCodec.encode(x) })
 }
@@ -10481,6 +10737,21 @@ object MarkDefStrokeDashOffsetCodec {
     j match {
       case MarkDefStrokeDashOffsetAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2Spacing (UnionType)
+object TopLevelRepeatSpecAsObject2SpacingCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Spacing =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Spacing] =
+    j.asOpt[JsNumber].map { TopLevelRepeatSpecAsObject2SpacingAsNumber(_) }.orElse {
+    RowColNumberCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2Spacing): JsValue =
+    j match {
+      case TopLevelRepeatSpecAsObject2SpacingAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:RowColNumber /* TypeRef */ => RowColNumberCodec.encode(x)
     }
 }
 
@@ -10530,8 +10801,8 @@ object ArrayOfSortFieldCodec {
   def decode(j: JsValue): Seq[SortField] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[SortField]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      SortFieldCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      SortFieldCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[SortField]): JsArray =
       JsArray(j.map { x => SortFieldCodec.encode(x) })
 }
@@ -10726,6 +10997,21 @@ object TimeLocaleCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit (UnionType)
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnitCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit] =
+    TimeUnitCodec.decodeOpt(j).orElse {
+    TimeUnitParamsCodec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit): JsValue =
+    j match {
+      case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
+      case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // Transparent (ConstantType)
 object TransparentCodec {
   def decode(j: JsValue): Transparent =
@@ -10757,6 +11043,34 @@ object PositionFieldDefStackCodec {
       case PositionFieldDefStackAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2 (StructType)
+object ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2] =
+    {
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2(
+        `expr` = `expr`.get,
+        `test` = `test`.get,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("expr" -> Json.toJson(j.`expr`)),
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // NonLayerRepeatSpecCenter (UnionType)
@@ -10804,6 +11118,34 @@ object TitleParamsOffsetCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontStyleAsObject1 (StructType)
+object ConditionalAxisLabelFontStyleAsObject1Codec {
+  def decode(j: JsValue): ConditionalAxisLabelFontStyleAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontStyleAsObject1] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelFontStyleAsObject1ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => x.asOpt[String].map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalAxisLabelFontStyleAsObject1(
+        `condition` = `condition`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalAxisLabelFontStyleAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisLabelFontStyleAsObject1ConditionCodec.encode(j.`condition`)),
+        j.`value`.map { x => "value" -> Json.toJson(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // AxisConfigGridDashOffset (UnionType)
 object AxisConfigGridDashOffsetCodec {
   def decode(j: JsValue): AxisConfigGridDashOffset =
@@ -10849,22 +11191,6 @@ object VConcatSpecGenericSpecBoundsCodec {
       case _ => None
     }
   def encode(j: VConcatSpecGenericSpecBounds): JsValue =
-    j.payload
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectBounds (EnumType)
-object TopLevelRepeatSpecAsObjectBoundsCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectBounds =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectBounds] =
-    j match {
-      case JsString("full") => Some(TopLevelRepeatSpecAsObjectBoundsFull)
-      case JsString("flush") => Some(TopLevelRepeatSpecAsObjectBoundsFlush)
-      case _ => None
-    }
-  def encode(j: TopLevelRepeatSpecAsObjectBounds): JsValue =
     j.payload
 }
 
@@ -11389,19 +11715,6 @@ object SharedEncodingOpacityTimeUnitCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisString (UnionType)
-object ConditionalAxisStringCodec {
-  def decode(j: JsValue): ConditionalAxisString =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisString] =
-    ConditionalAxisStringAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalAxisString): JsValue =
-    j match {
-      case x:ConditionalAxisStringAsObject /* TypeRef */ => ConditionalAxisStringAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // SharedEncodingStrokeDashTimeUnit (UnionType)
 object SharedEncodingStrokeDashTimeUnitCodec {
   def decode(j: JsValue): SharedEncodingStrokeDashTimeUnit =
@@ -11493,6 +11806,60 @@ object BindRangeCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1 (StructType)
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => FieldCodec.decodeOpt(x) }
+      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPositionCodec.decodeOpt(x) }
+      val `bin` = (j \ "bin").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinCodec.decodeOpt(x) }
+      val `aggregate` = (j \ "aggregate").asOpt[JsValue].flatMap { x => AggregateCodec.decodeOpt(x) }
+      val `timeUnit` = (j \ "timeUnit").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnitCodec.decodeOpt(x) }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `sort` = (j \ "sort").asOpt[JsValue].flatMap { x => SortCodec.decodeOpt(x) }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => TypeForShapeCodec.decodeOpt(x) }
+      return Some(ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1(
+        `test` = `test`.get,
+        `field` = `field`,
+        `scale` = `scale`,
+        `legend` = `legend`,
+        `bandPosition` = `bandPosition`,
+        `bin` = `bin`,
+        `aggregate` = `aggregate`,
+        `timeUnit` = `timeUnit`,
+        `title` = `title`,
+        `sort` = `sort`,
+        `type` = `type`,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`field`.map { x => "field" -> FieldCodec.encode(x) },
+        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
+        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
+        j.`bandPosition`.map { x => "bandPosition" -> ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPositionCodec.encode(x) },
+        j.`bin`.map { x => "bin" -> ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinCodec.encode(x) },
+        j.`aggregate`.map { x => "aggregate" -> AggregateCodec.encode(x) },
+        j.`timeUnit`.map { x => "timeUnit" -> ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnitCodec.encode(x) },
+        j.`title`.map { x => "title" -> TextCodec.encode(x) },
+        j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
+        j.`type`.map { x => "type" -> TypeForShapeCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // SharedEncodingXTimeUnit (UnionType)
 object SharedEncodingXTimeUnitCodec {
   def decode(j: JsValue): SharedEncodingXTimeUnit =
@@ -11504,6 +11871,21 @@ object SharedEncodingXTimeUnitCodec {
     j match {
       case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
       case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberAsObject2Condition (UnionType)
+object ConditionalAxisNumberAsObject2ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisNumberAsObject2Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberAsObject2Condition] =
+    ConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).map { ConditionalAxisNumberAsObject2ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(_) } } 
+  def encode(j: ConditionalAxisNumberAsObject2Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefNumberNullExprRef /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
+      case ConditionalAxisNumberAsObject2ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
     }
 }
 
@@ -11536,6 +11918,10 @@ object ProjectionConfigParallelCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// Padding (ConstrainedType)
+// see Padding (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
 // OverlayMarkDefStrokeCap (UnionType)
@@ -11772,8 +12158,8 @@ object ArrayOfJoinAggregateFieldDefCodec {
   def decode(j: JsValue): Seq[JoinAggregateFieldDef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[JoinAggregateFieldDef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      JoinAggregateFieldDefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      JoinAggregateFieldDefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[JoinAggregateFieldDef]): JsArray =
       JsArray(j.map { x => JoinAggregateFieldDefCodec.encode(x) })
 }
@@ -11809,6 +12195,22 @@ object ScaleConfigOffsetBandPaddingOuterCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2Bounds (EnumType)
+object TopLevelRepeatSpecAsObject2BoundsCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Bounds =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Bounds] =
+    j match {
+      case JsString("full") => Some(TopLevelRepeatSpecAsObject2BoundsFull)
+      case JsString("flush") => Some(TopLevelRepeatSpecAsObject2BoundsFlush)
+      case _ => None
+    }
+  def encode(j: TopLevelRepeatSpecAsObject2Bounds): JsValue =
+    j.payload
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // HeaderConfigTitleLimit (UnionType)
@@ -11918,6 +12320,23 @@ object MarkConfigOrderCodec {
       case MarkConfigOrderAsNull /* Global, NullType$ */ => JsNull
       case MarkConfigOrderAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
     }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition (ConstrainedType)
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPositionCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition] =
+    try {
+      j.asOpt[JsNumber]
+        .map { ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition(_) }
+    } catch {
+      case _:AssertionError => None
+    }
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition): JsValue =
+    Json.toJson(j.value)
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -12265,6 +12684,21 @@ object MarkConfigCornerRadiusCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontWeightAsObject1Condition (UnionType)
+object ConditionalAxisLabelFontWeightAsObject1ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisLabelFontWeightAsObject1Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontWeightAsObject1Condition] =
+    ConditionalPredicateValueDefFontWeightNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefFontWeightNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelFontWeightAsObject1ConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(_) } } 
+  def encode(j: ConditionalAxisLabelFontWeightAsObject1Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefFontWeightNullExprRef /* TypeRef */ => ConditionalPredicateValueDefFontWeightNullExprRefCodec.encode(x)
+      case ConditionalAxisLabelFontWeightAsObject1ConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefFontWeightNullExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // SharedEncodingStrokeDashBin (UnionType)
 object SharedEncodingStrokeDashBinCodec {
   def decode(j: JsValue): SharedEncodingStrokeDashBin =
@@ -12521,6 +12955,62 @@ object OverlayMarkDefDescriptionCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin (UnionType)
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin] =
+    j.asOpt[Boolean].map { ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinAsBool(_) }.orElse {
+    BinParamsCodec.decodeOpt(j).orElse {
+    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinAsNull } } } 
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Bin): JsValue =
+    j match {
+      case ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
+      case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
+      case ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinAsNull /* Global, NullType$ */ => JsNull
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1ParamsElement (UnionType)
+object TopLevelRepeatSpecAsObject1ParamsElementCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1ParamsElement =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1ParamsElement] =
+    VariableParameterCodec.decodeOpt(j).orElse {
+    TopLevelSelectionParameterCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1ParamsElement): JsValue =
+    j match {
+      case x:VariableParameter /* TypeRef */ => VariableParameterCodec.encode(x)
+      case x:TopLevelSelectionParameter /* TypeRef */ => TopLevelSelectionParameterCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ViewConfigDiscreteWidthAsObject2 (StructType)
+object ViewConfigDiscreteWidthAsObject2Codec {
+  def decode(j: JsValue): ViewConfigDiscreteWidthAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ViewConfigDiscreteWidthAsObject2] =
+    {
+      val `step` = (j \ "step").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      if(`step`.isEmpty) { return None }
+      return Some(ViewConfigDiscreteWidthAsObject2(
+        `step` = `step`.get,
+      ))
+    }
+
+  def encode(j: ViewConfigDiscreteWidthAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("step" -> Json.toJson(j.`step`)),
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // ScaleDatumDefDatum (UnionType)
@@ -12847,21 +13337,6 @@ object LegendConfigLegendYCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisNumberAsObjectCondition (UnionType)
-object ConditionalAxisNumberAsObjectConditionCodec {
-  def decode(j: JsValue): ConditionalAxisNumberAsObjectCondition =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberAsObjectCondition] =
-    ConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).orElse {
-    ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).map { ConditionalAxisNumberAsObjectConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(_) } } 
-  def encode(j: ConditionalAxisNumberAsObjectCondition): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefNumberNullExprRef /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
-      case ConditionalAxisNumberAsObjectConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // BarConfigY2 (UnionType)
 object BarConfigY2Codec {
   def decode(j: JsValue): BarConfigY2 =
@@ -13038,8 +13513,8 @@ object ArrayOfTopLevelHConcatSpecParamsElementCodec {
   def decode(j: JsValue): Seq[TopLevelHConcatSpecParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[TopLevelHConcatSpecParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelHConcatSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelHConcatSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[TopLevelHConcatSpecParamsElement]): JsArray =
       JsArray(j.map { x => TopLevelHConcatSpecParamsElementCodec.encode(x) })
 }
@@ -13181,38 +13656,6 @@ object ErrorBandConfigTensionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// HeaderConfigTitleAlign (UnionType)
-object HeaderConfigTitleAlignCodec {
-  def decode(j: JsValue): HeaderConfigTitleAlign =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[HeaderConfigTitleAlign] =
-    AlignCodec.decodeOpt(j).orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: HeaderConfigTitleAlign): JsValue =
-    j match {
-      case x:Align /* TypeRef */ => AlignCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// RangeSchemeAsObjectScheme (UnionType)
-object RangeSchemeAsObjectSchemeCodec {
-  def decode(j: JsValue): RangeSchemeAsObjectScheme =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[RangeSchemeAsObjectScheme] =
-    j.asOpt[String].map { RangeSchemeAsObjectSchemeAsString(_) }.orElse {
-    ArrayOfStringCodec.decodeOpt(j).map { RangeSchemeAsObjectSchemeAsArrayOfString(_) }.orElse {
-    ColorSchemeCodec.decodeOpt(j) } } 
-  def encode(j: RangeSchemeAsObjectScheme): JsValue =
-    j match {
-      case RangeSchemeAsObjectSchemeAsString(x) /* Base, StringType$ */ => Json.toJson(x)
-      case RangeSchemeAsObjectSchemeAsArrayOfString(x) /* Base, ArrayType */ => ArrayOfStringCodec.encode(x)
-      case x:ColorScheme /* TypeRef */ => ColorSchemeCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // JsonDataFormatType (ConstantType)
 object JsonDataFormatTypeCodec {
   def decode(j: JsValue): JsonDataFormatType =
@@ -13227,6 +13670,21 @@ object JsonDataFormatTypeCodec {
     JsString("json")
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// HeaderConfigTitleAlign (UnionType)
+object HeaderConfigTitleAlignCodec {
+  def decode(j: JsValue): HeaderConfigTitleAlign =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[HeaderConfigTitleAlign] =
+    AlignCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: HeaderConfigTitleAlign): JsValue =
+    j match {
+      case x:Align /* TypeRef */ => AlignCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // HeaderTitleAlign (UnionType)
@@ -13289,34 +13747,6 @@ object ViewBackgroundStrokeCapCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelFontStyleAsObject (StructType)
-object ConditionalAxisLabelFontStyleAsObjectCodec {
-  def decode(j: JsValue): ConditionalAxisLabelFontStyleAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontStyleAsObject] =
-    {
-      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelFontStyleAsObjectConditionCodec.decodeOpt(x) }
-      if(`condition`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => x.asOpt[String].map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalAxisLabelFontStyleAsObject(
-        `condition` = `condition`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalAxisLabelFontStyleAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("condition" -> ConditionalAxisLabelFontStyleAsObjectConditionCodec.encode(j.`condition`)),
-        j.`value`.map { x => "value" -> Json.toJson(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // HeaderLabelPadding (UnionType)
 object HeaderLabelPaddingCodec {
   def decode(j: JsValue): HeaderLabelPadding =
@@ -13337,8 +13767,8 @@ object ArrayOfWindowTransformFrameElementCodec {
   def decode(j: JsValue): Seq[WindowTransformFrameElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[WindowTransformFrameElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      WindowTransformFrameElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      WindowTransformFrameElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[WindowTransformFrameElement]): JsArray =
       JsArray(j.map { x => WindowTransformFrameElementCodec.encode(x) })
 }
@@ -13438,6 +13868,21 @@ object AxisTickBandCodec {
     j match {
       case x:AxisTickBandAsString /* TypeRef */ => AxisTickBandAsStringCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2Autosize (UnionType)
+object TopLevelRepeatSpecAsObject2AutosizeCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Autosize =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Autosize] =
+    AutosizeTypeCodec.decodeOpt(j).orElse {
+    AutoSizeParamsCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2Autosize): JsValue =
+    j match {
+      case x:AutosizeType /* TypeRef */ => AutosizeTypeCodec.encode(x)
+      case x:AutoSizeParams /* TypeRef */ => AutoSizeParamsCodec.encode(x)
     }
 }
 
@@ -13629,8 +14074,8 @@ object ArrayOfRangeRawElementCodec {
   def decode(j: JsValue): Seq[RangeRawElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[RangeRawElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      RangeRawElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      RangeRawElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[RangeRawElement]): JsArray =
       JsArray(j.map { x => RangeRawElementCodec.encode(x) })
 }
@@ -13890,6 +14335,21 @@ object RectConfigPadAngleCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShape (UnionType)
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShape =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShape] =
+    ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShape): JsValue =
+    j match {
+      case x:ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1 /* TypeRef */ => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Codec.encode(x)
+      case x:ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2 /* TypeRef */ => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // TickConfigCornerRadiusTopLeft (UnionType)
 object TickConfigCornerRadiusTopLeftCodec {
   def decode(j: JsValue): TickConfigCornerRadiusTopLeft =
@@ -13986,32 +14446,19 @@ object SharedEncodingTooltipCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelFontWeightAsObject (StructType)
-object ConditionalAxisLabelFontWeightAsObjectCodec {
-  def decode(j: JsValue): ConditionalAxisLabelFontWeightAsObject =
+// WindowEventType (UnionType)
+object WindowEventTypeCodec {
+  def decode(j: JsValue): WindowEventType =
     decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontWeightAsObject] =
-    {
-      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelFontWeightAsObjectConditionCodec.decodeOpt(x) }
-      if(`condition`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => FontWeightCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalAxisLabelFontWeightAsObject(
-        `condition` = `condition`.get,
-        `value` = `value`,
-      ))
+  def decodeOpt(j: JsValue): Option[WindowEventType] =
+    EventTypeCodec.decodeOpt(j).orElse {
+    j.asOpt[String].map { WindowEventTypeAsString(_) } } 
+  def encode(j: WindowEventType): JsValue =
+    j match {
+      case x:EventType /* TypeRef */ => EventTypeCodec.encode(x)
+      case WindowEventTypeAsString(x) /* Base, StringType$ */ => Json.toJson(x)
     }
-
-  def encode(j: ConditionalAxisLabelFontWeightAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("condition" -> ConditionalAxisLabelFontWeightAsObjectConditionCodec.encode(j.`condition`)),
-        j.`value`.map { x => "value" -> FontWeightCodec.encode(x) },
-      ).flatten.toMap
-    )
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 // FieldRangePredicateRange (UnionType)
@@ -14098,37 +14545,10 @@ object DictOfParseValueCodec {
   def decode(j: JsValue): Map[String,ParseValue] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Map[String,ParseValue]] =
-    Some(j.as[Map[String,JsValue]].mapValues { x => 
-      ParseValueCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Map[String,JsValue]].map { _.mapValues { x => 
+      ParseValueCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Map[String,ParseValue]): JsObject =
       JsObject(j.mapValues { x => ParseValueCodec.encode(x) })
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// ParameterExtentAsObject (StructType)
-object ParameterExtentAsObjectCodec {
-  def decode(j: JsValue): ParameterExtentAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ParameterExtentAsObject] =
-    {
-      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => x.asOpt[String] }
-      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
-      if(`param`.isEmpty) { return None }
-      return Some(ParameterExtentAsObject(
-        `field` = `field`,
-        `param` = `param`.get,
-      ))
-    }
-
-  def encode(j: ParameterExtentAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        j.`field`.map { x => "field" -> Json.toJson(x) },
-        Some("param" -> Json.toJson(j.`param`)),
-      ).flatten.toMap
-    )
 }
 
 
@@ -14485,6 +14905,21 @@ object TickConfigStrokeOffsetCodec {
     j match {
       case TickConfigStrokeOffsetAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisColorAsObject1Condition (UnionType)
+object ConditionalAxisColorAsObject1ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisColorAsObject1Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisColorAsObject1Condition] =
+    ConditionalPredicateValueDefColorNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefColorNullExprRefCodec.decodeOpt(j).map { ConditionalAxisColorAsObject1ConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(_) } } 
+  def encode(j: ConditionalAxisColorAsObject1Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefColorNullExprRef /* TypeRef */ => ConditionalPredicateValueDefColorNullExprRefCodec.encode(x)
+      case ConditionalAxisColorAsObject1ConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefColorNullExprRefCodec.encode(x)
     }
 }
 
@@ -15041,8 +15476,8 @@ object ArrayOfUnitSpecWithFrameParamsElementCodec {
   def decode(j: JsValue): Seq[UnitSpecWithFrameParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[UnitSpecWithFrameParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      UnitSpecWithFrameParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      UnitSpecWithFrameParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[UnitSpecWithFrameParamsElement]): JsArray =
       JsArray(j.map { x => UnitSpecWithFrameParamsElementCodec.encode(x) })
 }
@@ -15135,6 +15570,21 @@ object TitleConfigFontCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1Center (UnionType)
+object TopLevelRepeatSpecAsObject1CenterCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Center =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Center] =
+    j.asOpt[Boolean].map { TopLevelRepeatSpecAsObject1CenterAsBool(_) }.orElse {
+    RowColBooleanCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1Center): JsValue =
+    j match {
+      case TopLevelRepeatSpecAsObject1CenterAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
+      case x:RowColBoolean /* TypeRef */ => RowColBooleanCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // AxisTitleBaseline (UnionType)
 object AxisTitleBaselineCodec {
   def decode(j: JsValue): AxisTitleBaseline =
@@ -15161,6 +15611,21 @@ object SharedEncodingStrokeDashValueCodec {
     j match {
       case SharedEncodingStrokeDashValueAsArrayOfNumber(x) /* Base, ArrayType */ => ArrayOfNumberCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2Title (UnionType)
+object TopLevelRepeatSpecAsObject2TitleCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Title =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Title] =
+    TextCodec.decodeOpt(j).orElse {
+    TitleParamsCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2Title): JsValue =
+    j match {
+      case x:Text /* TypeRef */ => TextCodec.encode(x)
+      case x:TitleParams /* TypeRef */ => TitleParamsCodec.encode(x)
     }
 }
 
@@ -15424,21 +15889,6 @@ object AreaConfigSizeCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectParamsElement (UnionType)
-object TopLevelRepeatSpecAsObjectParamsElementCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectParamsElement =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectParamsElement] =
-    VariableParameterCodec.decodeOpt(j).orElse {
-    TopLevelSelectionParameterCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectParamsElement): JsValue =
-    j match {
-      case x:VariableParameter /* TypeRef */ => VariableParameterCodec.encode(x)
-      case x:TopLevelSelectionParameter /* TypeRef */ => TopLevelSelectionParameterCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // FacetFieldDefBin (UnionType)
 object FacetFieldDefBinCodec {
   def decode(j: JsValue): FacetFieldDefBin =
@@ -15471,6 +15921,34 @@ object RangeConfigDivergingCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberAsObject1 (StructType)
+object ConditionalAxisNumberAsObject1Codec {
+  def decode(j: JsValue): ConditionalAxisNumberAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberAsObject1] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisNumberAsObject1ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ConditionalAxisNumberAsObject1ValueCodec.decodeOpt(x) }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalAxisNumberAsObject1(
+        `condition` = `condition`.get,
+        `value` = `value`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisNumberAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisNumberAsObject1ConditionCodec.encode(j.`condition`)),
+        Some("value" -> ConditionalAxisNumberAsObject1ValueCodec.encode(j.`value`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // TitleConfigSubtitleFontWeight (UnionType)
 object TitleConfigSubtitleFontWeightCodec {
   def decode(j: JsValue): TitleConfigSubtitleFontWeight =
@@ -15486,17 +15964,21 @@ object TitleConfigSubtitleFontWeightCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisNumberArrayAsObjectCondition (UnionType)
-object ConditionalAxisNumberArrayAsObjectConditionCodec {
-  def decode(j: JsValue): ConditionalAxisNumberArrayAsObjectCondition =
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum (UnionType)
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject2DatumCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberArrayAsObjectCondition] =
-    ConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).orElse {
-    ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).map { ConditionalAxisNumberArrayAsObjectConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(_) } } 
-  def encode(j: ConditionalAxisNumberArrayAsObjectCondition): JsValue =
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum] =
+    PrimitiveValueCodec.decodeOpt(j).orElse {
+    DateTimeCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j).orElse {
+    RepeatRefCodec.decodeOpt(j) } } } 
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Datum): JsValue =
     j match {
-      case x:ConditionalPredicateValueDefNumberNullExprRef /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
-      case ConditionalAxisNumberArrayAsObjectConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
+      case x:PrimitiveValue /* TypeRef */ => PrimitiveValueCodec.encode(x)
+      case x:DateTime /* TypeRef */ => DateTimeCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+      case x:RepeatRef /* TypeRef */ => RepeatRefCodec.encode(x)
     }
 }
 
@@ -15893,34 +16375,6 @@ object RectConfigAriaRoleDescriptionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefFontStyleNullExprRefAsObject (StructType)
-object ConditionalPredicateValueDefFontStyleNullExprRefAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefFontStyleNullExprRefAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontStyleNullExprRefAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => x.asOpt[String].map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalPredicateValueDefFontStyleNullExprRefAsObject(
-        `test` = `test`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateValueDefFontStyleNullExprRefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        j.`value`.map { x => "value" -> Json.toJson(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // ImputeParamsKeyvals (UnionType)
 object ImputeParamsKeyvalsCodec {
   def decode(j: JsValue): ImputeParamsKeyvals =
@@ -16115,6 +16569,21 @@ object BarConfigAngleCodec {
     j match {
       case x:BarConfigAngleAsNumber /* TypeRef */ => BarConfigAngleAsNumberCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// EventStream (UnionType)
+object EventStreamCodec {
+  def decode(j: JsValue): EventStream =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[EventStream] =
+    EventStreamAsObject1Codec.decodeOpt(j).orElse {
+    EventStreamAsObject2Codec.decodeOpt(j) } 
+  def encode(j: EventStream): JsValue =
+    j match {
+      case x:EventStreamAsObject1 /* TypeRef */ => EventStreamAsObject1Codec.encode(x)
+      case x:EventStreamAsObject2 /* TypeRef */ => EventStreamAsObject2Codec.encode(x)
     }
 }
 
@@ -16417,6 +16886,91 @@ object LineConfigInvalidCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2 (StructType)
+object TopLevelRepeatSpecAsObject2Codec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2] =
+    {
+      val `name` = (j \ "name").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      val `description` = (j \ "description").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      val `params` = (j \ "params").asOpt[JsValue].flatMap { x => ArrayOfTopLevelRepeatSpecAsObject2ParamsElementCodec.decodeOpt(x) }
+      val `config` = (j \ "config").asOpt[JsValue].flatMap { x => ConfigCodec.decodeOpt(x) }
+      val `bounds` = (j \ "bounds").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2BoundsCodec.decodeOpt(x) }
+      val `datasets` = (j \ "datasets").asOpt[JsValue].flatMap { x => DictOfInlineDatasetCodec.decodeOpt(x) }
+      val `usermeta` = (j \ "usermeta").asOpt[JsValue].flatMap { x => DictOfAnyCodec.decodeOpt(x) }
+      val `columns` = (j \ "columns").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      val `resolve` = (j \ "resolve").asOpt[JsValue].flatMap { x => ResolveCodec.decodeOpt(x) }
+      val `spec` = (j \ "spec").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2SpecCodec.decodeOpt(x) }
+      if(`spec`.isEmpty) { return None }
+      val `padding` = (j \ "padding").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2PaddingCodec.decodeOpt(x) }
+      val `background` = (j \ "background").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2BackgroundCodec.decodeOpt(x) }
+      val `center` = (j \ "center").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2CenterCodec.decodeOpt(x) }
+      val `align` = (j \ "align").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2AlignCodec.decodeOpt(x) }
+      val `data` = (j \ "data").asOpt[JsValue].flatMap { x => DataCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `repeat` = (j \ "repeat").asOpt[JsValue].flatMap { x => LayerRepeatMappingCodec.decodeOpt(x) }
+      if(`repeat`.isEmpty) { return None }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2TitleCodec.decodeOpt(x) }
+      val `spacing` = (j \ "spacing").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2SpacingCodec.decodeOpt(x) }
+      val `$schema` = (j \ "$schema").asOpt[JsValue].flatMap { x => UriCodec.decodeOpt(x) }
+      val `autosize` = (j \ "autosize").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject2AutosizeCodec.decodeOpt(x) }
+      val `transform` = (j \ "transform").asOpt[JsValue].flatMap { x => ArrayOfTransformCodec.decodeOpt(x) }
+      return Some(TopLevelRepeatSpecAsObject2(
+        `name` = `name`,
+        `description` = `description`,
+        `params` = `params`,
+        `config` = `config`,
+        `bounds` = `bounds`,
+        `datasets` = `datasets`,
+        `usermeta` = `usermeta`,
+        `columns` = `columns`,
+        `resolve` = `resolve`,
+        `spec` = `spec`.get,
+        `padding` = `padding`,
+        `background` = `background`,
+        `center` = `center`,
+        `align` = `align`,
+        `data` = `data`,
+        `repeat` = `repeat`.get,
+        `title` = `title`,
+        `spacing` = `spacing`,
+        `$schema` = `$schema`,
+        `autosize` = `autosize`,
+        `transform` = `transform`,
+      ))
+    }
+
+  def encode(j: TopLevelRepeatSpecAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`name`.map { x => "name" -> Json.toJson(x) },
+        j.`description`.map { x => "description" -> Json.toJson(x) },
+        j.`params`.map { x => "params" -> ArrayOfTopLevelRepeatSpecAsObject2ParamsElementCodec.encode(x) },
+        j.`config`.map { x => "config" -> ConfigCodec.encode(x) },
+        j.`bounds`.map { x => "bounds" -> TopLevelRepeatSpecAsObject2BoundsCodec.encode(x) },
+        j.`datasets`.map { x => "datasets" -> DictOfInlineDatasetCodec.encode(x) },
+        j.`usermeta`.map { x => "usermeta" -> DictOfAnyCodec.encode(x) },
+        j.`columns`.map { x => "columns" -> Json.toJson(x) },
+        j.`resolve`.map { x => "resolve" -> ResolveCodec.encode(x) },
+        Some("spec" -> TopLevelRepeatSpecAsObject2SpecCodec.encode(j.`spec`)),
+        j.`padding`.map { x => "padding" -> TopLevelRepeatSpecAsObject2PaddingCodec.encode(x) },
+        j.`background`.map { x => "background" -> TopLevelRepeatSpecAsObject2BackgroundCodec.encode(x) },
+        j.`center`.map { x => "center" -> TopLevelRepeatSpecAsObject2CenterCodec.encode(x) },
+        j.`align`.map { x => "align" -> TopLevelRepeatSpecAsObject2AlignCodec.encode(x) },
+        j.`data`.map { x => "data" -> DataCodec.encode(x) },
+        Some("repeat" -> LayerRepeatMappingCodec.encode(j.`repeat`)),
+        j.`title`.map { x => "title" -> TopLevelRepeatSpecAsObject2TitleCodec.encode(x) },
+        j.`spacing`.map { x => "spacing" -> TopLevelRepeatSpecAsObject2SpacingCodec.encode(x) },
+        j.`$schema`.map { x => "$schema" -> UriCodec.encode(x) },
+        j.`autosize`.map { x => "autosize" -> TopLevelRepeatSpecAsObject2AutosizeCodec.encode(x) },
+        j.`transform`.map { x => "transform" -> ArrayOfTransformCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // RectConfigStartAngle (UnionType)
 object RectConfigStartAngleCodec {
   def decode(j: JsValue): RectConfigStartAngle =
@@ -16622,13 +17176,28 @@ object OverlayMarkDefStrokeOffsetCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// EventStreamAsObject1Filter (UnionType)
+object EventStreamAsObject1FilterCodec {
+  def decode(j: JsValue): EventStreamAsObject1Filter =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[EventStreamAsObject1Filter] =
+    j.asOpt[String].map { EventStreamAsObject1FilterAsString(_) }.orElse {
+    ArrayOfStringCodec.decodeOpt(j).map { EventStreamAsObject1FilterAsArrayOfString(_) } } 
+  def encode(j: EventStreamAsObject1Filter): JsValue =
+    j match {
+      case EventStreamAsObject1FilterAsString(x) /* Base, StringType$ */ => Json.toJson(x)
+      case EventStreamAsObject1FilterAsArrayOfString(x) /* Base, ArrayType */ => ArrayOfStringCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // ArrayOfTopLevelSelectionParameterViewsElement (ArrayType)
 object ArrayOfTopLevelSelectionParameterViewsElementCodec {
   def decode(j: JsValue): Seq[TopLevelSelectionParameterViewsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[TopLevelSelectionParameterViewsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelSelectionParameterViewsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelSelectionParameterViewsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[TopLevelSelectionParameterViewsElement]): JsArray =
       JsArray(j.map { x => TopLevelSelectionParameterViewsElementCodec.encode(x) })
 }
@@ -17027,6 +17596,55 @@ object ViewBackgroundStrokeOpacityCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// EventStreamAsObject2 (StructType)
+object EventStreamAsObject2Codec {
+  def decode(j: JsValue): EventStreamAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[EventStreamAsObject2] =
+    {
+      val `source` = (j \ "source").asOpt[JsValue].flatMap { x => EventStreamAsObject2SourceCodec.decodeOpt(x) }
+      if(`source`.isEmpty) { return None }
+      val `marktype` = (j \ "marktype").asOpt[JsValue].flatMap { x => MarkTypeCodec.decodeOpt(x) }
+      val `filter` = (j \ "filter").asOpt[JsValue].flatMap { x => EventStreamAsObject2FilterCodec.decodeOpt(x) }
+      val `markname` = (j \ "markname").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      val `consume` = (j \ "consume").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => WindowEventTypeCodec.decodeOpt(x) }
+      if(`type`.isEmpty) { return None }
+      val `debounce` = (j \ "debounce").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      val `between` = (j \ "between").asOpt[JsValue].flatMap { x => ArrayOfStreamCodec.decodeOpt(x) }
+      val `throttle` = (j \ "throttle").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      return Some(EventStreamAsObject2(
+        `source` = `source`.get,
+        `marktype` = `marktype`,
+        `filter` = `filter`,
+        `markname` = `markname`,
+        `consume` = `consume`,
+        `type` = `type`.get,
+        `debounce` = `debounce`,
+        `between` = `between`,
+        `throttle` = `throttle`,
+      ))
+    }
+
+  def encode(j: EventStreamAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("source" -> EventStreamAsObject2SourceCodec.encode(j.`source`)),
+        j.`marktype`.map { x => "marktype" -> MarkTypeCodec.encode(x) },
+        j.`filter`.map { x => "filter" -> EventStreamAsObject2FilterCodec.encode(x) },
+        j.`markname`.map { x => "markname" -> Json.toJson(x) },
+        j.`consume`.map { x => "consume" -> Json.toJson(x) },
+        Some("type" -> WindowEventTypeCodec.encode(j.`type`)),
+        j.`debounce`.map { x => "debounce" -> Json.toJson(x) },
+        j.`between`.map { x => "between" -> ArrayOfStreamCodec.encode(x) },
+        j.`throttle`.map { x => "throttle" -> Json.toJson(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // SharedEncodingStrokeWidth (StructType)
 object SharedEncodingStrokeWidthCodec {
   def decode(j: JsValue): SharedEncodingStrokeWidth =
@@ -17065,54 +17683,6 @@ object SharedEncodingStrokeWidthCodec {
         j.`title`.map { x => "title" -> TextCodec.encode(x) },
         j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
         j.`type`.map { x => "type" -> SharedEncodingStrokeWidthTypeCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// EventStreamAsObject (StructType)
-object EventStreamAsObjectCodec {
-  def decode(j: JsValue): EventStreamAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[EventStreamAsObject] =
-    {
-      val `source` = (j \ "source").asOpt[JsValue].flatMap { x => EventStreamAsObjectSourceCodec.decodeOpt(x) }
-      val `marktype` = (j \ "marktype").asOpt[JsValue].flatMap { x => MarkTypeCodec.decodeOpt(x) }
-      val `filter` = (j \ "filter").asOpt[JsValue].flatMap { x => EventStreamAsObjectFilterCodec.decodeOpt(x) }
-      val `markname` = (j \ "markname").asOpt[JsValue].flatMap { x => x.asOpt[String] }
-      val `consume` = (j \ "consume").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
-      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => EventTypeCodec.decodeOpt(x) }
-      if(`type`.isEmpty) { return None }
-      val `debounce` = (j \ "debounce").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
-      val `between` = (j \ "between").asOpt[JsValue].flatMap { x => ArrayOfStreamCodec.decodeOpt(x) }
-      val `throttle` = (j \ "throttle").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
-      return Some(EventStreamAsObject(
-        `source` = `source`,
-        `marktype` = `marktype`,
-        `filter` = `filter`,
-        `markname` = `markname`,
-        `consume` = `consume`,
-        `type` = `type`.get,
-        `debounce` = `debounce`,
-        `between` = `between`,
-        `throttle` = `throttle`,
-      ))
-    }
-
-  def encode(j: EventStreamAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        j.`source`.map { x => "source" -> EventStreamAsObjectSourceCodec.encode(x) },
-        j.`marktype`.map { x => "marktype" -> MarkTypeCodec.encode(x) },
-        j.`filter`.map { x => "filter" -> EventStreamAsObjectFilterCodec.encode(x) },
-        j.`markname`.map { x => "markname" -> Json.toJson(x) },
-        j.`consume`.map { x => "consume" -> Json.toJson(x) },
-        Some("type" -> EventTypeCodec.encode(j.`type`)),
-        j.`debounce`.map { x => "debounce" -> Json.toJson(x) },
-        j.`between`.map { x => "between" -> ArrayOfStreamCodec.encode(x) },
-        j.`throttle`.map { x => "throttle" -> Json.toJson(x) },
       ).flatten.toMap
     )
 }
@@ -17272,22 +17842,6 @@ object SphereGeneratorCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// EventStreamAsObjectSource (EnumType)
-object EventStreamAsObjectSourceCodec {
-  def decode(j: JsValue): EventStreamAsObjectSource =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[EventStreamAsObjectSource] =
-    j match {
-      case JsString("view") => Some(EventStreamAsObjectSourceView)
-      case JsString("scope") => Some(EventStreamAsObjectSourceScope)
-      case _ => None
-    }
-  def encode(j: EventStreamAsObjectSource): JsValue =
-    j.payload
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // LegendConfigSymbolOffset (UnionType)
 object LegendConfigSymbolOffsetCodec {
   def decode(j: JsValue): LegendConfigSymbolOffset =
@@ -17301,24 +17855,6 @@ object LegendConfigSymbolOffsetCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
-
-////////////////////////////////////////////////////////////////////////
-// AxisOrient (EnumType)
-object AxisOrientCodec {
-  def decode(j: JsValue): AxisOrient =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[AxisOrient] =
-    j match {
-      case JsString("top") => Some(AxisOrientTop)
-      case JsString("bottom") => Some(AxisOrientBottom)
-      case JsString("left") => Some(AxisOrientLeft)
-      case JsString("right") => Some(AxisOrientRight)
-      case _ => None
-    }
-  def encode(j: AxisOrient): JsValue =
-    j.payload
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // DomainUnionWith (StructType)
@@ -17345,6 +17881,39 @@ object DomainUnionWithCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// AxisOrient (EnumType)
+object AxisOrientCodec {
+  def decode(j: JsValue): AxisOrient =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[AxisOrient] =
+    j match {
+      case JsString("top") => Some(AxisOrientTop)
+      case JsString("bottom") => Some(AxisOrientBottom)
+      case JsString("left") => Some(AxisOrientLeft)
+      case JsString("right") => Some(AxisOrientRight)
+      case _ => None
+    }
+  def encode(j: AxisOrient): JsValue =
+    j.payload
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefStringNullExprRefAsObject1Value (UnionType)
+object ConditionalPredicateValueDefStringNullExprRefAsObject1ValueCodec {
+  def decode(j: JsValue): ConditionalPredicateValueDefStringNullExprRefAsObject1Value =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefStringNullExprRefAsObject1Value] =
+    j.asOpt[String].map { ConditionalPredicateValueDefStringNullExprRefAsObject1ValueAsString(_) }.orElse {
+    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalPredicateValueDefStringNullExprRefAsObject1ValueAsNull } } 
+  def encode(j: ConditionalPredicateValueDefStringNullExprRefAsObject1Value): JsValue =
+    j match {
+      case ConditionalPredicateValueDefStringNullExprRefAsObject1ValueAsString(x) /* Base, StringType$ */ => Json.toJson(x)
+      case ConditionalPredicateValueDefStringNullExprRefAsObject1ValueAsNull /* Global, NullType$ */ => JsNull
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // AreaConfigUrl (UnionType)
 object AreaConfigUrlCodec {
   def decode(j: JsValue): AreaConfigUrl =
@@ -17365,8 +17934,8 @@ object ArrayOfImputeParamsFrameElementCodec {
   def decode(j: JsValue): Seq[ImputeParamsFrameElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ImputeParamsFrameElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ImputeParamsFrameElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ImputeParamsFrameElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ImputeParamsFrameElement]): JsArray =
       JsArray(j.map { x => ImputeParamsFrameElementCodec.encode(x) })
 }
@@ -17377,8 +17946,8 @@ object ArrayOfAnyCodec {
   def decode(j: JsValue): Seq[JsValue] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[JsValue]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      x.asOpt[JsValue].getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      x.asOpt[JsValue].getOrElse { return None } } }
   def encode(j: Seq[JsValue]): JsArray =
       JsArray(j.map { x => Json.toJson(x) })
 }
@@ -17652,21 +18221,6 @@ object TitleParamsSubtitlePaddingCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ViewConfigDiscreteHeight (UnionType)
-object ViewConfigDiscreteHeightCodec {
-  def decode(j: JsValue): ViewConfigDiscreteHeight =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ViewConfigDiscreteHeight] =
-    j.asOpt[JsNumber].map { ViewConfigDiscreteHeightAsNumber(_) }.orElse {
-    ViewConfigDiscreteHeightAsObjectCodec.decodeOpt(j) } 
-  def encode(j: ViewConfigDiscreteHeight): JsValue =
-    j match {
-      case ViewConfigDiscreteHeightAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case x:ViewConfigDiscreteHeightAsObject /* TypeRef */ => ViewConfigDiscreteHeightAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // MarkDefDy (UnionType)
 object MarkDefDyCodec {
   def decode(j: JsValue): MarkDefDy =
@@ -17833,8 +18387,8 @@ object ArrayOfNumberCodec {
   def decode(j: JsValue): Seq[JsNumber] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[JsNumber]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      x.asOpt[JsNumber].getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      x.asOpt[JsNumber].getOrElse { return None } } }
   def encode(j: Seq[JsNumber]): JsArray =
       JsArray(j.map { x => Json.toJson(x) })
 }
@@ -17887,6 +18441,21 @@ object AxisTickDashOffsetCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefStringNullExprRef (UnionType)
+object ConditionalPredicateValueDefStringNullExprRefCodec {
+  def decode(j: JsValue): ConditionalPredicateValueDefStringNullExprRef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefStringNullExprRef] =
+    ConditionalPredicateValueDefStringNullExprRefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateValueDefStringNullExprRefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateValueDefStringNullExprRef): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefStringNullExprRefAsObject1 /* TypeRef */ => ConditionalPredicateValueDefStringNullExprRefAsObject1Codec.encode(x)
+      case x:ConditionalPredicateValueDefStringNullExprRefAsObject2 /* TypeRef */ => ConditionalPredicateValueDefStringNullExprRefAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // FieldOrDatumDefWithConditionStringFieldDefTextTimeUnit (UnionType)
 object FieldOrDatumDefWithConditionStringFieldDefTextTimeUnitCodec {
   def decode(j: JsValue): FieldOrDatumDefWithConditionStringFieldDefTextTimeUnit =
@@ -17907,8 +18476,8 @@ object ArrayOfSingleDefUnitChannelCodec {
   def decode(j: JsValue): Seq[SingleDefUnitChannel] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[SingleDefUnitChannel]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      SingleDefUnitChannelCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      SingleDefUnitChannelCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[SingleDefUnitChannel]): JsArray =
       JsArray(j.map { x => SingleDefUnitChannelCodec.encode(x) })
 }
@@ -17984,19 +18553,6 @@ object LineConfigXCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDef (UnionType)
-object ConditionalPredicateMarkPropFieldOrDatumDefCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDef =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDef] =
-    ConditionalPredicateMarkPropFieldOrDatumDefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDef): JsValue =
-    j match {
-      case x:ConditionalPredicateMarkPropFieldOrDatumDefAsObject /* TypeRef */ => ConditionalPredicateMarkPropFieldOrDatumDefAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // AxisTitlePadding (UnionType)
 object AxisTitlePaddingCodec {
   def decode(j: JsValue): AxisTitlePadding =
@@ -18017,8 +18573,8 @@ object ArrayOfConditionalPredicateValueDefFontWeightNullExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalPredicateValueDefFontWeightNullExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalPredicateValueDefFontWeightNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalPredicateValueDefFontWeightNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalPredicateValueDefFontWeightNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalPredicateValueDefFontWeightNullExprRef]): JsArray =
       JsArray(j.map { x => ConditionalPredicateValueDefFontWeightNullExprRefCodec.encode(x) })
 }
@@ -18044,8 +18600,8 @@ object ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalPredicateValueDefNumberNullExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalPredicateValueDefNumberNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalPredicateValueDefNumberNullExprRef]): JsArray =
       JsArray(j.map { x => ConditionalPredicateValueDefNumberNullExprRefCodec.encode(x) })
 }
@@ -18097,6 +18653,21 @@ object SharedEncodingRadius2DatumCodec {
       case x:DateTime /* TypeRef */ => DateTimeCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
       case x:RepeatRef /* TypeRef */ => RepeatRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelAlignAsObject1Condition (UnionType)
+object ConditionalAxisLabelAlignAsObject1ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisLabelAlignAsObject1Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelAlignAsObject1Condition] =
+    ConditionalPredicateValueDefAlignNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefAlignNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelAlignAsObject1ConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(_) } } 
+  def encode(j: ConditionalAxisLabelAlignAsObject1Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefAlignNullExprRef /* TypeRef */ => ConditionalPredicateValueDefAlignNullExprRefCodec.encode(x)
+      case ConditionalAxisLabelAlignAsObject1ConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefAlignNullExprRefCodec.encode(x)
     }
 }
 
@@ -18297,10 +18868,6 @@ object SharedEncodingColorTimeUnitCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// RectConfigInnerRadius (ConstrainedType)
-// see RectConfigInnerRadius (UnionType)
-
-////////////////////////////////////////////////////////////////////////
 // TickConfigAspect (UnionType)
 object TickConfigAspectCodec {
   def decode(j: JsValue): TickConfigAspect =
@@ -18344,6 +18911,10 @@ object ConfigParamsElementCodec {
       case x:TopLevelSelectionParameter /* TypeRef */ => TopLevelSelectionParameterCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// RectConfigInnerRadius (ConstrainedType)
+// see RectConfigInnerRadius (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
 // AreaConfigCursor (UnionType)
@@ -18502,8 +19073,8 @@ object ArrayOfBoolCodec {
   def decode(j: JsValue): Seq[Boolean] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[Boolean]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      x.asOpt[Boolean].getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      x.asOpt[Boolean].getOrElse { return None } } }
   def encode(j: Seq[Boolean]): JsArray =
       JsArray(j.map { x => Json.toJson(x) })
 }
@@ -18650,8 +19221,8 @@ object DictOfSelectionInitCodec {
   def decode(j: JsValue): Map[String,SelectionInit] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Map[String,SelectionInit]] =
-    Some(j.as[Map[String,JsValue]].mapValues { x => 
-      SelectionInitCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Map[String,JsValue]].map { _.mapValues { x => 
+      SelectionInitCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Map[String,SelectionInit]): JsObject =
       JsObject(j.mapValues { x => SelectionInitCodec.encode(x) })
 }
@@ -18792,6 +19363,21 @@ object OverlayMarkDefDyCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelBaseline (UnionType)
+object ConditionalAxisLabelBaselineCodec {
+  def decode(j: JsValue): ConditionalAxisLabelBaseline =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelBaseline] =
+    ConditionalAxisLabelBaselineAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalAxisLabelBaselineAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalAxisLabelBaseline): JsValue =
+    j match {
+      case x:ConditionalAxisLabelBaselineAsObject1 /* TypeRef */ => ConditionalAxisLabelBaselineAsObject1Codec.encode(x)
+      case x:ConditionalAxisLabelBaselineAsObject2 /* TypeRef */ => ConditionalAxisLabelBaselineAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // HeaderTitleFontWeight (UnionType)
 object HeaderTitleFontWeightCodec {
   def decode(j: JsValue): HeaderTitleFontWeight =
@@ -18854,22 +19440,6 @@ object HeaderConfigLabelPaddingCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// Unaggregated (ConstantType)
-object UnaggregatedCodec {
-  def decode(j: JsValue): Unaggregated =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[Unaggregated] =
-    j match {
-      case JsString("unaggregated") => Some(Unaggregated())
-      case _ => None
-    }
-  def encode(j: Unaggregated): JsValue =
-    JsString("unaggregated")
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // ValueDefWithConditionMarkPropFieldOrDatumDefTypeForShapeStringNullCondition (UnionType)
 object ValueDefWithConditionMarkPropFieldOrDatumDefTypeForShapeStringNullConditionCodec {
   def decode(j: JsValue): ValueDefWithConditionMarkPropFieldOrDatumDefTypeForShapeStringNullCondition =
@@ -18900,6 +19470,22 @@ object ProjectionScaleCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// Unaggregated (ConstantType)
+object UnaggregatedCodec {
+  def decode(j: JsValue): Unaggregated =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[Unaggregated] =
+    j match {
+      case JsString("unaggregated") => Some(Unaggregated())
+      case _ => None
+    }
+  def encode(j: Unaggregated): JsValue =
+    JsString("unaggregated")
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // AreaConfigLine (UnionType)
@@ -18949,30 +19535,6 @@ object AxisConfigBandPositionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ViewConfigDiscreteWidthAsObject (StructType)
-object ViewConfigDiscreteWidthAsObjectCodec {
-  def decode(j: JsValue): ViewConfigDiscreteWidthAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ViewConfigDiscreteWidthAsObject] =
-    {
-      val `step` = (j \ "step").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
-      if(`step`.isEmpty) { return None }
-      return Some(ViewConfigDiscreteWidthAsObject(
-        `step` = `step`.get,
-      ))
-    }
-
-  def encode(j: ViewConfigDiscreteWidthAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("step" -> Json.toJson(j.`step`)),
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // AxisConfigLabelAngleAsNumber (ConstrainedType)
 object AxisConfigLabelAngleAsNumberCodec {
   def decode(j: JsValue): AxisConfigLabelAngleAsNumber =
@@ -19002,18 +19564,6 @@ object AreaConfigRadius2Codec {
       case AreaConfigRadius2AsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ArrayOfTopLevelRepeatSpecAsObjectParamsElement (ArrayType)
-object ArrayOfTopLevelRepeatSpecAsObjectParamsElementCodec {
-  def decode(j: JsValue): Seq[TopLevelRepeatSpecAsObjectParamsElement] =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[Seq[TopLevelRepeatSpecAsObjectParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelRepeatSpecAsObjectParamsElementCodec.decodeOpt(x).getOrElse { return None } })
-  def encode(j: Seq[TopLevelRepeatSpecAsObjectParamsElement]): JsArray =
-      JsArray(j.map { x => TopLevelRepeatSpecAsObjectParamsElementCodec.encode(x) })
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -19080,6 +19630,82 @@ object SharedEncodingDetailCodec {
       case SharedEncodingDetailAsArrayOfFieldDefWithoutScale(x) /* Base, ArrayType */ => ArrayOfFieldDefWithoutScaleCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum (UnionType)
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject2DatumCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum] =
+    PrimitiveValueCodec.decodeOpt(j).orElse {
+    DateTimeCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j).orElse {
+    RepeatRefCodec.decodeOpt(j) } } } 
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObject2Datum): JsValue =
+    j match {
+      case x:PrimitiveValue /* TypeRef */ => PrimitiveValueCodec.encode(x)
+      case x:DateTime /* TypeRef */ => DateTimeCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+      case x:RepeatRef /* TypeRef */ => RepeatRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1 (StructType)
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1Codec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1] =
+    {
+      val `empty` = (j \ "empty").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
+      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => FieldCodec.decodeOpt(x) }
+      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`param`.isEmpty) { return None }
+      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPositionCodec.decodeOpt(x) }
+      val `bin` = (j \ "bin").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinCodec.decodeOpt(x) }
+      val `aggregate` = (j \ "aggregate").asOpt[JsValue].flatMap { x => AggregateCodec.decodeOpt(x) }
+      val `timeUnit` = (j \ "timeUnit").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnitCodec.decodeOpt(x) }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `sort` = (j \ "sort").asOpt[JsValue].flatMap { x => SortCodec.decodeOpt(x) }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => TypeForShapeCodec.decodeOpt(x) }
+      return Some(ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1(
+        `empty` = `empty`,
+        `field` = `field`,
+        `param` = `param`.get,
+        `scale` = `scale`,
+        `legend` = `legend`,
+        `bandPosition` = `bandPosition`,
+        `bin` = `bin`,
+        `aggregate` = `aggregate`,
+        `timeUnit` = `timeUnit`,
+        `title` = `title`,
+        `sort` = `sort`,
+        `type` = `type`,
+      ))
+    }
+
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`empty`.map { x => "empty" -> Json.toJson(x) },
+        j.`field`.map { x => "field" -> FieldCodec.encode(x) },
+        Some("param" -> Json.toJson(j.`param`)),
+        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
+        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
+        j.`bandPosition`.map { x => "bandPosition" -> ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPositionCodec.encode(x) },
+        j.`bin`.map { x => "bin" -> ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BinCodec.encode(x) },
+        j.`aggregate`.map { x => "aggregate" -> AggregateCodec.encode(x) },
+        j.`timeUnit`.map { x => "timeUnit" -> ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnitCodec.encode(x) },
+        j.`title`.map { x => "title" -> TextCodec.encode(x) },
+        j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
+        j.`type`.map { x => "type" -> TypeForShapeCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // AreaConfigStrokeOffset (UnionType)
@@ -19153,6 +19779,21 @@ object MarkConfigTextCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefAlignNullExprRef (UnionType)
+object ConditionalPredicateValueDefAlignNullExprRefCodec {
+  def decode(j: JsValue): ConditionalPredicateValueDefAlignNullExprRef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefAlignNullExprRef] =
+    ConditionalPredicateValueDefAlignNullExprRefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateValueDefAlignNullExprRefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateValueDefAlignNullExprRef): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefAlignNullExprRefAsObject1 /* TypeRef */ => ConditionalPredicateValueDefAlignNullExprRefAsObject1Codec.encode(x)
+      case x:ConditionalPredicateValueDefAlignNullExprRefAsObject2 /* TypeRef */ => ConditionalPredicateValueDefAlignNullExprRefAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // AxisConfigTitleLineHeight (UnionType)
 object AxisConfigTitleLineHeightCodec {
   def decode(j: JsValue): AxisConfigTitleLineHeight =
@@ -19187,34 +19828,6 @@ object DateTimeSecondsCodec {
   def encode(j: DateTimeSeconds): JsValue =
     Json.toJson(j.value)
 }
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefAlignNullExprRefAsObject (StructType)
-object ConditionalPredicateValueDefAlignNullExprRefAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefAlignNullExprRefAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefAlignNullExprRefAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => AlignCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalPredicateValueDefAlignNullExprRefAsObject(
-        `test` = `test`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateValueDefAlignNullExprRefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        j.`value`.map { x => "value" -> AlignCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // TimeUnit (UnionType)
@@ -19446,21 +20059,6 @@ object SharedEncodingShapeDatumCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// AreaConfigBaseline (UnionType)
-object AreaConfigBaselineCodec {
-  def decode(j: JsValue): AreaConfigBaseline =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[AreaConfigBaseline] =
-    TextBaselineCodec.decodeOpt(j).orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: AreaConfigBaseline): JsValue =
-    j match {
-      case x:TextBaseline /* TypeRef */ => TextBaselineCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // ScaleConfigBandWithNestedOffsetPaddingInner (UnionType)
 object ScaleConfigBandWithNestedOffsetPaddingInnerCodec {
   def decode(j: JsValue): ScaleConfigBandWithNestedOffsetPaddingInner =
@@ -19568,19 +20166,6 @@ object PositionDatumDefCodec {
     )
 }
 
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShape (UnionType)
-object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShape =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShape] =
-    ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShape): JsValue =
-    j match {
-      case x:ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject /* TypeRef */ => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectCodec.encode(x)
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////
 // ConditionalPredicateValueDefNumberExprRefValue (UnionType)
@@ -19906,6 +20491,21 @@ object ScaleResolveMapCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1Spacing (UnionType)
+object TopLevelRepeatSpecAsObject1SpacingCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Spacing =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Spacing] =
+    j.asOpt[JsNumber].map { TopLevelRepeatSpecAsObject1SpacingAsNumber(_) }.orElse {
+    RowColNumberCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1Spacing): JsValue =
+    j match {
+      case TopLevelRepeatSpecAsObject1SpacingAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:RowColNumber /* TypeRef */ => RowColNumberCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // ProjectionConfigSpacing (UnionType)
 object ProjectionConfigSpacingCodec {
   def decode(j: JsValue): ProjectionConfigSpacing =
@@ -19979,6 +20579,36 @@ object RectConfigAspectCodec {
     j match {
       case RectConfigAspectAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// AreaConfigBaseline (UnionType)
+object AreaConfigBaselineCodec {
+  def decode(j: JsValue): AreaConfigBaseline =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[AreaConfigBaseline] =
+    TextBaselineCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: AreaConfigBaseline): JsValue =
+    j match {
+      case x:TextBaseline /* TypeRef */ => TextBaselineCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberArrayAsObject2Condition (UnionType)
+object ConditionalAxisNumberArrayAsObject2ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisNumberArrayAsObject2Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberArrayAsObject2Condition] =
+    ConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.decodeOpt(j).map { ConditionalAxisNumberArrayAsObject2ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(_) } } 
+  def encode(j: ConditionalAxisNumberArrayAsObject2Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefNumberNullExprRef /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
+      case ConditionalAxisNumberArrayAsObject2ConditionAsArrayOfConditionalPredicateValueDefNumberNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefNumberNullExprRefCodec.encode(x)
     }
 }
 
@@ -20099,17 +20729,31 @@ object MarkDefContinuousBandSizeCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisColor (UnionType)
-object ConditionalAxisColorCodec {
-  def decode(j: JsValue): ConditionalAxisColor =
+// ParameterExtentAsObject1 (StructType)
+object ParameterExtentAsObject1Codec {
+  def decode(j: JsValue): ParameterExtentAsObject1 =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisColor] =
-    ConditionalAxisColorAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalAxisColor): JsValue =
-    j match {
-      case x:ConditionalAxisColorAsObject /* TypeRef */ => ConditionalAxisColorAsObjectCodec.encode(x)
+
+  def decodeOpt(j: JsValue): Option[ParameterExtentAsObject1] =
+    {
+      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`param`.isEmpty) { return None }
+      return Some(ParameterExtentAsObject1(
+        `field` = `field`,
+        `param` = `param`.get,
+      ))
     }
+
+  def encode(j: ParameterExtentAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`field`.map { x => "field" -> Json.toJson(x) },
+        Some("param" -> Json.toJson(j.`param`)),
+      ).flatten.toMap
+    )
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // TitleConfigLimitAsNumber (ConstrainedType)
@@ -20146,21 +20790,46 @@ object AxisConfigGridOpacityCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin (UnionType)
-object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin =
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2 (StructType)
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2 =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin] =
-    j.asOpt[Boolean].map { ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsBool(_) }.orElse {
-    BinParamsCodec.decodeOpt(j).orElse {
-    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsNull } } } 
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBin): JsValue =
-    j match {
-      case ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
-      case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
-      case ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsNull /* Global, NullType$ */ => JsNull
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `datum` = (j \ "datum").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2DatumCodec.decodeOpt(x) }
+      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPositionCodec.decodeOpt(x) }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => TypeCodec.decodeOpt(x) }
+      return Some(ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2(
+        `test` = `test`.get,
+        `scale` = `scale`,
+        `datum` = `datum`,
+        `legend` = `legend`,
+        `bandPosition` = `bandPosition`,
+        `title` = `title`,
+        `type` = `type`,
+      ))
     }
+
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
+        j.`datum`.map { x => "datum" -> ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2DatumCodec.encode(x) },
+        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
+        j.`bandPosition`.map { x => "bandPosition" -> ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPositionCodec.encode(x) },
+        j.`title`.map { x => "title" -> TextCodec.encode(x) },
+        j.`type`.map { x => "type" -> TypeCodec.encode(x) },
+      ).flatten.toMap
+    )
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // SharedEncodingOpacityBin (UnionType)
@@ -20280,11 +20949,56 @@ object ArrayOfTopLevelLayerSpecLayerElementCodec {
   def decode(j: JsValue): Seq[TopLevelLayerSpecLayerElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[TopLevelLayerSpecLayerElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelLayerSpecLayerElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelLayerSpecLayerElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[TopLevelLayerSpecLayerElement]): JsArray =
       JsArray(j.map { x => TopLevelLayerSpecLayerElementCodec.encode(x) })
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2 (StructType)
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Codec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2] =
+    {
+      val `empty` = (j \ "empty").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
+      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`param`.isEmpty) { return None }
+      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `datum` = (j \ "datum").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2DatumCodec.decodeOpt(x) }
+      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPositionCodec.decodeOpt(x) }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => TypeCodec.decodeOpt(x) }
+      return Some(ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2(
+        `empty` = `empty`,
+        `param` = `param`.get,
+        `scale` = `scale`,
+        `datum` = `datum`,
+        `legend` = `legend`,
+        `bandPosition` = `bandPosition`,
+        `title` = `title`,
+        `type` = `type`,
+      ))
+    }
+
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`empty`.map { x => "empty" -> Json.toJson(x) },
+        Some("param" -> Json.toJson(j.`param`)),
+        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
+        j.`datum`.map { x => "datum" -> ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2DatumCodec.encode(x) },
+        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
+        j.`bandPosition`.map { x => "bandPosition" -> ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPositionCodec.encode(x) },
+        j.`title`.map { x => "title" -> TextCodec.encode(x) },
+        j.`type`.map { x => "type" -> TypeCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // LineConfigOpacity (ConstrainedType)
@@ -20543,6 +21257,34 @@ object EncodingDescriptionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefColorNullExprRefAsObject1 (StructType)
+object ConditionalPredicateValueDefColorNullExprRefAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefColorNullExprRefAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefColorNullExprRefAsObject1] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ColorCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefColorNullExprRefAsObject1(
+        `test` = `test`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefColorNullExprRefAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`value`.map { x => "value" -> ColorCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // FieldOrDatumDefWithConditionStringFieldDefTextCondition (UnionType)
 object FieldOrDatumDefWithConditionStringFieldDefTextConditionCodec {
   def decode(j: JsValue): FieldOrDatumDefWithConditionStringFieldDefTextCondition =
@@ -20569,21 +21311,6 @@ object TitleParamsFontSizeCodec {
     j match {
       case x:TitleParamsFontSizeAsNumber /* TypeRef */ => TitleParamsFontSizeAsNumberCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectAutosize (UnionType)
-object TopLevelRepeatSpecAsObjectAutosizeCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectAutosize =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectAutosize] =
-    AutosizeTypeCodec.decodeOpt(j).orElse {
-    AutoSizeParamsCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectAutosize): JsValue =
-    j match {
-      case x:AutosizeType /* TypeRef */ => AutosizeTypeCodec.encode(x)
-      case x:AutoSizeParams /* TypeRef */ => AutoSizeParamsCodec.encode(x)
     }
 }
 
@@ -20781,8 +21508,8 @@ object DictOfSelectionInitIntervalCodec {
   def decode(j: JsValue): Map[String,SelectionInitInterval] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Map[String,SelectionInitInterval]] =
-    Some(j.as[Map[String,JsValue]].mapValues { x => 
-      SelectionInitIntervalCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Map[String,JsValue]].map { _.mapValues { x => 
+      SelectionInitIntervalCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Map[String,SelectionInitInterval]): JsObject =
       JsObject(j.mapValues { x => SelectionInitIntervalCodec.encode(x) })
 }
@@ -20809,8 +21536,8 @@ object ArrayOfFitCodec {
   def decode(j: JsValue): Seq[Fit] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[Fit]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      FitCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      FitCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[Fit]): JsArray =
       JsArray(j.map { x => FitCodec.encode(x) })
 }
@@ -20848,6 +21575,21 @@ object SelectionParameterCodec {
     )
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDef (UnionType)
+object ConditionalPredicateMarkPropFieldOrDatumDefCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDef] =
+    ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDef): JsValue =
+    j match {
+      case x:ConditionalPredicateMarkPropFieldOrDatumDefAsObject1 /* TypeRef */ => ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Codec.encode(x)
+      case x:ConditionalPredicateMarkPropFieldOrDatumDefAsObject2 /* TypeRef */ => ConditionalPredicateMarkPropFieldOrDatumDefAsObject2Codec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // MarkDefCornerRadiusBottomRight (UnionType)
@@ -20914,21 +21656,6 @@ object HeaderTitleAngleCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectAlign (UnionType)
-object TopLevelRepeatSpecAsObjectAlignCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectAlign =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectAlign] =
-    LayoutAlignCodec.decodeOpt(j).orElse {
-    RowColLayoutAlignCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectAlign): JsValue =
-    j match {
-      case x:LayoutAlign /* TypeRef */ => LayoutAlignCodec.encode(x)
-      case x:RowColLayoutAlign /* TypeRef */ => RowColLayoutAlignCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // ScaleDomainAsArrayElement (UnionType)
 object ScaleDomainAsArrayElementCodec {
   def decode(j: JsValue): ScaleDomainAsArrayElement =
@@ -20948,21 +21675,6 @@ object ScaleDomainAsArrayElementCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
       case ScaleDomainAsArrayElementAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
       case ScaleDomainAsArrayElementAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisStringAsObjectValue (UnionType)
-object ConditionalAxisStringAsObjectValueCodec {
-  def decode(j: JsValue): ConditionalAxisStringAsObjectValue =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisStringAsObjectValue] =
-    j.asOpt[String].map { ConditionalAxisStringAsObjectValueAsString(_) }.orElse {
-    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalAxisStringAsObjectValueAsNull } } 
-  def encode(j: ConditionalAxisStringAsObjectValue): JsValue =
-    j match {
-      case ConditionalAxisStringAsObjectValueAsString(x) /* Base, StringType$ */ => Json.toJson(x)
-      case ConditionalAxisStringAsObjectValueAsNull /* Global, NullType$ */ => JsNull
     }
 }
 
@@ -20993,23 +21705,6 @@ object HeaderTitleFontSizeCodec {
     j match {
       case HeaderTitleFontSizeAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// RangeScheme (UnionType)
-object RangeSchemeCodec {
-  def decode(j: JsValue): RangeScheme =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[RangeScheme] =
-    RangeEnumCodec.decodeOpt(j).orElse {
-    ArrayOfRangeRawElementCodec.decodeOpt(j).map { RangeSchemeAsArrayOfRangeRawElement(_) }.orElse {
-    RangeSchemeAsObjectCodec.decodeOpt(j) } } 
-  def encode(j: RangeScheme): JsValue =
-    j match {
-      case x:RangeEnum /* TypeRef */ => RangeEnumCodec.encode(x)
-      case RangeSchemeAsArrayOfRangeRawElement(x) /* Base, ArrayType */ => ArrayOfRangeRawElementCodec.encode(x)
-      case x:RangeSchemeAsObject /* TypeRef */ => RangeSchemeAsObjectCodec.encode(x)
     }
 }
 
@@ -21172,6 +21867,23 @@ object MarkDefRadiusOffsetCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin (UnionType)
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin] =
+    j.asOpt[Boolean].map { ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinAsBool(_) }.orElse {
+    BinParamsCodec.decodeOpt(j).orElse {
+    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinAsNull } } } 
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObject1Bin): JsValue =
+    j match {
+      case ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
+      case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
+      case ConditionalParameterMarkPropFieldOrDatumDefAsObject1BinAsNull /* Global, NullType$ */ => JsNull
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // AxisConfigTitleLimit (UnionType)
 object AxisConfigTitleLimitCodec {
   def decode(j: JsValue): AxisConfigTitleLimit =
@@ -21192,8 +21904,8 @@ object ArrayOfColorCodec {
   def decode(j: JsValue): Seq[Color] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[Color]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ColorCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ColorCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[Color]): JsArray =
       JsArray(j.map { x => ColorCodec.encode(x) })
 }
@@ -21339,6 +22051,23 @@ object SpecCodec {
 // see TickConfigRadius2 (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition (ConstrainedType)
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPositionCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition] =
+    try {
+      j.asOpt[JsNumber]
+        .map { ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition(_) }
+    } catch {
+      case _:AssertionError => None
+    }
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2BandPosition): JsValue =
+    Json.toJson(j.value)
+}
+
+////////////////////////////////////////////////////////////////////////
 // HeaderLabelColor (UnionType)
 object HeaderLabelColorCodec {
   def decode(j: JsValue): HeaderLabelColor =
@@ -21350,6 +22079,21 @@ object HeaderLabelColorCodec {
     j match {
       case x:Color /* TypeRef */ => ColorCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelAlignAsObject2Condition (UnionType)
+object ConditionalAxisLabelAlignAsObject2ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisLabelAlignAsObject2Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelAlignAsObject2Condition] =
+    ConditionalPredicateValueDefAlignNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefAlignNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelAlignAsObject2ConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(_) } } 
+  def encode(j: ConditionalAxisLabelAlignAsObject2Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefAlignNullExprRef /* TypeRef */ => ConditionalPredicateValueDefAlignNullExprRefCodec.encode(x)
+      case ConditionalAxisLabelAlignAsObject2ConditionAsArrayOfConditionalPredicateValueDefAlignNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefAlignNullExprRefCodec.encode(x)
     }
 }
 
@@ -21504,6 +22248,23 @@ object ScaleRangeMinCodec {
       case ScaleRangeMinAsString(x) /* Base, StringType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPosition (ConstrainedType)
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPositionCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPosition =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPosition] =
+    try {
+      j.asOpt[JsNumber]
+        .map { ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPosition(_) }
+    } catch {
+      case _:AssertionError => None
+    }
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObject2BandPosition): JsValue =
+    Json.toJson(j.value)
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -21708,8 +22469,8 @@ object ArrayOfConditionalValueDefNumberExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalValueDefNumberExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalValueDefNumberExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalValueDefNumberExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalValueDefNumberExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalValueDefNumberExprRef]): JsArray =
       JsArray(j.map { x => ConditionalValueDefNumberExprRefCodec.encode(x) })
 }
@@ -21780,32 +22541,47 @@ object MarkDefAngleCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelAlignAsObject (StructType)
-object ConditionalAxisLabelAlignAsObjectCodec {
-  def decode(j: JsValue): ConditionalAxisLabelAlignAsObject =
+// ConditionalPredicateValueDefStringNullExprRefAsObject2 (StructType)
+object ConditionalPredicateValueDefStringNullExprRefAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefStringNullExprRefAsObject2 =
     decodeOpt(j).get
 
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelAlignAsObject] =
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefStringNullExprRefAsObject2] =
     {
-      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelAlignAsObjectConditionCodec.decodeOpt(x) }
-      if(`condition`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => AlignCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalAxisLabelAlignAsObject(
-        `condition` = `condition`.get,
-        `value` = `value`,
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefStringNullExprRefAsObject2(
+        `expr` = `expr`.get,
+        `test` = `test`.get,
       ))
     }
 
-  def encode(j: ConditionalAxisLabelAlignAsObject): JsObject =
+  def encode(j: ConditionalPredicateValueDefStringNullExprRefAsObject2): JsObject =
     JsObject(
       Seq[Option[(String,JsValue)]](
-        Some("condition" -> ConditionalAxisLabelAlignAsObjectConditionCodec.encode(j.`condition`)),
-        j.`value`.map { x => "value" -> AlignCodec.encode(x) },
+        Some("expr" -> Json.toJson(j.`expr`)),
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
       ).flatten.toMap
     )
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2Spec (UnionType)
+object TopLevelRepeatSpecAsObject2SpecCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Spec =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Spec] =
+    LayerSpecCodec.decodeOpt(j).orElse {
+    UnitSpecCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2Spec): JsValue =
+    j match {
+      case x:LayerSpec /* TypeRef */ => LayerSpecCodec.encode(x)
+      case x:UnitSpec /* TypeRef */ => UnitSpecCodec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // ErrorBandDef (StructType)
@@ -22057,6 +22833,23 @@ object ColorHexCodec {
       case _:AssertionError => None
     }
   def encode(j: ColorHex): JsValue =
+    Json.toJson(j.value)
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPosition (ConstrainedType)
+object ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPositionCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPosition =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPosition] =
+    try {
+      j.asOpt[JsNumber]
+        .map { ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPosition(_) }
+    } catch {
+      case _:AssertionError => None
+    }
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObject1BandPosition): JsValue =
     Json.toJson(j.value)
 }
 
@@ -22793,34 +23586,6 @@ object ViewBackgroundStrokeJoinCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelBaselineAsObject (StructType)
-object ConditionalAxisLabelBaselineAsObjectCodec {
-  def decode(j: JsValue): ConditionalAxisLabelBaselineAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelBaselineAsObject] =
-    {
-      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelBaselineAsObjectConditionCodec.decodeOpt(x) }
-      if(`condition`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => TextBaselineCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalAxisLabelBaselineAsObject(
-        `condition` = `condition`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalAxisLabelBaselineAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("condition" -> ConditionalAxisLabelBaselineAsObjectConditionCodec.encode(j.`condition`)),
-        j.`value`.map { x => "value" -> TextBaselineCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // Uri (TypeRef)
 object UriCodec {
   def decode(j: JsValue): Uri = j.as[Uri]
@@ -22977,30 +23742,49 @@ object BarConfigBinSpacingCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// PaddingAsObject (StructType)
-object PaddingAsObjectCodec {
-  def decode(j: JsValue): PaddingAsObject =
+// ConditionalPredicateValueDefNumberNullExprRefAsObject1 (StructType)
+object ConditionalPredicateValueDefNumberNullExprRefAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefNumberNullExprRefAsObject1 =
     decodeOpt(j).get
 
-  def decodeOpt(j: JsValue): Option[PaddingAsObject] =
-    Some(PaddingAsObject(
-      `bottom` = (j \ "bottom").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] },
-      `left` = (j \ "left").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] },
-      `right` = (j \ "right").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] },
-      `top` = (j \ "top").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] },
-    ))
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefNumberNullExprRefAsObject1] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ArrayOfNumberCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefNumberNullExprRefAsObject1(
+        `test` = `test`.get,
+        `value` = `value`,
+      ))
+    }
 
-  def encode(j: PaddingAsObject): JsObject =
+  def encode(j: ConditionalPredicateValueDefNumberNullExprRefAsObject1): JsObject =
     JsObject(
       Seq[Option[(String,JsValue)]](
-        j.`bottom`.map { x => "bottom" -> Json.toJson(x) },
-        j.`left`.map { x => "left" -> Json.toJson(x) },
-        j.`right`.map { x => "right" -> Json.toJson(x) },
-        j.`top`.map { x => "top" -> Json.toJson(x) },
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`value`.map { x => "value" -> ArrayOfNumberCodec.encode(x) },
       ).flatten.toMap
     )
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition (ConstrainedType)
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPositionCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition] =
+    try {
+      j.asOpt[JsNumber]
+        .map { ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition(_) }
+    } catch {
+      case _:AssertionError => None
+    }
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1BandPosition): JsValue =
+    Json.toJson(j.value)
+}
 
 ////////////////////////////////////////////////////////////////////////
 // UrlData (StructType)
@@ -23146,8 +23930,8 @@ object ArrayOfVector2NumberCodec {
   def decode(j: JsValue): Seq[Vector2Number] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[Vector2Number]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      Vector2NumberCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      Vector2NumberCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[Vector2Number]): JsArray =
       JsArray(j.map { x => Vector2NumberCodec.encode(x) })
 }
@@ -23299,18 +24083,6 @@ object SharedEncodingStrokeCodec {
     )
 }
 
-
-////////////////////////////////////////////////////////////////////////
-// ArrayOfConditionalPredicateValueDefFontStyleNullExprRef (ArrayType)
-object ArrayOfConditionalPredicateValueDefFontStyleNullExprRefCodec {
-  def decode(j: JsValue): Seq[ConditionalPredicateValueDefFontStyleNullExprRef] =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[Seq[ConditionalPredicateValueDefFontStyleNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalPredicateValueDefFontStyleNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
-  def encode(j: Seq[ConditionalPredicateValueDefFontStyleNullExprRef]): JsArray =
-      JsArray(j.map { x => ConditionalPredicateValueDefFontStyleNullExprRefCodec.encode(x) })
-}
 
 ////////////////////////////////////////////////////////////////////////
 // AxisConfigGridWidth (UnionType)
@@ -23475,6 +24247,52 @@ object ProjectionParallelCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum (UnionType)
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2DatumCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum] =
+    PrimitiveValueCodec.decodeOpt(j).orElse {
+    DateTimeCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j).orElse {
+    RepeatRefCodec.decodeOpt(j) } } } 
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum): JsValue =
+    j match {
+      case x:PrimitiveValue /* TypeRef */ => PrimitiveValueCodec.encode(x)
+      case x:DateTime /* TypeRef */ => DateTimeCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+      case x:RepeatRef /* TypeRef */ => RepeatRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontStyleAsObject1Condition (UnionType)
+object ConditionalAxisLabelFontStyleAsObject1ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisLabelFontStyleAsObject1Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontStyleAsObject1Condition] =
+    ConditionalPredicateValueDefFontStyleNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefFontStyleNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelFontStyleAsObject1ConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(_) } } 
+  def encode(j: ConditionalAxisLabelFontStyleAsObject1Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefFontStyleNullExprRef /* TypeRef */ => ConditionalPredicateValueDefFontStyleNullExprRefCodec.encode(x)
+      case ConditionalAxisLabelFontStyleAsObject1ConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefFontStyleNullExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ArrayOfConditionalPredicateValueDefFontStyleNullExprRef (ArrayType)
+object ArrayOfConditionalPredicateValueDefFontStyleNullExprRefCodec {
+  def decode(j: JsValue): Seq[ConditionalPredicateValueDefFontStyleNullExprRef] =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[Seq[ConditionalPredicateValueDefFontStyleNullExprRef]] =
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalPredicateValueDefFontStyleNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
+  def encode(j: Seq[ConditionalPredicateValueDefFontStyleNullExprRef]): JsArray =
+      JsArray(j.map { x => ConditionalPredicateValueDefFontStyleNullExprRefCodec.encode(x) })
+}
+
+////////////////////////////////////////////////////////////////////////
 // TopLevelUnitSpecAutosize (UnionType)
 object TopLevelUnitSpecAutosizeCodec {
   def decode(j: JsValue): TopLevelUnitSpecAutosize =
@@ -23515,21 +24333,6 @@ object SortByEncodingCodec {
     )
 }
 
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit (UnionType)
-object ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnitCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit] =
-    TimeUnitCodec.decodeOpt(j).orElse {
-    TimeUnitParamsCodec.decodeOpt(j) } 
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnit): JsValue =
-    j match {
-      case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
-      case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////
 // FieldOrDatumDefWithConditionMarkPropFieldDefTypeForShapeStringNullCondition (UnionType)
@@ -23578,6 +24381,21 @@ object QuantitativeCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberArray (UnionType)
+object ConditionalAxisNumberArrayCodec {
+  def decode(j: JsValue): ConditionalAxisNumberArray =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberArray] =
+    ConditionalAxisNumberArrayAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalAxisNumberArrayAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalAxisNumberArray): JsValue =
+    j match {
+      case x:ConditionalAxisNumberArrayAsObject1 /* TypeRef */ => ConditionalAxisNumberArrayAsObject1Codec.encode(x)
+      case x:ConditionalAxisNumberArrayAsObject2 /* TypeRef */ => ConditionalAxisNumberArrayAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // BarConfigY (UnionType)
 object BarConfigYCodec {
   def decode(j: JsValue): BarConfigY =
@@ -23595,64 +24413,6 @@ object BarConfigYCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// RangeSchemeAsObject (StructType)
-object RangeSchemeAsObjectCodec {
-  def decode(j: JsValue): RangeSchemeAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[RangeSchemeAsObject] =
-    {
-      val `count` = (j \ "count").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
-      val `extent` = (j \ "extent").asOpt[JsValue].flatMap { x => ArrayOfNumberCodec.decodeOpt(x) }
-      val `scheme` = (j \ "scheme").asOpt[JsValue].flatMap { x => RangeSchemeAsObjectSchemeCodec.decodeOpt(x) }
-      if(`scheme`.isEmpty) { return None }
-      return Some(RangeSchemeAsObject(
-        `count` = `count`,
-        `extent` = `extent`,
-        `scheme` = `scheme`.get,
-      ))
-    }
-
-  def encode(j: RangeSchemeAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        j.`count`.map { x => "count" -> Json.toJson(x) },
-        j.`extent`.map { x => "extent" -> ArrayOfNumberCodec.encode(x) },
-        Some("scheme" -> RangeSchemeAsObjectSchemeCodec.encode(j.`scheme`)),
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisNumberArrayAsObject (StructType)
-object ConditionalAxisNumberArrayAsObjectCodec {
-  def decode(j: JsValue): ConditionalAxisNumberArrayAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberArrayAsObject] =
-    {
-      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisNumberArrayAsObjectConditionCodec.decodeOpt(x) }
-      if(`condition`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ArrayOfNumberCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalAxisNumberArrayAsObject(
-        `condition` = `condition`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalAxisNumberArrayAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("condition" -> ConditionalAxisNumberArrayAsObjectConditionCodec.encode(j.`condition`)),
-        j.`value`.map { x => "value" -> ArrayOfNumberCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // AxisConfigTitleFontWeight (UnionType)
 object AxisConfigTitleFontWeightCodec {
   def decode(j: JsValue): AxisConfigTitleFontWeight =
@@ -23666,34 +24426,6 @@ object AxisConfigTitleFontWeightCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefStringNullExprRefAsObject (StructType)
-object ConditionalPredicateValueDefStringNullExprRefAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefStringNullExprRefAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefStringNullExprRefAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ConditionalPredicateValueDefStringNullExprRefAsObjectValueCodec.decodeOpt(x) }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalPredicateValueDefStringNullExprRefAsObject(
-        `test` = `test`.get,
-        `value` = `value`.get,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateValueDefStringNullExprRefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        Some("value" -> ConditionalPredicateValueDefStringNullExprRefAsObjectValueCodec.encode(j.`value`)),
-      ).flatten.toMap
-    )
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // Position2Def (UnionType)
@@ -23884,19 +24616,32 @@ object ViewBackgroundStrokeDashCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelFontWeightAsObjectCondition (UnionType)
-object ConditionalAxisLabelFontWeightAsObjectConditionCodec {
-  def decode(j: JsValue): ConditionalAxisLabelFontWeightAsObjectCondition =
+// ConditionalAxisLabelBaselineAsObject2 (StructType)
+object ConditionalAxisLabelBaselineAsObject2Codec {
+  def decode(j: JsValue): ConditionalAxisLabelBaselineAsObject2 =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontWeightAsObjectCondition] =
-    ConditionalPredicateValueDefFontWeightNullExprRefCodec.decodeOpt(j).orElse {
-    ArrayOfConditionalPredicateValueDefFontWeightNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelFontWeightAsObjectConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(_) } } 
-  def encode(j: ConditionalAxisLabelFontWeightAsObjectCondition): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefFontWeightNullExprRef /* TypeRef */ => ConditionalPredicateValueDefFontWeightNullExprRefCodec.encode(x)
-      case ConditionalAxisLabelFontWeightAsObjectConditionAsArrayOfConditionalPredicateValueDefFontWeightNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefFontWeightNullExprRefCodec.encode(x)
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelBaselineAsObject2] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelBaselineAsObject2ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      return Some(ConditionalAxisLabelBaselineAsObject2(
+        `condition` = `condition`.get,
+        `expr` = `expr`.get,
+      ))
     }
+
+  def encode(j: ConditionalAxisLabelBaselineAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisLabelBaselineAsObject2ConditionCodec.encode(j.`condition`)),
+        Some("expr" -> Json.toJson(j.`expr`)),
+      ).flatten.toMap
+    )
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // MarkDefY2Offset (UnionType)
@@ -24118,6 +24863,34 @@ object SharedEncodingRadiusCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelBaselineAsObject1 (StructType)
+object ConditionalAxisLabelBaselineAsObject1Codec {
+  def decode(j: JsValue): ConditionalAxisLabelBaselineAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelBaselineAsObject1] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelBaselineAsObject1ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => TextBaselineCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalAxisLabelBaselineAsObject1(
+        `condition` = `condition`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalAxisLabelBaselineAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisLabelBaselineAsObject1ConditionCodec.encode(j.`condition`)),
+        j.`value`.map { x => "value" -> TextBaselineCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // LegendConfigTitleAlign (UnionType)
 object LegendConfigTitleAlignCodec {
   def decode(j: JsValue): LegendConfigTitleAlign =
@@ -24284,21 +25057,6 @@ object SharedEncodingShapeTypeCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// RectConfigCornerRadius (UnionType)
-object RectConfigCornerRadiusCodec {
-  def decode(j: JsValue): RectConfigCornerRadius =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[RectConfigCornerRadius] =
-    j.asOpt[JsNumber].map { RectConfigCornerRadiusAsNumber(_) }.orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: RectConfigCornerRadius): JsValue =
-    j match {
-      case RectConfigCornerRadiusAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // BarConfigEndAngle (UnionType)
 object BarConfigEndAngleCodec {
   def decode(j: JsValue): BarConfigEndAngle =
@@ -24309,6 +25067,36 @@ object BarConfigEndAngleCodec {
   def encode(j: BarConfigEndAngle): JsValue =
     j match {
       case BarConfigEndAngleAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisStringAsObject1Condition (UnionType)
+object ConditionalAxisStringAsObject1ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisStringAsObject1Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisStringAsObject1Condition] =
+    ConditionalPredicateValueDefStringNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefStringNullExprRefCodec.decodeOpt(j).map { ConditionalAxisStringAsObject1ConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(_) } } 
+  def encode(j: ConditionalAxisStringAsObject1Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefStringNullExprRef /* TypeRef */ => ConditionalPredicateValueDefStringNullExprRefCodec.encode(x)
+      case ConditionalAxisStringAsObject1ConditionAsArrayOfConditionalPredicateValueDefStringNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefStringNullExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// RectConfigCornerRadius (UnionType)
+object RectConfigCornerRadiusCodec {
+  def decode(j: JsValue): RectConfigCornerRadius =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[RectConfigCornerRadius] =
+    j.asOpt[JsNumber].map { RectConfigCornerRadiusAsNumber(_) }.orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: RectConfigCornerRadius): JsValue =
+    j match {
+      case RectConfigCornerRadiusAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
@@ -24594,21 +25382,6 @@ object AxisTickBandAsStringCodec {
     j.payload
 }
 
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisColorAsObjectCondition (UnionType)
-object ConditionalAxisColorAsObjectConditionCodec {
-  def decode(j: JsValue): ConditionalAxisColorAsObjectCondition =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisColorAsObjectCondition] =
-    ConditionalPredicateValueDefColorNullExprRefCodec.decodeOpt(j).orElse {
-    ArrayOfConditionalPredicateValueDefColorNullExprRefCodec.decodeOpt(j).map { ConditionalAxisColorAsObjectConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(_) } } 
-  def encode(j: ConditionalAxisColorAsObjectCondition): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefColorNullExprRef /* TypeRef */ => ConditionalPredicateValueDefColorNullExprRefCodec.encode(x)
-      case ConditionalAxisColorAsObjectConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefColorNullExprRefCodec.encode(x)
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////
 // FieldOrDatumDefWithConditionStringFieldDefTextBin (UnionType)
@@ -24948,6 +25721,53 @@ object RelativeBandSizeCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontWeightAsObject2 (StructType)
+object ConditionalAxisLabelFontWeightAsObject2Codec {
+  def decode(j: JsValue): ConditionalAxisLabelFontWeightAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontWeightAsObject2] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelFontWeightAsObject2ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      return Some(ConditionalAxisLabelFontWeightAsObject2(
+        `condition` = `condition`.get,
+        `expr` = `expr`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisLabelFontWeightAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisLabelFontWeightAsObject2ConditionCodec.encode(j.`condition`)),
+        Some("expr" -> Json.toJson(j.`expr`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum (UnionType)
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2DatumCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum] =
+    PrimitiveValueCodec.decodeOpt(j).orElse {
+    DateTimeCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j).orElse {
+    RepeatRefCodec.decodeOpt(j) } } } 
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Datum): JsValue =
+    j match {
+      case x:PrimitiveValue /* TypeRef */ => PrimitiveValueCodec.encode(x)
+      case x:DateTime /* TypeRef */ => DateTimeCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+      case x:RepeatRef /* TypeRef */ => RepeatRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // ConditionalStringFieldDef (UnionType)
 object ConditionalStringFieldDefCodec {
   def decode(j: JsValue): ConditionalStringFieldDef =
@@ -24976,6 +25796,21 @@ object AxisTickWidthCodec {
       case x:AxisTickWidthAsNumber /* TypeRef */ => AxisTickWidthAsNumberCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
       case x:ConditionalAxisNumber /* TypeRef */ => ConditionalAxisNumberCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefTextBaselineNullExprRef (UnionType)
+object ConditionalPredicateValueDefTextBaselineNullExprRefCodec {
+  def decode(j: JsValue): ConditionalPredicateValueDefTextBaselineNullExprRef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefTextBaselineNullExprRef] =
+    ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateValueDefTextBaselineNullExprRef): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1 /* TypeRef */ => ConditionalPredicateValueDefTextBaselineNullExprRefAsObject1Codec.encode(x)
+      case x:ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2 /* TypeRef */ => ConditionalPredicateValueDefTextBaselineNullExprRefAsObject2Codec.encode(x)
     }
 }
 
@@ -25305,6 +26140,34 @@ object FacetedEncodingUrlCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisColorAsObject2 (StructType)
+object ConditionalAxisColorAsObject2Codec {
+  def decode(j: JsValue): ConditionalAxisColorAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisColorAsObject2] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisColorAsObject2ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      return Some(ConditionalAxisColorAsObject2(
+        `condition` = `condition`.get,
+        `expr` = `expr`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisColorAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisColorAsObject2ConditionCodec.encode(j.`condition`)),
+        Some("expr" -> Json.toJson(j.`expr`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // AreaConfigLimit (UnionType)
 object AreaConfigLimitCodec {
   def decode(j: JsValue): AreaConfigLimit =
@@ -25335,6 +26198,49 @@ object AxisLabelPaddingCodec {
       case x:ConditionalAxisNumber /* TypeRef */ => ConditionalAxisNumberCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumber (UnionType)
+object ConditionalAxisNumberCodec {
+  def decode(j: JsValue): ConditionalAxisNumber =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumber] =
+    ConditionalAxisNumberAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalAxisNumberAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalAxisNumber): JsValue =
+    j match {
+      case x:ConditionalAxisNumberAsObject1 /* TypeRef */ => ConditionalAxisNumberAsObject1Codec.encode(x)
+      case x:ConditionalAxisNumberAsObject2 /* TypeRef */ => ConditionalAxisNumberAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefFontStyleNullExprRefAsObject1 (StructType)
+object ConditionalPredicateValueDefFontStyleNullExprRefAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefFontStyleNullExprRefAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontStyleNullExprRefAsObject1] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => x.asOpt[String].map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefFontStyleNullExprRefAsObject1(
+        `test` = `test`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefFontStyleNullExprRefAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`value`.map { x => "value" -> Json.toJson(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // TickConfigTheta (ConstrainedType)
@@ -25506,6 +26412,21 @@ object DerivedStreamCodec {
     )
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefNumberNullExprRef (UnionType)
+object ConditionalPredicateValueDefNumberNullExprRefCodec {
+  def decode(j: JsValue): ConditionalPredicateValueDefNumberNullExprRef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefNumberNullExprRef] =
+    ConditionalPredicateValueDefNumberNullExprRefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateValueDefNumberNullExprRefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateValueDefNumberNullExprRef): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefNumberNullExprRefAsObject1 /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefAsObject1Codec.encode(x)
+      case x:ConditionalPredicateValueDefNumberNullExprRefAsObject2 /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefAsObject2Codec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // SharedEncodingStrokeWidthDatum (UnionType)
@@ -25788,8 +26709,8 @@ object ArrayOfOrderFieldDefCodec {
   def decode(j: JsValue): Seq[OrderFieldDef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[OrderFieldDef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      OrderFieldDefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      OrderFieldDefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[OrderFieldDef]): JsArray =
       JsArray(j.map { x => OrderFieldDefCodec.encode(x) })
 }
@@ -25929,6 +26850,21 @@ object EncodingYErrorCodec {
 ////////////////////////////////////////////////////////////////////////
 // OverlayMarkDefSize (ConstrainedType)
 // see OverlayMarkDefSize (UnionType)
+
+////////////////////////////////////////////////////////////////////////
+// RangeConfigOrdinal (UnionType)
+object RangeConfigOrdinalCodec {
+  def decode(j: JsValue): RangeConfigOrdinal =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[RangeConfigOrdinal] =
+    RangeSchemeCodec.decodeOpt(j).orElse {
+    ArrayOfColorCodec.decodeOpt(j).map { RangeConfigOrdinalAsArrayOfColor(_) } } 
+  def encode(j: RangeConfigOrdinal): JsValue =
+    j match {
+      case x:RangeScheme /* TypeRef */ => RangeSchemeCodec.encode(x)
+      case RangeConfigOrdinalAsArrayOfColor(x) /* Base, ArrayType */ => ArrayOfColorCodec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // MarkDefCornerRadiusBottomLeft (UnionType)
@@ -26195,8 +27131,8 @@ object DictOfBindingCodec {
   def decode(j: JsValue): Map[String,Binding] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Map[String,Binding]] =
-    Some(j.as[Map[String,JsValue]].mapValues { x => 
-      BindingCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Map[String,JsValue]].map { _.mapValues { x => 
+      BindingCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Map[String,Binding]): JsObject =
       JsObject(j.mapValues { x => BindingCodec.encode(x) })
 }
@@ -26285,8 +27221,8 @@ object ArrayOfStreamCodec {
   def decode(j: JsValue): Seq[Stream] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[Stream]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      StreamCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      StreamCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[Stream]): JsArray =
       JsArray(j.map { x => StreamCodec.encode(x) })
 }
@@ -26328,21 +27264,6 @@ object SharedEncodingX2Codec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// RangeConfigOrdinal (UnionType)
-object RangeConfigOrdinalCodec {
-  def decode(j: JsValue): RangeConfigOrdinal =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[RangeConfigOrdinal] =
-    RangeSchemeCodec.decodeOpt(j).orElse {
-    ArrayOfColorCodec.decodeOpt(j).map { RangeConfigOrdinalAsArrayOfColor(_) } } 
-  def encode(j: RangeConfigOrdinal): JsValue =
-    j match {
-      case x:RangeScheme /* TypeRef */ => RangeSchemeCodec.encode(x)
-      case RangeConfigOrdinalAsArrayOfColor(x) /* Base, ArrayType */ => ArrayOfColorCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // MarkConfigStrokeCap (UnionType)
 object MarkConfigStrokeCapCodec {
   def decode(j: JsValue): MarkConfigStrokeCap =
@@ -26373,6 +27294,21 @@ object SharedEncodingUrlTimeUnitCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisString (UnionType)
+object ConditionalAxisStringCodec {
+  def decode(j: JsValue): ConditionalAxisString =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisString] =
+    ConditionalAxisStringAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalAxisStringAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalAxisString): JsValue =
+    j match {
+      case x:ConditionalAxisStringAsObject1 /* TypeRef */ => ConditionalAxisStringAsObject1Codec.encode(x)
+      case x:ConditionalAxisStringAsObject2 /* TypeRef */ => ConditionalAxisStringAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // HeaderTitlePadding (UnionType)
 object HeaderTitlePaddingCodec {
   def decode(j: JsValue): HeaderTitlePadding =
@@ -26384,19 +27320,6 @@ object HeaderTitlePaddingCodec {
     j match {
       case HeaderTitlePaddingAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefFontWeightNullExprRef (UnionType)
-object ConditionalPredicateValueDefFontWeightNullExprRefCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefFontWeightNullExprRef =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontWeightNullExprRef] =
-    ConditionalPredicateValueDefFontWeightNullExprRefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateValueDefFontWeightNullExprRef): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefFontWeightNullExprRefAsObject /* TypeRef */ => ConditionalPredicateValueDefFontWeightNullExprRefAsObjectCodec.encode(x)
     }
 }
 
@@ -26544,8 +27467,8 @@ object ArrayOfTransformCodec {
   def decode(j: JsValue): Seq[Transform] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[Transform]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TransformCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TransformCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[Transform]): JsArray =
       JsArray(j.map { x => TransformCodec.encode(x) })
 }
@@ -26645,6 +27568,32 @@ object ErrorBandDefBandCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// PaddingAsObject2 (StructType)
+object PaddingAsObject2Codec {
+  def decode(j: JsValue): PaddingAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[PaddingAsObject2] =
+    Some(PaddingAsObject2(
+      `bottom` = (j \ "bottom").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] },
+      `left` = (j \ "left").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] },
+      `right` = (j \ "right").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] },
+      `top` = (j \ "top").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] },
+    ))
+
+  def encode(j: PaddingAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`bottom`.map { x => "bottom" -> Json.toJson(x) },
+        j.`left`.map { x => "left" -> Json.toJson(x) },
+        j.`right`.map { x => "right" -> Json.toJson(x) },
+        j.`top`.map { x => "top" -> Json.toJson(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // AxisTitleAngle (UnionType)
 object AxisTitleAngleCodec {
   def decode(j: JsValue): AxisTitleAngle =
@@ -26675,6 +27624,33 @@ object AxisConfigLabelBaselineCodec {
       case x:ConditionalAxisLabelBaseline /* TypeRef */ => ConditionalAxisLabelBaselineCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// ParameterExtentAsObject2 (StructType)
+object ParameterExtentAsObject2Codec {
+  def decode(j: JsValue): ParameterExtentAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ParameterExtentAsObject2] =
+    {
+      val `encoding` = (j \ "encoding").asOpt[JsValue].flatMap { x => SingleDefUnitChannelCodec.decodeOpt(x) }
+      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`param`.isEmpty) { return None }
+      return Some(ParameterExtentAsObject2(
+        `encoding` = `encoding`,
+        `param` = `param`.get,
+      ))
+    }
+
+  def encode(j: ParameterExtentAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`encoding`.map { x => "encoding" -> SingleDefUnitChannelCodec.encode(x) },
+        Some("param" -> Json.toJson(j.`param`)),
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // RangeConfigOptional (UnionType)
@@ -26786,21 +27762,6 @@ object RectConfigFontCodec {
     j match {
       case RectConfigFontAsString(x) /* Base, StringType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelBaselineAsObjectCondition (UnionType)
-object ConditionalAxisLabelBaselineAsObjectConditionCodec {
-  def decode(j: JsValue): ConditionalAxisLabelBaselineAsObjectCondition =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelBaselineAsObjectCondition] =
-    ConditionalPredicateValueDefTextBaselineNullExprRefCodec.decodeOpt(j).orElse {
-    ArrayOfConditionalPredicateValueDefTextBaselineNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelBaselineAsObjectConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(_) } } 
-  def encode(j: ConditionalAxisLabelBaselineAsObjectCondition): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefTextBaselineNullExprRef /* TypeRef */ => ConditionalPredicateValueDefTextBaselineNullExprRefCodec.encode(x)
-      case ConditionalAxisLabelBaselineAsObjectConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefTextBaselineNullExprRefCodec.encode(x)
     }
 }
 
@@ -27087,21 +28048,6 @@ object SharedEncodingLongitude2TimeUnitCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// Padding (UnionType)
-object PaddingCodec {
-  def decode(j: JsValue): Padding =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[Padding] =
-    j.asOpt[JsNumber].map { PaddingAsNumber(_) }.orElse {
-    PaddingAsObjectCodec.decodeOpt(j) } 
-  def encode(j: Padding): JsValue =
-    j match {
-      case PaddingAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case x:PaddingAsObject /* TypeRef */ => PaddingAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // ViewConfigStrokeWidth (UnionType)
 object ViewConfigStrokeWidthCodec {
   def decode(j: JsValue): ViewConfigStrokeWidth =
@@ -27137,8 +28083,8 @@ object ArrayOfTopLevelUnitSpecParamsElementCodec {
   def decode(j: JsValue): Seq[TopLevelUnitSpecParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[TopLevelUnitSpecParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelUnitSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelUnitSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[TopLevelUnitSpecParamsElement]): JsArray =
       JsArray(j.map { x => TopLevelUnitSpecParamsElementCodec.encode(x) })
 }
@@ -27163,15 +28109,17 @@ object SharedEncodingStrokeDatumCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisNumberArray (UnionType)
-object ConditionalAxisNumberArrayCodec {
-  def decode(j: JsValue): ConditionalAxisNumberArray =
+// TopLevelRepeatSpecAsObject2Center (UnionType)
+object TopLevelRepeatSpecAsObject2CenterCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Center =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberArray] =
-    ConditionalAxisNumberArrayAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalAxisNumberArray): JsValue =
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Center] =
+    j.asOpt[Boolean].map { TopLevelRepeatSpecAsObject2CenterAsBool(_) }.orElse {
+    RowColBooleanCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2Center): JsValue =
     j match {
-      case x:ConditionalAxisNumberArrayAsObject /* TypeRef */ => ConditionalAxisNumberArrayAsObjectCodec.encode(x)
+      case TopLevelRepeatSpecAsObject2CenterAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
+      case x:RowColBoolean /* TypeRef */ => RowColBooleanCodec.encode(x)
     }
 }
 
@@ -27285,19 +28233,34 @@ object RowColumnEncodingFieldDefTimeUnitCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin (UnionType)
-object ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin =
+// RangeScheme (UnionType)
+object RangeSchemeCodec {
+  def decode(j: JsValue): RangeScheme =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin] =
-    j.asOpt[Boolean].map { ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinAsBool(_) }.orElse {
-    BinParamsCodec.decodeOpt(j).orElse {
-    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinAsNull } } } 
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBin): JsValue =
+  def decodeOpt(j: JsValue): Option[RangeScheme] =
+    RangeEnumCodec.decodeOpt(j).orElse {
+    ArrayOfRangeRawElementCodec.decodeOpt(j).map { RangeSchemeAsArrayOfRangeRawElement(_) }.orElse {
+    RangeSchemeAsObject3Codec.decodeOpt(j) } } 
+  def encode(j: RangeScheme): JsValue =
     j match {
-      case ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
-      case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
-      case ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinAsNull /* Global, NullType$ */ => JsNull
+      case x:RangeEnum /* TypeRef */ => RangeEnumCodec.encode(x)
+      case RangeSchemeAsArrayOfRangeRawElement(x) /* Base, ArrayType */ => ArrayOfRangeRawElementCodec.encode(x)
+      case x:RangeSchemeAsObject3 /* TypeRef */ => RangeSchemeAsObject3Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape (UnionType)
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape] =
+    ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape): JsValue =
+    j match {
+      case x:ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1 /* TypeRef */ => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Codec.encode(x)
+      case x:ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2 /* TypeRef */ => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject2Codec.encode(x)
     }
 }
 
@@ -27354,19 +28317,6 @@ object RowColLayoutAlignCodec {
     )
 }
 
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape (UnionType)
-object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape] =
-    ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShape): JsValue =
-    j match {
-      case x:ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject /* TypeRef */ => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectCodec.encode(x)
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////
 // TickConfigAngleAsNumber (ConstrainedType)
@@ -27589,19 +28539,6 @@ object LineConfigYCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisNumber (UnionType)
-object ConditionalAxisNumberCodec {
-  def decode(j: JsValue): ConditionalAxisNumber =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisNumber] =
-    ConditionalAxisNumberAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalAxisNumber): JsValue =
-    j match {
-      case x:ConditionalAxisNumberAsObject /* TypeRef */ => ConditionalAxisNumberAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // TopLevelLayerSpecParamsElement (UnionType)
 object TopLevelLayerSpecParamsElementCodec {
   def decode(j: JsValue): TopLevelLayerSpecParamsElement =
@@ -27717,8 +28654,8 @@ object ArrayOfConditionalValueDefStringNullExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalValueDefStringNullExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalValueDefStringNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalValueDefStringNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalValueDefStringNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalValueDefStringNullExprRef]): JsArray =
       JsArray(j.map { x => ConditionalValueDefStringNullExprRefCodec.encode(x) })
 }
@@ -28089,27 +29026,6 @@ object TitleConfigDxCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition (ConstrainedType)
-object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPositionCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition] =
-    try {
-      j.asOpt[JsNumber]
-        .map { ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition(_) }
-    } catch {
-      case _:AssertionError => None
-    }
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectBandPosition): JsValue =
-    Json.toJson(j.value)
-}
-
-////////////////////////////////////////////////////////////////////////
-// RectConfigTheta (ConstrainedType)
-// see RectConfigTheta (UnionType)
-
-////////////////////////////////////////////////////////////////////////
 // SharedEncodingXError (StructType)
 object SharedEncodingXErrorCodec {
   def decode(j: JsValue): SharedEncodingXError =
@@ -28142,17 +29058,8 @@ object SharedEncodingXErrorCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelFontStyle (UnionType)
-object ConditionalAxisLabelFontStyleCodec {
-  def decode(j: JsValue): ConditionalAxisLabelFontStyle =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontStyle] =
-    ConditionalAxisLabelFontStyleAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalAxisLabelFontStyle): JsValue =
-    j match {
-      case x:ConditionalAxisLabelFontStyleAsObject /* TypeRef */ => ConditionalAxisLabelFontStyleAsObjectCodec.encode(x)
-    }
-}
+// RectConfigTheta (ConstrainedType)
+// see RectConfigTheta (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
 // SequenceGenerator (StructType)
@@ -28280,21 +29187,6 @@ object SharedEncodingStrokeTimeUnitCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectRepeat (UnionType)
-object TopLevelRepeatSpecAsObjectRepeatCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectRepeat =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectRepeat] =
-    ArrayOfStringCodec.decodeOpt(j).map { TopLevelRepeatSpecAsObjectRepeatAsArrayOfString(_) }.orElse {
-    RepeatMappingCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectRepeat): JsValue =
-    j match {
-      case TopLevelRepeatSpecAsObjectRepeatAsArrayOfString(x) /* Base, ArrayType */ => ArrayOfStringCodec.encode(x)
-      case x:RepeatMapping /* TypeRef */ => RepeatMappingCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // BarConfigHeight (UnionType)
 object BarConfigHeightCodec {
   def decode(j: JsValue): BarConfigHeight =
@@ -28355,6 +29247,10 @@ object TickConfigStrokeDashOffsetCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// RectConfigOuterRadius (ConstrainedType)
+// see RectConfigOuterRadius (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
 // TopLevelVConcatSpecParamsElement (UnionType)
@@ -28453,6 +29349,21 @@ object BinExtentCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// MarkConfigDir (UnionType)
+object MarkConfigDirCodec {
+  def decode(j: JsValue): MarkConfigDir =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[MarkConfigDir] =
+    TextDirectionCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: MarkConfigDir): JsValue =
+    j match {
+      case x:TextDirection /* TypeRef */ => TextDirectionCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // TopLevelFacetSpecBackground (UnionType)
 object TopLevelFacetSpecBackgroundCodec {
   def decode(j: JsValue): TopLevelFacetSpecBackground =
@@ -28502,34 +29413,6 @@ object ConditionalParameterStringFieldDefBinCodec {
       case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
       case x:Binned /* TypeRef */ => BinnedCodec.encode(x)
       case ConditionalParameterStringFieldDefBinAsNull /* Global, NullType$ */ => JsNull
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// MarkConfigDir (UnionType)
-object MarkConfigDirCodec {
-  def decode(j: JsValue): MarkConfigDir =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[MarkConfigDir] =
-    TextDirectionCodec.decodeOpt(j).orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: MarkConfigDir): JsValue =
-    j match {
-      case x:TextDirection /* TypeRef */ => TextDirectionCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// EventStream (UnionType)
-object EventStreamCodec {
-  def decode(j: JsValue): EventStream =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[EventStream] =
-    EventStreamAsObjectCodec.decodeOpt(j) 
-  def encode(j: EventStream): JsValue =
-    j match {
-      case x:EventStreamAsObject /* TypeRef */ => EventStreamAsObjectCodec.encode(x)
     }
 }
 
@@ -28650,19 +29533,6 @@ object TopLevelVConcatSpecTitleCodec {
     j match {
       case x:Text /* TypeRef */ => TextCodec.encode(x)
       case x:TitleParams /* TypeRef */ => TitleParamsCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefTextBaselineNullExprRef (UnionType)
-object ConditionalPredicateValueDefTextBaselineNullExprRefCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefTextBaselineNullExprRef =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefTextBaselineNullExprRef] =
-    ConditionalPredicateValueDefTextBaselineNullExprRefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateValueDefTextBaselineNullExprRef): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefTextBaselineNullExprRefAsObject /* TypeRef */ => ConditionalPredicateValueDefTextBaselineNullExprRefAsObjectCodec.encode(x)
     }
 }
 
@@ -28936,6 +29806,34 @@ object StrokeJoinCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisColorAsObject1 (StructType)
+object ConditionalAxisColorAsObject1Codec {
+  def decode(j: JsValue): ConditionalAxisColorAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisColorAsObject1] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisColorAsObject1ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ColorCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalAxisColorAsObject1(
+        `condition` = `condition`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalAxisColorAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisColorAsObject1ConditionCodec.encode(j.`condition`)),
+        j.`value`.map { x => "value" -> ColorCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // TitleConfigAnchor (UnionType)
 object TitleConfigAnchorCodec {
   def decode(j: JsValue): TitleConfigAnchor =
@@ -29156,19 +30054,6 @@ object SharedEncodingLatitude2Codec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefNumberNullExprRef (UnionType)
-object ConditionalPredicateValueDefNumberNullExprRefCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefNumberNullExprRef =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefNumberNullExprRef] =
-    ConditionalPredicateValueDefNumberNullExprRefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateValueDefNumberNullExprRef): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefNumberNullExprRefAsObject /* TypeRef */ => ConditionalPredicateValueDefNumberNullExprRefAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // AreaConfigAngleAsNumber (ConstrainedType)
 object AreaConfigAngleAsNumberCodec {
   def decode(j: JsValue): AreaConfigAngleAsNumber =
@@ -29184,10 +30069,6 @@ object AreaConfigAngleAsNumberCodec {
   def encode(j: AreaConfigAngleAsNumber): JsValue =
     Json.toJson(j.value)
 }
-
-////////////////////////////////////////////////////////////////////////
-// RectConfigOuterRadius (ConstrainedType)
-// see RectConfigOuterRadius (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
 // AreaConfigY2 (UnionType)
@@ -29564,8 +30445,8 @@ object ArrayOfDateTimeCodec {
   def decode(j: JsValue): Seq[DateTime] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[DateTime]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      DateTimeCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      DateTimeCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[DateTime]): JsArray =
       JsArray(j.map { x => DateTimeCodec.encode(x) })
 }
@@ -29624,6 +30505,34 @@ object Vector2BooleanCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefFontStyleNullExprRefAsObject2 (StructType)
+object ConditionalPredicateValueDefFontStyleNullExprRefAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefFontStyleNullExprRefAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontStyleNullExprRefAsObject2] =
+    {
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefFontStyleNullExprRefAsObject2(
+        `expr` = `expr`.get,
+        `test` = `test`.get,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefFontStyleNullExprRefAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("expr" -> Json.toJson(j.`expr`)),
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // SharedEncodingFill (StructType)
 object SharedEncodingFillCodec {
   def decode(j: JsValue): SharedEncodingFill =
@@ -29673,8 +30582,8 @@ object ArrayOfSpecCodec {
   def decode(j: JsValue): Seq[Spec] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[Spec]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      SpecCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      SpecCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[Spec]): JsArray =
       JsArray(j.map { x => SpecCodec.encode(x) })
 }
@@ -29757,23 +30666,6 @@ object TitleParamsDxCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// CompositeMark (UnionType)
-object CompositeMarkCodec {
-  def decode(j: JsValue): CompositeMark =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[CompositeMark] =
-    BoxPlotCodec.decodeOpt(j).orElse {
-    ErrorBarCodec.decodeOpt(j).orElse {
-    ErrorBandCodec.decodeOpt(j) } } 
-  def encode(j: CompositeMark): JsValue =
-    j match {
-      case x:BoxPlot /* TypeRef */ => BoxPlotCodec.encode(x)
-      case x:ErrorBar /* TypeRef */ => ErrorBarCodec.encode(x)
-      case x:ErrorBand /* TypeRef */ => ErrorBandCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // MarkDefAria (UnionType)
 object MarkDefAriaCodec {
   def decode(j: JsValue): MarkDefAria =
@@ -29813,6 +30705,22 @@ object ScaleDatumDefCodec {
         j.`type`.map { x => "type" -> TypeCodec.encode(x) },
       ).flatten.toMap
     )
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// EventStreamAsObject2Source (ConstantType)
+object EventStreamAsObject2SourceCodec {
+  def decode(j: JsValue): EventStreamAsObject2Source =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[EventStreamAsObject2Source] =
+    j match {
+      case JsString("window") => Some(EventStreamAsObject2Source())
+      case _ => None
+    }
+  def encode(j: EventStreamAsObject2Source): JsValue =
+    JsString("window")
 }
 
 
@@ -30043,6 +30951,21 @@ object ProjectionConfigTiltCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontStyleAsObject2Condition (UnionType)
+object ConditionalAxisLabelFontStyleAsObject2ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisLabelFontStyleAsObject2Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontStyleAsObject2Condition] =
+    ConditionalPredicateValueDefFontStyleNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefFontStyleNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelFontStyleAsObject2ConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(_) } } 
+  def encode(j: ConditionalAxisLabelFontStyleAsObject2Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefFontStyleNullExprRef /* TypeRef */ => ConditionalPredicateValueDefFontStyleNullExprRefCodec.encode(x)
+      case ConditionalAxisLabelFontStyleAsObject2ConditionAsArrayOfConditionalPredicateValueDefFontStyleNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefFontStyleNullExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // NonLayerRepeatSpecRepeat (UnionType)
 object NonLayerRepeatSpecRepeatCodec {
   def decode(j: JsValue): NonLayerRepeatSpecRepeat =
@@ -30156,19 +31079,34 @@ object BarConfigFillCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectCenter (UnionType)
-object TopLevelRepeatSpecAsObjectCenterCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectCenter =
+// RangeSchemeAsObject3 (StructType)
+object RangeSchemeAsObject3Codec {
+  def decode(j: JsValue): RangeSchemeAsObject3 =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectCenter] =
-    j.asOpt[Boolean].map { TopLevelRepeatSpecAsObjectCenterAsBool(_) }.orElse {
-    RowColBooleanCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectCenter): JsValue =
-    j match {
-      case TopLevelRepeatSpecAsObjectCenterAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
-      case x:RowColBoolean /* TypeRef */ => RowColBooleanCodec.encode(x)
+
+  def decodeOpt(j: JsValue): Option[RangeSchemeAsObject3] =
+    {
+      val `count` = (j \ "count").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      val `extent` = (j \ "extent").asOpt[JsValue].flatMap { x => ArrayOfNumberCodec.decodeOpt(x) }
+      val `scheme` = (j \ "scheme").asOpt[JsValue].flatMap { x => RangeSchemeAsObject3SchemeCodec.decodeOpt(x) }
+      if(`scheme`.isEmpty) { return None }
+      return Some(RangeSchemeAsObject3(
+        `count` = `count`,
+        `extent` = `extent`,
+        `scheme` = `scheme`.get,
+      ))
     }
+
+  def encode(j: RangeSchemeAsObject3): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`count`.map { x => "count" -> Json.toJson(x) },
+        j.`extent`.map { x => "extent" -> ArrayOfNumberCodec.encode(x) },
+        Some("scheme" -> RangeSchemeAsObject3SchemeCodec.encode(j.`scheme`)),
+      ).flatten.toMap
+    )
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // ConfigPadding (UnionType)
@@ -30301,8 +31239,8 @@ object ArrayOfConfigParamsElementCodec {
   def decode(j: JsValue): Seq[ConfigParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConfigParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConfigParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConfigParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConfigParamsElement]): JsArray =
       JsArray(j.map { x => ConfigParamsElementCodec.encode(x) })
 }
@@ -30693,6 +31631,34 @@ object MarkConfigStrokeDashCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontWeightAsObject1 (StructType)
+object ConditionalAxisLabelFontWeightAsObject1Codec {
+  def decode(j: JsValue): ConditionalAxisLabelFontWeightAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontWeightAsObject1] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelFontWeightAsObject1ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => FontWeightCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalAxisLabelFontWeightAsObject1(
+        `condition` = `condition`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalAxisLabelFontWeightAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisLabelFontWeightAsObject1ConditionCodec.encode(j.`condition`)),
+        j.`value`.map { x => "value" -> FontWeightCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // LineConfigStroke (UnionType)
 object LineConfigStrokeCodec {
   def decode(j: JsValue): LineConfigStroke =
@@ -30717,8 +31683,8 @@ object ArrayOfTopLevelLayerSpecParamsElementCodec {
   def decode(j: JsValue): Seq[TopLevelLayerSpecParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[TopLevelLayerSpecParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelLayerSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelLayerSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[TopLevelLayerSpecParamsElement]): JsArray =
       JsArray(j.map { x => TopLevelLayerSpecParamsElementCodec.encode(x) })
 }
@@ -30859,6 +31825,38 @@ object BarConfigStrokeMiterLimitCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// CompositeMark (UnionType)
+object CompositeMarkCodec {
+  def decode(j: JsValue): CompositeMark =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[CompositeMark] =
+    BoxPlotCodec.decodeOpt(j).orElse {
+    ErrorBarCodec.decodeOpt(j).orElse {
+    ErrorBandCodec.decodeOpt(j) } } 
+  def encode(j: CompositeMark): JsValue =
+    j match {
+      case x:BoxPlot /* TypeRef */ => BoxPlotCodec.encode(x)
+      case x:ErrorBar /* TypeRef */ => ErrorBarCodec.encode(x)
+      case x:ErrorBand /* TypeRef */ => ErrorBandCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontStyle (UnionType)
+object ConditionalAxisLabelFontStyleCodec {
+  def decode(j: JsValue): ConditionalAxisLabelFontStyle =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontStyle] =
+    ConditionalAxisLabelFontStyleAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalAxisLabelFontStyleAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalAxisLabelFontStyle): JsValue =
+    j match {
+      case x:ConditionalAxisLabelFontStyleAsObject1 /* TypeRef */ => ConditionalAxisLabelFontStyleAsObject1Codec.encode(x)
+      case x:ConditionalAxisLabelFontStyleAsObject2 /* TypeRef */ => ConditionalAxisLabelFontStyleAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // ConcatSpecGenericSpec (StructType)
 object ConcatSpecGenericSpecCodec {
   def decode(j: JsValue): ConcatSpecGenericSpec =
@@ -30931,6 +31929,21 @@ object LegendConfigAriaCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelBaselineAsObject1Condition (UnionType)
+object ConditionalAxisLabelBaselineAsObject1ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisLabelBaselineAsObject1Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelBaselineAsObject1Condition] =
+    ConditionalPredicateValueDefTextBaselineNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefTextBaselineNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelBaselineAsObject1ConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(_) } } 
+  def encode(j: ConditionalAxisLabelBaselineAsObject1Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefTextBaselineNullExprRef /* TypeRef */ => ConditionalPredicateValueDefTextBaselineNullExprRefCodec.encode(x)
+      case ConditionalAxisLabelBaselineAsObject1ConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefTextBaselineNullExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // BarConfigTheta2 (UnionType)
 object BarConfigTheta2Codec {
   def decode(j: JsValue): BarConfigTheta2 =
@@ -30974,6 +31987,91 @@ object TopLevelConcatSpecAutosizeCodec {
       case x:AutoSizeParams /* TypeRef */ => AutoSizeParamsCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1 (StructType)
+object TopLevelRepeatSpecAsObject1Codec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1] =
+    {
+      val `name` = (j \ "name").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      val `description` = (j \ "description").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      val `params` = (j \ "params").asOpt[JsValue].flatMap { x => ArrayOfTopLevelRepeatSpecAsObject1ParamsElementCodec.decodeOpt(x) }
+      val `config` = (j \ "config").asOpt[JsValue].flatMap { x => ConfigCodec.decodeOpt(x) }
+      val `bounds` = (j \ "bounds").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1BoundsCodec.decodeOpt(x) }
+      val `datasets` = (j \ "datasets").asOpt[JsValue].flatMap { x => DictOfInlineDatasetCodec.decodeOpt(x) }
+      val `usermeta` = (j \ "usermeta").asOpt[JsValue].flatMap { x => DictOfAnyCodec.decodeOpt(x) }
+      val `columns` = (j \ "columns").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      val `resolve` = (j \ "resolve").asOpt[JsValue].flatMap { x => ResolveCodec.decodeOpt(x) }
+      val `spec` = (j \ "spec").asOpt[JsValue].flatMap { x => NonNormalizedSpecCodec.decodeOpt(x) }
+      if(`spec`.isEmpty) { return None }
+      val `padding` = (j \ "padding").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1PaddingCodec.decodeOpt(x) }
+      val `background` = (j \ "background").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1BackgroundCodec.decodeOpt(x) }
+      val `center` = (j \ "center").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1CenterCodec.decodeOpt(x) }
+      val `align` = (j \ "align").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1AlignCodec.decodeOpt(x) }
+      val `data` = (j \ "data").asOpt[JsValue].flatMap { x => DataCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `repeat` = (j \ "repeat").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1RepeatCodec.decodeOpt(x) }
+      if(`repeat`.isEmpty) { return None }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1TitleCodec.decodeOpt(x) }
+      val `spacing` = (j \ "spacing").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1SpacingCodec.decodeOpt(x) }
+      val `$schema` = (j \ "$schema").asOpt[JsValue].flatMap { x => UriCodec.decodeOpt(x) }
+      val `autosize` = (j \ "autosize").asOpt[JsValue].flatMap { x => TopLevelRepeatSpecAsObject1AutosizeCodec.decodeOpt(x) }
+      val `transform` = (j \ "transform").asOpt[JsValue].flatMap { x => ArrayOfTransformCodec.decodeOpt(x) }
+      return Some(TopLevelRepeatSpecAsObject1(
+        `name` = `name`,
+        `description` = `description`,
+        `params` = `params`,
+        `config` = `config`,
+        `bounds` = `bounds`,
+        `datasets` = `datasets`,
+        `usermeta` = `usermeta`,
+        `columns` = `columns`,
+        `resolve` = `resolve`,
+        `spec` = `spec`.get,
+        `padding` = `padding`,
+        `background` = `background`,
+        `center` = `center`,
+        `align` = `align`,
+        `data` = `data`,
+        `repeat` = `repeat`.get,
+        `title` = `title`,
+        `spacing` = `spacing`,
+        `$schema` = `$schema`,
+        `autosize` = `autosize`,
+        `transform` = `transform`,
+      ))
+    }
+
+  def encode(j: TopLevelRepeatSpecAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`name`.map { x => "name" -> Json.toJson(x) },
+        j.`description`.map { x => "description" -> Json.toJson(x) },
+        j.`params`.map { x => "params" -> ArrayOfTopLevelRepeatSpecAsObject1ParamsElementCodec.encode(x) },
+        j.`config`.map { x => "config" -> ConfigCodec.encode(x) },
+        j.`bounds`.map { x => "bounds" -> TopLevelRepeatSpecAsObject1BoundsCodec.encode(x) },
+        j.`datasets`.map { x => "datasets" -> DictOfInlineDatasetCodec.encode(x) },
+        j.`usermeta`.map { x => "usermeta" -> DictOfAnyCodec.encode(x) },
+        j.`columns`.map { x => "columns" -> Json.toJson(x) },
+        j.`resolve`.map { x => "resolve" -> ResolveCodec.encode(x) },
+        Some("spec" -> NonNormalizedSpecCodec.encode(j.`spec`)),
+        j.`padding`.map { x => "padding" -> TopLevelRepeatSpecAsObject1PaddingCodec.encode(x) },
+        j.`background`.map { x => "background" -> TopLevelRepeatSpecAsObject1BackgroundCodec.encode(x) },
+        j.`center`.map { x => "center" -> TopLevelRepeatSpecAsObject1CenterCodec.encode(x) },
+        j.`align`.map { x => "align" -> TopLevelRepeatSpecAsObject1AlignCodec.encode(x) },
+        j.`data`.map { x => "data" -> DataCodec.encode(x) },
+        Some("repeat" -> TopLevelRepeatSpecAsObject1RepeatCodec.encode(j.`repeat`)),
+        j.`title`.map { x => "title" -> TopLevelRepeatSpecAsObject1TitleCodec.encode(x) },
+        j.`spacing`.map { x => "spacing" -> TopLevelRepeatSpecAsObject1SpacingCodec.encode(x) },
+        j.`$schema`.map { x => "$schema" -> UriCodec.encode(x) },
+        j.`autosize`.map { x => "autosize" -> TopLevelRepeatSpecAsObject1AutosizeCodec.encode(x) },
+        j.`transform`.map { x => "transform" -> ArrayOfTransformCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // FieldRangePredicateTimeUnit (UnionType)
@@ -31405,6 +32503,21 @@ object MarkDefFillOpacityAsNumberCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelAlign (UnionType)
+object ConditionalAxisLabelAlignCodec {
+  def decode(j: JsValue): ConditionalAxisLabelAlign =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelAlign] =
+    ConditionalAxisLabelAlignAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalAxisLabelAlignAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalAxisLabelAlign): JsValue =
+    j match {
+      case x:ConditionalAxisLabelAlignAsObject1 /* TypeRef */ => ConditionalAxisLabelAlignAsObject1Codec.encode(x)
+      case x:ConditionalAxisLabelAlignAsObject2 /* TypeRef */ => ConditionalAxisLabelAlignAsObject2Codec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNull (StructType)
 object FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNullCodec {
   def decode(j: JsValue): FieldOrDatumDefWithConditionMarkPropFieldDefGradientStringNull =
@@ -31484,8 +32597,8 @@ object ArrayOfConditionalValueDefGradientStringNullExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalValueDefGradientStringNullExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalValueDefGradientStringNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalValueDefGradientStringNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalValueDefGradientStringNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalValueDefGradientStringNullExprRef]): JsArray =
       JsArray(j.map { x => ConditionalValueDefGradientStringNullExprRefCodec.encode(x) })
 }
@@ -31521,21 +32634,6 @@ object AxisLabelAlignCodec {
       case x:Align /* TypeRef */ => AlignCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
       case x:ConditionalAxisLabelAlign /* TypeRef */ => ConditionalAxisLabelAlignCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisNumberAsObjectValue (UnionType)
-object ConditionalAxisNumberAsObjectValueCodec {
-  def decode(j: JsValue): ConditionalAxisNumberAsObjectValue =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberAsObjectValue] =
-    j.asOpt[JsNumber].map { ConditionalAxisNumberAsObjectValueAsNumber(_) }.orElse {
-    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalAxisNumberAsObjectValueAsNull } } 
-  def encode(j: ConditionalAxisNumberAsObjectValue): JsValue =
-    j match {
-      case ConditionalAxisNumberAsObjectValueAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case ConditionalAxisNumberAsObjectValueAsNull /* Global, NullType$ */ => JsNull
     }
 }
 
@@ -31769,21 +32867,6 @@ object FacetedUnitSpecTitleCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// TickConfigStrokeDash (UnionType)
-object TickConfigStrokeDashCodec {
-  def decode(j: JsValue): TickConfigStrokeDash =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TickConfigStrokeDash] =
-    ArrayOfNumberCodec.decodeOpt(j).map { TickConfigStrokeDashAsArrayOfNumber(_) }.orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: TickConfigStrokeDash): JsValue =
-    j match {
-      case TickConfigStrokeDashAsArrayOfNumber(x) /* Base, ArrayType */ => ArrayOfNumberCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // SharedEncodingLatitude2Datum (UnionType)
 object SharedEncodingLatitude2DatumCodec {
   def decode(j: JsValue): SharedEncodingLatitude2Datum =
@@ -31800,6 +32883,38 @@ object SharedEncodingLatitude2DatumCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
       case x:RepeatRef /* TypeRef */ => RepeatRefCodec.encode(x)
     }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TickConfigStrokeDash (UnionType)
+object TickConfigStrokeDashCodec {
+  def decode(j: JsValue): TickConfigStrokeDash =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TickConfigStrokeDash] =
+    ArrayOfNumberCodec.decodeOpt(j).map { TickConfigStrokeDashAsArrayOfNumber(_) }.orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: TickConfigStrokeDash): JsValue =
+    j match {
+      case TickConfigStrokeDashAsArrayOfNumber(x) /* Base, ArrayType */ => ArrayOfNumberCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPosition (ConstrainedType)
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPositionCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPosition =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPosition] =
+    try {
+      j.asOpt[JsNumber]
+        .map { ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPosition(_) }
+    } catch {
+      case _:AssertionError => None
+    }
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPosition): JsValue =
+    Json.toJson(j.value)
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -32085,6 +33200,34 @@ object BarConfigTextCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelFontStyleAsObject2 (StructType)
+object ConditionalAxisLabelFontStyleAsObject2Codec {
+  def decode(j: JsValue): ConditionalAxisLabelFontStyleAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelFontStyleAsObject2] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelFontStyleAsObject2ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      return Some(ConditionalAxisLabelFontStyleAsObject2(
+        `condition` = `condition`.get,
+        `expr` = `expr`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisLabelFontStyleAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisLabelFontStyleAsObject2ConditionCodec.encode(j.`condition`)),
+        Some("expr" -> Json.toJson(j.`expr`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // TopLevelConcatSpecParamsElement (UnionType)
 object TopLevelConcatSpecParamsElementCodec {
   def decode(j: JsValue): TopLevelConcatSpecParamsElement =
@@ -32098,34 +33241,6 @@ object TopLevelConcatSpecParamsElementCodec {
       case x:TopLevelSelectionParameter /* TypeRef */ => TopLevelSelectionParameterCodec.encode(x)
     }
 }
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefNumberNullExprRefAsObject (StructType)
-object ConditionalPredicateValueDefNumberNullExprRefAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefNumberNullExprRefAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefNumberNullExprRefAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ArrayOfNumberCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalPredicateValueDefNumberNullExprRefAsObject(
-        `test` = `test`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateValueDefNumberNullExprRefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        j.`value`.map { x => "value" -> ArrayOfNumberCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // ExprRef (StructType)
@@ -32478,6 +33593,22 @@ object TitleConfigSubtitleColorCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// TickConfigInvalid (EnumType)
+object TickConfigInvalidCodec {
+  def decode(j: JsValue): TickConfigInvalid =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TickConfigInvalid] =
+    j match {
+      case JsString("filter") => Some(TickConfigInvalidFilter)
+      case JsNull => Some(TickConfigInvalidUndefined)
+      case _ => None
+    }
+  def encode(j: TickConfigInvalid): JsValue =
+    j.payload
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // LineConfigStrokeOffset (UnionType)
 object LineConfigStrokeOffsetCodec {
   def decode(j: JsValue): LineConfigStrokeOffset =
@@ -32638,6 +33769,21 @@ object SharedEncodingFillOpacityBinCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2Padding (UnionType)
+object TopLevelRepeatSpecAsObject2PaddingCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2Padding =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2Padding] =
+    PaddingCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2Padding): JsValue =
+    j match {
+      case x:Padding /* TypeRef */ => PaddingCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // LegendConfigTitleAnchor (UnionType)
 object LegendConfigTitleAnchorCodec {
   def decode(j: JsValue): LegendConfigTitleAnchor =
@@ -32686,6 +33832,34 @@ object ScaleInterpolateEnumCodec {
     }
   def encode(j: ScaleInterpolateEnum): JsValue =
     j.payload
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberArrayAsObject1 (StructType)
+object ConditionalAxisNumberArrayAsObject1Codec {
+  def decode(j: JsValue): ConditionalAxisNumberArrayAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberArrayAsObject1] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisNumberArrayAsObject1ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ArrayOfNumberCodec.decodeOpt(x).map { Some(_) }.flatten }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalAxisNumberArrayAsObject1(
+        `condition` = `condition`.get,
+        `value` = `value`,
+      ))
+    }
+
+  def encode(j: ConditionalAxisNumberArrayAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisNumberArrayAsObject1ConditionCodec.encode(j.`condition`)),
+        j.`value`.map { x => "value" -> ArrayOfNumberCodec.encode(x) },
+      ).flatten.toMap
+    )
 }
 
 
@@ -32769,17 +33943,17 @@ object SharedEncodingStrokeWidthValueCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit (UnionType)
-object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnitCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit =
+// TopLevelRepeatSpecAsObject1Repeat (UnionType)
+object TopLevelRepeatSpecAsObject1RepeatCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Repeat =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit] =
-    TimeUnitCodec.decodeOpt(j).orElse {
-    TimeUnitParamsCodec.decodeOpt(j) } 
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObjectTimeUnit): JsValue =
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Repeat] =
+    ArrayOfStringCodec.decodeOpt(j).map { TopLevelRepeatSpecAsObject1RepeatAsArrayOfString(_) }.orElse {
+    RepeatMappingCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1Repeat): JsValue =
     j match {
-      case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
-      case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
+      case TopLevelRepeatSpecAsObject1RepeatAsArrayOfString(x) /* Base, ArrayType */ => ArrayOfStringCodec.encode(x)
+      case x:RepeatMapping /* TypeRef */ => RepeatMappingCodec.encode(x)
     }
 }
 
@@ -32833,19 +34007,6 @@ object LineConfigCornerRadiusTopLeftCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalAxisLabelAlign (UnionType)
-object ConditionalAxisLabelAlignCodec {
-  def decode(j: JsValue): ConditionalAxisLabelAlign =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelAlign] =
-    ConditionalAxisLabelAlignAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalAxisLabelAlign): JsValue =
-    j match {
-      case x:ConditionalAxisLabelAlignAsObject /* TypeRef */ => ConditionalAxisLabelAlignAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // RectConfigInnerRadius (UnionType)
 object RectConfigInnerRadiusCodec {
   def decode(j: JsValue): RectConfigInnerRadius =
@@ -32895,6 +34056,34 @@ object ValueDefWithConditionStringFieldDefTextConditionCodec {
       case ValueDefWithConditionStringFieldDefTextConditionAsArrayOfConditionalValueDefTextExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalValueDefTextExprRefCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelAlignAsObject2 (StructType)
+object ConditionalAxisLabelAlignAsObject2Codec {
+  def decode(j: JsValue): ConditionalAxisLabelAlignAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelAlignAsObject2] =
+    {
+      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisLabelAlignAsObject2ConditionCodec.decodeOpt(x) }
+      if(`condition`.isEmpty) { return None }
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      return Some(ConditionalAxisLabelAlignAsObject2(
+        `condition` = `condition`.get,
+        `expr` = `expr`.get,
+      ))
+    }
+
+  def encode(j: ConditionalAxisLabelAlignAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("condition" -> ConditionalAxisLabelAlignAsObject2ConditionCodec.encode(j.`condition`)),
+        Some("expr" -> Json.toJson(j.`expr`)),
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // ScaleConfigMaxBandSize (ConstrainedType)
@@ -33201,60 +34390,6 @@ object BinTransformAsCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefAsObject (StructType)
-object ConditionalPredicateMarkPropFieldOrDatumDefAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => FieldCodec.decodeOpt(x) }
-      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPositionCodec.decodeOpt(x) }
-      val `bin` = (j \ "bin").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinCodec.decodeOpt(x) }
-      val `aggregate` = (j \ "aggregate").asOpt[JsValue].flatMap { x => AggregateCodec.decodeOpt(x) }
-      val `timeUnit` = (j \ "timeUnit").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnitCodec.decodeOpt(x) }
-      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `sort` = (j \ "sort").asOpt[JsValue].flatMap { x => SortCodec.decodeOpt(x) }
-      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => StandardTypeCodec.decodeOpt(x) }
-      return Some(ConditionalPredicateMarkPropFieldOrDatumDefAsObject(
-        `test` = `test`.get,
-        `field` = `field`,
-        `scale` = `scale`,
-        `legend` = `legend`,
-        `bandPosition` = `bandPosition`,
-        `bin` = `bin`,
-        `aggregate` = `aggregate`,
-        `timeUnit` = `timeUnit`,
-        `title` = `title`,
-        `sort` = `sort`,
-        `type` = `type`,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        j.`field`.map { x => "field" -> FieldCodec.encode(x) },
-        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
-        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
-        j.`bandPosition`.map { x => "bandPosition" -> ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBandPositionCodec.encode(x) },
-        j.`bin`.map { x => "bin" -> ConditionalPredicateMarkPropFieldOrDatumDefAsObjectBinCodec.encode(x) },
-        j.`aggregate`.map { x => "aggregate" -> AggregateCodec.encode(x) },
-        j.`timeUnit`.map { x => "timeUnit" -> ConditionalPredicateMarkPropFieldOrDatumDefAsObjectTimeUnitCodec.encode(x) },
-        j.`title`.map { x => "title" -> TextCodec.encode(x) },
-        j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
-        j.`type`.map { x => "type" -> StandardTypeCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // AxisConfigTickColor (UnionType)
 object AxisConfigTickColorCodec {
   def decode(j: JsValue): AxisConfigTickColor =
@@ -33551,8 +34686,8 @@ object ArrayOfConditionalPredicateValueDefColorNullExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalPredicateValueDefColorNullExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalPredicateValueDefColorNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalPredicateValueDefColorNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalPredicateValueDefColorNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalPredicateValueDefColorNullExprRef]): JsArray =
       JsArray(j.map { x => ConditionalPredicateValueDefColorNullExprRefCodec.encode(x) })
 }
@@ -33573,6 +34708,21 @@ object SharedEncodingColorValueCodec {
       case SharedEncodingColorValueAsString(x) /* Base, StringType$ */ => Json.toJson(x)
       case SharedEncodingColorValueAsNull /* Global, NullType$ */ => JsNull
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisColor (UnionType)
+object ConditionalAxisColorCodec {
+  def decode(j: JsValue): ConditionalAxisColor =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisColor] =
+    ConditionalAxisColorAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalAxisColorAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalAxisColor): JsValue =
+    j match {
+      case x:ConditionalAxisColorAsObject1 /* TypeRef */ => ConditionalAxisColorAsObject1Codec.encode(x)
+      case x:ConditionalAxisColorAsObject2 /* TypeRef */ => ConditionalAxisColorAsObject2Codec.encode(x)
     }
 }
 
@@ -33784,34 +34934,6 @@ object AxisConfigTitleAnchorCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefTextBaselineNullExprRefAsObject (StructType)
-object ConditionalPredicateValueDefTextBaselineNullExprRefAsObjectCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefTextBaselineNullExprRefAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefTextBaselineNullExprRefAsObject] =
-    {
-      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
-      if(`test`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => TextBaselineCodec.decodeOpt(x).map { Some(_) }.flatten }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalPredicateValueDefTextBaselineNullExprRefAsObject(
-        `test` = `test`.get,
-        `value` = `value`,
-      ))
-    }
-
-  def encode(j: ConditionalPredicateValueDefTextBaselineNullExprRefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
-        j.`value`.map { x => "value" -> TextBaselineCodec.encode(x) },
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
 // TitleConfigFontSize (UnionType)
 object TitleConfigFontSizeCodec {
   def decode(j: JsValue): TitleConfigFontSize =
@@ -33842,37 +34964,6 @@ object RowColumnEncodingFieldDefBandPositionCodec {
   def encode(j: RowColumnEncodingFieldDefBandPosition): JsValue =
     Json.toJson(j.value)
 }
-
-////////////////////////////////////////////////////////////////////////
-// EventStreamAsObjectFilter (UnionType)
-object EventStreamAsObjectFilterCodec {
-  def decode(j: JsValue): EventStreamAsObjectFilter =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[EventStreamAsObjectFilter] =
-    j.asOpt[String].map { EventStreamAsObjectFilterAsString(_) }.orElse {
-    ArrayOfStringCodec.decodeOpt(j).map { EventStreamAsObjectFilterAsArrayOfString(_) } } 
-  def encode(j: EventStreamAsObjectFilter): JsValue =
-    j match {
-      case EventStreamAsObjectFilterAsString(x) /* Base, StringType$ */ => Json.toJson(x)
-      case EventStreamAsObjectFilterAsArrayOfString(x) /* Base, ArrayType */ => ArrayOfStringCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// TickConfigInvalid (EnumType)
-object TickConfigInvalidCodec {
-  def decode(j: JsValue): TickConfigInvalid =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TickConfigInvalid] =
-    j match {
-      case JsString("filter") => Some(TickConfigInvalidFilter)
-      case JsNull => Some(TickConfigInvalidUndefined)
-      case _ => None
-    }
-  def encode(j: TickConfigInvalid): JsValue =
-    j.payload
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // BrushConfig (StructType)
@@ -33937,41 +35028,6 @@ object OverlayMarkDefStrokeOpacityCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
-
-////////////////////////////////////////////////////////////////////////
-// LegendConfigGradientStrokeColor (UnionType)
-object LegendConfigGradientStrokeColorCodec {
-  def decode(j: JsValue): LegendConfigGradientStrokeColor =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[LegendConfigGradientStrokeColor] =
-    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => LegendConfigGradientStrokeColorAsNull }.orElse {
-    ColorCodec.decodeOpt(j).orElse {
-    ExprRefCodec.decodeOpt(j) } } 
-  def encode(j: LegendConfigGradientStrokeColor): JsValue =
-    j match {
-      case LegendConfigGradientStrokeColorAsNull /* Global, NullType$ */ => JsNull
-      case x:Color /* TypeRef */ => ColorCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// Orient (EnumType)
-object OrientCodec {
-  def decode(j: JsValue): Orient =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[Orient] =
-    j match {
-      case JsString("left") => Some(OrientLeft)
-      case JsString("right") => Some(OrientRight)
-      case JsString("top") => Some(OrientTop)
-      case JsString("bottom") => Some(OrientBottom)
-      case _ => None
-    }
-  def encode(j: Orient): JsValue =
-    j.payload
-}
-
 
 ////////////////////////////////////////////////////////////////////////
 // OverlayMarkDefOrder (UnionType)
@@ -34215,6 +35271,22 @@ object AxisConfigLabelBoundCodec {
 // see OverlayMarkDefOpacity (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1Bounds (EnumType)
+object TopLevelRepeatSpecAsObject1BoundsCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Bounds =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Bounds] =
+    j match {
+      case JsString("full") => Some(TopLevelRepeatSpecAsObject1BoundsFull)
+      case JsString("flush") => Some(TopLevelRepeatSpecAsObject1BoundsFlush)
+      case _ => None
+    }
+  def encode(j: TopLevelRepeatSpecAsObject1Bounds): JsValue =
+    j.payload
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // DatumDefDatum (UnionType)
 object DatumDefDatumCodec {
   def decode(j: JsValue): DatumDefDatum =
@@ -34360,19 +35432,6 @@ object ConditionalParameterValueDefGradientStringNullExprRefValueCodec {
       case ConditionalParameterValueDefGradientStringNullExprRefValueAsString(x) /* Base, StringType$ */ => Json.toJson(x)
       case ConditionalParameterValueDefGradientStringNullExprRefValueAsNull /* Global, NullType$ */ => JsNull
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefStringNullExprRef (UnionType)
-object ConditionalPredicateValueDefStringNullExprRefCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefStringNullExprRef =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefStringNullExprRef] =
-    ConditionalPredicateValueDefStringNullExprRefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateValueDefStringNullExprRef): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefStringNullExprRefAsObject /* TypeRef */ => ConditionalPredicateValueDefStringNullExprRefAsObjectCodec.encode(x)
     }
 }
 
@@ -34650,68 +35709,28 @@ object ArrayOfWindowFieldDefCodec {
   def decode(j: JsValue): Seq[WindowFieldDef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[WindowFieldDef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      WindowFieldDefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      WindowFieldDefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[WindowFieldDef]): JsArray =
       JsArray(j.map { x => WindowFieldDefCodec.encode(x) })
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefAsObject (StructType)
-object ConditionalParameterMarkPropFieldOrDatumDefAsObjectCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObject =
+// LegendConfigGradientStrokeColor (UnionType)
+object LegendConfigGradientStrokeColorCodec {
+  def decode(j: JsValue): LegendConfigGradientStrokeColor =
     decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObject] =
-    {
-      val `empty` = (j \ "empty").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
-      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => FieldCodec.decodeOpt(x) }
-      val `param` = (j \ "param").asOpt[JsValue].flatMap { x => x.asOpt[String] }
-      if(`param`.isEmpty) { return None }
-      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPositionCodec.decodeOpt(x) }
-      val `bin` = (j \ "bin").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinCodec.decodeOpt(x) }
-      val `aggregate` = (j \ "aggregate").asOpt[JsValue].flatMap { x => AggregateCodec.decodeOpt(x) }
-      val `timeUnit` = (j \ "timeUnit").asOpt[JsValue].flatMap { x => ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnitCodec.decodeOpt(x) }
-      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
-      val `sort` = (j \ "sort").asOpt[JsValue].flatMap { x => SortCodec.decodeOpt(x) }
-      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => StandardTypeCodec.decodeOpt(x) }
-      return Some(ConditionalParameterMarkPropFieldOrDatumDefAsObject(
-        `empty` = `empty`,
-        `field` = `field`,
-        `param` = `param`.get,
-        `scale` = `scale`,
-        `legend` = `legend`,
-        `bandPosition` = `bandPosition`,
-        `bin` = `bin`,
-        `aggregate` = `aggregate`,
-        `timeUnit` = `timeUnit`,
-        `title` = `title`,
-        `sort` = `sort`,
-        `type` = `type`,
-      ))
+  def decodeOpt(j: JsValue): Option[LegendConfigGradientStrokeColor] =
+    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => LegendConfigGradientStrokeColorAsNull }.orElse {
+    ColorCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } } 
+  def encode(j: LegendConfigGradientStrokeColor): JsValue =
+    j match {
+      case LegendConfigGradientStrokeColorAsNull /* Global, NullType$ */ => JsNull
+      case x:Color /* TypeRef */ => ColorCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
-
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        j.`empty`.map { x => "empty" -> Json.toJson(x) },
-        j.`field`.map { x => "field" -> FieldCodec.encode(x) },
-        Some("param" -> Json.toJson(j.`param`)),
-        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
-        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
-        j.`bandPosition`.map { x => "bandPosition" -> ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPositionCodec.encode(x) },
-        j.`bin`.map { x => "bin" -> ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinCodec.encode(x) },
-        j.`aggregate`.map { x => "aggregate" -> AggregateCodec.encode(x) },
-        j.`timeUnit`.map { x => "timeUnit" -> ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnitCodec.encode(x) },
-        j.`title`.map { x => "title" -> TextCodec.encode(x) },
-        j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
-        j.`type`.map { x => "type" -> StandardTypeCodec.encode(x) },
-      ).flatten.toMap
-    )
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 // AllSortString (UnionType)
@@ -34759,6 +35778,21 @@ object DerivedStreamFilterCodec {
     j match {
       case DerivedStreamFilterAsString(x) /* Base, StringType$ */ => Json.toJson(x)
       case DerivedStreamFilterAsArrayOfString(x) /* Base, ArrayType */ => ArrayOfStringCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisStringAsObject1Value (UnionType)
+object ConditionalAxisStringAsObject1ValueCodec {
+  def decode(j: JsValue): ConditionalAxisStringAsObject1Value =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisStringAsObject1Value] =
+    j.asOpt[String].map { ConditionalAxisStringAsObject1ValueAsString(_) }.orElse {
+    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalAxisStringAsObject1ValueAsNull } } 
+  def encode(j: ConditionalAxisStringAsObject1Value): JsValue =
+    j match {
+      case ConditionalAxisStringAsObject1ValueAsString(x) /* Base, StringType$ */ => Json.toJson(x)
+      case ConditionalAxisStringAsObject1ValueAsNull /* Global, NullType$ */ => JsNull
     }
 }
 
@@ -34823,6 +35857,39 @@ object BoxPlotConfigCodec {
     )
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// Orient (EnumType)
+object OrientCodec {
+  def decode(j: JsValue): Orient =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[Orient] =
+    j match {
+      case JsString("left") => Some(OrientLeft)
+      case JsString("right") => Some(OrientRight)
+      case JsString("top") => Some(OrientTop)
+      case JsString("bottom") => Some(OrientBottom)
+      case _ => None
+    }
+  def encode(j: Orient): JsValue =
+    j.payload
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1Background (UnionType)
+object TopLevelRepeatSpecAsObject1BackgroundCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Background =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Background] =
+    ColorCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1Background): JsValue =
+    j match {
+      case x:Color /* TypeRef */ => ColorCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // PositionDatumDefStack (UnionType)
@@ -34997,21 +36064,6 @@ object OverlayMarkDefFontStyleCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// AreaConfigHref (UnionType)
-object AreaConfigHrefCodec {
-  def decode(j: JsValue): AreaConfigHref =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[AreaConfigHref] =
-    UriReferenceCodec.decodeOpt(j).orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: AreaConfigHref): JsValue =
-    j match {
-      case x:UriReference /* TypeRef */ => UriReferenceCodec.encode(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // AxisConfigTickWidth (UnionType)
 object AxisConfigTickWidthCodec {
   def decode(j: JsValue): AxisConfigTickWidth =
@@ -35055,6 +36107,53 @@ object ProjectionConfigFractionCodec {
     j match {
       case ProjectionConfigFractionAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1Align (UnionType)
+object TopLevelRepeatSpecAsObject1AlignCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Align =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Align] =
+    LayoutAlignCodec.decodeOpt(j).orElse {
+    RowColLayoutAlignCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1Align): JsValue =
+    j match {
+      case x:LayoutAlign /* TypeRef */ => LayoutAlignCodec.encode(x)
+      case x:RowColLayoutAlign /* TypeRef */ => RowColLayoutAlignCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// AreaConfigHref (UnionType)
+object AreaConfigHrefCodec {
+  def decode(j: JsValue): AreaConfigHref =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[AreaConfigHref] =
+    UriReferenceCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: AreaConfigHref): JsValue =
+    j match {
+      case x:UriReference /* TypeRef */ => UriReferenceCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin (UnionType)
+object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinCodec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin] =
+    j.asOpt[Boolean].map { ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsBool(_) }.orElse {
+    BinParamsCodec.decodeOpt(j).orElse {
+    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsNull } } } 
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1Bin): JsValue =
+    j match {
+      case ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
+      case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
+      case ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObject1BinAsNull /* Global, NullType$ */ => JsNull
     }
 }
 
@@ -35184,6 +36283,21 @@ object BooleanConstCodec {
     JsString("boolean")
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefFontStyleNullExprRef (UnionType)
+object ConditionalPredicateValueDefFontStyleNullExprRefCodec {
+  def decode(j: JsValue): ConditionalPredicateValueDefFontStyleNullExprRef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontStyleNullExprRef] =
+    ConditionalPredicateValueDefFontStyleNullExprRefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateValueDefFontStyleNullExprRefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateValueDefFontStyleNullExprRef): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefFontStyleNullExprRefAsObject1 /* TypeRef */ => ConditionalPredicateValueDefFontStyleNullExprRefAsObject1Codec.encode(x)
+      case x:ConditionalPredicateValueDefFontStyleNullExprRefAsObject2 /* TypeRef */ => ConditionalPredicateValueDefFontStyleNullExprRefAsObject2Codec.encode(x)
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 // LegendConfigGradientLengthAsNumber (ConstrainedType)
@@ -35351,36 +36465,10 @@ object ArrayOfImputeTransformFrameElementCodec {
   def decode(j: JsValue): Seq[ImputeTransformFrameElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ImputeTransformFrameElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ImputeTransformFrameElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ImputeTransformFrameElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ImputeTransformFrameElement]): JsArray =
       JsArray(j.map { x => ImputeTransformFrameElementCodec.encode(x) })
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefAlignNullExprRef (UnionType)
-object ConditionalPredicateValueDefAlignNullExprRefCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefAlignNullExprRef =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefAlignNullExprRef] =
-    ConditionalPredicateValueDefAlignNullExprRefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateValueDefAlignNullExprRef): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefAlignNullExprRefAsObject /* TypeRef */ => ConditionalPredicateValueDefAlignNullExprRefAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpec (UnionType)
-object TopLevelRepeatSpecCodec {
-  def decode(j: JsValue): TopLevelRepeatSpec =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpec] =
-    TopLevelRepeatSpecAsObjectCodec.decodeOpt(j) 
-  def encode(j: TopLevelRepeatSpec): JsValue =
-    j match {
-      case x:TopLevelRepeatSpecAsObject /* TypeRef */ => TopLevelRepeatSpecAsObjectCodec.encode(x)
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -35472,8 +36560,8 @@ object ArrayOfEmptyObjectCodec {
   def decode(j: JsValue): Seq[JsObject] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[JsObject]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      x.asOpt[JsObject].map { _ => Json.obj() }.getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      x.asOpt[JsObject].map { _ => Json.obj() }.getOrElse { return None } } }
   def encode(j: Seq[JsObject]): JsArray =
       JsArray(j.map { x => Json.toJson(x) })
 }
@@ -35496,16 +36584,16 @@ object LegendConfigSymbolSizeAsNumberCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// TickConfigStrokeJoin (UnionType)
-object TickConfigStrokeJoinCodec {
-  def decode(j: JsValue): TickConfigStrokeJoin =
+// LineConfigStartAngle (UnionType)
+object LineConfigStartAngleCodec {
+  def decode(j: JsValue): LineConfigStartAngle =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TickConfigStrokeJoin] =
-    StrokeJoinCodec.decodeOpt(j).orElse {
+  def decodeOpt(j: JsValue): Option[LineConfigStartAngle] =
+    j.asOpt[JsNumber].map { LineConfigStartAngleAsNumber(_) }.orElse {
     ExprRefCodec.decodeOpt(j) } 
-  def encode(j: TickConfigStrokeJoin): JsValue =
+  def encode(j: LineConfigStartAngle): JsValue =
     j match {
-      case x:StrokeJoin /* TypeRef */ => StrokeJoinCodec.encode(x)
+      case LineConfigStartAngleAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
@@ -35526,17 +36614,32 @@ object OverlayMarkDefFontCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// LineConfigStartAngle (UnionType)
-object LineConfigStartAngleCodec {
-  def decode(j: JsValue): LineConfigStartAngle =
+// TickConfigStrokeJoin (UnionType)
+object TickConfigStrokeJoinCodec {
+  def decode(j: JsValue): TickConfigStrokeJoin =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[LineConfigStartAngle] =
-    j.asOpt[JsNumber].map { LineConfigStartAngleAsNumber(_) }.orElse {
+  def decodeOpt(j: JsValue): Option[TickConfigStrokeJoin] =
+    StrokeJoinCodec.decodeOpt(j).orElse {
     ExprRefCodec.decodeOpt(j) } 
-  def encode(j: LineConfigStartAngle): JsValue =
+  def encode(j: TickConfigStrokeJoin): JsValue =
     j match {
-      case LineConfigStartAngleAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:StrokeJoin /* TypeRef */ => StrokeJoinCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpec (UnionType)
+object TopLevelRepeatSpecCodec {
+  def decode(j: JsValue): TopLevelRepeatSpec =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpec] =
+    TopLevelRepeatSpecAsObject1Codec.decodeOpt(j).orElse {
+    TopLevelRepeatSpecAsObject2Codec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpec): JsValue =
+    j match {
+      case x:TopLevelRepeatSpecAsObject1 /* TypeRef */ => TopLevelRepeatSpecAsObject1Codec.encode(x)
+      case x:TopLevelRepeatSpecAsObject2 /* TypeRef */ => TopLevelRepeatSpecAsObject2Codec.encode(x)
     }
 }
 
@@ -35862,8 +36965,8 @@ object ArrayOfConditionalPredicateValueDefStringNullExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalPredicateValueDefStringNullExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalPredicateValueDefStringNullExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalPredicateValueDefStringNullExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalPredicateValueDefStringNullExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalPredicateValueDefStringNullExprRef]): JsArray =
       JsArray(j.map { x => ConditionalPredicateValueDefStringNullExprRefCodec.encode(x) })
 }
@@ -36592,21 +37695,6 @@ object MarkDefY2Codec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// BarConfigStrokeDashOffset (UnionType)
-object BarConfigStrokeDashOffsetCodec {
-  def decode(j: JsValue): BarConfigStrokeDashOffset =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[BarConfigStrokeDashOffset] =
-    j.asOpt[JsNumber].map { BarConfigStrokeDashOffsetAsNumber(_) }.orElse {
-    ExprRefCodec.decodeOpt(j) } 
-  def encode(j: BarConfigStrokeDashOffset): JsValue =
-    j match {
-      case BarConfigStrokeDashOffsetAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // FieldOrDatumDefWithConditionStringDatumDefTextCondition (UnionType)
 object FieldOrDatumDefWithConditionStringDatumDefTextConditionCodec {
   def decode(j: JsValue): FieldOrDatumDefWithConditionStringDatumDefTextCondition =
@@ -36782,6 +37870,36 @@ object TopLevelHConcatSpecParamsElementCodec {
     j match {
       case x:VariableParameter /* TypeRef */ => VariableParameterCodec.encode(x)
       case x:TopLevelSelectionParameter /* TypeRef */ => TopLevelSelectionParameterCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// BarConfigStrokeDashOffset (UnionType)
+object BarConfigStrokeDashOffsetCodec {
+  def decode(j: JsValue): BarConfigStrokeDashOffset =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[BarConfigStrokeDashOffset] =
+    j.asOpt[JsNumber].map { BarConfigStrokeDashOffsetAsNumber(_) }.orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: BarConfigStrokeDashOffset): JsValue =
+    j match {
+      case BarConfigStrokeDashOffsetAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalAxisLabelBaselineAsObject2Condition (UnionType)
+object ConditionalAxisLabelBaselineAsObject2ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisLabelBaselineAsObject2Condition =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisLabelBaselineAsObject2Condition] =
+    ConditionalPredicateValueDefTextBaselineNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefTextBaselineNullExprRefCodec.decodeOpt(j).map { ConditionalAxisLabelBaselineAsObject2ConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(_) } } 
+  def encode(j: ConditionalAxisLabelBaselineAsObject2Condition): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefTextBaselineNullExprRef /* TypeRef */ => ConditionalPredicateValueDefTextBaselineNullExprRefCodec.encode(x)
+      case ConditionalAxisLabelBaselineAsObject2ConditionAsArrayOfConditionalPredicateValueDefTextBaselineNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefTextBaselineNullExprRefCodec.encode(x)
     }
 }
 
@@ -37279,6 +38397,21 @@ object OverlayMarkDefUrlCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1Padding (UnionType)
+object TopLevelRepeatSpecAsObject1PaddingCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Padding =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Padding] =
+    PaddingCodec.decodeOpt(j).orElse {
+    ExprRefCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1Padding): JsValue =
+    j match {
+      case x:Padding /* TypeRef */ => PaddingCodec.encode(x)
+      case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // Greedy (ConstantType)
 object GreedyCodec {
   def decode(j: JsValue): Greedy =
@@ -37420,6 +38553,60 @@ object AreaConfigStrokeOpacityAsNumberCodec {
   def encode(j: AreaConfigStrokeOpacityAsNumber): JsValue =
     Json.toJson(j.value)
 }
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateMarkPropFieldOrDatumDefAsObject1 (StructType)
+object ConditionalPredicateMarkPropFieldOrDatumDefAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefAsObject1] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `field` = (j \ "field").asOpt[JsValue].flatMap { x => FieldCodec.decodeOpt(x) }
+      val `scale` = (j \ "scale").asOpt[JsValue].flatMap { x => ScaleCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `legend` = (j \ "legend").asOpt[JsValue].flatMap { x => LegendCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `bandPosition` = (j \ "bandPosition").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPositionCodec.decodeOpt(x) }
+      val `bin` = (j \ "bin").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinCodec.decodeOpt(x) }
+      val `aggregate` = (j \ "aggregate").asOpt[JsValue].flatMap { x => AggregateCodec.decodeOpt(x) }
+      val `timeUnit` = (j \ "timeUnit").asOpt[JsValue].flatMap { x => ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnitCodec.decodeOpt(x) }
+      val `title` = (j \ "title").asOpt[JsValue].flatMap { x => TextCodec.decodeOpt(x).map { Some(_) }.flatten }
+      val `sort` = (j \ "sort").asOpt[JsValue].flatMap { x => SortCodec.decodeOpt(x) }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => StandardTypeCodec.decodeOpt(x) }
+      return Some(ConditionalPredicateMarkPropFieldOrDatumDefAsObject1(
+        `test` = `test`.get,
+        `field` = `field`,
+        `scale` = `scale`,
+        `legend` = `legend`,
+        `bandPosition` = `bandPosition`,
+        `bin` = `bin`,
+        `aggregate` = `aggregate`,
+        `timeUnit` = `timeUnit`,
+        `title` = `title`,
+        `sort` = `sort`,
+        `type` = `type`,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        j.`field`.map { x => "field" -> FieldCodec.encode(x) },
+        j.`scale`.map { x => "scale" -> ScaleCodec.encode(x) },
+        j.`legend`.map { x => "legend" -> LegendCodec.encode(x) },
+        j.`bandPosition`.map { x => "bandPosition" -> ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BandPositionCodec.encode(x) },
+        j.`bin`.map { x => "bin" -> ConditionalPredicateMarkPropFieldOrDatumDefAsObject1BinCodec.encode(x) },
+        j.`aggregate`.map { x => "aggregate" -> AggregateCodec.encode(x) },
+        j.`timeUnit`.map { x => "timeUnit" -> ConditionalPredicateMarkPropFieldOrDatumDefAsObject1TimeUnitCodec.encode(x) },
+        j.`title`.map { x => "title" -> TextCodec.encode(x) },
+        j.`sort`.map { x => "sort" -> SortCodec.encode(x) },
+        j.`type`.map { x => "type" -> StandardTypeCodec.encode(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // OverlayMarkDefTheta2Offset (UnionType)
@@ -37623,19 +38810,6 @@ object LineConfigAriaRoleDescriptionCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefColorNullExprRef (UnionType)
-object ConditionalPredicateValueDefColorNullExprRefCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefColorNullExprRef =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefColorNullExprRef] =
-    ConditionalPredicateValueDefColorNullExprRefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateValueDefColorNullExprRef): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefColorNullExprRefAsObject /* TypeRef */ => ConditionalPredicateValueDefColorNullExprRefAsObjectCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // LinearGradient (StructType)
 object LinearGradientCodec {
   def decode(j: JsValue): LinearGradient =
@@ -37679,21 +38853,6 @@ object LinearGradientCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectTitle (UnionType)
-object TopLevelRepeatSpecAsObjectTitleCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectTitle =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectTitle] =
-    TextCodec.decodeOpt(j).orElse {
-    TitleParamsCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectTitle): JsValue =
-    j match {
-      case x:Text /* TypeRef */ => TextCodec.encode(x)
-      case x:TitleParams /* TypeRef */ => TitleParamsCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // MarkConfigTheta (ConstrainedType)
 // see MarkConfigTheta (UnionType)
 
@@ -37726,6 +38885,21 @@ object ConditionalValueDefTextExprRefCodec {
     j match {
       case x:ConditionalPredicateValueDefTextExprRef /* TypeRef */ => ConditionalPredicateValueDefTextExprRefCodec.encode(x)
       case x:ConditionalParameterValueDefTextExprRef /* TypeRef */ => ConditionalParameterValueDefTextExprRefCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject2ParamsElement (UnionType)
+object TopLevelRepeatSpecAsObject2ParamsElementCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject2ParamsElement =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject2ParamsElement] =
+    VariableParameterCodec.decodeOpt(j).orElse {
+    TopLevelSelectionParameterCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject2ParamsElement): JsValue =
+    j match {
+      case x:VariableParameter /* TypeRef */ => VariableParameterCodec.encode(x)
+      case x:TopLevelSelectionParameter /* TypeRef */ => TopLevelSelectionParameterCodec.encode(x)
     }
 }
 
@@ -37869,6 +39043,21 @@ object LineConfigTheta2Codec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// SharedEncodingOpacityType (UnionType)
+object SharedEncodingOpacityTypeCodec {
+  def decode(j: JsValue): SharedEncodingOpacityType =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[SharedEncodingOpacityType] =
+    StandardTypeCodec.decodeOpt(j).orElse {
+    TypeCodec.decodeOpt(j) } 
+  def encode(j: SharedEncodingOpacityType): JsValue =
+    j match {
+      case x:StandardType /* TypeRef */ => StandardTypeCodec.encode(x)
+      case x:Type /* TypeRef */ => TypeCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // LineConfigStrokeDashOffset (UnionType)
 object LineConfigStrokeDashOffsetCodec {
   def decode(j: JsValue): LineConfigStrokeDashOffset =
@@ -37884,17 +39073,17 @@ object LineConfigStrokeDashOffsetCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// SharedEncodingOpacityType (UnionType)
-object SharedEncodingOpacityTypeCodec {
-  def decode(j: JsValue): SharedEncodingOpacityType =
+// ConditionalAxisColorAsObject2Condition (UnionType)
+object ConditionalAxisColorAsObject2ConditionCodec {
+  def decode(j: JsValue): ConditionalAxisColorAsObject2Condition =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[SharedEncodingOpacityType] =
-    StandardTypeCodec.decodeOpt(j).orElse {
-    TypeCodec.decodeOpt(j) } 
-  def encode(j: SharedEncodingOpacityType): JsValue =
+  def decodeOpt(j: JsValue): Option[ConditionalAxisColorAsObject2Condition] =
+    ConditionalPredicateValueDefColorNullExprRefCodec.decodeOpt(j).orElse {
+    ArrayOfConditionalPredicateValueDefColorNullExprRefCodec.decodeOpt(j).map { ConditionalAxisColorAsObject2ConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(_) } } 
+  def encode(j: ConditionalAxisColorAsObject2Condition): JsValue =
     j match {
-      case x:StandardType /* TypeRef */ => StandardTypeCodec.encode(x)
-      case x:Type /* TypeRef */ => TypeCodec.encode(x)
+      case x:ConditionalPredicateValueDefColorNullExprRef /* TypeRef */ => ConditionalPredicateValueDefColorNullExprRefCodec.encode(x)
+      case ConditionalAxisColorAsObject2ConditionAsArrayOfConditionalPredicateValueDefColorNullExprRef(x) /* Base, ArrayType */ => ArrayOfConditionalPredicateValueDefColorNullExprRefCodec.encode(x)
     }
 }
 
@@ -38172,47 +39361,6 @@ object MarkConfigFontCodec {
     j match {
       case MarkConfigFontAsString(x) /* Base, StringType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalAxisNumberAsObject (StructType)
-object ConditionalAxisNumberAsObjectCodec {
-  def decode(j: JsValue): ConditionalAxisNumberAsObject =
-    decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberAsObject] =
-    {
-      val `condition` = (j \ "condition").asOpt[JsValue].flatMap { x => ConditionalAxisNumberAsObjectConditionCodec.decodeOpt(x) }
-      if(`condition`.isEmpty) { return None }
-      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ConditionalAxisNumberAsObjectValueCodec.decodeOpt(x) }
-      if(`value`.isEmpty) { return None }
-      return Some(ConditionalAxisNumberAsObject(
-        `condition` = `condition`.get,
-        `value` = `value`.get,
-      ))
-    }
-
-  def encode(j: ConditionalAxisNumberAsObject): JsObject =
-    JsObject(
-      Seq[Option[(String,JsValue)]](
-        Some("condition" -> ConditionalAxisNumberAsObjectConditionCodec.encode(j.`condition`)),
-        Some("value" -> ConditionalAxisNumberAsObjectValueCodec.encode(j.`value`)),
-      ).flatten.toMap
-    )
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// ParameterExtent (UnionType)
-object ParameterExtentCodec {
-  def decode(j: JsValue): ParameterExtent =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ParameterExtent] =
-    ParameterExtentAsObjectCodec.decodeOpt(j) 
-  def encode(j: ParameterExtent): JsValue =
-    j match {
-      case x:ParameterExtentAsObject /* TypeRef */ => ParameterExtentAsObjectCodec.encode(x)
     }
 }
 
@@ -38656,17 +39804,32 @@ object SequenceParamsCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDef (UnionType)
-object ConditionalParameterMarkPropFieldOrDatumDefCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDef =
+// ConditionalPredicateValueDefFontWeightNullExprRefAsObject2 (StructType)
+object ConditionalPredicateValueDefFontWeightNullExprRefAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefFontWeightNullExprRefAsObject2 =
     decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDef] =
-    ConditionalParameterMarkPropFieldOrDatumDefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDef): JsValue =
-    j match {
-      case x:ConditionalParameterMarkPropFieldOrDatumDefAsObject /* TypeRef */ => ConditionalParameterMarkPropFieldOrDatumDefAsObjectCodec.encode(x)
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontWeightNullExprRefAsObject2] =
+    {
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefFontWeightNullExprRefAsObject2(
+        `expr` = `expr`.get,
+        `test` = `test`.get,
+      ))
     }
+
+  def encode(j: ConditionalPredicateValueDefFontWeightNullExprRefAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("expr" -> Json.toJson(j.`expr`)),
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+      ).flatten.toMap
+    )
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // ScaleExponent (UnionType)
@@ -39052,6 +40215,34 @@ object ScaleConfigClampCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefNumberNullExprRefAsObject2 (StructType)
+object ConditionalPredicateValueDefNumberNullExprRefAsObject2Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefNumberNullExprRefAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefNumberNullExprRefAsObject2] =
+    {
+      val `expr` = (j \ "expr").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      if(`expr`.isEmpty) { return None }
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefNumberNullExprRefAsObject2(
+        `expr` = `expr`.get,
+        `test` = `test`.get,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefNumberNullExprRefAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("expr" -> Json.toJson(j.`expr`)),
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // TitleConfigDy (UnionType)
 object TitleConfigDyCodec {
   def decode(j: JsValue): TitleConfigDy =
@@ -39138,8 +40329,8 @@ object ArrayOfTopLevelConcatSpecParamsElementCodec {
   def decode(j: JsValue): Seq[TopLevelConcatSpecParamsElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[TopLevelConcatSpecParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      TopLevelConcatSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      TopLevelConcatSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[TopLevelConcatSpecParamsElement]): JsArray =
       JsArray(j.map { x => TopLevelConcatSpecParamsElementCodec.encode(x) })
 }
@@ -39222,6 +40413,54 @@ object LegendConfigTitleFontWeightCodec {
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+// EventStreamAsObject1 (StructType)
+object EventStreamAsObject1Codec {
+  def decode(j: JsValue): EventStreamAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[EventStreamAsObject1] =
+    {
+      val `source` = (j \ "source").asOpt[JsValue].flatMap { x => EventStreamAsObject1SourceCodec.decodeOpt(x) }
+      val `marktype` = (j \ "marktype").asOpt[JsValue].flatMap { x => MarkTypeCodec.decodeOpt(x) }
+      val `filter` = (j \ "filter").asOpt[JsValue].flatMap { x => EventStreamAsObject1FilterCodec.decodeOpt(x) }
+      val `markname` = (j \ "markname").asOpt[JsValue].flatMap { x => x.asOpt[String] }
+      val `consume` = (j \ "consume").asOpt[JsValue].flatMap { x => x.asOpt[Boolean] }
+      val `type` = (j \ "type").asOpt[JsValue].flatMap { x => EventTypeCodec.decodeOpt(x) }
+      if(`type`.isEmpty) { return None }
+      val `debounce` = (j \ "debounce").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      val `between` = (j \ "between").asOpt[JsValue].flatMap { x => ArrayOfStreamCodec.decodeOpt(x) }
+      val `throttle` = (j \ "throttle").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      return Some(EventStreamAsObject1(
+        `source` = `source`,
+        `marktype` = `marktype`,
+        `filter` = `filter`,
+        `markname` = `markname`,
+        `consume` = `consume`,
+        `type` = `type`.get,
+        `debounce` = `debounce`,
+        `between` = `between`,
+        `throttle` = `throttle`,
+      ))
+    }
+
+  def encode(j: EventStreamAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        j.`source`.map { x => "source" -> EventStreamAsObject1SourceCodec.encode(x) },
+        j.`marktype`.map { x => "marktype" -> MarkTypeCodec.encode(x) },
+        j.`filter`.map { x => "filter" -> EventStreamAsObject1FilterCodec.encode(x) },
+        j.`markname`.map { x => "markname" -> Json.toJson(x) },
+        j.`consume`.map { x => "consume" -> Json.toJson(x) },
+        Some("type" -> EventTypeCodec.encode(j.`type`)),
+        j.`debounce`.map { x => "debounce" -> Json.toJson(x) },
+        j.`between`.map { x => "between" -> ArrayOfStreamCodec.encode(x) },
+        j.`throttle`.map { x => "throttle" -> Json.toJson(x) },
+      ).flatten.toMap
+    )
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // AreaConfigStrokeWidthAsNumber (ConstrainedType)
@@ -39455,8 +40694,8 @@ object ArrayOfConditionalValueDefStringExprRefCodec {
   def decode(j: JsValue): Seq[ConditionalValueDefStringExprRef] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[ConditionalValueDefStringExprRef]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      ConditionalValueDefStringExprRefCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      ConditionalValueDefStringExprRefCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[ConditionalValueDefStringExprRef]): JsArray =
       JsArray(j.map { x => ConditionalValueDefStringExprRefCodec.encode(x) })
 }
@@ -39586,6 +40825,10 @@ object LineConfigStrokeJoinCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// MarkConfigRadius (ConstrainedType)
+// see MarkConfigRadius (UnionType)
+
+////////////////////////////////////////////////////////////////////////
 // RectConfigEndAngle (UnionType)
 object RectConfigEndAngleCodec {
   def decode(j: JsValue): RectConfigEndAngle =
@@ -39601,8 +40844,16 @@ object RectConfigEndAngleCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// MarkConfigRadius (ConstrainedType)
-// see MarkConfigRadius (UnionType)
+// ArrayOfFacetedUnitSpecParamsElement (ArrayType)
+object ArrayOfFacetedUnitSpecParamsElementCodec {
+  def decode(j: JsValue): Seq[FacetedUnitSpecParamsElement] =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[Seq[FacetedUnitSpecParamsElement]] =
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      FacetedUnitSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } } }
+  def encode(j: Seq[FacetedUnitSpecParamsElement]): JsArray =
+      JsArray(j.map { x => FacetedUnitSpecParamsElementCodec.encode(x) })
+}
 
 ////////////////////////////////////////////////////////////////////////
 // BarConfigCornerRadiusTopLeft (UnionType)
@@ -39617,18 +40868,6 @@ object BarConfigCornerRadiusTopLeftCodec {
       case BarConfigCornerRadiusTopLeftAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
     }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ArrayOfFacetedUnitSpecParamsElement (ArrayType)
-object ArrayOfFacetedUnitSpecParamsElementCodec {
-  def decode(j: JsValue): Seq[FacetedUnitSpecParamsElement] =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[Seq[FacetedUnitSpecParamsElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      FacetedUnitSpecParamsElementCodec.decodeOpt(x).getOrElse { return None } })
-  def encode(j: Seq[FacetedUnitSpecParamsElement]): JsArray =
-      JsArray(j.map { x => FacetedUnitSpecParamsElementCodec.encode(x) })
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -39650,6 +40889,30 @@ object PositionValueDefCodec {
     JsObject(
       Seq[Option[(String,JsValue)]](
         Some("value" -> PositionValueDefValueCodec.encode(j.`value`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// ViewConfigDiscreteHeightAsObject2 (StructType)
+object ViewConfigDiscreteHeightAsObject2Codec {
+  def decode(j: JsValue): ViewConfigDiscreteHeightAsObject2 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ViewConfigDiscreteHeightAsObject2] =
+    {
+      val `step` = (j \ "step").asOpt[JsValue].flatMap { x => x.asOpt[JsNumber] }
+      if(`step`.isEmpty) { return None }
+      return Some(ViewConfigDiscreteHeightAsObject2(
+        `step` = `step`.get,
+      ))
+    }
+
+  def encode(j: ViewConfigDiscreteHeightAsObject2): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("step" -> Json.toJson(j.`step`)),
       ).flatten.toMap
     )
 }
@@ -39777,23 +41040,6 @@ object LineConfigLineBreakCodec {
 // see RectConfigOpacity (UnionType)
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin (UnionType)
-object ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin] =
-    j.asOpt[Boolean].map { ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinAsBool(_) }.orElse {
-    BinParamsCodec.decodeOpt(j).orElse {
-    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinAsNull } } } 
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObjectBin): JsValue =
-    j match {
-      case ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
-      case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
-      case ConditionalParameterMarkPropFieldOrDatumDefAsObjectBinAsNull /* Global, NullType$ */ => JsNull
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // TopLevelFacetSpecAutosize (UnionType)
 object TopLevelFacetSpecAutosizeCodec {
   def decode(j: JsValue): TopLevelFacetSpecAutosize =
@@ -39874,21 +41120,6 @@ object StringValueDefWithConditionCodec {
     )
 }
 
-
-////////////////////////////////////////////////////////////////////////
-// TopLevelRepeatSpecAsObjectSpacing (UnionType)
-object TopLevelRepeatSpecAsObjectSpacingCodec {
-  def decode(j: JsValue): TopLevelRepeatSpecAsObjectSpacing =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObjectSpacing] =
-    j.asOpt[JsNumber].map { TopLevelRepeatSpecAsObjectSpacingAsNumber(_) }.orElse {
-    RowColNumberCodec.decodeOpt(j) } 
-  def encode(j: TopLevelRepeatSpecAsObjectSpacing): JsValue =
-    j match {
-      case TopLevelRepeatSpecAsObjectSpacingAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
-      case x:RowColNumber /* TypeRef */ => RowColNumberCodec.encode(x)
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////
 // BarConfigDx (UnionType)
@@ -40105,23 +41336,6 @@ object AutoSizeParamsContainsCodec {
 
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin (UnionType)
-object ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinCodec {
-  def decode(j: JsValue): ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin] =
-    j.asOpt[Boolean].map { ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsBool(_) }.orElse {
-    BinParamsCodec.decodeOpt(j).orElse {
-    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsNull } } } 
-  def encode(j: ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBin): JsValue =
-    j match {
-      case ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsBool(x) /* Base, BooleanType$ */ => Json.toJson(x)
-      case x:BinParams /* TypeRef */ => BinParamsCodec.encode(x)
-      case ConditionalPredicateMarkPropFieldOrDatumDefTypeForShapeAsObjectBinAsNull /* Global, NullType$ */ => JsNull
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
 // AxisConfigLabelFontStyle (UnionType)
 object AxisConfigLabelFontStyleCodec {
   def decode(j: JsValue): AxisConfigLabelFontStyle =
@@ -40179,6 +41393,21 @@ object SharedEncodingHrefTimeUnitCodec {
     TimeUnitCodec.decodeOpt(j).orElse {
     TimeUnitParamsCodec.decodeOpt(j) } 
   def encode(j: SharedEncodingHrefTimeUnit): JsValue =
+    j match {
+      case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
+      case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit (UnionType)
+object ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnitCodec {
+  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit] =
+    TimeUnitCodec.decodeOpt(j).orElse {
+    TimeUnitParamsCodec.decodeOpt(j) } 
+  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefTypeForShapeAsObject1TimeUnit): JsValue =
     j match {
       case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
       case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
@@ -40457,6 +41686,34 @@ object BarConfigInnerRadiusCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefStringNullExprRefAsObject1 (StructType)
+object ConditionalPredicateValueDefStringNullExprRefAsObject1Codec {
+  def decode(j: JsValue): ConditionalPredicateValueDefStringNullExprRefAsObject1 =
+    decodeOpt(j).get
+
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefStringNullExprRefAsObject1] =
+    {
+      val `test` = (j \ "test").asOpt[JsValue].flatMap { x => PredicateCompositionCodec.decodeOpt(x) }
+      if(`test`.isEmpty) { return None }
+      val `value` = (j \ "value").asOpt[JsValue].flatMap { x => ConditionalPredicateValueDefStringNullExprRefAsObject1ValueCodec.decodeOpt(x) }
+      if(`value`.isEmpty) { return None }
+      return Some(ConditionalPredicateValueDefStringNullExprRefAsObject1(
+        `test` = `test`.get,
+        `value` = `value`.get,
+      ))
+    }
+
+  def encode(j: ConditionalPredicateValueDefStringNullExprRefAsObject1): JsObject =
+    JsObject(
+      Seq[Option[(String,JsValue)]](
+        Some("test" -> PredicateCompositionCodec.encode(j.`test`)),
+        Some("value" -> ConditionalPredicateValueDefStringNullExprRefAsObject1ValueCodec.encode(j.`value`)),
+      ).flatten.toMap
+    )
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // LegendStreamBinding (StructType)
 object LegendStreamBindingCodec {
   def decode(j: JsValue): LegendStreamBinding =
@@ -40505,8 +41762,8 @@ object ArrayOfStringCodec {
   def decode(j: JsValue): Seq[String] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[String]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      x.asOpt[String].getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      x.asOpt[String].getOrElse { return None } } }
   def encode(j: Seq[String]): JsArray =
       JsArray(j.map { x => Json.toJson(x) })
 }
@@ -40773,20 +42030,18 @@ object BarConfigSizeCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPosition (ConstrainedType)
-object ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPositionCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPosition =
+// ParameterExtent (UnionType)
+object ParameterExtentCodec {
+  def decode(j: JsValue): ParameterExtent =
     decodeOpt(j).get
-
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPosition] =
-    try {
-      j.asOpt[JsNumber]
-        .map { ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPosition(_) }
-    } catch {
-      case _:AssertionError => None
+  def decodeOpt(j: JsValue): Option[ParameterExtent] =
+    ParameterExtentAsObject1Codec.decodeOpt(j).orElse {
+    ParameterExtentAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ParameterExtent): JsValue =
+    j match {
+      case x:ParameterExtentAsObject1 /* TypeRef */ => ParameterExtentAsObject1Codec.encode(x)
+      case x:ParameterExtentAsObject2 /* TypeRef */ => ParameterExtentAsObject2Codec.encode(x)
     }
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObjectBandPosition): JsValue =
-    Json.toJson(j.value)
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -40801,19 +42056,6 @@ object ProjectionRatioCodec {
     j match {
       case ProjectionRatioAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalPredicateValueDefFontStyleNullExprRef (UnionType)
-object ConditionalPredicateValueDefFontStyleNullExprRefCodec {
-  def decode(j: JsValue): ConditionalPredicateValueDefFontStyleNullExprRef =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefFontStyleNullExprRef] =
-    ConditionalPredicateValueDefFontStyleNullExprRefAsObjectCodec.decodeOpt(j) 
-  def encode(j: ConditionalPredicateValueDefFontStyleNullExprRef): JsValue =
-    j match {
-      case x:ConditionalPredicateValueDefFontStyleNullExprRefAsObject /* TypeRef */ => ConditionalPredicateValueDefFontStyleNullExprRefAsObjectCodec.encode(x)
     }
 }
 
@@ -41443,6 +42685,21 @@ object MarkDefBaselineCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// TopLevelRepeatSpecAsObject1Autosize (UnionType)
+object TopLevelRepeatSpecAsObject1AutosizeCodec {
+  def decode(j: JsValue): TopLevelRepeatSpecAsObject1Autosize =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[TopLevelRepeatSpecAsObject1Autosize] =
+    AutosizeTypeCodec.decodeOpt(j).orElse {
+    AutoSizeParamsCodec.decodeOpt(j) } 
+  def encode(j: TopLevelRepeatSpecAsObject1Autosize): JsValue =
+    j match {
+      case x:AutosizeType /* TypeRef */ => AutosizeTypeCodec.encode(x)
+      case x:AutoSizeParams /* TypeRef */ => AutoSizeParamsCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // RectConfig (StructType)
 object RectConfigCodec {
   def decode(j: JsValue): RectConfig =
@@ -41631,6 +42888,21 @@ object ConcatSpecGenericSpecAlignCodec {
     j match {
       case x:LayoutAlign /* TypeRef */ => LayoutAlignCodec.encode(x)
       case x:RowColLayoutAlign /* TypeRef */ => RowColLayoutAlignCodec.encode(x)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
+// ConditionalPredicateValueDefColorNullExprRef (UnionType)
+object ConditionalPredicateValueDefColorNullExprRefCodec {
+  def decode(j: JsValue): ConditionalPredicateValueDefColorNullExprRef =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalPredicateValueDefColorNullExprRef] =
+    ConditionalPredicateValueDefColorNullExprRefAsObject1Codec.decodeOpt(j).orElse {
+    ConditionalPredicateValueDefColorNullExprRefAsObject2Codec.decodeOpt(j) } 
+  def encode(j: ConditionalPredicateValueDefColorNullExprRef): JsValue =
+    j match {
+      case x:ConditionalPredicateValueDefColorNullExprRefAsObject1 /* TypeRef */ => ConditionalPredicateValueDefColorNullExprRefAsObject1Codec.encode(x)
+      case x:ConditionalPredicateValueDefColorNullExprRefAsObject2 /* TypeRef */ => ConditionalPredicateValueDefColorNullExprRefAsObject2Codec.encode(x)
     }
 }
 
@@ -41872,8 +43144,8 @@ object ArrayOfFieldRangePredicateRangeAsArrayElementCodec {
   def decode(j: JsValue): Seq[FieldRangePredicateRangeAsArrayElement] =
     decodeOpt(j).get
   def decodeOpt(j: JsValue): Option[Seq[FieldRangePredicateRangeAsArrayElement]] =
-    Some(j.as[Seq[JsValue]].map { x => 
-      FieldRangePredicateRangeAsArrayElementCodec.decodeOpt(x).getOrElse { return None } })
+    j.asOpt[Seq[JsValue]].map { _.map { x => 
+      FieldRangePredicateRangeAsArrayElementCodec.decodeOpt(x).getOrElse { return None } } }
   def encode(j: Seq[FieldRangePredicateRangeAsArrayElement]): JsArray =
       JsArray(j.map { x => FieldRangePredicateRangeAsArrayElementCodec.encode(x) })
 }
@@ -42144,6 +43416,21 @@ object TickConfigTooltipCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// ConditionalAxisNumberAsObject1Value (UnionType)
+object ConditionalAxisNumberAsObject1ValueCodec {
+  def decode(j: JsValue): ConditionalAxisNumberAsObject1Value =
+    decodeOpt(j).get
+  def decodeOpt(j: JsValue): Option[ConditionalAxisNumberAsObject1Value] =
+    j.asOpt[JsNumber].map { ConditionalAxisNumberAsObject1ValueAsNumber(_) }.orElse {
+    j.asOpt[JsNull.type].map { _ => JsNull }.map { _ => ConditionalAxisNumberAsObject1ValueAsNull } } 
+  def encode(j: ConditionalAxisNumberAsObject1Value): JsValue =
+    j match {
+      case ConditionalAxisNumberAsObject1ValueAsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
+      case ConditionalAxisNumberAsObject1ValueAsNull /* Global, NullType$ */ => JsNull
+    }
+}
+
+////////////////////////////////////////////////////////////////////////
 // AreaConfigX2 (UnionType)
 object AreaConfigX2Codec {
   def decode(j: JsValue): AreaConfigX2 =
@@ -42157,21 +43444,6 @@ object AreaConfigX2Codec {
       case AreaConfigX2AsNumber(x) /* Base, NumberType$ */ => Json.toJson(x)
       case x:Width /* TypeRef */ => WidthCodec.encode(x)
       case x:ExprRef /* TypeRef */ => ExprRefCodec.encode(x)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////
-// ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit (UnionType)
-object ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnitCodec {
-  def decode(j: JsValue): ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit =
-    decodeOpt(j).get
-  def decodeOpt(j: JsValue): Option[ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit] =
-    TimeUnitCodec.decodeOpt(j).orElse {
-    TimeUnitParamsCodec.decodeOpt(j) } 
-  def encode(j: ConditionalParameterMarkPropFieldOrDatumDefAsObjectTimeUnit): JsValue =
-    j match {
-      case x:TimeUnit /* TypeRef */ => TimeUnitCodec.encode(x)
-      case x:TimeUnitParams /* TypeRef */ => TimeUnitParamsCodec.encode(x)
     }
 }
 

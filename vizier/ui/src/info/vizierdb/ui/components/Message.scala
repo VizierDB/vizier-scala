@@ -1,14 +1,17 @@
 package info.vizierdb.ui.components
 
 import org.scalajs.dom
+import scala.scalajs.js
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import rx._
 import info.vizierdb.serialized
-import info.vizierdb.ui.facades.Marked
+import info.vizierdb.ui.facades.{ Marked, VegaEmbed }
 import info.vizierdb.types.MessageType
 import info.vizierdb.serializers._
 import info.vizierdb.ui.components.dataset.Dataset
+import info.vizierdb.ui.rxExtras.OnMount
+import info.vizierdb.nativeTypes.JsValue
 
 sealed trait Message
   { def root: dom.Node }
@@ -56,6 +59,35 @@ case class HtmlMessage(content: String) extends Message
 
 //////////////////////////////////////////////////////////////
 
+case class VegaMessage(content: JsValue) extends Message
+{
+  val divId = s"vega_chart_${VegaMessage.nextId}"
+  // println(s"Allocating HtmlMessage\n$content")
+  val root:dom.html.Div = (
+    div(
+      OnMount { node => 
+        println(divId)
+        println(content)
+        val parsed = js.JSON.parse(content.toString)
+        println(parsed)
+        VegaEmbed(
+          s"#$divId", 
+          playToNativeJson(content).asInstanceOf[js.Dictionary[Any]]
+        )
+      },
+      id := divId,
+    ):dom.Node
+  ).asInstanceOf[dom.html.Div]
+}
+
+object VegaMessage
+{
+  var uniqueId = 0l
+  var nextId: Long = { uniqueId += 1; uniqueId }
+}
+
+//////////////////////////////////////////////////////////////
+
 
 object Message
 {
@@ -69,6 +101,7 @@ object Message
       case MessageType.JAVASCRIPT => TextMessage.error(s"Javascript messages not supported yet")
       case MessageType.DATASET => DatasetMessage(new Dataset(message.value.as[serialized.DatasetDescription]))
       case MessageType.CHART => TextMessage.error(s"Chart messages not supported yet")
+      case MessageType.VEGALITE => VegaMessage(message.value)
     }
   }
 }
