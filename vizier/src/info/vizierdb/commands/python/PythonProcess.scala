@@ -20,6 +20,7 @@ import play.api.libs.json._
 import scala.util.matching.Regex
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.commands.ExecutionContext
+import info.vizierdb.Vizier
 
 // Note: Scala does have a ProcessBuilder.  However, Scala's ProcessBuilder
 // (inherited from SBT) is optimized for shell-like streaming pipes between 
@@ -199,8 +200,12 @@ object PythonProcess
   {
     val cmd = 
       new JProcessBuilder(PYTHON_COMMAND, scriptPath)
-        .start()
-    return new PythonProcess(cmd)
+
+    if(Vizier.config.workingDirectory.isDefined){
+      cmd.directory(new File(Vizier.config.workingDirectory()))
+    }
+
+    return new PythonProcess(cmd.start())
   }
 
   def run(script: String, pythonPath: String = PYTHON_COMMAND): String =

@@ -156,4 +156,15 @@ object serializers
   )
   implicit val caveatFormat = Json.format[nativeTypes.Caveat]
   implicit val dataContainerFormat = Json.format[DataContainer]
+
+
+  def playToNativeJson(j: JsValue): js.Any = 
+    j match {
+      case JsObject(o) => js.Dictionary(o.mapValues { playToNativeJson(_) }.toSeq:_*)
+      case JsArray(a) => js.Array(a.map { playToNativeJson(_) }.toSeq:_*)
+      case JsString(s) => s
+      case JsNumber(n) => n.toDouble
+      case JsBoolean(b) => b
+      case JsNull => null
+    }
 }

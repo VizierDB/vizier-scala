@@ -35,7 +35,11 @@ object Schema
 
   def initialize()
   {
-    migrateToCurrentVersion()
+    if(schemaVersion > 0){
+      migrateToCurrentVersion()
+    } else {
+      initializeEmptyDatabase()
+    }
   }
   def drop = 
   {
@@ -49,6 +53,20 @@ object Schema
             logger.error(s"Error dropping $migration: ${e.getMessage()}")
         } 
       }
+    }
+  }
+
+  def initializeEmptyDatabase()
+  {
+    logger.info(s"Initializing empty Vizier database")
+
+    DB autoCommit { implicit session =>
+      for(table <- TABLES.values){
+        val create = CreateTableMigration(table)
+        logger.trace(create.sql)
+        create.apply
+      }
+      Metadata.put("schema", MIGRATIONS.size.toString)
     }
   }
 
@@ -212,7 +230,20 @@ object Schema
         Column("started",         SQL.TIMESTAMP,"timestamp",    isRequired = true),
         Column("finished",        SQL.TIMESTAMP,"timestamp",    isRequired = false)
       )
+    )),
+
+    ///////////////////// Publishing ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Published_Artifact",
+      columns = List(
+        Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true, 
+                                                                isPrimaryKey = true),
+        Column("artifact_id",     SQL.INTEGER,  "integer",      isRequired = true),
+        Column("project_id",      SQL.INTEGER,  "integer",      isRequired = true),
+        Column("properties",      SQL.BLOB,     "json",         isRequired = false)
+      )
     ))
+
   )
 
   val TABLES: Map[String, Table] =

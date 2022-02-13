@@ -20,6 +20,8 @@ import info.vizierdb.catalog._
 import info.vizierdb.types._
 import info.vizierdb.serialized
 import info.vizierdb.viztrails.Provenance
+import info.vizierdb.serialized.ModuleDescription
+import info.vizierdb.viztrails.ScopeSummary
 
 object ComputeDelta
 {
@@ -132,7 +134,7 @@ object ComputeDelta
         workflow.projectId,
         workflow.branchId,
         workflow.id,
-        Provenance.getRefScope(cell).values.toSeq
+        ScopeSummary(cell)
       )
     }
 

@@ -14,10 +14,12 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.vizual
 
+import play.api.libs.json._
 import info.vizierdb.commands._
 import info.vizierdb.spark.vizual
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.spark.vizual.VizualScriptConstructor
+import info.vizierdb.viztrails.ProvenancePrediction
 
 trait VizualCommand 
   extends Command
@@ -60,9 +62,11 @@ trait VizualCommand
     context.message(s"Updated $datasetName")
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String](PARA_DATASET)), 
-           Seq(arguments.get[String](PARA_DATASET))) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PARA_DATASET))
+      .definitelyWrites(arguments.get[String](PARA_DATASET))
+      .andNothingElse
 
 
 }

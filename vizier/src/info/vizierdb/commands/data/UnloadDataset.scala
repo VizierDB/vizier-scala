@@ -15,7 +15,7 @@
 package info.vizierdb.commands.data
 
 import scalikejdbc._
-import play.api.libs.json.Json
+import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
@@ -23,6 +23,8 @@ import info.vizierdb.types._
 import info.vizierdb.filestore.Filestore
 import java.io.File
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.catalog.PublishedArtifact
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object UnloadDataset extends Command
   with LazyLogging
@@ -46,15 +48,16 @@ object UnloadDataset extends Command
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
     EnumerableParameter(id = PARAM_FORMAT, name = "Unload Format", values = EnumerableValue.withNames(
-      "CSV"          -> DatasetFormat.CSV, 
-      "JSON"         -> DatasetFormat.JSON, 
-      "Google Sheet" -> DatasetFormat.GSheet, 
-      "XML"          -> DatasetFormat.XML, 
-      "Excel"        -> DatasetFormat.Excel, 
-      "JDBC Source"  -> DatasetFormat.JDBC, 
-      "Text"         -> DatasetFormat.Text, 
-      "Parquet"      -> DatasetFormat.Parquet, 
-      "ORC"          -> DatasetFormat.ORC
+      "CSV"               -> DatasetFormat.CSV, 
+      "JSON"              -> DatasetFormat.JSON, 
+      "Google Sheet"      -> DatasetFormat.GSheet, 
+      "XML"               -> DatasetFormat.XML, 
+      "Excel"             -> DatasetFormat.Excel, 
+      "JDBC Source"       -> DatasetFormat.JDBC, 
+      "Text"              -> DatasetFormat.Text, 
+      "Parquet"           -> DatasetFormat.Parquet, 
+      "ORC"               -> DatasetFormat.ORC,
+      "Locally Published" -> "publish_local",
     ), default = Some(0)),
     StringParameter(id = PARAM_URL, name = "URL (optional)", required = false),
     ListParameter(id = PARAM_OPTIONS, name = "Unload Options", components = Seq(
@@ -69,12 +72,41 @@ object UnloadDataset extends Command
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String](PARAM_DATASET)
+    val format = arguments.get[String](PARAM_FORMAT)
+    val optionList = 
+      arguments.getList(PARAM_OPTIONS)
+               .map { option => 
+                  option.get[String](PARAM_OPTIONS_KEY) ->
+                    option.get[String](PARAM_OPTIONS_VALUE)
+               }
+
+    // Publish Local gets some special handling, since we're not creating an 
+    // artifact.
+    if(format.equals("publish_local")) {
+      val artifact = context.artifact(datasetName)
+                            .getOrElse{ 
+                              context.error(s"Dataset $datasetName does not exist"); return
+                            }
+
+      val published:PublishedArtifact = DB.autoCommit { implicit s => 
+        PublishedArtifact.make(
+          artifact = artifact, 
+          name = optionList.find { _._1.equalsIgnoreCase("name") }
+                    .map { _._2 },
+          properties = Json.obj(),
+          overwrite = true
+        )
+      }
+
+      context.message(s"Access as ${published.url}")
+
+      return
+    }
+
     val dataset = context.artifact(datasetName)
                          .getOrElse{ 
                            context.error(s"Dataset $datasetName does not exist"); return
                          }
-    val format = arguments.get[String](PARAM_FORMAT)
-
 
     val mimeTypeForFile = format match {
       case DatasetFormat.GSheet   => None
@@ -92,7 +124,7 @@ object UnloadDataset extends Command
       if(url.isDefined) { None }
       else {
         mimeTypeForFile.map { mimeType => 
-          context.outputFile(
+          context.outputFilePlaceholder(
             name = "file_export", 
             properties = Json.obj(
               "filename" -> s"export_$datasetName"
@@ -102,12 +134,6 @@ object UnloadDataset extends Command
         }
       }
 
-    val sparkOptions = 
-      arguments.getList(PARAM_OPTIONS)
-               .map { option => 
-                  option.get[String](PARAM_OPTIONS_KEY) ->
-                    option.get[String](PARAM_OPTIONS_VALUE)
-               }
 
     val df: DataFrame = 
       DB.autoCommit { implicit s => 
@@ -125,7 +151,7 @@ object UnloadDataset extends Command
     // Specific options for specific formats
     writer = format match {
       case DatasetFormat.Excel => {
-        if(sparkOptions.exists { _._1 == "header" }){
+        if(optionList.exists { _._1 == "header" }){
           writer.option("header", true)
         } else { writer }
       }
@@ -134,7 +160,7 @@ object UnloadDataset extends Command
     }
 
     // User-provided options
-    writer = sparkOptions.foldLeft(writer) {
+    writer = optionList.foldLeft(writer) {
       case (writer, ("mode", mode)) => writer.mode(mode)
       case (writer, (option, value)) => writer.option(option, value)
     }
@@ -194,11 +220,11 @@ object UnloadDataset extends Command
 
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq(arguments.get[String]("dataset")),
-      Seq("file_export")
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PARAM_DATASET))
+      .definitelyWrites("file_export")
+      .andNothingElse
 
 
 }

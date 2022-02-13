@@ -22,7 +22,7 @@ import info.vizierdb.Vizier
 import info.vizierdb.catalog.{ Artifact, Workflow, Module, Cell, Result }
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
-import info.vizierdb.artifacts.Chart
+import info.vizierdb.vega.Chart
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.DatasetMessage
 import info.vizierdb.catalog.ArtifactSummary
@@ -34,6 +34,12 @@ import info.vizierdb.serializers._
 import info.vizierdb.delta.DeltaBus
 import info.vizierdb.spark.DataFrameConstructor
 import info.vizierdb.artifacts.Dataset
+import info.vizierdb.viztrails.ScopeSummary
+import info.vizierdb.catalog.ArtifactRef
+import info.vizierdb.catalog.JavascriptMessage
+import java.io.FileOutputStream
+import java.io.BufferedOutputStream
+import java.io.OutputStream
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -53,11 +59,22 @@ class ExecutionContext(
   var isError = false
 
   /**
+   * Get a summary of the input scope
+   */
+  def inputScopeSummary: ScopeSummary = 
+    ScopeSummary.withIds(scope.mapValues { _.id })
+
+  /**
+   * Get a summary of the input scope
+   */
+  def outputScopeSummary: ScopeSummary = 
+    inputScopeSummary.copyWithOutputs(outputs.mapValues { _.map { _.id }}.toMap)
+
+  /**
    * Check to see if the specified artifact appears in the scope
    */
-  def artifactExists(name: String): Boolean = {
+  def artifactExists(name: String): Boolean = 
     scope.contains(name.toLowerCase()) || outputs.contains(name.toLowerCase())
-  }
 
   /**
    * Retrieve the specified artifact
@@ -181,8 +198,9 @@ class ExecutionContext(
   {
     output(
       name, 
-      ArtifactType.PARAMETER, 
-      Json.toJson(serialized.ParameterArtifact.fromNative(value, dataType)).toString.getBytes
+      t = ArtifactType.PARAMETER,
+      data = Json.toJson(serialized.ParameterArtifact.fromNative(value, dataType)).toString.getBytes,
+      mimeType = MIME.JSON
     )
   }
 
@@ -193,25 +211,21 @@ class ExecutionContext(
    * @param   withMessage     Include a message containing the chart
    * @param   withArtifact    Include an message containing the chart
    */
-  def chart(chart: Chart, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
+  def chart(chart: Chart, identifier: String, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
   {
-    val df = dataframe(chart.dataset)
-
-    val encoded = 
-      chart.render(df).toString.getBytes
-
+    val encoded = chart.export
     if(withMessage){
       message(
-        mimeType = MIME.CHART_VIEW, 
-        content = encoded
+        mimeType = MessageType.VEGALITE.toString, 
+        content = encoded.toString,
       )
     }
     if(withArtifact){
       output(
-        name = chart.name,
-        t = ArtifactType.CHART,
-        data = encoded,
-        mimeType = MIME.CHART_VIEW
+        name = identifier,
+        t = ArtifactType.VEGALITE,
+        data = encoded.toString.getBytes,
+        mimeType = MIME.JSON
       )
     }
 
@@ -302,13 +316,40 @@ class ExecutionContext(
   }
 
   /**
-   * Allocate a new dataset object and register it as an output
+   * Allocate a new file artifact and register it as an output
    * 
-   * @param   name            The user-facing name of the dataset
+   * @param   name            The user-facing name of the file
+   * @param   mimeType        The MIME type of the file
+   * @param   properties      A key/value dictionary of properties for the file
    * @returns                 The newly allocated backend-facing name
    */
-  def outputFile(name: String, mimeType: String = MIME.TEXT, properties: JsObject = Json.obj()): Artifact =
+  def outputFilePlaceholder(name: String, mimeType: String = MIME.TEXT, properties: JsObject = Json.obj()): Artifact =
     output(name, ArtifactType.FILE, properties.toString.getBytes, mimeType)
+
+  /**
+   * Allocate a new dataset object and register it as an output
+   * 
+   * Allocate a new file artifact and register it as an output
+   * 
+   * @param   name            The user-facing name of the file
+   * @param   mimeType        The MIME type of the file
+   * @param   properties      A key/value dictionary of properties for the file
+   * @param   genFile         A block that generates the file
+   * @returns                 The newly allocated backend-facing name
+   */
+  def outputFile(name: String, mimeType: String = MIME.TEXT, properties: JsObject = Json.obj())
+                (genFile: OutputStream => Unit): Artifact =
+  {
+    val placeholder = outputFilePlaceholder(name, mimeType, properties)
+    val fout = new FileOutputStream(placeholder.absoluteFile)
+    try {
+      genFile(fout)
+      fout.flush()
+    } finally {
+      fout.close()
+    }
+    return placeholder
+  }
 
   /**
    * Record that this execution failed with the specified name
@@ -395,6 +436,38 @@ class ExecutionContext(
   }
 
   /**
+   * Display HTML, along with embedded javascript
+   * 
+   * @param html          The HTML to display
+   * @param javascript    Javascript code to execute after the HTML is loaded
+   * @param dependencies  A list of Javascript files to load into the global
+   *                      context.
+   * 
+   * Dependencies are typically cached by the client and only loaded once per
+   * session.  
+   */
+  def displayHTML(
+    html: String, 
+    javascript: String = "", 
+    javascriptDependencies: Iterable[String] = Seq.empty,
+    cssDependencies: Iterable[String] = Seq.empty
+  )
+  {
+    if(javascript.isEmpty && javascriptDependencies.isEmpty && cssDependencies.isEmpty){
+      message(MIME.HTML, html.getBytes)
+    } else {
+      message(MIME.JAVASCRIPT, 
+        Json.toJson(JavascriptMessage(
+          html = html,
+          code = javascript,
+          js_deps = javascriptDependencies.toSeq,
+          css_deps = cssDependencies.toSeq
+        )).toString.getBytes()
+      )
+    }
+  }
+
+  /**
    * Modify the arguments of the calling cell (DANGEROUS)
    *
    * Alter a subset of the arguments to the cell currently being
@@ -472,5 +545,7 @@ class ExecutionContext(
     {
       s"SCOPE: { ${scope.map { case (ds, art) => ds+" -> "+art.id }.mkString(", ")} }"
     }
+
+  def spark = Vizier.sparkSession
 }
 

@@ -20,7 +20,8 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
 import java.net.URL
 import java.nio.file.{ Files, Paths }
-import info.vizierdb.api.FormattedError
+import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 
 object UnloadFile extends Command
@@ -49,9 +50,17 @@ object UnloadFile extends Command
                               }
 
     val path = arguments.get[String](PATH)
-    val url = if(path.size > 0 && path(0) == '/'){
-                new URL("file://"+path)
-              } else { new URL(path) }
+    val url = if(path.size <= 0) { new URL(path) } 
+              else {
+                if(path(0) == '/'){ 
+                  new URL("file://"+path) 
+                } else if(!path.contains(":/") 
+                            && Vizier.config.workingDirectory.isDefined) {
+                  new URL("file://"+Vizier.config.workingDirectory()+"/"+path)
+                } else {
+                  new URL(path)
+                }
+              }
 
     url.getProtocol() match {
       case "file" if Vizier.config.serverMode() => {
@@ -78,10 +87,9 @@ object UnloadFile extends Command
     }
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq(arguments.get[String](FILE)),
-      Seq("file_export")
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](FILE))
+      .andNothingElse
 }
 

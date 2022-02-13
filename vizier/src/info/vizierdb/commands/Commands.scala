@@ -74,8 +74,9 @@ object Commands
   )
 
   register(packageId = "transform", name = "Transformation", category = "data")(
-    "aggregate"  -> info.vizierdb.commands.transform.AggregateDataset,
-    "filter"     -> info.vizierdb.commands.transform.FilterDataset,
+    "aggregate"  -> info.vizierdb.commands.transform.Aggregate,
+    "filter"     -> info.vizierdb.commands.transform.Filter,
+    "split"      -> info.vizierdb.commands.transform.SplitDataset,
   )
 
   register(packageId = "plot", name = "Data Plotting", category = "plot")(
@@ -129,7 +130,7 @@ object Commands
     "shape_watcher"  -> info.vizierdb.commands.mimir.ShapeWatcher,
     "comment"        -> info.vizierdb.commands.mimir.Comment,
     "pivot"          -> info.vizierdb.commands.mimir.Pivot,
-    // geocoder lens gets initialized by Geocoder.init
+    "geotag"         -> info.vizierdb.commands.mimir.Geotag,
   )
 }
 

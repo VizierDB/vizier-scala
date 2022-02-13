@@ -358,9 +358,9 @@ class ColIdParameter(
     }
   )
   def value = 
-    JsString(inputNode[dom.html.Select].value)
+    JsNumber(inputNode[dom.html.Select].value.toInt)
   override def set(v: JsValue): Unit = 
-    inputNode[dom.html.Select].value = v.as[String]
+    inputNode[dom.html.Select].value = v.as[Int].toString
 
 }
 
@@ -759,7 +759,12 @@ class RecordParameter(
   def value = 
     Json.toJson(elements.map { _.toArgument })
   def set(v: JsValue): Unit = 
-    ???
+  {
+    val data = serialized.CommandArgumentList.decodeAsMap(v)
+    for(field <- elements){
+      field.set( data.getOrElse(field.id, JsNull) )
+    }
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////

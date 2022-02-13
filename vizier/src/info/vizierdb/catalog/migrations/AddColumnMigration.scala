@@ -12,37 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
- package info.vizierdb.commands
+package info.vizierdb.catalog.migrations
 
-import play.api.libs.json._
+import scalikejdbc.DBSession
+import scalikejdbc.metadata.{ Table, Column }
 
-import org.specs2.mutable.Specification
-import org.specs2.specification.BeforeAll
-
-import info.vizierdb.viztrails.MutableProject
-import info.vizierdb.test.SharedTestResources
-
-class PlotCommandSpec
-  extends Specification
-  with BeforeAll
+case class AddColumnMigration(
+  table: String,
+  column: Column
+) extends Migration
 {
-  def beforeAll = SharedTestResources.init
-  
+  def apply(implicit session: DBSession): Unit =
+    session.executeUpdate(sql)
+  def drop(implicit session: DBSession): Unit =
+    session.executeUpdate(s"ALTER TABLE `${table}` DROP COLUMN `${column.name}`")
 
-  "Plot Nulls" >> {
-    val project = MutableProject("Plot commands")
-    project.load("test_data/r.csv", "r")
-    project.append("plot", "chart")(
-      "dataset" -> "r",
-      "series" -> Seq(Map(
-        "series_column" -> 2, 
-      )),
-      "xaxis" -> Map(
-        "xaxis_column" -> 1
-      ),
-      "chart" -> Map()
+  def updateSchema(sch: Map[String, Table]): Map[String, Table] =
+  {
+    val tableDefn = sch(table.toLowerCase())
+    return sch ++ Map(
+      table -> tableDefn.copy(
+        columns = tableDefn.columns :+ column
+      )
     )
-    project.waitUntilReadyAndThrowOnError
-    ok
   }
+
+  def sql: String =
+    s"ALTER TABLE ${table.toLowerCase()} ADD COLUMN ${Migration.columnSql(column)}"
 }
+

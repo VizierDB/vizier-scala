@@ -22,6 +22,7 @@ import info.vizierdb.spark.caveats.DataContainer
 import java.time.ZonedDateTime
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
+import com.typesafe.scalalogging.LazyLogging
 
 
 case class DatasetMessage(
@@ -75,15 +76,33 @@ object DatasetMessage
   implicit val format: Format[DatasetMessage] = Json.format
 }
 
+case class JavascriptMessage(
+  // javascript to run once the HTML below loads
+  code: String,
+  // a bit of HTML to display in the output
+  html: String,
+  // javascript dependency URLs
+  js_deps: Seq[String],
+  // css dependency URLs
+  css_deps: Seq[String]
+)
+object JavascriptMessage
+{
+  implicit val format: Format[JavascriptMessage] = Json.format
+}
 
+
+/** Note: mimeType should actually be named messageType **/
 case class Message(
   val resultId: Identifier,
   val mimeType: String,
   val data: Array[Byte],
   val stream: StreamType.T
 )
+  extends LazyLogging
 {
   def dataString: String = new String(data)
+  def dataJson: JsValue = Json.parse(data)
 
   def describe(implicit session: DBSession): serialized.MessageDescription = 
     try { 
@@ -92,15 +111,18 @@ case class Message(
         `type` = t,
         value = (t match {
           case MessageType.DATASET => Json.toJson(Json.parse(data).as[DatasetMessage].describe)
-          case MessageType.CHART => Json.parse(data)
-          case MessageType.JAVASCRIPT => Json.parse(data)
+          case MessageType.CHART => dataJson
+          case MessageType.JAVASCRIPT => dataJson
           case MessageType.HTML => JsString(new String(data))
           case MessageType.TEXT => JsString(new String(data))
           case MessageType.MARKDOWN => JsString(new String(data))
+          case MessageType.VEGALITE => dataJson
         })
       )
     } catch {
       case e: Throwable => 
+        logger.error(s"Error retrieving message: ${e.getMessage}\n${e.getStackTraceString}")
+        e.printStackTrace()
         serialized.MessageDescription(
           `type` = MessageType.TEXT,
           value  = JsString(s"Error retrieving message: $e")

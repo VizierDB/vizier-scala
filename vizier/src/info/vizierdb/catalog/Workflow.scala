@@ -24,7 +24,7 @@ import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.serialized
 import info.vizierdb.delta.{ UpdateCell, DeltaBus }
-import info.vizierdb.viztrails.{ Provenance, StateTransition }
+import info.vizierdb.viztrails.{ StateTransition }
 
 /**
  * One version of a workflow.  
