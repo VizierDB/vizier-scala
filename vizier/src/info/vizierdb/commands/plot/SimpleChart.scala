@@ -27,30 +27,16 @@ import org.apache.spark.unsafe.types.UTF8String
 import info.vizierdb.VizierException
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.vega.{ Vega, Chart }
-import info.vizierdb.vega.MarkBar
 import info.vizierdb.spark.SparkPrimitive
-import info.vizierdb.vega.TopLevelRepeatSpec
-import info.vizierdb.vega.TopLevelRepeatSpecAsObject2
-import info.vizierdb.vega.StandardTypeNominal
-import info.vizierdb.vega.RepeatRefRepeat
-import info.vizierdb.vega.FacetSpec
-import info.vizierdb.vega.FacetedUnitSpec
-import info.vizierdb.vega.InlineData
-import info.vizierdb.vega.InlineDatasetAsArrayOfEmptyObject
-import info.vizierdb.vega.FacetedEncoding
-import info.vizierdb.vega.PositionFieldDef
-import info.vizierdb.vega.RepeatRefRepeatRepeat
-import info.vizierdb.vega.RepeatRef
-import info.vizierdb.vega.FieldAsString
-import info.vizierdb.vega.StandardTypeQuantitative
-import info.vizierdb.vega.TextAsString
-import info.vizierdb.vega.FieldOrDatumDefWithConditionDatumDefGradientStringNull
-import info.vizierdb.vega.ScaleDatumDef
-import info.vizierdb.vega.RepeatRefRepeatLayer
-import info.vizierdb.vega.LayerRepeatMapping
-import info.vizierdb.vega.LayerSpec
-import info.vizierdb.vega.UnitSpec
-import info.vizierdb.vega.Encoding
+import info.vizierdb.vega.{
+  AnyMark,
+  MarkBar,
+  MarkArea,
+  MarkPoint,
+  MarkLine,
+  MarkDef
+}
+import info.vizierdb.vega.MarkDefPointAsBool
 
 object SimpleChart extends Command
 {
@@ -76,7 +62,7 @@ object SimpleChart extends Command
   val MAX_RECORDS = 10000
 
 
-  def name: String = "Simple Chart"
+  def name: String = "Column-Based Chart"
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
     StringParameter(id = PARAM_NAME, name = "Chart Name", required = false),
@@ -127,38 +113,38 @@ object SimpleChart extends Command
 
     val data = 
       rows.map { row =>
-        JsObject(
-          (xaxis +: yaxes).map { idx => 
-            val column = schema(idx)
-            column.name -> SparkPrimitive.encode(row(idx), column.dataType)
-          }.toMap
-        )
+        (xaxis +: yaxes).map { idx => 
+          val column = schema(idx)
+          column.name -> SparkPrimitive.encode(row(idx), column.dataType)
+        }.toMap
       }.toSeq
-    val chart = new Chart(TopLevelRepeatSpecAsObject2(
-      `$schema` = Some(Vega.SCHEMA),
-      data = Some(InlineData(values = InlineDatasetAsArrayOfEmptyObject(data))),
-      repeat = LayerRepeatMapping( layer = yaxes.map { schema(_).name }),
-      spec = UnitSpec(
-        name = Some(name),
-        mark = MarkBar,
-        encoding = Some(Encoding(
-          x = Some(PositionFieldDef(
-            field = Some(FieldAsString(schema(xaxis).name)), 
-            `type` = Some(StandardTypeNominal)
-          )),
-          y = Some(PositionFieldDef(
-            field = Some(RepeatRef(RepeatRefRepeatLayer)),
-            `type` = Some(StandardTypeQuantitative)
-          )),
-          color = Some(FieldOrDatumDefWithConditionDatumDefGradientStringNull(
-            datum = Some(RepeatRef(RepeatRefRepeatLayer))
-          )),
-          xOffset = Some(ScaleDatumDef(
-            datum = Some(RepeatRef(RepeatRefRepeatLayer))
-          ))
-        ))
-      ),
-    ))
+    val chartOrMark:Either[Chart,AnyMark] = 
+      arguments.getRecord(PARAM_CHART).get[String](PARAM_CHART_TYPE) match {
+        case CHART_TYPE_BAR => Left(Vega.multiBarChart(
+                                  data,
+                                  schema(xaxis).name,
+                                  yaxes.map { schema(_).name }
+                                ))
+        case CHART_TYPE_AREA => Right(MarkArea)
+        case CHART_TYPE_SCATTER => Right(MarkPoint)
+        case CHART_TYPE_LINE_NO_POINTS => Right(MarkLine)
+        case CHART_TYPE_LINE_POINTS => Right(MarkDef(
+                                          `type` = MarkLine,
+                                          point = Some(MarkDefPointAsBool(true))
+                                        ))
+      }
+    val chart = 
+      chartOrMark match {
+        case Left(chart) => chart
+        case Right(mark) => Vega.multiChart(
+                                        mark,
+                                        data,
+                                        schema(xaxis).name,
+                                        yaxes.map { schema(_).name }
+                                      )
+      }
+
+
     context.chart(chart, identifier = name.replaceAll("[^a-zA-Z0-9]+", "_").toLowerCase)
 
     // val schema = context.datasetSchema(datasetName).getOrElse {

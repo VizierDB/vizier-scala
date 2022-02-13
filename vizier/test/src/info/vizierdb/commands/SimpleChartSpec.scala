@@ -30,23 +30,22 @@ class SimpleChartSpec
   def beforeAll = SharedTestResources.init
   
 
-  // "Plot Nulls" >> {
-  //   val project = MutableProject("Plot commands")
-  //   project.load("test_data/r.csv", "r")
-  //   project.append("plot", "chart")(
-  //     "dataset" -> "r",
-  //     "series" -> Seq(Map(
-  //       "series_column" -> 2, 
-  //     )),
-  //     "xaxis" -> Map(
-  //       "xaxis_column" -> 1
-  //     ),
-  //     "chart" -> Map()
-  //   )
-  //   project.waitUntilReadyAndThrowOnError
-  //   ok
-  // }
-
+  "Plot Nulls" >> {
+    val project = MutableProject("Plot commands")
+    project.load("test_data/r.csv", "r")
+    project.append("plot", "chart")(
+      "dataset" -> "r",
+      "series" -> Seq(Map(
+        "series_column" -> 2, 
+      )),
+      "xaxis" -> Map(
+        "xaxis_column" -> 1
+      ),
+      "chart" -> Map()
+    )
+    project.waitUntilReadyAndThrowOnError
+    ok
+  }
 
   "Bar Chart" >> {
     val project = MutableProject("Plot commands")
@@ -58,13 +57,119 @@ class SimpleChartSpec
       SimpleChart.PARAM_NAME -> "bar",
       SimpleChart.PARAM_SERIES -> Seq(Map(
         SimpleChart.PARAM_SERIES_COLUMN -> 1, 
-      // ),Map(
-      //   SimpleChart.PARAM_SERIES_COLUMN -> 2, 
+      ),Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 2, 
       )),
       SimpleChart.PARAM_XAXIS -> Map(
         SimpleChart.PARAM_XAXIS_COLUMN -> 0
       ),
-      SimpleChart.PARAM_CHART -> Map()
+      SimpleChart.PARAM_CHART -> Map(
+        SimpleChart.PARAM_CHART_TYPE -> SimpleChart.CHART_TYPE_BAR
+      )
+    )
+    project.waitUntilReadyAndThrowOnError
+    val data = project.artifact("bar").json
+    println(data)
+    ok
+  }
+
+  "Area Chart" >> {
+    val project = MutableProject("Plot commands")
+    project.load("test_data/r.csv", "r")
+    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
+
+    project.append("plot", "chart")(
+      SimpleChart.PARAM_DATASET -> "r",
+      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_SERIES -> Seq(Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 2, 
+      ),Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 1, 
+      )),
+      SimpleChart.PARAM_XAXIS -> Map(
+        SimpleChart.PARAM_XAXIS_COLUMN -> 0
+      ),
+      SimpleChart.PARAM_CHART -> Map(
+        SimpleChart.PARAM_CHART_TYPE -> SimpleChart.CHART_TYPE_AREA
+      )
+    )
+    project.waitUntilReadyAndThrowOnError
+    val data = project.artifact("bar").json
+    println(data)
+    ok
+  }
+
+  "Scatterplot" >> {
+    val project = MutableProject("Plot commands")
+    project.load("test_data/r.csv", "r")
+    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
+
+    project.append("plot", "chart")(
+      SimpleChart.PARAM_DATASET -> "r",
+      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_SERIES -> Seq(Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 2, 
+      ),Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 1, 
+      )),
+      SimpleChart.PARAM_XAXIS -> Map(
+        SimpleChart.PARAM_XAXIS_COLUMN -> 0
+      ),
+      SimpleChart.PARAM_CHART -> Map(
+        SimpleChart.PARAM_CHART_TYPE -> SimpleChart.CHART_TYPE_SCATTER
+      )
+    )
+    project.waitUntilReadyAndThrowOnError
+    val data = project.artifact("bar").json
+    println(data)
+    ok
+  }
+
+  "Line Plot" >> {
+    val project = MutableProject("Plot commands")
+    project.load("test_data/r.csv", "r")
+    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
+
+    project.append("plot", "chart")(
+      SimpleChart.PARAM_DATASET -> "r",
+      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_SERIES -> Seq(Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 2, 
+      ),Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 1, 
+      )),
+      SimpleChart.PARAM_XAXIS -> Map(
+        SimpleChart.PARAM_XAXIS_COLUMN -> 0
+      ),
+      SimpleChart.PARAM_CHART -> Map(
+        SimpleChart.PARAM_CHART_TYPE -> SimpleChart.CHART_TYPE_LINE_NO_POINTS
+      )
+    )
+    project.waitUntilReadyAndThrowOnError
+    val data = project.artifact("bar").json
+    println(data)
+    ok
+  }
+
+  "LinesPoints Plot" >> {
+    val project = MutableProject("Plot commands")
+    project.load("test_data/r.csv", "r")
+    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
+
+    project.append("plot", "chart")(
+      SimpleChart.PARAM_DATASET -> "r",
+      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_SERIES -> Seq(Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 2, 
+      ),Map(
+        SimpleChart.PARAM_SERIES_COLUMN -> 1, 
+      )),
+      SimpleChart.PARAM_XAXIS -> Map(
+        SimpleChart.PARAM_XAXIS_COLUMN -> 0
+      ),
+      SimpleChart.PARAM_CHART -> Map(
+        SimpleChart.PARAM_CHART_TYPE -> SimpleChart.CHART_TYPE_LINE_POINTS
+      )
     )
     project.waitUntilReadyAndThrowOnError
     val data = project.artifact("bar").json

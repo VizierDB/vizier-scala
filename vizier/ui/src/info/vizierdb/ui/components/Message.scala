@@ -62,14 +62,9 @@ case class HtmlMessage(content: String) extends Message
 case class VegaMessage(content: JsValue) extends Message
 {
   val divId = s"vega_chart_${VegaMessage.nextId}"
-  // println(s"Allocating HtmlMessage\n$content")
   val root:dom.html.Div = (
     div(
       OnMount { node => 
-        println(divId)
-        println(content)
-        val parsed = js.JSON.parse(content.toString)
-        println(parsed)
         VegaEmbed(
           s"#$divId", 
           playToNativeJson(content).asInstanceOf[js.Dictionary[Any]]
@@ -83,7 +78,7 @@ case class VegaMessage(content: JsValue) extends Message
 object VegaMessage
 {
   var uniqueId = 0l
-  var nextId: Long = { uniqueId += 1; uniqueId }
+  def nextId: Long = { uniqueId = uniqueId + 1l; uniqueId }
 }
 
 //////////////////////////////////////////////////////////////
