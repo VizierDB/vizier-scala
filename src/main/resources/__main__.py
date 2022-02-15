@@ -41,6 +41,7 @@ try:
         cmd = json.loads(cmd)
         if cmd["event"] == "script":
             script = cmd["script"]
+            
             artifacts = cmd["artifacts"]
             project_id = cmd["projectId"]
             cell_id = cmd["cellId"]
@@ -64,7 +65,7 @@ try:
         )
 
     python_cell_preload(client)
-
+    print("script:",script)
     variables = {
         "vizierdb": client,
         "show": client.show,

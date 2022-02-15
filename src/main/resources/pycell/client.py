@@ -30,7 +30,7 @@ from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
 from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
 import pickle
 import base64
-from types import FunctionType
+from types import ModuleType
 
 ARTIFACT_TYPE_DATASET   = "Dataset"
 MIME_TYPE_DATASET       = "dataset/view"
@@ -167,8 +167,8 @@ class VizierDBClient(object):
     if type(updated_data) in primitive_type: 
       self.export_parameter(key,updated_data)
     
-    elif isinstance(updated_data, FunctionType): 
-      self.export_module(exp = updated_data)
+    elif isinstance(updated_data, ModuleType): 
+      self.export_module(exp = updated_data,stack_depth = 2)
     
     elif (mapping_type.count(type(updated_data)) > 0) or (sequence_type.count(type(updated_data)) > 0) or (type(updated_data) == pandas.core.frame.DataFrame):
       self.export_pickle(key,updated_data)
@@ -592,7 +592,7 @@ class VizierDBClient(object):
         "js_deps": dependencies
       }), mime_type=OUTPUT_JAVASCRIPT)
 
-  def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
+  def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None,stack_depth:Any = 1):
     if name_override is not None:
       exp_name = name_override
     elif inspect.isclass(exp):
@@ -601,14 +601,19 @@ class VizierDBClient(object):
       exp_name = exp.__name__
     else:
       # If its a variable we grab the original name from the stack
-      lcls = inspect.stack()[1][0].f_locals
+      lcls = inspect.stack()[stack_depth][0].f_locals
       for name in lcls:
         if lcls[name] == exp:
           exp_name = name
+    print("Self:source",self.source)
     src_ast = ast.parse(self.source)
+    print(ast.dump(src_ast))
+    print("Exp_Name",exp_name)
     analyzer = Analyzer(exp_name)
     analyzer.visit(src_ast)
     src = analyzer.get_Source()
+    
+    
     if return_type is not None:
       if type(return_type) is type:
         if return_type is int:
@@ -621,11 +626,13 @@ class VizierDBClient(object):
           return_type = "pyspark_types.BoolType()"
         else:
           return_type = str(return_type)
-    src = "@return_type({})\n{}".format(return_type, src)
-
+    
+    if exp.__name__ == exp_name:
+    	src = "@return_type({})\n{}".format(return_type, src)
+    
     if exp_name in self.artifacts:
-      if name_override is None:
-        raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_module(exp, name_override=\"{}\")".format(exp_name, exp_name))
+    	if name_override is None:
+    	    raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_module(exp, name_override=\"{}\")".format(exp_name,exp_name))
 
     response = self.vizier_request("save_artifact",
         name=exp_name,
@@ -655,7 +662,7 @@ class VizierDBClient(object):
 
     value = export_from_native_type(value, vizier_data_type)	
     
-    print(value)
+    #print(value)
 
     response = self.vizier_request("save_artifact",
       name=key,
@@ -820,7 +827,29 @@ class Analyzer(ast.NodeVisitor):
 
   # treat coroutines the same way
   visit_AsyncFunctionDef = visit_FunctionDef
-
+  
+  def visit_ImportFrom(self,node):
+    self.context.append(('ImportFrom', set()))
+    if node.asname == self.name:
+      self.source = astor.to_source(node)
+      self.generic_visit(node)
+    self.context.pop()
+  
+  def visit_Import(self,node):
+    self.context.append(('Import', set()))
+    name = node.names[0]
+    if isinstance(name, ast.alias) and name.asname == self.name:
+      self.source = astor.to_source(node)
+      self.generic_visit(node)
+    self.context.pop()
+ 
+  def visit_alias(self, node):
+    self.context.append(('alias', set()))
+    if node.name == self.name:
+      self.source = astor.to_source(node)
+      self.generic_visit(node)
+    self.context.pop()
+  
   def visit_Assign(self, node):
     self.context.append(('assignment', set()))
     target = node.targets[0]
