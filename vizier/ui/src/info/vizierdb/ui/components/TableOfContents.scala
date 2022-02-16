@@ -17,10 +17,10 @@ class TableOfContents(workflow: Workflow)
   def TentativeSummary(module: TentativeModule): Frag =
     li( 
       `class` := "tentative",
-      Rx { span(
-      module.editor().map { ed => s"${ed.packageId}.${ed.command.id}" }
-                     .getOrElse { "new command" }:String
-      ) } 
+      span(
+        module.editor.map { _.map { ed => s"${ed.packageId}.${ed.command.id}" }
+                             .getOrElse { "new command" }:String }.reactive
+      )
     )
 
 

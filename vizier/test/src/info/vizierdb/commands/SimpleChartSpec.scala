@@ -71,7 +71,7 @@ class SimpleChartSpec
     )
     project.waitUntilReadyAndThrowOnError
     val data = project.artifact("bar").json
-    println("Bar Chart:\n$data")
+    println(s"Bar Chart:\n  $data")
     ok
   }
 
@@ -93,7 +93,7 @@ class SimpleChartSpec
     )
     project.waitUntilReadyAndThrowOnError
     val data = project.artifact("area").json
-    println("Area Chart:\n$data")
+    println(s"Area Chart:\n  $data")
     ok
   }
 
@@ -115,7 +115,7 @@ class SimpleChartSpec
     )
     project.waitUntilReadyAndThrowOnError
     val data = project.artifact("scatter").json
-    println("Scatterplot:\n$data")
+    println(s"Scatterplot:\n  $data")
     ok
   }
 
@@ -137,17 +137,13 @@ class SimpleChartSpec
     )
     project.waitUntilReadyAndThrowOnError
     val data = project.artifact("line_nopoints").json
-    println("Line Chart Without Points:\n$data")
+    println(s"Line Chart Without Points:\n  $data")
     ok
   }
 
   "LinesPoints Plot" >> {
-    val project = MutableProject("Plot commands")
-    project.load("test_data/r.csv", "r")
-    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
-
     project.append("plot", "chart")(
-      SimpleChart.PARAM_DATASET -> "r",
+      SimpleChart.PARAM_DATASET -> "s",
       SimpleChart.PARAM_NAME -> "line_withpoints",
       SimpleChart.PARAM_SERIES -> Seq(Map(
         SimpleChart.PARAM_SERIES_COLUMN -> 2, 
@@ -163,7 +159,7 @@ class SimpleChartSpec
     )
     project.waitUntilReadyAndThrowOnError
     val data = project.artifact("line_withpoints").json
-    println("Line Chart With Points\n$data")
+    println(s"Line Chart With Points\n  $data")
     ok
   }
 }

@@ -72,14 +72,15 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
 
   val root = 
     div(id := "project",
-      Rx { tag("nav")(
-              tableOfContents.map { _.map { _.root } 
-                                     .getOrElse { span("Loading....") } }
-      ) },
+      tag("nav")(
+        tableOfContents.map { _.map { _.root } 
+                               .getOrElse { span("Loading....") } 
+                            }.reactive
+      ),
       div(id := "workflow", 
-        h3("Workflow"),
-        Rx { workflow.map { _.map { _.root }
-                             .getOrElse { span("Loading...") } } }
+        h3("Workflowx"),
+        workflow.map { _.map { _.root }
+                        .getOrElse { span("Loading...") } }.reactive
       )
     )
 }

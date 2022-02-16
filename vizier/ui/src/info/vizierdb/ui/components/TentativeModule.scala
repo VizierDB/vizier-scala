@@ -88,20 +88,17 @@ class TentativeModule(
   val root = li(
     span(
       "Visible artifacts here: ",
-      Rx { 
-        val a = visibleArtifacts()
-        Rx { 
-          a().keys.mkString(", ")
+      visibleArtifacts
+        .flatMap { 
+          _.map { _.keys.mkString(", ") }
         }
-      }
+        .reactive
     ),
-    Rx { 
-      activeView.map {
-        case None => b("Loading commands...")
-        case Some(Left(commandList)) => commandList.root
-        case Some(Right(editor)) => editor.root
-      }
-    }
+    activeView.map {
+      case None => b("Loading commands...")
+      case Some(Left(commandList)) => commandList.root
+      case Some(Right(editor)) => editor.root
+    }.reactive
   )
 }
 

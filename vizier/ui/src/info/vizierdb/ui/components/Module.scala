@@ -92,9 +92,9 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
     attr("id") := id_attr,
     div(Rx { 
       editor().map { _.root }.getOrElse { pre(subscription.text()) }
-    }),
-    div(Rx { "State: " + subscription.state() }),
-    div("Outputs: ", Rx { outputs.map { _.keys.mkString(", ") }}),
+    }.reactive),
+    div(Rx { "State: " + subscription.state() }.reactive),
+    div("Outputs: ", outputs.map { _.keys.mkString(", ") }.reactive),
     div("Menu: ", 
       button("Add Cell Above", onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) }),
       button("Add Cell Below", onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) }),
@@ -105,14 +105,14 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
         } else { 
           button("Freeze Cell", onclick := { (_:dom.MouseEvent) => subscription.freezeCell() })
         }
-      },
+      }.reactive,
       Rx { 
         if (subscription.state() == types.ExecutionState.FROZEN) {
           button("Thaw Upto Here", onclick := { (_:dom.MouseEvent) => subscription.thawUpto() }) 
         } else { 
           button("Freeze From Here", onclick := { (_:dom.MouseEvent) => subscription.freezeFrom() })
         }
-      },
+      }.reactive,
       button("Delete Cell", 
         onclick := { (_:dom.MouseEvent) => subscription.delete() })
     ),

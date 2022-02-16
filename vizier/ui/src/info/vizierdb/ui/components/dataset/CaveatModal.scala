@@ -33,21 +33,19 @@ case class CaveatModal(
       div(
         `class` := "caveat_modal",
         margin := "auto",
-        Rx { 
-          (caveatsOrError() match { 
-            case Some(Left(caveats)) => 
-              div(
-                caveats.zipWithIndex.map { case (caveat, idx) => 
-                  div(
-                    `class` := s"caveat ${if(idx % 2 == 0){ "even_row" } else { "odd_row" }}",
-                    caveat.message
-                  )
-                }:_*
-              )
-            case Some(Right(error)) => span(`class` := "error", error)
-            case None => Spinner(50)
-          }):Frag
-        }
+        caveatsOrError.map { 
+          case Some(Left(caveats)) => 
+            div(
+              caveats.zipWithIndex.map { case (caveat, idx) => 
+                div(
+                  `class` := s"caveat ${if(idx % 2 == 0){ "even_row" } else { "odd_row" }}",
+                  caveat.message
+                )
+              }:_*
+            ):Frag
+          case Some(Right(error)) => span(`class` := "error", error):Frag
+          case None => Spinner(50):Frag
+        }.reactive
       )
     ).render
 

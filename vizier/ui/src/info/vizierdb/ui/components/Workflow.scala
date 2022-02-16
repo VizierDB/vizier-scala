@@ -36,7 +36,7 @@ class Workflow(subscription: BranchSubscription, project: Project)
       Rx { 
         if(subscription.awaitingReSync()) { div("Syncing workflow...") } 
         else { span("") }
-      },
+      }.reactive,
       moduleNodes.root,
       div(
         button(

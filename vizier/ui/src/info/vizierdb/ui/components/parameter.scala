@@ -355,7 +355,7 @@ class ColIdParameter(
           }
         ):_*
       )
-    }
+    }.reactive
   )
   def value = 
     JsNumber(inputNode[dom.html.Select].value.toInt)
@@ -430,7 +430,7 @@ class ArtifactParameter(
                      .map { x => x._1 -> x._1 }
         ):_*
       )
-    }
+    }.reactive
   )
   def value = 
     inputNode[dom.html.Select].value match {
@@ -501,7 +501,7 @@ class FileParameter(
 
   val dragAndDropField:dom.Node = 
     div(`class` := "file-drop-area",
-      bodyText,
+      bodyText.reactive,
       ondrop := { (e:dom.DragEvent) => 
         bodyText() = span("file dropped")
         e.preventDefault()
@@ -556,9 +556,9 @@ class FileParameter(
   val root = fieldset(
     `class` := "upload-dataset",
     legend(name),
-    tab("Upload File", 0),
-    tab("Load URL", 1),
-    mode.map { displays(_) }
+    tab("Upload File", 0).reactive,
+    tab("Load URL", 1).reactive,
+    mode.map { displays(_) }.reactive
   )
   def value =
     mode.now match {

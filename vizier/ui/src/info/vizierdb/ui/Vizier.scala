@@ -81,10 +81,10 @@ object Vizier
         document.body.appendChild(
           div(`class` := "viewport",
             Rx { menu().map { _.root }
-                       .getOrElse { div("loading...") } },
+                       .getOrElse { div("loading...") } }.reactive,
             div(`class` := "content",
               Rx { project().map { _.root }
-                            .getOrElse { div("loading...") } }
+                            .getOrElse { div("loading...") } }.reactive
             )
           )
         )
@@ -126,55 +126,51 @@ object Vizier
         }
       document.body.appendChild(
         div(id := "content",
-            Rx { projects
-              projects() match {
-                case Some(ProjectList(projects, _)) => 
-                  div(
-                    ul(
-                      projects.map { projectRef =>
-                        li(
-                          a(
-                            href := s"project.html?project=${projectRef.id}",
-                            span(
-                              `class` := "project_name",
-                              (
-                                projectRef("name")
-                                  .flatMap { _.asOpt[String] }
-                                  .getOrElse { "Untitled Project" }
-                              ):String
-                            ),
-                            span(
-                              `class` := "project_modified",
-                              s"(${projectRef.lastModifiedAt.toLocaleDateString()} ${projectRef.lastModifiedAt.toLocaleTimeString()})"
-                            )
+            projects.map {
+              case Some(ProjectList(projects, _)) => 
+                div(
+                  ul(
+                    projects.map { projectRef =>
+                      li(
+                        a(
+                          href := s"project.html?project=${projectRef.id}",
+                          span(
+                            `class` := "project_name",
+                            (
+                              projectRef("name")
+                                .flatMap { _.asOpt[String] }
+                                .getOrElse { "Untitled Project" }
+                            ):String
+                          ),
+                          span(
+                            `class` := "project_modified",
+                            s"(${projectRef.lastModifiedAt.toLocaleDateString()} ${projectRef.lastModifiedAt.toLocaleTimeString()})"
                           )
                         )
-                      }
-                    ),
-                    div(
-                      Rx { 
-                        projectNameField() match {
-                          case None => span():dom.Node
-                          case Some(f) => f
+                      )
+                    }
+                  ),
+                  div(
+                    projectNameField.map {
+                      case None => span():dom.Node
+                      case Some(f) => f
+                    }.reactive,
+                    button(
+                      onclick := { (_:dom.MouseEvent) => 
+                        projectNameField.now match {
+                          case None => projectNameField() = Some(input(`type` := "text"):dom.Node)
+                          case Some(nameField) => 
+                            createProject(projectNameField.now.get.asInstanceOf[dom.html.Input].value)
+                            projectNameField() = None
                         }
                       },
-                      button(
-                        onclick := { (_:dom.MouseEvent) => 
-                          projectNameField.now match {
-                            case None => projectNameField() = Some(input(`type` := "text"):dom.Node)
-                            case Some(nameField) => 
-                              createProject(projectNameField.now.get.asInstanceOf[dom.html.Input].value)
-                              projectNameField() = None
-                          }
-                        },
-                        "Create Project"
-                      )
+                      "Create Project"
                     )
                   )
-                case None => 
-                  div("Loading project list...")
-              }
-            }
+                )
+              case None => 
+                div("Loading project list...")
+            }.reactive
         )
       )
       OnMount.trigger(document.body)

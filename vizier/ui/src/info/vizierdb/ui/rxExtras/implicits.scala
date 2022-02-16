@@ -7,25 +7,29 @@ import rx._
 import scalatags.JsDom.all._
 import dom.html
 
-package object implicits {
-
-  def replaceNodeOnUpdate[T <% Frag](r: Rx[T], wrap: Frag => Frag = span(_))(implicit ctx: Ctx.Owner): Frag = {
-    def rSafe: dom.Node = wrap(r.now).render
+class RxTagWrapper[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner)
+{
+  def reactive: Frag =
+  {
+    def rSafe: dom.Node = r.now.render
     var last = rSafe
 
     r.triggerLater {  
-      val newLast = wrap(r.now).render
+      val newLast = r.now.render
       last.parentNode.replaceChild(newLast, last)
       last = newLast
       OnMount.trigger(newLast)
     }
     OnMount.trigger(last)
-    last
+    last    
   }
+}
 
 
-  implicit def rxFrag[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner): Frag =
-    replaceNodeOnUpdate(r)
+package object implicits {
+
+  implicit def rxFrag[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner): RxTagWrapper[T] =
+    new RxTagWrapper[T](r)
   
   implicit def renderFrag[T <% Frag](f: T): dom.Node = 
     f.render

@@ -94,7 +94,7 @@ class Dataset(
         href := s"spreadsheet.html?project=$projectId&dataset=$datasetId", 
         target := "_blank",
         "[edit]"
-      )) },
+      )) }.reactive,
   ).render
 
 }
