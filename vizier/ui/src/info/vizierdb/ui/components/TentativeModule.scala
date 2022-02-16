@@ -113,11 +113,13 @@ class CommandList(
         packages.map { pkg => 
           li(b(pkg.name), 
             div(
-              pkg.commands.toSeq.map { cmd => 
-                button(cmd.name, onclick := { 
-                  (e: dom.MouseEvent) => module.selectCommand(pkg.id, cmd)
-                })
-              }
+              pkg.commands.toSeq
+                  .filterNot { _.hidden.getOrElse { false } }
+                  .map { cmd => 
+                    button(cmd.name, onclick := { 
+                      (e: dom.MouseEvent) => module.selectCommand(pkg.id, cmd)
+                    })
+                  }
             )
           )
         }

@@ -82,6 +82,11 @@ trait Command
   def process(arguments: Arguments, context: ExecutionContext): Unit
 
   /**
+   * Return true if the command should be hidden from users
+   */
+  def hidden: Boolean = false
+
+  /**
    * Validate a Json object that claims to be arguments to this command
    * 
    * @param   arguments       The map corresponding to the Json arguments object

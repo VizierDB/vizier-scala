@@ -46,6 +46,7 @@ object RenameDataset extends Command
       .definitelyWrites(arguments.get[String]("name"))
       .andNothingElse
 
+  override def hidden: Boolean = true
 
 }
 

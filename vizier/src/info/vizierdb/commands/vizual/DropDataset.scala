@@ -37,5 +37,6 @@ object DropDataset extends Command
     ProvenancePrediction
       .definitelyDeletes(arguments.get[String]("dataset"))
       .andNothingElse
+  override def hidden: Boolean = true
 }
 

@@ -65,6 +65,26 @@ ul.menu_bar > li ul > li.highlight
   color: #eee;
 }
 
+/************ Workflow ************/
+
+div.add_cell_end_wrapper div.hint {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  color: gray;
+  font-size: 20px;
+}
+
+button.add_cell_end {
+  height: 50px;
+  width: 50px;
+  font-size: 30px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 
 
 /************ Table of Contents ************/

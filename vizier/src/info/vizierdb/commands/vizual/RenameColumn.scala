@@ -34,5 +34,6 @@ object RenameColumn extends VizualCommand
         name = arguments.get[String]("name")
       )
     )
+  override def hidden: Boolean = true
 }
 

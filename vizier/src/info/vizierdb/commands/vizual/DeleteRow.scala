@@ -30,5 +30,6 @@ object DeleteRow extends VizualCommand
     Seq(
       vizual.DeleteRow(arguments.get[String]("row").toLong)
     )
+  override def hidden: Boolean = true
 }
 

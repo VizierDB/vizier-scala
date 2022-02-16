@@ -1,5 +1,6 @@
 package info.vizierdb.ui.rxExtras
 
+import rx.Var
 import scala.collection.mutable
 import info.vizierdb.util.Logging
 
@@ -10,6 +11,20 @@ abstract class RxBuffer[A]
   def apply(idx: Int) = elements(idx)
   def iterator = elements.iterator
   def length = { elements.length }
+  lazy val rxLength = {
+    val x = Var[Int](0)
+    deliverUpdatesTo(new RxBufferTrigger[A] {
+      def onBufferChange() = { 
+        x() = length 
+      }
+      // Remove events trigger before the element is
+      // deleted, so decrement preemptively
+      override def onRemove(n: Int): Unit = {
+        x() = length - 1 
+      }
+    })
+    /* return */ x
+  }
 
   def deliverUpdatesTo[T2 <: RxBufferWatcher[A]](handler: T2): T2
   def rxMap[B](f: A => B): DerivedRxBuffer[A, B] =
@@ -120,6 +135,19 @@ trait RxBufferWatcher[A]
   def onInsertAll(n: Int, elems: collection.Traversable[A]): Unit
   def onRemove(n: Int): Unit
   def onUpdate(n: Int, elem: A): Unit
+}
+
+trait RxBufferTrigger[A]
+  extends RxBufferWatcher[A]
+{
+  def onBufferChange(): Unit
+
+  def onAppend(elem: A): Unit = onBufferChange()
+  def onPrepend(elem: A): Unit = onBufferChange()
+  def onClear(): Unit = onBufferChange()
+  def onInsertAll(n: Int, elems: collection.Traversable[A]): Unit = onBufferChange()
+  def onRemove(n: Int): Unit = onBufferChange()
+  def onUpdate(n: Int, elem: A): Unit = onBufferChange()
 }
 
 trait SimpleRxBufferWatcher[A]

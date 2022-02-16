@@ -30,5 +30,6 @@ object DeleteColumn extends VizualCommand
     Seq(
       vizual.DeleteColumn(arguments.get[Int]("column"))
     )
+  override def hidden: Boolean = true
 }
 

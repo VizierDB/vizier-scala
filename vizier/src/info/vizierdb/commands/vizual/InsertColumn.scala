@@ -41,5 +41,6 @@ object InsertColumn extends VizualCommand
         dataType = arguments.getOpt[String](PARA_DATATYPE).map { SparkSchema.decodeType(_) }
       )
     )
+  override def hidden: Boolean = true
 }
 

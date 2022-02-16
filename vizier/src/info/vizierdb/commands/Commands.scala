@@ -55,7 +55,8 @@ object Commands
               id = commandId,
               name = command.name,
               parameters = Parameter.describe(command.parameters),
-              suggest = Some(false)
+              suggest = Some(false),
+              hidden = Some(command.hidden)
             )
           }.toSeq
       )

@@ -54,6 +54,7 @@ object FilterColumns extends VizualCommand
       )
     )
   }
+  override def hidden: Boolean = true
 
 
 }

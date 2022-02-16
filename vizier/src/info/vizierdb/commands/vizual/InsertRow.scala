@@ -33,5 +33,6 @@ object InsertRow extends VizualCommand
         None
       )
     )
+  override def hidden: Boolean = true
 }
 

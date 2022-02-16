@@ -31,6 +31,8 @@ class Workflow(subscription: BranchSubscription, project: Project)
     )
 
 
+
+
   val root = 
     div(id := "workflow",
       Rx { 
@@ -39,10 +41,20 @@ class Workflow(subscription: BranchSubscription, project: Project)
       }.reactive,
       moduleNodes.root,
       div(
+        `class` := "add_cell_end_wrapper",
         button(
+          `class` := "add_cell_end",
           onclick := { (e: dom.MouseEvent) => moduleViewsWithEdits.appendTentative() }, 
-          "Add A Cell"
-        )
+          "+"
+        ),
+        moduleViewsWithEdits
+          .rxLength
+          .map { 
+            case 0 => div(`class` := "hint",
+                          "↑", br(), "Click here to start")
+            case _ => div()
+          }.reactive
+
       )
     )
 }

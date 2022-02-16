@@ -34,5 +34,6 @@ object MoveRow extends VizualCommand
         position = arguments.get[Int]("position")
       )
     )
+  override def hidden: Boolean = true
 }
 
