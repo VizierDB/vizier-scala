@@ -28,11 +28,17 @@ class SimpleChartSpec
   with BeforeAll
 {
   def beforeAll = SharedTestResources.init
+  lazy val project = MutableProject("Plot commands")
   
+  sequential
+
+  "Initialize Data" >> {
+    project.load("test_data/r.csv", "r")
+    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "s")
+    ok
+  }
 
   "Plot Nulls" >> {
-    val project = MutableProject("Plot commands")
-    project.load("test_data/r.csv", "r")
     project.append("plot", "chart")(
       "dataset" -> "r",
       "series" -> Seq(Map(
@@ -48,12 +54,8 @@ class SimpleChartSpec
   }
 
   "Bar Chart" >> {
-    val project = MutableProject("Plot commands")
-    project.load("test_data/r.csv", "r")
-    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
-
     project.append("plot", "chart")(
-      SimpleChart.PARAM_DATASET -> "r",
+      SimpleChart.PARAM_DATASET -> "s",
       SimpleChart.PARAM_NAME -> "bar",
       SimpleChart.PARAM_SERIES -> Seq(Map(
         SimpleChart.PARAM_SERIES_COLUMN -> 1, 
@@ -69,18 +71,14 @@ class SimpleChartSpec
     )
     project.waitUntilReadyAndThrowOnError
     val data = project.artifact("bar").json
-    println(data)
+    println("Bar Chart:\n$data")
     ok
   }
 
   "Area Chart" >> {
-    val project = MutableProject("Plot commands")
-    project.load("test_data/r.csv", "r")
-    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
-
     project.append("plot", "chart")(
-      SimpleChart.PARAM_DATASET -> "r",
-      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_DATASET -> "s",
+      SimpleChart.PARAM_NAME -> "area",
       SimpleChart.PARAM_SERIES -> Seq(Map(
         SimpleChart.PARAM_SERIES_COLUMN -> 2, 
       ),Map(
@@ -94,19 +92,15 @@ class SimpleChartSpec
       )
     )
     project.waitUntilReadyAndThrowOnError
-    val data = project.artifact("bar").json
-    println(data)
+    val data = project.artifact("area").json
+    println("Area Chart:\n$data")
     ok
   }
 
   "Scatterplot" >> {
-    val project = MutableProject("Plot commands")
-    project.load("test_data/r.csv", "r")
-    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
-
     project.append("plot", "chart")(
-      SimpleChart.PARAM_DATASET -> "r",
-      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_DATASET -> "s",
+      SimpleChart.PARAM_NAME -> "scatter",
       SimpleChart.PARAM_SERIES -> Seq(Map(
         SimpleChart.PARAM_SERIES_COLUMN -> 2, 
       ),Map(
@@ -120,19 +114,15 @@ class SimpleChartSpec
       )
     )
     project.waitUntilReadyAndThrowOnError
-    val data = project.artifact("bar").json
-    println(data)
+    val data = project.artifact("scatter").json
+    println("Scatterplot:\n$data")
     ok
   }
 
   "Line Plot" >> {
-    val project = MutableProject("Plot commands")
-    project.load("test_data/r.csv", "r")
-    project.sql("SELECT a, count(*) as b, sum(c) as c FROM r GROUP BY a" -> "r")
-
     project.append("plot", "chart")(
-      SimpleChart.PARAM_DATASET -> "r",
-      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_DATASET -> "s",
+      SimpleChart.PARAM_NAME -> "line_nopoints",
       SimpleChart.PARAM_SERIES -> Seq(Map(
         SimpleChart.PARAM_SERIES_COLUMN -> 2, 
       ),Map(
@@ -146,8 +136,8 @@ class SimpleChartSpec
       )
     )
     project.waitUntilReadyAndThrowOnError
-    val data = project.artifact("bar").json
-    println(data)
+    val data = project.artifact("line_nopoints").json
+    println("Line Chart Without Points:\n$data")
     ok
   }
 
@@ -158,7 +148,7 @@ class SimpleChartSpec
 
     project.append("plot", "chart")(
       SimpleChart.PARAM_DATASET -> "r",
-      SimpleChart.PARAM_NAME -> "bar",
+      SimpleChart.PARAM_NAME -> "line_withpoints",
       SimpleChart.PARAM_SERIES -> Seq(Map(
         SimpleChart.PARAM_SERIES_COLUMN -> 2, 
       ),Map(
@@ -172,8 +162,8 @@ class SimpleChartSpec
       )
     )
     project.waitUntilReadyAndThrowOnError
-    val data = project.artifact("bar").json
-    println(data)
+    val data = project.artifact("line_withpoints").json
+    println("Line Chart With Points\n$data")
     ok
   }
 }

@@ -213,8 +213,7 @@ case class LoadConstructor(
       )
     val data: DataFrame = 
       spark.read
-           .format("text")
-           .load(absoluteUrl)
+           .text(absoluteUrl)
     
     logger.trace(s"SCHEMA: ${data.schema}")
 
