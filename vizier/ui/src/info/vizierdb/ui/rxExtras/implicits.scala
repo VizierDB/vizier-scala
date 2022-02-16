@@ -9,7 +9,14 @@ import dom.html
 
 class RxTagWrapper[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner)
 {
-  def reactive: Frag =
+  /**
+   * Convert an Rx-wrapped fragment to a reactive DOM node
+   * 
+   * The fragment will return a &lt;span&gt; node.  Whenever
+   * the reactive component is updated, the span node's 
+   * contents will be replaced by the updated fragment.
+   */
+  def reactive: dom.Node =
   {
     def rSafe: dom.Node = r.now.render
     var last = rSafe
@@ -21,7 +28,11 @@ class RxTagWrapper[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner)
       OnMount.trigger(newLast)
     }
     OnMount.trigger(last)
-    last    
+
+    // wrap the node in a span to ensure that it has a parent
+    // **before** it shows up in the DOM.  Without this, we'll
+    // potentially get a null pointer exception above if 
+    span(`class` := "reactive", last).render
   }
 }
 
