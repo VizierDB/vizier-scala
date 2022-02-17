@@ -5,6 +5,7 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.ui.rxExtras.implicits._
+import info.vizierdb.ui.widgets.FontAwesome
 
 class TableOfContents(workflow: Workflow)
                      (implicit owner: Ctx.Owner)
@@ -44,7 +45,16 @@ class TableOfContents(workflow: Workflow)
     div(
       id := "table_of_contents", 
       `class` := "contents",
-      h3("Table of Contents"),
+      h3(
+        workflow.project.projectName.reactive,
+        " ",
+        FontAwesome("pencil-square-o")
+      ),
+      h4(
+        "[",
+        workflow.project.activeBranchName.reactive,
+        "]"
+      ),
       moduleNodes.root
     )
 }

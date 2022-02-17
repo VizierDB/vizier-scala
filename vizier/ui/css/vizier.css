@@ -12,7 +12,8 @@
 /************ Menu bar ************/
 
 div.content {
-  padding-top: 30px;
+  /*padding-top: 30px;*/
+  margin-top: 0px;
 }
 
 ul.menu_bar
@@ -101,7 +102,8 @@ ul.module_list li.module {
 }
 
 ul.module_list li.module div.menu {
-  width: 60px;
+  min-width: 50px;
+  max-width: 50px;
   display: block;
   vertical-align: middle;
   border-radius: 10px 0px 0px 10px;
@@ -129,8 +131,8 @@ ul.module_list li.module.highlight div.menu {
   opacity: 1;
 }
 ul.module_list li.module div.menu button {
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   margin-top: 5px;
   top: 0px;
   bottom: 0px;
@@ -138,6 +140,7 @@ ul.module_list li.module div.menu button {
   margin-left: auto;
   margin-right: auto;
   position: relative;
+  font-size: 80%;
 }
 ul.module_list li.module div.menu button tooltip {
   width: 200px;
@@ -201,11 +204,17 @@ div.module.select-command div.header button.cancel {
 div.contents 
 {
   position: fixed;
-  top: 50px;
+  top: 0px;
   right: 0px;
   float: right;
-  width: 300px;
+  width: 250px;
   overflow-y: auto;
+  font-size: 80%;
+  z-index: 10;
+  background-color: #fff;
+  height: 100%;
+  padding-left: 20px;
+  margin-top: 0px;
 }
 div.contents ul
 {  

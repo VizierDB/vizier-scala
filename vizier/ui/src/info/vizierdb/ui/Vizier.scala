@@ -80,8 +80,6 @@ object Vizier
 
         document.body.appendChild(
           div(`class` := "viewport",
-            Rx { menu().map { _.root }
-                       .getOrElse { div("loading...") } }.reactive,
             div(`class` := "content",
               Rx { project().map { _.root }
                             .getOrElse { div("loading...") } }.reactive

@@ -12,7 +12,7 @@ import info.vizierdb.ui.rxExtras.RxBufferWatcher
 import info.vizierdb.ui.network.ModuleSubscription
 import info.vizierdb.types.ArtifactType
 
-class Workflow(subscription: BranchSubscription, project: Project)
+class Workflow(val subscription: BranchSubscription, val project: Project)
               (implicit owner: Ctx.Owner)
 {
 
