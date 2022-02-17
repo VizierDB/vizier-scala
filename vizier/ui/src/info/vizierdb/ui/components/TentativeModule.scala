@@ -86,14 +86,14 @@ class TentativeModule(
   // }
 
   val root = li(
-    span(
-      "Visible artifacts here: ",
-      visibleArtifacts
-        .flatMap { 
-          _.map { _.keys.mkString(", ") }
-        }
-        .reactive
-    ),
+    // span(
+    //   "Visible artifacts here: ",
+    //   visibleArtifacts
+    //     .flatMap { 
+    //       _.map { _.keys.mkString(", ") }
+    //     }
+    //     .reactive
+    // ),
     activeView.map {
       case None => b("Loading commands...")
       case Some(Left(commandList)) => commandList.root
@@ -108,8 +108,15 @@ class CommandList(
 ){
   val root = 
     div(`class` := "module select-command", 
-      "Create a command... ",
+      div(
+        `class` := "header",
+        "New Cell",
+        button("X", 
+          `class` := "cancel",
+          onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() })
+      ),
       ul(
+        `class` := "command_list",
         packages.map { pkg => 
           li(b(pkg.name), 
             div(
@@ -124,9 +131,6 @@ class CommandList(
           )
         }
       ),
-      div(
-        button("Cancel", onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() })
-      )
     )
 }
 

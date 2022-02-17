@@ -67,6 +67,11 @@ ul.menu_bar > li ul > li.highlight
 
 /************ Workflow ************/
 
+#workflow
+{
+  width: calc(100% - 300px);
+}
+
 div.add_cell_end_wrapper div.hint {
   display: block;
   width: 100%;
@@ -83,6 +88,45 @@ button.add_cell_end {
   display: block;
   margin-left: auto;
   margin-right: auto;
+}
+
+ul.module_list { 
+  list-style: none;
+  padding: 3px;
+}
+
+div.module.select-command {
+}
+
+div.module.select-command div.header {
+  border-bottom: none;
+  border-radius: 15px 15px 0px 0px;
+  background-color: gray;
+  width: calc(100% - 40px);
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  height: 16px;
+  font-weight: bold;
+  color: #fff;
+}
+
+div.module.select-command ul.command_list {
+  padding: 10px;
+  list-style: none;
+  border: 2px solid gray;
+  border-top: none;
+  border-radius: 0px 0px 15px 15px;
+}
+
+div.module.select-command div.header button.cancel {
+  position: relative;
+  top: -3px;
+  right: -10px;
+  float: right;
+  background-color: #fdd;
+  font-weight: bold;
 }
 
 

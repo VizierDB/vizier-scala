@@ -77,9 +77,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
                                .getOrElse { span("Loading....") } 
                             }.reactive
       ),
-      div(id := "workflow", 
-        workflow.map { _.map { _.root }
-                        .getOrElse { span("Loading...") } }.reactive
-      )
+      workflow.map { _.map { _.root }
+                      .getOrElse { span("Loading...") } }.reactive
     )
 }

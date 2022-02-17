@@ -23,7 +23,7 @@ class Workflow(subscription: BranchSubscription, project: Project)
   val moduleViewsWithEdits = new TentativeEdits(moduleViews, project)
 
   val moduleNodes =
-    RxBufferView(ul(), 
+    RxBufferView(ul(`class` := "module_list"), 
       moduleViewsWithEdits.rxMap { 
         case Left(module) => module.root
         case Right(edit) => edit.root
