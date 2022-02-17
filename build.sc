@@ -8,21 +8,12 @@ import coursier.maven.{ MavenRepository }
 import mill.util.Ctx
 import mill.api.{ Result, PathRef }
 
-object upstream extends Module {
-
-  object caveats extends SbtModule {
-    val VERSION = "0.3.5"
-    def scalaVersion = "2.12.15"
-
-  }
-}
-
 
 /*************************************************
  *** The Vizier Backend 
  *************************************************/
 object vizier extends ScalaModule with PublishModule {
-  val VERSION       = "1.2.0-SNAPSHOT"
+  val VERSION       = "2.0.0-SNAPSHOT"
   val PLAY_JS       = ivy"com.typesafe.play::play-json:2.9.2"
                            
   val MIMIR_CAVEATS = ivy"org.mimirdb::mimir-caveats::0.3.5"
@@ -118,14 +109,15 @@ object vizier extends ScalaModule with PublishModule {
     extends Tests 
     with TestModule.Specs2 
   {
+    def scalaVersion = vizier.scalaVersion
 
     def scalacOptions = Seq("-Yrangepos")
-      def ivyDeps = Agg(
-        ivy"org.scalikejdbc::scalikejdbc-test::3.4.2",
-        ivy"org.specs2::specs2-core::4.8.2",
-        ivy"org.specs2::specs2-matcher-extra::4.8.2",
-        ivy"org.specs2::specs2-junit::4.8.2",
-      )
+    def ivyDeps = Agg(
+      ivy"org.scalikejdbc::scalikejdbc-test::3.4.2",
+      ivy"org.specs2::specs2-core::4.8.2",
+      ivy"org.specs2::specs2-matcher-extra::4.8.2",
+      ivy"org.specs2::specs2-junit::4.8.2",
+    )
 
   }
 

@@ -7,6 +7,8 @@ object Vega
 {
   val SCHEMA = new URL("https://vega.github.io/schema/vega-lite/v5.2.0.json")
 
+  type BasicChart = Chart[TopLevelRepeatSpecAsObject2]
+
   /**
    * Create a bar chart with multiple adjacent bars with one record per row
    * @param   data   A sequence of maps with data.  Each map must contain a key for xaxis
@@ -23,7 +25,7 @@ object Vega
     yaxes: Seq[String], 
     ylabel: String = null,
     title: String = null,
-  ): Chart =
+  ): BasicChart =
     new Chart(TopLevelRepeatSpecAsObject2(
       `$schema` = Some(Vega.SCHEMA),
       data = Some(InlineData(
@@ -71,7 +73,7 @@ object Vega
     yaxes: Seq[String], 
     ylabel: String = null,
     title: String = null,
-  ): Chart =
+  ): BasicChart =
     new Chart(TopLevelRepeatSpecAsObject2(
       `$schema` = Some(Vega.SCHEMA),
       data = Some(InlineData(

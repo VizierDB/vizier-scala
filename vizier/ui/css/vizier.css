@@ -247,6 +247,11 @@ div.message.error
   background-color: #fcc;
 }
 
+div.vega-embed
+{
+  min-width: 400px;
+}
+
 /************ Data Tables ************/
 
 

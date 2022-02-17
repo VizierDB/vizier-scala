@@ -41,11 +41,7 @@ object SharedTestResources
         if(!Vizier.config.basePath().exists) { Vizier.config.basePath().mkdir() }
         val vizierDir = Paths.get(Vizier.config.basePath().toURI())
         val filesDir = vizierDir.resolve("files")
-        val mimirDir = vizierDir.resolve("mimir_data")
-        val mimirDB = vizierDir.resolve("Mimir.db")
         if(Files.exists(filesDir)){ Process(Seq("rm", "-r", filesDir.toString)).!! }
-        if(Files.exists(mimirDir)){ Process(Seq("rm", "-r", mimirDir.toString)).!! }
-        if(Files.exists(mimirDB)){ Files.delete(mimirDB) }
 
         // Normal initialization
         Vizier.initSQLite()

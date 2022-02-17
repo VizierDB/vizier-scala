@@ -2,7 +2,7 @@ package info.vizierdb.vega
 
 import play.api.libs.json._
 
-class Chart(var root: TopLevelSpec)
+class Chart[T <: TopLevelSpec](var root: T)
 {
   root match {
     case t:TopLevelUnitSpec => t.`$schema` = Some(Vega.SCHEMA)

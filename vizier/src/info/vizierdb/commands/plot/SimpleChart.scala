@@ -37,6 +37,7 @@ import info.vizierdb.vega.{
   MarkDef
 }
 import info.vizierdb.vega.MarkDefPointAsBool
+import info.vizierdb.vega.AutosizeTypeFitX
 
 object SimpleChart extends Command
 {
@@ -118,7 +119,7 @@ object SimpleChart extends Command
           column.name -> SparkPrimitive.encode(row(idx), column.dataType)
         }.toMap
       }.toSeq
-    val chartOrMark:Either[Chart,AnyMark] = 
+    val chartOrMark:Either[Vega.BasicChart,AnyMark] = 
       arguments.getRecord(PARAM_CHART).get[String](PARAM_CHART_TYPE) match {
         case CHART_TYPE_BAR => Left(Vega.multiBarChart(
                                   data,
@@ -143,6 +144,8 @@ object SimpleChart extends Command
                                         yaxes.map { schema(_).name }
                                       )
       }
+    chart.root.autosize = Some(AutosizeTypeFitX)
+
 
 
     context.chart(chart, identifier = name.replaceAll("[^a-zA-Z0-9]+", "_").toLowerCase)

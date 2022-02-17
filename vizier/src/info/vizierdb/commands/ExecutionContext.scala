@@ -211,7 +211,7 @@ class ExecutionContext(
    * @param   withMessage     Include a message containing the chart
    * @param   withArtifact    Include an message containing the chart
    */
-  def chart(chart: Chart, identifier: String, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
+  def chart(chart: Chart[_], identifier: String, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
   {
     val encoded = chart.export
     if(withMessage){
