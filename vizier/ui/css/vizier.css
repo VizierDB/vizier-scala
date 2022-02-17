@@ -95,13 +95,77 @@ ul.module_list {
   padding: 3px;
 }
 
-div.module.select-command {
+ul.module_list li.module {
+  display: flex;
+  margin-top: 10px;
 }
 
+ul.module_list li.module div.menu {
+  width: 60px;
+  display: block;
+  vertical-align: middle;
+  border-radius: 10px 0px 0px 10px;
+  background-color: #ddd;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  opacity: 0.6;
+}
+ul.module_list li.module.error_state div.menu {
+  background-color: #de7e64;
+}
+ul.module_list li.module.cancelled_state div.menu {
+  background-color: #edee3e;
+}
+ul.module_list li.module.frozen_state div.menu {
+  background-color: #319cbc;
+}
+ul.module_list li.module.running_state div.menu {
+  background-color: #135b0e
+}
+ul.module_list li.module:hover div.menu {
+  opacity: 1;
+}
+ul.module_list li.module.highlight div.menu {
+  opacity: 1;
+}
+ul.module_list li.module div.menu button {
+  width: 40px;
+  height: 40px;
+  margin-top: 5px;
+  top: 0px;
+  bottom: 0px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+}
+ul.module_list li.module div.menu button tooltip {
+  width: 200px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 5px;
+  border-radius: 10px;
+  position: absolute;
+  z-index: 1;
+  top: 4px;
+  visibility: hidden;
+  left: calc(100% + 10px);
+}
+ul.module_list li.module div.menu button:hover tooltip {
+  visibility: visible;
+}
+ul.module_list li.module div.module_body {
+  padding-left: 10px;
+}
+
+div.module.select-command {
+  margin-top: 10px;
+}
 div.module.select-command div.header {
   border-bottom: none;
   border-radius: 15px 15px 0px 0px;
-  background-color: gray;
+  background-color: #ccc;
   width: calc(100% - 40px);
   padding-left: 20px;
   padding-right: 20px;
@@ -109,13 +173,13 @@ div.module.select-command div.header {
   padding-bottom: 10px;
   height: 16px;
   font-weight: bold;
-  color: #fff;
+  color: #111;
 }
 
 div.module.select-command ul.command_list {
   padding: 10px;
   list-style: none;
-  border: 2px solid gray;
+  border: 2px solid #ccc;
   border-top: none;
   border-radius: 0px 0px 15px 15px;
 }
@@ -127,6 +191,7 @@ div.module.select-command div.header button.cancel {
   float: right;
   background-color: #fdd;
   font-weight: bold;
+  border-radius: 7px;
 }
 
 

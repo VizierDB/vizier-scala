@@ -213,7 +213,7 @@ class RunningCell(
    */
   private def errorResult(
     cell: Cell, 
-    targetState: ExecutionState.T = ExecutionState.CANCELLED
+    targetState: ExecutionState.T = ExecutionState.ERROR
   )(implicit session: DBSession): Result = 
   {
     val result = cell.finish(targetState)._2

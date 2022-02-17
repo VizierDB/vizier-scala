@@ -12,6 +12,8 @@ import info.vizierdb.types
 import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.serialized.ArtifactSummary
+import info.vizierdb.ui.widgets.FontAwesome
+import java.awt.Font
 
 class Module(val subscription: ModuleSubscription, workflow: Workflow)
             (implicit owner: Ctx.Owner)
@@ -32,6 +34,8 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
   val visibleArtifacts = Var[Rx[Map[String, ArtifactSummary]]](Var(Map.empty))
 
   val outputs = subscription.outputs
+
+  val highlight = Var[Boolean](false)
 
   def command = subscription.command
 
@@ -88,34 +92,88 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
   def position: Int =
     subscription.position
 
-  val root = li(
+  val root: dom.html.LI = li(
     attr("id") := id_attr,
-    div(Rx { 
-      editor().map { _.root }.getOrElse { pre(subscription.text()) }
-    }.reactive),
-    div(Rx { "State: " + subscription.state() }.reactive),
-    div("Outputs: ", outputs.map { _.keys.mkString(", ") }.reactive),
-    div("Menu: ", 
-      button("Add Cell Above", onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) }),
-      button("Add Cell Below", onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) }),
-      button("Edit Cell", onclick := { _:dom.MouseEvent => openEditor() }),
+    `class` := "module",
+    div(
+      `class` := "menu",
+      button(
+        FontAwesome("chevron-up"),
+        br(),
+        FontAwesome("plus"),
+        onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) },
+        tag("tooltip")("Add cell above")
+      ),
+      button(
+        FontAwesome("pencil-square-o"), 
+        onclick := { _:dom.MouseEvent => openEditor() },
+        tag("tooltip")("Edit cell")
+      ),
       Rx { 
         if (subscription.state() == types.ExecutionState.FROZEN) { 
-          button("Thaw Cell", onclick := { (_:dom.MouseEvent) => subscription.thawCell() })
+          button(
+            FontAwesome("play"),
+            onclick := { (_:dom.MouseEvent) => subscription.thawCell() },
+            tag("tooltip")("Thaw this cell")
+          )
         } else { 
-          button("Freeze Cell", onclick := { (_:dom.MouseEvent) => subscription.freezeCell() })
+          button(
+            FontAwesome("snowflake-o"), 
+            onclick := { (_:dom.MouseEvent) => subscription.freezeCell() },
+            tag("tooltip")("Freeze this cell")
+          )
         }
       }.reactive,
       Rx { 
         if (subscription.state() == types.ExecutionState.FROZEN) {
-          button("Thaw Upto Here", onclick := { (_:dom.MouseEvent) => subscription.thawUpto() }) 
+          button(
+            FontAwesome("chevron-up"),
+            br(),
+            FontAwesome("play"), 
+            onclick := { (_:dom.MouseEvent) => subscription.thawUpto() },
+            tag("tooltip")("Thaw this cell and all above")
+          ) 
         } else { 
-          button("Freeze From Here", onclick := { (_:dom.MouseEvent) => subscription.freezeFrom() })
+          button(
+            FontAwesome("snowflake-o"), 
+            br(),
+            FontAwesome("chevron-down"),
+            onclick := { (_:dom.MouseEvent) => subscription.freezeFrom() },
+            tag("tooltip")("Freeze this cell and all below")
+          )
         }
       }.reactive,
-      button("Delete Cell", 
-        onclick := { (_:dom.MouseEvent) => subscription.delete() })
+      button(
+        FontAwesome("trash-o"), 
+        onclick := { (_:dom.MouseEvent) => subscription.delete() },
+        tag("tooltip")("Delete this cell")
+      ),
+      button(
+        FontAwesome("plus"),
+        br(),
+        FontAwesome("chevron-down"),
+        onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) },
+        tag("tooltip")("Add cell below")
+      ),
     ),
-    div("Messages: ", messageView.root),
-  )
+    div(
+      `class` := "module_body",
+      div(Rx { 
+        editor().map { _.root }.getOrElse { pre(subscription.text()) }
+      }.reactive),
+      div(Rx { "State: " + subscription.state() }.reactive),
+      div("Outputs: ", outputs.map { _.keys.mkString(", ") }.reactive),
+      div("Messages: ", messageView.root),
+    )
+  ).render
+
+  def refreshClasses() =
+  {
+    val currentState = subscription.state.now.toString.toLowerCase
+    val highlightState = if(highlight.now){ " highlight" } else { "" }
+    root.className = s"module ${currentState}_state $highlightState"
+  }
+
+  subscription.state.trigger { refreshClasses() }
+  highlight.trigger { refreshClasses() }
 }

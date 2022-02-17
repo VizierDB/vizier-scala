@@ -226,9 +226,17 @@ object vizier extends ScalaModule with PublishModule {
 
     // CSS files
     //   Take all of the files in vizier/ui/css and put them into the resource
-    //   directory webroot
+    //   directory / css
     def css = T.sources {
       os.walk(millSourcePath / "css")
+        .map { PathRef(_) }
+    }
+
+    // Fonts
+    //   Take all of the files in vizier/ui/fonts and put them into the resource
+    //   directory / fonts
+    def fonts = T.sources {
+      os.walk(millSourcePath / "fonts")
         .map { PathRef(_) }
     }
 
@@ -239,7 +247,8 @@ object vizier extends ScalaModule with PublishModule {
         uiBinary = fastOpt().path,
         vendor = ( vendor().map { _.path }, os.read(vendorLicense().path) ),
         assets = html().map { x => (x.path -> os.rel / x.path.last) } ++
-                 css().map { x => (x.path -> os.rel / x.path.last) }
+                 css().map { x => (x.path -> os.rel / "css" / x.path.last) } ++
+                 fonts().map { x => (x.path -> os.rel / "fonts" / x.path.last) }
 
       )
     }

@@ -11,7 +11,14 @@ class TableOfContents(workflow: Workflow)
 {
 
   def ModuleSummary(module: Module): Frag =
-    module.toc.map { toc => li(a(href := s"#${module.id_attr}", toc.title)) }
+    module.toc.map { toc => 
+                li(a(
+                    href := s"#${module.id_attr}", toc.title,
+                  ),
+                  onmouseover := { _:dom.Event => module.highlight() = true },
+                  onmouseout := { _:dom.Event => module.highlight() = false }
+                ) 
+              }
               .getOrElse { li(visibility := "hidden", s"${module.command.packageId}.${module.command.commandId}") }
 
   def TentativeSummary(module: TentativeModule): Frag =
