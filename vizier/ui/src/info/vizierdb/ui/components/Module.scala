@@ -98,7 +98,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
     div(
       `class` := "menu",
       button(
-        FontAwesome("chevron-up"),
+        FontAwesome("angle-up"),
         br(),
         FontAwesome("plus"),
         onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) },
@@ -127,7 +127,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
       Rx { 
         if (subscription.state() == types.ExecutionState.FROZEN) {
           button(
-            FontAwesome("chevron-up"),
+            FontAwesome("angle-double-up"),
             br(),
             FontAwesome("play"), 
             onclick := { (_:dom.MouseEvent) => subscription.thawUpto() },
@@ -137,7 +137,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
           button(
             FontAwesome("snowflake-o"), 
             br(),
-            FontAwesome("chevron-down"),
+            FontAwesome("angle-double-down"),
             onclick := { (_:dom.MouseEvent) => subscription.freezeFrom() },
             tag("tooltip")("Freeze this cell and all below")
           )
@@ -151,7 +151,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
       button(
         FontAwesome("plus"),
         br(),
-        FontAwesome("chevron-down"),
+        FontAwesome("angle-down"),
         onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) },
         tag("tooltip")("Add cell below")
       ),
@@ -161,7 +161,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
       div(Rx { 
         editor().map { _.root }.getOrElse { pre(subscription.text()) }
       }.reactive),
-      div(Rx { "State: " + subscription.state() }.reactive),
+      // div(Rx { "State: " + subscription.state() }.reactive),
       div("Outputs: ", outputs.map { _.keys.mkString(", ") }.reactive),
       div("Messages: ", messageView.root),
     )
