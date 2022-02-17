@@ -111,9 +111,10 @@ class CommandList(
       div(
         `class` := "header",
         "New Cell",
-        button("X", 
+        button("Cancel", 
           `class` := "cancel",
-          onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() })
+          onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() }
+        )
       ),
       ul(
         `class` := "command_list",
