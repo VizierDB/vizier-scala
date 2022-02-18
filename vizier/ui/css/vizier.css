@@ -129,6 +129,7 @@ ul.module_list li.module:hover div.menu {
 }
 ul.module_list li.module.highlight div.menu {
   opacity: 1;
+  background-color: #aaa;
 }
 ul.module_list li.module div.menu button {
   width: 35px;
@@ -159,6 +160,26 @@ ul.module_list li.module div.menu button:hover tooltip {
   visibility: visible;
 }
 ul.module_list li.module div.module_body {
+  padding-left: 0px;
+  max-width: 100%;
+  min-width: 400px;
+}
+ul.module_list li.module div.module_body div.summary {
+  width: auto;
+  background-color: #eee;
+  border-left: none;
+  padding-left: 10px;
+  padding-right: 20px;
+  border-radius: 0px 10px 10px 0px;
+  display: inline-block;
+  font-size: 120%;
+  font-weight: bold;
+}
+ul.module_list li.module div.module_body div.summary.hidden {
+  visibility: hidden;
+  position: fixed;
+}
+ul.module_list li.module div.module_body div.editor {
   padding-left: 10px;
 }
 
@@ -223,8 +244,22 @@ div.contents ul
 }
 div.contents li
 {
-  list-style: none;
-  margin-top: 10px;
+  list-style: decimal;
+  margin-top: 7px;
+  font-weight: bold;
+}
+div.contents li::marker
+{
+  font-weight: lighter;
+  font-size: 80%;
+}
+div.contents li a
+{
+  text-decoration: none;
+}
+div.contents li a:visited
+{
+  color: blue;
 }
 div.contents li.tentative
 {
@@ -232,6 +267,12 @@ div.contents li.tentative
 }
 
 /************ Messages ************/
+
+div.module_body div.messages ul
+{
+  padding-left: 20px;
+  padding-top: 10px;
+}
 
 div.message
 {
@@ -245,6 +286,24 @@ div.message.error
   border: 1px solid #c00;
   border-radius: 5px;
   background-color: #fcc;
+}
+
+div.message div.header
+{
+  border-radius: 10px 10px 0px 0px;
+  background-color: lightgray;
+  border-bottom: none;
+  min-width: 200px;
+  max-width: calc(100% - 200px);
+  padding-left: 10px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+div.message div.header h3
+{
+  display: inline-block;
+  margin: 0px;
+  margin-right: 20px;
 }
 
 div.vega-embed

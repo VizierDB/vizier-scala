@@ -40,7 +40,7 @@ class TentativeModule(
 
   def selectCommand(packageId: String, command: serialized.PackageCommand)
   {
-    activeView() = Some(Right(new ModuleEditor(packageId, command, this)))
+    activeView() = Some(Right(ModuleEditor(packageId, command, this)))
   }
   def cancelSelectCommand()
   {

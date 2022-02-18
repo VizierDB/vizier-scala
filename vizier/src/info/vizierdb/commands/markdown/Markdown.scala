@@ -23,9 +23,11 @@ import info.vizierdb.viztrails.ProvenancePrediction
 object Markdown extends Command
   with LazyLogging
 {
+  def PAR_SOURCE = "source"
+
   def name: String = "Markdown Doc"
   def parameters: Seq[Parameter] = Seq(
-    CodeParameter(id = "source", language = "markdown", name = "Markdown Code"),
+    CodeParameter(id = PAR_SOURCE, language = "markdown", name = "Markdown Code"),
   )
   def format(arguments: Arguments): String = 
     s"MARKDOWN"
@@ -33,7 +35,7 @@ object Markdown extends Command
     s"MARKDOWN"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-    context.message(MIME.MARKDOWN, arguments.get[String]("source"))
+    context.message(MIME.MARKDOWN, arguments.get[String](PAR_SOURCE))
   }
 
   def predictProvenance(arguments: Arguments, properties: JsObject) = 

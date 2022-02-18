@@ -17,8 +17,8 @@ import info.vizierdb.serialized.{
   ParameterDescriptionTree,
   DatasetSummary,
   DatasetDescription,
-  DatasetColumn
-
+  DatasetColumn,
+  PackageCommand
 }
 import info.vizierdb.types._
 import info.vizierdb.nativeTypes.JsValue
@@ -26,15 +26,10 @@ import scala.util.{ Success, Failure }
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 
-class ModuleEditor(
-  val packageId: String, 
-  val command: serialized.PackageCommand, 
-  val delegate: ModuleEditorDelegate
-)(implicit owner: Ctx.Owner) 
-  extends Object 
+trait ModuleEditor
+  extends Object
   with Logging
 {
-
   def saveState()
   {
     val response = 
@@ -75,6 +70,44 @@ class ModuleEditor(
     }
   }
 
+  def setState(arguments: (String, JsValue)*) =
+    loadState(CommandArgumentList(arguments:_*))
+  
+  def loadState(arguments: Seq[CommandArgument])
+  def packageId: String
+  def command: PackageCommand
+  def delegate: ModuleEditorDelegate
+  def arguments: Seq[CommandArgument]
+  def serialized: CommandDescription
+
+  def root: Frag
+}
+
+object ModuleEditor
+{
+  def apply(
+    packageId: String, 
+    command: serialized.PackageCommand, 
+    delegate: ModuleEditorDelegate
+  )(implicit owner: Ctx.Owner): ModuleEditor = {
+    (packageId, command.id) match {
+      case _ => new DefaultModuleEditor(packageId, command, delegate)
+    }
+  }
+}
+
+
+
+class DefaultModuleEditor(
+  val packageId: String, 
+  val command: serialized.PackageCommand, 
+  val delegate: ModuleEditorDelegate
+)(implicit owner: Ctx.Owner) 
+  extends ModuleEditor
+  with Logging
+{
+
+
   def loadState(arguments: Seq[CommandArgument])
   {
     for(arg <- arguments){
@@ -84,9 +117,6 @@ class ModuleEditor(
       }
     }
   }
-
-  def setState(arguments: (String, JsValue)*) =
-    loadState(CommandArgumentList(arguments:_*))
 
   val selectedDataset = Var[Option[String]](None)
 

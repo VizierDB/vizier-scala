@@ -37,7 +37,7 @@ object TextMessage
 
 case class DatasetMessage(content: Dataset) extends Message
 {
-  def root = content.root
+  val root = div(`class` := "message", content.root)
 }
 
 //////////////////////////////////////////////////////////////
