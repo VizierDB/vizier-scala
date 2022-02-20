@@ -47,22 +47,18 @@ object LoadDataset
 
 
   def name: String = "Load Dataset"
+  
+  /**
+   * HEADS UP: The LoadDataset cell is one of several that get a custom
+   * editor.  If you add a parameter here, you will also need to modify 
+   * [[LoadDatasetEditor]] for the changes to be visible in the frontend.
+   */
   def parameters = Seq[Parameter](
     FileParameter(name = "Source File", id = PARAM_FILE),
     StringParameter(name = "Dataset Name", id = PARAM_NAME),
-    EnumerableParameter(name = "Load Format", id = PARAM_FORMAT, values = EnumerableValue.withNames(
-      "CSV"               -> DatasetFormat.CSV,
-      "JSON"              -> DatasetFormat.JSON,
-      "PDF"               -> DatasetFormat.PDF,
-      "Google Sheet"      -> DatasetFormat.GSheet,
-      "XML"               -> DatasetFormat.XML,
-      "Excel"             -> DatasetFormat.Excel,
-      "JDBC Source"       -> DatasetFormat.JDBC,
-      "Text"              -> DatasetFormat.Text,
-      "Parquet"           -> DatasetFormat.Parquet,
-      "ORC"               -> DatasetFormat.ORC,
-      "Locally Published" -> "publish_local",
-    ), default = Some(0)),
+    EnumerableParameter(name = "Load Format", id = PARAM_FORMAT, 
+                        values = EnumerableValue.withNames(DatasetFormat.ALL:_*),
+                        default = Some(0)),
     TemplateParameters.SCHEMA,
     BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(false)),
     BooleanParameter(name = "File Has Headers", id = PARAM_HEADERS, default = Some(false)),

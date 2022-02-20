@@ -42,7 +42,7 @@ object WorkflowSpec extends TestSuite with TestFixtures
         "dataset" -> JsString("foo")
       )
       assert(
-        module.arguments
+        module.currentState
               .find { _.id.equals("dataset") }
               .get
               .value

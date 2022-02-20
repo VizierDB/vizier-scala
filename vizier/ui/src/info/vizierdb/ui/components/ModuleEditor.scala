@@ -25,6 +25,7 @@ import info.vizierdb.nativeTypes.JsValue
 import scala.util.{ Success, Failure }
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
+import info.vizierdb.ui.components.editors.LoadDatasetEditor
 
 trait ModuleEditor
   extends Object
@@ -37,21 +38,21 @@ trait ModuleEditor
         delegate.client.workflowReplace(
           modulePosition = delegate.position,
           packageId = packageId,
-          commandId = command.id,
-          arguments = arguments
+          commandId = commandId,
+          arguments = currentState
         )
       } else if(delegate.isLast){
         delegate.client.workflowAppend(
           packageId = packageId,
-          commandId = command.id,
-          arguments = arguments
+          commandId = commandId,
+          arguments = currentState
         )
       } else {
         delegate.client.workflowInsert(
           modulePosition = delegate.position,
           packageId = packageId,
-          commandId = command.id,
-          arguments = arguments
+          commandId = commandId,
+          arguments = currentState
         )
       }
     response.onComplete { 
@@ -75,12 +76,26 @@ trait ModuleEditor
   
   def loadState(arguments: Seq[CommandArgument])
   def packageId: String
-  def command: PackageCommand
+  def commandId: String
   def delegate: ModuleEditorDelegate
-  def arguments: Seq[CommandArgument]
-  def serialized: CommandDescription
+  def currentState: Seq[CommandArgument]
+  val editorFields: Frag
 
-  def root: Frag
+  def serialized: CommandDescription =
+    CommandDescription(
+      packageId = packageId,
+      commandId = commandId,
+      arguments = currentState
+    )
+
+  lazy val root: Frag = 
+    div(`class` := "module editable",
+      editorFields,
+      div(
+        button("Back", onclick := { (e: dom.MouseEvent) => delegate.cancelEditor() }),
+        button("Save", onclick := { (e: dom.MouseEvent) => saveState() })
+      )
+    )
 }
 
 object ModuleEditor
@@ -91,6 +106,7 @@ object ModuleEditor
     delegate: ModuleEditorDelegate
   )(implicit owner: Ctx.Owner): ModuleEditor = {
     (packageId, command.id) match {
+      case ("data", "load") => new LoadDatasetEditor(delegate)
       case _ => new DefaultModuleEditor(packageId, command, delegate)
     }
   }
@@ -107,7 +123,6 @@ class DefaultModuleEditor(
   with Logging
 {
 
-
   def loadState(arguments: Seq[CommandArgument])
   {
     for(arg <- arguments){
@@ -117,6 +132,8 @@ class DefaultModuleEditor(
       }
     }
   }
+
+  def commandId = command.id
 
   val selectedDataset = Var[Option[String]](None)
 
@@ -138,25 +155,15 @@ class DefaultModuleEditor(
   lazy val getParameter:Map[String, Parameter] = 
     parameters.map { p => p.id -> p }.toMap
 
-  def arguments: Seq[CommandArgument] =
+  def currentState: Seq[CommandArgument] =
     parameters.map { _.toArgument }
 
-  def serialized: CommandDescription =
-    CommandDescription(
-      packageId = packageId,
-      commandId = command.id,
-      arguments = arguments
-    )
 
-
-  val root = 
-    div(`class` := "module editable",
+  val editorFields =
+    div(
       h4(command.name),
-      parameters.filter { !_.hidden }.map { param => div(param.root) },
-      div(
-        button("Back", onclick := { (e: dom.MouseEvent) => delegate.cancelEditor() }),
-        button("Save", onclick := { (e: dom.MouseEvent) => saveState() })
-      )
+      parameters.filter { !_.hidden }
+                .map { param => div(param.root) }
     )
 }
 

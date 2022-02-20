@@ -170,4 +170,5 @@ object serializers
         }
     }
   )
+  implicit val filesystemObjectFormat = Json.format[serialized.FilesystemObject]
 }

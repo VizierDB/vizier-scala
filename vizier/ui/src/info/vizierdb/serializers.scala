@@ -157,6 +157,7 @@ object serializers
   implicit val caveatFormat = Json.format[nativeTypes.Caveat]
   implicit val dataContainerFormat = Json.format[DataContainer]
 
+  implicit val filesystemObjectFormat = Json.format[serialized.FilesystemObject]
 
   def playToNativeJson(j: JsValue): js.Any = 
     j match {

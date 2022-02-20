@@ -74,6 +74,30 @@ object Vizier
               case Success(response) => 
                 project() = Some(new Project(projectId, api).load(response))
                 logger.debug(s"Project: ${project.now.get}")
+
+                // The following bit can be uncommented for onLoad triggers
+                // to automate development debugging
+                dom.window.setTimeout(
+                  () => {
+                    val workflow = 
+                      project.now
+                             .get
+                             .workflow
+                             .now
+                             .get
+                    val module = 
+                      workflow.moduleViewsWithEdits
+                              .appendTentative()
+                    module.activeView.trigger { _ match {
+                      case Some(Left(commandlist)) =>
+                        commandlist.simulateClick("data", "load")
+                      case _ => 
+                        println("Waiting...")
+                    }}
+                  },
+                  1000
+                )
+
               case Failure(ex) => 
                 error(ex.toString)
             }

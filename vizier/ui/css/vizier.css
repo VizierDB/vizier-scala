@@ -9,63 +9,6 @@
   }
 }
 
-/************ Menu bar ************/
-
-div.content {
-  /*padding-top: 30px;*/
-  margin-top: 0px;
-}
-
-ul.menu_bar
-{
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  height: 35px;
-  width: 100%;
-  margin: 0px;
-  padding: 0px;
-  background-color: #ccc;
-}
-ul.menu_bar > li
-{
-  display: inline-block;
-  margin-top: 0px;
-  height: 28px;
-  padding-top: 7px;
-  margin-left: 10px;
-  padding-left: 20px;
-  padding-right: 20px;
-  vertical-align: middle;
-  background-color: #336;
-  color: #ccc;
-  font-weight: bold;
-}
-ul.menu_bar > li ul
-{
-  position: absolute;
-  top: 35px;
-  background: #336;
-  padding: 0px;
-}
-ul.menu_bar > li ul > li
-{
-  list-style: none;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  padding-left: 20px;
-  padding-right: 20px;
-}
-ul.menu_bar > li ul > li.menu_separator
-{
-  border-bottom: 2px solid darkgrey;
-}
-ul.menu_bar > li ul > li.highlight
-{
-  font-weight: bolder;
-  color: #eee;
-}
-
 /************ Workflow ************/
 
 #workflow
@@ -477,10 +420,7 @@ div.caveat_modal div.caveat.odd_row
   background-color: #eee;
 }
 
-
-
-
-/************ Parameters ************/
+/************ Editor ************/
 
 /* The last child of a parameter list is a "template" placeholder to allow
    adding more records by just typing */
@@ -493,3 +433,85 @@ table.parameter_list tbody tr:last-child button.delete_row
 {
   visibility: hidden;
 }
+
+div.module.editable.load_dataset 
+{
+  width: 100%;
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 10px;
+}
+div.module.editable.load_dataset div.header
+{
+  width: 100%;
+  display: flex;
+  margin-bottom: 10px;
+}
+div.module.editable.load_dataset div.back_button_wrapper
+{
+  width: 40px;
+  flex-grow: none;
+}
+div.module.editable.load_dataset div.url
+{
+  flex: 1 1 auto;
+}
+div.module.editable.load_dataset div.url input 
+{
+  width: calc(100% - 60px);
+}
+div.module.editable.load_dataset div.url label 
+{
+  width: 50px;
+}
+div.module.editable.load_dataset div.file_browser
+{
+  width: 100%;
+  border: 1px solid black;
+}
+div.module.editable.load_dataset .reactive
+{
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+div.module.editable.load_dataset .spinner
+{
+  margin-top: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+div.module.editable.load_dataset div.file_list
+{
+  display: flex;
+  flex-wrap: wrap;
+  overflow-y: scroll;
+  max-height: 200px;
+  padding: 10px;
+}
+div.module.editable.load_dataset div.file_list div.file
+{
+  width: 150px;
+  height: 20px;
+  margin: 5px;
+  background-color: #ddd;
+  padding: 7px;
+  border-radius: 5px;
+  box-shadow: 1px 1px 1px gray;
+}
+div.module.editable.load_dataset div.file_list div.file span.label
+{
+  margin-left: 5px;
+}
+div.module.editable.load_dataset div.format_field
+{
+  margin-top: 10px;
+  display: flex;
+}
+div.module.editable.load_dataset div.format_field select
+{
+  margin-left: 10px;
+  flex: 1 1 auto;
+}
+

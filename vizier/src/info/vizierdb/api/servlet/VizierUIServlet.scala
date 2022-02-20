@@ -21,6 +21,7 @@ import java.io.{ File, InputStream }
 import java.net.URLConnection
 import info.vizierdb.VizierAPI
 import java.io.StringBufferInputStream
+import info.vizierdb.util.FileUtils
 
 object VizierUIServlet
   extends HttpServlet
@@ -72,11 +73,7 @@ object VizierUIServlet
       } else {
         val content = Streams.readAll(data)
         val f = new File(resourcePath)
-        val mime = 
-          f.getName().split("\\.").last match {
-            case "js" => "application/javascript"
-            case _ => URLConnection.guessContentTypeFromName(f.getName())
-          }
+        val mime = FileUtils.guessMimeType(f, default = null)
         output.setContentType(mime)
         output.setContentLength(content.length)
         output.getOutputStream().write(content)
