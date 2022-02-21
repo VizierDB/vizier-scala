@@ -863,6 +863,8 @@ class StringParameter(
     JsString(inputNode[dom.html.Input].value)
   def set(v: JsValue): Unit = 
     inputNode[dom.html.Input].value = v.as[String]
+  def setHint(s: String): Unit =
+    inputNode[dom.html.Input].placeholder = s
 }
 
 /////////////////////////////////////////////////////////////////////////////

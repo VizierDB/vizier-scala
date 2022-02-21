@@ -37,7 +37,51 @@ class LoadDatasetEditor(
                        name := "url",
                        onchange := { _:dom.Event => urlChanged }).render
   val directoryStack = Var[List[FileBrowser]](Nil)
-  val format = Var[String]("csv")
+  val format = 
+    select(
+      name := "file_format",
+      DatasetFormat.ALL.map { case (label, id) =>
+        option(value := id, label)
+      },
+      onchange := { _:dom.Event => formatChanged }
+    ).render:dom.html.Select
+
+  val sparkOptions: Parameter = 
+    new ListParameter("loadOptions",
+      "Spark Load Options",
+      Seq[String]("Key", "Value"),
+      Seq[() => Parameter](
+        { () => new StringParameter(
+                  "loadOptionKey",
+                  "Key",
+                  true,
+                  false
+                ) },
+        { () => new StringParameter(
+                  "loadOptionValue",
+                  "Value",
+                  true,
+                  false
+                ) },
+      ),
+      false,
+      false
+    )
+  val datasetName: StringParameter =
+    new StringParameter(
+      "name",
+      "Dataset Name: ",
+      false,
+      false
+    )
+
+  val optionalParameters = Seq[(Set[String], Parameter)](
+    Set(DatasetFormat.CSV) ->
+      new BooleanParameter("loadDetectHeaders", "File has Headers: ", true, false),
+  )
+
+  val activeParameters = Var(Seq[Parameter](sparkOptions))
+  formatChanged
 
   override val editorFields: Frag = 
     div(`class` := "module editable load_dataset",
@@ -75,22 +119,17 @@ class LoadDatasetEditor(
       ),
       div(`class` := "format_field", 
         label("Format: ", `for` := "file_format"),
-        Rx { 
-          val active = format() 
-          println(s"Active format is $active")
-          select(
-            name := "file_format",
-            DatasetFormat.ALL.map { case (label, id) =>
-              if(id == active){
-                option(value := id, selected, label)
-              } else {
-                option(value := id, label)
-              }
-            }
-          )
-        }.reactive,
+        format
       ),
+      Rx {
+        div(
+          activeParameters().map { param =>
+            div(`class` := "format_field", param.root) 
+          }
+        )
+      }.reactive
     )
+
 
   def setURL(path: String)
   {
@@ -100,13 +139,27 @@ class LoadDatasetEditor(
 
   def urlChanged: Unit =
   {
-    println(s"Url field now ${urlField.value}")
-    urlField.value.split("\\.").last match {
-      case "json" => format() = DatasetFormat.JSON
-      case "csv" => format() = DatasetFormat.CSV
-      case _ => format() = DatasetFormat.Text
+    val file = urlField.value.split("/").last
+    val components = file.split("\\.")
+    components.last match {
+      case "json" => format.value = DatasetFormat.JSON
+      case "csv"  => format.value = DatasetFormat.CSV
+      case _      => format.value = DatasetFormat.Text
     }
-    println(s"URL Value now : ${urlField.value}")
+    datasetName.setHint(components.head)
+    formatChanged
+  }
+
+  def formatChanged: Unit =
+  {
+    println(s"Format now ${format.value}")
+    val fmt = format.value
+    activeParameters() =
+      Seq( datasetName ) ++
+      optionalParameters.filter { _._1(fmt) }
+                        .map { _._2 } ++
+      Seq( sparkOptions )
+    println(s"Format done")
   }
 
   def visitDirectory(path: String = "", externalPath: String = "") =
