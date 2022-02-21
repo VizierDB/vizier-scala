@@ -227,5 +227,24 @@ object types
     val HTTP                   = "http"
     val HTTPS                  = "https"
   }
+
+  object DataTypes
+  {
+    val BY_NAME = Seq[(String, String)](
+      "String"          -> "string",
+      "Real"            -> "real",
+      "Float"           -> "float",
+      "Large Float"     -> "double",
+      "Bool"            -> "boolean",
+      "Small Integer"   -> "short",
+      "Integer"         -> "int",
+      "Large Integer"   -> "long",
+      "1 Byte"          -> "byte",
+      "Date"            -> "date",
+      "Date+Time"       -> "timestamp",
+      "Geometry"        -> "geometry",
+      "PNG Image"       -> "image/png"
+    )
+  }
 }
 

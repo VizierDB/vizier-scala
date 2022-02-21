@@ -29,10 +29,6 @@ class LoadDatasetEditor(
 {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  override def loadState(arguments: Seq[CommandArgument]): Unit = ???
-
-  override def currentState: Seq[CommandArgument] = ???
-
   val urlField = input(`type` := "text", 
                        name := "url",
                        onchange := { _:dom.Event => urlChanged }).render
@@ -67,17 +63,39 @@ class LoadDatasetEditor(
       false,
       false
     )
-  val datasetName: StringParameter =
+  val datasetName =
     new StringParameter(
       "name",
       "Dataset Name: ",
       false,
       false
     )
+  val schema = new ListParameter("schema",
+    "Schema (leave empty to guess)",
+    Seq[String]("Column", "Data Type"),
+    Seq[() => Parameter](
+      { () => new StringParameter(
+                "schema_column",
+                "Column",
+                true,
+                false
+              ) },
+      { () => new DataTypeParameter(
+                "schema_datatype",
+                "Data Type",
+                true,
+                false
+              ) },
+    ),
+    false,
+    false
+  )
 
   val optionalParameters = Seq[(Set[String], Parameter)](
     Set(DatasetFormat.CSV) ->
       new BooleanParameter("loadDetectHeaders", "File has Headers: ", true, false),
+    Set(DatasetFormat.CSV) ->
+      new StringParameter("loadDelimiter", "Field Delimiter: ", true, false, ","),
   )
 
   val activeParameters = Var(Seq[Parameter](sparkOptions))
@@ -127,7 +145,8 @@ class LoadDatasetEditor(
             div(`class` := "format_field", param.root) 
           }
         )
-      }.reactive
+      }.reactive,
+      div(`class` := "schema", schema.root)
     )
 
 
@@ -215,4 +234,9 @@ class LoadDatasetEditor(
         }
       ).render
   }
+
+  override def loadState(arguments: Seq[CommandArgument]): Unit = ???
+
+  override def currentState: Seq[CommandArgument] = ???
+
 }
