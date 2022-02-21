@@ -254,7 +254,12 @@ class VizierDBClient(object):
       "vizierdb": self
     }
 
-    exec("@export\n" + response["data"], variables, variables)
+    code = response["data"]
+    if code.startswith("import ") or code.startswith("from "):
+        exec(code, variables, variables)
+        self.py_objects[name] = variables[name]
+    else:
+        exec("@export\n" + response["data"], variables, variables)
     return self.py_objects[name]
 
   def get_dataset(self, name: str) -> DatasetClient:
