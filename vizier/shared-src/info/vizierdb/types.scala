@@ -183,25 +183,41 @@ object types
     val MARKDOWN      = "text/markdown"
     val DATASET_VIEW  = "dataset/view"
     val PYTHON        = "application/python"
-    val JAVASCRIPT    = "text/javascript"
+    val JAVASCRIPT    = "application/javascript"
     val RAW           = "application/octet-stream"
     val JSON          = "text/json"
     val PNG           = "image/png"
+    val DIRECTORY     = "inode/directory"
   }
 
   object DatasetFormat
   {
     type T = String
-    val CSV     = "csv"
-    val JSON    = "json"
-    val PDF     = "mimir.exec.spark.datasource.pdf"
-    val GSheet  = "mimir.exec.spark.datasource.google.spreadsheet"
-    val XML     = "com.databricks.spark.xml"
-    val Excel   = "com.crealytics.spark.excel"
-    val JDBC    = "jdbc"
-    val Text    = "text"
-    val Parquet = "parquet"
-    val ORC     = "orc"
+    val CSV         = "csv"
+    val JSON        = "json"
+    val PDF         = "mimir.exec.spark.datasource.pdf"
+    val GSheet      = "mimir.exec.spark.datasource.google.spreadsheet"
+    val XML         = "com.databricks.spark.xml"
+    val Excel       = "com.crealytics.spark.excel"
+    val JDBC        = "jdbc"
+    val Text        = "text"
+    val Parquet     = "parquet"
+    val ORC         = "orc"
+    val VizierLocal = "publish_local"
+
+    val ALL = Seq[(String,String)](
+      "CSV"               -> CSV,
+      "JSON"              -> JSON,
+      "PDF"               -> PDF,
+      "Google Sheet"      -> GSheet,
+      "XML"               -> XML,
+      "Excel"             -> Excel,
+      "JDBC Source"       -> JDBC,
+      "Text"              -> Text,
+      "Parquet"           -> Parquet,
+      "ORC"               -> ORC,
+      "Locally Published" -> VizierLocal,
+    )
   }
 
   object DataSourceProtocol {
@@ -210,6 +226,25 @@ object types
     val S3A                    = "s3a"
     val HTTP                   = "http"
     val HTTPS                  = "https"
+  }
+
+  object DataTypes
+  {
+    val BY_NAME = Seq[(String, String)](
+      "String"          -> "string",
+      "Real"            -> "real",
+      "Float"           -> "float",
+      "Large Float"     -> "double",
+      "Bool"            -> "boolean",
+      "Small Integer"   -> "short",
+      "Integer"         -> "int",
+      "Large Integer"   -> "long",
+      "1 Byte"          -> "byte",
+      "Date"            -> "date",
+      "Date+Time"       -> "timestamp",
+      "Geometry"        -> "geometry",
+      "PNG Image"       -> "image/png"
+    )
   }
 }
 

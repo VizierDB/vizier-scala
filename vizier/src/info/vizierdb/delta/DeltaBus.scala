@@ -153,6 +153,29 @@ object DeltaBus
   }
 
   /**
+   * Convenience method to announce an updated set of arguments
+   * @param  workflow  The [[Workflow]] at the head of the [[Branch]] 
+   *                   <b>after</b> the update.
+   * @param  cell      The [[Cell]] being updated.
+   * @param  module    The [[Module]] with the updated arguments.
+   */
+  def notifyUpdateCellArguments(
+    workflow: Workflow,
+    cell: Cell,
+    module: Module
+  )(implicit session: DBSession)
+  {
+    DeltaBus.notify(
+      workflow.branchId,
+      UpdateCellArguments(
+        cell.position,
+        module.argumentList,
+        module.id
+      )
+    )
+  }
+
+  /**
    * Convenience method to announce a set of cell inserts
    * @param workflow     The [[Workflow]] at the head of the [[Branch]]
    *                     <b>after</b> the update.

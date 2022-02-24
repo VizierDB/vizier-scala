@@ -918,4 +918,31 @@ case class API(baseUrl: String)
     )
   }
 
+  /** GET /filesystem **/
+  def fsGet(
+  ):Future[Seq[serialized.FilesystemObject]] =
+  {
+    val url = makeUrl(s"/filesystem")
+    Ajax.get(
+      url = url,
+    ).map { xhr => 
+      Json.parse(xhr.responseText)
+          .as[Seq[serialized.FilesystemObject]]
+    }
+  }
+
+  /** GET /filesystem/{path:subpath} **/
+  def fsGet(
+    path:String,
+  ):Future[Seq[serialized.FilesystemObject]] =
+  {
+    val url = makeUrl(s"/filesystem/${path}")
+    Ajax.get(
+      url = url,
+    ).map { xhr => 
+      Json.parse(xhr.responseText)
+          .as[Seq[serialized.FilesystemObject]]
+    }
+  }
+
 }

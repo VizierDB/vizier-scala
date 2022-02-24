@@ -218,14 +218,19 @@ class TentativeEdits(val project: Project)
   /**
    * Append a [[TentativeModule]] to the end of the workflow
    */
-  def appendTentative(defaultPackageList: Option[Seq[serialized.PackageDescription]] = None) =
+  def appendTentative(
+    defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
+  ): TentativeModule =
   {
-    doAppend(Right(new TentativeModule(
-                            position = elements.size, 
-                            editList = this, 
-                            defaultPackageList = defaultPackageList
-                          )))
+    val module = 
+      new TentativeModule(
+            position = elements.size, 
+            editList = this, 
+            defaultPackageList = defaultPackageList
+          )
+    doAppend(Right(module))
     refreshModuleState()
+    return module
   }
 
   /**
@@ -234,14 +239,17 @@ class TentativeEdits(val project: Project)
   def insertTentative(
     n: Int,
     defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
-  ) =
+  ): TentativeModule =
   {
-    doInsertAll(n, Some(Right(new TentativeModule(
-                            position = n, 
-                            editList = this,
-                            defaultPackageList = defaultPackageList
-                          ))))
+    val module = 
+      new TentativeModule(
+            position = n, 
+            editList = this,
+            defaultPackageList = defaultPackageList
+          )
+    doInsertAll(n, Some(Right(module)))
     refreshModuleState()
+    return module
   }
 
   /**

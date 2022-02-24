@@ -184,7 +184,7 @@ class TableView(
     div(
       OnMount { _ => updateScroller() },
       `class` := "data_table_wrapper",
-      width := outerDimensions._1,
+      width := "100%",
       height := outerDimensions._2,
       onscroll := { _:dom.Node => requestScrollUpdate() },
       overflowY := "scroll",

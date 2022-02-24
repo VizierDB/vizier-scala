@@ -20,13 +20,13 @@ class TableOfContents(workflow: Workflow)
                   onmouseout := { _:dom.Event => module.highlight() = false }
                 ) 
               }
-              .getOrElse { li(visibility := "hidden", s"${module.command.packageId}.${module.command.commandId}") }
+              .getOrElse { li(s"${module.subscription.packageId}.${module.subscription.commandId}") }
 
   def TentativeSummary(module: TentativeModule): Frag =
     li( 
       `class` := "tentative",
       span(
-        module.editor.map { _.map { ed => s"${ed.packageId}.${ed.command.id}" }
+        module.editor.map { _.map { ed => s"${ed.packageId}.${ed.commandId}" }
                              .getOrElse { "new command" }:String }.reactive
       )
     )

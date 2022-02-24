@@ -100,6 +100,9 @@ class Config(arguments: Seq[String])
     default = None
   )
 
+  def workingDirectoryFile = 
+    new File(workingDirectory.getOrElse("."))
+
   val sparkHost = opt[String]("spark-host",
     descr = "Spark master node",
     default = Some("local")

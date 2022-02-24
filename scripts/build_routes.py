@@ -43,7 +43,7 @@ preflightPaths: Dict[str, Tuple[List[str], str]] = {}
 DATATYPE_OPERATIONS = {
   "int": ("([0-9]+)", "{}.toInt", "Int"),
   "long": ("([0-9]+)", "{}.toLong", "Long"),
-  "subpath": ("(.+)", None, "String"),
+  "subpath": ("(.*)", None, "String"),
   "string": ("([^/]+)", None, "String"),
 }
 

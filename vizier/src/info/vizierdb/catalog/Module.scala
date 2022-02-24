@@ -27,6 +27,7 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.viztrails.Provenance
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.serialized
+import info.vizierdb.commands.markdown.Markdown
 
 /**
  * One step in an arbitrary workflow.
@@ -77,29 +78,26 @@ case class Module(
 
   def toc(cell: Cell)(implicit session:DBSession): Option[serialized.TableOfContentsEntry] =
   {
-    packageId match {
-      case "docs" => 
+    (packageId, commandId) match {
+      case ("docs", "markdown") => 
       {
-        cell.messages
-            .collect { 
-              case message if message.mimeType.equals(MIME.MARKDOWN) => 
-                new String(message.data)
-                  .split("\n")
-                  .filter { _ startsWith "#" }
-                  .collect { 
-                    case TOC_HEADER(levelPrefix, title) => 
-                      (levelPrefix.length, title)
-                  }
-                  .headOption
-            }
-            .headOption.flatten
-            .map { case (level, title) => 
-              serialized.TableOfContentsEntry(
-                            title = title, 
-                            titleLevel = Some(level),
-                            moduleId = id
-              )
-            }
+        (arguments \ Markdown.PAR_SOURCE).asOpt[String]
+          .flatMap { 
+            _.split("\n")
+             .filter { _ startsWith "#" }
+             .collect { 
+                case TOC_HEADER(levelPrefix, title) => 
+                  (levelPrefix.length, title)
+             }
+            .headOption
+          }
+          .map { case (level, title) => 
+            serialized.TableOfContentsEntry(
+                          title = title, 
+                          titleLevel = Some(level),
+                          moduleId = id
+            )
+          }
       }
       case _ => 
         {
@@ -117,6 +115,13 @@ case class Module(
     }
   }
 
+  def argumentList: serialized.CommandArgumentList.T =
+    (command match { 
+      case None => 
+        serialized.CommandArgumentList.toPropertyList(arguments.value.toMap)
+      case Some(cmd) => 
+        cmd.propertyListFromArguments(arguments)
+    }):serialized.CommandArgumentList.T
 
 
   def describe(
@@ -151,13 +156,7 @@ case class Module(
       command = serialized.CommandDescription(
         packageId = packageId,
         commandId = commandId,
-        arguments = 
-          (command match { 
-            case None => 
-              serialized.CommandArgumentList.toPropertyList(arguments.value.toMap)
-            case Some(cmd) => 
-              cmd.propertyListFromArguments(arguments)
-          }):serialized.CommandArgumentList.T
+        arguments = argumentList,
       ),
       text = description,
       toc = toc(cell),

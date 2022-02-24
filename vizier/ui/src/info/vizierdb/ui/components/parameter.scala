@@ -154,7 +154,7 @@ object Parameter
    * Decode a [[ParameterDescriptor]] into a [[Parameter]] for use with the
    * specified [[ModuleEditor]]
    */
-  def apply(tree: serialized.ParameterDescriptionTree, editor: ModuleEditor)
+  def apply(tree: serialized.ParameterDescriptionTree, editor: DefaultModuleEditor)
            (implicit owner: Ctx.Owner): Parameter =
   {
     def visibleArtifactsByType = editor.delegate
@@ -209,6 +209,12 @@ class BooleanParameter(
 ) extends Parameter
 {
 
+
+  def this(id: String, name: String, required: Boolean, hidden: Boolean, default: Boolean)
+  {
+    this(id, name, required, hidden)
+    set(JsBoolean(default))
+  }
 
   def this(parameter: serialized.ParameterDescription)
   {
@@ -845,7 +851,8 @@ class StringParameter(
   val id: String, 
   val name: String, 
   val required: Boolean,
-  val hidden: Boolean
+  val hidden: Boolean,
+  val initialPlaceholder: String = ""
 ) extends Parameter
 {
   def this(parameter: serialized.ParameterDescription)
@@ -858,11 +865,52 @@ class StringParameter(
     )
   }
   val root = 
-    input(`type` := "text").render.asInstanceOf[dom.html.Input]
+    input(`type` := "text", placeholder := initialPlaceholder).render.asInstanceOf[dom.html.Input]
   def value =
-    JsString(inputNode[dom.html.Input].value)
+    JsString(
+      inputNode[dom.html.Input].value match {
+        case "" => inputNode[dom.html.Input].placeholder
+        case x => x
+      }
+    )
   def set(v: JsValue): Unit = 
     inputNode[dom.html.Input].value = v.as[String]
+  def setHint(s: String): Unit =
+    inputNode[dom.html.Input].placeholder = s
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A parameter with a limited set of options
+ */
+class DataTypeParameter(
+  val id: String, 
+  val name: String, 
+  val required: Boolean,
+  val hidden: Boolean
+) extends Parameter
+{
+  def this(parameter: serialized.EnumerableParameterDescription)
+  {
+    this(
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
+    )
+  }
+  val root = 
+    pulldown(
+      DataTypes.BY_NAME.indexWhere { _._2 == "int" }
+    )(DataTypes.BY_NAME:_*)
+      .render.asInstanceOf[dom.html.Select]
+
+  def value = 
+    JsString(inputNode[dom.html.Select].value)
+  def set(v: JsValue): Unit = 
+    inputNode[dom.html.Select].value = v.as[String]
+
 }
 
 /////////////////////////////////////////////////////////////////////////////

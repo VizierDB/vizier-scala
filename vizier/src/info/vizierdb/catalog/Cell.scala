@@ -166,7 +166,7 @@ case class Cell(
     }.update.apply()
     copy(state = state)
   }
-  def replaceArguments(arguments: JsObject)(implicit session: DBSession): Cell =
+  def replaceArguments(arguments: JsObject)(implicit session: DBSession): (Cell, Module) =
   {
     val updatedModule = module.replaceArguments(arguments)
     withSQL { 
@@ -176,7 +176,7 @@ case class Cell(
         .where.eq(c.workflowId, workflowId)
           .and.eq(c.position, position)
     }.update.apply()
-    copy(moduleId = updatedModule.id)
+    (copy(moduleId = updatedModule.id), updatedModule)
   }
 
   override def toString = s"Workflow $workflowId @ $position: Module $moduleId ($state)"

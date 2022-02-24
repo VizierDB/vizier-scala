@@ -22,9 +22,11 @@ class ModuleSubscription(
   extends Object
   with Logging
 {
-  def id: Identifier = initial.moduleId
+  var id: Identifier = initial.moduleId
   val state = Var(initial.statev2)
-  def command = initial.command
+  val commandId = initial.command.commandId
+  val packageId = initial.command.packageId
+  var arguments = initial.command.arguments
   def text = Var(initial.text)
   def links = initial.links
   def toc = initial.toc

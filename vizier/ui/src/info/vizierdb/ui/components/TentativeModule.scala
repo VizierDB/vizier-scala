@@ -40,7 +40,7 @@ class TentativeModule(
 
   def selectCommand(packageId: String, command: serialized.PackageCommand)
   {
-    activeView() = Some(Right(new ModuleEditor(packageId, command, this)))
+    activeView() = Some(Right(ModuleEditor(packageId, command, this)))
   }
   def cancelSelectCommand()
   {
@@ -133,5 +133,17 @@ class CommandList(
         }
       ),
     )
+
+  def simulateClick(packageId: String, commandId: String) =
+  {
+    packages.find { _.id == packageId } match {
+      case Some(pkg) => 
+        pkg.commands.find { _.id == commandId } match {
+          case Some(cmd) => module.selectCommand(packageId, cmd)
+          case None => println(s"SIMULATE CLICK ON TENTATIVE MODULE FAILED: NO COMMAND $commandId")
+        }
+      case None => println(s"SIMULATE CLICK ON TENTATIVE MODULE FAILED: NO PACKAGE $packageId")
+    }
+  }
 }
 
