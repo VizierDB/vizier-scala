@@ -173,6 +173,15 @@ class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: A
                 modules(position).state() = state
              
               /////////////////////////////////////////////////
+              
+              case delta.UpdateCellArguments(position, arguments, moduleId) =>
+                logger.debug(s"Arguments Update: $arguments @ $position")
+                val module = modules(position)
+                module.arguments = arguments
+                module.id = moduleId
+
+
+              /////////////////////////////////////////////////
 
               case delta.AppendCellMessage(position, stream, message) =>
                 logger.debug(s"New Message @ $position")

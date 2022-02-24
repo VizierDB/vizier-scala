@@ -125,6 +125,7 @@ object serializers
   implicit val deleteCellFormat: Format[delta.DeleteCell] = Json.format
   implicit val updateCellStateFormat: Format[delta.UpdateCellState] = Json.format
   implicit val appendCellMessageFormat: Format[delta.AppendCellMessage] = Json.format
+  implicit val updateCellArgumentsFormat: Format[delta.UpdateCellArguments] = Json.format
   implicit val deltaOutputArtifactFormat = Format[delta.DeltaOutputArtifact](
     new Reads[delta.DeltaOutputArtifact]{
       def reads(j: JsValue): JsResult[delta.DeltaOutputArtifact] =
@@ -147,26 +148,28 @@ object serializers
     new Reads[delta.WorkflowDelta]() {
       def reads(j: JsValue): JsResult[delta.WorkflowDelta] =
         (j \ delta.WorkflowDelta.OP_TYPE).as[String] match {
-          case delta.WorkflowDelta.INSERT_CELL          => JsSuccess(j.as[delta.InsertCell])
-          case delta.WorkflowDelta.UPDATE_CELL          => JsSuccess(j.as[delta.UpdateCell])
-          case delta.WorkflowDelta.DELETE_CELL          => JsSuccess(j.as[delta.DeleteCell])
-          case delta.WorkflowDelta.UPDATE_CELL_STATE    => JsSuccess(j.as[delta.UpdateCellState])
-          case delta.WorkflowDelta.APPEND_CELL_MESSAGE  => JsSuccess(j.as[delta.AppendCellMessage])
-          case delta.WorkflowDelta.UPDATE_CELL_OUTPUTS  => JsSuccess(j.as[delta.UpdateCellOutputs])
-          case delta.WorkflowDelta.ADVANCE_RESULT_ID    => JsSuccess(j.as[delta.AdvanceResultId])
+          case delta.WorkflowDelta.INSERT_CELL           => JsSuccess(j.as[delta.InsertCell])
+          case delta.WorkflowDelta.UPDATE_CELL           => JsSuccess(j.as[delta.UpdateCell])
+          case delta.WorkflowDelta.DELETE_CELL           => JsSuccess(j.as[delta.DeleteCell])
+          case delta.WorkflowDelta.UPDATE_CELL_STATE     => JsSuccess(j.as[delta.UpdateCellState])
+          case delta.WorkflowDelta.APPEND_CELL_MESSAGE   => JsSuccess(j.as[delta.AppendCellMessage])
+          case delta.WorkflowDelta.UPDATE_CELL_OUTPUTS   => JsSuccess(j.as[delta.UpdateCellOutputs])
+          case delta.WorkflowDelta.ADVANCE_RESULT_ID     => JsSuccess(j.as[delta.AdvanceResultId])
+          case delta.WorkflowDelta.UPDATE_CELL_ARGUMENTS => JsSuccess(j.as[delta.UpdateCellArguments])
           case _ => JsError()
         }
     },
     new Writes[delta.WorkflowDelta]() {
       def writes(d: delta.WorkflowDelta): JsValue =
         d match { 
-          case x:delta.InsertCell         => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.INSERT_CELL))
-          case x:delta.UpdateCell         => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL))
-          case x:delta.DeleteCell         => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.DELETE_CELL))
-          case x:delta.UpdateCellState    => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_STATE))
-          case x:delta.AppendCellMessage  => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.APPEND_CELL_MESSAGE))
-          case x:delta.UpdateCellOutputs  => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_OUTPUTS))
-          case x:delta.AdvanceResultId    => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.ADVANCE_RESULT_ID))
+          case x:delta.InsertCell          => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.INSERT_CELL))
+          case x:delta.UpdateCell          => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL))
+          case x:delta.DeleteCell          => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.DELETE_CELL))
+          case x:delta.UpdateCellState     => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_STATE))
+          case x:delta.AppendCellMessage   => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.APPEND_CELL_MESSAGE))
+          case x:delta.UpdateCellOutputs   => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_OUTPUTS))
+          case x:delta.AdvanceResultId     => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.ADVANCE_RESULT_ID))
+          case x:delta.UpdateCellArguments => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_ARGUMENTS))
         }
     }
   )

@@ -20,7 +20,7 @@ class TableOfContents(workflow: Workflow)
                   onmouseout := { _:dom.Event => module.highlight() = false }
                 ) 
               }
-              .getOrElse { li(s"${module.command.packageId}.${module.command.commandId}") }
+              .getOrElse { li(s"${module.subscription.packageId}.${module.subscription.commandId}") }
 
   def TentativeSummary(module: TentativeModule): Frag =
     li( 

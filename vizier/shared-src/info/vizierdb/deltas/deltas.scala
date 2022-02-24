@@ -23,6 +23,7 @@ case class InsertCell(cell: serialized.ModuleDescription, position: Int) extends
 case class UpdateCell(cell: serialized.ModuleDescription, position: Int) extends WorkflowDelta
 case class DeleteCell(position: Int) extends WorkflowDelta
 case class UpdateCellState(position: Int, state: ExecutionState.T) extends WorkflowDelta
+case class UpdateCellArguments(position: Int, arguments: serialized.CommandArgumentList.T, newModuleId: Identifier) extends WorkflowDelta
 case class AppendCellMessage(position: Int, stream: StreamType.T, message: serialized.MessageDescription) extends WorkflowDelta
 case class DeltaOutputArtifact(artifact: Either[String, serialized.ArtifactSummary]) 
 { 
@@ -52,6 +53,7 @@ object WorkflowDelta
   val DELETE_CELL           = "delete_cell"
   val UPDATE_CELL_STATE     = "update_cell_state"
   val APPEND_CELL_MESSAGE   = "append_cell_message"
+  val UPDATE_CELL_ARGUMENTS = "update_cell_arguments"
   val UPDATE_CELL_OUTPUTS   = "update_cell_outputs"
   val ADVANCE_RESULT_ID     = "advance_result_id"
 }

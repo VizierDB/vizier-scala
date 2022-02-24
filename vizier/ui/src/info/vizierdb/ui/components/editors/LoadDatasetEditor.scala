@@ -18,6 +18,7 @@ import scala.util.Success
 import scala.util.Failure
 import info.vizierdb.util.Logging
 import info.vizierdb.types.DatasetFormat
+import play.api.libs.json._
 
 class LoadDatasetEditor(
   val delegate: ModuleEditorDelegate,
@@ -31,6 +32,7 @@ class LoadDatasetEditor(
 
   val urlField = input(`type` := "text", 
                        name := "url",
+                       placeholder := "https://url/of/file.csv ...OR... path/to/file.csv",
                        onchange := { _:dom.Event => urlChanged }).render
   val directoryStack = Var[List[FileBrowser]](Nil)
   val format = 
@@ -93,10 +95,14 @@ class LoadDatasetEditor(
 
   val optionalParameters = Seq[(Set[String], Parameter)](
     Set(DatasetFormat.CSV) ->
-      new BooleanParameter("loadDetectHeaders", "File has Headers: ", true, false),
+      new BooleanParameter("loadDetectHeaders", "File has Headers: ", true, false, true),
     Set(DatasetFormat.CSV) ->
       new StringParameter("loadDelimiter", "Field Delimiter: ", true, false, ","),
+    Set(DatasetFormat.CSV) ->
+      new BooleanParameter("loadInferTypes", "Guess Schema: ", true, false, true),
   )
+  val optionalParameterByKey = 
+    optionalParameters.map { param => param._2.id -> param._2 }.toMap
 
   val activeParameters = Var(Seq[Parameter](sparkOptions))
   formatChanged
@@ -123,7 +129,7 @@ class LoadDatasetEditor(
           }.reactive
         ),
         div(`class` := "url", 
-          label(`for` := "url", "URL: "),
+          label(`for` := "url", "File or URL: "),
           urlField
         ),
       ),
@@ -235,8 +241,43 @@ class LoadDatasetEditor(
       ).render
   }
 
-  override def loadState(arguments: Seq[CommandArgument]): Unit = ???
+  override def loadState(arguments: Seq[CommandArgument]): Unit = 
+  {
+    print(s"loadState: ${arguments.mkString("\n")}")
+    for(arg <- arguments){
+      arg.id match {
+        case "file" => 
+          (arg.value \ "url").asOpt[String] match {
+            case Some(f) => urlField.value = f
+            case None    => println("ERROR: Internal files are not supported yet")
+          }
+        case "name"       => datasetName.set(arg.value)
+        case "loadFormat" => format.value = arg.value.as[String]
+        case "loadOptions" => sparkOptions.set(arg.value)
+        case "loadDataSourceErrors" => ()
+        case "schema" => println(s"Schema: ${arg.value}"); schema.set(arg.value)
+        case x if optionalParameterByKey contains x => 
+          optionalParameterByKey(x).set(arg.value)
+        case x => println(s"ERROR: Unsupported load editor parameter $x")
+      }
+    }
+  }
 
-  override def currentState: Seq[CommandArgument] = ???
-
+  override def currentState: Seq[CommandArgument] = 
+  {
+    Seq(
+      CommandArgument(
+        "file", Json.obj("url" -> JsString(urlField.value))
+      ), 
+      datasetName.toArgument,
+      CommandArgument(
+        "loadFormat" -> JsString(format.value)
+      ),
+      CommandArgument(
+        "loadInferTypes" -> JsBoolean(true)
+      ),
+      schema.toArgument,
+      sparkOptions.toArgument
+    ) ++ optionalParameters.map { _._2.toArgument }
+  }
 }

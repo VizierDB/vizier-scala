@@ -210,6 +210,12 @@ class BooleanParameter(
 {
 
 
+  def this(id: String, name: String, required: Boolean, hidden: Boolean, default: Boolean)
+  {
+    this(id, name, required, hidden)
+    set(JsBoolean(default))
+  }
+
   def this(parameter: serialized.ParameterDescription)
   {
     this(
@@ -861,7 +867,12 @@ class StringParameter(
   val root = 
     input(`type` := "text", placeholder := initialPlaceholder).render.asInstanceOf[dom.html.Input]
   def value =
-    JsString(inputNode[dom.html.Input].value)
+    JsString(
+      inputNode[dom.html.Input].value match {
+        case "" => inputNode[dom.html.Input].placeholder
+        case x => x
+      }
+    )
   def set(v: JsValue): Unit = 
     inputNode[dom.html.Input].value = v.as[String]
   def setHint(s: String): Unit =

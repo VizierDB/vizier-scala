@@ -57,6 +57,11 @@ case class WorkflowState(
           cells(position).copy( state = newState )
         ), 1)
       )
+      case UpdateCellArguments(position, newArguments, newModuleId) => copy(cells =
+        cells.patch(position, Seq(
+          cells(position).copy( moduleId = newModuleId.toString )
+        ), 1)
+      )
       case AppendCellMessage(position, _, _) => copy(cells =
         cells.patch(position, Seq(
           cells(position).copy( messageCount = cells(position).messageCount + 1 )

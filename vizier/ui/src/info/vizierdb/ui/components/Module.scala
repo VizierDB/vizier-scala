@@ -63,11 +63,6 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
   val highlight = Var[Boolean](false)
 
   /**
-   * The command descriptor for the command represented by this module
-   */
-  def command = subscription.command
-
-  /**
    * The table of contents summary for the command represented by this module
    */
   def toc = subscription.toc
@@ -102,15 +97,15 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
    * True for "special" modules that should have their summary text hidden
    */
   val hideSummary: Boolean = 
-    command.packageId == "docs"
+    subscription.packageId == "docs"
 
   /**
    * Allocate an editor for the module and place it in editing mode.
    */
   def openEditor(): Unit =
   { 
-    val packageId = subscription.command.packageId
-    val commandId = subscription.command.commandId
+    val packageId = subscription.packageId
+    val commandId = subscription.commandId
     subscription
       .branch
       .api
@@ -126,7 +121,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
             command = command,
             delegate = this
           )
-        tempEditor.loadState(subscription.command.arguments)
+        tempEditor.loadState(subscription.arguments)
         editor() = Some(tempEditor)
       }
   }

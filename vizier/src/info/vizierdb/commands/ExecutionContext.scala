@@ -496,7 +496,8 @@ class ExecutionContext(
     val command = Commands.get(module.packageId, module.commandId)
     val newArgs = command.encodeArguments(args.toMap, module.arguments.value.toMap)
     DB.autoCommit { implicit s => 
-      cell.replaceArguments(newArgs)
+      val (newCell, newModule) = cell.replaceArguments(newArgs)
+      DeltaBus.notifyUpdateCellArguments(workflow, newCell, newModule)
     }
     return Arguments(newArgs, command.parameters)
   }
@@ -529,7 +530,8 @@ class ExecutionContext(
   {
     val newArgs = JsObject(module.arguments.value ++ args.toMap)
     DB.autoCommit { implicit s => 
-      cell.replaceArguments(newArgs)
+      val (newCell, newModule) = cell.replaceArguments(newArgs)
+      DeltaBus.notifyUpdateCellArguments(workflow, newCell, newModule)
     }
   }
 

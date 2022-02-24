@@ -115,6 +115,13 @@ case class Module(
     }
   }
 
+  def argumentList: serialized.CommandArgumentList.T =
+    (command match { 
+      case None => 
+        serialized.CommandArgumentList.toPropertyList(arguments.value.toMap)
+      case Some(cmd) => 
+        cmd.propertyListFromArguments(arguments)
+    }):serialized.CommandArgumentList.T
 
 
   def describe(
@@ -149,13 +156,7 @@ case class Module(
       command = serialized.CommandDescription(
         packageId = packageId,
         commandId = commandId,
-        arguments = 
-          (command match { 
-            case None => 
-              serialized.CommandArgumentList.toPropertyList(arguments.value.toMap)
-            case Some(cmd) => 
-              cmd.propertyListFromArguments(arguments)
-          }):serialized.CommandArgumentList.T
+        arguments = argumentList,
       ),
       text = description,
       toc = toc(cell),
