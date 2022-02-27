@@ -288,11 +288,15 @@ ul.module_list div.editor_actions div.spacer
 }
 ul.module_list div.editor_actions button.cancel 
 {
-  /*border-color: #c00;*/
+  border-color: #c00;
 }
 ul.module_list div.editor_actions button.cancel i.fa
 {
   color: #c00;
+}
+ul.module_list div.editor_actions button.save
+{
+  border-color: #292; 
 }
 ul.module_list div.editor_actions button.save i.fa
 {
