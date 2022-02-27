@@ -133,7 +133,7 @@ case class Branch(
     )
     DeltaBus.notifyCellInserts(ret._2){ (cell, _) => cell.position == position }
     for(cell <- ret._2.cellsWhere(sqls"position > ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
     return ret
   }
@@ -158,7 +158,7 @@ case class Branch(
     )
     DeltaBus.notifyCellUpdates(ret._2) { (cell, _) => cell.position == position }
     for(cell <- ret._2.cellsWhere(sqls"position > ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
     return ret
   }
@@ -187,7 +187,7 @@ case class Branch(
         updateState = stateUpdate
       )
     for(cell <- ret._2.cells){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
     return ret
   }
@@ -211,7 +211,7 @@ case class Branch(
     )
     DeltaBus.notifyCellDelete(ret._2, position)
     for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
     return ret
   }
@@ -238,7 +238,7 @@ case class Branch(
       recomputeCellsFrom = position+1
     )
     for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
     return ret
   }
@@ -261,7 +261,7 @@ case class Branch(
       recomputeCellsFrom = position+1
     )
     for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
     return ret
   }
@@ -288,7 +288,7 @@ case class Branch(
         StateTransition.forAll(sqls"position >= $position", FROZEN)
     )
     for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
     return ret
   }
@@ -312,7 +312,7 @@ case class Branch(
       recomputeCellsFrom = position + 1
     )
     for(cell <- ret._2.cellsWhere(sqls"position <= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state)
+      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
     return ret
   }

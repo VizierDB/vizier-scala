@@ -21,6 +21,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.catalog.{ Workflow, Module, Cell, ArtifactRef, Message }
 import scalikejdbc.interpolation.SQLSyntax
 import info.vizierdb.viztrails.ScopeSummary
+import info.vizierdb.serialized.Timestamps
 
 /**
  * A central hub for notifications about state changes on branches.  
@@ -265,10 +266,11 @@ object DeltaBus
   def notifyStateChange(
     workflow: Workflow,
     position: Int,
-    newState: ExecutionState.T
+    newState: ExecutionState.T,
+    newTimestamps: Timestamps,
   )
   {
-    DeltaBus.notify(workflow.branchId, UpdateCellState(position, newState))
+    DeltaBus.notify(workflow.branchId, UpdateCellState(position, newState, newTimestamps))
   }
 
   /**

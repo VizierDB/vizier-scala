@@ -7,6 +7,7 @@ import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.types.UDTRegistration
 import info.vizierdb.spark.udt.ImageUDT
 import org.apache.spark.mllib.linalg.VectorUDT
+import info.vizierdb.util.StringUtils
 
 object SparkSchema {
   def apply(df: DataFrame): Seq[StructField] =
@@ -115,4 +116,18 @@ object SparkSchema {
       }
     }
   )
+
+  def friendlyTypeString(dataType: DataType): String = 
+  {
+    dataType match {
+      case StringType => "string"
+      case IntegerType => "4 byte integer"
+      case LongType => "8 byte integer"
+      case ShortType => "8 byte integer"
+      case FloatType => "single precision float"
+      case DoubleType => "double precision float"
+      case ArrayType(elem, _) => "array of "+StringUtils.plural(friendlyTypeString(elem))
+      case _ => dataType.json
+    }
+  }
 }

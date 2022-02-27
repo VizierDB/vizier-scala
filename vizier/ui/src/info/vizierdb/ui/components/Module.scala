@@ -13,6 +13,7 @@ import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.serialized.ArtifactSummary
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.util.StringUtils
 import java.awt.Font
 
 class Module(val subscription: ModuleSubscription, workflow: Workflow)
@@ -233,6 +234,24 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
                   )
                 }
       }.reactive,
+      div(`class` := "status", 
+        span(`class` := "label", "Status: "),
+        Rx { 
+          val timestamps = subscription.timestamps()
+          subscription.state() match {
+            case ExecutionState.DONE => 
+              span(s"Completed ${timestamps.finishedAtString} (${timestamps.runtimeString})")
+            case ExecutionState.FROZEN => 
+              span(s"Frozen ${timestamps.createdAtString}")
+            case ExecutionState.CANCELLED | ExecutionState.ERROR =>
+              span(StringUtils.capitalize(subscription.state().toString()))
+            case ExecutionState.RUNNING =>
+              span(s"Running since ${timestamps.startedAtString}")
+            case ExecutionState.WAITING | ExecutionState.STALE =>
+              span(s"Waiting to run since ${timestamps.createdAtString}")
+          }
+        }.reactive
+      ),
       // div(Rx { "State: " + subscription.state() }.reactive),
       // div("Outputs: ", outputs.map { _.keys.mkString(", ") }.reactive),
       div(

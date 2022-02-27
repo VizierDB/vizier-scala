@@ -18,4 +18,6 @@ object nativeTypes
 
   def nativeFromJson(value: JsValue, dataType: CellDataType): Any = value
   def jsonFromNative(value: Any, dataType: CellDataType) = value.asInstanceOf[JsValue]
+  def dateDiffMillis(from: DateTime, to: DateTime): Long = { (to.getTime - from.getTime).toLong }
+  def formatDate(date: DateTime): String = date.toLocaleDateString() + " " + date.toLocaleTimeString()
 }

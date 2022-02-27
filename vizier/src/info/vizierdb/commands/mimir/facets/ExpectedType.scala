@@ -5,12 +5,13 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructField
 import info.vizierdb.util.StringUtils
 import info.vizierdb.spark.SparkSchema.fieldFormat
+import info.vizierdb.spark.SparkSchema
 
 case class ExpectedType(field: StructField)
   extends Facet
 {
   def identity = ExpectedType.identity
-  def description = s"The column ${field.name} should be ${StringUtils.withDefiniteArticle(StringUtils.friendlyTypeString(field.dataType))}"
+  def description = s"The column ${field.name} should be ${StringUtils.withDefiniteArticle(SparkSchema.friendlyTypeString(field.dataType))}"
   def test(query:DataFrame): Seq[String] =
   {
     query.schema
@@ -20,7 +21,7 @@ case class ExpectedType(field: StructField)
          .flatMap { 
            case actual => 
              if( ! field.dataType.equals(actual.dataType) ) { 
-               Some(s"${actual.name} is ${StringUtils.withDefiniteArticle(StringUtils.friendlyTypeString(actual.dataType))} (Expected ${StringUtils.withDefiniteArticle(StringUtils.friendlyTypeString(field.dataType))})") 
+               Some(s"${actual.name} is ${StringUtils.withDefiniteArticle(SparkSchema.friendlyTypeString(actual.dataType))} (Expected ${StringUtils.withDefiniteArticle(SparkSchema.friendlyTypeString(field.dataType))})") 
              } else { None }
          }
          .toSeq

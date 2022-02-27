@@ -63,19 +63,22 @@ object StringUtils
       case _ => str+"s"
     }
 
-  import org.apache.spark.sql.types._
-  def friendlyTypeString(dataType: DataType): String = 
+  def capitalize(str: String): String =
+    str.substring(0, 1).toUpperCase + str.substring(1).toLowerCase()
+
+  def formatDuration(millis: Long): String = 
   {
-    dataType match {
-      case StringType => "string"
-      case IntegerType => "4 byte integer"
-      case LongType => "8 byte integer"
-      case ShortType => "8 byte integer"
-      case FloatType => "single precision float"
-      case DoubleType => "double precision float"
-      case ArrayType(elem, _) => "array of "+plural(friendlyTypeString(elem))
-      case _ => dataType.json
+    var t = millis
+    Seq(
+      (1000, 1000, "ms"),
+      (120, 60, "s"),
+      (120, 60, "min"),
+      (36, 24, "hr")
+    ).foreach { case (cutoff, scale, suffix) => 
+      if(t <= cutoff) { return s"$t $suffix" }
+      else { t = t / scale }
     }
+    return s"$t days"
   }
 }
 

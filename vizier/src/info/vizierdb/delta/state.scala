@@ -22,6 +22,7 @@ case class CellState(
   moduleId: String,
   resultId: Option[Identifier],
   state: ExecutionState.T, 
+  timestamps: serialized.Timestamps,
   messageCount: Int
 )
 object CellState
@@ -31,7 +32,8 @@ object CellState
       description.moduleId.toString,
       description.resultId,
       description.statev2,
-      description.outputs.stdout.size + description.outputs.stderr.size
+      description.timestamps,
+      description.outputs.stdout.size + description.outputs.stderr.size,
     )
 }
 
@@ -52,9 +54,9 @@ case class WorkflowState(
       case DeleteCell(position) => copy(cells = 
         cells.patch(position, Seq(), 1)
       )
-      case UpdateCellState(position, newState) => copy(cells =
+      case UpdateCellState(position, newState, newTimestamps) => copy(cells =
         cells.patch(position, Seq(
-          cells(position).copy( state = newState )
+          cells(position).copy( state = newState, timestamps = newTimestamps )
         ), 1)
       )
       case UpdateCellArguments(position, newArguments, newModuleId) => copy(cells =

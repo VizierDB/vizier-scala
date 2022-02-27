@@ -153,7 +153,7 @@ class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: A
              
               /////////////////////////////////////////////////
 
-              case delta.UpdateCellState(position, state) =>
+              case delta.UpdateCellState(position, state, timestamps) =>
                 logger.debug(s"State Update: ${state} @ ${position}")
                 if(state == ExecutionState.RUNNING){
                   executionStartTime =  java.lang.System.currentTimeMillis()
@@ -169,8 +169,9 @@ class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: A
                 } else {
                   executionStartTime = -1
                 }
-
-                modules(position).state() = state
+                val module = modules(position)
+                module.state() = state
+                module.timestamps() = timestamps
              
               /////////////////////////////////////////////////
               

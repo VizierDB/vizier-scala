@@ -107,6 +107,14 @@ ul.module_list li.module div.module_body {
   max-width: 100%;
   min-width: 400px;
 }
+ul.module_list li.module div.module_body div.status {
+  font-size: 80%;
+  font-family: monospace;
+  margin: 5px;
+}
+ul.module_list li.module div.module_body div.status span.label {
+  font-weight: bold;
+}
 ul.module_list li.module div.module_body div.summary {
   width: auto;
   background-color: #eee;

@@ -147,7 +147,8 @@ case class Workflow(
       DeltaBus.notifyStateChange(
         this, 
         cell.position, 
-        ExecutionState.CANCELLED
+        ExecutionState.CANCELLED,
+        cell.timestamps
       )
     }
     val stateTransitions = 

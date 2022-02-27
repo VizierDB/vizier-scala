@@ -241,6 +241,7 @@ object ComputeDelta
           moduleId = module.id.toString,
           resultId = cell.resultId,
           state = cell.state,
+          timestamps = cell.timestamps,
           messageCount = cell.messages.size
         )
       }

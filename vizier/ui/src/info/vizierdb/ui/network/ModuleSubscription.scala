@@ -27,7 +27,8 @@ class ModuleSubscription(
   val commandId = initial.command.commandId
   val packageId = initial.command.packageId
   var arguments = initial.command.arguments
-  def text = Var(initial.text)
+  lazy val text = Var(initial.text)
+  val timestamps = Var(initial.timestamps)
   def links = initial.links
   def toc = initial.toc
   val outputs = Var[Map[String,Option[serialized.ArtifactSummary]]](

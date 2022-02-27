@@ -16,6 +16,8 @@ import scala.util.Failure
 import scala.util.Success
 import info.vizierdb.api.FormattedError
 import info.vizierdb.VizierException
+import info.vizierdb.vega.DateTime
+import java.time.ZonedDateTime
 
 class RunningCell(
   val cell: Cell, 
@@ -188,7 +190,7 @@ class RunningCell(
           context.error(msg)
           return Failure(new VizierException(msg))
         }
-        DeltaBus.notifyStateChange(workflow, startedCell.position, startedCell.state)
+        DeltaBus.notifyStateChange(workflow, startedCell.position, startedCell.state, startedCell.timestamps)
         DeltaBus.notifyAdvanceResultId(workflow, startedCell.position, startedCell.resultId.get)
         /* return */ (command, arguments, context)
       }
@@ -225,10 +227,6 @@ class RunningCell(
         sqls"position > ${cell.position}", 
         ExecutionState.PENDING_STATES -> ExecutionState.CANCELLED 
       )
-    DeltaBus.notifyStateChange(workflow, cell.position, targetState)
-    for(cell <- workflow.cellsWhere(sqls"""position > ${cell.position}""")) {
-      DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.CANCELLED)
-    }
     withSQL {
       val c = Cell.column
       update(Cell)
@@ -239,6 +237,10 @@ class RunningCell(
         .where.eq(c.workflowId, workflow.id)
           .and.gt(c.position, cell.position)
     }.update.apply()
+    DeltaBus.notifyStateChange(workflow, cell.position, targetState, cell.timestamps)
+    for(cell <- workflow.cellsWhere(sqls"""position > ${cell.position}""")) {
+      DeltaBus.notifyStateChange(workflow, cell.position, ExecutionState.CANCELLED, cell.timestamps)
+    }
     return result
   }
   /**
@@ -268,14 +270,14 @@ class RunningCell(
         case (name, Some(a)) => DeltaOutputArtifact.fromArtifact(a.summarize(name))
       }.toSeq
     )
-    DeltaBus.notifyStateChange(cell.workflow, cell.position, ExecutionState.DONE)
-    DeltaBus.notifyStateChange(cell.workflow, cell.position, ExecutionState.DONE)
+    DeltaBus.notifyStateChange(cell.workflow, cell.position, ExecutionState.DONE, cell.timestamps)
 
     for(cell <- workflow.cellsWhere(sqls"position > ${cell.position}")){
       DeltaBus.notifyStateChange(
         workflow = workflow,
         position = cell.position,
-        newState = cell.state
+        newState = cell.state,
+        newTimestamps = cell.timestamps
       )
     }
     return result
