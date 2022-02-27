@@ -26,6 +26,7 @@ import scala.util.{ Success, Failure }
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.components.editors.LoadDatasetEditor
+import info.vizierdb.ui.widgets.FontAwesome
 
 trait ModuleEditor
   extends Object
@@ -91,9 +92,10 @@ trait ModuleEditor
   lazy val root: Frag = 
     div(`class` := "module editable",
       editorFields,
-      div(
-        button("Back", onclick := { (e: dom.MouseEvent) => delegate.cancelEditor() }),
-        button("Save", onclick := { (e: dom.MouseEvent) => saveState() })
+      div(`class` := "editor_actions",
+        button(FontAwesome("arrow-left"), " Back", `class` := "cancel", onclick := { (e: dom.MouseEvent) => delegate.cancelEditor() }),
+        div(`class` := "spacer"),
+        button(FontAwesome("cogs"), " Save", `class` := "save", onclick := { (e: dom.MouseEvent) => saveState() })
       )
     )
 }

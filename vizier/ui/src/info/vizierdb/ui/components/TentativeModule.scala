@@ -10,6 +10,7 @@ import info.vizierdb.serialized
 import scala.concurrent.{ Future, Promise }
 import info.vizierdb.types.Identifier
 import info.vizierdb.ui.Vizier
+import info.vizierdb.ui.widgets.FontAwesome
 
 class TentativeModule(
   var position: Int, 
@@ -85,20 +86,18 @@ class TentativeModule(
   //           .collect { case Left(m) => m.id }
   // }
 
-  val root = li(
-    // span(
-    //   "Visible artifacts here: ",
-    //   visibleArtifacts
-    //     .flatMap { 
-    //       _.map { _.keys.mkString(", ") }
-    //     }
-    //     .reactive
-    // ),
-    activeView.map {
-      case None => b("Loading commands...")
-      case Some(Left(commandList)) => commandList.root
-      case Some(Right(editor)) => editor.root
-    }.reactive
+  val root = li(`class` := "module",
+    div(
+      `class` := "menu",
+    ),
+    div(
+      `class` := "module_body",
+      activeView.map {
+        case None => b("Loading commands...")
+        case Some(Left(commandList)) => commandList.root
+        case Some(Right(editor)) => editor.root
+      }.reactive
+    )
   )
 }
 
@@ -107,15 +106,7 @@ class CommandList(
   module: TentativeModule
 ){
   val root = 
-    div(`class` := "module select-command", 
-      div(
-        `class` := "header",
-        "New Cell",
-        button("Cancel", 
-          `class` := "cancel",
-          onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() }
-        )
-      ),
+    div(`class` := "select-command", 
       ul(
         `class` := "command_list",
         packages.map { pkg => 
@@ -130,7 +121,15 @@ class CommandList(
                   }
             )
           )
-        }
+        },
+        div(`class` := "editor_actions",
+          button(
+            FontAwesome("ban"),
+            " Cancel", 
+            `class` := "cancel",
+            onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() }
+          )
+        )
       ),
     )
 

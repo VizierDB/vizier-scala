@@ -1,4 +1,5 @@
-@keyframes spinner-rotate {
+@keyframes spinner-rotate 
+{
   0% { 
     transform-origin: center, center;
     transform: rotate(0);
@@ -9,6 +10,105 @@
   }
 }
 
+a
+{
+  color: blue;
+}
+a:visited
+{
+  color: blue;
+}
+
+/************ Project List ************/
+
+div.project_list_wrapper 
+{
+  border: 1px solid gray;
+  border-radius: 5px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+ul.project_list 
+{
+  list-style: none;
+  width: 100%;
+  margin: 0px;
+  margin-bottom: 10px;
+  padding: 0px;
+}
+ul.project_list li
+{
+  width: calc(100% - 20px);
+  padding: 10px;
+  display: flex;
+  height: 40px;
+}
+
+ul.project_list li.odd
+{
+  background-color: #ddd;
+}
+
+ul.project_list li a
+{
+  font-size: 120%;
+  flex-grow: 1;
+  height: 100%;
+  font-weight: bold;
+  padding-left: 10px;
+  display: table;
+}
+ul.project_list li a span
+{
+  display: table-cell;
+  vertical-align: middle;
+}
+ul.project_list li span.dates
+{
+  flex-grow: 0;
+  font-size: 80%;
+  color: gray;
+  display: table;
+}
+ul.project_list li span.dates div.date_valign
+{
+  display: table-cell;
+  vertical-align: middle;
+}
+div.project_list_wrapper button.create_project
+{
+  height: 50px;
+  width: 50px;
+  font-size: 30px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+div.project_list_wrapper div.hint 
+{
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  color: gray;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+div.project_list_wrapper div.create_project_form 
+{
+  margin: 10px;
+}
+div.project_list_wrapper div.create_project_form input
+{
+  max-width: 400px;
+}
+
+
 /************ Workflow ************/
 
 #workflow
@@ -16,7 +116,8 @@
   width: calc(100% - 300px);
 }
 
-div.add_cell_end_wrapper div.hint {
+div.add_cell_end_wrapper div.hint 
+{
   display: block;
   width: 100%;
   text-align: center;
@@ -25,7 +126,8 @@ div.add_cell_end_wrapper div.hint {
   font-size: 20px;
 }
 
-button.add_cell_end {
+button.add_cell_end 
+{
   height: 50px;
   width: 50px;
   font-size: 30px;
@@ -34,17 +136,20 @@ button.add_cell_end {
   margin-right: auto;
 }
 
-ul.module_list { 
+ul.module_list 
+{ 
   list-style: none;
   padding: 3px;
 }
 
-ul.module_list li.module {
+ul.module_list li.module 
+{
   display: flex;
   margin-top: 10px;
 }
 
-ul.module_list li.module div.menu {
+ul.module_list li.module div.menu 
+{
   min-width: 50px;
   max-width: 50px;
   display: block;
@@ -55,26 +160,33 @@ ul.module_list li.module div.menu {
   padding-bottom: 10px;
   opacity: 0.6;
 }
-ul.module_list li.module.error_state div.menu {
+ul.module_list li.module.error_state div.menu 
+{
   background-color: #de7e64;
 }
-ul.module_list li.module.cancelled_state div.menu {
+ul.module_list li.module.cancelled_state div.menu 
+{
   background-color: #edee3e;
 }
-ul.module_list li.module.frozen_state div.menu {
+ul.module_list li.module.frozen_state div.menu 
+{
   background-color: #319cbc;
 }
-ul.module_list li.module.running_state div.menu {
+ul.module_list li.module.running_state div.menu 
+{
   background-color: #135b0e
 }
-ul.module_list li.module:hover div.menu {
+ul.module_list li.module:hover div.menu 
+{
   opacity: 1;
 }
-ul.module_list li.module.highlight div.menu {
+ul.module_list li.module.highlight div.menu 
+{
   opacity: 1;
   background-color: #aaa;
 }
-ul.module_list li.module div.menu button {
+ul.module_list li.module div.menu button 
+{
   width: 35px;
   height: 35px;
   margin-top: 5px;
@@ -86,7 +198,8 @@ ul.module_list li.module div.menu button {
   position: relative;
   font-size: 80%;
 }
-ul.module_list li.module div.menu button tooltip {
+ul.module_list li.module div.menu button tooltip 
+{
   width: 200px;
   background-color: black;
   color: #fff;
@@ -99,23 +212,28 @@ ul.module_list li.module div.menu button tooltip {
   visibility: hidden;
   left: calc(100% + 10px);
 }
-ul.module_list li.module div.menu button:hover tooltip {
+ul.module_list li.module div.menu button:hover tooltip 
+{
   visibility: visible;
 }
-ul.module_list li.module div.module_body {
+ul.module_list li.module div.module_body 
+{
   padding-left: 0px;
   max-width: 100%;
   min-width: 400px;
 }
-ul.module_list li.module div.module_body div.status {
+ul.module_list li.module div.module_body div.status 
+{
   font-size: 80%;
   font-family: monospace;
   margin: 5px;
 }
-ul.module_list li.module div.module_body div.status span.label {
+ul.module_list li.module div.module_body div.status span.label 
+{
   font-weight: bold;
 }
-ul.module_list li.module div.module_body div.summary {
+ul.module_list li.module div.module_body div.summary 
+{
   width: auto;
   background-color: #eee;
   border-left: none;
@@ -126,50 +244,60 @@ ul.module_list li.module div.module_body div.summary {
   font-size: 120%;
   font-weight: bold;
 }
-ul.module_list li.module div.module_body div.summary.hidden {
+ul.module_list li.module div.module_body div.summary.hidden 
+{
   visibility: hidden;
   position: fixed;
 }
-ul.module_list li.module div.module_body div.editor {
+ul.module_list li.module div.module_body div.editor 
+{
   padding-left: 10px;
 }
 
-div.module.select-command {
-  margin-top: 10px;
-}
-div.module.select-command div.header {
-  border-bottom: none;
-  border-radius: 15px 15px 0px 0px;
-  background-color: #ccc;
-  width: calc(100% - 40px);
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  height: 16px;
-  font-weight: bold;
-  color: #111;
-}
-
-div.module.select-command ul.command_list {
+ul.module_list li.module div.select-command ul.command_list 
+{
   padding: 10px;
   list-style: none;
-  border: 2px solid #ccc;
-  border-top: none;
-  border-radius: 0px 0px 15px 15px;
+}
+ul.module_list li.module div.select-command ul.command_list li 
+{
+  margin-top: 10px;
 }
 
-div.module.select-command div.header button.cancel {
-  position: relative;
-  top: -3px;
-  right: -10px;
-  float: right;
-  background-color: #fdd;
+ul.module_list div.editor_actions 
+{
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+ul.module_list div.editor_actions button 
+{
+  width: 160px;
+  height: 40px;
+  border: 1px solid gray;
+  border-radius: 3px;
   font-weight: bold;
-  border-radius: 7px;
+  flex-grow: 0;
+  sha
 }
-
-
+ul.module_list div.editor_actions div.spacer
+{
+  flex-grow: 1;
+}
+ul.module_list div.editor_actions button.cancel 
+{
+  /*border-color: #c00;*/
+}
+ul.module_list div.editor_actions button.cancel i.fa
+{
+  color: #c00;
+}
+ul.module_list div.editor_actions button.save i.fa
+{
+  color: #292;
+}
 
 /************ Table of Contents ************/
 
@@ -242,7 +370,7 @@ div.message.error
 div.message div.header
 {
   border-radius: 10px 10px 0px 0px;
-  background-color: lightgray;
+  background-color: white;
   border-bottom: none;
   min-width: 200px;
   max-width: calc(100% - 200px);
@@ -252,9 +380,23 @@ div.message div.header
 }
 div.message div.header h3
 {
-  display: inline-block;
   margin: 0px;
   margin-right: 20px;
+  display: inline;
+}
+div.message div.header a
+{
+  vertical-align: baseline;
+  text-decoration: none;
+}
+div.message div.header i.fa
+{
+  display: inline;
+  position: relative;
+  vertical-align: baseline;
+  top: 1px;
+  left: -8px;
+  font-size: 90%;
 }
 
 div.vega-embed
@@ -444,9 +586,10 @@ table.parameter_list tbody tr:last-child button.delete_row
 
 div.module.editable.load_dataset 
 {
-  width: 100%;
-  border: 1px solid black;
-  border-radius: 5px;
+  width: calc(100% - 20px);
+  border: 1px solid lightgray;
+  border-radius: 0px 5px 5px 0px;
+  border-left: none;
   padding: 10px;
 }
 div.module.editable.load_dataset div.header
@@ -466,7 +609,7 @@ div.module.editable.load_dataset div.url
 }
 div.module.editable.load_dataset div.url input 
 {
-  width: calc(100% - 60px);
+  width: calc(100% - 5px);
 }
 div.module.editable.load_dataset div.url label 
 {

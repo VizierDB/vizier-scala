@@ -51,7 +51,7 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
           .rxLength
           .map { 
             case 0 => div(`class` := "hint",
-                          "↑", br(), "Click here to start")
+                          "↑", br(), "Click here to add a module")
             case _ => div()
           }.reactive
 

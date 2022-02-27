@@ -27,7 +27,7 @@ class TableOfContents(workflow: Workflow)
       `class` := "tentative",
       span(
         module.editor.map { _.map { ed => s"${ed.packageId}.${ed.commandId}" }
-                             .getOrElse { "new command" }:String }.reactive
+                             .getOrElse { "New Module" }:String }.reactive
       )
     )
 

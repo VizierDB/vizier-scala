@@ -27,7 +27,7 @@ import info.vizierdb.viztrails.ProvenancePrediction
 
 object EmptyDataset extends Command
 {
-  def name: String = "Empty Dataset"
+  def name: String = "Create Empty Dataset"
   def parameters: Seq[Parameter] = Seq(
     StringParameter(id = "name", name = "Name of Dataset")
   )

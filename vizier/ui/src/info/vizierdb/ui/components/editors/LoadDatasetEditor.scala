@@ -32,7 +32,7 @@ class LoadDatasetEditor(
 
   val urlField = input(`type` := "text", 
                        name := "url",
-                       placeholder := "https://url/of/file.csv ...OR... path/to/file.csv",
+                       placeholder := "https://url/of/file.csv      OR      path/to/file.csv",
                        onchange := { _:dom.Event => urlChanged }).render
   val directoryStack = Var[List[FileBrowser]](Nil)
   val format = 

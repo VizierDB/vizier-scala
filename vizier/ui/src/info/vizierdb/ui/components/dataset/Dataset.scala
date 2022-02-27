@@ -96,7 +96,7 @@ class Dataset(
         a(
           href := s"spreadsheet.html?project=$projectId&dataset=$datasetId", 
           target := "_blank",
-          FontAwesome("pencil-square-o")
+          FontAwesome("table")
         )
       )
     }.reactive,

@@ -21,6 +21,7 @@ import info.vizierdb.serialized.PropertyList
 import info.vizierdb.ui.components.dataset.Dataset
 import info.vizierdb.ui.components.MenuBar
 import info.vizierdb.ui.components.dataset.TableView
+import info.vizierdb.nativeTypes
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -95,7 +96,7 @@ object Vizier
                 //         println("Waiting...")
                 //     }}
                 //   },
-                //   1000
+                //   500
                 // )
 
               case Failure(ex) => 
@@ -138,7 +139,7 @@ object Vizier
       api.projectList()
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       var projects = Var[Option[ProjectList]](None)
-      var projectNameField = Var[Option[dom.Node]](None)
+      val projectNameField = Var[Option[dom.html.Input]](None)
       projectListRequest
         .onComplete {
           case Success(result) => 
@@ -150,10 +151,10 @@ object Vizier
         div(id := "content",
             projects.map {
               case Some(ProjectList(projects, _)) => 
-                div(
-                  ul(
-                    projects.map { projectRef =>
-                      li(
+                div(`class` := "project_list_wrapper",
+                  ul(`class` := "project_list",
+                    projects.zipWithIndex.map { case (projectRef, idx) =>
+                      li((if(idx % 2 == 0) { `class` := "even" } else { `class` := "odd" }),
                         a(
                           href := s"project.html?project=${projectRef.id}",
                           span(
@@ -164,9 +165,12 @@ object Vizier
                                 .getOrElse { "Untitled Project" }
                             ):String
                           ),
-                          span(
-                            `class` := "project_modified",
-                            s"(${projectRef.lastModifiedAt.toLocaleDateString()} ${projectRef.lastModifiedAt.toLocaleTimeString()})"
+                        ),
+                        span(
+                          `class` := "dates",
+                          div(`class` := "date_valign",
+                            div(`class` := "created", "Created: ", nativeTypes.formatDate(projectRef.createdAt)),
+                            div(`class` := "modified", "Modified: ", nativeTypes.formatDate(projectRef.lastModifiedAt)),
                           )
                         )
                       )
@@ -174,20 +178,34 @@ object Vizier
                   ),
                   div(
                     projectNameField.map {
-                      case None => span():dom.Node
-                      case Some(f) => f
+                      case None => 
+                        div(
+                          button(
+                            `class` := "create_project",
+                            onclick := { (_:dom.MouseEvent) => 
+                              projectNameField() = 
+                                Some(input(`type` := "text", placeholder := "Project Name").render)
+                              projectNameField.now.get.focus()
+                            },
+                            "+"
+                          ),
+                          (if(projects.isEmpty){
+                            div(`class` := "hint",
+                                "↑", br(), "Click here to create a project")
+                          } else { div() })
+                        )
+                      case Some(f) => 
+                        div(`class` := "create_project_form", 
+                          f,
+                          button(
+                            onclick := { (_:dom.MouseEvent) =>
+                              createProject(f.value)
+                              projectNameField() = None
+                            },
+                            "Create"
+                          )
+                        )
                     }.reactive,
-                    button(
-                      onclick := { (_:dom.MouseEvent) => 
-                        projectNameField.now match {
-                          case None => projectNameField() = Some(input(`type` := "text"):dom.Node)
-                          case Some(nameField) => 
-                            createProject(projectNameField.now.get.asInstanceOf[dom.html.Input].value)
-                            projectNameField() = None
-                        }
-                      },
-                      "Create Project"
-                    )
                   )
                 )
               case None => 
