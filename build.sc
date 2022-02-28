@@ -1,5 +1,7 @@
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`org.scala-js::scalajs-env-jsdom-nodejs:1.0.0`
+import $ivy.`org.slf4j:slf4j-simple:1.6.1`
+import $ivy.`io.bit3:jsass:5.10.4`
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
@@ -7,6 +9,7 @@ import mill.scalajslib._
 import coursier.maven.{ MavenRepository }
 import mill.util.Ctx
 import mill.api.{ Result, PathRef }
+import io.bit3.jsass.{ Compiler => SassCompiler, Options => SassOptions }
 
 
 /*************************************************
@@ -216,11 +219,36 @@ object vizier extends ScalaModule with PublishModule {
         .map { PathRef(_) }
     )
 
+    def sass = T.sources {
+      os.walk(millSourcePath / "css")
+        .filter { _.ext == "scss" }
+        .map { PathRef(_) }
+    }
+
+    def compiledSass = T {
+      val compiler = new SassCompiler()
+      val options = new SassOptions()
+      val target = T.dest
+
+      for(src <- sass()){
+        val out = (target / (src.path.baseName + ".css"))
+        println(s"IGNORE THE FOLLOWING DEPRECATION WARNING: https://gitlab.com/jsass/jsass/-/issues/95")
+        val output = compiler.compileFile(
+                        new java.net.URI((src.path.toString).toString),
+                        new java.net.URI(out.toString),
+                        options
+                      )
+        os.write(out, output.getCss)
+      }
+      target
+    }
+
     // CSS files
     //   Take all of the files in vizier/ui/css and put them into the resource
     //   directory / css
     def css = T.sources {
       os.walk(millSourcePath / "css")
+        .filter { _.ext == "css" }
         .map { PathRef(_) }
     }
 
@@ -235,38 +263,22 @@ object vizier extends ScalaModule with PublishModule {
     // The following rule and function actually build the resources directory
     //     
     def resourceDir = T { 
-      buildUIResourceDir(
-        uiBinary = fastOpt().path,
-        vendor = ( vendor().map { _.path }, os.read(vendorLicense().path) ),
-        assets = html().map { x => (x.path -> os.rel / x.path.last) } ++
-                 css().map { x => (x.path -> os.rel / "css" / x.path.last) } ++
-                 fonts().map { x => (x.path -> os.rel / "fonts" / x.path.last) }
-
-      )
-    }
-  
-    def buildUIResourceDir(
-      uiBinary: os.Path,
-      vendor: (Seq[os.Path], String),
-      assets: Seq[(os.Path, os.RelPath)]
-    )(implicit ctx: Ctx): Result[os.Path] =
-    {
-      val target = ctx.dest
+      val target = T.dest
 
       // Vizier UI binary
       os.copy.over(
-        uiBinary,
+        fastOpt().path,
         target / "ui" / "vizier.js",
         createFolders = true
       )
       os.copy.over(
-        uiBinary / os.up / (uiBinary.last+".map"),
-        target / "ui" / (uiBinary.last+".map"),
+        fastOpt().path / os.up / (fastOpt().path.last+".map"),
+        target / "ui" / (fastOpt().path.last+".map"),
         createFolders = true
       )
 
       // Vendor JS
-      for(source <- vendor._1){
+      for(source <- vendor().map { _.path }){
         os.copy.over(
           source,
           target / "ui" / "vendor" / source.segments.toSeq.last,
@@ -275,10 +287,15 @@ object vizier extends ScalaModule with PublishModule {
       }
       os.write(
         target / "ui" / "vendor" / "LICENSE.txt",
-        vendor._2 + "\n"
+        os.read(vendorLicense().path) + "\n"
       )
 
-      // Assets
+      val assets = html().map { x => (x.path -> os.rel / x.path.last) } ++
+                   css().map { x => (x.path -> os.rel / "css" / x.path.last) } ++
+                   fonts().map { x => (x.path -> os.rel / "fonts" / x.path.last) } ++
+                   os.walk(compiledSass()).map { x => (x -> os.rel / "css" / x.last) }
+
+      // Copy Assets
       for((asset, assetTarget) <- assets){
         os.copy.over(
           asset,
@@ -288,7 +305,7 @@ object vizier extends ScalaModule with PublishModule {
       }
 
       println(s"Generated UI resource dir: $target")
-      return target
+      target
     }
   }
 

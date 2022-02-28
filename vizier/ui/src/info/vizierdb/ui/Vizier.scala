@@ -89,12 +89,12 @@ object Vizier
                 //     val module = 
                 //       workflow.moduleViewsWithEdits
                 //               .appendTentative()
-                //     module.activeView.trigger { _ match {
-                //       case Some(Left(commandlist)) =>
-                //         commandlist.simulateClick("data", "load")
-                //       case _ => 
-                //         println("Waiting...")
-                //     }}
+                //     // module.activeView.trigger { _ match {
+                //     //   case Some(Left(commandlist)) =>
+                //     //     commandlist.simulateClick("data", "load")
+                //     //   case _ => 
+                //     //     println("Waiting...")
+                //     // }}
                 //   },
                 //   500
                 // )

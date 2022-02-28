@@ -1,3 +1,13 @@
+$alt_row_grey: #ddd;
+$background_grey: #ddd;
+$background_error: #de7e64;
+$background_cancelled: #edee3e;
+$background_frozen: #319cbc;
+$background_running: #135b0e;
+$background_highlight: #aaa;
+$red_button: #c00; 
+$green_button: #292;
+
 @keyframes spinner-rotate 
 {
   0% { 
@@ -47,7 +57,7 @@ ul.project_list li
 
 ul.project_list li.odd
 {
-  background-color: #ddd;
+  background-color: $alt_row_grey;
 }
 
 ul.project_list li a
@@ -155,26 +165,26 @@ ul.module_list li.module div.menu
   display: block;
   vertical-align: middle;
   border-radius: 10px 0px 0px 10px;
-  background-color: #ddd;
+  background-color: $background_grey;
   padding-top: 10px;
   padding-bottom: 10px;
   opacity: 0.6;
 }
 ul.module_list li.module.error_state div.menu 
 {
-  background-color: #de7e64;
+  background-color: $background_error;
 }
 ul.module_list li.module.cancelled_state div.menu 
 {
-  background-color: #edee3e;
+  background-color: $background_cancelled;
 }
 ul.module_list li.module.frozen_state div.menu 
 {
-  background-color: #319cbc;
+  background-color: $background_frozen;
 }
 ul.module_list li.module.running_state div.menu 
 {
-  background-color: #135b0e
+  background-color: $background_running;
 }
 ul.module_list li.module:hover div.menu 
 {
@@ -183,7 +193,7 @@ ul.module_list li.module:hover div.menu
 ul.module_list li.module.highlight div.menu 
 {
   opacity: 1;
-  background-color: #aaa;
+  background-color: $background_highlight;
 }
 ul.module_list li.module div.menu button 
 {
@@ -235,7 +245,7 @@ ul.module_list li.module div.module_body div.status span.label
 ul.module_list li.module div.module_body div.summary 
 {
   width: auto;
-  background-color: #eee;
+  background-color: $background_grey;
   border-left: none;
   padding-left: 10px;
   padding-right: 20px;
@@ -280,7 +290,6 @@ ul.module_list div.editor_actions button
   border-radius: 3px;
   font-weight: bold;
   flex-grow: 0;
-  sha
 }
 ul.module_list div.editor_actions div.spacer
 {
@@ -288,19 +297,19 @@ ul.module_list div.editor_actions div.spacer
 }
 ul.module_list div.editor_actions button.cancel 
 {
-  border-color: #c00;
+  border-color: $red_button;
 }
 ul.module_list div.editor_actions button.cancel i.fa
 {
-  color: #c00;
+  color: $red_button;
 }
 ul.module_list div.editor_actions button.save
 {
-  border-color: #292; 
+  border-color: $green_button; 
 }
 ul.module_list div.editor_actions button.save i.fa
 {
-  color: #292;
+  color: $green_button;
 }
 
 /************ Table of Contents ************/
