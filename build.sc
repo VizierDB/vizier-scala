@@ -132,7 +132,8 @@ object vizier extends ScalaModule with PublishModule {
 
   def routes = T { 
     println("Recompiling routes from "+routesFile().head.path); 
-    os.proc("python3", buildRoutesScript().head.path.toString).call() 
+    os.proc("python3", buildRoutesScript().head.path.toString)
+                                          .call( stdout = os.Inherit, stderr = os.Inherit) 
   }
 
   def publishVersion = VERSION

@@ -15,6 +15,7 @@ import info.vizierdb.serialized.ArtifactSummary
 import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.util.StringUtils
 import java.awt.Font
+import info.vizierdb.ui.widgets.Tooltip
 
 class Module(val subscription: ModuleSubscription, workflow: Workflow)
             (implicit owner: Ctx.Owner)
@@ -168,25 +169,25 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
         br(),
         FontAwesome("plus"),
         onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) },
-        tag("tooltip")("Add cell above")
+        Tooltip("Add cell above")
       ),
       button(
         FontAwesome("pencil-square-o"), 
         onclick := { _:dom.MouseEvent => openEditor() },
-        tag("tooltip")("Edit cell")
+        Tooltip("Edit cell")
       ),
       Rx { 
         if (subscription.state() == types.ExecutionState.FROZEN) { 
           button(
             FontAwesome("play"),
             onclick := { (_:dom.MouseEvent) => subscription.thawCell() },
-            tag("tooltip")("Thaw this cell")
+            Tooltip("Thaw this cell")
           )
         } else { 
           button(
             FontAwesome("snowflake-o"), 
             onclick := { (_:dom.MouseEvent) => subscription.freezeCell() },
-            tag("tooltip")("Freeze this cell")
+            Tooltip("Freeze this cell")
           )
         }
       }.reactive,
@@ -197,7 +198,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
             br(),
             FontAwesome("play"), 
             onclick := { (_:dom.MouseEvent) => subscription.thawUpto() },
-            tag("tooltip")("Thaw this cell and all above")
+            Tooltip("Thaw this cell and all above")
           ) 
         } else { 
           button(
@@ -205,21 +206,21 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
             br(),
             FontAwesome("angle-double-down"),
             onclick := { (_:dom.MouseEvent) => subscription.freezeFrom() },
-            tag("tooltip")("Freeze this cell and all below")
+            Tooltip("Freeze this cell and all below")
           )
         }
       }.reactive,
       button(
         FontAwesome("trash-o"), 
         onclick := { (_:dom.MouseEvent) => subscription.delete() },
-        tag("tooltip")("Delete this cell")
+        Tooltip("Delete this cell")
       ),
       button(
         FontAwesome("plus"),
         br(),
         FontAwesome("angle-down"),
         onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) },
-        tag("tooltip")("Add cell below")
+        Tooltip("Add cell below")
       ),
     ),
     div(

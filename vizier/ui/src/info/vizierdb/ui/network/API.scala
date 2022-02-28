@@ -410,6 +410,47 @@ case class API(baseUrl: String)
     }
   }
 
+  /** GET /projects/{projectId:long}/branches/{branchId:long}/workflows/{workflowId:long}/suggest?before:long&after:long **/
+  def workflowSuggest(
+    projectId:Long,
+    branchId:Long,
+    workflowId:Long,
+    before:Option[Long] = None,
+    after:Option[Long] = None,
+  ):Future[Seq[serialized.PackageDescription]] =
+  {
+    val url = makeUrl(s"/projects/${projectId}/branches/${branchId}/workflows/${workflowId}/suggest",
+                      "before" -> before.map { _.toString },
+                      "after" -> after.map { _.toString },
+                     )
+    Ajax.get(
+      url = url,
+    ).map { xhr => 
+      Json.parse(xhr.responseText)
+          .as[Seq[serialized.PackageDescription]]
+    }
+  }
+
+  /** GET /projects/{projectId:long}/branches/{branchId:long}/head/suggest?before:long&after:long **/
+  def workflowHeadSuggest(
+    projectId:Long,
+    branchId:Long,
+    before:Option[Long] = None,
+    after:Option[Long] = None,
+  ):Future[Seq[serialized.PackageDescription]] =
+  {
+    val url = makeUrl(s"/projects/${projectId}/branches/${branchId}/head/suggest",
+                      "before" -> before.map { _.toString },
+                      "after" -> after.map { _.toString },
+                     )
+    Ajax.get(
+      url = url,
+    ).map { xhr => 
+      Json.parse(xhr.responseText)
+          .as[Seq[serialized.PackageDescription]]
+    }
+  }
+
   /** GET /projects/{projectId:long}/branches/{branchId:long}/workflows/{workflowId:long}/modules/{modulePosition:int} **/
   def workflowGetModule(
     projectId:Long,

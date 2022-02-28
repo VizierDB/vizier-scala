@@ -43,6 +43,11 @@ object Commands
 
 
   def describe: Seq[serialized.PackageDescription] =
+    describe { (_:String,_:String) => Some(false) }
+
+  def describe(
+    suggest: (String, String) => Option[Boolean]
+  ): Seq[serialized.PackageDescription] =
   {
     packages.values.map { pkg => 
       serialized.PackageDescription(
@@ -55,7 +60,7 @@ object Commands
               id = commandId,
               name = command.name,
               parameters = Parameter.describe(command.parameters),
-              suggest = Some(false),
+              suggest = suggest(pkg.id, commandId),
               hidden = Some(command.hidden)
             )
           }.toSeq

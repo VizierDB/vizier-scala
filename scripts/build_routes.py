@@ -309,6 +309,11 @@ with open(WEBSOCKET_IMPL_FILE, "w") as f:
       for (fieldName, fieldType) in body_fields
     ]
 
+    fields_with_types = [
+      (fieldName, fieldType.replace("UndefOr[", "Option["))
+      for fieldName, fieldType in fields_with_types
+    ]
+    
     internalArgs = [
       f"{arg} = {arg}"
       for arg in WEBSOCKET_INTERNAL_ARGS
@@ -366,6 +371,11 @@ with open(WEBSOCKET_PROXY_FILE, "w") as f:
     ] + [
       (fieldName, fieldType.replace("FILE", "(Array[Byte], String)"))
       for (fieldName, fieldType) in body_fields
+    ]
+
+    fields_with_types = [
+      (fieldName, fieldType.replace("UndefOr[", "Option["))
+      for fieldName, fieldType in fields_with_types
     ]
 
     fieldString = ", ".join(

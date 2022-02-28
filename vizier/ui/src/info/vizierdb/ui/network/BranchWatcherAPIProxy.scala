@@ -30,6 +30,9 @@ abstract class BranchWatcherAPIProxy
   def workflowAppend(packageId:String, commandId:String, arguments:serialized.CommandArgumentList.T): Future[serialized.WorkflowDescription] =
     sendRequest(Seq("workflowAppend"), Map("packageId" -> Json.toJson(packageId), "commandId" -> Json.toJson(commandId), "arguments" -> Json.toJson(arguments)))
        .map { _.as[serialized.WorkflowDescription] }
+  def workflowSuggest(before:Long, after:Long): Future[Seq[serialized.PackageDescription]] =
+    sendRequest(Seq("workflowSuggest"), Map("before" -> Json.toJson(before), "after" -> Json.toJson(after)))
+       .map { _.as[Seq[serialized.PackageDescription]] }
   def workflowGetModule(modulePosition:Int): Future[serialized.ModuleDescription] =
     sendRequest(Seq("workflowGetModule"), Map("modulePosition" -> Json.toJson(modulePosition)))
        .map { _.as[serialized.ModuleDescription] }

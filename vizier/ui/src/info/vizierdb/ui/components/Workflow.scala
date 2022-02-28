@@ -20,7 +20,7 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
     subscription.modules
                 .rxMap { module => new Module(module, this) }
 
-  val moduleViewsWithEdits = new TentativeEdits(moduleViews, project)
+  val moduleViewsWithEdits = new TentativeEdits(moduleViews, project, this)
 
   val moduleNodes =
     RxBufferView(ul(`class` := "module_list"), 

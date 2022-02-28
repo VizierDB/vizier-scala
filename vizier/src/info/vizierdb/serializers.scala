@@ -5,9 +5,30 @@ import info.vizierdb.api.AppendModule
 import info.vizierdb.spark.{ SparkSchema, SparkPrimitive }
 import java.time.format.{ DateTimeFormatter, DateTimeParseException }
 import java.time.{ ZonedDateTime, LocalDateTime, ZoneId }
+import info.vizierdb.types.Identifier
 
 object serializers
 {
+  /**
+   * 2022 by OK: not sure why this is required.  I think that because
+   * Identifier is a non-boxed type, there's not an implicit chain to
+   * allow Option to wrap it.
+   */
+  implicit val optionalIdentifierFormat = Format[Option[Identifier]](
+    new Reads[Option[Identifier]] {
+      def reads(j: JsValue): JsResult[Option[Identifier]] = 
+        j match { 
+          case JsNull => JsSuccess(None)
+          case JsNumber(i) => JsSuccess(Some(i.toLong))
+          case _ => JsError()
+        }
+    },
+    new Writes[Option[Identifier]] {
+      def writes(j: Option[Identifier]) =
+        j.map { JsNumber(_) }.getOrElse { JsNull}
+    }
+  )
+
   implicit val sparkPrimitiveFormat = SparkSchema.dataTypeFormat
   implicit val zonedDateTimeFormat = Format[ZonedDateTime](
     new Reads[ZonedDateTime] {

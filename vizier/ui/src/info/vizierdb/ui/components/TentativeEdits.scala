@@ -31,17 +31,17 @@ import info.vizierdb.util.Logging
  * the initial implementation, I'm keeping these as-is.  In the longer term (TODO) it
  * would probably be a good idea to implement this as a sort of Tree structure.  
  */
-class TentativeEdits(val project: Project)
+class TentativeEdits(val project: Project, val workflow: Workflow)
                     (implicit owner: Ctx.Owner)
   extends RxBufferBase[Module,Either[Module,TentativeModule]]
      with RxBufferWatcher[Module]
      with Logging
 {
 
-  def this(input: RxBuffer[Module], project: Project)
+  def this(input: RxBuffer[Module], project: Project, workflow: Workflow)
           (implicit owner: Ctx.Owner)
   {
-    this(project)
+    this(project, workflow)
     this.onInsertAll(0, input.elements)
     input.deliverUpdatesTo(this)
   }

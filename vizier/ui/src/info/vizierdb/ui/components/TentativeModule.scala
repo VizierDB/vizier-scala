@@ -11,6 +11,7 @@ import scala.concurrent.{ Future, Promise }
 import info.vizierdb.types.Identifier
 import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.util.Trie
 
 class TentativeModule(
   var position: Int, 
@@ -63,7 +64,10 @@ class TentativeModule(
         editList
           .project
           .api
-          .packages
+          .workflowHeadSuggest(
+            editList.project.projectId,
+            editList.project.activeBranch.now.get,
+          )
           .onSuccess { case packages => 
             activeView() = Some(Left(new CommandList(packages, this)))
           }
@@ -104,33 +108,102 @@ class TentativeModule(
 class CommandList(
   packages: Seq[serialized.PackageDescription], 
   module: TentativeModule
-){
+)(implicit owner:Ctx.Owner){
+
+  val keywords = 
+    Trie.ofSeq[String](
+      packages.flatMap { pkg =>
+        val packageKeywords = pkg.name.toLowerCase.split("[^a-zA-Z]") :+ pkg.id
+        pkg.commands.toSeq
+           .filterNot { _.hidden.getOrElse { false } }
+           .flatMap { cmd => 
+              val commandKeywords =
+                packageKeywords ++
+                  cmd.name.toLowerCase.split(" +") :+ 
+                  cmd.id
+              val commandKey = s"${pkg.id}.${cmd.id}"
+              commandKeywords.map { _ -> commandKey }
+           }
+      }
+    )
+
+  val searchField =
+    input(
+      placeholder := "keywords",
+      onkeypress := { _:dom.Event =>  
+                        dom.window.requestAnimationFrame { _ => refreshSelectedCommands() } }
+    ).render
+
+  val selectedCommands = Var[Set[String]](Set.empty)
+
+  def refreshSelectedCommands():Unit =
+  {
+    val term = searchField.value:String
+    if(term.isEmpty()){ selectedCommands() = Set[String]() }
+    else {
+      selectedCommands() = keywords.prefixMatch(term)
+    }
+  }
+
+
   val root = 
-    div(`class` := "select-command", 
-      ul(
-        `class` := "command_list",
-        packages.map { pkg => 
-          li(b(pkg.name), 
-            div(
-              pkg.commands.toSeq
-                  .filterNot { _.hidden.getOrElse { false } }
-                  .map { cmd => 
-                    button(cmd.name, onclick := { 
-                      (e: dom.MouseEvent) => module.selectCommand(pkg.id, cmd)
-                    })
-                  }
+    div(`class` := "select_command", 
+      div(`class` := "command_search",
+        FontAwesome("search"),
+        searchField,
+        Rx { 
+          if(selectedCommands().isEmpty) {
+            button(
+              FontAwesome("ban"),
+              visibility := "hidden"
             )
-          )
-        },
-        div(`class` := "editor_actions",
-          button(
-            FontAwesome("ban"),
-            " Cancel", 
-            `class` := "cancel",
-            onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() }
-          )
-        )
+          } else {
+            button(
+              FontAwesome("ban"),
+              onclick := { _:dom.Event =>
+                searchField.value = ""
+                dom.window.requestAnimationFrame( _ => refreshSelectedCommands() )
+              }
+            )
+          }
+        }.reactive
       ),
+      Rx {
+        val activeSelection = selectedCommands()
+        ul(
+          `class` := "command_list",
+          packages.map { pkg => 
+            li(b(pkg.name), 
+              div(
+                pkg.commands.toSeq
+                    .filterNot { _.hidden.getOrElse { false } }
+                    .map { cmd => 
+                      val isSuggested = 
+                        if(activeSelection.isEmpty){
+                          cmd.suggest.getOrElse(false)
+                        } else {
+                          activeSelection(s"${pkg.id}.${cmd.id}")
+                        }
+                      button(
+                        cmd.name, 
+                        `class` := s"command${if(isSuggested){ " suggested" } else { "" }}",
+                        onclick := { 
+                          (e: dom.MouseEvent) => module.selectCommand(pkg.id, cmd)
+                        })
+                    }
+              )
+            )
+          },
+        )
+      }.reactive,
+      div(`class` := "editor_actions",
+        button(
+          FontAwesome("ban"),
+          " Cancel", 
+          `class` := "cancel",
+          onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() }
+        )
+      )
     )
 
   def simulateClick(packageId: String, commandId: String) =
