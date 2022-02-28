@@ -1,5 +1,7 @@
 $alt_row_grey: #ddd;
+$deemphasize_alpha: 0.6;
 $background_grey: #ddd;
+$background_grey_deemphasized: #ebebeb;
 $background_error: #de7e64;
 $background_cancelled: #edee3e;
 $background_frozen: #319cbc;
@@ -146,170 +148,198 @@ button.add_cell_end
   margin-right: auto;
 }
 
+// The overall module list
 ul.module_list 
 { 
   list-style: none;
   padding: 3px;
-}
 
-ul.module_list li.module 
-{
-  display: flex;
-  margin-top: 10px;
-}
+  // An individual module (tentative or real)
+  li.module 
+  {
+    display: flex;
+    margin-top: 10px;
 
-ul.module_list li.module div.menu 
-{
-  min-width: 50px;
-  max-width: 50px;
-  display: block;
-  vertical-align: middle;
-  border-radius: 10px 0px 0px 10px;
-  background-color: $background_grey;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  opacity: 0.6;
-}
-ul.module_list li.module.error_state div.menu 
-{
-  background-color: $background_error;
-}
-ul.module_list li.module.cancelled_state div.menu 
-{
-  background-color: $background_cancelled;
-}
-ul.module_list li.module.frozen_state div.menu 
-{
-  background-color: $background_frozen;
-}
-ul.module_list li.module.running_state div.menu 
-{
-  background-color: $background_running;
-}
-ul.module_list li.module:hover div.menu 
-{
-  opacity: 1;
-}
-ul.module_list li.module.highlight div.menu 
-{
-  opacity: 1;
-  background-color: $background_highlight;
-}
-ul.module_list li.module div.menu button 
-{
-  width: 35px;
-  height: 35px;
-  margin-top: 5px;
-  top: 0px;
-  bottom: 0px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  position: relative;
-  font-size: 80%;
-}
-ul.module_list li.module div.menu button tooltip 
-{
-  width: 200px;
-  background-color: black;
-  color: #fff;
-  text-align: center;
-  padding: 5px;
-  border-radius: 10px;
-  position: absolute;
-  z-index: 1;
-  top: 4px;
-  visibility: hidden;
-  left: calc(100% + 10px);
-}
-ul.module_list li.module div.menu button:hover tooltip 
-{
-  visibility: visible;
-}
-ul.module_list li.module div.module_body 
-{
-  padding-left: 0px;
-  max-width: 100%;
-  min-width: 400px;
-}
-ul.module_list li.module div.module_body div.status 
-{
-  font-size: 80%;
-  font-family: monospace;
-  margin: 5px;
-}
-ul.module_list li.module div.module_body div.status span.label 
-{
-  font-weight: bold;
-}
-ul.module_list li.module div.module_body div.summary 
-{
-  width: auto;
-  background-color: $background_grey;
-  border-left: none;
-  padding-left: 10px;
-  padding-right: 20px;
-  border-radius: 0px 10px 10px 0px;
-  display: inline-block;
-  font-size: 120%;
-  font-weight: bold;
-}
-ul.module_list li.module div.module_body div.summary.hidden 
-{
-  visibility: hidden;
-  position: fixed;
-}
-ul.module_list li.module div.module_body div.editor 
-{
-  padding-left: 10px;
-}
+    // The menu is the "tab" to the left of each module
+    div.menu 
+    {
+      min-width: 50px;
+      max-width: 50px;
+      display: block;
+      vertical-align: middle;
+      border-radius: 10px 0px 0px 10px;
+      background-color: $background_grey;
+      padding-top: 10px;
+      padding-bottom: 10px;
 
-ul.module_list li.module div.select-command ul.command_list 
-{
-  padding: 10px;
-  list-style: none;
-}
-ul.module_list li.module div.select-command ul.command_list li 
-{
-  margin-top: 10px;
-}
+      // Blur the menu slightly so that we can emphasize it with
+      // a mouse-over or other highlight.
+      opacity: $deemphasize_alpha;
 
-ul.module_list div.editor_actions 
-{
-  margin-top: 20px;
-  width: 100%;
-  display: flex;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-ul.module_list div.editor_actions button 
-{
-  width: 160px;
-  height: 40px;
-  border: 1px solid gray;
-  border-radius: 3px;
-  font-weight: bold;
-  flex-grow: 0;
-}
-ul.module_list div.editor_actions div.spacer
-{
-  flex-grow: 1;
-}
-ul.module_list div.editor_actions button.cancel 
-{
-  border-color: $red_button;
-}
-ul.module_list div.editor_actions button.cancel i.fa
-{
-  color: $red_button;
-}
-ul.module_list div.editor_actions button.save
-{
-  border-color: $green_button; 
-}
-ul.module_list div.editor_actions button.save i.fa
-{
-  color: $green_button;
+      // Buttons in the menu
+      button
+      {
+        width: 35px;
+        height: 35px;
+        margin-top: 5px;
+        top: 0px;
+        bottom: 0px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        position: relative;
+        font-size: 80%;
+
+        // The mouseover tooltip for the button
+        tooltip
+        {
+          width: 200px;
+          background-color: black;
+          color: #fff;
+          text-align: center;
+          padding: 5px;
+          border-radius: 10px;
+          position: absolute;
+          z-index: 1;
+          top: 4px;
+          visibility: hidden;
+          left: calc(100% + 10px);
+        }
+
+        &:hover tooltip
+        {
+          visibility: visible;
+        }
+      }
+    }
+
+    // Color the menu based on the module's lifecycle state
+    &.error_state 
+    {
+      div.menu { background-color: $background_error; }
+    }
+    &.cancelled_state 
+    {
+      div.menu { background-color: $background_cancelled; }
+    }
+    &.frozen_state
+    {
+      div.menu { background-color: $background_frozen; }
+    }
+    &.running_state
+    {
+      div.menu { background-color: $background_running; }
+    }
+    &.running_state
+    {
+      div.menu { background-color: $background_running; }
+    }
+
+    // Deblur the menu when the module is moused over
+    &:hover
+    {
+      div.menu { opacity: 1; }
+    }
+    // Deblur and emphasize the menu when the module is moused over in the ToC
+    &.highlight
+    {
+      div.menu
+      {
+        opacity: 1;
+        background-color: $background_highlight;
+      }
+    }
+
+    div.module_body
+    {
+      padding-left: 0px;
+      max-width: 100%;
+      min-width: 400px;
+
+      div.status
+      {
+        font-size: 80%;
+        font-family: monospace;
+        margin: 5px;
+
+        span.label
+        {
+          font-weight: bold;
+        }
+      }
+
+      div.summary
+      {
+        width: auto;
+        background-color: $background_grey_deemphasized;
+        border-left: none;
+        padding-left: 10px;
+        padding-right: 20px;
+        border-radius: 0px 10px 10px 0px;
+        display: inline-block;
+        font-size: 120%;
+        font-weight: bold;
+
+        &.hidden
+        {
+          visibility: hidden;
+          // pull the rendering out of the flow.
+          position: fixed;
+        }
+      }
+
+      div.editor
+      {
+        padding-left: 10px;
+      }
+    }
+
+    div.select-command
+    {
+      ul.command_list
+      {
+        padding: 10px;
+        list-style: none;
+
+        li { margin-top: 10px; }
+      }
+    }
+
+    div.editor_actions
+    {
+      margin-top: 20px;
+      width: 100%;
+      display: flex;
+      padding-left: 5px;
+      padding-right: 5px;
+
+      button
+      {
+        width: 160px;
+        height: 40px;
+        border: 1px solid gray;
+        border-radius: 3px;
+        font-weight: bold;
+        flex-grow: 0;
+
+        &.cancel
+        {
+          border-color: $red_button;
+          i.fa { color: $red_button; }
+        }
+        &.save
+        {
+          border-color: $green_button;
+          i.fa { color: $green_button; }
+        }
+      }
+
+      div.spacer
+      { 
+        flex-grow: 1;
+      }
+    }
+  }
 }
 
 /************ Table of Contents ************/

@@ -9,7 +9,7 @@ import mill.scalajslib._
 import coursier.maven.{ MavenRepository }
 import mill.util.Ctx
 import mill.api.{ Result, PathRef }
-import io.bit3.jsass.{ Compiler => SassCompiler, Options => SassOptions }
+import io.bit3.jsass.{ Compiler => SassCompiler, Options => SassOptions, OutputStyle => SassOutputStyle }
 
 
 /*************************************************
@@ -229,18 +229,17 @@ object vizier extends ScalaModule with PublishModule {
       val compiler = new SassCompiler()
       val options = new SassOptions()
       val target = T.dest
+      options.setOutputStyle(SassOutputStyle.COMPRESSED)
 
-      for(src <- sass()){
-        val out = (target / (src.path.baseName + ".css"))
-        println(s"IGNORE THE FOLLOWING DEPRECATION WARNING: https://gitlab.com/jsass/jsass/-/issues/95")
-        val output = compiler.compileFile(
-                        new java.net.URI((src.path.toString).toString),
-                        new java.net.URI(out.toString),
-                        options
-                      )
-        os.write(out, output.getCss)
-      }
-      target
+      val src = sass().filter { _.path.last == "vizier.scss" }.head
+      val out = target / "vizier.css"
+      println(s"IGNORE THE FOLLOWING DEPRECATION WARNING: https://gitlab.com/jsass/jsass/-/issues/95")
+      val output = compiler.compileFile(
+                      new java.net.URI((src.path.toString).toString),
+                      new java.net.URI(out.toString),
+                      options
+                    )
+      output.getCss
     }
 
     // CSS files
@@ -292,8 +291,7 @@ object vizier extends ScalaModule with PublishModule {
 
       val assets = html().map { x => (x.path -> os.rel / x.path.last) } ++
                    css().map { x => (x.path -> os.rel / "css" / x.path.last) } ++
-                   fonts().map { x => (x.path -> os.rel / "fonts" / x.path.last) } ++
-                   os.walk(compiledSass()).map { x => (x -> os.rel / "css" / x.last) }
+                   fonts().map { x => (x.path -> os.rel / "fonts" / x.path.last) }
 
       // Copy Assets
       for((asset, assetTarget) <- assets){
@@ -303,6 +301,11 @@ object vizier extends ScalaModule with PublishModule {
           createFolders = true
         )
       }
+      os.write(
+        target / "ui" / "css" / "vizier.css",
+        compiledSass(),
+        createFolders = true
+      )
 
       println(s"Generated UI resource dir: $target")
       target
