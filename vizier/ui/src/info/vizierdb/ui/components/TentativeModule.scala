@@ -130,7 +130,7 @@ class CommandList(
   val searchField =
     input(
       placeholder := "Search modules...",
-      onkeypress := { _:dom.Event =>  
+      onkeydown := { _:dom.Event =>  
                         dom.window.requestAnimationFrame { _ => refreshSelectedCommands() } }
     ).render
 

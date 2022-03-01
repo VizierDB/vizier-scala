@@ -75,6 +75,15 @@ object Vizier
               case Success(response) => 
                 project() = Some(new Project(projectId, api).load(response))
                 logger.debug(s"Project: ${project.now.get}")
+                document.addEventListener("keydown", { (evt:dom.KeyboardEvent) => 
+                  if(evt.key == "Enter" && evt.ctrlKey){
+                    project.now.foreach { 
+                      _.workflow.now.foreach {
+                        _.moduleViewsWithEdits.saveAllCells()
+                      }
+                    }
+                  }
+                })
 
                 // The following bit can be uncommented for onLoad triggers
                 // to automate development debugging

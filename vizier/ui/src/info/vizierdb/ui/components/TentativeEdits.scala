@@ -261,4 +261,15 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     refreshModuleState()
   }
 
+  /**
+   * Cause all pending cells to be saved
+   */
+  def saveAllCells() =
+  {
+    elements.map {
+      case Left(module) => module.editor.now
+      case Right(module) => module.editor.now
+    }.foreach { _.foreach { _.saveState() } }
+  }
+
 }
