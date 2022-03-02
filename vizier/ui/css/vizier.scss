@@ -55,13 +55,15 @@ ul.project_list
 }
 ul.project_list li
 {
+  margin-top: 10px;
   width: calc(100% - 20px);
   padding: 10px;
   display: flex;
   height: 40px;
+  justify-content: space-between;
 }
 
-ul.project_list li.odd
+ul.project_list li.even
 {
   background-color: $alt_row_grey;
 }
@@ -69,7 +71,8 @@ ul.project_list li.odd
 ul.project_list li a
 {
   font-size: 120%;
-  flex-grow: 1;
+  flex-grow: 10;
+  min-width: 200px;
   height: 100%;
   font-weight: bold;
   padding-left: 10px;
@@ -102,6 +105,7 @@ div.project_list_wrapper button.create_project
   margin-right: auto;
   margin-top: 10px;
   margin-bottom: 10px;
+  padding: 0px;
 }
 
 div.project_list_wrapper div.hint 
@@ -150,6 +154,8 @@ button.add_cell_end
   display: block;
   margin-left: auto;
   margin-right: auto;
+  padding: 0px;
+  text-align: center;
 }
 
 // The overall module list
@@ -175,6 +181,7 @@ ul.module_list
       background-color: $background_grey;
       padding-top: 10px;
       padding-bottom: 10px;
+      margin-right: 0px;
 
       // Blur the menu slightly so that we can emphasize it with
       // a mouse-over or other highlight.
@@ -183,8 +190,8 @@ ul.module_list
       // Buttons in the menu
       button
       {
-        width: 35px;
-        height: 35px;
+        width: 40px;
+        height: 40px;
         margin-top: 5px;
         top: 0px;
         bottom: 0px;
@@ -193,6 +200,8 @@ ul.module_list
         margin-right: auto;
         position: relative;
         font-size: 80%;
+        padding: 0px;
+        text-align: center;
       }
     }
 
@@ -273,7 +282,7 @@ ul.module_list
 
       div.editor
       {
-        padding-left: 10px;
+        margin-left: 0px;
       }
     }
 
@@ -668,6 +677,9 @@ div.module.editable.load_dataset div.back_button_wrapper
 {
   width: 40px;
   flex-grow: none;
+  display: inline-block;
+
+  button { width: 20px; }
 }
 div.module.editable.load_dataset div.url
 {

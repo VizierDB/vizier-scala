@@ -128,6 +128,8 @@ object serializers
   )
   implicit val updateCellOutputsFormat: Format[delta.UpdateCellOutputs] = Json.format
   implicit val advanceResultIdFormat: Format[delta.AdvanceResultId] = Json.format
+  implicit val updateBranchPropertiesFormat: Format[delta.UpdateBranchProperties] = Json.format
+  implicit val updateProjectPropertiesFormat: Format[delta.UpdateProjectProperties] = Json.format
   implicit val workflowDeltaFormat: Format[delta.WorkflowDelta] = Format(
     new Reads[delta.WorkflowDelta]() {
       def reads(j: JsValue): JsResult[delta.WorkflowDelta] =
@@ -140,6 +142,8 @@ object serializers
           case delta.WorkflowDelta.UPDATE_CELL_OUTPUTS  => JsSuccess(j.as[delta.UpdateCellOutputs])
           case delta.WorkflowDelta.ADVANCE_RESULT_ID    => JsSuccess(j.as[delta.AdvanceResultId])
           case delta.WorkflowDelta.UPDATE_CELL_ARGUMENTS => JsSuccess(j.as[delta.UpdateCellArguments])
+          case delta.WorkflowDelta.UPDATE_BRANCH_PROPERTIES  => JsSuccess(j.as[delta.UpdateBranchProperties])
+          case delta.WorkflowDelta.UPDATE_PROJECT_PROPERTIES => JsSuccess(j.as[delta.UpdateProjectProperties])
           case _ => JsError()
         }
     },
@@ -154,6 +158,8 @@ object serializers
           case x:delta.UpdateCellOutputs  => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_OUTPUTS))
           case x:delta.AdvanceResultId    => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.ADVANCE_RESULT_ID))
           case x:delta.UpdateCellArguments => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_ARGUMENTS))
+          case x:delta.UpdateBranchProperties  => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_BRANCH_PROPERTIES))
+          case x:delta.UpdateProjectProperties => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_PROJECT_PROPERTIES))
         }
     }
   )

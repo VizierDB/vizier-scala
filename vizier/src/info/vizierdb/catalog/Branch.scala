@@ -25,7 +25,7 @@ import info.vizierdb.catalog.binders._
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.viztrails.{ Scheduler, StateTransition, ScopeSummary }
-import info.vizierdb.delta.DeltaBus
+import info.vizierdb.delta.{ DeltaBus, UpdateBranchProperties }
 import ExecutionState.{ WAITING, STALE, RUNNING, ERROR, CANCELLED, DONE, FROZEN }
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
@@ -542,6 +542,7 @@ case class Branch(
              b.modified   -> now)
         .where.eq(b.id, id)
     }.update.apply()
+    DeltaBus.notify(id, UpdateBranchProperties(properties))
     Branch.get(id)
   }
 }

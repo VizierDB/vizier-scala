@@ -13,6 +13,7 @@ import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
 import info.vizierdb.types.Identifier
 import info.vizierdb.nativeTypes.JsValue
+import play.api.libs.json.JsString
 
 class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = true)
              (implicit owner: Ctx.Owner)
@@ -24,7 +25,6 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
     properties().get("name")
                 .map { _.as[String] }
                 .getOrElse { "Untitled Project" } }
-
   val branches = Var[Map[Identifier, serialized.BranchSummary]](Map.empty)
   val activeBranch = Var[Option[Identifier]](None)
   val activeBranchName = Rx {
@@ -53,6 +53,16 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
     return this
   }
 
+  def setProjectName(name: String): Unit =
+  {
+    api.projectUpdate(projectId,
+      serialized.PropertyList
+                .toPropertyList(
+                  properties.now ++ Map("name" -> JsString(name))
+                )
+    )
+  }
+
   var branchSubscription: Option[BranchSubscription] = None
   val workflow = Var[Option[Workflow]](None) 
   val tableOfContents:Rx[Option[TableOfContents]] = 
@@ -64,7 +74,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
       branchSubscription.foreach { _.close() }
       branchSubscription = 
         activeBranch.now.map { branch =>
-          new BranchSubscription(projectId, branch, api)
+          new BranchSubscription(this, branch, api)
         }
       workflow() = branchSubscription.map { new Workflow(_, this) }
     }

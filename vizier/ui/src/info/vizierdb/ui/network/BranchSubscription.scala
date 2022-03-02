@@ -17,8 +17,13 @@ import info.vizierdb.api.websocket
 import info.vizierdb.delta
 import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
+import info.vizierdb.ui.components.Project
 
-class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: API)
+class BranchSubscription(
+  project: Project, 
+  branchId: Identifier, 
+  val api: API
+)
   extends Object
   with Logging
 {
@@ -30,6 +35,7 @@ class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: A
   val modules = new RxBufferVar[ModuleSubscription]()
   val maxTimeWithoutNotification: Long = 5000L
   var executionStartTime: Long = -1
+  val properties = Var[Map[String, JsValue]](Map.empty)
   
   protected[ui] def getSocket(): dom.WebSocket =
   {
@@ -82,7 +88,7 @@ class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: A
     logger.debug("Connected!")
     awaitingReSync() = true
     
-    Client.subscribe(projectId, branchId)
+    Client.subscribe(project.projectId, branchId)
           .onSuccess { case workflow => onSync(workflow) } 
   }
   def onClosed(event: dom.Event)
@@ -211,6 +217,17 @@ class BranchSubscription(projectId: Identifier, branchId: Identifier, val api: A
                       artifact.name -> Some(artifact)
                   }
                   .toMap
+
+              /////////////////////////////////////////////////
+
+              case delta.UpdateBranchProperties(newProperties) => 
+                properties() = newProperties
+
+              /////////////////////////////////////////////////
+
+              case delta.UpdateProjectProperties(newProperties) => 
+                project.properties() = newProperties
+                
             }
         }
   }
