@@ -16,6 +16,7 @@ import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.util.StringUtils
 import java.awt.Font
 import info.vizierdb.ui.widgets.Tooltip
+import info.vizierdb.ui.widgets.ConfirmableButton
 
 class Module(val subscription: ModuleSubscription, workflow: Workflow)
             (implicit owner: Ctx.Owner)
@@ -210,11 +211,12 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
           )
         }
       }.reactive,
-      button(
+      ConfirmableButton(
         FontAwesome("trash-o"), 
-        onclick := { (_:dom.MouseEvent) => subscription.delete() },
         Tooltip("Delete this cell")
-      ),
+      ) {
+        _ => subscription.delete();  
+      },
       button(
         FontAwesome("plus"),
         br(),

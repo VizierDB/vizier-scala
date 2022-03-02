@@ -766,3 +766,41 @@ button
     visibility: visible;
   }
 }
+
+div.confirmable_button_wrapper
+{
+  // display: flex;
+  position: relative;
+
+  &.closed 
+  {
+    div.confirmable_button
+    {
+      visibility: hidden;
+    }
+  }
+
+  &.open
+  {
+    button
+    {
+      color: $red_button;
+    }
+  }
+
+  div.confirmable_button
+  {
+    left: 50px;
+    bottom: 0px;
+    position: absolute;
+    display: flex;
+    vertical-align: middle;
+    z-index: $tooltip_layer;
+
+    button
+    {
+      color: $green_button;
+    }
+  }
+
+}
