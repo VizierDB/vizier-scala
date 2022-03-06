@@ -1,5 +1,6 @@
 package info.vizierdb.ui.components
 
+import play.api.libs.json._
 import org.scalajs.dom
 import scala.scalajs.js
 import scalatags.JsDom.all._
@@ -83,6 +84,31 @@ object VegaMessage
 
 //////////////////////////////////////////////////////////////
 
+case class JavascriptMessage(code: String, html: String, js_deps: Option[Seq[String]]) extends Message
+{
+  val root:dom.html.Div = 
+    // if(js_deps.isEmpty) {
+      div(
+        OnMount { _ => js.eval(code) }
+      ).render
+  //   } else {
+  //     div(
+  //       s"This module depends on ${js_deps.mkString(", ")}"
+  //     ).render
+  //   }
+
+  // if(js_deps.isEmpty){
+    root.innerHTML = html
+  // }
+}
+object JavascriptMessage
+{
+
+  implicit val format: Format[JavascriptMessage] = Json.format
+}
+
+//////////////////////////////////////////////////////////////
+
 
 object Message
 {
@@ -93,7 +119,7 @@ object Message
       case MessageType.TEXT => TextMessage(message.value.as[String])
       case MessageType.HTML => HtmlMessage(message.value.as[String])
       case MessageType.MARKDOWN => MarkdownMessage(message.value.as[String])
-      case MessageType.JAVASCRIPT => TextMessage.error(s"Javascript messages not supported yet")
+      case MessageType.JAVASCRIPT => message.value.as[JavascriptMessage]
       case MessageType.DATASET => DatasetMessage(new Dataset(message.value.as[serialized.DatasetDescription]))
       case MessageType.CHART => TextMessage.error(s"Chart messages not supported yet")
       case MessageType.VEGALITE => VegaMessage(message.value)

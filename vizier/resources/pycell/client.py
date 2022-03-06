@@ -42,7 +42,7 @@ ARTIFACT_TYPE_FILE      = "File"
 
 OUTPUT_TEXT       = "text/plain"
 OUTPUT_HTML       = "text/html"
-OUTPUT_JAVASCRIPT = "application/javascript"
+OUTPUT_JAVASCRIPT = "text/javascript"
 OUTPUT_DATASET    = "dataset/view"
 
 

@@ -236,8 +236,8 @@ object Vizier
       if(connected){ cli.subscribe(0) }
     }
     val table = new TableView(cli, 
-        rowDimensions = (780, 30),
-        outerDimensions = ("800px", "400px"),
+        rowHeight = 30,
+        maxHeight = 400,
         headerHeight = 40
     )
     cli.table = Some(table)

@@ -53,10 +53,7 @@ class StaticDataSource(
   override def columnDataType(column: Int): CellDataType = 
     schema(column).`type`
 
-  override def columnWidthInPixels(column: Int): Int = 
-    RenderCell.defaultWidthForType(columnDataType(column))
-
-  override def cellAt(row: Long, column: Int): Frag = 
+  override def cellAt(row: Long, column: Int, width: Int): Frag = 
   {
     cache(row) match {
       case None => 
@@ -65,6 +62,7 @@ class StaticDataSource(
         RenderCell(
           values(column), 
           columnDataType(column),
+          width = width,
           caveatted = 
             if(cellCaveats.map { _(column) }.getOrElse { false }){
               Some( (trigger: dom.html.Button) => displayCaveat(rowId, Some(column)) )
@@ -73,25 +71,18 @@ class StaticDataSource(
     }
   }
 
-  def headerAt(column: Int): Frag =
-    RenderCell.header(columnTitle(column), columnDataType(column))
-
   override def rowClasses(row: Long): Seq[String] =
     if(cache(row).flatMap { _.rowIsAnnotated }.getOrElse(false)){ 
       Seq("caveatted")
     } else { Seq.empty }
 
-  override def rowGutter(row: Long): Frag =
-    RenderCell.gutter(
-      row = row, 
-      caveatted = 
-        cache(row) match {
-          case None => None
-          case Some(data) => 
-            if(data.rowIsAnnotated.getOrElse { false }){
-              Some( () => displayCaveat(data.id, None) )
-            } else { None }
-        }
-    )
+  override def rowCaveat(row: Long): Option[() => Unit] =
+    cache(row) match {
+      case None => None
+      case Some(data) => 
+        if(data.rowIsAnnotated.getOrElse { false }){
+          Some( () => displayCaveat(data.id, None) )
+        } else { None }
+    }
 
 }

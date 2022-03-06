@@ -161,9 +161,9 @@ case class Module(
       text = description,
       toc = toc(cell),
       timestamps = timestamps,
-      datasets  = datasets    .map { case (name, d) => d.summarize(name) },
-      charts    = charts      .map { case (name, d) => d.summarize(name) },
-      artifacts = cell.outputs.flatMap { a => a.getSummary.map { _.summarize(a.userFacingName) }},
+      datasets  = datasets    .flatMap { case (name, d) => try { Some(d.summarize(name)) } catch { case e:JsResultException => e.printStackTrace(); None } },
+      charts    = charts      .flatMap { case (name, d) => try { Some(d.summarize(name)) } catch { case e:JsResultException => e.printStackTrace(); None } },
+      artifacts = cell.outputs.flatMap { a => try { a.getSummary.map { _.summarize(a.userFacingName) } } catch { case e:JsResultException => e.printStackTrace(); None } },
         // artifactSummaries.map { case (name, d) => d.summarize(name) },
 
       outputs = serialized.ModuleOutputDescription(

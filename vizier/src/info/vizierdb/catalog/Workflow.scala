@@ -243,8 +243,8 @@ case class Workflow(
           workflowId = id,
           cells = cellsAndModules
         ),
-      datasets = datasets.map { d => d._1.summarize(name = d._2) },
-      dataobjects = dataobjects.map { d => d._1.summarize(name = d._2) },
+      datasets    = datasets   .flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:JsResultException => e.printStackTrace(); None } },
+      dataobjects = dataobjects.flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:JsResultException => e.printStackTrace(); None } },
       readOnly = !branch.headId.equals(id),
       newLinks = HATEOAS(
         HATEOAS.WORKFLOW_CANCEL -> (

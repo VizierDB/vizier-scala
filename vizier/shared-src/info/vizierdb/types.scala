@@ -183,7 +183,7 @@ object types
     val MARKDOWN      = "text/markdown"
     val DATASET_VIEW  = "dataset/view"
     val PYTHON        = "application/python"
-    val JAVASCRIPT    = "application/javascript"
+    val JAVASCRIPT    = "text/javascript"
     val RAW           = "application/octet-stream"
     val JSON          = "text/json"
     val PNG           = "image/png"

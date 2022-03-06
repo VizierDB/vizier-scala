@@ -68,7 +68,7 @@ case class Artifact(
   /**
    * Interpret the artifact's value as JSON data
    */
-  def json = Json.parse(string)
+  def json = string match { case "" => Json.obj(); case x => Json.parse(x) }
   /**
    * Retrieve the dataset descriptor of a dataset artifact
    */

@@ -51,8 +51,8 @@ class Dataset(
     if(table == null){
       table = new TableView(
         data = source,
-        rowDimensions = (780, ROW_HEIGHT),
-        outerDimensions = ("800px", "400px"),
+        rowHeight = ROW_HEIGHT,
+        maxHeight = 400,
         headerHeight = 40
       )
       root.appendChild(table.root)
