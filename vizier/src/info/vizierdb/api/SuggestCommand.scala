@@ -16,7 +16,8 @@ object SuggestCommand
     "plot.chart",
     "docs.markdown",
     "script.python",
-    "script.scala"
+    "script.scala",
+    "sql.query"
   )
 
   def apply(

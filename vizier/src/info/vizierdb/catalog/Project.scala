@@ -26,6 +26,7 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.serialized
+import info.vizierdb.delta.{ DeltaBus, UpdateProjectProperties }
 
 /**
  * A vistrails project.  The project may have an optional set of user-defined properties.
@@ -49,7 +50,7 @@ case class Project(
     withSQL { 
       val b = Branch.syntax
       select(b.id).from(Branch as b).where.eq(b.projectId, id)
-    }.map { _.long(0) }.list.apply()
+    }.map { _.long(1) }.list.apply()
 
   def artifacts(implicit session: DBSession): Seq[Artifact] =
     withSQL {
@@ -158,6 +159,9 @@ case class Project(
              p.modified   -> now)
         .where.eq(p.id, id)
     }.update.apply()
+    for(branchId <- branchIds){
+      DeltaBus.notify(branchId, UpdateProjectProperties(properties))
+    }
     Project.get(id)
   }
 
