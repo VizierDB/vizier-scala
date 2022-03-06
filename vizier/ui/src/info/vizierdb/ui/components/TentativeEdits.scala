@@ -86,7 +86,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
           val deletions: Rx[Set[String]] = 
             outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
 
-          println(s"Left starting with: ${artifacts.now.mkString(", ")} and adding ${insertions.now.mkString(", ")}")
+          // println(s"Left starting with: ${artifacts.now.mkString(", ")} and adding ${insertions.now.mkString(", ")}")
 
           val updatedArtifacts = Rx { 
             val ret = (artifacts() -- deletions()) ++ insertions()
@@ -96,7 +96,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
           module.visibleArtifacts() = artifacts
           /* return */ updatedArtifacts
         case (artifacts, (Right(tentative), idx)) => 
-          println(s"Right sees: ${artifacts.now.mkString(", ")}")
+          // println(s"Right sees: ${artifacts.now.mkString(", ")}")
           tentative.visibleArtifacts.now.kill()
           tentative.visibleArtifacts() = artifacts
           tentative.position = idx

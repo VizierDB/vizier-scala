@@ -25,7 +25,7 @@ import info.vizierdb.nativeTypes.JsValue
 import scala.util.{ Success, Failure }
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
-import info.vizierdb.ui.components.editors.LoadDatasetEditor
+import info.vizierdb.ui.components.editors._
 import info.vizierdb.ui.widgets.FontAwesome
 
 trait ModuleEditor
@@ -108,7 +108,8 @@ object ModuleEditor
     delegate: ModuleEditorDelegate
   )(implicit owner: Ctx.Owner): ModuleEditor = {
     (packageId, command.id) match {
-      case ("data", "load") => new LoadDatasetEditor(delegate)
+      case ("data", "load")   => new LoadDatasetEditor(delegate)
+      case ("data", "unload") => new UnloadDatasetEditor(delegate)
       case _ => new DefaultModuleEditor(packageId, command, delegate)
     }
   }

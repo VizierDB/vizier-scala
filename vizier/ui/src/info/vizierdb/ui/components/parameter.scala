@@ -429,7 +429,6 @@ class ArtifactParameter(
 
   val root = span(
     Rx { 
-      println(s"artifacts now: ${artifacts().mkString(", ")}")
       pulldown(0)(
         (
           Seq("---" -> "") ++ 
@@ -704,20 +703,30 @@ class ListParameter(
       )
     )
 
+  def rawValue =
+    rows.toSeq
+        .dropRight(1) // drop the "template" row
+        .map { row => 
+          JsArray(row.map { field => Json.toJson(field.toArgument) })
+        }
+
   def value = 
-    JsArray(
-      rows.toSeq
-          .dropRight(1) // drop the "template" row
-          .map { row => 
-            JsArray(row.map { field => Json.toJson(field.toArgument) })
-          }
-    )
+    JsArray(rawValue)
+
   def set(v: JsValue): Unit = 
   {
+    set(
+      v.as[Seq[serialized.CommandArgumentList.T]].map { 
+        serialized.CommandArgumentList.toMap(_)
+      }
+    )
+  }
+
+  def set(v: Seq[Map[String, JsValue]]) =
+  {
     rows.clear()
-    for(rowArguments <- v.as[Seq[JsValue]]){
+    for(rowData <- v){
       val row = tentativeRow()
-      val rowData = serialized.CommandArgumentList.decodeAsMap(rowArguments)
       for(field <- row){
         field.set(rowData.getOrElse(field.id, JsNull))
       }
