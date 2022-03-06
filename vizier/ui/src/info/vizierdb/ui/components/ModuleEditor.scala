@@ -163,7 +163,7 @@ class DefaultModuleEditor(
 
   val editorFields =
     div(
-      h4(command.name),
+      // h4(command.name),
       parameters.filter { !_.hidden }
                 .map { param => div(param.root) }
     )

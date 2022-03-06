@@ -429,6 +429,7 @@ class ArtifactParameter(
 
   val root = span(
     Rx { 
+      println(s"artifacts now: ${artifacts().mkString(", ")}")
       pulldown(0)(
         (
           Seq("---" -> "") ++ 

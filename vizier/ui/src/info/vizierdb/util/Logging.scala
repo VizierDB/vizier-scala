@@ -63,6 +63,7 @@ object Logging extends Enumeration
     "info.vizierdb.test.TestFixtures$MockBranchSubscription$" -> INFO,
     "info.vizierdb.ui.components.dataset.TableView" -> INFO,
     "info.vizierdb.ui.network.SpreadsheetClient" -> TRACE,
+    "info.vizierdb.ui.components.TentativeEdits" -> INFO,
   )
 
   def get(logger: String) = 
