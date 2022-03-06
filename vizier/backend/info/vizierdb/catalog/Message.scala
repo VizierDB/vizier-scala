@@ -106,7 +106,7 @@ case class Message(
 
   def describe(implicit session: DBSession): serialized.MessageDescription = 
     try { 
-      val t = MessageType.withName(mimeType)
+      val t = MessageType.decode(mimeType)
       serialized.MessageDescription(
         `type` = t,
         value = (t match {
