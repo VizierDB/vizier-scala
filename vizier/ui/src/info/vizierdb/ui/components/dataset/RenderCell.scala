@@ -30,8 +30,9 @@ object RenderCell
           (if(value == JsNull) { Some("null") } else { None })
       ).mkString(" "),
       css("width") := s"${width}px",
+      css("height") := "100%",
       (value match {
-        case JsNull => ""
+        case JsNull => " "
         case _ => value.toString()
       }).toString,
       (if(caveatted.isDefined){

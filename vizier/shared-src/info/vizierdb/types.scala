@@ -171,6 +171,14 @@ object types
 
     @deprecated("Use MessageType.VEGALITE instead of MessageType.CHART")
     val CHART       = Value(6, "chart/view")
+
+    def decode(name: String): T = 
+    {
+      name.toLowerCase match { 
+        case "application/javascript" => JAVASCRIPT
+        case x => withName(x) // fallback to Enumeration implementation
+      }
+    }
   }
 
   object MIME
