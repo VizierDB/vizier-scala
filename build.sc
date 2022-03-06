@@ -45,7 +45,7 @@ object vizier extends ScalaModule with PublishModule {
   }
 
   def sources = T.sources(
-    millSourcePath / "src",
+    millSourcePath / "backend-src",
     millSourcePath / "shared-src"
   )
   def resources = T.sources(

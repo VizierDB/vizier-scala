@@ -17,8 +17,8 @@ import re
 import sys
 
 INPUT_FILE = "vizier/resources/vizier-routes.txt"
-SERVLET_FILE = "vizier/src/info/vizierdb/api/servlet/VizierAPIServletRoutes.scala"
-WEBSOCKET_IMPL_FILE = "vizier/src/info/vizierdb/api/websocket/BranchWatcherAPIRoutes.scala"
+SERVLET_FILE = "vizier/backend-src/info/vizierdb/api/servlet/VizierAPIServletRoutes.scala"
+WEBSOCKET_IMPL_FILE = "vizier/backend-src/info/vizierdb/api/websocket/BranchWatcherAPIRoutes.scala"
 WEBSOCKET_PROXY_FILE = "vizier/ui/src/info/vizierdb/ui/network/BranchWatcherAPIProxy.scala"
 API_PROXY_FILE = "vizier/ui/src/info/vizierdb/ui/network/API.scala"
 
