@@ -44,7 +44,7 @@ object UnloadDataset extends Command
     DatasetFormat.Excel,
   ) 
 
-  def name: String = "Unload Dataset"
+  def name: String = "Publish Dataset"
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
     EnumerableParameter(id = PARAM_FORMAT, name = "Unload Format", values = EnumerableValue.withNames(
@@ -66,9 +66,9 @@ object UnloadDataset extends Command
     ), required = false),
   )
   def format(arguments: Arguments): String = 
-    s"UNLOAD ${arguments.pretty(PARAM_DATASET)} TO ${arguments.pretty(PARAM_FORMAT)}"
+    s"PUBLISH ${arguments.pretty(PARAM_DATASET)} TO ${arguments.pretty(PARAM_FORMAT)}"
   def title(arguments: Arguments): String = 
-    s"Unload ${arguments.pretty(PARAM_DATASET)}"
+    s"Publish ${arguments.pretty(PARAM_DATASET)}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val datasetName = arguments.get[String](PARAM_DATASET)
