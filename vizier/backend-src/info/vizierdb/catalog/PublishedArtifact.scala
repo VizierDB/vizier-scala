@@ -20,6 +20,8 @@ import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
+import com.google.gson.JsonObject
+import java.time.ZonedDateTime
 
 case class PublishedArtifact(
   name: String,
@@ -91,7 +93,27 @@ object PublishedArtifact
     }
   }
  
-
+  def list(implicit session: DBSession): Seq[(String, ArtifactSummary)] =
   {
+    withSQL { 
+      val b = PublishedArtifact.syntax
+      val a = Artifact.syntax
+      select(b.name, a.id, a.projectId, a.t, a.created, a.mimeType)
+        .from(PublishedArtifact as b)
+          .join(Artifact as a)
+        .where.eq(b.artifactId, a.id)
+          .and.eq(b.projectId, a.projectId)
+    }.map { r => 
+      (
+        r.get[String](1), 
+        ArtifactSummary(
+          r.get[Identifier](2),
+          r.get[Identifier](3), 
+          r.get[ArtifactType.T](4),
+          r.get[ZonedDateTime](5),
+          r.get[String](6)
+        )
+      )
+    }.list.apply()
   }
 }

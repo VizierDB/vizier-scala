@@ -162,16 +162,33 @@ class LoadDatasetEditor(
     urlChanged
   }
 
+  def guessFormat: DatasetFormat.T =
+  {
+    val url = urlField.value
+
+    // Special-case some URLs
+    if(url startsWith (Vizier.api.baseUrl+"/published")) {
+      return DatasetFormat.VizierLocal
+    }
+
+    // Fall back to the filename
+    val file = url.split("/").last
+    val components = file.split("\\.")
+    return components.last match {
+      case "json" => DatasetFormat.JSON
+      case "csv"  => DatasetFormat.CSV
+      case _      => DatasetFormat.Text
+    }
+
+  }
+
   def urlChanged: Unit =
   {
-    val file = urlField.value.split("/").last
-    val components = file.split("\\.")
-    components.last match {
-      case "json" => format.value = DatasetFormat.JSON
-      case "csv"  => format.value = DatasetFormat.CSV
-      case _      => format.value = DatasetFormat.Text
-    }
-    datasetName.setHint(components.head)
+    datasetName.setHint(
+      // File basename
+      urlField.value.split("/").last.split("\\.").head
+    )
+    format.value = guessFormat
     formatChanged
   }
 

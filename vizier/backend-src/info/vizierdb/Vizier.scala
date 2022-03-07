@@ -48,6 +48,7 @@ import scala.sys.process.Process
 import org.mimirdb.caveats.Caveat
 import info.vizierdb.util.StringUtils
 import info.vizierdb.spark.caveats.ExplainCaveats
+import info.vizierdb.api.BrowseFilesystem
 
 object Vizier
   extends LazyLogging
@@ -292,6 +293,14 @@ object Vizier
       case None => 
         println("Starting server...")
         VizierAPI.init()
+
+        if(!config.serverMode.getOrElse(false)){
+          // Disable local filesystem browsing if running in server
+          // mode.
+          BrowseFilesystem.mountLocalFS()
+        }
+        BrowseFilesystem.mountPublishedArtifacts()
+
         println(s"... server running at < ${VizierAPI.urls.ui} >")
 
         // Don't auto-launch the UI if we're asked not to
