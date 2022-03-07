@@ -65,7 +65,7 @@ object ScalaScript extends Command
     executionContext.set(null)
   }
 
-  def name = "Scala"
+  def name = "Scala Script"
   def parameters: Seq[Parameter] = Seq(
     CodeParameter(id = "source", language = "scala", name = "Scala Code"),
   )
