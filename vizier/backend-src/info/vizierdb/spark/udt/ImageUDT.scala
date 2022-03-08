@@ -20,7 +20,6 @@ class ImageUDT extends UserDefinedType[BufferedImage] {
   
   override def deserialize(datum: Any): BufferedImage = {
     val bais: InputStream = new ByteArrayInputStream(datum.asInstanceOf[Array[Byte]])
-    print(ImageIO.read(bais))
     ImageIO.read(bais)
   }
 }

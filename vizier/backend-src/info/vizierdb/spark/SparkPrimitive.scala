@@ -21,8 +21,13 @@ import java.awt.image.BufferedImage
 import java.nio.charset.StandardCharsets
 import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.sedona.sql.utils.GeometrySerializer
+import com.typesafe.scalalogging.LazyLogging
+import org.apache.spark.sql.types.{ UserDefinedType, BinaryType }
+import info.vizierdb.VizierException
 
 object SparkPrimitive
+  extends Object
+  with LazyLogging
 {
   def base64Encode(b: Array[Byte]): String =
     Base64.getEncoder().encodeToString(b)
@@ -113,12 +118,28 @@ object SparkPrimitive
 
   def encode(k: Any, t: DataType): JsValue =
   {
-    // print(k, t)
+    logger.trace(s"ENCODE $t: \n$k")
     (t, k) match {
       case (_, null)                   => JsNull
       case (StringType, _)             => JsString(k.toString)
       case (BinaryType, _)             => JsString(base64Encode(k.asInstanceOf[Array[Byte]]))
-      case (ImageUDT, _)               => JsString(base64Encode(ImageUDT.serialize(k.asInstanceOf[BufferedImage]).asInstanceOf[Array[Byte]]))
+      case (_:UserDefinedType[_], _)     => 
+      {
+        // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
+        // so we need to do a manual comparison here.
+
+        if(t.isInstanceOf[GeometryUDT]){
+          k match {
+            case geom:Geometry => JsString(geom.toText)
+            case enc:ArrayData => JsString(GeometrySerializer.deserialize(enc).toText)
+          }
+        } else if(t.isInstanceOf[ImageUDT]){
+          JsString(base64Encode(ImageUDT.serialize(k.asInstanceOf[BufferedImage]).asInstanceOf[Array[Byte]]))
+        } else {
+          throw new VizierException(s"Unsupported UDT: $t")
+        }
+      }
+
       case (BooleanType, _)            => JsBoolean(k.asInstanceOf[Boolean])
       case (DateType, _)               => JsString(formatDate(k.asInstanceOf[Date]))
       case (TimestampType, _)          => JsString(formatTimestamp(k.asInstanceOf[Timestamp]))
@@ -137,9 +158,6 @@ object SparkPrimitive
       case (ArrayType(element,_),_)    => JsArray(k.asInstanceOf[Seq[_]].map { encode(_, element) })
       case (s:StructType,_)            => encodeStruct(k, s)
                                        // Encode Geometry as WKT
-      case (GeometryUDT,geom:Geometry) => JsString(geom.toText)
-      case (GeometryUDT,enc:ArrayData) => JsString(GeometrySerializer.deserialize(enc)
-                                                              .toText)
 
       case (DecimalType(),d:BigDecimal)=> JsNumber(d)
       case (DecimalType(),d:Decimal)   => JsNumber(d.toBigDecimal)
@@ -163,6 +181,7 @@ object SparkPrimitive
   {
 
     // The following matching order is important
+    logger.trace(s"DECODE $t: \n$k")
 
     (k, t) match {  
       // Check for null first to avoid null pointer errors
@@ -178,8 +197,19 @@ object SparkPrimitive
       case (_, DateType)                  => decodeDate(k.as[String])
       case (_, TimestampType)             => decodeTimestamp(k.as[String])
       case (_, BinaryType)                => base64Decode(k.as[String])
-      case (_, GeometryUDT)               => geometryFormatMapper.readGeometry(k.as[String]) // parse as WKT
-      case (_, ImageUDT)                  => ImageUDT.deserialize(base64Decode(k.as[String]))
+      case (_, _:UserDefinedType[_])        => 
+      {
+        // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
+        // so we need to do a manual comparison here.
+
+        if(t.isInstanceOf[GeometryUDT]){
+          geometryFormatMapper.readGeometry(k.as[String]) // parse as WKT
+        } else if(t.isInstanceOf[ImageUDT]){
+          ImageUDT.deserialize(base64Decode(k.as[String]))
+        } else {
+          throw new VizierException(s"Unsupported UDT: $t")
+        }
+      }
 
       // Now that we've gotten through all String types, check if we still have
       // a string and fall back to string parsing if so.
