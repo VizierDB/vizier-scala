@@ -81,11 +81,6 @@ class ImageDataSpec
 
     val firstRow = dataset.dataCache.get.data(0)
     val imageValue = firstRow(1)
-    // println(imageValue)
     imageValue must not beNull
-
-
-    // println(dataset.dataCache.get.schema)
-    // println(firstRow)
   }
 }
