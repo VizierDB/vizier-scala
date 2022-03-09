@@ -683,7 +683,7 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
   elif data_type == DATATYPE_IMAGE:
     from PIL import Image
     import base64
-    with io.BytesIO(base64.decodebytes(value.encode('utf-8'))) as f:
+    with io.BytesIO(base64.b64decode(value.encode('utf-8'))) as f:
       return Image.open(f)
   else:
     return value
@@ -701,11 +701,11 @@ def export_from_native_type(value: Any, data_type: str, context="the value") -> 
     return base64.b64encode(bytes(value)).decode('utf-8')
   elif data_type == DATATYPE_IMAGE:
     import base64
-    from PIL.Image import Image
+    from PIL.Image import Image  # type: ignore[import]
     if(issubclass(type(value), Image)):
       with io.BytesIO() as f:
-        value.save(fp = f, format = "PNG")
-        value = base64.encodebytes(f.getbuffer()).decode('utf-8')
+        value.save(fp=f, format="PNG")
+        value = base64.b64encode(f.getbuffer()).decode('utf-8')
     elif type(value) is bytes:
       value = base64.encodebytes(value).decode()
     return value

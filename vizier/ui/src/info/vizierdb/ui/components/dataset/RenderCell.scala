@@ -31,10 +31,16 @@ object RenderCell
       ).mkString(" "),
       css("width") := s"${width}px",
       css("height") := "100%",
-      (value match {
-        case JsNull => " "
-        case _ => value.toString()
-      }).toString,
+      ((value, dataType) match {
+        case (JsNull, _) => 
+          span(" ")
+        case (_, JsString("image/png")) => 
+          img(src := "data:image/png;base64,"+value.as[String], height := "100%")
+        case (_, JsString("string")) => 
+          span(value.as[String])
+        case _ => 
+          span(value.toString())
+      }),
       (if(caveatted.isDefined){
         val callback = caveatted.get
         val node:dom.html.Button = button(`class` := "show_caveat", "(?)").render
