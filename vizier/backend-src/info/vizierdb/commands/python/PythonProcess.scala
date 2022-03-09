@@ -157,6 +157,7 @@ object PythonProcess
     "pandas"     -> "pandas",
     "shapely"    -> "shapely",
     "pyspark"    -> "pyspark",
+    "PIL"        -> "Pillow"
   )
 
   def checkPython()

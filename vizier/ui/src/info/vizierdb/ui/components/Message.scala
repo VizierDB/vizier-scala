@@ -51,11 +51,27 @@ case class MarkdownMessage(content: String) extends Message
 
 //////////////////////////////////////////////////////////////
 
-case class HtmlMessage(content: String) extends Message
+class DomMessage extends Message
 {
   // println(s"Allocating HtmlMessage\n$content")
-  val root:dom.html.Div = (div(""):dom.Node).asInstanceOf[dom.html.Div]
-  root.innerHTML = content
+  val root:dom.html.Div = div(`class` := "message").render
+}
+object DomMessage
+{
+  def html(content: String): DomMessage =
+  {
+    val ret = new DomMessage; ret.root.innerHTML = content; ret
+  }
+  def png(content: String): DomMessage =
+  {
+    val ret = new DomMessage
+    ret.root.appendChild(
+      img(
+        src := "data:image/png;base64,"+content
+      ).render
+    )
+    ret
+  }
 }
 
 //////////////////////////////////////////////////////////////
@@ -117,12 +133,14 @@ object Message
   {
     message.t match {
       case MessageType.TEXT => TextMessage(message.value.as[String])
-      case MessageType.HTML => HtmlMessage(message.value.as[String])
+      case MessageType.HTML => DomMessage.html(message.value.as[String])
+      case MessageType.PNG_IMAGE => DomMessage.png(message.value.as[String])
       case MessageType.MARKDOWN => MarkdownMessage(message.value.as[String])
       case MessageType.JAVASCRIPT => message.value.as[JavascriptMessage]
       case MessageType.DATASET => DatasetMessage(new Dataset(message.value.as[serialized.DatasetDescription]))
       case MessageType.CHART => TextMessage.error(s"Chart messages not supported yet")
       case MessageType.VEGALITE => VegaMessage(message.value)
+      case _ => TextMessage.error(s"Unknown message type ${message.t}")
     }
   }
 }

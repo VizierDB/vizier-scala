@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -- copyright-header:end --
-from typing import Dict, Any, IO, List, Tuple, Optional, Callable
+from typing import Dict, Any, IO, List, Tuple, Optional, Callable, cast
 import json
 import sys
 import ast
@@ -21,6 +21,7 @@ import inspect
 import pandas  # type: ignore[import]
 import os
 import re
+import io
 from datetime import datetime
 from pycell.dataset import DatasetClient, import_to_native_type, export_from_native_type, PYTHON_TO_VIZIER_TYPES
 from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
@@ -44,6 +45,7 @@ OUTPUT_TEXT       = "text/plain"
 OUTPUT_HTML       = "text/html"
 OUTPUT_JAVASCRIPT = "text/javascript"
 OUTPUT_DATASET    = "dataset/view"
+OUTPUT_PNG        = "image/png"
 
 
 class Artifact(object):
@@ -556,6 +558,11 @@ class VizierDBClient(object):
         # After a recursive show, don't need to output anything
         # here, so just return
         return
+      elif is_image(value):
+        mime_type = OUTPUT_PNG
+        with io.BytesIO() as f:
+          value.save(fp = f, format = "PNG")
+          value = base64.encodebytes(f.getbuffer()).decode()
       else:
         repr_html = getattr(value, "_repr_html_", None)
         if repr_html is not None:
@@ -573,6 +580,9 @@ class VizierDBClient(object):
       mimeType=mime_type,
       has_response=False
     )
+
+  def show_png(self, image: bytes) -> None:
+    self.show(base64.encodebytes(image).decode(), OUTPUT_PNG)
 
   def show_html(self, value: str) -> None:
     self.show(value, mime_type=OUTPUT_HTML)
@@ -864,3 +874,11 @@ def is_valid_name(name: str) -> bool:
     elif c not in ['_', '-', ' ']:
       return False
   return (allnums > 0)
+
+def is_image(obj: Any) -> bool:
+  try:
+    from PIL.Image import Image
+    return issubclass(type(obj), Image)
+  except Exception:
+    # Fall through on module not found
+    return False

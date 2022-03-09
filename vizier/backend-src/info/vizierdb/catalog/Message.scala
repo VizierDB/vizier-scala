@@ -117,6 +117,7 @@ case class Message(
           case MessageType.TEXT => JsString(new String(data))
           case MessageType.MARKDOWN => JsString(new String(data))
           case MessageType.VEGALITE => dataJson
+          case MessageType.PNG_IMAGE => JsString(new String(data))
         })
       )
     } catch {

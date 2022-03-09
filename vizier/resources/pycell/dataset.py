@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from pycell.client import VizierDBClient
 
 import datetime
+import io
 from bokeh.models.sources import ColumnDataSource  # type: ignore[import]
 
 """Identifier for column data types. By now the following data types are
@@ -679,6 +680,11 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
   elif data_type == DATATYPE_DATE:
     from datetime import date
     return date.fromisoformat(value)
+  elif data_type == DATATYPE_IMAGE:
+    from PIL import Image
+    import base64
+    with io.BytesIO(base64.decodebytes(value.encode('utf-8'))) as f:
+      return Image.open(f)
   else:
     return value
 
@@ -690,9 +696,19 @@ def export_from_native_type(value: Any, data_type: str, context="the value") -> 
   elif data_type == DATATYPE_GEOMETRY:
     from shapely.geometry import shape  # type: ignore[import]
     return shape(value).wkt
-  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+  elif data_type == DATATYPE_BINARY:
     import base64
     return base64.b64encode(bytes(value)).decode('utf-8')
+  elif data_type == DATATYPE_IMAGE:
+    import base64
+    from PIL.Image import Image
+    if(issubclass(type(value), Image)):
+      with io.BytesIO() as f:
+        value.save(fp = f, format = "PNG")
+        value = base64.encodebytes(f.getbuffer()).decode('utf-8')
+    elif type(value) is bytes:
+      value = base64.encodebytes(value).decode()
+    return value
   elif data_type == DATATYPE_DATETIME or data_type == DATATYPE_DATE:
     return value.isoformat()
   else:
@@ -705,7 +721,7 @@ TYPE_MAPPINGS = [
   (int, [DATATYPE_INT, DATATYPE_SHORT, DATATYPE_LONG]),
   (float, [DATATYPE_REAL]),
   (str, [DATATYPE_VARCHAR]),
-  (bytes, [DATATYPE_BINARY, DATATYPE_IMAGE]),
+  (bytes, [DATATYPE_BINARY]),
 ]
 
 PYTHON_TO_VIZIER_TYPES = {p: tlist[0] for (p, tlist) in TYPE_MAPPINGS}
@@ -722,6 +738,12 @@ def assert_type(value: Any, data_type: str, context="the value") -> Any:
     else:
       raise ValueError(f"{context} ({value}) is a {type(value)} but should be a {data_type}")
     # Special-case handling for Geometry types
+  elif data_type == DATATYPE_IMAGE:
+    from PIL.Image import Image
+    if(issubclass(type(value), Image)):
+      return value
+    else:
+      raise ValueError(f"{context} ({value}) is a {type(value)} but not a PIL image")
   elif data_type == DATATYPE_GEOMETRY:
     if not hasattr(value, "__geo_interface__"):
       raise ValueError(f"{context} ({value}) is a {type(value)}, and not a type that supports the geometry interface")

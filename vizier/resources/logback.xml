@@ -31,7 +31,7 @@
   <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="TRACE" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.commands.python.Python$"           level="WARN" />
+  <logger name="info.vizierdb.commands.python.Python$"           level="TRACE" />
   <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonInterface"   level="WARN" />

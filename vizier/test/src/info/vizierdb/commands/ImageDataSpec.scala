@@ -49,24 +49,30 @@ class ImageDataSpec
     val project = MutableProject("Load Images Test")
 
     project.script("""
+      |from PIL import Image
+      |
       |ds = vizierdb.new_dataset()
       |
       |ds.insert_column("url", "string")
       |ds.insert_column("image", "image/png")
       |
       |url = "test_data/test_image.png"
-      |with open(url, "rb") as f:
-      |  data = f.read()
+      |img = Image.open(url)
       |
-      |ds.insert_row([url, data])
+      |ds.insert_row([url, img])
       |ds.save("image_data", use_deltas = False)
       |ds.show()
+      |
+      |show(img)
     """.stripMargin)
     project.waitUntilReadyAndThrowOnError
 
     val outputs = project.lastOutput
 
     outputs must contain { (x:Message) => x.mimeType.equals(MIME.DATASET_VIEW) }
+    outputs must contain { (x:Message) => x.mimeType.equals(MIME.PNG) }
+
+
     val dsMessage = outputs.filter { (x:Message) => x.mimeType.equals(MIME.DATASET_VIEW) }
                            .head
     // println(s"MESSAGE: ${dsMessage.dataString}")

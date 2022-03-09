@@ -205,6 +205,7 @@ object SparkPrimitive
         if(t.isInstanceOf[GeometryUDT]){
           geometryFormatMapper.readGeometry(k.as[String]) // parse as WKT
         } else if(t.isInstanceOf[ImageUDT]){
+          println(s"XXXXXXXXXXXXXXX\n$k")
           ImageUDT.deserialize(base64Decode(k.as[String]))
         } else {
           throw new VizierException(s"Unsupported UDT: $t")

@@ -168,6 +168,8 @@ object types
     val JAVASCRIPT  = Value(4, "text/javascript")
     val DATASET     = Value(5, "dataset/view")
     val VEGALITE    = Value(7, "chart/vegalite")
+    val PNG_IMAGE   = Value(8, "image/png")
+    // if you add a message here, update catalog/Message.scala as well
 
     @deprecated("Use MessageType.VEGALITE instead of MessageType.CHART")
     val CHART       = Value(6, "chart/view")
