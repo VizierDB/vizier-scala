@@ -608,6 +608,18 @@ div.data_table
           background-color : #611;
           color : #ccc;
         }
+
+        img.table_image
+        {
+          height: 100%;
+        }
+
+        img.table_image:hover
+        {
+          position: relative;
+          height: auto;
+          z-index: $tooltip_layer;
+        }
       }
     }
   }

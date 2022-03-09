@@ -35,7 +35,12 @@ object RenderCell
         case (JsNull, _) => 
           span(" ")
         case (_, JsString("image/png")) => 
-          img(src := "data:image/png;base64,"+value.as[String], height := "100%")
+          {
+            img(
+              `class` := "table_image", 
+              src := "data:image/png;base64,"+value.as[String], 
+            ),
+          }
         case (_, JsString("string")) => 
           span(value.as[String])
         case _ => 
