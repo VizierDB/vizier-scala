@@ -31,19 +31,20 @@ import info.vizierdb.util.Logging
  * the initial implementation, I'm keeping these as-is.  In the longer term (TODO) it
  * would probably be a good idea to implement this as a sort of Tree structure.  
  */
-class TentativeEdits(val project: Project)
+class TentativeEdits(val project: Project, val workflow: Workflow)
                     (implicit owner: Ctx.Owner)
   extends RxBufferBase[Module,Either[Module,TentativeModule]]
      with RxBufferWatcher[Module]
      with Logging
 {
 
-  def this(input: RxBuffer[Module], project: Project)
+  def this(input: RxBuffer[Module], project: Project, workflow: Workflow)
           (implicit owner: Ctx.Owner)
   {
-    this(project)
+    this(project, workflow)
     this.onInsertAll(0, input.elements)
     input.deliverUpdatesTo(this)
+    refreshModuleState()
   }
 
   val derive = Left(_)
@@ -60,19 +61,32 @@ class TentativeEdits(val project: Project)
    * - All [[TentativeModule]]s' `visibleArtifacts` fields are valid
    * - All [[TentativeModule]]s' `position` fields are valid
    */
-  private def refreshModuleState()
+  private def refreshModuleState(from: Int = 0)
   {
+    val visibleArtifacts:Rx[Map[String, serialized.ArtifactSummary]] = 
+      if(from <= 0){
+        Var(Map.empty)
+      } else {
+        elements(from-1) match {
+          case Left(e) => e.visibleArtifacts.now
+          case Right(e) => e.visibleArtifacts.now
+        }
+      }
     elements
       .zipWithIndex
-      .foldLeft(Var(Map.empty):Rx[Map[String, serialized.ArtifactSummary]]) {
+      .drop(Math.max(from-1, 0))
+      .foldLeft(visibleArtifacts) {
         case (artifacts, (Left(module), idx)) =>
           val outputs = module.outputs
           val oldArtifacts = artifacts
+
 
           val insertions: Rx[Map[String, serialized.ArtifactSummary]] = 
             outputs.map { _.filter { _._2.isDefined }.mapValues { _.get }.toMap }
           val deletions: Rx[Set[String]] = 
             outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
+
+          // println(s"Left starting with: ${artifacts.now.mkString(", ")} and adding ${insertions.now.mkString(", ")}")
 
           val updatedArtifacts = Rx { 
             val ret = (artifacts() -- deletions()) ++ insertions()
@@ -82,6 +96,7 @@ class TentativeEdits(val project: Project)
           module.visibleArtifacts() = artifacts
           /* return */ updatedArtifacts
         case (artifacts, (Right(tentative), idx)) => 
+          // println(s"Right sees: ${artifacts.now.mkString(", ")}")
           tentative.visibleArtifacts.now.kill()
           tentative.visibleArtifacts() = artifacts
           tentative.position = idx
@@ -183,10 +198,12 @@ class TentativeEdits(val project: Project)
    */
   override def onAppend(sourceElem: Module): Unit = 
   {
+    logger.trace(s"ON APPEND: $sourceElem")
     findAppendCandidate(sourceElem.id) match {
       case Some(tentativeModule) => doUpdate(tentativeModule.position, Left(sourceElem))
       case None => doAppend(Left(sourceElem))
     }
+    refreshModuleState(elements.size - 1)
   }
 
   /**
@@ -198,6 +215,7 @@ class TentativeEdits(val project: Project)
    */
   override def onRemove(n: Int): Unit =
   {
+    logger.trace(s"ON REMOVE: $n")
     super.onRemove(sourceToTargetPosition(n))
     refreshModuleState()
   }
@@ -211,6 +229,7 @@ class TentativeEdits(val project: Project)
    */
   override def onUpdate(n: Int, sourceElem: Module): Unit =
   {
+    logger.trace(s"ON UPDATE: $n")
     super.onUpdate(sourceToTargetPosition(n), sourceElem)
     refreshModuleState()
   }
@@ -218,14 +237,19 @@ class TentativeEdits(val project: Project)
   /**
    * Append a [[TentativeModule]] to the end of the workflow
    */
-  def appendTentative(defaultPackageList: Option[Seq[serialized.PackageDescription]] = None) =
+  def appendTentative(
+    defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
+  ): TentativeModule =
   {
-    doAppend(Right(new TentativeModule(
-                            position = elements.size, 
-                            editList = this, 
-                            defaultPackageList = defaultPackageList
-                          )))
+    val module = 
+      new TentativeModule(
+            position = elements.size, 
+            editList = this, 
+            defaultPackageList = defaultPackageList
+          )
+    doAppend(Right(module))
     refreshModuleState()
+    return module
   }
 
   /**
@@ -234,14 +258,17 @@ class TentativeEdits(val project: Project)
   def insertTentative(
     n: Int,
     defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
-  ) =
+  ): TentativeModule =
   {
-    doInsertAll(n, Some(Right(new TentativeModule(
-                            position = n, 
-                            editList = this,
-                            defaultPackageList = defaultPackageList
-                          ))))
+    val module = 
+      new TentativeModule(
+            position = n, 
+            editList = this,
+            defaultPackageList = defaultPackageList
+          )
+    doInsertAll(n, Some(Right(module)))
     refreshModuleState()
+    return module
   }
 
   /**
@@ -251,6 +278,17 @@ class TentativeEdits(val project: Project)
   {
     onRemove(m.position)
     refreshModuleState()
+  }
+
+  /**
+   * Cause all pending cells to be saved
+   */
+  def saveAllCells() =
+  {
+    elements.map {
+      case Left(module) => module.editor.now
+      case Right(module) => module.editor.now
+    }.foreach { _.foreach { _.saveState() } }
   }
 
 }

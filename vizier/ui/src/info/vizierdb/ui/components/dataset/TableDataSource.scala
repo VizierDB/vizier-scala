@@ -11,17 +11,10 @@ trait TableDataSource
   
   def columnTitle(column: Int): String
   def columnDataType(column: Int): CellDataType
-  def columnWidthInPixels(column: Int): Int
 
-  def cellAt(row: Long, column: Int): Frag
-  def rowAt(row: Long): Seq[Frag] = 
-    (0 until columnCount).map { cellAt(row, _) }
+  def cellAt(row: Long, column: Int, width: Int): Frag
   
-  def headerAt(column: Int): Frag
-  def headerCells: Seq[Frag] =
-    (0 until columnCount).map { headerAt(_) }
-
   def rowClasses(row: Long): Seq[String]
 
-  def rowGutter(row: Long): Frag
+  def rowCaveat(row: Long): Option[() => Unit]
 }

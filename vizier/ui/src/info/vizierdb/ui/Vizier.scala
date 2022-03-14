@@ -21,6 +21,7 @@ import info.vizierdb.serialized.PropertyList
 import info.vizierdb.ui.components.dataset.Dataset
 import info.vizierdb.ui.components.MenuBar
 import info.vizierdb.ui.components.dataset.TableView
+import info.vizierdb.nativeTypes
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -74,17 +75,48 @@ object Vizier
               case Success(response) => 
                 project() = Some(new Project(projectId, api).load(response))
                 logger.debug(s"Project: ${project.now.get}")
+                document.addEventListener("keydown", { (evt:dom.KeyboardEvent) => 
+                  if(evt.key == "Enter" && evt.ctrlKey){
+                    project.now.foreach { 
+                      _.workflow.now.foreach {
+                        _.moduleViewsWithEdits.saveAllCells()
+                      }
+                    }
+                  }
+                })
+
+                // The following bit can be uncommented for onLoad triggers
+                // to automate development debugging
+                // dom.window.setTimeout(
+                //   () => {
+                //     val workflow = 
+                //       project.now
+                //              .get
+                //              .workflow
+                //              .now
+                //              .get
+                //     val module = 
+                //       workflow.moduleViewsWithEdits
+                //               .appendTentative()
+                //     // module.activeView.trigger { _ match {
+                //     //   case Some(Left(commandlist)) =>
+                //     //     commandlist.simulateClick("data", "load")
+                //     //   case _ => 
+                //     //     println("Waiting...")
+                //     // }}
+                //   },
+                //   500
+                // )
+
               case Failure(ex) => 
                 error(ex.toString)
             }
 
         document.body.appendChild(
           div(`class` := "viewport",
-            Rx { menu().map { _.root }
-                       .getOrElse { div("loading...") } },
             div(`class` := "content",
               Rx { project().map { _.root }
-                            .getOrElse { div("loading...") } }
+                            .getOrElse { div("loading...") } }.reactive
             )
           )
         )
@@ -116,7 +148,7 @@ object Vizier
       api.projectList()
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       var projects = Var[Option[ProjectList]](None)
-      var projectNameField = Var[Option[dom.Node]](None)
+      val projectNameField = Var[Option[dom.html.Input]](None)
       projectListRequest
         .onComplete {
           case Success(result) => 
@@ -126,55 +158,68 @@ object Vizier
         }
       document.body.appendChild(
         div(id := "content",
-            Rx { projects
-              projects() match {
-                case Some(ProjectList(projects, _)) => 
-                  div(
-                    ul(
-                      projects.map { projectRef =>
-                        li(
-                          a(
-                            href := s"project.html?project=${projectRef.id}",
-                            span(
-                              `class` := "project_name",
-                              (
-                                projectRef("name")
-                                  .flatMap { _.asOpt[String] }
-                                  .getOrElse { "Untitled Project" }
-                              ):String
-                            ),
-                            span(
-                              `class` := "project_modified",
-                              s"(${projectRef.lastModifiedAt.toLocaleDateString()} ${projectRef.lastModifiedAt.toLocaleTimeString()})"
-                            )
+            projects.map {
+              case Some(ProjectList(projects, _)) => 
+                div(`class` := "project_list_wrapper",
+                  ul(`class` := "project_list",
+                    projects.zipWithIndex.map { case (projectRef, idx) =>
+                      li((if(idx % 2 == 0) { `class` := "even" } else { `class` := "odd" }),
+                        a(
+                          href := s"project.html?project=${projectRef.id}",
+                          span(
+                            `class` := "project_name",
+                            (
+                              projectRef("name")
+                                .flatMap { _.asOpt[String] }
+                                .getOrElse { "Untitled Project" }
+                            ):String
+                          ),
+                        ),
+                        span(
+                          `class` := "dates",
+                          div(`class` := "date_valign",
+                            div(`class` := "created", "Created: ", nativeTypes.formatDate(projectRef.createdAt)),
+                            div(`class` := "modified", "Modified: ", nativeTypes.formatDate(projectRef.lastModifiedAt)),
                           )
                         )
-                      }
-                    ),
-                    div(
-                      Rx { 
-                        projectNameField() match {
-                          case None => span():dom.Node
-                          case Some(f) => f
-                        }
-                      },
-                      button(
-                        onclick := { (_:dom.MouseEvent) => 
-                          projectNameField.now match {
-                            case None => projectNameField() = Some(input(`type` := "text"):dom.Node)
-                            case Some(nameField) => 
-                              createProject(projectNameField.now.get.asInstanceOf[dom.html.Input].value)
-                              projectNameField() = None
-                          }
-                        },
-                        "Create Project"
                       )
-                    )
+                    }
+                  ),
+                  div(
+                    projectNameField.map {
+                      case None => 
+                        div(
+                          button(
+                            `class` := "create_project",
+                            onclick := { (_:dom.MouseEvent) => 
+                              projectNameField() = 
+                                Some(input(`type` := "text", placeholder := "Project Name").render)
+                              projectNameField.now.get.focus()
+                            },
+                            "+"
+                          ),
+                          (if(projects.isEmpty){
+                            div(`class` := "hint",
+                                "↑", br(), "Click here to create a project")
+                          } else { div() })
+                        )
+                      case Some(f) => 
+                        div(`class` := "create_project_form", 
+                          f,
+                          button(
+                            onclick := { (_:dom.MouseEvent) =>
+                              createProject(f.value)
+                              projectNameField() = None
+                            },
+                            "Create"
+                          )
+                        )
+                    }.reactive,
                   )
-                case None => 
-                  div("Loading project list...")
-              }
-            }
+                )
+              case None => 
+                div("Loading project list...")
+            }.reactive
         )
       )
       OnMount.trigger(document.body)
@@ -191,8 +236,8 @@ object Vizier
       if(connected){ cli.subscribe(0) }
     }
     val table = new TableView(cli, 
-        rowDimensions = (780, 30),
-        outerDimensions = ("800px", "400px"),
+        rowHeight = 30,
+        maxHeight = 400,
         headerHeight = 40
     )
     cli.table = Some(table)

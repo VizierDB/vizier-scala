@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -- copyright-header:end --
-from typing import Dict, Any, IO, List, Tuple, Optional, Callable
+from typing import Dict, Any, IO, List, Tuple, Optional, Callable, cast
 import json
 import sys
 import ast
@@ -21,8 +21,9 @@ import inspect
 import pandas  # type: ignore[import]
 import os
 import re
+import io
 from datetime import datetime
-from pycell.dataset import DatasetClient, import_to_native_type
+from pycell.dataset import DatasetClient, import_to_native_type, export_from_native_type, PYTHON_TO_VIZIER_TYPES
 from pycell.plugins import vizier_bokeh_show, vizier_matplotlib_render
 from pycell.file import FileClient
 from bokeh.models.layouts import LayoutDOM as BokehLayout  # type: ignore[import]
@@ -44,6 +45,7 @@ OUTPUT_TEXT       = "text/plain"
 OUTPUT_HTML       = "text/html"
 OUTPUT_JAVASCRIPT = "text/javascript"
 OUTPUT_DATASET    = "dataset/view"
+OUTPUT_PNG        = "image/png"
 
 
 class Artifact(object):
@@ -80,12 +82,18 @@ class ArtifactProxy(object):
     self.load_if_needed()
     return self.__artifact.__getattribute__(name)
 
+  def __setitem__(self,key,value):
+    self.load_if_needed()
+    return self.__artifact.__setitem__(key,value)
+
   def __setattr__(self, name, value):
     if name == "_ArtifactProxy__client" or name == "_ArtifactProxy__artifact" or name == "_ArtifactProxy__artifact_name":
       super(ArtifactProxy, self).__setattr__(name, value)
     else:
       self.load_if_needed()
       return self.__artifact.__setattribute__(name, value)
+
+  
 
   def __call__(self, *args, **kwargs):
     self.load_if_needed()
@@ -151,6 +159,22 @@ class VizierDBClient(object):
                 artifact.artifact_type,
                 artifact.mime_type
               ))
+  def __setitem__(self,key: Any, updated_data: Any = None) -> Any:
+  
+    primitive_type = (int, str, bool, float)
+    sequence_type  = (list,tuple,range)
+    mapping_type   = (dict)
+
+    if type(updated_data) in primitive_type or type(updated_data) in sequence_type or type(updated_data) in mapping_type:
+      self.export_parameter(key,updated_data)
+    elif type(updated_data) == ModuleType:
+      self.export_module(key)
+    elif type(updated_data) == pandas.core.frame.DataFrame:
+      self.save_data_frame(key,updated_data)
+    else:
+      raise ValueError('Type Not in any specified types supported by Python')
+  
+
 
   def vizier_request(self,
                      event: str,
@@ -195,8 +219,8 @@ class VizierDBClient(object):
       )
     assert(response is not None)
     return import_to_native_type(
-      response["data"]["value"],
-      response["data"]["dataType"]
+      response["data"],
+      response["dataType"]
     )
 
   def get_module(self, name: str) -> Any:
@@ -488,9 +512,11 @@ class VizierDBClient(object):
                   errors: Any = None,
                   newline: Optional[str] = None,
                   closefd: bool = True,
-                  opener: Optional[Any] = None
+                  opener: Optional[Any] = None,
+                  ignore_warning: bool = False
                   ) -> IO:
-    print("***File access may not be reproducible because filesystem resources are transient***")
+    if not ignore_warning:
+      print("***File access may not be reproducible because filesystem resources are transient***")
     return open(file, mode, buffering, encoding, errors, newline, closefd, opener)
 
   def show(self,
@@ -532,6 +558,11 @@ class VizierDBClient(object):
         # After a recursive show, don't need to output anything
         # here, so just return
         return
+      elif is_image(value):
+        mime_type = OUTPUT_PNG
+        with io.BytesIO() as f:
+          value.save(fp = f, format = "PNG")
+          value = base64.encodebytes(f.getbuffer()).decode()
       else:
         repr_html = getattr(value, "_repr_html_", None)
         if repr_html is not None:
@@ -549,6 +580,9 @@ class VizierDBClient(object):
       mimeType=mime_type,
       has_response=False
     )
+
+  def show_png(self, image: bytes) -> None:
+    self.show(base64.encodebytes(image).decode(), OUTPUT_PNG)
 
   def show_html(self, value: str) -> None:
     self.show(value, mime_type=OUTPUT_HTML)
@@ -617,6 +651,35 @@ class VizierDBClient(object):
     )
     if exp_name in self.datasets:
       del self.datasets[exp_name]
+
+  def export_parameter(self, key: str, value: Any) -> None:
+
+    python_data_type = type(value)
+    if python_data_type not in PYTHON_TO_VIZIER_TYPES:
+      raise ValueError(f"{value} is not a valid parameter")
+
+    vizier_data_type = PYTHON_TO_VIZIER_TYPES[python_data_type]
+
+    value = export_from_native_type(value, vizier_data_type)	
+    
+    print(value)
+
+    response = self.vizier_request("save_artifact",
+      name=key,
+      data={"value": value, "dataType": vizier_data_type},
+      mimeType="application/json",
+      artifactType=ARTIFACT_TYPE_PARAMETER,
+      has_response=True
+    )
+    assert(response is not None)
+    
+    # print("ArtifactId",response["artifactId"])
+    self.artifacts[key] = Artifact(
+      name=key,
+      artifact_type=ARTIFACT_TYPE_PARAMETER,
+      mime_type=vizier_data_type,
+      artifact_id=response["artifactId"]
+    )
 
   def get_data_frame(self, name: str) -> pandas.DataFrame:
     """Get dataset with given name as a pandas dataframe.
@@ -811,3 +874,11 @@ def is_valid_name(name: str) -> bool:
     elif c not in ['_', '-', ' ']:
       return False
   return (allnums > 0)
+
+def is_image(obj: Any) -> bool:
+  try:
+    from PIL.Image import Image
+    return issubclass(type(obj), Image)
+  except Exception:
+    # Fall through on module not found
+    return False

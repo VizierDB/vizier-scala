@@ -17,8 +17,13 @@ import info.vizierdb.api.websocket
 import info.vizierdb.delta
 import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
+import info.vizierdb.ui.components.Project
 
-class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: API)
+class BranchSubscription(
+  project: Project, 
+  branchId: Identifier, 
+  val api: API
+)
   extends Object
   with Logging
 {
@@ -30,6 +35,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
   val modules = new RxBufferVar[ModuleSubscription]()
   val maxTimeWithoutNotification: Long = 5000L
   var executionStartTime: Long = -1
+  val properties = Var[Map[String, JsValue]](Map.empty)
   
   protected[ui] def getSocket(): dom.WebSocket =
   {
@@ -81,8 +87,8 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
     connected() = true
     logger.debug("Connected!")
     awaitingReSync() = true
-
-    Client.subscribe(projectId, branchId)
+    
+    Client.subscribe(project.projectId, branchId)
           .onSuccess { case workflow => onSync(workflow) } 
   }
   def onClosed(event: dom.Event)
@@ -153,7 +159,7 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
              
               /////////////////////////////////////////////////
 
-              case delta.UpdateCellState(position, state) =>
+              case delta.UpdateCellState(position, state, timestamps) =>
                 logger.debug(s"State Update: ${state} @ ${position}")
                 if(state == ExecutionState.RUNNING){
                   executionStartTime =  java.lang.System.currentTimeMillis()
@@ -169,9 +175,19 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
                 } else {
                   executionStartTime = -1
                 }
-
-                modules(position).state() = state
+                val module = modules(position)
+                module.state() = state
+                module.timestamps() = timestamps
              
+              /////////////////////////////////////////////////
+              
+              case delta.UpdateCellArguments(position, arguments, moduleId) =>
+                logger.debug(s"Arguments Update: $arguments @ $position")
+                val module = modules(position)
+                module.arguments = arguments
+                module.id = moduleId
+
+
               /////////////////////////////////////////////////
 
               case delta.AppendCellMessage(position, stream, message) =>
@@ -201,6 +217,17 @@ class BranchSubscription(branchId: Identifier, projectId: Identifier, val api: A
                       artifact.name -> Some(artifact)
                   }
                   .toMap
+
+              /////////////////////////////////////////////////
+
+              case delta.UpdateBranchProperties(newProperties) => 
+                properties() = newProperties
+
+              /////////////////////////////////////////////////
+
+              case delta.UpdateProjectProperties(newProperties) => 
+                project.properties() = newProperties
+                
             }
         }
   }

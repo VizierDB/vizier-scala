@@ -6,3 +6,4 @@ pyarrow<4.0.0
 pandas
 shapely
 pyspark
+Pillow

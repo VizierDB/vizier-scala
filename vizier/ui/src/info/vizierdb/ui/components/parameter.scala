@@ -154,7 +154,7 @@ object Parameter
    * Decode a [[ParameterDescriptor]] into a [[Parameter]] for use with the
    * specified [[ModuleEditor]]
    */
-  def apply(tree: serialized.ParameterDescriptionTree, editor: ModuleEditor)
+  def apply(tree: serialized.ParameterDescriptionTree, editor: DefaultModuleEditor)
            (implicit owner: Ctx.Owner): Parameter =
   {
     def visibleArtifactsByType = editor.delegate
@@ -209,6 +209,12 @@ class BooleanParameter(
 ) extends Parameter
 {
 
+
+  def this(id: String, name: String, required: Boolean, hidden: Boolean, default: Boolean)
+  {
+    this(id, name, required, hidden)
+    set(JsBoolean(default))
+  }
 
   def this(parameter: serialized.ParameterDescription)
   {
@@ -355,12 +361,12 @@ class ColIdParameter(
           }
         ):_*
       )
-    }
+    }.reactive
   )
   def value = 
-    JsString(inputNode[dom.html.Select].value)
+    JsNumber(inputNode[dom.html.Select].value.toInt)
   override def set(v: JsValue): Unit = 
-    inputNode[dom.html.Select].value = v.as[String]
+    inputNode[dom.html.Select].value = v.as[Int].toString
 
 }
 
@@ -430,7 +436,7 @@ class ArtifactParameter(
                      .map { x => x._1 -> x._1 }
         ):_*
       )
-    }
+    }.reactive
   )
   def value = 
     inputNode[dom.html.Select].value match {
@@ -501,7 +507,7 @@ class FileParameter(
 
   val dragAndDropField:dom.Node = 
     div(`class` := "file-drop-area",
-      bodyText,
+      bodyText.reactive,
       ondrop := { (e:dom.DragEvent) => 
         bodyText() = span("file dropped")
         e.preventDefault()
@@ -556,9 +562,9 @@ class FileParameter(
   val root = fieldset(
     `class` := "upload-dataset",
     legend(name),
-    tab("Upload File", 0),
-    tab("Load URL", 1),
-    mode.map { displays(_) }
+    tab("Upload File", 0).reactive,
+    tab("Load URL", 1).reactive,
+    mode.map { displays(_) }.reactive
   )
   def value =
     mode.now match {
@@ -697,20 +703,30 @@ class ListParameter(
       )
     )
 
+  def rawValue =
+    rows.toSeq
+        .dropRight(1) // drop the "template" row
+        .map { row => 
+          JsArray(row.map { field => Json.toJson(field.toArgument) })
+        }
+
   def value = 
-    JsArray(
-      rows.toSeq
-          .dropRight(1) // drop the "template" row
-          .map { row => 
-            JsArray(row.map { field => Json.toJson(field.toArgument) })
-          }
-    )
+    JsArray(rawValue)
+
   def set(v: JsValue): Unit = 
   {
+    set(
+      v.as[Seq[serialized.CommandArgumentList.T]].map { 
+        serialized.CommandArgumentList.toMap(_)
+      }
+    )
+  }
+
+  def set(v: Seq[Map[String, JsValue]]) =
+  {
     rows.clear()
-    for(rowArguments <- v.as[Seq[JsValue]]){
+    for(rowData <- v){
       val row = tentativeRow()
-      val rowData = serialized.CommandArgumentList.decodeAsMap(rowArguments)
       for(field <- row){
         field.set(rowData.getOrElse(field.id, JsNull))
       }
@@ -759,7 +775,12 @@ class RecordParameter(
   def value = 
     Json.toJson(elements.map { _.toArgument })
   def set(v: JsValue): Unit = 
-    ???
+  {
+    val data = serialized.CommandArgumentList.decodeAsMap(v)
+    for(field <- elements){
+      field.set( data.getOrElse(field.id, JsNull) )
+    }
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -840,7 +861,8 @@ class StringParameter(
   val id: String, 
   val name: String, 
   val required: Boolean,
-  val hidden: Boolean
+  val hidden: Boolean,
+  val initialPlaceholder: String = ""
 ) extends Parameter
 {
   def this(parameter: serialized.ParameterDescription)
@@ -853,11 +875,52 @@ class StringParameter(
     )
   }
   val root = 
-    input(`type` := "text").render.asInstanceOf[dom.html.Input]
+    input(`type` := "text", placeholder := initialPlaceholder).render.asInstanceOf[dom.html.Input]
   def value =
-    JsString(inputNode[dom.html.Input].value)
+    JsString(
+      inputNode[dom.html.Input].value match {
+        case "" => inputNode[dom.html.Input].placeholder
+        case x => x
+      }
+    )
   def set(v: JsValue): Unit = 
     inputNode[dom.html.Input].value = v.as[String]
+  def setHint(s: String): Unit =
+    inputNode[dom.html.Input].placeholder = s
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A parameter with a limited set of options
+ */
+class DataTypeParameter(
+  val id: String, 
+  val name: String, 
+  val required: Boolean,
+  val hidden: Boolean
+) extends Parameter
+{
+  def this(parameter: serialized.EnumerableParameterDescription)
+  {
+    this(
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
+    )
+  }
+  val root = 
+    pulldown(
+      DataTypes.BY_NAME.indexWhere { _._2 == "int" }
+    )(DataTypes.BY_NAME:_*)
+      .render.asInstanceOf[dom.html.Select]
+
+  def value = 
+    JsString(inputNode[dom.html.Select].value)
+  def set(v: JsValue): Unit = 
+    inputNode[dom.html.Select].value = v.as[String]
+
 }
 
 /////////////////////////////////////////////////////////////////////////////

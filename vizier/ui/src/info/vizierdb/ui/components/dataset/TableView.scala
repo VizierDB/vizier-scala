@@ -12,9 +12,10 @@ import play.api.libs.json.JsString
 
 class TableView(
   var data: TableDataSource,
-  rowDimensions: (Int, Int),
-  outerDimensions: (String, String),
+  rowHeight: Int,
+  maxHeight: Int,
   headerHeight: Int,
+  maxWidth: Int = 800,
 )(implicit val owner: Ctx.Owner)
   extends Logging
 {
@@ -36,14 +37,23 @@ class TableView(
   var visibleRows = new ArrayDeque[Row]()
 
   /**
-   * The width of a single row in pixels
+   * The height of the inner (full table) view
    */
-  def rowWidth = rowDimensions._1
+  def innerHeight = rowHeight * data.rowCount
+  
+  /**
+   * The height of the outer (scrolling wrapper) view
+   */
+  def outerHeight = Math.min(innerHeight, maxHeight)
 
   /**
-   * The height of a single row in pixels
+   * The width of the inner (full table) view
    */
-  def rowHeight = rowDimensions._2
+  def innerWidth = data.columnCount * TableView.DEFAULT_CELL_WIDTH + TableView.GUTTER_WIDTH
+
+  /**
+   * The width of the outer (wrapper) view
+   */
 
   val PREFIX_ROWS = 10
   val SUFFIX_ROWS = 10
@@ -115,7 +125,7 @@ class TableView(
 
   def refreshSize() =
   {
-    body.style.height = s"${rowHeight * data.rowCount + headerHeight}px"
+    body.style.height = s"${innerHeight}px"
   }
 
 
@@ -133,49 +143,61 @@ class TableView(
 
   class Row(row: Long)
   {
-    val root: dom.html.TableRow = 
-      tr(
+    val root: dom.html.Div = 
+      div(
         `class` := (Seq(
           (if(row % 2 == 0) { "even_row" } else { "odd_row" }),
+          "table_row",
         ) ++ data.rowClasses(row)).mkString(" "),
         position := "absolute",
         top := s"${row * rowHeight}px",
         left := "0px",
         height := s"${rowHeight}px",
-        width := s"${rowWidth}px",
-        data.rowGutter(row)
+        width := "100%",
+        RenderCell.gutter(
+          row = row, 
+          caveatted = data.rowCaveat(row),
+          width = TableView.GUTTER_WIDTH
+        )
       ).render
     refresh()
 
     def refresh()
     {
       while(root.firstChild != root.lastChild) { root.removeChild(root.lastChild) }
-      for(cell <- data.rowAt(row)){ root.appendChild(cell) }
+      for(i <- 0 until data.columnCount){ 
+        root.appendChild(data.cellAt(row, i, TableView.DEFAULT_CELL_WIDTH))
+      }
     }
 
   }
 
   /**
-   * The header row
-   */
-  val header = thead(
-    width := s"${rowWidth}px",
-    tr(
-      width := s"100%",
-      height := s"${headerHeight}px",
-    )
-  ).render
-  rebuildHeaderRow()
-
-  /**
    * The body component
    */
   val body = 
-      tbody(
-        width := "100%",
-        height := s"${rowHeight * data.rowCount + headerHeight}px",
-        position := "relative",
+      div(
+        `class` := "table_body",
+        height := s"${innerHeight}px",
+        width := "100%"
       ).render
+
+  /**
+   * The header row
+   */
+  val header = div(
+    `class` := "table_header",
+    height := s"${headerHeight}px",
+    width := "100%",
+    div()
+  ).render
+
+  val tableContents =
+    div(`class` := "table_contents",
+      header,
+      body
+    ).render
+  rebuildHeaderRow()
 
   /**
    * The actual structure
@@ -183,30 +205,31 @@ class TableView(
   val root = 
     div(
       OnMount { _ => updateScroller() },
-      `class` := "data_table_wrapper",
-      width := outerDimensions._1,
-      height := outerDimensions._2,
+      `class` := "data_table",
       onscroll := { _:dom.Node => requestScrollUpdate() },
-      overflowY := "scroll",
-      overflowX := "auto",
-      table(
-        `class` := "data_table",
-        overflow := "visible",
-        position := "static",
-        header,
-        body
-      )
+      tableContents
     ).render
   /**
    * Rebuild the header row, e.g., in response to added columns
    */
   def rebuildHeaderRow()
   {
+    tableContents.style.width = s"${innerWidth+20}px"
     header.replaceChild(
-      tr(
+      div(
         ( Seq[Frag](
-            td(`class` := "gutter", ""),
-          )++data.headerCells
+            div(
+              `class` := "gutter", 
+              width := TableView.GUTTER_WIDTH,
+              ""
+            ),
+          )++(0 until data.columnCount).map { i =>
+            RenderCell.header(
+              data.columnTitle(i), 
+              data.columnDataType(i),
+              width = TableView.DEFAULT_CELL_WIDTH
+            )
+          }
         ):_*
       ).render,
       header.firstChild
@@ -229,4 +252,13 @@ class TableView(
     } )
   }
 
+}
+
+object TableView
+{
+  /**
+   * The width of a cell (TODO: allow users to override this by dragging cols)
+   */
+  val DEFAULT_CELL_WIDTH = 150
+  val GUTTER_WIDTH = 20
 }

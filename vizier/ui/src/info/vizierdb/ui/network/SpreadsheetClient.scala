@@ -56,8 +56,8 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
       Json.parse(message.data.asInstanceOf[String])
           .as[SpreadsheetResponse] match {
             case Connected(name)                 => this.name() = name; connected() = true
-            case UpdateSchema(newSchema)         => setSchema(newSchema)
-            case UpdateSize(newSize)             => setSize(newSize)
+            case UpdateSchema(newSchema)         => setSchema(newSchema); table.foreach { _.rebuildHeaderRow() }
+            case UpdateSize(newSize)             => setSize(newSize); table.foreach { _.refreshSize }
             case Pong(id)                        => logger.debug(s"Pong $id")
             case DeliverRows(start, data)        => updateData(start, data)
             case DeliverCell(column, row, value) => updateCell(column, row, value)
@@ -285,17 +285,14 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
     }
   }
 
-  def cellAt(row: Long, column: Int): Frag =
+  def cellAt(row: Long, column: Int, width: Int): Frag =
   {
     if(currentlyEditingCell == Some((row, column))){
       currentlyEditingField match { 
         case None => 
           RenderCell.spinner(schema(column).dataType)
         case Some(i) => 
-          td(
-            width := RenderCell.defaultWidthForType(schema(column).dataType),
-            i
-          )
+          div(i)
       }
         
     } else {
@@ -304,15 +301,15 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
           RenderCell(
             value, 
             schema(column).dataType, 
+            width = width,
             caveatted = if(caveat){ Some((trigger: dom.html.Button) => displayCaveat(row, Some(column))) } else { None },
             onclick = { _:dom.Event => startEditing(row, column) }
           )
         case ValueInProgress => 
           RenderCell.spinner(schema(column).dataType)
         case ErrorValue(err, detail) =>
-          td(
-            `class` := "error",
-            width := RenderCell.defaultWidthForType(schema(column).dataType),
+          div(
+            `class` := "cell error",
             err,
             onclick := { _:dom.Event => startEditing(row, column) }
           )
@@ -328,22 +325,12 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   def columnTitle(column: Int): String = 
     schema(column).name
 
-  def columnWidthInPixels(column: Int): Int = 
-    RenderCell.defaultWidthForType(schema(column).dataType)
-
-  def headerAt(column: Int): Frag =
-    RenderCell.header(columnTitle(column), columnDataType(column))
-
   def rowClasses(row: Long): Seq[String] = 
     Seq.empty
 
   def rowCount: Long = 
     size
 
-  def rowGutter(row: Long): Frag = 
-    RenderCell.gutter(
-      row = row, 
-      caveatted = None
-    )
+  def rowCaveat(row: Long): Option[() => Unit] = None
 
 }

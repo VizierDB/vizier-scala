@@ -15,13 +15,14 @@
 package info.vizierdb.commands
 
 import scalikejdbc.DB
+import play.api.libs.json._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 
 import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.MutableProject
 import info.vizierdb.commands.python.PythonProcess
 import org.apache.spark.sql.types._
 import info.vizierdb.util.FeatureSupported
@@ -223,9 +224,43 @@ print(df['A'].sum())
       |  return x + 1
       |vizierdb.export_module(addOne)
     """.stripMargin)
+    project.artifactSummaries.keys must contain("addone")
     project.sql("SELECT addOne(2)" -> "functionTest")
     project.waitUntilReadyAndThrowOnError
     project.datasetData("functionTest").data(0)(0) must beEqualTo("3")
+  }
+    
+  "Export types properly" >>
+  {
+    project.script("""
+      |from datetime import datetime, date
+      |from shapely.geometry import Point
+      |ds = vizierdb.new_dataset()
+      |ds.insert_column("a", "string")
+      |ds.insert_column("b", "timestamp") 
+      |ds.insert_column("c", "date")
+      |ds.insert_column("d", "geometry")
+      |ds.insert_row([
+      |  "hello",
+      |  datetime.now(),
+      |  date.today(),
+      |  Point(42, 59)
+      |])
+      |ds.save("funky_format_export")
+    """.stripMargin)
+    project.waitUntilReadyAndThrowOnError
+    val row:Seq[Any] = 
+      project.dataframe("funky_format_export")
+             .take(1)
+             .head
+             .toSeq
+    row(0).asInstanceOf[String] must beEqualTo("hello")
+    val timestamp: AnyRef = row(1).asInstanceOf[AnyRef]
+    val date: AnyRef = row(2).asInstanceOf[AnyRef]
+    val geometry: AnyRef = row(3).asInstanceOf[AnyRef]
+    timestamp must beAnInstanceOf[java.sql.Timestamp]
+    date must beAnInstanceOf[java.sql.Date]
+    geometry must beAnInstanceOf[org.locationtech.jts.geom.Geometry]
   }
 
 }

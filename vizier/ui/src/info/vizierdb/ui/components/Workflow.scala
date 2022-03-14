@@ -12,7 +12,7 @@ import info.vizierdb.ui.rxExtras.RxBufferWatcher
 import info.vizierdb.ui.network.ModuleSubscription
 import info.vizierdb.types.ArtifactType
 
-class Workflow(subscription: BranchSubscription, project: Project)
+class Workflow(val subscription: BranchSubscription, val project: Project)
               (implicit owner: Ctx.Owner)
 {
 
@@ -20,10 +20,10 @@ class Workflow(subscription: BranchSubscription, project: Project)
     subscription.modules
                 .rxMap { module => new Module(module, this) }
 
-  val moduleViewsWithEdits = new TentativeEdits(moduleViews, project)
+  val moduleViewsWithEdits = new TentativeEdits(moduleViews, project, this)
 
   val moduleNodes =
-    RxBufferView(ul(), 
+    RxBufferView(ul(`class` := "module_list"), 
       moduleViewsWithEdits.rxMap { 
         case Left(module) => module.root
         case Right(edit) => edit.root
@@ -31,18 +31,30 @@ class Workflow(subscription: BranchSubscription, project: Project)
     )
 
 
+
+
   val root = 
     div(id := "workflow",
       Rx { 
         if(subscription.awaitingReSync()) { div("Syncing workflow...") } 
         else { span("") }
-      },
+      }.reactive,
       moduleNodes.root,
       div(
+        `class` := "add_cell_end_wrapper",
         button(
+          `class` := "add_cell_end",
           onclick := { (e: dom.MouseEvent) => moduleViewsWithEdits.appendTentative() }, 
-          "Add A Cell"
-        )
+          "+"
+        ),
+        moduleViewsWithEdits
+          .rxLength
+          .map { 
+            case 0 => div(`class` := "hint",
+                          "↑", br(), "Click here to add a module")
+            case _ => div()
+          }.reactive
+
       )
     )
 }

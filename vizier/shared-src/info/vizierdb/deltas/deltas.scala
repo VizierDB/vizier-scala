@@ -16,13 +16,15 @@ package info.vizierdb.delta
 
 import info.vizierdb.types.{ ExecutionState, StreamType, Identifier }
 import info.vizierdb.serialized
+import info.vizierdb.nativeTypes.JsValue
 
 sealed trait WorkflowDelta
 
 case class InsertCell(cell: serialized.ModuleDescription, position: Int) extends WorkflowDelta
 case class UpdateCell(cell: serialized.ModuleDescription, position: Int) extends WorkflowDelta
 case class DeleteCell(position: Int) extends WorkflowDelta
-case class UpdateCellState(position: Int, state: ExecutionState.T) extends WorkflowDelta
+case class UpdateCellState(position: Int, state: ExecutionState.T, timestamps: serialized.Timestamps) extends WorkflowDelta
+case class UpdateCellArguments(position: Int, arguments: serialized.CommandArgumentList.T, newModuleId: Identifier) extends WorkflowDelta
 case class AppendCellMessage(position: Int, stream: StreamType.T, message: serialized.MessageDescription) extends WorkflowDelta
 case class DeltaOutputArtifact(artifact: Either[String, serialized.ArtifactSummary]) 
 { 
@@ -38,20 +40,24 @@ object DeltaOutputArtifact {
   def fromArtifact(a:serialized.ArtifactSummary) =
     DeltaOutputArtifact(Right(a))
 }
-
 case class UpdateCellOutputs(position: Int, outputs: Seq[DeltaOutputArtifact]) extends WorkflowDelta
 case class AdvanceResultId(position: Int, resultId: Identifier) extends WorkflowDelta
+case class UpdateBranchProperties(properties: Map[String, JsValue]) extends WorkflowDelta
+case class UpdateProjectProperties(properties: Map[String, JsValue]) extends WorkflowDelta
 
 
 object WorkflowDelta
 {
   val OP_TYPE = "operation"
 
-  val INSERT_CELL           = "insert_cell"
-  val UPDATE_CELL           = "update_cell"
-  val DELETE_CELL           = "delete_cell"
-  val UPDATE_CELL_STATE     = "update_cell_state"
-  val APPEND_CELL_MESSAGE   = "append_cell_message"
-  val UPDATE_CELL_OUTPUTS   = "update_cell_outputs"
-  val ADVANCE_RESULT_ID     = "advance_result_id"
+  val INSERT_CELL               = "insert_cell"
+  val UPDATE_CELL               = "update_cell"
+  val DELETE_CELL               = "delete_cell"
+  val UPDATE_CELL_STATE         = "update_cell_state"
+  val APPEND_CELL_MESSAGE       = "append_cell_message"
+  val UPDATE_CELL_ARGUMENTS     = "update_cell_arguments"
+  val UPDATE_CELL_OUTPUTS       = "update_cell_outputs"
+  val ADVANCE_RESULT_ID         = "advance_result_id"
+  val UPDATE_BRANCH_PROPERTIES  = "update_branch_properties"
+  val UPDATE_PROJECT_PROPERTIES = "update_project_properties"
 }

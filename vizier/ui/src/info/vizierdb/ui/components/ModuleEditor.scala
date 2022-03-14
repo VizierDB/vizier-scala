@@ -17,24 +17,21 @@ import info.vizierdb.serialized.{
   ParameterDescriptionTree,
   DatasetSummary,
   DatasetDescription,
-  DatasetColumn
-
+  DatasetColumn,
+  PackageCommand
 }
 import info.vizierdb.types._
 import info.vizierdb.nativeTypes.JsValue
 import scala.util.{ Success, Failure }
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
+import info.vizierdb.ui.components.editors._
+import info.vizierdb.ui.widgets.FontAwesome
 
-class ModuleEditor(
-  val packageId: String, 
-  val command: serialized.PackageCommand, 
-  val delegate: ModuleEditorDelegate
-)(implicit owner: Ctx.Owner) 
-  extends Object 
+trait ModuleEditor
+  extends Object
   with Logging
 {
-
   def saveState()
   {
     val response = 
@@ -42,21 +39,21 @@ class ModuleEditor(
         delegate.client.workflowReplace(
           modulePosition = delegate.position,
           packageId = packageId,
-          commandId = command.id,
-          arguments = arguments
+          commandId = commandId,
+          arguments = currentState
         )
       } else if(delegate.isLast){
         delegate.client.workflowAppend(
           packageId = packageId,
-          commandId = command.id,
-          arguments = arguments
+          commandId = commandId,
+          arguments = currentState
         )
       } else {
         delegate.client.workflowInsert(
           modulePosition = delegate.position,
           packageId = packageId,
-          commandId = command.id,
-          arguments = arguments
+          commandId = commandId,
+          arguments = currentState
         )
       }
     response.onComplete { 
@@ -75,6 +72,60 @@ class ModuleEditor(
     }
   }
 
+  def setState(arguments: (String, JsValue)*) =
+    loadState(CommandArgumentList(arguments:_*))
+  
+  def loadState(arguments: Seq[CommandArgument])
+  def packageId: String
+  def commandId: String
+  def delegate: ModuleEditorDelegate
+  def currentState: Seq[CommandArgument]
+  val editorFields: Frag
+
+  def serialized: CommandDescription =
+    CommandDescription(
+      packageId = packageId,
+      commandId = commandId,
+      arguments = currentState
+    )
+
+  lazy val root: Frag = 
+    div(`class` := "module editable",
+      editorFields,
+      div(`class` := "editor_actions",
+        button(FontAwesome("arrow-left"), " Back", `class` := "cancel", onclick := { (e: dom.MouseEvent) => delegate.cancelEditor() }),
+        div(`class` := "spacer"),
+        button(FontAwesome("cogs"), " Save", `class` := "save", onclick := { (e: dom.MouseEvent) => saveState() })
+      )
+    )
+}
+
+object ModuleEditor
+{
+  def apply(
+    packageId: String, 
+    command: serialized.PackageCommand, 
+    delegate: ModuleEditorDelegate
+  )(implicit owner: Ctx.Owner): ModuleEditor = {
+    (packageId, command.id) match {
+      case ("data", "load")   => new LoadDatasetEditor(delegate)
+      case ("data", "unload") => new UnloadDatasetEditor(delegate)
+      case _ => new DefaultModuleEditor(packageId, command, delegate)
+    }
+  }
+}
+
+
+
+class DefaultModuleEditor(
+  val packageId: String, 
+  val command: serialized.PackageCommand, 
+  val delegate: ModuleEditorDelegate
+)(implicit owner: Ctx.Owner) 
+  extends ModuleEditor
+  with Logging
+{
+
   def loadState(arguments: Seq[CommandArgument])
   {
     for(arg <- arguments){
@@ -85,8 +136,7 @@ class ModuleEditor(
     }
   }
 
-  def setState(arguments: (String, JsValue)*) =
-    loadState(CommandArgumentList(arguments:_*))
+  def commandId = command.id
 
   val selectedDataset = Var[Option[String]](None)
 
@@ -108,25 +158,15 @@ class ModuleEditor(
   lazy val getParameter:Map[String, Parameter] = 
     parameters.map { p => p.id -> p }.toMap
 
-  def arguments: Seq[CommandArgument] =
+  def currentState: Seq[CommandArgument] =
     parameters.map { _.toArgument }
 
-  def serialized: CommandDescription =
-    CommandDescription(
-      packageId = packageId,
-      commandId = command.id,
-      arguments = arguments
-    )
 
-
-  val root = 
-    div(`class` := "module editable",
-      h4(command.name),
-      parameters.filter { !_.hidden }.map { param => div(param.root) },
-      div(
-        button("Back", onclick := { (e: dom.MouseEvent) => delegate.cancelEditor() }),
-        button("Save", onclick := { (e: dom.MouseEvent) => saveState() })
-      )
+  val editorFields =
+    div(
+      // h4(command.name),
+      parameters.filter { !_.hidden }
+                .map { param => div(param.root) }
     )
 }
 

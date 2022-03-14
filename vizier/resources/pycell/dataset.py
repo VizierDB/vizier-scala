@@ -19,6 +19,8 @@ from typing import TYPE_CHECKING, Optional, Union, Dict, Any, List, cast
 if TYPE_CHECKING:
     from pycell.client import VizierDBClient
 
+import datetime
+import io
 from bokeh.models.sources import ColumnDataSource  # type: ignore[import]
 
 """Identifier for column data types. By now the following data types are
@@ -26,13 +28,15 @@ distinguished: date (format yyyy-MM-dd), int, varchar, real, and datetime
 (format yyyy-MM-dd hh:mm:ss:zzzz).
 """
 DATATYPE_DATE = 'date'
-DATATYPE_DATETIME = 'datetime'
+DATATYPE_DATETIME = 'timestamp'
 DATATYPE_INT = 'int'
 DATATYPE_SHORT = 'short'
 DATATYPE_LONG = 'long'
 DATATYPE_REAL = 'real'
 DATATYPE_VARCHAR = 'varchar'
 DATATYPE_GEOMETRY = "geometry"
+DATATYPE_BINARY = 'binary'
+DATATYPE_IMAGE = 'image/png'
 
 
 VIZUAL_DELETE_COLUMN  = "deletecolumn"
@@ -158,6 +162,9 @@ class MutableDatasetRow(object):
   def __setitem__(self, key, value):
     return self.set_value(key, value)
 
+  def __contains__(self, key):
+    return self.dataset.__contains__(key)
+
   def get_value(self, column: Union[int, str]) -> Any:
     """Get the row value for the given column.
 
@@ -267,6 +274,9 @@ class DatasetClient(object):
       ", ".join(col.__repr__() for col in self.columns),
       len(self.rows)
     )
+
+  def __contains__(self, key):
+    return self.get_column(key) is not None
 
   def add_delta(self, id: str, **varargs) -> None:
     self.history.append({"id": id, **varargs})
@@ -416,12 +426,15 @@ class DatasetClient(object):
     Raises ValueError if the length of the values list does not match the
     number of columns in the dataset.
     """
+    import base64
     # Ensure that there is exactly one value for each column in the dataset
     if values is not None:
       if len(values) != len(self.columns):
         raise ValueError('invalid number of values for dataset schema')
+      for v, col in zip(values, self.columns):
+        assert_type(v, col.data_type, col.name)
       row = MutableDatasetRow(
-        values=[str(v) for v in values],
+        values=[v for v in values],
         dataset=self
       )
     else:
@@ -621,7 +634,7 @@ class DatasetClient(object):
       ],
       "data": [
         [
-          export_from_native_type(v, c.data_type)
+          export_from_native_type(v, c.data_type, c.name)
           for (v, c) in zip(row.values, self.columns)
         ]
         for row in rows
@@ -652,38 +665,88 @@ def collabel_2_index(label):
 
 
 def import_to_native_type(value: Any, data_type: str) -> Any:
-  if data_type == "geometry":
+  # print("Parsing {} as {}".format(value, data_type))
+  if value is None:
+    return None
+  elif data_type == DATATYPE_GEOMETRY:
     from shapely import wkt  # type: ignore[import]
     return wkt.loads(value)
-  else:
-    return value
-
-
-def export_from_native_type(value: Any, data_type: str) -> Any:
-  if data_type == "geometry":
-    return value.wkt
-  else:
-    return value
-
-
-def assert_type(value: Any, data_type: str) -> Any:
-  import datetime
-  if data_type == DATATYPE_DATE:
-    assert(isinstance(value, datetime.date))
-    return value
+  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+    import base64
+    return base64.b64decode(value.encode('utf-8'))
   elif data_type == DATATYPE_DATETIME:
-    assert(isinstance(value, datetime.datetime))
+    from datetime import datetime
+    return datetime.fromisoformat(value)
+  elif data_type == DATATYPE_DATE:
+    from datetime import date
+    return date.fromisoformat(value)
+  elif data_type == DATATYPE_IMAGE:
+    from PIL import Image
+    import base64
+    with io.BytesIO(base64.b64decode(value.encode('utf-8'))) as f:
+      return Image.open(f)
+  else:
     return value
-  elif data_type == DATATYPE_INT or data_type == DATATYPE_SHORT or data_type == DATATYPE_LONG:
-    assert(isinstance(value, int))
-    return value
-  elif data_type == DATATYPE_REAL:
-    assert(isinstance(value, float))
-    return value
-  elif data_type == DATATYPE_VARCHAR:
-    assert(isinstance(value, str))
-    return value
+
+
+def export_from_native_type(value: Any, data_type: str, context="the value") -> Any:
+  assert_type(value, data_type, context)
+  if value is None:
+    return None
   elif data_type == DATATYPE_GEOMETRY:
+    from shapely.geometry import shape  # type: ignore[import]
+    return shape(value).wkt
+  elif data_type == DATATYPE_BINARY:
+    import base64
+    return base64.b64encode(bytes(value)).decode('utf-8')
+  elif data_type == DATATYPE_IMAGE:
+    import base64
+    from PIL.Image import Image  # type: ignore[import]
+    if(issubclass(type(value), Image)):
+      with io.BytesIO() as f:
+        value.save(fp=f, format="PNG")
+        value = base64.b64encode(f.getbuffer()).decode('utf-8')
+    elif type(value) is bytes:
+      value = base64.encodebytes(value).decode()
+    return value
+  elif data_type == DATATYPE_DATETIME or data_type == DATATYPE_DATE:
+    return value.isoformat()
+  else:
+    return value
+
+
+TYPE_MAPPINGS = [
+  (datetime.date, [DATATYPE_DATE]),
+  (datetime.datetime, [DATATYPE_DATETIME]),
+  (int, [DATATYPE_INT, DATATYPE_SHORT, DATATYPE_LONG]),
+  (float, [DATATYPE_REAL]),
+  (str, [DATATYPE_VARCHAR]),
+  (bytes, [DATATYPE_BINARY]),
+]
+
+PYTHON_TO_VIZIER_TYPES = {p: tlist[0] for (p, tlist) in TYPE_MAPPINGS}
+VIZIER_TO_PYTHON_TYPES = {t: p for (p, tlist) in TYPE_MAPPINGS for t in tlist}
+
+
+def assert_type(value: Any, data_type: str, context="the value") -> Any:
+  if value is None:
+    return value
+  elif data_type in VIZIER_TO_PYTHON_TYPES:
+    python_type = VIZIER_TO_PYTHON_TYPES[data_type]
+    if isinstance(value, python_type):
+      return value
+    else:
+      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a {data_type}")
+    # Special-case handling for Geometry types
+  elif data_type == DATATYPE_IMAGE:
+    from PIL.Image import Image
+    if(issubclass(type(value), Image)):
+      return value
+    else:
+      raise ValueError(f"{context} ({value}) is a {type(value)} but not a PIL image")
+  elif data_type == DATATYPE_GEOMETRY:
+    if not hasattr(value, "__geo_interface__"):
+      raise ValueError(f"{context} ({value}) is a {type(value)}, and not a type that supports the geometry interface")
     # Not sure how to validate this...
     return value
   else:

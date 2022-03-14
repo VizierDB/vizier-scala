@@ -14,6 +14,7 @@ import scala.concurrent.Promise
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.Vizier
 import info.vizierdb.util.RowCache
+import info.vizierdb.ui.widgets.FontAwesome
 
 /**
  * A representation of a dataset artifact
@@ -50,8 +51,8 @@ class Dataset(
     if(table == null){
       table = new TableView(
         data = source,
-        rowDimensions = (780, ROW_HEIGHT),
-        outerDimensions = ("800px", "400px"),
+        rowHeight = ROW_HEIGHT,
+        maxHeight = 400,
         headerHeight = 40
       )
       root.appendChild(table.root)
@@ -88,13 +89,18 @@ class Dataset(
 
   val root:dom.html.Div = div(
     `class` := "dataset",
-    Rx { h3(
-      (if(name().isEmpty()) { "Untitled Dataset "} else { name() }),
-      a(
-        href := s"spreadsheet.html?project=$projectId&dataset=$datasetId", 
-        target := "_blank",
-        "[edit]"
-      )) },
+    Rx { 
+      div(
+        `class` := "header",
+        h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() }),
+        a(
+          href := s"spreadsheet.html?project=$projectId&dataset=$datasetId", 
+          target := "_blank",
+          FontAwesome("table")
+        )
+      )
+    }.reactive,
+    // Table root is appended by setSource()
   ).render
 
 }

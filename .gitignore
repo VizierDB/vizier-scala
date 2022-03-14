@@ -1,6 +1,9 @@
 .metals
 .bloop
-/project
+/project/metals.sbt
+/project/target
+/project/project
+/project/plugins.sbt
 /target
 /vizier.db
 /upstream
@@ -12,6 +15,8 @@ __pycache__
 /out
 /node_modules
 .coursier
-/vizier/src/info/vizierdb/api/servlet/VizierAPIServletRoutes.scala
-/vizier/src/info/vizierdb/api/websocket/BranchWatcherAPIRoutes.scala
+/vizier/backend-src/info/vizierdb/api/servlet/VizierAPIServletRoutes.scala
+/vizier/backend-src/info/vizierdb/api/websocket/BranchWatcherAPIRoutes.scala
+/vizier/ui/src/info/vizierdb/ui/network/BranchWatcherAPIProxy.scala
+/vizier/ui/src/info/vizierdb/ui/network/API.scala
 /mill.*

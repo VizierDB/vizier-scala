@@ -60,7 +60,7 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
         Rx { 
           if(active()){ ul(elements.map { _.root }.toSeq:_*) }
           else { ul(`class` := "placeholder", visibility := "hidden") }
-        }
+        }.reactive
       )
 
     def items(newElements: MenuElement*) = copy(title, elements ++ newElements)
@@ -93,7 +93,7 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
           Seq(id := "main_menu", `class` := "menu_bar") ++
           menus().map { _.root } 
         ):_*)
-      }
+      }.reactive
     )
 
 }

@@ -18,21 +18,34 @@ object RenderCell
   def apply(
     value: JsValue, 
     dataType: CellDataType, 
+    width: Int,
     caveatted: Option[dom.html.Button => Unit] = None,
     onclick: (dom.Event => Unit) = (_ => ())
   ): Frag =
   {
-    td(
+    div(
       `class` := (
         Seq("cell") ++ 
           (if(caveatted.isDefined) { Some("caveatted") } else { None }) ++
           (if(value == JsNull) { Some("null") } else { None })
       ).mkString(" "),
-      width := s"${defaultWidthForType(dataType)}px",
-      (value match {
-        case JsNull => ""
-        case _ => value.toString()
-      }).toString,
+      css("width") := s"${width}px",
+      css("height") := "100%",
+      ((value, dataType) match {
+        case (JsNull, _) => 
+          span(" ")
+        case (_, JsString("image/png")) => 
+          {
+            img(
+              `class` := "table_image", 
+              src := "data:image/png;base64,"+value.as[String], 
+            ),
+          }
+        case (_, JsString("string")) => 
+          span(value.as[String])
+        case _ => 
+          span(value.toString())
+      }),
       (if(caveatted.isDefined){
         val callback = caveatted.get
         val node:dom.html.Button = button(`class` := "show_caveat", "(?)").render
@@ -45,10 +58,13 @@ object RenderCell
 
   def header(
     name: String,
-    dataType: CellDataType
+    dataType: CellDataType,
+    width: Int,
   ): Frag =
   {
-    th(
+    div(
+      `class` := "cell",
+      css("width") := s"${width}px",
       span(
         `class` := "title",
         name
@@ -60,16 +76,17 @@ object RenderCell
           case _ => dataType.toString
         }})"
       ),
-      width := s"${defaultWidthForType(dataType)}px"
     )
   }
 
   def gutter(
     row: Long,
+    width: Int,
     caveatted: Option[() => Unit] = None
   ): Frag =
-    td(
+    div(
       `class` := "gutter", 
+      css("width") := s"${width}px",
       (caveatted match { 
         case None => span((row+1).toString)
         case Some(handler) => 
@@ -82,17 +99,9 @@ object RenderCell
     )
 
   def spinner(columnDataType: CellDataType) =
-    td(
+    div(
       textAlign := "center", 
-      width := RenderCell.defaultWidthForType(columnDataType),
       Spinner(15)
     )
-
-
-  /**
-   * The default size for a column of this type in pixels
-   */
-  def defaultWidthForType(dataType: CellDataType):Int = 
-    200
 
 }

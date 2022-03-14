@@ -4,5 +4,6 @@ case class PackageCommand(
   id: String,
   name: String,
   parameters: Seq[ParameterDescription],
-  suggest: Option[Boolean]
+  suggest: Option[Boolean],
+  hidden: Option[Boolean] = Some(false)
 )
