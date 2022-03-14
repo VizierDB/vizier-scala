@@ -324,7 +324,7 @@ object GeoPlot extends Command
 
     s"""
     |{
-    |  let layer = L.imageOverlay('${layer.url}', [[${envelope.getMinX()},${envelope.getMinY()}], [${envelope.getMaxX()},${envelope.getMaxY()}]])
+    |  let layer = L.imageOverlay('${layer.url}', [[${envelope.getMinY()},${envelope.getMinX()}], [${envelope.getMaxY()},${envelope.getMaxX()}]])
     |  layer.addTo(theMap)
     |}
     """.stripMargin
