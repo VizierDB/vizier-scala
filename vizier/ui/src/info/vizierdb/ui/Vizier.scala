@@ -20,6 +20,7 @@ import info.vizierdb.serialized.ProjectList
 import info.vizierdb.serialized.PropertyList
 import info.vizierdb.ui.components.dataset.Dataset
 import info.vizierdb.ui.components.MenuBar
+import info.vizierdb.ui.components.SettingsView
 import info.vizierdb.ui.components.dataset.TableView
 import info.vizierdb.nativeTypes
 
@@ -242,28 +243,20 @@ object Vizier
     )
     cli.table = Some(table)
 
-    // val datasetFuture = 
-    //   api.artifactGetDataset(
-    //     projectId = projectId,
-    //     artifactId = arguments.get("artifact").get.toLong,
-    //     limit = Some(20),
-    //   )
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       document.body.appendChild(table.root)
       OnMount.trigger(document.body)
     })
-    //   document.body.style.background = "#ccf"
-    //   datasetFuture.onComplete {
-    //     case Failure(e) => error(e.toString())
-    //     case Success(description) => 
-    //     {
-    //       val dataset = new Dataset(description, projectId)
-    //       document.body.appendChild(dataset.root)
+  }
 
-    //     }
-    //     OnMount.trigger(document.body)
-    //   }
-    // })
+  @JSExport("settings")
+  def settings(): Unit =
+  {
+    val settings = new SettingsView()
+    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
+      document.body.appendChild(settings.root)
+      OnMount.trigger(document.body)
+    })
   }
 
 }  

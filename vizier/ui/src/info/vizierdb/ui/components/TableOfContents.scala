@@ -44,11 +44,31 @@ class TableOfContents(workflow: Workflow)
   val projectNameEditor = 
     Var[Option[dom.html.Input]](None)
 
+  val branchList =
+    div(`class` := "branch_list",
+      Rx {
+        val branches = workflow.project.branches()
+        ul(
+          branches.values.map { branch => 
+            a(href := "#", branch.name, 
+              onclick := { _:dom.Event => 
+                            if(workflow.project.activeBranch.now != Some(branch.id)){
+                              workflow.project.setActiveBranch(branch.id)
+                            } else {
+                              println(s"Already on branch ${branch.id}")
+                            }
+                          }
+            )
+          }.toSeq
+        ),
+      }.reactive
+    ).render
+
   val root:Frag = 
     div(
       id := "table_of_contents", 
       `class` := "contents",
-      h3(
+      h3(`class` := "project_name",
         Rx {
           projectNameEditor() match {
             case Some(ed) => 
@@ -78,11 +98,17 @@ class TableOfContents(workflow: Workflow)
         " ",
 
       ),
-      h4(
-        "[",
-        workflow.project.activeBranchName.reactive,
-        "]"
+      h4(`class` := "branch_name",
+        button(
+          FontAwesome("code-fork"),
+          " ",
+          workflow.project.activeBranchName.reactive,
+          onclick := { _:dom.Event => 
+            branchList.classList.toggle("active")
+          }
+        )
       ),
+      branchList,
       moduleNodes.root
     )
 }

@@ -392,34 +392,70 @@ div.contents
   height: 100%;
   padding-left: 20px;
   margin-top: 0px;
-}
-div.contents ul
-{  
-  margin-left: 0px;
-  padding-left: 0px;
-}
-div.contents li
-{
-  list-style: decimal;
-  margin-top: 7px;
-  font-weight: bold;
-}
-div.contents li::marker
-{
-  font-weight: lighter;
-  font-size: 80%;
-}
-div.contents li a
-{
-  text-decoration: none;
-}
-div.contents li a:visited
-{
-  color: blue;
-}
-div.contents li.tentative
-{
-  opacity: 0.5;
+  
+  .project_name
+  {
+    margin-bottom: 3px;
+
+    button
+    {
+      margin-left: 5px;
+    }
+  }
+  .branch_name
+  {
+    margin-top: 3px;
+    margin-bottom: 0px;
+  }
+
+  div.branch_list
+  {
+    visibility: hidden;
+    position: absolute;
+    border-radius: 5px;
+    border: 1px solid black;
+    padding-left: 10px;
+    margin-right: 20px;
+    margin-top: 0px;
+    &.active
+    {
+      position: initial;
+      visibility: visible;
+    }
+  }
+
+  ul
+  {  
+    margin-left: 0px;
+    padding-left: 0px;
+    li
+    {
+      list-style: decimal;
+      margin-top: 7px;
+      font-weight: bold;
+      
+      a
+      {
+        text-decoration: none;
+        color: blue;
+
+        &:visited
+        {
+          color: blue;
+        }
+      }
+
+      &::marker
+      {
+        font-weight: lighter;
+        font-size: 80%;
+      }
+      &.tentative
+      {
+        opacity: 0.5;
+      }
+    }
+  }
 }
 
 /************ Messages ************/

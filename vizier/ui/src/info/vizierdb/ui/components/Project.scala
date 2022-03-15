@@ -63,6 +63,17 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
     )
   }
 
+  def setActiveBranch(id: Identifier): Unit =
+  {
+    api.projectUpdate(projectId,
+      serialized.PropertyList
+                .toPropertyList(
+                  properties.now
+                ),
+      defaultBranch = Some(id)
+    )
+  }
+
   var branchSubscription: Option[BranchSubscription] = None
   val workflow = Var[Option[Workflow]](None) 
   val tableOfContents:Rx[Option[TableOfContents]] = 
