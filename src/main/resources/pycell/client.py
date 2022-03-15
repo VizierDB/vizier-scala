@@ -30,7 +30,11 @@ from matplotlib.figure import Figure as MatplotlibFigure  # type: ignore[import]
 from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
 import pickle
 import base64
+<<<<<<< Updated upstream
 from types import ModuleType
+=======
+from types import FunctionType, ModuleType
+>>>>>>> Stashed changes
 
 ARTIFACT_TYPE_DATASET   = "Dataset"
 MIME_TYPE_DATASET       = "dataset/view"
@@ -167,7 +171,11 @@ class VizierDBClient(object):
     if type(updated_data) in primitive_type: 
       self.export_parameter(key,updated_data)
     
+<<<<<<< Updated upstream
     elif isinstance(updated_data, ModuleType): 
+=======
+    elif isinstance(updated_data, ModuleType) or isinstance(updated_data,FunctionType): 
+>>>>>>> Stashed changes
       self.export_module(exp = updated_data,stack_depth = 2)
     
     elif (mapping_type.count(type(updated_data)) > 0) or (sequence_type.count(type(updated_data)) > 0) or (type(updated_data) == pandas.core.frame.DataFrame):
