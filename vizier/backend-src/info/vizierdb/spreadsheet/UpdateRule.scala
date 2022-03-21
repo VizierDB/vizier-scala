@@ -125,7 +125,7 @@ object UpdateRule {
 
   implicit val updateRuleWrites = new Writes[UpdateRule] {
     def writes(updateRule: UpdateRule) = Json.obj(
-      "expression" -> updateRule.expression.toJSON,
+      "expression" -> updateRule.expression.toString,
       "frame" -> Json.toJson(updateRule.frame),
       "id" -> updateRule.id
     )

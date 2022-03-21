@@ -411,7 +411,7 @@ object RangeMap
       val data = j.as[Map[String, JsValue]]
       val returnThis = new RangeMap[UpdateRule]
       for((k, v) <- data) {
-        returnThis.data(k.asInstanceOf[Long]) = data(k).asInstanceOf[(Long, UpdateRule)]
+        returnThis.data(k.toLong) = data(k).as[(Long, UpdateRule)]
       }
       JsSuccess(returnThis)
     }

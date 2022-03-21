@@ -22,7 +22,21 @@ object ColumnRef
     ret.label = label
     return ret
   }
-  implicit val columnFormat = Json.valueFormat[ColumnRef]
+  //implicit val columnFormat = Json.valueFormat[ColumnRef]
+  //implicit val columnFormat: Format[ColumnRef] = Json.format
+  implicit val columRefWrites = new Writes[ColumnRef] {
+    def writes(columnRef: ColumnRef) = Json.obj (
+      "id" -> columnRef.id,
+      "label" -> columnRef.label
+    )
+  }
+  implicit val columnRefReads = new Reads[ColumnRef] {
+    def reads(j: JsValue): JsResult[ColumnRef] = {
+      val id = (j \ "id").as[Long]
+      val label = (j \ "label").as[String]
+      JsSuccess(ColumnRef(id, label))
+    }
+  }
 }
 
 /**

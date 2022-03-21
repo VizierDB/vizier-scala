@@ -18,7 +18,7 @@ import play.api.libs.json.JsValue
 import scala.collection.mutable
 import scala.concurrent.Future
 import org.rogach.scallop.throwError
-
+import scala.util.{Try, Success, Failure}
 
 case class SpreadsheetConstructor ( 
   input: Option[Identifier],
@@ -139,11 +139,14 @@ object SpreadsheetConstructor
     }
   }
   **/
+
+  /**
   implicit val dagReads = new Reads[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] {
   override def reads(j: JsValue): JsResult[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] = 
   {
     JsSuccess(j.as[mutable.Map[ColumnRef, RangeMap[UpdateRule]]].map{case (k, v) =>
-      k.asInstanceOf[JsValue].asInstanceOf[ColumnRef] -> v.asInstanceOf[RangeMap[UpdateRule]]
+      k -> v
+      //Json.parse(k).asInstanceOf[ColumnRef] -> v.asInstanceOf[RangeMap[UpdateRule]]
     })
   }
 }
@@ -157,6 +160,49 @@ object SpreadsheetConstructor
         }.toSeq:_*)
     }
   }
+
+  **/
+
+  /**
+  implicit val dagReads: Reads[Map[ColumnRef, RangeMap[UpdateRule]]] =
+    Reads.mapReads[ColumnRef, RangeMap[UpdateRule]](s => JsResult.fromTry(Try(s.asInstanceOf[ColumnRef])))
+
+  implicit val dagWrites: Writes[Map[ColumnRef, RangeMap[UpdateRule]]] =
+    MapWrites.mapWrites[RangeMap[UpdateRule]].contramap(_.map { case (k, v) => k.toString -> v})
+
+
+  implicit val dagWrites2 = new Writes[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] {
+    def writes(dag: mutable.Map[ColumnRef, RangeMap[UpdateRule]]): JsValue = {
+        val dag2 = dag.toMap
+        Json.toJson(dag2)
+  }
+}
+  implicit val dagReads2 = new Reads[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] {
+  def reads(j: JsValue): JsResult[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] = {
+        val immutableDag = (Json.fromJson[Map[ColumnRef, RangeMap[UpdateRule]]](j).asOpt).get
+        //val ret = mutable.Map(immutableDag.toSeq:_*)
+        val ret = collection.mutable.Map() ++ immutableDag
+        JsSuccess(ret)
+    }
+  }
+**/
+
+  implicit val dagWrites = new Writes[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] {
+     def writes(dag: mutable.Map[ColumnRef, RangeMap[UpdateRule]]): JsValue = {
+       val d = dag.toSeq
+       Json.toJson(d)
+     }
+  }
+
+  implicit val dagReads = new Reads[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] {
+    def reads(j: JsValue): JsResult[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] = {
+      val dagList = (j.as[Seq[(ColumnRef, RangeMap[UpdateRule])]]).toMap
+      val dag = mutable.Map(dagList.toSeq: _*)
+      JsSuccess(dag)
+    }
+  }
+
+
 
   implicit val dagFormat: Format[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] = Format(dagReads, dagWrites)
   
