@@ -29,10 +29,13 @@ import info.vizierdb.Vizier
 // we're going to use the lower level Java process builder here.
 import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder}
 import org.mimirdb.spark.PythonUDFBuilder
+import info.vizierdb.VizierException
 
 class PythonProcess(python: JProcess)
   extends LazyLogging
 {
+  lazy val input = new BufferedReader(new InputStreamReader(python.getInputStream))
+  lazy val error = new BufferedReader(new InputStreamReader(python.getErrorStream))
 
   def send(event: String, args: (String, JsValue)*)
   {
@@ -42,13 +45,27 @@ class PythonProcess(python: JProcess)
     python.getOutputStream.flush()
   }
 
+  def read(): Option[JsValue] =
+    Option(input.readLine()).map { Json.parse(_) }
+
+  def ping() =
+  {
+    send("ping")
+    logger.trace("ping")
+    val result = read().get
+    try { 
+      assert(result.as[String] == "pong") 
+    } catch { 
+      case e:JsResultException => 
+        throw new VizierException(s"Unable to ping python process, got unexpected response: $result")
+    }
+    logger.trace("pong")
+  }
+
   def monitor(handler: JsValue => Unit)(handleError: String => Unit): Int =
   {
-    val input = new BufferedReader(new InputStreamReader(python.getInputStream))
-
     (new Thread(){ 
       override def run(){
-        val error = new BufferedReader(new InputStreamReader(python.getErrorStream))
         var line = error.readLine()
         while( line != null ){
           handleError(line)
@@ -79,6 +96,8 @@ object PythonProcess
   var PYTHON_COMMAND = "python3"
   val JAR_PREFIX = "^jar:(.*)!(.*)$".r
   val FILE_PREFIX = "f".r
+  lazy val pool: PythonWorkerPool = new BufferPythonWorkers()
+  // lazy val pool: PythonWorkerPool = new AllocatePythonWorkersOnDemand()
 
   def udfBuilder = PythonUDFBuilder(Some(PYTHON_COMMAND))
 
@@ -198,6 +217,9 @@ object PythonProcess
   }
 
   def apply(): PythonProcess =
+    pool.get
+
+  def create(): PythonProcess =
   {
     val cmd = 
       new JProcessBuilder(PYTHON_COMMAND, scriptPath)

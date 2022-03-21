@@ -186,6 +186,10 @@ object Vizier
       runServer = !config.commandOrSubcommandNeedsMimir
     )
 
+    // Start python processes
+    println("Starting python...")
+    PythonProcess.pool // force materialization of the lazy value
+
     config.subcommand match {
       //////////////// HANDLE SPECIAL COMMANDS //////////////////
       case Some(subcommand) => 

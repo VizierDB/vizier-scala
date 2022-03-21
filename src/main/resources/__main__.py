@@ -45,6 +45,9 @@ try:
             artifacts = cmd["artifacts"]
             project_id = cmd["projectId"]
             cell_id = cmd["cellId"]
+        elif cmd["event"] == "ping":
+            raw_output.write(json.dumps("pong") + "\n")
+            raw_output.flush()
         else:
             print("Unknown event type '{}'".format(cmd["event"]))
 
