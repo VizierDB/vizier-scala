@@ -22,8 +22,6 @@ object ColumnRef
     ret.label = label
     return ret
   }
-  //implicit val columnFormat = Json.valueFormat[ColumnRef]
-  //implicit val columnFormat: Format[ColumnRef] = Json.format
   implicit val columRefWrites = new Writes[ColumnRef] {
     def writes(columnRef: ColumnRef) = Json.obj (
       "id" -> columnRef.id,

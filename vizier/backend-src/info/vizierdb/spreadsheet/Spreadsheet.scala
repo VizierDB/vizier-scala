@@ -281,52 +281,6 @@ class Spreadsheet(data: SpreadsheetDataSource)
 
 object Spreadsheet
 {
-  //FunctionalBuilder.canBuild1(5 => 3)
-  /**
-  val spreadsheetJson: JsValue = Json.obj(
-    "updateOverlay"     -> Json.obj(
-      "subscriptions"   -> Seq(Spreadsheet().overlay.subscriptions.toString),
-      "updates"         -> Json.toJson(overlay.updates)
-      )
-    )
-    
-
-  implicit val spreadsheetWrites: Writes[Spreadsheet] = new Writes[Spreadsheet] {
-    def writes(s: Spreadsheet): JsValue = spreadsheetJson
-  }
-  implicit val spreadsheetReads: Reads[Spreadsheet] = new Reads[Spreadsheet] {
-    def reads(j: JsValue): JsResult[Spreadsheet] = 
-      JsSuccess(j.as[Spreadsheet])
-  }
-  implicit val spreadsheetFormat: Format[Spreadsheet] = Format(spreadsheetReads, spreadsheetWrites)
-  **/
-
-  /**
-  implicit val spreadsheetWrites = new Writes[Spreadsheet] {
-    def writes(spreadsheet: Spreadsheet) = Json.obj(
-      "updateOverlay"     -> Json.obj(
-      "subscriptions"   -> Seq(spreadsheet.overlay.subscriptions.toString),
-      "updates"         -> Json.toJson(spreadsheet.overlay.updates),
-      "dataframe"       -> Json.toJson(spreadsheet.source.toString())
-      )
-    )
-  }
-  **/
-  /**
-  implicit val spreadsheetReads = new Reads[Spreadsheet] {
-    def reads(j: JsValue): JsResult[Spreadsheet] =
-      JsSuccess(j.as[Spreadsheet])
-  }
-  **/
-  /**
-  implicit val spreadsheetReads: Reads[Spreadsheet] = (
-   // (JsPath \ "updateOverlay" \"dataframe").read[String]
-  )
-  **/
-
-  //def unapply(spreadsheet: Spreadsheet): Option[(SpreadsheetDataSource)] = Some(spreadsheet.get)
-  
-
   def apply(base: DataFrame)(implicit ec: ExecutionContext) = 
   {
     val annotated = 

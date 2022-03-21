@@ -10,6 +10,7 @@ import org.apache.spark.sql.catalyst.expressions.{
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.functions
+import info.vizierdb.spark.SparkExpression.expressionFormat
 case class UpdateRule(
   expression: Expression,
   frame: ReferenceFrame,
@@ -117,32 +118,7 @@ case class UpdateRule(
   override def toString = s"{${expression.toString}}[$id]"
 }
 object UpdateRule {
-  def apply(expression: Expression, frame: ReferenceFrame,id: Long): UpdateRule = {
-    val uR: UpdateRule = new UpdateRule(expression, frame, id)
-    uR
-  }
+
+  implicit val updateRuleFormat: Format[UpdateRule] = Json.format
   
-
-  implicit val updateRuleWrites = new Writes[UpdateRule] {
-    def writes(updateRule: UpdateRule) = Json.obj(
-      "expression" -> updateRule.expression.toString,
-      "frame" -> Json.toJson(updateRule.frame),
-      "id" -> updateRule.id
-    )
-  }
-  implicit val updateRuleReads = new Reads[UpdateRule] {
-    def reads(j: JsValue): JsResult[UpdateRule] = {
-      //JsSuccess(j.as[UpdateRule])
-      val expressionString = (j \ "expression").as[String]
-      //val expression = expressionString.
-      val expression = expr(expressionString).expr
-      val frame = (j \ "frame").as[ReferenceFrame]
-      val id = (j \ "id").as[Long]
-      JsSuccess(UpdateRule(expression, frame, id))
-      }
-    }
-    //implicit val updateRuleFormat: Format[UpdateRule] = Format(updateRuleReads, updateRuleWrites)
-
-
-    //implicit val updateRuleFormat: Format[UpdateRule] = Format(updateRuleReads, updateRuleWrites)
-  }
+ }

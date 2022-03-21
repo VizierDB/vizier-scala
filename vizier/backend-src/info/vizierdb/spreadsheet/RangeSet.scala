@@ -200,15 +200,6 @@ class RangeSet(ranges: Seq[(Long, Long)])
 
 object RangeSet
 {
-
-  /**
-  implicit val rangeSetWrites = new Writes[RangeSet] {
-    def writes(rangeSet: RangeSet) = Json.obj(
-      "range" -> "ok"
-    )
-  }
-  val rs = new RangeSet(4)
-  **/
   implicit val rangeSetFormat = Json.format[RangeSet]
   
   def unapply(rS: RangeSet): Option[Seq[(Long, Long)]] = {

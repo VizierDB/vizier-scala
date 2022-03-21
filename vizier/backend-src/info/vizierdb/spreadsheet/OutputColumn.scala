@@ -3,9 +3,6 @@ package info.vizierdb.spreadsheet
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.DataType
 import play.api.libs.json._
-//import info.vizierdb.spark.SparkSchema.fieldFormat
-//import info.vizierdb.spark.SparkSchema.encodeType
-//import info.vizierdb.spark.SparkSchema.decodeType
 import info.vizierdb.spark.SparkSchema._
 import info.vizierdb.serializers._
 
@@ -20,22 +17,6 @@ class OutputColumn(val source: ColumnSource, var output: StructField, val id: Lo
 }
 object OutputColumn
 {
-  /**
-  implicit val outputColumnWrites = new Writes[OutputColumn] {
-    def writes(outputColumn: OutputColumn) = Json.obj(
-      "columnSource" -> Json.toJson(outputColumn.source)
-    )
-  }
-  **/
-
-    /**
-    implicit val outputColumnReads = new Reads[OutputColumn] {
-    def reads(j: JsValue): JsResult[OutputColumn] = {
-      val source = (j \ "")
-    }
-  }
-  **/
-  
   def apply(source: ColumnSource, output: StructField, id: Long, position: Int): OutputColumn = {
     return new OutputColumn(source, output, id, position)
   }
@@ -70,20 +51,11 @@ object DefaultValue{
   def apply(defaultValue: Any): DefaultValue = {
     return new DefaultValue(defaultValue)
   }
-  /**
-  def unapply(dV: DefaultValue): Option[Any] = {
-    Some(dV.defaultValue)
-  }
-  **/
-
-
-  
 
   implicit val defaultValueWrites = new Writes[DefaultValue] {
     def writes(dV: DefaultValue): JsValue =
       {
         val t = encodeType(dV.defaultValue.asInstanceOf[StructField].dataType)
-       // val t = encodeType(dV.as)
         Json.obj(
           "name" -> dV.defaultValue.asInstanceOf[StructField].name,
           "type" -> t,
@@ -91,10 +63,6 @@ object DefaultValue{
         )
       }
   }
-
-  
- 
-
   implicit val defaultValueReads = new Reads[DefaultValue]  {
       def reads(j: JsValue): JsResult[DefaultValue] = 
       {
@@ -113,28 +81,5 @@ object DefaultValue{
         )))
       }
     }
-    
-    
-
-  /**
-
-  implicit val defaultValueReads = new Reads[DefaultValue] {
-    def reads(j: JsValue): JsResult[DefaultValue] = fieldFormat.reads(j).asInstanceOf[JsResult[DefaultValue]]
-  }
-  **/
-  //impli
-  
-
-  /**
-  implicit val defaultValueWrites = new Writes[DefaultValue] {
-    def writes(dV: DefaultValue): JsValue =
-      {
-        encodeStruct()
-      }
-    }
-**/
-  
-
   implicit val defaultValueFormat: Format[DefaultValue] = Format(defaultValueReads, defaultValueWrites)
-  //implicit val defaultValueFormat: Format[DefaultValue] = Json.format
 }

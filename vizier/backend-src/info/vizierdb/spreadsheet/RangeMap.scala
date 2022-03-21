@@ -372,37 +372,15 @@ object RangeMap
 
   }
 
-  /**
-  def apply[T]: RangeMap[T] =
-  {
-    return new RangeMap[T]
-  }
-  **/
-
-  /**
-
-
-  implicit val treeMapWrites= new Writes[mutable.TreeMap[Long,(Long, info.vizierdb.spreadsheet.UpdateRule)]] {
-    def writes(tM: mutable.TreeMap[Long,(Long, info.vizierdb.spreadsheet.UpdateRule)]) = Json.obj(
-      
-    )
-    }
-  }
-**/
-
 
   implicit val tmValueFormat = Json.format[(Long, UpdateRule)]
-//new Writes[(Long, UpdateRule)] 
-
-
   implicit val rangeMapWrites = new Writes[RangeMap[UpdateRule]] {
     def writes(rM: RangeMap[UpdateRule]): JsValue  = {
-      //val jsObj = new JsObject(Map.empty[String, JsValue])
-      val bigMap = mutable.Map.empty[String, JsValue]
+      val map = mutable.Map.empty[String, JsValue]
       for((k, v) <- rM.data) {
-        bigMap(k.toString()) = Json.toJson(v)
+        map(k.toString()) = Json.toJson(v)
       }
-      val returnThis: JsObject = new JsObject(bigMap)
+      val returnThis: JsObject = new JsObject(map)
       return returnThis
     }
   }

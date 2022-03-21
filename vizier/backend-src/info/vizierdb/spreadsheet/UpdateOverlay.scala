@@ -26,21 +26,8 @@ class UpdateOverlay(
 )(implicit ec: ExecutionContext)
   extends LazyLogging
 {
-  /**
-implicit val updateIDWrites = new Writes[UpdateID] {
-    def writes(uID: UpdateID) = Json.obj(
-      "updateid" -> uID.toInt
-    )
-  }
-  **/
-
-
   type UpdateID = Long
   type RowIndex = Long
-
-  
-
-
 
   var subscriptions = RangeSet()
   val updates = mutable.Map[UpdateID, UpdateRule]()
@@ -55,36 +42,6 @@ implicit val updateIDWrites = new Writes[UpdateID] {
   def activeTriggers(column: ColumnRef) = 
   {
     RangeSet.ofIndices(triggers(column).keys.toSeq)
-  }
-  
-  def specialToString(): Unit =
-  { /**
-    println("")
-    println("DAG:")
-    for((column, lvalues) <- dag) {
-      println(s"\t ColumnRef id: ${column.id} | ColumnRef label: ${column.label}")
-      println(s"\t lvalues: ${lvalues}")
-    }
-    println("DATA")
-    for((column, mysteryMap) <- data) {
-      println(s"\t ColumnRef id: ${column.id} | ColumnRef label: ${column.label}")
-      println(s"\t Map: mutable.Map[RowIndex, Future[Any]: ${mysteryMap}")
-    }
-    println("TRIGGERS")
-    for((column, mysteryMap) <- data) {
-      println(s"\t ColumnRef id: ${column.id} | ColumnRef label: ${column.label}")
-      println(s"\t Map: mutable.Map[RowIndex, TriggerSet]: ${mysteryMap}")
-    }
-    println("FRAME:")
-    println(s"\tFrame: ${frame}")
-    println(s"\tFrame Transformations: ${frame.transformations}")
-    println("UPDATES:")
-    for((updateID, updateRule) <- updates) {
-      println(s"\tID: ${updateID}")
-      println(s"\tUpdate Rule: ${updateRule}")
-      
-    }
-    **/
   }
   
   def addColumn(name: ColumnRef) =
@@ -129,8 +86,6 @@ implicit val updateIDWrites = new Writes[UpdateID] {
 
   def update(target: LValue, expression: Expression): Unit =
   {
-    //println(s"\nBEGIN update(target(LValue): ${target} expression(Expression): ${expression}")
-   // specialToString()
     val rule = UpdateRule(expression, frame, nextUpdate);
     nextUpdate += 1
     updates.put(rule.id, rule)
@@ -143,7 +98,6 @@ implicit val updateIDWrites = new Writes[UpdateID] {
         {
           if(!cellNeeded(target.column, row)){
             delTriggerFor(target.column, row, rule)
-           // println(s"delTriggerFor(target.column: ${target.column}, row: ${row}, rule: ${rule})")
           }
         }
       }
@@ -157,19 +111,13 @@ implicit val updateIDWrites = new Writes[UpdateID] {
       (activeTriggers(target.column) ++ subscriptions) intersect target.toRangeSet
 
     logger.debug(s"Update requires triggers on rows $requiredTriggers")
-    //println(s"Update requires triggers on rows $requiredTriggers")
     for(row <- requiredTriggers.indices)
     {
       addTriggerFor(target.column, row, rule)
     }
-
-    //println(s"triggerReexecution(targets: ${requiredTriggers.indices.map { SingleCell(target.column, _) }.toSeq})")
     triggerReexecution(
       requiredTriggers.indices.map { SingleCell(target.column, _) }.toSeq
     )
-    
-    //println(s"\n END update(target(LValue): ${target} expression(Expression): ${expression}")
-    //specialToString()
   }
 
   /**
@@ -217,8 +165,6 @@ implicit val updateIDWrites = new Writes[UpdateID] {
 
   def triggerReexecution(targets: Seq[SingleCell]): Unit = 
   {
-    //print("specialToString before triggerReexecution: ")
-    //specialToString()
     logger.debug(s"Starting re-execution pass with targets: $targets")
 
     def collectUpstream(accum: Set[SingleCell], cell: SingleCell): Set[SingleCell] = 
@@ -422,8 +368,6 @@ implicit val updateIDWrites = new Writes[UpdateID] {
 
   def subscribe(rows: RangeSet, forceCells: Set[SingleCell] = Set.empty): Unit =
   {
-    //println(s"\nBEGIN subscribe(rows: ${rows}, forceCells: ${forceCells})")
-    //specialToString()
     logger.debug(s"Adding subscriptions for $rows")
     subscriptions = subscriptions ++ rows
     val needsExecution = mutable.ArrayBuffer(forceCells.toSeq:_*)
@@ -440,21 +384,14 @@ implicit val updateIDWrites = new Writes[UpdateID] {
             if( !(data(column) contains row) )
             {
               addTriggerFor(column, row, rule)
-              //println(s"addTriggerFor(${column}, ${row}, ${rule})")
               needsExecution.append(SingleCell(column, row))
-              //println(s"needsExecution.append(SingleCell(${column}, ${row}))")
             }
           }
         }
       }
     }
     logger.debug(s"Triggering re-execution for $needsExecution")
-    //println(s"Triggering re-execution for $needsExecution")
-    specialToString()
     triggerReexecution(needsExecution)
-    //println(s"Just finished re-execution for $needsExecution")
-    //println(s"\nEND subscribe(rows: ${rows}, forceCells: ${forceCells})")
-    //specialToString()
   }
 
   def updateSubscription(newSubscriptions: RangeSet, forceCells: Set[SingleCell] = Set.empty): Unit =
@@ -610,135 +547,7 @@ implicit val updateIDWrites = new Writes[UpdateID] {
     )
   }
 }
-/**
-object UpdateOverlay {
-  
-  def apply(sourceValue: (ColumnRef, Long) => Any, cellModified: (ColumnRef, Long) => Unit = {(_,_) => ()})(implicit ec: ExecutionContext): UpdateOverlay =
-  {
-    val uO = UpdateOverlay(sourceValue,  cellModified)(ec)
-    uO
-  }
-  def unapply(uO: UpdateOverlay): Option[UpdateOverlay] = 
-  {
-      //val uO = Option[UpdateOverlay](UpdateOverlay(sourceValue,  cellModified)(ec))
 
-      Some(uO)
-  }
-
-
-  
-//scala.collection.mutable.Map[info.vizierdb.spreadsheet.ColumnRef,scala.collection.mutable.Map[Long,scala.concurrent.Future[Any]]
-
-  implicit val dataWrites = new Writes[mutable.Map[ColumnRef, mutable.Map[Long, Future[Any]]]] {
-    def writes(d: mutable.Map[ColumnRef, mutable.Map[Long, Future[Any]]]): JsValue =
-      d.asInstanceOf[JsObject]
-  }
-
-  implicit val dataReads = new Reads[mutable.Map[ColumnRef, mutable.Map[Long, Future[Any]]]] {
-    def reads(j: JsValue): JsResult[mutable.Map[ColumnRef, mutable.Map[Long, Future[Any]]]] = {
-      val data = j.as[Map[String, JsValue]]
-      val returnThis = mutable.Map.empty[ColumnRef, mutable.Map[Long, Future[Any]]]
-      for((k, v) <- data) {
-        returnThis(k.asInstanceOf[ColumnRef]) = data(k).asInstanceOf[ mutable.Map[Long, Future[Any]]]
-      }
-      JsSuccess(returnThis)
-     }
-  }
-
-  //scala.collection.mutable.Map[info.vizierdb.spreadsheet.ColumnRef,scala.collection.mutable.Map[Long,info.vizierdb.spreadsheet.TriggerSet]]
-  implicit val triggersWrites = new Writes[mutable.Map[ColumnRef, mutable.Map[Long,TriggerSet]]] {
-    def writes(t: mutable.Map[ColumnRef, mutable.Map[Long,TriggerSet]]): JsValue =
-     t.asInstanceOf[JsObject]
-  }
-  implicit val triggersReads = new Reads[mutable.Map[ColumnRef, mutable.Map[Long,TriggerSet]]] {
-    def reads(j: JsValue): JsResult[mutable.Map[ColumnRef, mutable.Map[Long,TriggerSet]]] = {
-      val data = j.as[Map[String, JsValue]]
-      val returnThis = mutable.Map.empty[ColumnRef, mutable.Map[Long, TriggerSet]]
-      for((k, v) <- data) {
-        returnThis(k.asInstanceOf[ColumnRef]) = data(k).asInstanceOf[mutable.Map[Long, TriggerSet]]
-      }
-      JsSuccess(returnThis)
-    }
-  }
-
-  implicit val updateOverlayWrites = new Writes[UpdateOverlay] {
-    def writes(overlay: UpdateOverlay) = Json.obj(
-      "subscriptions"   -> Json.toJson(overlay.subscriptions),
-      "updates"         -> Json.toJson(overlay.updates),
-      "dag"       -> Json.toJson(overlay.dag),
-      "data" -> Json.toJson(overlay.data),
-      "triggers" -> Json.toJson(overlay.triggers),
-      "frame" -> Json.toJson(overlay.frame)
-    )
-  }
-
-  implicit val updatesWrites = new Writes[mutable.Map[Long, UpdateRule]] {
-    def writes(m: mutable.Map[Long, UpdateRule]): JsValue = {
-      val bigMap = mutable.Map.empty[String, JsValue]
-      for((k, v) <- m) {
-        bigMap(k.toString()) = Json.toJson(v)
-      }
-      val returnThis: JsObject = new JsObject(bigMap)
-      return returnThis
-    }
-  }
-
-  implicit val updatesReads = new Reads[mutable.Map[Long, UpdateRule]] {
-    def reads(j: JsValue): JsResult[mutable.Map[Long, UpdateRule]] = {
-      val data = j.as[Map[String, JsValue]]
-      val returnThis = mutable.Map.empty[Long, UpdateRule]
-      for((k, v) <- data) {
-        returnThis(k.asInstanceOf[Long]) = data(k).asInstanceOf[UpdateRule]
-      }
-      JsSuccess(returnThis)
-     }
-  }
-  /**
-  
-
-  implicit val dagReads = new Reads[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] {
-    def reads(j: JsObject): JsResult[mutable.Map[ColumnRef, RangeMap[UpdateRule]]] = {
-      val data = j.as[Map[String, JsValue]]
-      val returnThis = mutable.Map.empty[ColumnRef, RangeMap[UpdateRule]]
-      for((k, v) <- data) {
-        returnThis(k.asInstanceOf[ColumnRef]) = data(k).asInstanceOf[RangeMap[UpdateRule]]
-      }
-      JsSuccess(returnThis)
-     }
-  }
-  **/
-  
-
- // implicit val dagFormat = Json.format[mutable.Map[ColumnRef,RangeMap[UpdateRule]]]
-/**
-  implicit val updateOverlayReads = new Reads[UpdateOverlay] {
-    def reads(j: JsValue): JsResult[UpdateOverlay] = {
-      val subscriptions = (j \ "subscriptions").as[RangeSet]
-      val updates = (j \ "updates").as[mutable.Map[Long, UpdateRule]]
-      val dag = (j \ "dag").as[mutable.Map[ColumnRef,RangeMap[UpdateRule]]]
-      val data = (j \ "data").as[mutable.Map[ColumnRef, mutable.Map[Long, Future[Any]]]]
-      val triggers = (j \ "triggers").as[mutable.Map[ColumnRef, mutable.Map[Long, TriggerSet]]]
-      val frame = (j \ "frame").as[ReferenceFrame]
-      JsSuccess(UpdateOverlay)
-    }
-  }
-  **/
-  
-  /**
-  implicit val spreadsheetReads = new Reads[Spreadsheet] {
-    def reads(j: JsValue): JsResult[Spreadsheet] =
-      JsSuccess(j.as[Spreadsheet])
-  }
-  **/
-  /**
-  implicit val spreadsheetReads: Reads[Spreadsheet] = (
-   // (JsPath \ "updateOverlay" \"dataframe").read[String]
-  )
-  **/
-
-
-}
-**/
 
 case class TriggerSet(var frame: ReferenceFrame)
 {

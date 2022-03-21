@@ -89,13 +89,6 @@ case class InsertRows(position: Long, count: Int, insertId: Identifier) extends 
 }
 object InsertRows
 {
-  /**
-  def apply(position: Long, count: Int, insertId: Identifier): InsertRows =
-    InsertRows(position, count, insertId)
-  def unapply(insertRows: InsertRows): Option[(Long, Int, Identifier)] =
-    Some((insertRows.position, insertRows.count, insertRows.insertId))
-    **/
-
   implicit val insertRowsFormat = Json.format[InsertRows]
 }
 

@@ -50,21 +50,12 @@ case class ReferenceFrame(transformations: Seq[RowTransformation] = Seq.empty)
 }
 object ReferenceFrame
 {
-  /**
-  
-  def apply(transformations: Seq[RowTransformation] = Seq.empty): ReferenceFrame =  {
-    return ReferenceFrame(transformations)
-  }
-  **/
-  
   implicit val rowTransfomationFormat: OFormat[RowTransformation] = Json.format[RowTransformation]
   
   implicit val rfSequenceWrites = new Writes[Seq[RowTransformation]] {
     def writes(s: Seq[RowTransformation]): JsValue =
-      //s.asInstanceOf[JsArray]
       Json.toJson(s)
   }
-  
   
   implicit val rfSequenceReads = new Reads[Seq[RowTransformation]] {
     def reads(j: JsValue): JsResult[Seq[RowTransformation]] =
