@@ -8,7 +8,7 @@
    version="1.1"
    id="svg5"
    inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
-   sodipodi:docname="Layout.svg"
+   sodipodi:docname="Wireframes.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -25,15 +25,15 @@
      showgrid="true"
      units="px"
      width="800px"
-     inkscape:zoom="0.5"
-     inkscape:cx="223"
-     inkscape:cy="237"
-     inkscape:window-width="1503"
-     inkscape:window-height="970"
-     inkscape:window-x="0"
+     inkscape:zoom="2"
+     inkscape:cx="369.25"
+     inkscape:cy="159"
+     inkscape:window-width="2560"
+     inkscape:window-height="1371"
+     inkscape:window-x="1080"
      inkscape:window-y="32"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="svg5"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer4"
      guidecolor="#ff0000"
      guideopacity="1"
      showguides="true">
@@ -504,76 +504,76 @@
          d="m 115.14185,136.71659 v 9.99991 h 9.99991 v -9.99991 z" />
       <text
          xml:space="preserve"
-         style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-stretch:normal;font-variant:normal"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.5833px;line-height:1.25;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
          x="6.2809377"
          y="23.817009"
          id="text4338"><tspan
            sodipodi:role="line"
            id="tspan4336"
-           style="stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-family:'Allegreya Sans';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';stroke-width:0.264583"
            x="6.2809377"
            y="23.817009">Material Design</tspan></text>
       <text
          xml:space="preserve"
-         style="font-style:normal;font-weight:normal;font-size:7.05556px;line-height:1.25;font-family:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-stretch:normal;font-variant:normal"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;line-height:1.25;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
          x="6.2849727"
          y="50.228886"
          id="text4338-9"><tspan
            sodipodi:role="line"
            id="tspan4336-3"
-           style="font-size:7.05556px;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-family:'Allegreya Sans';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';stroke-width:0.264583"
            x="6.2849727"
            y="50.228886">Primary</tspan></text>
       <text
          xml:space="preserve"
-         style="font-style:normal;font-weight:normal;font-size:7.05556px;line-height:1.25;font-family:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-stretch:normal;font-variant:normal"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;line-height:1.25;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
          x="6.2849727"
          y="73.512222"
          id="text10442"><tspan
            sodipodi:role="line"
            id="tspan10440"
-           style="font-size:7.05556px;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-family:'Allegreya Sans';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';stroke-width:0.264583"
            x="6.2849727"
            y="73.512222">Inverse</tspan></text>
       <text
          xml:space="preserve"
-         style="font-style:normal;font-weight:normal;font-size:7.05556px;line-height:1.25;font-family:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-stretch:normal;font-variant:normal"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;line-height:1.25;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
          x="6.2849727"
          y="94.678879"
          id="text10548"><tspan
            sodipodi:role="line"
            id="tspan10546"
-           style="font-size:7.05556px;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-family:'Allegreya Sans';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';stroke-width:0.264583"
            x="6.2849727"
            y="94.678879">Complimentary</tspan></text>
       <text
          xml:space="preserve"
-         style="font-style:normal;font-weight:normal;font-size:7.05556px;line-height:1.25;font-family:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-stretch:normal;font-variant:normal"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;line-height:1.25;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
          x="6.2849727"
          y="125.37053"
          id="text11266"><tspan
            sodipodi:role="line"
            id="tspan11264"
-           style="font-size:7.05556px;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-family:'Allegreya Sans';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';stroke-width:0.264583"
            x="6.2849727"
            y="125.37053">Triadic</tspan></text>
     </g>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:3.175px;line-height:1.25;font-family:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-stretch:normal;font-variant:normal"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;line-height:1.25;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
        x="-131.1562"
        y="29.376934"
        id="text20501"><tspan
          sodipodi:role="line"
          id="tspan20499"
-         style="font-size:3.175px;fill:#0000ff;stroke-width:0.264583;-inkscape-font-specification:'Allegreya Sans';font-family:'Allegreya Sans';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';fill:#0000ff;stroke-width:0.264583"
          x="-131.1562"
          y="29.376934">https://material.io/design/color/the-color-system.html#tools-for-picking-colors</tspan></text>
     <text
        xml:space="preserve"
        transform="scale(0.26458333)"
        id="text24637"
-       style="fill:black;fill-opacity:1;line-height:1.25;stroke:none;font-family:'Allegreya Sans';font-style:normal;font-weight:normal;font-size:40px;white-space:pre;shape-inside:url(#rect24639);-inkscape-font-specification:'Allegreya Sans';font-stretch:normal;font-variant:normal" />
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:1.25;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';white-space:pre;shape-inside:url(#rect24639);fill:#000000;fill-opacity:1;stroke:none" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -632,170 +632,395 @@
      d="m 114.18364,-23.14913 -2.9246,5.231601 v 9.7189326"
      id="path48222"
      sodipodi:nodetypes="ccc" />
-  <text
-     xml:space="preserve"
-     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.29167px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-     x="116.49627"
-     y="8.2697811"
-     id="text5477"><tspan
-       sodipodi:role="line"
-       id="tspan5475"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:5.29167px;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="Table Of Contents"
+     style="display:inline">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.29167px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
        x="116.49627"
-       y="8.2697811">Project Title</tspan></text>
-  <g
-     id="g39589">
-    <rect
-       style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-       id="rect53847"
-       width="4.2333331"
-       height="4.2333331"
-       x="144.07939"
-       y="4.3793769"
-       ry="0" />
-    <rect
-       style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-       id="rect25855"
-       width="4.2333331"
-       height="4.2333331"
-       x="143.93332"
-       y="4.2333331"
-       ry="8.9190671e-08" />
-    <text
-       xml:space="preserve"
-       style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-       x="144.68889"
-       y="7.597321"
-       id="text33090"><tspan
+       y="8.2697811"
+       id="text5477"><tspan
          sodipodi:role="line"
-         id="tspan33088"
-         style="font-size:3.175px;fill:#000000;stroke-width:0.264583"
+         id="tspan5475"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:5.29167px;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
+         x="116.49627"
+         y="8.2697811">Project Title</tspan></text>
+    <g
+       id="g39589">
+      <rect
+         style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+         id="rect53847"
+         width="4.2333331"
+         height="4.2333331"
+         x="144.07939"
+         y="4.3793769"
+         ry="0" />
+      <rect
+         style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+         id="rect25855"
+         width="4.2333331"
+         height="4.2333331"
+         x="143.93332"
+         y="4.2333331"
+         ry="8.9190671e-08" />
+      <text
+         xml:space="preserve"
+         style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
          x="144.68889"
-         y="7.597321"></tspan></text>
-  </g>
-  <g
-     id="g23295">
-    <rect
-       style="fill:#e6e6e6;stroke-width:0.132292;stroke:#000000"
-       id="rect8782"
-       width="25.4"
-       height="4.2333331"
-       x="116.41666"
-       y="10.583333" />
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-       x="120.40208"
-       y="13.694737"
-       id="text1036"><tspan
-         sodipodi:role="line"
-         id="tspan1034"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.175px;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
+         y="7.597321"
+         id="text33090"><tspan
+           sodipodi:role="line"
+           id="tspan33088"
+           style="font-size:3.175px;fill:#000000;stroke-width:0.264583"
+           x="144.68889"
+           y="7.597321"></tspan></text>
+    </g>
+    <g
+       id="g23295">
+      <rect
+         style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292"
+         id="rect8782"
+         width="25.4"
+         height="4.2333331"
+         x="116.41666"
+         y="10.583333" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
          x="120.40208"
-         y="13.694737">Branch Title</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-       x="117.63902"
-       y="13.794847"
-       id="text10460"><tspan
-         sodipodi:role="line"
-         id="tspan10458"
-         style="font-size:3.175px;stroke-width:0.264583"
+         y="13.694737"
+         id="text1036"><tspan
+           sodipodi:role="line"
+           id="tspan1034"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.175px;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
+           x="120.40208"
+           y="13.694737">Branch Title</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
          x="117.63902"
-         y="13.794847"></tspan></text>
+         y="13.794847"
+         id="text10460"><tspan
+           sodipodi:role="line"
+           id="tspan10458"
+           style="font-size:3.175px;stroke-width:0.264583"
+           x="117.63902"
+           y="13.794847"></tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+         x="138.82295"
+         y="13.751282"
+         id="text17210"><tspan
+           sodipodi:role="line"
+           id="tspan17208"
+           style="font-size:3.175px;stroke-width:0.264583"
+           x="138.82295"
+           y="13.751282"></tspan></text>
+    </g>
     <text
        xml:space="preserve"
-       style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-       x="138.82295"
-       y="13.751282"
-       id="text17210"><tspan
-         sodipodi:role="line"
-         id="tspan17208"
-         style="font-size:3.175px;stroke-width:0.264583"
-         x="138.82295"
-         y="13.751282"></tspan></text>
-  </g>
-  <text
-     xml:space="preserve"
-     style="font-size:3.175px;line-height:1.33;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';text-decoration:underline;text-decoration-line:underline;fill:#214478;stroke-width:0.264583"
-     x="116.21827"
-     y="22.225"
-     id="text4469"><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
+       style="font-size:3.175px;line-height:1.33;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';text-decoration:underline;text-decoration-line:underline;fill:#214478;stroke-width:0.264583"
        x="116.21827"
-       y="22.225"
-       id="tspan9797">Load <tspan
+       y="21.166666"
+       id="text4469"><tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
+         x="116.21827"
+         y="21.166666"
+         id="tspan9797">Load <tspan
    style="font-weight:bold;fill:#214478"
    id="tspan23338">foo</tspan> From CSV</tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
-       x="116.21827"
-       y="26.44775"
-       id="tspan23333">Select Into <tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
+         x="116.21827"
+         y="25.389416"
+         id="tspan23333">Select Into <tspan
    style="font-weight:bold;fill:#214478"
    id="tspan9801">foo</tspan></tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
-       x="116.21827"
-       y="30.6705"
-       id="tspan9799">Select Into <tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
+         x="116.21827"
+         y="29.612165"
+         id="tspan9799">Select Into <tspan
    style="font-weight:bold;fill:#214478"
    id="tspan23336">bar</tspan></tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
-       x="116.21827"
-       y="34.89325"
-       id="tspan23329">Python Script</tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
-       x="116.21827"
-       y="39.116001"
-       id="tspan23340">Plot <tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
+         x="116.21827"
+         y="33.834915"
+         id="tspan23329">Python Script</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
+         x="116.21827"
+         y="38.057667"
+         id="tspan23340">Plot <tspan
    style="font-weight:bold;fill:#214478"
    id="tspan23344">bar</tspan></tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
-       x="116.21827"
-       y="43.338749"
-       id="tspan23342">Export <tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;fill:#214478;stroke-width:0.264583"
+         x="116.21827"
+         y="42.280415"
+         id="tspan23342">Export <tspan
    style="font-weight:bold;fill:#214478"
    id="tspan23346">bar</tspan> Into CSV</tspan></text>
-  <text
-     xml:space="preserve"
-     style="font-size:3.175px;line-height:1.33;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-     x="115.77111"
-     y="22.225002"
-     id="text4469-3"><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
+    <text
+       xml:space="preserve"
+       style="font-size:3.175px;line-height:1.33;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
        x="115.77111"
-       y="22.225002"
-       id="tspan23333-5">1.</tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
-       x="115.77111"
-       y="26.447752"
-       id="tspan9799-5">2.</tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
-       x="115.77111"
-       y="30.670502"
-       id="tspan23329-2">3.</tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
-       x="115.77111"
-       y="34.893253"
-       id="tspan23340-9">4.</tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
-       x="115.77111"
-       y="39.116001"
-       id="tspan23342-2">5.</tspan><tspan
-       sodipodi:role="line"
-       style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
-       x="115.77111"
-       y="43.338753"
-       id="tspan28266">6.</tspan></text>
+       y="21.166668"
+       id="text4469-3"><tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="115.77111"
+         y="21.166668"
+         id="tspan23333-5">1.</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="115.77111"
+         y="25.389418"
+         id="tspan9799-5">2.</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="115.77111"
+         y="29.612167"
+         id="tspan23329-2">3.</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="115.77111"
+         y="33.834919"
+         id="tspan23340-9">4.</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="115.77111"
+         y="38.057667"
+         id="tspan23342-2">5.</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:3.175px;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="115.77111"
+         y="42.280418"
+         id="tspan28266">6.</tspan></text>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="Cell 1">
+    <rect
+       style="fill:#216f78;fill-rule:evenodd;stroke-width:0.264583"
+       id="rect201"
+       width="1.0583332"
+       height="46.566666"
+       x="7.4083333"
+       y="2.1166666" />
+    <g
+       id="g13096"
+       transform="translate(-141.81664,4.233333)">
+      <g
+         id="g13094">
+        <rect
+           style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+           id="rect13086"
+           width="4.2333331"
+           height="4.2333331"
+           x="144.07939"
+           y="4.3793769"
+           ry="0" />
+        <rect
+           style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+           id="rect13088"
+           width="4.2333331"
+           height="4.2333331"
+           x="143.93332"
+           y="4.2333331"
+           ry="8.9190671e-08" />
+        <text
+           xml:space="preserve"
+           style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+           x="146.00235"
+           y="7.5311751"
+           id="text13092"><tspan
+             sodipodi:role="line"
+             id="tspan13090"
+             style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
+             x="146.00235"
+             y="7.5311751"></tspan></text>
+      </g>
+    </g>
+    <g
+       id="g39589-5"
+       transform="translate(-141.81665,-1.0583333)">
+      <rect
+         style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+         id="rect53847-62"
+         width="4.2333331"
+         height="4.2333331"
+         x="144.07939"
+         y="4.3793769"
+         ry="0" />
+      <rect
+         style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+         id="rect25855-9"
+         width="4.2333331"
+         height="4.2333331"
+         x="143.93332"
+         y="4.2333331"
+         ry="8.9190671e-08" />
+      <text
+         xml:space="preserve"
+         style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+         x="144.68889"
+         y="7.597321"
+         id="text33090-1"><tspan
+           sodipodi:role="line"
+           id="tspan33088-2"
+           style="font-size:3.175px;fill:#000000;stroke-width:0.264583"
+           x="144.68889"
+           y="7.597321"></tspan></text>
+    </g>
+    <g
+       id="g15311"
+       transform="translate(-141.81664,9.5249993)">
+      <g
+         id="g15309">
+        <rect
+           style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+           id="rect15301"
+           width="4.2333331"
+           height="4.2333331"
+           x="144.07939"
+           y="4.3793769"
+           ry="0" />
+        <rect
+           style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+           id="rect15303"
+           width="4.2333331"
+           height="4.2333331"
+           x="143.93332"
+           y="4.2333331"
+           ry="8.9190671e-08" />
+        <text
+           xml:space="preserve"
+           style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+           x="146.00235"
+           y="7.5311751"
+           id="text15307"><tspan
+             sodipodi:role="line"
+             id="tspan15305"
+             style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
+             x="146.00235"
+             y="7.5311751"></tspan></text>
+      </g>
+    </g>
+    <g
+       id="g16471"
+       transform="translate(-141.81664,14.816666)">
+      <g
+         id="g16469">
+        <rect
+           style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+           id="rect16461"
+           width="4.2333331"
+           height="4.2333331"
+           x="144.07939"
+           y="4.3793769"
+           ry="0" />
+        <rect
+           style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
+           id="rect16463"
+           width="4.2333331"
+           height="4.2333331"
+           x="143.93332"
+           y="4.2333331"
+           ry="8.9190671e-08" />
+        <text
+           xml:space="preserve"
+           style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+           x="146.00235"
+           y="7.5311751"
+           id="text16467"><tspan
+             sodipodi:role="line"
+             id="tspan16465"
+             style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
+             x="146.00235"
+             y="7.5311751"></tspan></text>
+      </g>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:1.41111px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="-18.375864"
+       y="1.7993699"
+       id="text17685"><tspan
+         sodipodi:role="line"
+         id="tspan17683"
+         style="font-size:1.41111px;stroke-width:0.264583"
+         x="-18.375864"
+         y="1.7993699">pencil-square-o</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:1.41111px;stroke-width:0.264583"
+         x="-18.375864"
+         y="3.5632575"
+         id="tspan19963">snowflake</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:1.41111px;stroke-width:0.264583"
+         x="-18.375864"
+         y="5.3271451"
+         id="tspan19965">trash</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:1.41111px;stroke-width:0.264583"
+         x="-18.375864"
+         y="7.0910325"
+         id="tspan39422">bug</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:2.82222px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
+       x="9.3466244"
+       y="5.2448945"
+       id="text44874"><tspan
+         sodipodi:role="line"
+         id="tspan44872"
+         style="font-size:2.82222px;stroke-width:0.264583"
+         x="9.3466244"
+         y="5.2448945">Load <tspan
+   style="font-weight:bold;font-size:2.82222px"
+   id="tspan45500">foo</tspan> from <tspan
+   style="font-weight:bold;font-size:2.82222px"
+   id="tspan48164">CSV</tspan> <tspan
+   style="font-weight:bold;font-size:2.82222px"
+   id="tspan46992">'data/foo.csv'</tspan></tspan></text>
+    <rect
+       style="fill:#cccccc;stroke-width:0.264583"
+       id="rect57453"
+       width="100.54166"
+       height="39.158329"
+       x="9.5249987"
+       y="8.466671" />
+    <text
+       xml:space="preserve"
+       style="font-size:10.5833px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
+       x="45.094017"
+       y="29.737019"
+       id="text58293"><tspan
+         sodipodi:role="line"
+         id="tspan58291"
+         style="stroke-width:0.264583"
+         x="45.094017"
+         y="29.737019">Table</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:1.41111px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
+       x="9.5250006"
+       y="7.4083328"
+       id="text60850"><tspan
+         sodipodi:role="line"
+         id="tspan60848"
+         style="font-size:1.41111px;stroke-width:0.264583"
+         x="9.5250006"
+         y="7.4083328"><tspan
+   style="font-weight:bold"
+   id="tspan65388">Status:</tspan> DONE (March 22, 2022; 4:49 PM; 3 seconds)</tspan></text>
+  </g>
 </svg>
