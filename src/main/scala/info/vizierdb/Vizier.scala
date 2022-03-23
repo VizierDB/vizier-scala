@@ -197,6 +197,9 @@ object Vizier
         //////////////////// Ingest ////////////////////
         if(subcommand.equals(config.ingest)){
           try {
+            if(config.ingest.execute()){
+              VizierAPI.init()
+            }
             Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
               ImportProject(
                 _,
