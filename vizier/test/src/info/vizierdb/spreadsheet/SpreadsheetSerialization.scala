@@ -40,6 +40,9 @@ import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.IntegerType
+import info.vizierdb.Vizier
+import scala.collection.compat.immutable.LazyList
+import info.vizierdb.catalog.Artifact
 
 class SpreadsheetSerialization
     extends Specification
@@ -144,5 +147,141 @@ class SpreadsheetSerialization
         val immutableDAGPostSerialization = postSerialization.map(kv => (kv._1,kv._2.data.toSet)).toMap
         immutableDAG must_== immutableDAGPostSerialization
         }
+    
+        //"spreadsheet serialization" >> {
+        {
+        lazy val project = MutableProject("Spreadsheet serialization test")
+        project.load("test_data/r.csv", "W")
+        val preSerialization = Spreadsheet(project.dataframe("W"))
+        preSerialization.overlay.addColumn(A)
+        preSerialization.overlay.addColumn(B)
+        preSerialization.overlay.update(A(1, 3), lit(1))
+        preSerialization.overlay.update(A(4, 7), lit(2))
+        preSerialization.overlay.update(A(8, 10), lit(3))
+        val spreadsheetConstructor = SpreadsheetConstructor(Some(project.projectId), preSerialization.overlay.dag, preSerialization.overlay.frame, preSerialization.schema)
+        val jsonConstructor = Json.toJson(spreadsheetConstructor)
+        val readableConstructor = Json.prettyPrint(jsonConstructor)
+        //println(readableConstructor)
+        val constructorFromJson: JsResult[SpreadsheetConstructor] = jsonConstructor.validate[SpreadsheetConstructor]
+        var cDeserialized: SpreadsheetConstructor = null
+        var postSerialization: Spreadsheet = null
+        constructorFromJson match {
+            case JsSuccess(s, _) => cDeserialized = s
+            case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
+        }
+        postSerialization = Spreadsheet(project.dataframe("W"))
+        postSerialization.overlay.dag ++= cDeserialized.dag
+        postSerialization.overlay.frame = cDeserialized.frame
+
+        for((k,v) <- postSerialization.overlay.dag) {
+            val rules = v.data.values.map(_._2)
+            for (rule <- rules) postSerialization.overlay.updates.put(rule.id, rule)
+        }
+        Spreadsheet.spreadsheetEquals(preSerialization, postSerialization) must beTrue
+        ok
+        }
+
+        /**
+        //"nothing test to be deleted soon" >> {
+        {
+        lazy val project = MutableProject("Spreadsheet serialization test")
+        project.load("test_data/r.csv", "L")
+        val spreadsheet = Spreadsheet(project.dataframe("L"))
+        spreadsheet.overlay.subscribe(RangeSet(0, 19))
+
+        var schema = spreadsheet.schema
+        var jsonSchema = Json.toJson(schema)
+        println("Schema BEFORE:")
+        println(jsonSchema)
+
+        var dag = spreadsheet.overlay.dag
+        var jsonDAG = Json.toJson(dag)
+        println("Dag BEFORE:")
+        println(jsonDAG)
+
+        var frame = spreadsheet.overlay.frame
+        var jsonRF = Json.toJson(frame)
+        println("frame BEFORE:")
+        println(jsonRF)
+
+        //spreadsheet.overlay.addColumn(A)
+        //spreadsheet.overlay.update((2), A(1).ref + 1)
+        //spreadsheet.overlay.update(A(1), lit(1))
+        //spreadsheet.overlay.addColumn(B)
+       // spreadsheet.overlay.update(B(1, 2), (A offsetBy 0).ref)
+        //spreadsheet.overlay.addColumn(C)
+     //   spreadsheet.overlay.update(C(1, 2), (A offsetBy 0).ref + (B offsetBy 1).ref)
+        //spreadsheet.overlay.addColumn(A)
+    //    spreadsheet.overlay.update(A(2), A(1).ref + 1)
+    //    spreadsheet.overlay.update(A(1), lit(1))
+        //spreadsheet.overlay.addColumn(B)
+  //      spreadsheet.overlay.update(B(1, 2), (A offsetBy 0).ref)
+        //spreadsheet.overlay.addColumn(C)
+   //     spreadsheet.overlay.update(C(1, 2), (A offsetBy 0).ref + (B offsetBy 1).ref)
+   //     spreadsheet.overlay.update(A(1), lit(3))
+     //   spreadsheet.overlay.update(B(3), lit(2))
+
+
+        spreadsheet.editCell(spreadsheet.indexOfColumn("A"), 2, JsString("=A1+1"))
+        spreadsheet.editCell(spreadsheet.indexOfColumn("A"), 1, JsString("5"))
+
+        //Static dependencies
+        schema = spreadsheet.schema
+        jsonSchema = Json.toJson(schema)
+        println(s"\n\nSchema AFTER dependencies:\n${jsonSchema}\n")
+
+        dag = spreadsheet.overlay.dag
+        jsonDAG = Json.toJson(dag)
+        println(s"\n\nDag AFTER dependencies:\n${jsonDAG}\n")
+
+        frame = spreadsheet.overlay.frame
+        jsonRF = Json.toJson(frame)
+        println(s"\n\nFrame AFTER dependencies:\n${jsonRF}\n")
+
+        //Row deletion
+        spreadsheet.overlay.deleteRows(8, 3)
+        schema = spreadsheet.schema
+        jsonSchema = Json.toJson(schema)
+        println(s"\n\nSchema AFTER row deletion:\n${jsonSchema}\n")
+
+        dag = spreadsheet.overlay.dag
+        jsonDAG = Json.toJson(dag)
+        println(s"\n\nDag AFTER row deletion:\n${jsonDAG}\n")
+
+        frame = spreadsheet.overlay.frame
+        jsonRF = Json.toJson(frame)
+        println(s"\n\nFrame AFTER row deletion:\n${jsonRF}\n")
+
+        //Row moves
+        spreadsheet.overlay.moveRows(from = 5, to = 9, count = 3)
+        schema = spreadsheet.schema
+        jsonSchema = Json.toJson(schema)
+        println(s"\n\nSchema AFTER row MOVES:\n${jsonSchema}\n")
+
+        dag = spreadsheet.overlay.dag
+        jsonDAG = Json.toJson(dag)
+        println(s"\n\nDag AFTER row MOVES:\n${jsonDAG}\n")
+
+        frame = spreadsheet.overlay.frame
+        jsonRF = Json.toJson(frame)
+        println(s"\n\nFrame AFTER row MOVES:\n${jsonRF}\n")
+
+        //Column deletion
+        spreadsheet.deleteColumn("B")
+        schema = spreadsheet.schema
+        jsonSchema = Json.toJson(schema)
+        println(s"\n\nSchema AFTER column deletion:\n${jsonSchema}\n")
+
+        dag = spreadsheet.overlay.dag
+        jsonDAG = Json.toJson(dag)
+        println(s"\n\nDag AFTER column deletion:\n${jsonDAG}\n")
+
+        frame = spreadsheet.overlay.frame
+        jsonRF = Json.toJson(frame)
+        println(s"\n\nFrame AFTER column deletion:\n${jsonRF}\n")
+
+        ok
+        }
+        **/
     }
 }

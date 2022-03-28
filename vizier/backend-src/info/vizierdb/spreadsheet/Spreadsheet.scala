@@ -322,4 +322,57 @@ object Spreadsheet
     /* return */ spreadsheet
     
   }
+
+  def spreadsheetEquals(a: Spreadsheet, b: Spreadsheet): Boolean = {
+    var equals = true
+    val aSchema = a.schema.map((OutputColumn.unapply(_))) 
+    val bSchema = b.schema.map((OutputColumn.unapply(_)))
+
+    val aUpdates = a.overlay.updates.toSeq
+    val bUpdates = b.overlay.updates.toSeq
+    
+    val aDag = a.overlay.dag.map(kv => (kv._1,kv._2.data.toSet)).toMap
+    val bDag = b.overlay.dag.map(kv => (kv._1,kv._2.data.toSet)).toMap
+
+    val aData = a.overlay.data.map(kv => (kv._1,kv._2.toSet)).toMap
+    val bData = b.overlay.data.map(kv => (kv._1,kv._2.toSet)).toMap
+
+    val aTriggers = a.overlay.triggers.map(kv => (kv._1,kv._2.toSet)).toMap
+    val bTriggers = b.overlay.triggers.map(kv => (kv._1,kv._2.toSet)).toMap
+
+    val aFrame = a.overlay.frame
+    val bFrame = b.overlay.frame
+
+    if(aSchema != bSchema) {
+      println("schemas are not equal")
+      println(s"${aSchema}\n\u2260\n${bSchema}")
+      equals = false
+    }
+    if(aUpdates != bUpdates) {
+      println("updates are not equal")
+      println(s"${aUpdates}\n\u2260\n${bUpdates}")
+      equals = false
+    }
+    if(aDag != bDag) {
+      println("dags are not equal")
+      println(s"${aDag}\n\u2260\n${bDag}")
+      equals = false
+    }
+    if(aData != bData) {
+      println("data are not equal")
+      println(s"${aData}\n\u2260\n${bData}")
+      equals = false
+    }
+    if(aTriggers != bTriggers) {
+      println("triggers are not equal")
+      println(s"${aTriggers}\n\u2260\n${bTriggers}")
+      equals = false
+    }
+    if(aFrame != bFrame) {
+      println("frames are not equal")
+      println(s"${aFrame}\n\u2260\n${bFrame}")
+      equals = false
+    }
+    equals
+  }
 }
