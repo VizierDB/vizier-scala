@@ -7,7 +7,7 @@
    viewBox="0 0 183.62083 264.58334"
    version="1.1"
    id="svg5"
-   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
    sodipodi:docname="Wireframes.svg"
    inkscape:export-filename="/home/okennedy/Downloads/Wireframes.png"
    inkscape:export-xdpi="95.868927"
@@ -29,15 +29,15 @@
      showgrid="false"
      units="px"
      width="800px"
-     inkscape:zoom="1.8101934"
-     inkscape:cx="390.01357"
-     inkscape:cy="182.57717"
-     inkscape:window-width="1503"
-     inkscape:window-height="970"
-     inkscape:window-x="0"
-     inkscape:window-y="32"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="layer4"
+     inkscape:zoom="1.1111095"
+     inkscape:cx="261.00039"
+     inkscape:cy="131.40019"
+     inkscape:window-width="1920"
+     inkscape:window-height="1011"
+     inkscape:window-x="1080"
+     inkscape:window-y="306"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg5"
      guidecolor="#ff0000"
      guideopacity="1"
      showguides="false">
@@ -653,7 +653,7 @@
        id="tspan29049"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:6.35px;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';stroke-width:0.264583"
        x="45.971958"
-       y="-10.473881">Rest (500px)</tspan></text>
+       y="-10.473881">Rest (700-200=500px)</tspan></text>
   <text
      xml:space="preserve"
      style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:6.35px;line-height:1.25;font-family:'Allegreya Sans';-inkscape-font-specification:'Allegreya Sans';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
@@ -916,14 +916,14 @@
     <text
        xml:space="preserve"
        style="font-size:5.29167px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-       x="158.0573"
-       y="24.159285"
+       x="151.17819"
+       y="28.392622"
        id="text352444-9"><tspan
          sodipodi:role="line"
          id="tspan352442-1"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.29167px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-         x="158.0573"
-         y="24.159285"></tspan></text>
+         x="151.17819"
+         y="28.392622"></tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
@@ -1197,23 +1197,16 @@
     <g
        id="g219294"
        transform="translate(0,1.5875)">
-      <rect
-         style="fill:#e9eaf5;stroke:none;stroke-width:0.13229167;stroke-miterlimit:4;stroke-dasharray:none"
-         id="rect36853"
-         width="131.23332"
-         height="47.095833"
-         x="1.0583339"
-         y="2.116667" />
       <text
          xml:space="preserve"
          style="font-size:2.82222px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-         x="9.3466244"
+         x="8.2882919"
          y="5.2448945"
          id="text44874"><tspan
            sodipodi:role="line"
            id="tspan44872"
            style="font-size:2.82222px;stroke-width:0.264583"
-           x="9.3466244"
+           x="8.2882919"
            y="5.2448945">Load <tspan
    style="font-weight:bold;font-size:2.82222px"
    id="tspan45500">foo</tspan> from <tspan
@@ -1222,95 +1215,64 @@
    style="font-weight:bold;font-size:2.82222px"
    id="tspan46992">'data/foo.csv'</tspan></tspan></text>
       <rect
-         style="fill:#f2f2f2;stroke-width:0.264583"
+         style="fill:#ffffff;stroke:#000000;stroke-width:0.264583"
          id="rect57453"
-         width="118.53333"
-         height="38.629166"
-         x="12.7"
-         y="8.4666662" />
+         width="122.76666"
+         height="34.924999"
+         x="8.4666662"
+         y="12.170833" />
       <g
-         id="g10832">
+         id="g10832"
+         transform="translate(6.2727459,-4.2333346)">
         <g
            id="g552157-5"
-           transform="translate(0.00665346,-87.312491)">
+           transform="matrix(1.0345054,0,0,1.0345017,-0.25140986,-90.781342)">
           <rect
-             style="display:inline;fill:#4d4d4d;stroke:none;stroke-width:0.0639398;stroke-miterlimit:4;stroke-dasharray:none"
-             id="rect53847-1-9"
-             width="2.0460663"
-             height="2.0460727"
-             x="9.5956001"
-             y="100.61225"
-             ry="0" />
-          <rect
-             style="display:inline;fill:#e6e6e6;stroke:#000000;stroke-width:0.0639398;stroke-miterlimit:4;stroke-dasharray:none"
+             style="display:inline;fill:#999999;stroke:none;stroke-width:0.0639398;stroke-miterlimit:4;stroke-dasharray:none"
              id="rect25855-7-7"
              width="2.0460663"
              height="2.0460727"
              x="9.5249996"
              y="100.54166"
-             ry="4.3108017e-08" />
+             ry="0.55254716"
+             rx="0.50834835" />
           <text
              xml:space="preserve"
-             style="font-size:1.05833px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;stroke-width:0.127879"
-             x="10.075388"
+             style="font-size:1.05833px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;fill:#ffffff;stroke-width:0.127879"
+             x="10.050411"
              y="101.99461"
              id="text33090-7-7"><tspan
                sodipodi:role="line"
                id="tspan33088-1-6"
-               style="font-size:1.05833px;fill:#000000;stroke-width:0.127879"
-               x="10.075388"
+               style="font-size:1.05833px;fill:#ffffff;stroke-width:0.127879"
+               x="10.050411"
                y="101.99461"></tspan></text>
         </g>
         <g
-           id="g552157-5-7"
-           transform="translate(0.00665346,-84.13749)">
+           id="g55870"
+           transform="matrix(1.0345054,0,0,1.0345017,2.92359,-90.781342)">
           <rect
-             style="display:inline;fill:#4d4d4d;stroke:none;stroke-width:0.0639398;stroke-miterlimit:4;stroke-dasharray:none"
-             id="rect53847-1-9-3"
-             width="2.0460663"
-             height="2.0460727"
-             x="9.5956001"
-             y="100.61225"
-             ry="0" />
-          <rect
-             style="display:inline;fill:#e6e6e6;stroke:#000000;stroke-width:0.0639398;stroke-miterlimit:4;stroke-dasharray:none"
-             id="rect25855-7-7-6"
+             style="display:inline;fill:#999999;stroke:none;stroke-width:0.0639398;stroke-miterlimit:4;stroke-dasharray:none"
+             id="rect55864"
              width="2.0460663"
              height="2.0460727"
              x="9.5249996"
              y="100.54166"
-             ry="4.3108017e-08" />
+             ry="0.55254716"
+             rx="0.50834835" />
           <text
              xml:space="preserve"
-             style="font-size:1.05833px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;stroke-width:0.127879"
-             x="10.075388"
+             style="font-size:1.05833px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;fill:#ffffff;stroke-width:0.127879"
+             x="10.050411"
              y="101.99461"
-             id="text33090-7-7-5"><tspan
+             id="text55868"><tspan
                sodipodi:role="line"
-               id="tspan33088-1-6-6"
-               style="font-size:1.05833px;fill:#000000;stroke-width:0.127879"
-               x="10.075388"
+               id="tspan55866"
+               style="font-size:1.05833px;fill:#ffffff;stroke-width:0.127879"
+               x="10.050411"
                y="101.99461"></tspan></text>
         </g>
       </g>
-      <rect
-         style="opacity:0.7;fill:#ffffff;stroke-width:0"
-         id="rect640890"
-         width="2.2262897"
-         height="5.4012923"
-         x="9.5249996"
-         y="13.11954" />
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="9.6727552"
-         y="11.322897"
-         id="text336586-4-6"><tspan
-           sodipodi:role="line"
-           id="tspan336584-7-5"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-           x="9.6727552"
-           y="11.322897"></tspan></text>
       <text
          xml:space="preserve"
          style="font-size:10.5833px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
@@ -1325,13 +1287,13 @@
       <text
          xml:space="preserve"
          style="font-size:1.41111px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-         x="9.5250006"
+         x="8.4666681"
          y="7.4083328"
          id="text60850"><tspan
            sodipodi:role="line"
            id="tspan60848"
            style="font-size:1.41111px;stroke-width:0.264583"
-           x="9.5250006"
+           x="8.4666681"
            y="7.4083328"><tspan
    style="font-weight:bold"
    id="tspan65388">Status:</tspan> <tspan
@@ -1340,110 +1302,68 @@
       <rect
          style="fill:#2a2178;fill-rule:evenodd;stroke-width:0.264583"
          id="rect616"
-         width="1.058333"
+         width="6.3499994"
          height="47.095833"
-         x="7.4083333"
+         x="1.0583333"
+         y="2.1166666" />
+      <rect
+         style="opacity:0.7;fill:#ffffff;stroke-width:0"
+         id="rect1573-5-5-6"
+         width="6.3499999"
+         height="47.095833"
+         x="1.0583333"
          y="2.1166666" />
       <g
          id="g761"
-         transform="translate(-1.6694141e-5,1.0583333)">
-        <g
-           id="g725"
-           transform="translate(-141.81664,4.233333)">
-          <g
-             id="g723">
-            <rect
-               style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect715"
-               width="4.2333331"
-               height="4.2333331"
-               x="144.07939"
-               y="4.3793769"
-               ry="0" />
-            <rect
-               style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect717"
-               width="4.2333331"
-               height="4.2333331"
-               x="143.93332"
-               y="4.2333331"
-               ry="8.9190671e-08" />
-            <text
-               xml:space="preserve"
-               style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-               x="146.00235"
-               y="7.5311751"
-               id="text721"><tspan
-                 sodipodi:role="line"
-                 id="tspan719"
-                 style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
-                 x="146.00235"
-                 y="7.5311751"></tspan></text>
-          </g>
-        </g>
-        <g
-           id="g735"
-           transform="translate(-141.81665,-1.0583333)">
-          <rect
-             style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-             id="rect727"
-             width="4.2333331"
-             height="4.2333331"
-             x="144.07939"
-             y="4.3793769"
-             ry="0" />
-          <rect
-             style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-             id="rect729"
-             width="4.2333331"
-             height="4.2333331"
-             x="143.93332"
-             y="4.2333331"
-             ry="8.9190671e-08" />
-          <text
-             xml:space="preserve"
-             style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-             x="144.68889"
-             y="7.597321"
-             id="text733"><tspan
-               sodipodi:role="line"
-               id="tspan731"
-               style="font-size:3.175px;fill:#000000;stroke-width:0.264583"
-               x="144.68889"
-               y="7.597321"></tspan></text>
-        </g>
+         transform="translate(-1.669147e-5,1.0583333)">
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+           x="4.18571"
+           y="11.583639"
+           id="text721"><tspan
+             sodipodi:role="line"
+             id="tspan719"
+             style="font-size:4.23333px;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.264583"
+             x="4.18571"
+             y="11.583639"></tspan></text>
+        <path
+           style="fill:#ffffff;stroke:#ffffff;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 1.05836,13.229166 h 5.29166 v 0 h 1.05833"
+           id="path5104-3"
+           sodipodi:nodetypes="cccc" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;fill:#ffffff;stroke-width:0.264583"
+           x="2.2789159"
+           y="5.4806542"
+           id="text733"><tspan
+             sodipodi:role="line"
+             id="tspan731"
+             style="font-size:4.23333px;fill:#ffffff;stroke-width:0.264583"
+             x="2.2789159"
+             y="5.4806542"></tspan></text>
+        <path
+           style="fill:#ffffff;stroke:#ffffff;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 1.05835,6.8791663 h 5.29166 v 0 h 1.05833"
+           id="path5104"
+           sodipodi:nodetypes="cccc" />
         <g
            id="g747"
-           transform="translate(-141.81664,9.5249993)">
+           transform="translate(-141.81664,9.8474608)">
           <g
              id="g745">
-            <rect
-               style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect737"
-               width="4.2333331"
-               height="4.2333331"
-               x="144.07939"
-               y="4.3793769"
-               ry="0" />
-            <rect
-               style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect739"
-               width="4.2333331"
-               height="4.2333331"
-               x="143.93332"
-               y="4.2333331"
-               ry="8.9190671e-08" />
             <text
                xml:space="preserve"
-               style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+               style="font-size:4.23333px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;fill:#ffffff;stroke-width:0.264583"
                x="146.00235"
-               y="7.5311751"
+               y="8.0861797"
                id="text743"><tspan
                  sodipodi:role="line"
                  id="tspan741"
-                 style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
+                 style="font-size:4.23333px;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.264583"
                  x="146.00235"
-                 y="7.5311751"></tspan></text>
+                 y="8.0861797"></tspan></text>
           </g>
         </g>
         <g
@@ -1451,50 +1371,30 @@
            transform="translate(-141.81664,14.816666)">
           <g
              id="g757">
-            <rect
-               style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect749"
-               width="4.2333331"
-               height="4.2333331"
-               x="144.07939"
-               y="4.3793769"
-               ry="0" />
-            <rect
-               style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect751"
-               width="4.2333331"
-               height="4.2333331"
-               x="143.93332"
-               y="4.2333331"
-               ry="8.9190671e-08" />
             <text
                xml:space="preserve"
-               style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+               style="font-size:4.23333px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
                x="146.00235"
-               y="7.5311751"
+               y="9.5444889"
                id="text755"><tspan
                  sodipodi:role="line"
                  id="tspan753"
-                 style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
+                 style="font-size:4.23333px;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.264583"
                  x="146.00235"
-                 y="7.5311751"></tspan></text>
+                 y="9.5444889"></tspan></text>
           </g>
         </g>
+        <path
+           style="fill:#ffffff;stroke:#ffffff;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 1.05836,19.579167 h 5.29166 v 0 h 1.05833"
+           id="path16908"
+           sodipodi:nodetypes="cccc" />
+        <path
+           style="fill:#ffffff;stroke:#ffffff;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 1.05836,25.929168 h 5.29166 v 0 h 1.05833"
+           id="path16910"
+           sodipodi:nodetypes="cccc" />
       </g>
-      <rect
-         style="opacity:0.7;fill:#ffffff;stroke-width:0"
-         id="rect1573"
-         width="4.4310718"
-         height="4.4444928"
-         x="2.0649903"
-         y="4.1682172" />
-      <rect
-         style="opacity:0.7;fill:#ffffff;stroke-width:0"
-         id="rect1573-1"
-         width="4.4310718"
-         height="4.4444928"
-         x="2.0477695"
-         y="9.465929" />
       <use
          x="0"
          y="0"
@@ -1503,58 +1403,132 @@
          transform="translate(0,47.095831)"
          width="100%"
          height="100%" />
-      <rect
-         style="opacity:0.7;fill:#ffffff;stroke-width:0"
-         id="rect37499"
-         width="4.4310718"
-         height="4.4444928"
-         x="2.0477695"
-         y="14.757596" />
-      <rect
-         style="opacity:0.7;fill:#ffffff;stroke-width:0"
-         id="rect37501"
-         width="4.4310718"
-         height="4.4444928"
-         x="2.0477695"
-         y="20.049263" />
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
+         x="11.501115"
+         y="11.060822"
+         id="text25610"><tspan
+           sodipodi:role="line"
+           id="tspan25608"
+           style="font-size:2.11667px;stroke-width:0.264583"
+           x="11.501115"
+           y="11.060822">foo</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
+         x="9.2325783"
+         y="10.801263"
+         id="text36456"><tspan
+           sodipodi:role="line"
+           id="tspan36454"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+           x="9.2325783"
+           y="10.801263"></tspan></text>
     </g>
     <g
        id="g219294-3"
-       transform="translate(0,210.60831)">
+       transform="translate(0,208.49163)">
+      <g
+         id="g94176-8"
+         transform="translate(-1.0583342,-87.841639)">
+        <rect
+           style="opacity:1;fill:#fae4ea;stroke:none;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+           id="rect64996-7"
+           width="122.76666"
+           height="5.2916608"
+           x="9.5249996"
+           y="97.366661"
+           ry="1.0583287"
+           rx="1.0583355" />
+        <g
+           id="g552157-9"
+           transform="translate(121.36397,-2.1105369)"
+           style="stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none">
+          <path
+             id="rect25855-7-2"
+             style="display:inline;fill:#ececec;stroke:#000000;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+             d="m 8.8110533,99.477193 h 1.0583316 c 0.5863181,0 1.0583351,0.47202 1.0583351,1.058347 v 1.05833 0 H 8.8110533 c 0,-1.06558 0,-1.17419 0,-2.116677 z"
+             sodipodi:nodetypes="csscccc" />
+          <g
+             aria-label=""
+             id="text33090-7-0"
+             style="font-size:2.11667px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+             transform="translate(-1.5875,-0.974143)">
+            <text
+               xml:space="preserve"
+               style="font-size:1.05833px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.0175011"
+               x="10.927717"
+               y="101.94415"
+               id="text76942-2"><tspan
+                 sodipodi:role="line"
+                 id="tspan76940-3"
+                 style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.05833px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.0175011"
+                 x="10.927717"
+                 y="101.94415"></tspan></text>
+          </g>
+          <rect
+             style="opacity:1;fill:#ececec;stroke:#000000;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+             id="rect80010-7"
+             width="2.1166666"
+             height="2.1166666"
+             x="8.8110542"
+             y="101.59386"
+             rx="1.1235595e-06"
+             ry="3.1884765e-06" />
+          <g
+             aria-label=""
+             id="g80266-5"
+             style="font-size:2.11667px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+             transform="translate(-1.5875,1.1425237)">
+            <text
+               xml:space="preserve"
+               style="font-size:1.05833px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.0175011"
+               x="10.927717"
+               y="101.94415"
+               id="text80264-9"><tspan
+                 sodipodi:role="line"
+                 id="tspan80262-2"
+                 style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.05833px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.0175011"
+                 x="10.927717"
+                 y="101.94415"></tspan></text>
+          </g>
+        </g>
+      </g>
       <text
          xml:space="preserve"
          style="font-size:2.82222px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-         x="9.3466244"
+         x="8.2882919"
          y="6.3032279"
          id="text44874-0"><tspan
            sodipodi:role="line"
            id="tspan44872-7"
            style="font-size:2.82222px;stroke-width:0.264583"
-           x="9.3466244"
+           x="8.2882919"
            y="6.3032279">Plot <tspan
    style="font-weight:bold;font-size:2.82222px"
    id="tspan45500-8">bar</tspan> as a bar chart</tspan></text>
       <text
          xml:space="preserve"
-         style="font-size:2.11667px;line-height:0.955;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="12.568697"
-         y="11.62392"
+         style="font-size:2.11667px;line-height:0.955;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;fill:#782144;stroke-width:0.264583"
+         x="11.510365"
+         y="12.682253"
          id="text274290-7"><tspan
            sodipodi:role="line"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';stroke-width:0.264583"
-           x="12.568697"
-           y="11.62392"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';fill:#782144;stroke-width:0.264583"
+           x="11.510365"
+           y="12.682253"
            id="tspan274294-5">bar doesn't have a column named 'q'</tspan></text>
       <text
          xml:space="preserve"
          style="font-size:1.41111px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-         x="9.5250006"
+         x="8.4666681"
          y="8.4666662"
          id="text60850-9"><tspan
            sodipodi:role="line"
            id="tspan60848-2"
            style="font-size:1.41111px;stroke-width:0.264583"
-           x="9.5250006"
+           x="8.4666681"
            y="8.4666662"><tspan
    style="font-weight:bold"
    id="tspan65388-0">Status:</tspan> <tspan
@@ -1563,176 +1537,142 @@
       <rect
          style="fill:#9d284c;fill-rule:evenodd;stroke-width:0.264583"
          id="rect616-8"
-         width="1.058333"
-         height="24.341665"
-         x="7.4083333"
-         y="3.175" />
-      <g
-         id="g761-9"
-         transform="translate(-1.6694141e-5,2.1166667)">
-        <g
-           id="g725-2"
-           transform="translate(-141.81664,4.233333)">
-          <g
-             id="g723-6">
-            <rect
-               style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect715-6"
-               width="4.2333331"
-               height="4.2333331"
-               x="144.07939"
-               y="4.3793769"
-               ry="0" />
-            <rect
-               style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect717-4"
-               width="4.2333331"
-               height="4.2333331"
-               x="143.93332"
-               y="4.2333331"
-               ry="8.9190671e-08" />
-            <text
-               xml:space="preserve"
-               style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-               x="146.00235"
-               y="7.5311751"
-               id="text721-9"><tspan
-                 sodipodi:role="line"
-                 id="tspan719-5"
-                 style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
-                 x="146.00235"
-                 y="7.5311751"></tspan></text>
-          </g>
-        </g>
-        <g
-           id="g735-0"
-           transform="translate(-141.81665,-1.0583333)">
-          <rect
-             style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-             id="rect727-4"
-             width="4.2333331"
-             height="4.2333331"
-             x="144.07939"
-             y="4.3793769"
-             ry="0" />
-          <rect
-             style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-             id="rect729-8"
-             width="4.2333331"
-             height="4.2333331"
-             x="143.93332"
-             y="4.2333331"
-             ry="8.9190671e-08" />
-          <text
-             xml:space="preserve"
-             style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-             x="144.68889"
-             y="7.597321"
-             id="text733-7"><tspan
-               sodipodi:role="line"
-               id="tspan731-1"
-               style="font-size:3.175px;fill:#000000;stroke-width:0.264583"
-               x="144.68889"
-               y="7.597321"></tspan></text>
-        </g>
-        <g
-           id="g747-7"
-           transform="translate(-141.81664,9.5249993)">
-          <g
-             id="g745-2">
-            <rect
-               style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect737-7"
-               width="4.2333331"
-               height="4.2333331"
-               x="144.07939"
-               y="4.3793769"
-               ry="0" />
-            <rect
-               style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect739-2"
-               width="4.2333331"
-               height="4.2333331"
-               x="143.93332"
-               y="4.2333331"
-               ry="8.9190671e-08" />
-            <text
-               xml:space="preserve"
-               style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-               x="146.00235"
-               y="7.5311751"
-               id="text743-2"><tspan
-                 sodipodi:role="line"
-                 id="tspan741-6"
-                 style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
-                 x="146.00235"
-                 y="7.5311751"></tspan></text>
-          </g>
-        </g>
-        <g
-           id="g759-1"
-           transform="translate(-141.81664,14.816666)">
-          <g
-             id="g757-0">
-            <rect
-               style="fill:#4d4d4d;stroke:none;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect749-6"
-               width="4.2333331"
-               height="4.2333331"
-               x="144.07939"
-               y="4.3793769"
-               ry="0" />
-            <rect
-               style="fill:#e6e6e6;stroke:#000000;stroke-width:0.132292;stroke-miterlimit:4;stroke-dasharray:none"
-               id="rect751-1"
-               width="4.2333331"
-               height="4.2333331"
-               x="143.93332"
-               y="4.2333331"
-               ry="8.9190671e-08" />
-            <text
-               xml:space="preserve"
-               style="font-size:3.175px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-               x="146.00235"
-               y="7.5311751"
-               id="text755-5"><tspan
-                 sodipodi:role="line"
-                 id="tspan753-9"
-                 style="font-size:3.175px;text-align:center;text-anchor:middle;fill:#000000;stroke-width:0.264583"
-                 x="146.00235"
-                 y="7.5311751"></tspan></text>
-          </g>
-        </g>
-      </g>
+         width="6.3499994"
+         height="24.34165"
+         x="1.0583333"
+         y="3.1750166" />
       <rect
          style="opacity:0.7;fill:#ffffff;stroke-width:0"
-         id="rect1573-4"
-         width="6.3499999"
-         height="26.458332"
+         id="rect1573-5-5-75"
+         width="6.3499994"
+         height="24.341661"
          x="1.0583333"
-         y="4.2333331" />
+         y="3.1750166" />
       <text
          xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;display:inline;fill:#000000;stroke-width:0.264583"
-         x="11.596045"
-         y="11.426458"
+         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;display:inline;fill:#782144;stroke-width:0.264583"
+         x="10.898498"
+         y="12.677196"
          id="text517786-3"><tspan
            sodipodi:role="line"
            id="tspan517784-6"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;text-align:end;text-anchor:end;fill:#000000;stroke-width:0.264583"
-           x="11.596045"
-           y="11.426458"></tspan></text>
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;text-align:end;text-anchor:end;fill:#782144;stroke-width:0.264583"
+           x="10.898498"
+           y="12.677196"></tspan></text>
+      <use
+         x="0"
+         y="0"
+         xlink:href="#g761"
+         id="use21683"
+         transform="translate(-3.7614697e-6,1.0583558)"
+         width="100%"
+         height="100%" />
     </g>
     <g
        id="g219643"
        transform="translate(0,66.675005)">
+      <g
+         id="g94176"
+         transform="translate(-1.0583333)">
+        <rect
+           style="opacity:1;fill:#f9f9f9;stroke:none;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+           id="rect64996"
+           width="122.76666"
+           height="8.4666615"
+           x="9.5249996"
+           y="97.366661"
+           ry="1.0583287"
+           rx="1.0583355" />
+        <g
+           id="g552157"
+           transform="translate(121.36397,-2.1105369)"
+           style="stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none">
+          <path
+             id="rect25855-7"
+             style="display:inline;fill:#ececec;stroke:#000000;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+             d="m 8.8110533,99.477193 h 1.0583316 c 0.5863181,0 1.0583351,0.47202 1.0583351,1.058347 v 1.05833 0 H 8.8110533 c 0,-1.06558 0,-1.17419 0,-2.116677 z"
+             sodipodi:nodetypes="csscccc" />
+          <g
+             aria-label=""
+             id="text33090-7"
+             style="font-size:2.11667px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+             transform="translate(-1.5875,-0.974143)">
+            <text
+               xml:space="preserve"
+               style="font-size:1.05833px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.0175011"
+               x="10.927717"
+               y="101.94415"
+               id="text76942"><tspan
+                 sodipodi:role="line"
+                 id="tspan76940"
+                 style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.05833px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.0175011"
+                 x="10.927717"
+                 y="101.94415"></tspan></text>
+          </g>
+          <rect
+             style="opacity:1;fill:#ececec;stroke:#000000;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+             id="rect80010"
+             width="2.1166666"
+             height="2.1166666"
+             x="8.8110542"
+             y="101.59386"
+             rx="1.1235595e-06"
+             ry="3.1884765e-06" />
+          <g
+             aria-label=""
+             id="g80266"
+             style="font-size:2.11667px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;stroke-width:0.0661458;stroke-miterlimit:4;stroke-dasharray:none"
+             transform="translate(-1.5875,1.1425237)">
+            <text
+               xml:space="preserve"
+               style="font-size:1.05833px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.0175011"
+               x="10.927717"
+               y="101.94415"
+               id="text80264"><tspan
+                 sodipodi:role="line"
+                 id="tspan80262"
+                 style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.05833px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.0175011"
+                 x="10.927717"
+                 y="101.94415"></tspan></text>
+          </g>
+        </g>
+      </g>
       <rect
-         style="fill:#f2f2f2;stroke-width:0.264583"
+         style="fill:#216f78;stroke:none;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none"
+         id="rect8908"
+         width="6.3499999"
+         height="89.958328"
+         x="1.0583333"
+         y="52.916656" />
+      <rect
+         style="fill:#ffffff;stroke:#000000;stroke-width:0.264583"
          id="rect57453-3"
-         width="118.53333"
-         height="39.158329"
-         x="12.7"
-         y="104.77499" />
+         width="122.76666"
+         height="30.69169"
+         x="8.46667"
+         y="110.06662" />
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
+         x="11.501121"
+         y="108.95664"
+         id="text25610-3-9"><tspan
+           sodipodi:role="line"
+           id="tspan25608-5-1"
+           style="font-size:2.11667px;stroke-width:0.264583"
+           x="11.501121"
+           y="108.95664">foo</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
+         x="9.1502066"
+         y="108.68948"
+         id="text336586"><tspan
+           sodipodi:role="line"
+           id="tspan336584"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
+           x="9.1502066"
+           y="108.68948"></tspan></text>
       <use
          x="0"
          y="0"
@@ -1740,20 +1680,13 @@
          id="use10834-3"
          width="100%"
          height="100%"
-         transform="translate(-4.3853026e-7,95.779157)" />
-      <rect
-         style="opacity:0.7;fill:#ffffff;stroke-width:0"
-         id="rect10836"
-         width="2.2262897"
-         height="5.4012923"
-         x="9.5250034"
-         y="108.8987" />
+         transform="translate(0.07725386,97.895822)" />
       <use
          x="0"
          y="0"
          xlink:href="#g567072"
          id="use567742-1"
-         transform="translate(6.6294055e-7,143.93332)"
+         transform="translate(6.6294055e-7,140.7583)"
          width="100%"
          height="100%" />
       <text
@@ -1770,13 +1703,13 @@
       <text
          xml:space="preserve"
          style="font-size:1.41111px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-         x="9.5249987"
+         x="8.4666662"
          y="96.242172"
          id="text60850-5"><tspan
            sodipodi:role="line"
            id="tspan60848-3"
            style="font-size:1.41111px;stroke-width:0.264583"
-           x="9.5249987"
+           x="8.4666662"
            y="96.242172"><tspan
    style="font-weight:bold"
    id="tspan65388-5">Status:</tspan> <tspan
@@ -1787,26 +1720,19 @@
          y="0"
          xlink:href="#g761"
          id="use5605"
-         transform="translate(1.6694141e-5,50.800001)"
+         transform="translate(1.669147e-5,50.800001)"
          width="100%"
          height="100%" />
       <rect
          style="opacity:0.7;fill:#ffffff;stroke-width:0"
          id="rect1573-5-5"
-         width="6.3499999"
-         height="26.458332"
+         width="6.3637972"
+         height="90.057625"
          x="1.0445358"
-         y="53.875694" />
-      <rect
-         style="fill:#216f78;stroke:none;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none"
-         id="rect8908"
-         width="1.0583335"
-         height="92.074989"
-         x="7.4083328"
-         y="52.916664" />
+         y="52.81736" />
       <g
          id="g121492"
-         transform="matrix(0.60000001,0,0,0.60000001,3.3866665,21.166665)">
+         transform="matrix(0.60000001,0,0,0.60000001,2.3283331,21.166665)">
         <rect
            style="opacity:1;fill:#f9f9f9;stroke:#cccccc;stroke-width:0"
            id="rect1850"
@@ -1993,83 +1919,42 @@
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:0.955;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="12.568704"
-         y="99.465569"
+         x="10.452039"
+         y="99.994736"
          id="text274290"><tspan
            sodipodi:role="line"
            id="tspan274288"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';stroke-width:0.264583"
-           x="12.568704"
-           y="99.465569">Next value is 132</tspan><tspan
+           x="10.452039"
+           y="99.994736">Next value is 132</tspan><tspan
            sodipodi:role="line"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';stroke-width:0.264583"
-           x="12.568704"
-           y="101.58801"
+           x="10.452039"
+           y="102.11718"
            id="tspan274292">Next value is 199</tspan><tspan
            sodipodi:role="line"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';stroke-width:0.264583"
-           x="12.568704"
-           y="103.71045"
+           x="10.452039"
+           y="104.23962"
            id="tspan274294">Next value is 213</tspan></text>
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="9.5096941"
-         y="99.470993"
-         id="text311420"><tspan
-           sodipodi:role="line"
-           id="tspan311418"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-           x="9.5096941"
-           y="99.470993"></tspan></text>
-      <g
-         id="g552157">
-        <rect
-           style="display:inline;fill:#4d4d4d;stroke:none;stroke-width:0.0639398;stroke-miterlimit:4;stroke-dasharray:none"
-           id="rect53847-1"
-           width="2.0460663"
-           height="2.0460727"
-           x="9.5956001"
-           y="100.61225"
-           ry="0" />
-        <rect
-           style="display:inline;fill:#e6e6e6;stroke:#000000;stroke-width:0.0639398;stroke-miterlimit:4;stroke-dasharray:none"
-           id="rect25855-7"
-           width="2.0460663"
-           height="2.0460727"
-           x="9.5249996"
-           y="100.54166"
-           ry="4.3108017e-08" />
-        <text
-           xml:space="preserve"
-           style="font-size:1.05833px;line-height:1.25;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;display:inline;stroke-width:0.127879"
-           x="10.020576"
-           y="101.92149"
-           id="text33090-7"><tspan
-             sodipodi:role="line"
-             id="tspan33088-1"
-             style="font-size:1.05833px;fill:#000000;stroke-width:0.127879"
-             x="10.020576"
-             y="101.92149"></tspan></text>
-      </g>
-      <rect
-         style="opacity:0.7;fill:#ffffff;stroke-width:0"
-         id="rect1573-5-5-7"
-         width="2.2262897"
-         height="2.2262857"
-         x="9.4153767"
-         y="100.43204" />
     </g>
     <g
        id="g219643-6"
        transform="translate(-0.01379742,-0.01375414)">
       <rect
-         style="fill:#f2f2f2;stroke-width:0.264583"
+         style="fill:#2a2178;stroke:none;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none"
+         id="rect8908-6"
+         width="6.3499999"
+         height="64.558327"
+         x="1.0721307"
+         y="52.93042" />
+      <rect
+         style="fill:#ffffff;stroke:#000000;stroke-width:0.264583"
          id="rect57453-3-2"
-         width="118.53333"
-         height="39.158333"
-         x="12.713797"
-         y="77.272087" />
+         width="122.76666"
+         height="33.866669"
+         x="8.4804649"
+         y="81.505417" />
       <use
          x="0"
          y="0"
@@ -2077,17 +1962,17 @@
          id="use10834"
          width="100%"
          height="100%"
-         transform="translate(0.01379736,68.276252)" />
+         transform="translate(0.09105145,69.334585)" />
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="9.6682825"
+         x="9.1391163"
          y="80.128311"
          id="text336586-4"><tspan
            sodipodi:role="line"
            id="tspan336584-7"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-           x="9.6682825"
+           x="9.1391163"
            y="80.128311"></tspan></text>
       <text
          xml:space="preserve"
@@ -2103,13 +1988,13 @@
       <text
          xml:space="preserve"
          style="font-size:1.41111px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
-         x="9.5249987"
+         x="8.4666662"
          y="76.193153"
          id="text60850-5-2"><tspan
            sodipodi:role="line"
            id="tspan60848-3-7"
            style="font-size:1.41111px;stroke-width:0.264583"
-           x="9.5249987"
+           x="8.4666662"
            y="76.193153"><tspan
    style="font-weight:bold"
    id="tspan65388-5-0">Status:</tspan> <tspan
@@ -2120,19 +2005,12 @@
          y="0"
          xlink:href="#g761"
          id="use5605-3"
-         transform="translate(1.6694141e-5,50.800001)"
+         transform="translate(1.669147e-5,50.800001)"
          width="100%"
          height="100%" />
-      <rect
-         style="fill:#2a2178;stroke:none;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none"
-         id="rect8908-6"
-         width="1.072131"
-         height="64.57209"
-         x="7.4083328"
-         y="52.916664" />
       <g
          id="g121492-0"
-         transform="matrix(0.60000001,0,0,0.60000001,3.3866665,21.166665)">
+         transform="matrix(0.60000001,0,0,0.60000001,2.3283331,21.166665)">
         <rect
            style="opacity:1;fill:#f9f9f9;stroke:#cccccc;stroke-width:0"
            id="rect1850-6"
@@ -2201,9 +2079,20 @@
          y="0"
          xlink:href="#g567072"
          id="use567742-5"
-         transform="translate(0.01379809,116.43041)"
+         transform="translate(0.01379809,115.37207)"
          width="100%"
          height="100%" />
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
+         x="11.514915"
+         y="80.395409"
+         id="text25610-3"><tspan
+           sodipodi:role="line"
+           id="tspan25608-5"
+           style="font-size:2.11667px;stroke-width:0.264583"
+           x="11.514915"
+           y="80.395409">foo</tspan></text>
     </g>
     <text
        xml:space="preserve"
@@ -2216,17 +2105,6 @@
          style="stroke-width:0.264583"
          x="51.85833"
          y="166.68747" /></text>
-    <text
-       xml:space="preserve"
-       style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-       x="9.6727562"
-       y="173.77704"
-       id="text336586"><tspan
-         sodipodi:role="line"
-         id="tspan336584"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-         x="9.6727562"
-         y="173.77704"></tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
        d="M -18.264163,3.9951373 -3.593902,14.880536"
