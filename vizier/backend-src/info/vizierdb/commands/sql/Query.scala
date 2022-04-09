@@ -42,8 +42,23 @@ object Query extends Command
   def format(arguments: Arguments): String = 
     s"${arguments.pretty("source")} TO ${arguments.pretty("output_dataset")}"
   def title(arguments: Arguments): String =
-    arguments.getOpt[String]("output_dataset")
-             .map { "SELECT into " + _ }
+    arguments.getOpt[String]("source")
+             .flatMap { source =>
+                // If there's a -- comment on the first line, use it as the
+                // title.
+               if(source.startsWith("--")){
+                Some(
+                  source.split("\n").head  // only take the first line.
+                        .drop(2)           // drop the '--'
+                        .trim()            // drop any leading/tailing whitespace
+                )
+               } else { None }
+             }
+             .orElse { 
+                arguments.getOpt[String]("output_dataset")
+                         .map { "SELECT into " + _ }
+             }
+    
              .getOrElse { "SQL Query" }
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {

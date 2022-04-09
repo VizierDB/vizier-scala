@@ -1,7 +1,7 @@
 package info.vizierdb.ui.components.editors
 
 import info.vizierdb.ui.components._
-import info.vizierdb.serialized.CommandArgument
+import info.vizierdb.serialized.{ CommandArgument, CommandArgumentList }
 import info.vizierdb.serialized.PackageCommand
 import info.vizierdb.serialized.CommandDescription
 import org.scalajs.dom
@@ -19,6 +19,7 @@ import scala.util.Failure
 import info.vizierdb.util.Logging
 import info.vizierdb.types.DatasetFormat
 import play.api.libs.json._
+import info.vizierdb.serializers._
 
 class LoadDatasetEditor(
   val delegate: ModuleEditorDelegate,
@@ -44,7 +45,7 @@ class LoadDatasetEditor(
       onchange := { _:dom.Event => formatChanged }
     ).render:dom.html.Select
 
-  val sparkOptions: Parameter = 
+  val sparkOptions: ListParameter = 
     new ListParameter("loadOptions",
       "Spark Load Options",
       Seq[String]("Key", "Value"),
@@ -95,14 +96,19 @@ class LoadDatasetEditor(
 
   val optionalParameters = Seq[(Set[String], Parameter)](
     Set(DatasetFormat.CSV) ->
-      new BooleanParameter("loadDetectHeaders", "File has Headers: ", true, false, true),
+      new BooleanParameter("header", "File has Headers: ", true, false, true),
     Set(DatasetFormat.CSV) ->
-      new StringParameter("loadDelimiter", "Field Delimiter: ", true, false, ","),
+      new StringParameter("delimiter", "Field Delimiter: ", true, false, ","),
     Set(DatasetFormat.CSV) ->
       new BooleanParameter("loadInferTypes", "Guess Schema: ", true, false, true),
   )
+  val directToSparkOptionalParameters = Set(
+    "header",
+    "delimiter"
+  )
   val optionalParameterByKey = 
-    optionalParameters.map { param => param._2.id -> param._2 }.toMap
+    optionalParameters.map { param => param._2.id -> param._2 }
+                      .toMap
 
   val activeParameters = Var(Seq[Parameter](sparkOptions))
   formatChanged
@@ -177,6 +183,7 @@ class LoadDatasetEditor(
     return components.last match {
       case "json" => DatasetFormat.JSON
       case "csv"  => DatasetFormat.CSV
+      case "tsv"  => DatasetFormat.CSV
       case _      => DatasetFormat.Text
     }
 
@@ -270,7 +277,28 @@ class LoadDatasetEditor(
           }
         case "name"       => datasetName.set(arg.value)
         case "loadFormat" => format.value = arg.value.as[String]
-        case "loadOptions" => sparkOptions.set(arg.value)
+        case "loadOptions" => 
+          {
+            val (special, generic) = 
+              arg.value.as[Seq[CommandArgumentList.T]]
+                       .map { CommandArgumentList.toMap(_) }
+                       .partition { x => 
+                          directToSparkOptionalParameters(
+                            x.getOrElse("loadOptionKey", JsString("")).as[String]
+                          )
+                        }
+            sparkOptions.set(generic)
+            special.map { r => 
+              val value = r("loadOptionValue")
+              optionalParameterByKey(r("loadOptionKey").as[String]) match {
+                case x:StringParameter => x.set(value)
+                case x:BooleanParameter => 
+                  x.set(JsBoolean(value.as[String].toLowerCase == "true"))
+                case _ => ???
+              }
+                          
+            }
+          }
         case "loadDataSourceErrors" => ()
         case "schema" => println(s"Schema: ${arg.value}"); schema.set(arg.value)
         case x if optionalParameterByKey contains x => 
@@ -279,6 +307,8 @@ class LoadDatasetEditor(
       }
     }
   }
+
+
 
   override def currentState: Seq[CommandArgument] = 
   {
@@ -294,7 +324,28 @@ class LoadDatasetEditor(
         "loadInferTypes" -> JsBoolean(true)
       ),
       schema.toArgument,
-      sparkOptions.toArgument
-    ) ++ optionalParameters.map { _._2.toArgument }
+      CommandArgument(
+        sparkOptions.id -> JsArray(
+          sparkOptions.rawValue ++ 
+          optionalParameters.filter { x => directToSparkOptionalParameters(x._2.id) }
+                            .map { _._2 }
+                            .map { x:Parameter => 
+                              Json.arr(
+                                CommandArgument("loadOptionKey", JsString(x.id)),
+                                CommandArgument("loadOptionValue", 
+                                  x match { 
+                                    case _:StringParameter => x.value
+                                    case b:BooleanParameter => 
+                                      JsString(if(b.value.as[Boolean]) { "true" } else { "false" })
+                                    case _ => ???
+                                  }
+                                )
+                              )
+                            }
+                            .toSeq
+        )
+      )
+    ) ++ optionalParameters.filter { x => !directToSparkOptionalParameters(x._2.id) }
+                           .map { _._2.toArgument }
   }
 }

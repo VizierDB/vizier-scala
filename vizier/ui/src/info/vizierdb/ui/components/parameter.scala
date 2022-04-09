@@ -351,9 +351,19 @@ class ColIdParameter(
     )
   }
 
+  val selectedColumn = Var[Option[Int]](None)
+
+  onChange { e:dom.Event => 
+    selectedColumn() = 
+      inputNode[dom.html.Select].value match { 
+        case "" => None
+        case x => Some(x.toInt)
+      }
+  }
+
   val root = span(
     Rx {
-      pulldown(0)(
+      pulldown(selectedColumn().map { _ + 1 }.getOrElse(0))(
         (
           ("---" -> "") +:
           schema().map { col => 
@@ -366,7 +376,9 @@ class ColIdParameter(
   def value = 
     JsNumber(inputNode[dom.html.Select].value.toInt)
   override def set(v: JsValue): Unit = 
-    inputNode[dom.html.Select].value = v.as[Int].toString
+  {
+    selectedColumn() = v.asOpt[Int]
+  }
 
 }
 
@@ -444,7 +456,10 @@ class ArtifactParameter(
       case x => JsString(x)
     }
   override def set(v: JsValue): Unit = 
-    inputNode[dom.html.Select].value = v.as[String]
+  {
+    selectedDataset() = v.asOpt[String]
+    inputNode[dom.html.Select].value = v.asOpt[String].getOrElse { "" }
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
