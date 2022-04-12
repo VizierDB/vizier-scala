@@ -31,7 +31,7 @@
      width="800px"
      inkscape:zoom="1.4142136"
      inkscape:cx="1604.4253"
-     inkscape:cy="461.03362"
+     inkscape:cy="234.75945"
      inkscape:window-width="2560"
      inkscape:window-height="1371"
      inkscape:window-x="1080"
@@ -3088,16 +3088,26 @@
          style="font-size:2.82222px;stroke-width:0.264583"
          x="34.925003"
          y="-35.277779"
-         id="tspan45129">- History </tspan><tspan
+         id="tspan154275">- Fork</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.82222px;stroke-width:0.264583"
          x="34.925003"
          y="-31.750004"
-         id="tspan45127">---</tspan><tspan
+         id="tspan154277">- Merge</tspan><tspan
          sodipodi:role="line"
          style="font-size:2.82222px;stroke-width:0.264583"
          x="34.925003"
          y="-28.222227"
+         id="tspan45129">- History </tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.82222px;stroke-width:0.264583"
+         x="34.925003"
+         y="-24.694452"
+         id="tspan45127">---</tspan><tspan
+         sodipodi:role="line"
+         style="font-size:2.82222px;stroke-width:0.264583"
+         x="34.925003"
+         y="-21.166677"
          id="tspan45123">- [List of Branches]</tspan></text>
     <text
        xml:space="preserve"
