@@ -29,15 +29,15 @@
      showgrid="true"
      units="px"
      width="800px"
-     inkscape:zoom="2"
-     inkscape:cx="1455.5"
-     inkscape:cy="406.5"
+     inkscape:zoom="4"
+     inkscape:cx="1071"
+     inkscape:cy="342.5"
      inkscape:window-width="2560"
      inkscape:window-height="1371"
      inkscape:window-x="1080"
      inkscape:window-y="329"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer3"
+     inkscape:current-layer="g219294"
      guidecolor="#ff0000"
      guideopacity="1"
      showguides="true">
@@ -1070,7 +1070,7 @@
          y="12.170833" />
       <g
          id="g10832"
-         transform="translate(6.2727459,-4.2333346)">
+         transform="translate(4.1560791,-4.0845074)">
         <g
            id="g552157-5"
            transform="matrix(1.0345054,0,0,1.0345017,-0.25140986,-90.781342)">
@@ -1222,25 +1222,14 @@
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="11.501115"
+         x="9.38445"
          y="11.060822"
          id="text25610"><tspan
            sodipodi:role="line"
            id="tspan25608"
            style="font-size:2.11667px;stroke-width:0.264583"
-           x="11.501115"
+           x="9.38445"
            y="11.060822">foo</tspan></text>
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="9.2325783"
-         y="10.801263"
-         id="text36456"><tspan
-           sodipodi:role="line"
-           id="tspan36454"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-           x="9.2325783"
-           y="10.801263"></tspan></text>
     </g>
     <g
        id="g219294-3"
@@ -1418,25 +1407,14 @@
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="11.501121"
+         x="9.3844557"
          y="108.95664"
          id="text25610-3-9"><tspan
            sodipodi:role="line"
            id="tspan25608-5-1"
            style="font-size:2.11667px;stroke-width:0.264583"
-           x="11.501121"
+           x="9.3844557"
            y="108.95664">foo</tspan></text>
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="9.1502066"
-         y="108.68948"
-         id="text336586"><tspan
-           sodipodi:role="line"
-           id="tspan336584"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-           x="9.1502066"
-           y="108.68948"></tspan></text>
       <use
          x="0"
          y="0"
@@ -1444,7 +1422,7 @@
          id="use10834-3"
          width="100%"
          height="100%"
-         transform="translate(0.07725386,97.895822)" />
+         transform="translate(0.07725386,98.077713)" />
       <text
          xml:space="preserve"
          style="font-size:10.5833px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
@@ -1718,18 +1696,7 @@
          id="use10834"
          width="100%"
          height="100%"
-         transform="translate(0.09105145,69.334585)" />
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="9.1391163"
-         y="80.128311"
-         id="text336586-4"><tspan
-           sodipodi:role="line"
-           id="tspan336584-7"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:FontAwesome;-inkscape-font-specification:FontAwesome;stroke-width:0.264583"
-           x="9.1391163"
-           y="80.128311"></tspan></text>
+         transform="translate(0.09105146,69.582622)" />
       <text
          xml:space="preserve"
          style="font-size:10.5833px;line-height:1.25;font-family:'Alegreya Sans';-inkscape-font-specification:'Alegreya Sans';stroke-width:0.264583"
@@ -1833,13 +1800,13 @@
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;letter-spacing:0px;stroke-width:0.264583"
-         x="11.514915"
+         x="9.3982506"
          y="80.395409"
          id="text25610-3"><tspan
            sodipodi:role="line"
            id="tspan25608-5"
            style="font-size:2.11667px;stroke-width:0.264583"
-           x="11.514915"
+           x="9.3982506"
            y="80.395409">foo</tspan></text>
     </g>
     <text
