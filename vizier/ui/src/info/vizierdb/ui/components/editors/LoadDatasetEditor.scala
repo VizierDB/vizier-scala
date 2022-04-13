@@ -114,7 +114,7 @@ class LoadDatasetEditor(
   formatChanged
 
   override val editorFields: Frag = 
-    div(`class` := "module editable load_dataset",
+    div(`class` := "load_dataset",
       div(`class` := "header",
         // wrapper needed for flexbox
         div(`class` := "back_button_wrapper",

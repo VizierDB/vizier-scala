@@ -48,7 +48,8 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   }
 
   val derive = Left(_)
-  
+  val allArtifacts = Var[Rx[Map[String, serialized.ArtifactSummary]]](Var(Map.empty))
+
   /**
    * Retrieve a list of all "tentative" modules currently being edited
    */
@@ -72,36 +73,37 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
           case Right(e) => e.visibleArtifacts.now
         }
       }
-    elements
-      .zipWithIndex
-      .drop(Math.max(from-1, 0))
-      .foldLeft(visibleArtifacts) {
-        case (artifacts, (Left(module), idx)) =>
-          val outputs = module.outputs
-          val oldArtifacts = artifacts
+    allArtifacts() =
+      elements
+        .zipWithIndex
+        .drop(Math.max(from-1, 0))
+        .foldLeft(visibleArtifacts) {
+          case (artifacts, (Left(module), idx)) =>
+            val outputs = module.outputs
+            val oldArtifacts = artifacts
 
 
-          val insertions: Rx[Map[String, serialized.ArtifactSummary]] = 
-            outputs.map { _.filter { _._2.isDefined }.mapValues { _.get }.toMap }
-          val deletions: Rx[Set[String]] = 
-            outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
+            val insertions: Rx[Map[String, serialized.ArtifactSummary]] = 
+              outputs.map { _.filter { _._2.isDefined }.mapValues { _.get }.toMap }
+            val deletions: Rx[Set[String]] = 
+              outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
 
-          // println(s"Left starting with: ${artifacts.now.mkString(", ")} and adding ${insertions.now.mkString(", ")}")
+            // println(s"Left starting with: ${artifacts.now.mkString(", ")} and adding ${insertions.now.mkString(", ")}")
 
-          val updatedArtifacts = Rx { 
-            val ret = (artifacts() -- deletions()) ++ insertions()
-            ret
-          }
-          module.visibleArtifacts.now.kill()
-          module.visibleArtifacts() = artifacts
-          /* return */ updatedArtifacts
-        case (artifacts, (Right(tentative), idx)) => 
-          // println(s"Right sees: ${artifacts.now.mkString(", ")}")
-          tentative.visibleArtifacts.now.kill()
-          tentative.visibleArtifacts() = artifacts
-          tentative.position = idx
-          /* return */ artifacts
-      }
+            val updatedArtifacts = Rx { 
+              val ret = (artifacts() -- deletions()) ++ insertions()
+              ret
+            }
+            module.visibleArtifacts.now.kill()
+            module.visibleArtifacts() = artifacts
+            /* return */ updatedArtifacts
+          case (artifacts, (Right(tentative), idx)) => 
+            // println(s"Right sees: ${artifacts.now.mkString(", ")}")
+            tentative.visibleArtifacts.now.kill()
+            tentative.visibleArtifacts() = artifacts
+            tentative.position = idx
+            /* return */ artifacts
+        }
   }
 
   /**

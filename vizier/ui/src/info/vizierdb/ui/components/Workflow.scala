@@ -24,13 +24,50 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
   val moduleViewsWithEdits = new TentativeEdits(moduleViews, project, this)
 
   val moduleNodes =
-    RxBufferView(ul(`class` := "module_list"), 
+    RxBufferView(div(`class` := "module_list"), 
       moduleViewsWithEdits.rxMap { 
-        case Left(module) => module.root
+        case Left(module) => 
+          div(
+            module.root,
+            InterModule(
+              button(
+                FontAwesome("plus"),
+                onclick := { _:dom.Event => 
+                  moduleViewsWithEdits.insertTentative(module.subscription.position + 1)
+                }
+              ).render,
+              button(
+                FontAwesome("binoculars"),
+                onclick := { _:dom.Event => println("TODO: Create Inspector") }
+              ).render
+            ),
+          )
         case Right(edit) => edit.root
       }
     )
 
+  // DEBUG: Automatically add a tentative module
+  // {
+  //   subscription.awaitingReSync.triggerLater { f => 
+  //     if(!f) { moduleViewsWithEdits.appendTentative() }
+  //   }
+  // }
+
+
+  /**
+   * A helper method to create divs representing inter-module separators
+   */
+  def InterModule(buttons: dom.html.Button*): Frag =
+  {
+    div(`class` := "inter_module",
+      div(
+        `class` := "elements", 
+        span(`class` := "separator", "—"),
+        buttons,
+        span(`class` := "separator", "—"),
+      )
+    )
+  }
 
 
   val root = 
@@ -38,30 +75,24 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
       Rx { 
         if(subscription.awaitingReSync()) { div("Syncing workflow...") } 
         else { 
-          div(`class` := "inter_module",
-            div(`class` := "action",
-              FontAwesome("plus")
-            )
+          div(`class` := "first",
+            InterModule(
+              button(
+                FontAwesome("plus"),
+                onclick := { _:dom.Event => moduleViewsWithEdits.insertTentative(0) }
+              ).render
+            ),
+            moduleViewsWithEdits
+              .rxLength
+              .map { 
+                case 0 => div(`class` := "hint",
+                              "↑", br(), "Click here to add a module")
+                case _ => div()
+              }.reactive
           )
         }
       }.reactive,
       moduleNodes.root,
-      div(
-        `class` := "add_cell_end_wrapper",
-        button(
-          `class` := "add_cell_end",
-          onclick := { (e: dom.MouseEvent) => moduleViewsWithEdits.appendTentative() }, 
-          "+"
-        ),
-        moduleViewsWithEdits
-          .rxLength
-          .map { 
-            case 0 => div(`class` := "hint",
-                          "↑", br(), "Click here to add a module")
-            case _ => div()
-          }.reactive
-
-      )
     )
 }
 

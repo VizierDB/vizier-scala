@@ -265,6 +265,7 @@ case class CodeParameter(
 
   val root = 
     div(
+      width := "100%",
       textarea(
         // "code goes here...",
         OnMount { (n: dom.Node) => 

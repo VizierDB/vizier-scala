@@ -70,16 +70,4 @@ class ModuleSubscription(
    */
   def thawUpto(): Unit = 
     branch.Client.workflowThawUpto(position)
-
-  /**
-   * Add a new cell above this one
-   */
-  def addCellAbove(workflow: Workflow): Unit = 
-    workflow.moduleViewsWithEdits.insertTentative(position)
-  
-  /**
-   * Add a new cell below this one
-   */
-  def addCellBelow(workflow: Workflow): Unit = 
-    workflow.moduleViewsWithEdits.insertTentative(position+1)
 }

@@ -160,7 +160,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
   /**
    * The DOM node representing this module
    */
-  val root: dom.html.LI = li(
+  val root: dom.html.Div = div(
     attr("id") := id_attr,
     `class` := "module",
     div(

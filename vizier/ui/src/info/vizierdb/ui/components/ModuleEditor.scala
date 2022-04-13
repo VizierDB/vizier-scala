@@ -164,9 +164,10 @@ class DefaultModuleEditor(
 
   val editorFields =
     div(
+      width := "100%",
       // h4(command.name),
       parameters.filter { !_.hidden }
-                .map { param => div(param.root) }
+                .map { param => div(width := "100%", param.root) }
     )
 }
 

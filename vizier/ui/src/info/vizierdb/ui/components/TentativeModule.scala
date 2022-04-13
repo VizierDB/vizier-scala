@@ -90,9 +90,11 @@ class TentativeModule(
   //           .collect { case Left(m) => m.id }
   // }
 
-  val root = li(`class` := "module",
+  val root = div(`class` := "module tentative",
     div(
       `class` := "menu",
+      // button("x"),
+      div(`class` := "spacer")
     ),
     div(
       `class` := "module_body",
@@ -102,7 +104,7 @@ class TentativeModule(
         case Some(Right(editor)) => editor.root
       }.reactive
     )
-  )
+  ).render
 }
 
 class CommandList(
@@ -144,7 +146,6 @@ class CommandList(
       selectedCommands() = keywords.prefixMatch(term)
     }
   }
-
 
   val root = 
     div(`class` := "select_command", 
@@ -202,7 +203,7 @@ class CommandList(
           " Cancel", 
           `class` := "cancel",
           onclick := { (e: dom.MouseEvent) => module.cancelSelectCommand() }
-        )
+        ).render
       )
     )
 
