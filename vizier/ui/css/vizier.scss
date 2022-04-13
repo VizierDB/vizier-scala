@@ -17,6 +17,13 @@ $button_shadow: #bbb;
 $color_primary:           #214478;
 $color_primary_highlight: #2e6098;
 
+$color_done:              #36338d;
+$color_error:             #9d284c;
+$color_frozen:            #5b9dcf;
+$color_running:           #2d93a5;
+$color_waiting:           #2d93a5;
+
+
 a         { color: blue; }
 a:visited { color: blue; }
 
@@ -270,8 +277,6 @@ $menu_height: 32px;
     {
       height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
       flex-grow: 1;
-      background-color: blue;
-      opacity: 0.2;
       overflow-y: auto;
     }
 
@@ -358,7 +363,7 @@ $menu_height: 32px;
 
   i.fa
   {
-    font-size: 18px;
+    font-size: 16px;
     height: 18px;
     padding: ($menu_height - 18px) / 2;
     padding-left: 16px;
@@ -381,6 +386,66 @@ $menu_height: 32px;
   {
     flex-grow: 1;
   }
+}
+
+/************ Workflow ************/
+
+#project .workflow
+{
+  padding: 0px;
+  
+  .module_list 
+  {
+    display: flex;
+    list-style: none;
+    padding: 0px;
+    margin: 0px;
+    width: 100%;
+
+    .module
+    {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+
+      .menu {
+        width: 28px;
+        margin-left: 8px;
+        margin-right: 8px;
+        flex-grow: 0;
+        border-top: solid 1px white;
+        opacity: 0.3;
+
+        button {
+          width: 28px;
+          height: 28px;
+          border: none;
+          border-bottom: solid 1px white;
+          background-color: inherit;
+          color: white;
+
+          &:hover { 
+            color: grey;
+          }
+
+          tooltip {
+            visibility: hidden;
+            position: absolute;
+          }
+        }
+      }
+
+      &:hover           { .menu { opacity: 1.0 }}
+      &.done_state      { .menu { background-color: $color_done; }}
+      &.error_state     { .menu { background-color: $color_error; }}
+      &.waiting_state   { .menu { background-color: $color_waiting; }}
+      &.stale_state     { .menu { background-color: $color_waiting; }}
+      &.cancelled_state { .menu { background-color: $color_error; }}
+      &.frozen_state    { .menu { background-color: $color_frozen; }}
+      &.running_state   { .menu { background-color: $color_running; }}
+    }
+  }
+
 }
 
 

@@ -165,13 +165,13 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
     `class` := "module",
     div(
       `class` := "menu",
-      button(
-        FontAwesome("angle-up"),
-        br(),
-        FontAwesome("plus"),
-        onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) },
-        Tooltip("Add cell above")
-      ),
+      // button(
+      //   FontAwesome("angle-up"),
+      //   br(),
+      //   FontAwesome("plus"),
+      //   onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) },
+      //   Tooltip("Add cell above")
+      // ),
       button(
         FontAwesome("pencil-square-o"), 
         onclick := { _:dom.MouseEvent => openEditor() },
@@ -217,13 +217,13 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
       ) {
         _ => subscription.delete();  
       },
-      button(
-        FontAwesome("plus"),
-        br(),
-        FontAwesome("angle-down"),
-        onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) },
-        Tooltip("Add cell below")
-      ),
+      // button(
+      //   FontAwesome("plus"),
+      //   br(),
+      //   FontAwesome("angle-down"),
+      //   onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) },
+      //   Tooltip("Add cell below")
+      // ),
     ),
     div(
       `class` := "module_body",

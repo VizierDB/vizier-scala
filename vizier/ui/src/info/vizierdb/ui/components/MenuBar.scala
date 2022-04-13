@@ -45,6 +45,7 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
         MenuItem("Thaw Everything", { () => println("Thaw")}, icon = "sun-o"),
       ),
       Rx {
+        val activeBranchId = project.activeBranch().getOrElse(-100)
         Menu("left item", FontAwesome("code-fork"))(
           (
             Seq(
@@ -53,7 +54,11 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
               MenuItem("Project History", { () => println("Stop")}, icon = "history"),
               Separator,
             ) ++ project.branches().map { case (id, branch) => 
-              MenuItem(branch.name, { () => println(s"Switch to branch $id") }, icon = "code-fork")
+              MenuItem(
+                branch.name, 
+                { () => println(s"Switch to branch $id") }, 
+                icon = if(id == activeBranchId){ "code-fork" } else { null }
+              )
             }
           ):_*
         )
