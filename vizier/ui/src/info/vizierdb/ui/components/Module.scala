@@ -16,7 +16,7 @@ import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.util.StringUtils
 import java.awt.Font
 import info.vizierdb.ui.widgets.Tooltip
-import info.vizierdb.ui.widgets.ConfirmableButton
+import info.vizierdb.ui.widgets.PopUpButton
 
 class Module(val subscription: ModuleSubscription, workflow: Workflow)
             (implicit owner: Ctx.Owner)
@@ -177,53 +177,46 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
         onclick := { _:dom.MouseEvent => openEditor() },
         Tooltip("Edit cell")
       ),
-      Rx { 
-        if (subscription.state() == types.ExecutionState.FROZEN) { 
-          button(
-            FontAwesome("play"),
-            onclick := { (_:dom.MouseEvent) => subscription.thawCell() },
-            Tooltip("Thaw this cell")
-          )
-        } else { 
-          button(
-            FontAwesome("snowflake-o"), 
-            onclick := { (_:dom.MouseEvent) => subscription.freezeCell() },
-            Tooltip("Freeze this cell")
-          )
-        }
-      }.reactive,
-      Rx { 
-        if (subscription.state() == types.ExecutionState.FROZEN) {
-          button(
-            FontAwesome("angle-double-up"),
-            br(),
-            FontAwesome("play"), 
-            onclick := { (_:dom.MouseEvent) => subscription.thawUpto() },
-            Tooltip("Thaw this cell and all above")
-          ) 
-        } else { 
-          button(
-            FontAwesome("snowflake-o"), 
-            br(),
-            FontAwesome("angle-double-down"),
-            onclick := { (_:dom.MouseEvent) => subscription.freezeFrom() },
-            Tooltip("Freeze this cell and all below")
-          )
-        }
-      }.reactive,
-      ConfirmableButton(
-        FontAwesome("trash-o"), 
-        Tooltip("Delete this cell")
-      ) {
-        _ => subscription.delete();  
-      },
-      // button(
-      //   FontAwesome("plus"),
-      //   br(),
-      //   FontAwesome("angle-down"),
-      //   onclick := { (_:dom.MouseEvent) => subscription.addCellBelow(workflow) },
-      //   Tooltip("Add cell below")
-      // ),
+      PopUpButton(
+        button(
+          subscription.state
+                      .map { _ == types.ExecutionState.FROZEN }
+                      .map { f => (if(f) { FontAwesome("play") } 
+                                   else  { FontAwesome("snowflake-o") }) }
+                      .reactive
+        ).render,
+        button(
+          FontAwesome("arrow-circle-left"),
+          onclick := { (_:dom.MouseEvent) => 
+            if(subscription.state.now == types.ExecutionState.FROZEN){ subscription.thawCell() } 
+            else                                                     { subscription.freezeCell() }
+          }
+        ).render,
+        button(
+          subscription.state
+                      .map { _ == types.ExecutionState.FROZEN }
+                      .map { if(_) { FontAwesome("arrow-circle-up") } 
+                             else  { FontAwesome("arrow-circle-down") } }
+                      .reactive,
+          onclick := { (_:dom.MouseEvent) => 
+            if(subscription.state.now == types.ExecutionState.FROZEN){ subscription.thawCell() } 
+            else                                                     { subscription.freezeCell() }
+          }
+        ).render,
+      ),
+      PopUpButton(
+        button(
+          `class` := "to_confirm",
+          FontAwesome("trash-o"), 
+          Tooltip("Delete this cell")
+        ).render,
+        button(
+          `class` := "confirm",
+          FontAwesome("check"),
+          onclick := { _:dom.Event => subscription.delete(); }
+        ).render
+      ),
+      div(`class` := "spacer")
     ),
     div(
       `class` := "module_body",
@@ -255,8 +248,6 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
           }
         }.reactive
       ),
-      // div(Rx { "State: " + subscription.state() }.reactive),
-      // div("Outputs: ", outputs.map { _.keys.mkString(", ") }.reactive),
       div(
         `class` := "messages",
         (if(hideSummary) { onclick := { _:dom.MouseEvent => openEditor() } }
