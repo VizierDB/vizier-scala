@@ -12,6 +12,11 @@ $red_button: #c00;
 $green_button: #292;
 $button_shadow: #bbb;
 
+/*********************************/
+/****** Color Scheme - Revised ******/
+$color_primary:           #214478;
+$color_primary_highlight: #2e6098;
+
 a         { color: blue; }
 a:visited { color: blue; }
 
@@ -21,6 +26,99 @@ $table_header_layer: 2;
 $table_gutter_layer: 1;
 $toc_layer: 10;
 $tooltip_layer: 20;
+$menu_layer: 15;
+
+/*********** Fonts ***************/
+
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans100italic.woff2");
+  font-style: italic;
+  font-weight: 100;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans100.woff2");
+  font-weight: 100;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans300italic.woff2");
+  font-style: italic;
+  font-weight: 300;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans300.woff2");
+  font-weight: 300;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans500italic.woff2");
+  font-style: italic;
+  font-weight: 500;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans500.woff2");
+  font-weight: 500;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans700italic.woff2");
+  font-style: italic;
+  font-weight: 700;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans700.woff2");
+  font-weight: 700;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans800italic.woff2");
+  font-style: italic;
+  font-weight: 800;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans800.woff2");
+  font-weight: 800;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans900italic.woff2");
+  font-style: italic;
+  font-weight: 900;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans900.woff2");
+  font-weight: 900;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSansitalic.woff2");
+  font-style: italic;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSansregular.woff2");
+}
 
 /********* Animations ************/
 
@@ -130,392 +228,161 @@ div.project_list_wrapper div.create_project_form input
   max-width: 400px;
 }
 
+/************ General Layout ************/
 
-/************ Workflow ************/
-
-#workflow
+body
 {
-  width: calc(100% - 300px);
-}
-
-div.add_cell_end_wrapper div.hint 
-{
-  display: block;
-  width: 100%;
-  text-align: center;
-  font-weight: bold;
-  color: gray;
-  font-size: 20px;
-}
-
-button.add_cell_end 
-{
-  height: 50px;
-  width: 50px;
-  font-size: 30px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0px;  
   padding: 0px;
-  text-align: center;
+  font-family: "alegreya sans";
 }
 
-// The overall module list
-ul.module_list 
-{ 
-  list-style: none;
-  padding: 3px;
+$menu_height: 32px;
 
-  // An individual module (tentative or real)
-  li.module 
+#project
+{
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+
+  .content
   {
+    width: 100vw;
     display: flex;
-    margin-top: 10px;
+    flex-direction: row-reverse;
 
-    // The menu is the "tab" to the left of each module
-    div.menu 
+    .table_of_contents
     {
-      min-width: 50px;
-      max-width: 50px;
-      display: block;
-      vertical-align: middle;
-      border-radius: 10px 0px 0px 10px;
-      background-color: $background_grey;
-      padding-top: 10px;
-      padding-bottom: 10px;
-      margin-right: 0px;
+      height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
+      width: 200px;
+      flex-grow: 0;
+      margin-left: 16px;
+      background-color: green;
+      opacity: 0.2;
+      overflow-y: auto;
+    }
 
-      // Blur the menu slightly so that we can emphasize it with
-      // a mouse-over or other highlight.
-      opacity: $deemphasize_alpha;
+    .workflow
+    {
+      height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
+      flex-grow: 1;
+      background-color: blue;
+      opacity: 0.2;
+      overflow-y: auto;
+    }
 
-      // Buttons in the menu
-      button
+  }
+}
+
+#menu_bar
+{
+  height: $menu_height;
+  width: 100vw;
+  background-color: $color_primary;
+  display: flex;
+  flex-direction: row;
+  color: white;
+
+  .left
+  {
+    border-right: solid 1px white;
+  }
+
+  .right
+  {
+    border-left: solid 1px white;
+  }
+  
+  .item
+  {
+    flex-grow: 0;
+    cursor: pointer;
+
+    ul
+    {
+      visibility: hidden;
+      z-index: $menu_layer;
+      background-color: $color_primary;
+      margin: 0px;
+      position: absolute;
+      list-style: none;
+      padding: 0px;
+      padding: 0px;
+
+      li
       {
-        width: 40px;
-        height: 40px;
-        margin-top: 5px;
-        top: 0px;
-        bottom: 0px;
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        position: relative;
-        font-size: 80%;
-        padding: 0px;
-        text-align: center;
+        padding: 8px;
+        padding-left: 16px;
+        padding-right: 16px;
+
+        i.fa { 
+          padding: 0px; 
+          padding-right: 8px; 
+          font-size: 12px; 
+        }
+
+        &:hover
+        {
+          background-color: $color_primary_highlight;
+        }
+
+        &.separator
+        {
+          padding: 0px;
+          border-top: solid 1px white;
+        }
       }
     }
 
-    // Color the menu based on the module's lifecycle state
-    &.error_state 
-    {
-      div.menu { background-color: $background_error; }
-    }
-    &.cancelled_state 
-    {
-      div.menu { background-color: $background_cancelled; }
-    }
-    &.frozen_state
-    {
-      div.menu { background-color: $background_frozen; }
-    }
-    &.running_state
-    {
-      div.menu { background-color: $background_running; }
-    }
-    &.running_state
-    {
-      div.menu { background-color: $background_running; }
-    }
-
-    // Deblur the menu when the module is moused over
     &:hover
     {
-      div.menu { opacity: 1; }
-    }
-    // Deblur and emphasize the menu when the module is moused over in the ToC
-    &.highlight
-    {
-      div.menu
-      {
-        opacity: 1;
-        background-color: $background_highlight;
-      }
-    }
-
-    div.module_body
-    {
-      padding-left: 0px;
-      max-width: 100%;
-      min-width: 400px;
-
-      div.status
-      {
-        font-size: 80%;
-        font-family: monospace;
-        margin: 5px;
-
-        span.label
-        {
-          font-weight: bold;
-        }
-      }
-
-      div.summary
-      {
-        width: auto;
-        background-color: $background_grey_deemphasized;
-        border-left: none;
-        padding-left: 10px;
-        padding-right: 20px;
-        border-radius: 0px 10px 10px 0px;
-        display: inline-block;
-        font-size: 120%;
-        font-weight: bold;
-
-        &.hidden
-        {
-          visibility: hidden;
-          // pull the rendering out of the flow.
-          position: fixed;
-        }
-      }
-
-      div.editor
-      {
-        margin-left: 0px;
-      }
-    }
-
-    div.select_command
-    {
-      div.command_search
-      {
-        border: 1px solid gray;
-        border-radius: 5px;
-        margin-left: 10px;
-        padding: 5px;
-        display: flex;
-
-        i.fa {
-          flex-grow: 0;
-        }
-
-        button {
-          flex-grow: 0;
-        }
-
-        input {
-          margin-left: 5px;
-          border: none;
-          flex-grow: 1;
-        }
-      }
-
-      ul.command_list
-      {
-        padding: 10px;
-        list-style: none;
-
-        li { margin-top: 10px; }
-
-        button.command 
-        { 
-          opacity: 0.5;
-          margin: 3px;
-
-          &:hover
-          {
-            opacity: 1;
-          }
-
-          &.suggested
-          {
-            opacity: 1;
-            box-shadow: 1px 1px 2px $background_highlight;
-          }
-        }
-      }
-    }
-
-    div.editor_actions
-    {
-      margin-top: 20px;
-      width: 100%;
-      display: flex;
-      padding-left: 5px;
-      padding-right: 5px;
-
-      button
-      {
-        width: 160px;
-        height: 40px;
-        border: 1px solid gray;
-        border-radius: 3px;
-        font-weight: bold;
-        flex-grow: 0;
-
-        &.cancel
-        {
-          border-color: $red_button;
-          i.fa { color: $red_button; }
-        }
-        &.save
-        {
-          border-color: $green_button;
-          i.fa { color: $green_button; }
-        }
-      }
-
-      div.spacer
-      { 
-        flex-grow: 1;
-      }
+      background-color: $color_primary_highlight;
+      ul { visibility: visible; }
     }
   }
-}
 
-/************ Table of Contents ************/
-
-div.contents 
-{
-  position: fixed;
-  top: 0px;
-  right: 0px;
-  float: right;
-  width: 250px;
-  overflow-y: auto;
-  font-size: 80%;
-  z-index: $toc_layer;
-  background-color: #fff;
-  height: 100%;
-  padding-left: 20px;
-  margin-top: 0px;
-  
-  .project_name
+  .text
   {
-    margin-bottom: 3px;
-
-    button
-    {
-      margin-left: 5px;
-    }
+    font-size: 16px;
+    height: 18px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: $menu_height/2 - 8px;
+    padding-top: $menu_height/2 - 10px;
+    font-weight: bold;
   }
-  .branch_name
+
+  i.fa
   {
-    margin-top: 3px;
-    margin-bottom: 0px;
+    font-size: 18px;
+    height: 18px;
+    padding: ($menu_height - 18px) / 2;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
-  div.branch_list
+  img
   {
-    visibility: hidden;
-    position: absolute;
-    border-radius: 5px;
-    border: 1px solid black;
-    padding-left: 10px;
-    margin-right: 20px;
-    margin-top: 0px;
-    &.active
-    {
-      position: initial;
-      visibility: visible;
-    }
+    height: $menu_height - 8px;
+    width: $menu_height - 8px;
+    padding: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
   }
 
-  ul
-  {  
-    margin-left: 0px;
-    padding-left: 0px;
-    li
-    {
-      list-style: decimal;
-      margin-top: 7px;
-      font-weight: bold;
-      
-      a
-      {
-        text-decoration: none;
-        color: blue;
+  a         { color: white; }
+  a:visited { color: white}
 
-        &:visited
-        {
-          color: blue;
-        }
-      }
-
-      &::marker
-      {
-        font-weight: lighter;
-        font-size: 80%;
-      }
-      &.tentative
-      {
-        opacity: 0.5;
-      }
-    }
+  div.spacer
+  {
+    flex-grow: 1;
   }
 }
 
-/************ Messages ************/
-
-div.module_body div.messages ul
-{
-  padding-left: 20px;
-  padding-top: 10px;
-}
-
-div.message
-{
-  font-family: monospace;
-}
-
-div.message.error
-{
-  color: #c00;
-  padding: 10px;
-  border: 1px solid #c00;
-  border-radius: 5px;
-  background-color: #fcc;
-}
-
-div.message div.header
-{
-  border-radius: 10px 10px 0px 0px;
-  background-color: white;
-  border-bottom: none;
-  min-width: 200px;
-  max-width: calc(100% - 200px);
-  padding-left: 10px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-div.message div.header h3
-{
-  margin: 0px;
-  margin-right: 20px;
-  display: inline;
-}
-div.message div.header a
-{
-  vertical-align: baseline;
-  text-decoration: none;
-}
-div.message div.header i.fa
-{
-  display: inline;
-  position: relative;
-  vertical-align: baseline;
-  top: 1px;
-  left: -8px;
-  font-size: 90%;
-}
-
-div.vega-embed
-{
-  min-width: 400px;
-}
 
 /************ Data Tables ************/
 
@@ -822,77 +689,4 @@ div.module.editable.load_dataset div.format_field select
 {
   margin-left: 10px;
   flex: 1 1 auto;
-}
-
-/********* Systemwide Button Settings ************/
-button
-{
-  box-shadow: 1px 1px 3px $button_shadow;
-
-  &:active
-  {
-    box-shadow: 0px 0px 1px $button_shadow;
-    position: relative;
-    left: 1px;
-    top: 1px;
-  }
-
-  // The mouseover tooltip for the button
-  tooltip
-  {
-    width: 200px;
-    background-color: black;
-    color: #fff;
-    text-align: center;
-    padding: 5px;
-    border-radius: 10px;
-    position: absolute;
-    z-index: $tooltip_layer;
-    top: 4px;
-    visibility: hidden;
-    left: calc(100% + 10px);
-  }
-
-  &:hover tooltip
-  {
-    visibility: visible;
-  }
-}
-
-div.confirmable_button_wrapper
-{
-  // display: flex;
-  position: relative;
-
-  &.closed 
-  {
-    div.confirmable_button
-    {
-      visibility: hidden;
-    }
-  }
-
-  &.open
-  {
-    button
-    {
-      color: $red_button;
-    }
-  }
-
-  div.confirmable_button
-  {
-    left: 50px;
-    bottom: 0px;
-    position: absolute;
-    display: flex;
-    vertical-align: middle;
-    z-index: $tooltip_layer;
-
-    button
-    {
-      color: $green_button;
-    }
-  }
-
 }

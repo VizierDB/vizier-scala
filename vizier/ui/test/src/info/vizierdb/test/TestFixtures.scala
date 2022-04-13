@@ -77,7 +77,7 @@ trait TestFixtures
 
 
   object MockBranchSubscription
-    extends BranchSubscription(1, 1, Vizier.api)
+    extends BranchSubscription(project, 1, Vizier.api)
   {
 
     val expectedMessages = mutable.Stack[Seq[String] => JsValue]()

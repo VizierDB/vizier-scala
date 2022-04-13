@@ -5,95 +5,71 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types._
+import info.vizierdb.ui.widgets.FontAwesome
 
 
 class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 {  
-  def separator(): Frag = li(`class` := "separator")
 
-  val menus = Rx {
-    val active:Option[Identifier] = project.activeBranch();
-    Seq(
-      Menu(s"Project [${project.projectName()}]").items(
-        Item("Project List", () => dom.window.location.href = "index.html"),
-        Item("Rename...", () => println("Clicked Rename")),
-        Item("Export...", () => println("Clicked Export")),
+
+
+  def Menu(clazz: String, title: Modifier*)(items: Frag*) = 
+  {
+    var contents:Seq[Modifier] = title
+    contents = (`class` := clazz) +: contents
+    contents = contents :+ ul(items:_*)
+    div(contents:_*)
+  }
+
+  def MenuItem(title: String, action: () => Unit, icon: String = null): Frag =
+  {
+    var contents = Seq[Modifier](
+      title, onclick := { _:dom.Event => action() }
+    )
+    if(icon != null){ contents = FontAwesome(icon) +: contents }
+    li(contents:_*)
+  }
+
+  def Separator: Frag = li(`class` := "separator")
+
+  val root = 
+    tag("nav")(id := "menu_bar",
+      a(`class` := "left item", href := "index.html", img(src := "vizier.svg")),
+      Menu("left item", div(`class` := "text", project.projectName.reactive))(
+        MenuItem("Rename...", { () => println("Rename!")}),
+        MenuItem("Duplicate...", { () => println("Duplicate!")}),
       ),
-      Menu(s"Branch [${project.activeBranchName()}]").items(
-        Item("History", () => println("Clicked History")),
-        Separator()
-      ).items(
-        project.branches()
-               .values
-               .map { description => 
-                  Item(
-                    description.name, 
-                    () => println(s"Switch to ${description.name}"),
-                    highlight = Some(description.id) == active
-                  )
-               }.toSeq:_*
-      )
-    )
-  }
-
-  def deactivateAllMenus(): Unit =
-  {
-    for(menu <- menus.now){
-      if(menu.active.now) { menu.active() = false }
-    }
-  }
-
-
-  case class Menu(title: String, elements: Seq[MenuElement] = Seq.empty)
-  {
-    val active = Var[Boolean](false)
-
-    lazy val root:Frag = 
-      li(
-        `class` := "menu",
-        title,
-        onclick := { _:dom.Event => 
-          val oldState = active.now
-          deactivateAllMenus()
-          if(!oldState) { active() = true }
-        },
-        Rx { 
-          if(active()){ ul(elements.map { _.root }.toSeq:_*) }
-          else { ul(`class` := "placeholder", visibility := "hidden") }
-        }.reactive
-      )
-
-    def items(newElements: MenuElement*) = copy(title, elements ++ newElements)
-  }
-
-  trait MenuElement { val root: Frag }
-
-  case class Item(
-    title: String, 
-    effect: () => Unit, 
-    highlight: Boolean = false
-  ) extends MenuElement 
-  {
-    val root: Frag = 
-      li(
-        `class` := s"menu_item${if(highlight){ " highlight" } else { "" }}",
-        title, 
-        onclick := { _:dom.Event => effect() })
-  }
-
-  case class Separator() extends MenuElement
-  {
-    val root: Frag = li(`class` := "menu_separator")
-  }
-
-  val root:Frag = 
-    tag("nav")(
-      Rx { 
-        ul( (
-          Seq(id := "main_menu", `class` := "menu_bar") ++
-          menus().map { _.root } 
-        ):_*)
-      }.reactive
-    )
+      Menu("left item", FontAwesome("play-circle"))(
+        MenuItem("Stop Running", { () => println("Stop")}, icon = "stop"),
+        MenuItem("Freeze Everything", { () => println("Freeze")}, icon = "snowflake-o"),
+        MenuItem("Thaw Everything", { () => println("Thaw")}, icon = "sun-o"),
+      ),
+      Rx {
+        Menu("left item", FontAwesome("code-fork"))(
+          (
+            Seq(
+              MenuItem("Rename Branch...", { () => println("Rename branch")}),
+              MenuItem("Create Branch...", { () => println("Stop")}),
+              MenuItem("Project History", { () => println("Stop")}, icon = "history"),
+              Separator,
+            ) ++ project.branches().map { case (id, branch) => 
+              MenuItem(branch.name, { () => println(s"Switch to branch $id") }, icon = "code-fork")
+            }
+          ):_*
+        )
+      }.reactive,
+      Menu("left item", FontAwesome("share-alt"))(
+        MenuItem("Export Project...", { () => println("Export...") }),
+        MenuItem("Present Project", { () => println("Present...") }),
+      ),
+      Menu("left item", FontAwesome("wrench"))(
+        MenuItem("Python Settings", { () => println("Python Settings") }),
+        MenuItem("Scala Settings", { () => println("Scala Settings") }),
+        Separator,
+        MenuItem("Spark Status", { () => println("Spark Status") }),
+      ),
+      div(`class` := "spacer"),
+      a(`class` := "right item", href := "https://www.github.com/VizierDB/vizier-scala/wiki", FontAwesome("question-circle")),
+    ).render
 
 }

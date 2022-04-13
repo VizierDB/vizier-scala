@@ -78,3 +78,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ==== FontAwesome ====
 
 Font Awesome by Dave Gandy - http://fontawesome.io
+
+==== Alegreya Sans ====
+
+Designed by Juan Pablo del Peral for Huerta Tipográfica. 
+
+Licensed under the Open Font license

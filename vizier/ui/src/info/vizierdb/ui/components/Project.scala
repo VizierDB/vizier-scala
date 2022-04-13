@@ -14,6 +14,7 @@ import info.vizierdb.util.Logging
 import info.vizierdb.types.Identifier
 import info.vizierdb.nativeTypes.JsValue
 import play.api.libs.json.JsString
+import info.vizierdb.ui.widgets.Spinner
 
 class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = true)
              (implicit owner: Ctx.Owner)
@@ -91,14 +92,23 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
     }
   }
 
+  val menu = new MenuBar(this)
+
   val root = 
     div(id := "project",
-      tag("nav")(
-        tableOfContents.map { _.map { _.root } 
-                               .getOrElse { span("Loading....") } 
-                            }.reactive
-      ),
-      workflow.map { _.map { _.root }
-                      .getOrElse { span("Loading...") } }.reactive
-    )
+      menu.root,
+      div(`class` := "content",
+        tag("nav")(
+          `class` := "table_of_contents",
+          tableOfContents.map { _.map { _.root } 
+                                 .getOrElse { Spinner(size = 30):Frag } 
+                              }.reactive
+        ),
+        div(
+          `class` := "workflow",
+          workflow.map { _.map { _.root }
+                          .getOrElse { Spinner(size = 30):Frag } }.reactive
+        )
+      )
+    ).render
 }

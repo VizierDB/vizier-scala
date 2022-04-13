@@ -23,6 +23,7 @@ import info.vizierdb.ui.components.MenuBar
 import info.vizierdb.ui.components.SettingsView
 import info.vizierdb.ui.components.dataset.TableView
 import info.vizierdb.nativeTypes
+import info.vizierdb.ui.widgets.Spinner
 
 @JSExportTopLevel("Vizier")
 object Vizier 
@@ -83,6 +84,7 @@ object Vizier
                         _.moduleViewsWithEdits.saveAllCells()
                       }
                     }
+                    evt.stopPropagation()
                   }
                 })
 
@@ -114,12 +116,8 @@ object Vizier
             }
 
         document.body.appendChild(
-          div(`class` := "viewport",
-            div(`class` := "content",
-              Rx { project().map { _.root }
-                            .getOrElse { div("loading...") } }.reactive
-            )
-          )
+          Rx { project().map { _.root }
+                        .getOrElse { Spinner(size = 30) } }.reactive
         )
         OnMount.trigger(document.body)
       } catch {
