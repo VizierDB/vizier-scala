@@ -12,17 +12,20 @@ $button_shadow: #bbb;
 
 /*********************************/
 /****** Color Scheme - Revised ******/
-$color_primary:           #214478;
-$color_primary_highlight: #2e6098;
+$color_primary:                #214478;
+$color_primary_highlight:      #2e6098;
 
-$color_done:              #36338d;
-$color_error:             #9d284c;
-$color_frozen:            #5b9dcf;
-$color_running:           #2d93a5;
-$color_waiting:           #2d93a5;
+$color_done:                   #36338d;
+$color_error:                  #9d284c;
+$color_frozen:                 #5b9dcf;
+$color_running:                #2d93a5;
+$color_waiting:                #2d93a5;
 
-$color_button_abort:      #c00; 
-$color_button_confirm:    #292;
+$color_button_abort:           #c00; 
+$color_button_confirm:         #292;
+
+$color_inter_module:           #ccc;
+$color_inter_module_highlight: #777;
 
 
 
@@ -395,6 +398,14 @@ $menu_height: 32px;
 #project .workflow
 {
   padding: 0px;
+
+  .inter_module
+  {
+    width: 100%;
+    text-align: center;
+    color: $color_inter_module;
+    i.fa { color: $color_inter_module }
+  }
   
   .module_list 
   {
@@ -403,6 +414,7 @@ $menu_height: 32px;
     padding: 0px;
     margin: 0px;
     width: 100%;
+
 
     .module
     {
@@ -493,6 +505,7 @@ $menu_height: 32px;
       }
 
       &:hover           { .menu { opacity: 1.0 }}
+      &.highlight       { .menu { opacity: 1.0 }}
       &.done_state      { .menu { background-color: $color_done; }}
       &.error_state     { .menu { background-color: $color_error; }}
       &.waiting_state   { .menu { background-color: $color_waiting; }}

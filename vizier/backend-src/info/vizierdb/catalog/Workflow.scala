@@ -278,7 +278,7 @@ case class Workflow(
       )
     )
 
-  def deleteWorkflow(implicit session: DBSession)
+  def deleteWorkflow(implicit session: DBSession): Unit =
   {
 
     val (resultIds, moduleIds) = 

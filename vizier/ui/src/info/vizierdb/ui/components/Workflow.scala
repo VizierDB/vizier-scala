@@ -11,6 +11,7 @@ import info.vizierdb.ui.rxExtras.RxBufferBase
 import info.vizierdb.ui.rxExtras.RxBufferWatcher
 import info.vizierdb.ui.network.ModuleSubscription
 import info.vizierdb.types.ArtifactType
+import info.vizierdb.ui.widgets.FontAwesome
 
 class Workflow(val subscription: BranchSubscription, val project: Project)
               (implicit owner: Ctx.Owner)
@@ -32,12 +33,17 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
 
 
 
-
   val root = 
     div(id := "workflow",
       Rx { 
         if(subscription.awaitingReSync()) { div("Syncing workflow...") } 
-        else { span("") }
+        else { 
+          div(`class` := "inter_module",
+            div(`class` := "action",
+              FontAwesome("plus")
+            )
+          )
+        }
       }.reactive,
       moduleNodes.root,
       div(
