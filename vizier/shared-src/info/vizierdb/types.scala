@@ -72,6 +72,17 @@ object types
     val RUNNING   = Value(8, "RUNNING")  /* The referenced execution is incorrect for this workflow and 
                                             is currently being recomputed */
 
+    def merge(xs: Seq[T]): T =
+    {
+      xs.foreach { _ match {
+        case CANCELLED => return CANCELLED
+        case ERROR => return ERROR
+        case RUNNING | STALE | WAITING => return RUNNING
+        case _ => ()
+      } }
+      return DONE
+    }
+
     def translateToClassicVizier(state: T): Int = 
     {
       state match {

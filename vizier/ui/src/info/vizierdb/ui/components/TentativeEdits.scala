@@ -6,6 +6,7 @@ import info.vizierdb.ui.rxExtras._
 import info.vizierdb.types.Identifier
 import info.vizierdb.serialized
 import info.vizierdb.util.Logging
+import info.vizierdb.types._
 
 /**
  * A wrapper around an [[RxBuffer]] of [[Module]] objects that allows "new"
@@ -49,6 +50,8 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
 
   val derive = Left(_)
   val allArtifacts = Var[Rx[Map[String, serialized.ArtifactSummary]]](Var(Map.empty))
+  val allStates = Var[Rx[ExecutionState.T]](Var(ExecutionState.DONE))
+  val state = allStates.flatMap { x => x }
 
   /**
    * Retrieve a list of all "tentative" modules currently being edited
@@ -73,6 +76,13 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
           case Right(e) => e.visibleArtifacts.now
         }
       }
+    allStates() = 
+      Rx {
+        ExecutionState.merge( elements.collect { 
+          case Left(module) => module.subscription.state()
+        })
+      } 
+
     allArtifacts() =
       elements
         .zipWithIndex

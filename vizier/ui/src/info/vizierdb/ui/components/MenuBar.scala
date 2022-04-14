@@ -6,6 +6,7 @@ import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types._
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.ui.widgets.ShowModal
 
 
 class MenuBar(project: Project)(implicit owner: Ctx.Owner)
@@ -21,29 +22,92 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
     div(contents:_*)
   }
 
-  def MenuItem(title: String, action: () => Unit, icon: String = null): Frag =
+  def MenuItem(title: String, action: () => Unit, icon: String = null, enabled: Boolean = true): Frag =
   {
-    var contents = Seq[Modifier](
-      title, onclick := { _:dom.Event => action() }
-    )
+    var contents = Seq[Modifier](title)
+
+    if(!enabled){ contents = contents :+ (`class` := "disabled") }
+    else { contents = contents :+ (onclick := { _:dom.Event => action() })}
+
     if(icon != null){ contents = FontAwesome(icon) +: contents }
-    li(contents:_*)
+    
+    li(contents)
   }
 
   def Separator: Frag = li(`class` := "separator")
 
   val root = 
     tag("nav")(id := "menu_bar",
+
+      ////////////////// Logo ////////////////// 
+
       a(`class` := "left item", href := "index.html", img(src := "vizier.svg")),
+      
+      ////////////////// Project Menu ////////////////// 
       Menu("left item", div(`class` := "text", project.projectName.reactive))(
-        MenuItem("Rename...", { () => println("Rename!")}),
-        MenuItem("Duplicate...", { () => println("Duplicate!")}),
+
+        //////////////// Rename
+        MenuItem("Rename...", { () => 
+          val nameInput = 
+            input(
+              `type` := "text", 
+              name := "project_name",
+              value := project.projectName.now
+            ).render
+          ShowModal(
+            label(
+              `for` := "project_name",
+              "Name: "
+            ),
+            nameInput
+          )(
+            button("Cancel", `class` := "cancel").render,
+            button("OK", `class` := "confirm", 
+              onclick := { _:dom.Element => project.setProjectName(nameInput.value) }
+            ).render,
+          )
+        }),
+
+        //////////////// Rename
+        MenuItem("Export Project...", { () => 
+          dom.window.open(project.api.makeUrl(s"/projects/${project.projectId}/export "), "_self")
+        }),
+
+        //////////////// Rename
+        // View-only mode not supported yet
+        // MenuItem("Present Project", { () => println("Present...") }),
       ),
-      Menu("left item", FontAwesome("play-circle"))(
-        MenuItem("Stop Running", { () => println("Stop")}, icon = "stop"),
-        MenuItem("Freeze Everything", { () => println("Freeze")}, icon = "snowflake-o"),
-        MenuItem("Thaw Everything", { () => println("Thaw")}, icon = "sun-o"),
-      ),
+
+      ////////////////// Run Menu ////////////////// 
+      Rx { 
+        val state = project.workflow().map { _.moduleViewsWithEdits.state() }
+                                      .getOrElse { ExecutionState.DONE }
+        val icon = 
+          state match {
+            case ExecutionState.RUNNING   => "play-circle"
+            case ExecutionState.ERROR     => "exclamation-circle"
+            case ExecutionState.CANCELLED => "pause-circle"
+            case _                        => "stop-circle"
+          }
+
+        Menu("left item", FontAwesome(icon))(
+          MenuItem("Stop Running", 
+            { () => project.branchSubscription.get.Client.workflowCancel() }, 
+            icon = "stop", 
+            enabled = (state == ExecutionState.RUNNING)
+          ),
+          MenuItem("Freeze Everything", 
+            { () => project.branchSubscription.get.Client.workflowFreezeFrom(0) }, 
+            icon = "snowflake-o"
+          ),
+          MenuItem("Thaw Everything", 
+            { () => project.branchSubscription.get.Client.workflowThawUpto(project.workflow.now.get.moduleViews.rxLength.now) }, 
+            icon = "sun-o"
+          ),
+        )
+      }.reactive,
+
+      ////////////////// Branch Menu ////////////////// 
       Rx {
         val activeBranchId = project.activeBranch().getOrElse(-100)
         Menu("left item", FontAwesome("code-fork"))(
@@ -63,17 +127,19 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
           ):_*
         )
       }.reactive,
-      Menu("left item", FontAwesome("share-alt"))(
-        MenuItem("Export Project...", { () => println("Export...") }),
-        MenuItem("Present Project", { () => println("Present...") }),
-      ),
+
+      ////////////////// Settings Menu ////////////////// 
       Menu("left item", FontAwesome("wrench"))(
         MenuItem("Python Settings", { () => println("Python Settings") }),
         MenuItem("Scala Settings", { () => println("Scala Settings") }),
         Separator,
         MenuItem("Spark Status", { () => println("Spark Status") }),
       ),
+
+      ////////////////// Spacer ////////////////// 
       div(`class` := "spacer"),
+
+      ////////////////// Help Menu ////////////////// 
       a(`class` := "right item", href := "https://www.github.com/VizierDB/vizier-scala/wiki", FontAwesome("question-circle")),
     ).render
 

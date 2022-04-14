@@ -11,6 +11,7 @@ import info.vizierdb.catalog.Module
 import info.vizierdb.catalog.ArtifactRef
 import java.util.concurrent.{ ArrayBlockingQueue, ForkJoinTask }
 import scala.collection.JavaConverters._
+import info.vizierdb.delta.DeltaBus
 
 class RunningWorkflow(workflow: Workflow)
   extends ForkJoinTask[Unit]
@@ -100,7 +101,8 @@ class RunningWorkflow(workflow: Workflow)
       def transitionToState(newState: ExecutionState.T)
       {
         updatedState = newState
-        cell.updateState(newState)
+        val updated = cell.updateState(newState)
+        DeltaBus.notifyStateChange(workflow, cell.position, newState, updated.timestamps)
       }
 
       cell.state match { 
