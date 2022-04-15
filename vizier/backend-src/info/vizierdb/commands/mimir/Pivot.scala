@@ -82,8 +82,9 @@ object Pivot
 
   def train(df: DataFrame, arguments: Arguments, context: ExecutionContext): Map[String, Any] =
   {
+    val target = df.columns(arguments.get[Int](PARAM_TARGET))
     val pivots = 
-      df.select( df(arguments.get[String](PARAM_TARGET)).cast(StringType) )
+      df.select( df(target).cast(StringType) )
         .distinct()
         .take(DISTINCT_LIMIT + 1)
         .map { _.getString(0) }
@@ -103,7 +104,7 @@ object Pivot
   def build(df: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame = 
   {
     val schema = df.schema
-    val pivotColumn = df(arguments.get[String](PARAM_TARGET))
+    val pivotColumn = schema(arguments.get[Int](PARAM_TARGET)).name
     val pivots = arguments.getList(PARAM_PIVOTS)
                           .map { _.get[String](PARAM_VALUE) }
     val gbKeys = arguments.getList(PARAM_KEYS)
@@ -135,7 +136,7 @@ object Pivot
           val value = df(valueName)
           safePivots.map { case (pivot, safePivot) =>
             val valueIfPivotOtherwiseNull =
-              when(pivotColumn.cast(StringType) === pivot, value)
+              when(df(pivotColumn).cast(StringType) === pivot, value)
                     .otherwise(lit(null))
 
             val caveatMessage = concat((Seq[Column](

@@ -383,7 +383,8 @@ case class ListParameter(
   def encode(v: Any): JsValue = 
     v match { 
       case Seq() => JsArray()
-      case elems:Seq[Any] => {
+      case iter:Iterable[Any] => {
+        val elems = iter.toSeq
         val ret = 
           if(elems.head.isInstanceOf[Map[_,_]]){
             elems.asInstanceOf[Seq[Map[String,Any]]].map { 

@@ -156,7 +156,7 @@ object types
         case BLOB =>      "envelope-o"
         case FILE =>      "file"
         case PARAMETER => "sliders"
-        case VEGALITE =>  "chart"
+        case VEGALITE =>  "bar-chart"
         case _ =>         "question"
 
       }

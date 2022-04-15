@@ -16,7 +16,7 @@ class TableOfContents(workflow: Workflow)
     Rx {
       val clazz = s"${module.subscription.state().toString.toLowerCase}_state"
       module.toc.map { toc => 
-                      li(`class` := clazz,
+                      li(`class` := clazz + toc.titleLevel.map { " level_"+_ }.getOrElse { "" },
                         a(
                           href := s"#${module.id_attr}", toc.title,
                         ),
@@ -73,7 +73,10 @@ class TableOfContents(workflow: Workflow)
                   div(`class` := "artifact",
                     span(`class` := "label",
                       FontAwesome(ArtifactType.icon(artifact.category)),
-                      name
+                      name match {
+                        case "" => s"Untitled ${artifact.category.toString.toLowerCase}"
+                        case _ => name
+                      }
                     )
                   )
                 }.toSeq

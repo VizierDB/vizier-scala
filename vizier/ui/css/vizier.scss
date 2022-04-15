@@ -263,22 +263,25 @@ $menu_height: 32px;
 {
   width: 100vw;
   height: 100vh;
-  display: flex;
-  flex-direction: column;
   position: absolute;
   top: 0px;
   left: 0px;
 
   .content
   {
+    position: absolute;
+    top: $menu_height;
+    left: 0px;
     width: 100vw;
     display: flex;
     flex-direction: row-reverse;
 
     .table_of_contents
     {
+      position: absolute;
+      left: calc(100vw - 240px);
       height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
-      width: 200px;
+      width: 240px;
       flex-grow: 0;
       flex-shrink: 0;
       margin-left: 8px;
@@ -287,8 +290,10 @@ $menu_height: 32px;
 
     .workflow
     {
+      position: absolute;
+      left: 0;
+      width: calc(100vw - 248px);
       height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
-      flex-grow: 1;
       overflow-y: auto;
       border-right: solid 1px lightgrey;
     }
@@ -705,10 +710,11 @@ $menu_height: 32px;
 
   .module_list
   {
+
     ol
     {
       margin-top: 0px;
-      padding-left: 12px;
+      padding-left: 24px;
 
       li
       {
@@ -723,6 +729,11 @@ $menu_height: 32px;
 
         a         { color: inherit; }
         a:visited { color: inherit; }
+
+        &.level_1         { font-size: 140%; font-weight: bold; }
+        &.level_2         { font-size: 120%; font-weight: bold; }
+        &.level_3         { font-size: 110%; font-weight: bold; }
+        &.level_4         { font-weight: bold; }
       }
 
     }
@@ -915,6 +926,7 @@ div.modal_background
   height: 100%;
   background: #000;
   opacity: 0.3;
+  z-index: $modal_layer;
 }
 
 div.caveat_modal
