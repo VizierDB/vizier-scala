@@ -169,7 +169,8 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   def findInsertCandidate(targetPosition: Int, id: Identifier): Option[TentativeModule] = 
   {
     logger.trace(s"FIND INSERT: $id @ $targetPosition")
-    elements.drop(targetPosition)
+    elements.take(targetPosition)
+            .reverse
             .takeWhile { _.isInjected }
             .collect { case WorkflowTentativeModule(t) => t }
             .find { t => 

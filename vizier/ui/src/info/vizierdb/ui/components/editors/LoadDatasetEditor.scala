@@ -201,14 +201,14 @@ class LoadDatasetEditor(
 
   def formatChanged: Unit =
   {
-    println(s"Format now ${format.value}")
+    // println(s"Format now ${format.value}")
     val fmt = format.value
     activeParameters() =
       Seq( datasetName ) ++
       optionalParameters.filter { _._1(fmt) }
                         .map { _._2 } ++
       Seq( sparkOptions )
-    println(s"Format done")
+    // println(s"Format done")
   }
 
   def visitDirectory(path: String = "", externalPath: String = "") =
@@ -330,6 +330,7 @@ class LoadDatasetEditor(
           optionalParameters.filter { x => directToSparkOptionalParameters(x._2.id) }
                             .map { _._2 }
                             .map { x:Parameter => 
+                              // println(s"Saving ${x.id} -> ${x.value}")
                               Json.arr(
                                 CommandArgument("loadOptionKey", JsString(x.id)),
                                 CommandArgument("loadOptionValue", 

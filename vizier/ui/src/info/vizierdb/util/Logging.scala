@@ -64,6 +64,7 @@ object Logging extends Enumeration
     "info.vizierdb.ui.components.dataset.TableView" -> INFO,
     "info.vizierdb.ui.network.SpreadsheetClient" -> TRACE,
     "info.vizierdb.ui.components.TentativeEdits" -> INFO,
+    "info.vizierdb.ui.components.DefaultModuleEditor" -> INFO,
   )
 
   def get(logger: String) = 

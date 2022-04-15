@@ -965,87 +965,101 @@ table.parameter_list tbody tr:last-child button.delete_row
   visibility: hidden;
 }
 
-.module.editable .load_dataset 
+.module_editor 
 {
-  width: calc(100% - 20px);
-  border: 1px solid lightgray;
-  border-radius: 0px 5px 5px 0px;
-  border-left: none;
-  padding: 10px;
-}
-.module.editable .load_dataset div.header
-{
-  width: 100%;
-  display: flex;
-  margin-bottom: 10px;
-}
-.module.editable .load_dataset div.back_button_wrapper
-{
-  width: 40px;
-  flex-grow: none;
-  display: inline-block;
+  .load_dataset 
+  {
+    width: calc(100% - 20px);
+    border: 1px solid lightgray;
+    border-radius: 0px 5px 5px 0px;
+    border-left: none;
+    padding: 10px;
+    
+    div.header
+    {
+      width: 100%;
+      display: flex;
+      margin-bottom: 10px;
+    }
+    
+    div.back_button_wrapper
+    {
+      width: 40px;
+      flex-grow: none;
+      display: inline-block;
 
-  button { width: 20px; }
-}
-.module.editable .load_dataset div.url
-{
-  flex: 1 1 auto;
-}
-.module.editable .load_dataset div.url input 
-{
-  width: calc(100% - 5px);
-}
-.module.editable .load_dataset div.url label 
-{
-  width: 50px;
-}
-.module.editable .load_dataset div.file_browser
-{
-  width: 100%;
-  border: 1px solid black;
-}
-.module.editable .load_dataset .reactive
-{
-  display: flex;
-  width: 100%;
-  height: 100%;
-}
-.module.editable .load_dataset .spinner
-{
-  margin-top: 20px;
-  margin-left: auto;
-  margin-right: auto;
-  display: block;
-}
-.module.editable .load_dataset div.file_list
-{
-  display: flex;
-  flex-wrap: wrap;
-  overflow-y: scroll;
-  max-height: 200px;
-  padding: 10px;
-}
-.module.editable .load_dataset div.file_list div.file
-{
-  width: 150px;
-  height: 20px;
-  margin: 5px;
-  background-color: #ddd;
-  padding: 7px;
-  border-radius: 5px;
-  box-shadow: 1px 1px 1px gray;
-}
-.module.editable .load_dataset div.file_list div.file span.label
-{
-  margin-left: 5px;
-}
-.module.editable .load_dataset div.format_field
-{
-  margin-top: 10px;
-  display: flex;
-}
-.module.editable .load_dataset div.format_field select
-{
-  margin-left: 10px;
-  flex: 1 1 auto;
+      button { width: 20px; }
+    }
+    
+    div.url
+    {
+      flex: 1 1 auto;
+      input 
+      {
+        width: calc(100% - 5px);
+      }
+      label 
+      {
+        width: 50px;
+      }
+    }
+    
+    div.file_browser
+    {
+      width: 100%;
+      border: 1px solid black;
+    }
+    
+    .reactive
+    {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .spinner
+    {
+      margin-top: 20px;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+    
+    div.file_list
+    {
+      display: flex;
+      flex-wrap: wrap;
+      overflow-y: scroll;
+      max-height: 200px;
+      padding: 10px;
+      
+      div.file
+      {
+        width: 150px;
+        height: 20px;
+        margin: 5px;
+        background-color: #ddd;
+        padding: 7px;
+        border-radius: 5px;
+        box-shadow: 1px 1px 1px gray;
+        
+        span.label
+        {
+          margin-left: 5px;
+        }
+      }
+    }
+
+    div.format_field
+    {
+      margin-top: 10px;
+      display: flex;
+      
+      select
+      {
+        margin-left: 10px;
+        flex: 1 1 auto;
+      }
+    }
+  }
 }

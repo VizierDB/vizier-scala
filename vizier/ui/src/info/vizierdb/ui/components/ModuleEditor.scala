@@ -90,7 +90,7 @@ trait ModuleEditor
     )
 
   lazy val root: Frag = 
-    div(`class` := "module editable",
+    div(`class` := "module_editor",
       editorFields,
       div(`class` := "editor_actions",
         button(FontAwesome("arrow-left"), " Back", `class` := "cancel", onclick := { (e: dom.MouseEvent) => delegate.cancelEditor() }),
