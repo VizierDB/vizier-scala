@@ -21,6 +21,7 @@ $color_frozen:                 #96c4e3;
 $color_running:                #2d93a5;
 $color_waiting:                #2d93a5;
 $color_tentative:              #777;
+$color_inspector:              #aaa;
 
 $color_button_abort:           #c00; 
 $color_button_confirm:         #292;
@@ -279,6 +280,7 @@ $menu_height: 32px;
       height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
       width: 200px;
       flex-grow: 0;
+      flex-shrink: 0;
       margin-left: 8px;
       overflow-y: auto;
     }
@@ -398,6 +400,8 @@ $menu_height: 32px;
       padding: 0px;
       padding: 0px;
 
+      a { text-decoration: none; }
+
       li
       {
         padding: 8px;
@@ -428,6 +432,7 @@ $menu_height: 32px;
           // OK: not-allowed makes me feel sad.  Vizier should inspire joy.
           // cursor: not-allowed;
         }
+
       }
     }
 
@@ -577,6 +582,8 @@ $menu_height: 32px;
         transition-property: opacity;
         transition-duration: 0.2s;
 
+        &:hover { opacity: 1.0 }
+        
         >*
         {
           flex-grow: 0;
@@ -653,7 +660,6 @@ $menu_height: 32px;
         }
       }
 
-      &:hover           { .menu { opacity: 1.0 }}
       &.highlight       { .menu { opacity: 1.0 }}
       &.done_state      { .menu { background-color: $color_done; }}
       &.error_state     { .menu { background-color: $color_error; }}
@@ -663,6 +669,7 @@ $menu_height: 32px;
       &.frozen_state    { .menu { background-color: $color_frozen; }}
       &.running_state   { .menu { background-color: $color_running; }}
       &.tentative       { .menu { background-color: $color_tentative; }}
+      &.inspector       { .menu { background-color: $color_inspector; }}
 
       &.tentative
       {

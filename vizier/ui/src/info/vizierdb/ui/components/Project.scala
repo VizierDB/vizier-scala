@@ -15,6 +15,7 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.nativeTypes.JsValue
 import play.api.libs.json.JsString
 import info.vizierdb.ui.widgets.Spinner
+import info.vizierdb.ui.Vizier
 
 class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = true)
              (implicit owner: Ctx.Owner)
@@ -64,6 +65,16 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
     )
   }
 
+  def refresh(andThen: => Unit): Unit =
+  {
+    println("Refreshing")
+    api.projectGet(projectId)
+       .onComplete {
+        case Success(result) => println("Refreshed"); load(result); println("Loaded"); andThen
+        case Failure(err) => Vizier.error(err.toString)
+       }
+  }
+
   def setActiveBranch(id: Identifier): Unit =
   {
     api.projectUpdate(projectId,
@@ -73,6 +84,40 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
                 ),
       defaultBranch = Some(id)
     )
+    activeBranch() = Some(id)
+  }
+
+  def setActiveBranchName(name: String): Unit =
+  {
+    val branchId = activeBranch.now.get
+    val branch = branches.now.get(branchId).get
+    api.branchUpdate(projectId, branchId,
+      serialized.PropertyList
+                .toPropertyList(
+                  serialized.PropertyList.toMap(
+                    branch.properties
+                  ) ++ Map("name" -> JsString(name))
+                )
+    ).onComplete { f => refresh() }
+  }
+
+  def branchActiveWorkflow(name: String): Unit =
+  {
+    val branchId = activeBranch.now.get
+    api.branchCreate(projectId, 
+      source = Some(serialized.BranchSource(
+        branchId,
+        workflowId = None, // Branch the workflow head
+        moduleId = None,
+      )),
+      serialized.PropertyList
+                .toPropertyList(
+                  Map("name" -> JsString(name))
+                )
+    ).onComplete { 
+      case Success(response) => refresh { setActiveBranch(response.id) }
+      case Failure(error) => Vizier.error(error.toString())
+    }
   }
 
   var branchSubscription: Option[BranchSubscription] = None

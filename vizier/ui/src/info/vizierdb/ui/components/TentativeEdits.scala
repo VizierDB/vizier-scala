@@ -1,6 +1,6 @@
 package info.vizierdb.ui.components
 
-
+import org.scalajs.dom
 import rx._
 import info.vizierdb.ui.rxExtras._
 import info.vizierdb.types.Identifier
@@ -8,9 +8,33 @@ import info.vizierdb.serialized
 import info.vizierdb.util.Logging
 import info.vizierdb.types._
 
+
+sealed trait WorkflowElement
+{ 
+  def isInjected = true 
+  def visibleArtifacts: Rx[Map[String, serialized.ArtifactSummary]]
+  def root: dom.Node
+}
+case class WorkflowModule(module: Module) extends WorkflowElement
+{
+  def visibleArtifacts = module.visibleArtifacts.now
+  override def isInjected = false
+  def root = module.root
+}
+case class WorkflowTentativeModule(module: TentativeModule) extends WorkflowElement
+{
+  def visibleArtifacts = module.visibleArtifacts.now
+  def root = module.root
+}
+case class WorkflowArtifactInspector(inspector: ArtifactInspector) extends WorkflowElement
+{
+  def visibleArtifacts = inspector.visibleArtifacts.now
+  def root = inspector.root
+}
+
 /**
  * A wrapper around an [[RxBuffer]] of [[Module]] objects that allows "new"
- * modules (i.e., [[TentativeModule]]) to be injected inline.  
+ * modules (i.e., [[TentativeModule]] or [[ArtifactInspector]]) to be injected inline.  
  * 
  * Concretely, [[TentativeModule]] objects represent [[Module]] objects that have
  * not yet been allocated.  They typically do not have an identifier, and are not
@@ -18,10 +42,13 @@ import info.vizierdb.types._
  * allocated in the backend (and assigned an identifier), and then an insert or
  * append will allocate the module.
  * 
+ * [[ArtifactInspector]] modules are "read only" modules that allow users to inspect
+ * artifacts at that point in the workflow.
+ * 
  * There are about four major "quirks" that this class needs to handle
- * 1. The list consists of both [[Module]]s and [[TentativeModule]]s
- * 2. [[TentativeModule]]s do not count towards the positional index provided
- *    by the source collection.  Translations must "skip" these.
+ * 1. The list consists of [[Module]]s, [[TentativeModule]]s and [[ArtifactInspector]]s
+ * 2. [[TentativeModule]]s and [[ArtifactInspector]]s do not count towards the positional 
+ *    index provided by the source collection.  Translations must "skip" these.
  * 3. An `insert` `prepend`, or `append` may be used to replace a [[TentativeModule]] 
  *    with a corresponding [[Module]] once the module is allocated in the backend.
  * 4. This class is also responsible for maintaining visible Artifact maps for the
@@ -34,7 +61,7 @@ import info.vizierdb.types._
  */
 class TentativeEdits(val project: Project, val workflow: Workflow)
                     (implicit owner: Ctx.Owner)
-  extends RxBufferBase[Module,Either[Module,TentativeModule]]
+  extends RxBufferBase[Module,WorkflowElement]
      with RxBufferWatcher[Module]
      with Logging
 {
@@ -48,7 +75,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     refreshModuleState()
   }
 
-  val derive = Left(_)
+  val derive = WorkflowModule(_)
   val allArtifacts = Var[Rx[Map[String, serialized.ArtifactSummary]]](Var(Map.empty))
   val allStates = Var[Rx[ExecutionState.T]](Var(ExecutionState.DONE))
   val state = allStates.flatMap { x => x }
@@ -56,7 +83,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   /**
    * Retrieve a list of all "tentative" modules currently being edited
    */
-  def edits: Iterable[TentativeModule] = elements.collect { case Right(x) => x }
+  def edits: Iterable[TentativeModule] = elements.collect { case WorkflowTentativeModule(x) => x }
 
   /**
    * Update all module state for the workflow
@@ -71,15 +98,12 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
       if(from <= 0){
         Var(Map.empty)
       } else {
-        elements(from-1) match {
-          case Left(e) => e.visibleArtifacts.now
-          case Right(e) => e.visibleArtifacts.now
-        }
+        elements(from-1).visibleArtifacts
       }
     allStates() = 
       Rx {
         ExecutionState.merge( elements.collect { 
-          case Left(module) => module.subscription.state()
+          case WorkflowModule(module) => module.subscription.state()
         })
       } 
 
@@ -88,17 +112,16 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
         .zipWithIndex
         .drop(Math.max(from-1, 0))
         .foldLeft(visibleArtifacts) {
-          case (artifacts, (Left(module), idx)) =>
+          case (artifacts, (WorkflowModule(module), idx)) =>
             val outputs = module.outputs
             val oldArtifacts = artifacts
-
 
             val insertions: Rx[Map[String, serialized.ArtifactSummary]] = 
               outputs.map { _.filter { _._2.isDefined }.mapValues { _.get }.toMap }
             val deletions: Rx[Set[String]] = 
               outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
 
-            // println(s"Left starting with: ${artifacts.now.mkString(", ")} and adding ${insertions.now.mkString(", ")}")
+            // println(s"WorkflowModule starting with: ${artifacts.now.mkString(", ")} and adding ${insertions.now.mkString(", ")}")
 
             val updatedArtifacts = Rx { 
               val ret = (artifacts() -- deletions()) ++ insertions()
@@ -107,11 +130,16 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
             module.visibleArtifacts.now.kill()
             module.visibleArtifacts() = artifacts
             /* return */ updatedArtifacts
-          case (artifacts, (Right(tentative), idx)) => 
-            // println(s"Right sees: ${artifacts.now.mkString(", ")}")
+          case (artifacts, (WorkflowTentativeModule(tentative), idx)) => 
+            // println(s"WorkflowTentativeModule sees: ${artifacts.now.mkString(", ")}")
             tentative.visibleArtifacts.now.kill()
             tentative.visibleArtifacts() = artifacts
             tentative.position = idx
+            /* return */ artifacts
+          case (artifacts, (WorkflowArtifactInspector(inspector), idx)) =>
+            inspector.visibleArtifacts.now.kill()
+            inspector.visibleArtifacts() = artifacts
+            inspector.position = idx
             /* return */ artifacts
         }
   }
@@ -123,9 +151,11 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def sourceToTargetPosition(n: Int): Int =
     elements.foldLeft( (0, 0) ) {
-      case ((sourceModules, idx), _) if sourceModules >= n => return idx
-      case ((sourceModules, idx), Left(_))                 => (sourceModules+1, idx+1)
-      case ((sourceModules, idx), Right(_))                => (sourceModules, idx+1)
+      case ((sourceModules, idx), _) if sourceModules > n                  => return idx
+      case ((sourceModules, idx), WorkflowModule(_)) if sourceModules == n => return idx
+      case ((sourceModules, idx), WorkflowModule(_))                       => (sourceModules+1, idx+1)
+      case ((sourceModules, idx), WorkflowTentativeModule(_))              => (sourceModules, idx+1)
+      case ((sourceModules, idx), WorkflowArtifactInspector(_))            => (sourceModules, idx+1)
     }._2
 
   /**
@@ -140,8 +170,8 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   {
     logger.trace(s"FIND INSERT: $id @ $targetPosition")
     elements.drop(targetPosition)
-            .takeWhile { _.isRight }
-            .collect { case Right(t) => t }
+            .takeWhile { _.isInjected }
+            .collect { case WorkflowTentativeModule(t) => t }
             .find { t => 
               logger.trace(s"CHECK: ${t.id}")
               t.id.isDefined && t.id.get.equals(id) 
@@ -157,8 +187,8 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def findAppendCandidate(id: Identifier): Option[TentativeModule] = 
     elements.reverse
-            .takeWhile { _.isRight }
-            .collect { case Right(t) => t }
+            .takeWhile { _.isInjected }
+            .collect { case WorkflowTentativeModule(t) => t }
             .find { t => t.id.isDefined && t.id.get.equals(id) }
 
 
@@ -186,13 +216,13 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
       findInsertCandidate(targetPosition, sourceElem.id) match {
         case Some(tentativeModule) => 
           logger.trace(s"REPLACING: $tentativeModule")
-          doUpdate(tentativeModule.position, Left(sourceElem))
+          doUpdate(tentativeModule.position, WorkflowModule(sourceElem))
         case None => {
           logger.trace(s"IN-PLACE: $sourceElem")
-          doInsertAll(targetPosition, Seq(Left(sourceElem)))
+          doInsertAll(targetPosition, Seq(WorkflowModule(sourceElem)))
           targetPosition = targetPosition + 
                               elements.drop(targetPosition)
-                                      .takeWhile { _.isRight }
+                                      .takeWhile { _.isInjected }
                                       .size + 1
         }
       }
@@ -212,8 +242,8 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   {
     logger.trace(s"ON APPEND: $sourceElem")
     findAppendCandidate(sourceElem.id) match {
-      case Some(tentativeModule) => doUpdate(tentativeModule.position, Left(sourceElem))
-      case None => doAppend(Left(sourceElem))
+      case Some(tentativeModule) => doUpdate(tentativeModule.position, WorkflowModule(sourceElem))
+      case None => doAppend(WorkflowModule(sourceElem))
     }
     refreshModuleState(elements.size - 1)
   }
@@ -259,13 +289,13 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
             editList = this, 
             defaultPackageList = defaultPackageList
           )
-    doAppend(Right(module))
+    doAppend(WorkflowTentativeModule(module))
     refreshModuleState()
     return module
   }
 
   /**
-   * Insert a [[TentativeModule]] at the specified position
+   * Insert a [[TentativeModule]] at the specified position (indexed with target indices)
    */
   def insertTentative(
     n: Int,
@@ -278,9 +308,28 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
             editList = this,
             defaultPackageList = defaultPackageList
           )
-    doInsertAll(n, Some(Right(module)))
+    doInsertAll(n, Some(WorkflowTentativeModule(module)))
     refreshModuleState()
     return module
+  }
+
+  /**
+   * Insert an [[ArtifactInspector]] at the specified position (indexed with target indices)
+   */
+  def insertInspector(
+    n: Int,
+  ): ArtifactInspector =
+  {
+    val inspector = 
+      new ArtifactInspector(
+            position = n, 
+            if(n < 1){ Var(Var(Map.empty)) }
+            else { Var(elements(n-1).visibleArtifacts) },
+            this
+          )
+    doInsertAll(n, Some(WorkflowArtifactInspector(inspector)))
+    refreshModuleState()
+    return inspector
   }
 
   /**
@@ -288,7 +337,16 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def dropTentative(m: TentativeModule) = 
   {
-    onRemove(m.position)
+    super.onRemove(m.position)
+    refreshModuleState()
+  }
+
+  /**
+   * Drop the indicated [[TentativeModule]] from the workflow.
+   */
+  def dropInspector(m: ArtifactInspector) = 
+  {
+    super.onRemove(m.position)
     refreshModuleState()
   }
 
@@ -297,10 +355,11 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def saveAllCells() =
   {
-    elements.map {
-      case Left(module) => module.editor.now
-      case Right(module) => module.editor.now
-    }.foreach { _.foreach { _.saveState() } }
+    elements.flatMap {
+      case WorkflowModule(module) => module.editor.now
+      case WorkflowTentativeModule(module) => module.editor.now
+      case WorkflowArtifactInspector(module) => None
+    }.foreach { _.saveState() }
   }
 
 }

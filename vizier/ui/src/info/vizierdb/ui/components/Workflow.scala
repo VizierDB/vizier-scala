@@ -26,39 +26,53 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
   val moduleNodes =
     RxBufferView(div(`class` := "module_list"), 
       moduleViewsWithEdits.rxMap { 
-        case Left(module) => 
+        case WorkflowModule(module) => 
           div(
             module.root,
-            InterModule(
-              button(
-                FontAwesome("plus"),
-                onclick := { _:dom.Event => 
-                  moduleViewsWithEdits.insertTentative(module.subscription.position + 1)
-                }
-              ).render,
-              button(
-                FontAwesome("binoculars"),
-                onclick := { _:dom.Event => println("TODO: Create Inspector") }
-              ).render
-            ),
+            StandardInterModule(
+              moduleViewsWithEdits.sourceToTargetPosition(module.subscription.position)+1
+            )
           )
-        case Right(edit) => edit.root
+        case WorkflowTentativeModule(edit) => 
+          div(
+            edit.root,
+            StandardInterModule(edit.position+1)
+          )
+        case WorkflowArtifactInspector(inspect) => 
+          div(
+            inspect.root,
+            StandardInterModule(inspect.position+1)
+          )
       }
     )
 
   // DEBUG: Automatically add a tentative module
   // {
   //   subscription.awaitingReSync.triggerLater { f => 
-  //     if(!f) { moduleViewsWithEdits.appendTentative() }
+  //     if(!f) { moduleViewsWithEdits.insertInspector(2) }
   //   }
   // }
 
+  def StandardInterModule(position: => Int): Frag =
+    InterModule(
+      button(
+        FontAwesome("plus"),
+        onclick := { _:dom.Event => 
+          moduleViewsWithEdits.insertTentative(position)
+        }
+      ).render,
+      button(
+        FontAwesome("binoculars"),
+        onclick := { _:dom.Event => 
+          moduleViewsWithEdits.insertInspector(position)
+        }
+      ).render
+    )
 
   /**
    * A helper method to create divs representing inter-module separators
    */
   def InterModule(buttons: dom.html.Button*): Frag =
-  {
     div(`class` := "inter_module",
       div(
         `class` := "elements", 
@@ -67,7 +81,6 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
         span(`class` := "separator", "—"),
       )
     )
-  }
 
 
   val root = 

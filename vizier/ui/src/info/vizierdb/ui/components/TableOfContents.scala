@@ -42,13 +42,24 @@ class TableOfContents(workflow: Workflow)
       )
     )
 
+  def InspectorSummary(inspector: ArtifactInspector): Frag =
+    li(`class` := "tentative", 
+      inspector.selected
+               .map { _ match {
+                case None => span("Blank Inspector")
+                case Some(name) => span(s"Inspect ${name}")
+               }}
+               .reactive
+    )
+
 
   val moduleNodes =
     RxBufferView(ol(), 
       workflow.moduleViewsWithEdits
               .rxMap { 
-                  case Left(module) => ModuleSummary(module)
-                  case Right(edit) => TentativeSummary(edit)
+                  case WorkflowModule(module) => ModuleSummary(module)
+                  case WorkflowTentativeModule(edit) => TentativeSummary(edit)
+                  case WorkflowArtifactInspector(inspector) => InspectorSummary(inspector)
                 }
     )
 
@@ -59,19 +70,9 @@ class TableOfContents(workflow: Workflow)
             .map { artifacts => 
               div(`class` := "the_artifacts",
                 artifacts.map { case (name, artifact) => 
-                  val icon = 
-                    artifact.category match {
-                      case ArtifactType.DATASET =>   "table"
-                      case ArtifactType.FUNCTION =>  "code"
-                      case ArtifactType.BLOB =>      "envelope-o"
-                      case ArtifactType.FILE =>      "file"
-                      case ArtifactType.PARAMETER => "sliders"
-                      case ArtifactType.VEGALITE =>  "chart"
-                      case _ =>                      "question"
-                    }
                   div(`class` := "artifact",
                     span(`class` := "label",
-                      FontAwesome(icon),
+                      FontAwesome(ArtifactType.icon(artifact.category)),
                       name
                     )
                   )

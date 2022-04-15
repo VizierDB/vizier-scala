@@ -29,4 +29,10 @@ object ShowModal
     dom.document.body.appendChild(modal)
 
   }
+
+  def confirm(body: Frag*)(handler: => Unit): Unit =
+    apply(body:_*)(
+      button("Cancel", `class` := "cancel").render,
+      button("OK", `class` := "confirm", onclick := { _:dom.Element => handler }).render
+    )
 }

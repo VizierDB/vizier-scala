@@ -54,18 +54,15 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
               name := "project_name",
               value := project.projectName.now
             ).render
-          ShowModal(
+          ShowModal.confirm(
             label(
               `for` := "project_name",
               "Name: "
             ),
             nameInput
-          )(
-            button("Cancel", `class` := "cancel").render,
-            button("OK", `class` := "confirm", 
-              onclick := { _:dom.Element => project.setProjectName(nameInput.value) }
-            ).render,
-          )
+          ){ 
+            project.setProjectName(nameInput.value)
+          }
         }),
 
         //////////////// Rename
@@ -113,14 +110,46 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
         Menu("left item", FontAwesome("code-fork"))(
           (
             Seq(
-              MenuItem("Rename Branch...", { () => println("Rename branch")}),
-              MenuItem("Create Branch...", { () => println("Stop")}),
-              MenuItem("Project History", { () => println("Stop")}, icon = "history"),
+              MenuItem("Rename Branch...", { () =>
+                val nameInput = 
+                  input(
+                    `type` := "text", 
+                    name := "branch_name",
+                    value := project.activeBranchName.now
+                  ).render
+                ShowModal.confirm(
+                  label(
+                    `for` := "project_name",
+                    "Name: "
+                  ),
+                  nameInput
+                ){ 
+                  project.setActiveBranchName(nameInput.value)
+                }
+              }),
+              MenuItem("Create Branch...", { () => 
+                val nameInput = 
+                  input(
+                    `type` := "text", 
+                    name := "branch_name",
+                    value := (project.activeBranchName.now + " copy")
+                  ).render
+                ShowModal.confirm(
+                  label(
+                    `for` := "project_name",
+                    "Name: "
+                  ),
+                  nameInput
+                ){ 
+                  project.branchActiveWorkflow(nameInput.value)
+                }
+              }),
+              MenuItem("History", { () => println("Stop")}, icon = "history", enabled = false),
               Separator,
             ) ++ project.branches().map { case (id, branch) => 
               MenuItem(
                 branch.name, 
-                { () => println(s"Switch to branch $id") }, 
+                { () => project.setActiveBranch(id) }, 
                 icon = if(id == activeBranchId){ "code-fork" } else { null }
               )
             }
@@ -130,17 +159,22 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 
       ////////////////// Settings Menu ////////////////// 
       Menu("left item", FontAwesome("wrench"))(
-        MenuItem("Python Settings", { () => println("Python Settings") }),
-        MenuItem("Scala Settings", { () => println("Scala Settings") }),
+        MenuItem("Python Settings", { () => println("Python Settings") }, enabled = false),
+        MenuItem("Scala Settings", { () => println("Scala Settings") }, enabled = false),
         Separator,
-        MenuItem("Spark Status", { () => println("Spark Status") }),
+        a(href := "http://localhost:4040", target := "_blank", li("Spark Dashboard")),
       ),
 
       ////////////////// Spacer ////////////////// 
       div(`class` := "spacer"),
 
       ////////////////// Help Menu ////////////////// 
-      a(`class` := "right item", href := "https://www.github.com/VizierDB/vizier-scala/wiki", FontAwesome("question-circle")),
+      a(
+        `class` := "right item", 
+        href := "https://www.github.com/VizierDB/vizier-scala/wiki", 
+        target := "_blank",
+        FontAwesome("question-circle")
+      ),
     ).render
 
 }

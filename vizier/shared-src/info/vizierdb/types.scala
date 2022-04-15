@@ -148,6 +148,18 @@ object types
           JsNumber(s.id)
       }
     )
+
+    def icon(t: T): String =
+      t match {
+        case DATASET =>   "table"
+        case FUNCTION =>  "code"
+        case BLOB =>      "envelope-o"
+        case FILE =>      "file"
+        case PARAMETER => "sliders"
+        case VEGALITE =>  "chart"
+        case _ =>         "question"
+
+      }
   }
 
   object StreamType extends Enumeration
