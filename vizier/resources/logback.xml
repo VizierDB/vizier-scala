@@ -20,6 +20,8 @@
   <logger name="info.vizierdb.Config$"                           level="WARN" />
   <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="WARN" />
   <logger name="info.vizierdb.api.AppendModule"                  level="WARN" />
+  <logger name="info.vizierdb.catalog.Project"                   level="INFO" />
+  <logger name="info.vizierdb.catalog.Branch"                    level="INFO" />
   <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
   <logger name="info.vizierdb.viztrails.Scheduler$"              level="WARN" />
   <logger name="info.vizierdb.viztrails.RunningWorkflow"         level="WARN" />
@@ -67,7 +69,7 @@
   <logger name="org.eclipse.jetty.server.session"                level="WARN" />
 
     
-  <root level="ERROR">
+  <root level="WARN">
     <appender-ref ref="STDOUT" />
   </root>
  

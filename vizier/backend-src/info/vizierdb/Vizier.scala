@@ -112,12 +112,12 @@ object Vizier
     }
   }
 
-  def initORMLogging()
+  def initORMLogging(logLevel: String = "trace")
   {
     GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
       enabled = true,
       singleLineMode = true,
-      logLevel = "trace",
+      logLevel = logLevel,
     ) 
   }
 

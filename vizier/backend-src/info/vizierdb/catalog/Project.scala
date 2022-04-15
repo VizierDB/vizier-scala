@@ -27,6 +27,7 @@ import info.vizierdb.Vizier
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.serialized
 import info.vizierdb.delta.{ DeltaBus, UpdateProjectProperties }
+import com.typesafe.scalalogging.LazyLogging
 
 /**
  * A vistrails project.  The project may have an optional set of user-defined properties.
@@ -38,7 +39,7 @@ case class Project(
   properties: JsObject = Json.obj(),
   created: ZonedDateTime,
   modified: ZonedDateTime
-)
+) extends LazyLogging
 {
   def branches(implicit session: DBSession) = 
     withSQL { 
@@ -110,6 +111,8 @@ case class Project(
         )
       }
 
+    logger.debug(s"Branching project $id: From branch $fromBranch, workflow $sourceWorkflowId; ${if(isInitialBranch){ "(initial)" } else { "" }}")
+
     val branchId = withSQL {
       insertInto(Branch)
         .namedValues(
@@ -125,12 +128,16 @@ case class Project(
     }.updateAndReturnGeneratedKey.apply()
 
     if(skipWorkflowInitialization){
+      logger.debug("Skipping workflow initialization")
       return (this, Branch.get(branchId), null)
     }
     var (branch, workflow) = {
       var branch = Branch.get(branchId)
-      if(isInitialBranch){ branch.initWorkflow() }
+      if(isInitialBranch){ 
+        logger.debug("Initializing blank workflow")
+        branch.initWorkflow() }
       else { 
+        logger.debug(s"Cloning workflow $sourceWorkflowId")
         branch.cloneWorkflow(sourceWorkflowId.get)
       }
     }

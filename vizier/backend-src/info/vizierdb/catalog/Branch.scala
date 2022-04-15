@@ -29,6 +29,7 @@ import info.vizierdb.delta.{ DeltaBus, UpdateBranchProperties }
 import ExecutionState.{ WAITING, STALE, RUNNING, ERROR, CANCELLED, DONE, FROZEN }
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
+import com.typesafe.scalalogging.LazyLogging
 
 /**
  * One branch of the project
@@ -43,7 +44,7 @@ case class Branch(
   modified: ZonedDateTime,
   createdFromBranchId: Option[Identifier],
   createdFromWorkflowId: Option[Identifier]
-)
+) extends LazyLogging
 {
   /**
    * Retrieve the head [[Workflow]]
@@ -394,6 +395,8 @@ case class Branch(
     abortPrevWorkflow: Boolean = false
   )(implicit session: DBSession): (Branch, Workflow) = 
   {
+
+    logger.debug(s"Workflow $action: From $prevWorkflowId")
     // Note: we're working with immutable objects here.  `branch` will be the 
     // new instance with the updated headId
     val (branch, workflow) = initWorkflow(
@@ -425,7 +428,7 @@ case class Branch(
           c.created,
         ) {
           _.from(Cell as c)
-           .where.eq(c.workflowId, headId).and(Some(keepCells))
+           .where.eq(c.workflowId, prevWorkflowId).and(Some(keepCells))
         }
     }.update.apply()
     for((moduleId, position) <- addModules){
