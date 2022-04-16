@@ -242,7 +242,7 @@ updateBootstrap := {
   import scala.sys.process._
   val (art, file) = packagedArtifact.in(Compile, packageBin).value
   val home = Paths.get(System.getProperty("user.home"))
-  val coursier_cache = resolve(".cache").resolve("coursier") // home.resolve("Library/Caches/Coursier/")
+  val coursier_cache = home.resolve(".cache").resolve("coursier") // home.resolve("Library/Caches/Coursier/")
   if(Files.exists(coursier_cache)){
     val maven_mimir =
       coursier_cache.resolve("v1")
