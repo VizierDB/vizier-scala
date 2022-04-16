@@ -74,20 +74,20 @@ object VizierAPI
   lazy val WEB_UI_URL = getClass().getClassLoader().getResource("ui")
 
   /**
-   * 
+   *
    */
   def init(
-    publicURL: String = null, 
-    port: Int = DEFAULT_PORT, 
+    publicURL: String = null,
+    port: Int = Vizier.config.port(),
     path: File = Vizier.config.basePath(),
-    bindToLocalhost: Boolean = 
+    bindToLocalhost: Boolean =
       !(Vizier.config.devel() || Vizier.config.connectFromAnyHost())
   )
   {
-    if(server != null){ 
+    if(server != null){
       throw new RuntimeException("Can't have two Vizier servers running in one JVM")
     }
-    server = 
+    server =
       if(bindToLocalhost){
         new Server(InetSocketAddress.createUnresolved(
           "localhost",
@@ -143,4 +143,3 @@ object VizierAPI
     started = LocalDateTime.now()
   }
 }
-
