@@ -19,11 +19,13 @@ import play.api.libs.json.Json
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
-import info.vizierdb.catalog.PublishedArtifact
+import info.vizierdb.catalog.{ Artifact, PublishedArtifact }
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object UnloadDataset extends Command
   with LazyLogging
@@ -108,9 +110,9 @@ object UnloadDataset extends Command
       case _                      => Some("application/octet-stream")
     }
 
-    val artifactIfNeeded = 
+    val artifactIfNeeded: Option[Artifact] = 
       mimeTypeForFile.map { mimeType => 
-        context.outputFile(
+        context.outputFilePlaceholder(
           name = "file_export", 
           properties = Json.obj(
             "filename" -> s"export_$datasetName"
@@ -147,10 +149,10 @@ object UnloadDataset extends Command
 
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq(arguments.get[String](PARAM_DATASET)),
-      Seq("file_export")
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String](PARAM_DATASET))
+      .definitelyWrites("file_export")
+      .andNothingElse
 }
 

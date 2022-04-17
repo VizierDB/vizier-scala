@@ -1,6 +1,9 @@
 .metals
 .bloop
-/project
+/project/metals.sbt
+/project/target
+/project/project
+/project/plugins.sbt
 /target
 /vizier.db
 /upstream
@@ -9,3 +12,4 @@ __pycache__
 /bin/vizier
 /src/main/resources/__pycache__
 .python-version
+maven

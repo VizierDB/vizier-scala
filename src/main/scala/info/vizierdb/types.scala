@@ -53,6 +53,9 @@ object types
   {
     type T = Value
 
+    // Note that WAITING and STALE states are primarily for the user's benefit
+    // In general, we can compute these directly from the provenance.
+
     val DONE      = Value(1, "DONE")     /* The referenced execution is correct and up-to-date */
     val ERROR     = Value(2, "ERROR")    /* The cell or a cell preceding it is affected by a notebook 
                                             error */
@@ -160,6 +163,8 @@ object types
     val DATASET_VIEW  = "dataset/view"
     val PYTHON        = "application/python"
     val JAVASCRIPT    = "text/javascript"
+    val JSON          = "text/json"
+    val PNG           = "image/png"
   }
 
   object DATATYPE extends Enumeration
@@ -173,6 +178,8 @@ object types
     val VARCHAR  = Value(5, "varchar")
     val DATE     = Value(6, "date")
     val DATETIME = Value(7, "datetime")
+    val BINARY   = Value(8, "binary")
+    val IMAGE    = Value(9, "image/png")
 
     def fromSpark(t: org.apache.spark.sql.types.DataType): T =
     {
@@ -185,6 +192,8 @@ object types
         case org.apache.spark.sql.types.StringType => VARCHAR
         case org.apache.spark.sql.types.DateType => DATE
         case org.apache.spark.sql.types.TimestampType => DATETIME
+        case org.apache.spark.sql.types.BinaryType => BINARY
+        case org.apache.spark.sql.types.ImageUDT => IMAGE
         case _ => VARCHAR
       }
     }

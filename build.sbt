@@ -1,13 +1,13 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "1.1.1"
+val VIZIER_VERSION = "1.2.0"
 val MIMIR_VERSION = "1.1.1"
 val CAVEATS_VERSION = "0.3.4"
 
 // Project and subprojects
 lazy val vizier = (project in file("."))
                       .dependsOn(
-                        mimir, 
+                        mimir,
                         caveats
                       )
                       .settings(
@@ -59,8 +59,8 @@ excludeDependencies ++= Seq(
   // Hadoop brings in more logging backends.  Kill it with fire.
   ExclusionRule("org.slf4j", "slf4j-log4j12"),
   // Jetty shows up in infinite places with incompatible java servlet APIs
-  // ExclusionRule( organization = "org.xerial"), 
-  ExclusionRule( organization = "org.mortbay.jetty"), 
+  // ExclusionRule( organization = "org.xerial"),
+  ExclusionRule( organization = "org.mortbay.jetty"),
 )
 
 dependencyOverrides ++= Seq(
@@ -98,7 +98,7 @@ libraryDependencies ++= Seq(
 )
 
 ////// Publishing Metadata //////
-// use `sbt publish make-pom` to generate 
+// use `sbt publish make-pom` to generate
 // a publishable jar artifact and its POM metadata
 
 pomExtra := <url>http://vizierdb.info</url>
@@ -117,17 +117,17 @@ pomExtra := <url>http://vizierdb.info</url>
 // The upstream components pose a slight annoyance here.  If they're checked
 // out already, then the POM file gets generated properly, using the appropriate
 // build.sbt settings from those projects.  However, if not, then we end up
-// defaulting to settings from *this* file.  OTOH, there doesn't seem to be a 
+// defaulting to settings from *this* file.  OTOH, there doesn't seem to be a
 // way to incorporate upstream classpaths without marking them as an explicit
-// dependency.  ANNOYING!  To avoid having to check-out upstream packages on 
+// dependency.  ANNOYING!  To avoid having to check-out upstream packages on
 // the build server, we just give the "default" package settings a dummy groupId
 // and strip them out of the automatically derived dependencies here.
 import scala.xml.{ Node => XNode }
-pomPostProcess := { (node:XNode) => 
+pomPostProcess := { (node:XNode) =>
   import scala.xml._
   import scala.xml.transform._
-  val stripLocalDependencies = new RewriteRule { 
-    override def transform(n: Node): Seq[Node] = 
+  val stripLocalDependencies = new RewriteRule {
+    override def transform(n: Node): Seq[Node] =
     {
       if(n.label.equals("dependency")){
         if( (n \ "groupId").text.equals("remove-me") ){
@@ -140,11 +140,11 @@ pomPostProcess := { (node:XNode) =>
 }
 
 /////// Publishing Options ////////
-// use `sbt publish` to update the package in 
+// use `sbt publish` to update the package in
 // your own local ivy cache
 
 publishMavenStyle := true
-publishTo := Some(MavenCache("local-maven",  file("/var/www/maven_repo/")))
+publishTo := Some(MavenCache("local-maven",  file("maven/")))
 
 // publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
@@ -169,7 +169,7 @@ bootstrap := {
       "-o", coursier_bin,
       coursier_url
     )) ! logger match {
-      case 0 => 
+      case 0 =>
       case n => sys.error(s"Could not download Coursier")
     }
     Process(List(
@@ -180,8 +180,8 @@ bootstrap := {
 
   println("Coursier available.  Generating Repository List")
 
-  val relevantResolvers:Seq[String] = resolvers.value.flatMap { 
-    case r: MavenRepository => 
+  val relevantResolvers:Seq[String] = resolvers.value.flatMap {
+    case r: MavenRepository =>
       if(!r.root.startsWith("file:")){
         Some(r.root)
       } else { None }
@@ -209,7 +209,7 @@ bootstrap := {
   println(cmd.mkString(" "))
 
   Process(cmd) ! logger match {
-      case 0 => 
+      case 0 =>
       case n => sys.error(s"Bootstrap failed")
   }
 
@@ -221,7 +221,7 @@ bootstrap := {
     "    \"mainClass\": \"info.vizierdb.Vizier\",",
     "    \"repositories\": [",
     "      \"central\": ",
-  )++relevantResolvers.map { r => 
+  )++relevantResolvers.map { r =>
     ",     \""+r+"\""
   }++Seq(
     "    ],",
@@ -242,20 +242,20 @@ updateBootstrap := {
   import scala.sys.process._
   val (art, file) = packagedArtifact.in(Compile, packageBin).value
   val home = Paths.get(System.getProperty("user.home"))
-  val coursier_cache = home.resolve(".cache").resolve("coursier")
+  val coursier_cache = home.resolve(".cache").resolve("coursier") // home.resolve("Library/Caches/Coursier/")
   if(Files.exists(coursier_cache)){
-    val maven_mimir = 
+    val maven_mimir =
       coursier_cache.resolve("v1")
                     .resolve("https")
                     .resolve("maven.mimirdb.info")
     val qualified_artifact_name = file.name.replace(".jar", "").replaceFirst("-([0-9.]+(-SNAPSHOT)?)$", "")
-    val pathComponents = 
+    val pathComponents =
       (organization.value.split("\\.") :+ qualified_artifact_name :+ version.value)
     val repo_dir = pathComponents.foldLeft(maven_mimir) { _.resolve(_) }
     val target = repo_dir.resolve(s"$qualified_artifact_name-${version.value}.jar")
     val targetPom = repo_dir.resolve(s"$qualified_artifact_name-${version.value}.pom")
 
-    
+
     if(Files.exists(target)){
       {
         val cmd = Seq("cp", file.toString, target.toString)
@@ -274,7 +274,7 @@ updateBootstrap := {
     }
 
 
-  } else { 
+  } else {
     println(s"$coursier_cache does not exist")
   }
 }
@@ -292,11 +292,11 @@ checkout := {
     Files.createDirectory(upstream)
   }
   Seq(
-    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"       , "ui"     , Some("scala")), 
+    ("Vizier UI", "git@github.com:VizierDB/web-ui.git"       , "ui"     , Some("scala")),
     ("Mimir"    , "git@github.com:UBOdin/mimir-api.git"      , "mimir"  , None),
-    ("Caveats"  , "git@github.com:UBOdin/mimir-caveats.git"  , "caveats", None),
+    ("Caveats"  , "git@github.com:UBOdin/mimir-caveats.git"  , "caveats", Some("v0.3.4")),
     ("Docker"   , "git@github.com:VizierDB/vizier-docker.git", "docker",  None),
-  ).foreach { case (name, repo, stub, branch) => 
+  ).foreach { case (name, repo, stub, branch) =>
     val dir = upstream.resolve(stub)
     if(!Files.exists(dir.resolve(".git"))){
       println(s"Checking out $name into $dir")
@@ -305,9 +305,9 @@ checkout := {
         new ProcessBuilder(cmd:_*)
               .start
               .waitFor
-      } else { 
-        // need a little bit of a hack since SBT creates project directories with 
-        // a target folder automatically -- a straight checkout fails due to 
+      } else {
+        // need a little bit of a hack since SBT creates project directories with
+        // a target folder automatically -- a straight checkout fails due to
         // non-empty repo
         new ProcessBuilder("git", "init", dir.toString)
               .start
@@ -321,8 +321,8 @@ checkout := {
               .start
               .waitFor
       }
-      
-    } else { 
+
+    } else {
       println(s"$name already checked out")
     }
   }

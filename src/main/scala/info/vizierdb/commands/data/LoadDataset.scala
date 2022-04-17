@@ -25,8 +25,10 @@ import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.spark.Schema
 import org.apache.spark.sql.types.StructField
 import org.mimirdb.api.FormattedError
+import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.PublishedArtifact
 import org.mimirdb.api.request.CreateViewRequest
+import play.api.libs.json.JsObject
 
 object LoadDataset
   extends Command
@@ -173,10 +175,9 @@ object LoadDataset
     }
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq.empty,
-      Seq(arguments.get[String]("name"))
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 }
 

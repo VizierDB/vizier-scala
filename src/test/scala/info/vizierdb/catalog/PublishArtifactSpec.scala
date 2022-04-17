@@ -21,7 +21,7 @@ import org.specs2.specification.BeforeAll
 import info.vizierdb.VizierAPI
 import info.vizierdb.api._
 import info.vizierdb.test.SharedTestResources
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.MutableProject
 import info.vizierdb.commands.data.{ UnloadDataset, LoadDataset }
 import info.vizierdb.commands.FileArgument
 

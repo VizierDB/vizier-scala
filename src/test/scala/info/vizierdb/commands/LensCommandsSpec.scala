@@ -17,7 +17,7 @@ package info.vizierdb.commands
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import info.vizierdb.test.SharedTestResources
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.MutableProject
 import org.apache.spark.sql.types._
 
 class LensCommandsSpec

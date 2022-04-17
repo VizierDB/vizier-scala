@@ -14,7 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
-import play.api.libs.json.JsValue
+import play.api.libs.json._
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
@@ -23,6 +23,7 @@ import info.vizierdb.filestore.Filestore
 import java.io.File
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object CloneDataset extends Command
 {
@@ -45,7 +46,10 @@ object CloneDataset extends Command
     context.output(arguments.get[String]("name"), artifact)
     context.message("Dataset Cloned")
   }
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("name"))) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 }
 

@@ -20,6 +20,7 @@ import org.mimirdb.lenses.Lens
 import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.api.request.CreateLensRequest
 import org.apache.spark.sql.types.StructField
+import info.vizierdb.viztrails.ProvenancePrediction
 
 trait LensCommand 
   extends Command
@@ -77,9 +78,11 @@ trait LensCommand
     context.message(s"Created $name Lens on $datasetName")
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), 
-           Seq(arguments.get[String]("dataset"))) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("dataset"))
+      .andNothingElse
 
 }
 

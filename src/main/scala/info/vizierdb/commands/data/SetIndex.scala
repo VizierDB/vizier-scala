@@ -14,7 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
-import play.api.libs.json.JsValue
+import play.api.libs.json._
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
@@ -24,6 +24,7 @@ import java.io.File
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
 import org.mimirdb.api.request.MaterializeRequest
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object SetIndex extends Command
 {
@@ -50,7 +51,10 @@ object SetIndex extends Command
 
 
   }
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), Seq(arguments.get[String]("dataset"))) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("dataset"))
+      .andNothingElse
 }
 

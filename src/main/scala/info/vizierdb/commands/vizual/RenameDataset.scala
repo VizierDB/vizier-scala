@@ -15,6 +15,8 @@
 package info.vizierdb.commands.vizual
 
 import info.vizierdb.commands._
+import info.vizierdb.viztrails.ProvenancePrediction
+import play.api.libs.json.JsObject
 
 object RenameDataset extends Command
 {
@@ -37,9 +39,12 @@ object RenameDataset extends Command
     context.delete(oldName)
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), 
-           Seq(arguments.get[String]("dataset"), arguments.get[String]("name"))) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .definitelyDeletes(arguments.get[String]("dataset"))
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 
 
 }

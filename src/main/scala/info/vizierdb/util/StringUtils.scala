@@ -17,7 +17,10 @@ package info.vizierdb.util
 object StringUtils
 {
   def ellipsize(text: String, len: Int): String =
-        if(text.size > len){ text.substring(0, len-3)+"..." } else { text }
+    if(text.size > len){ text.substring(0, len-3)+"..." } else { text }
+
+  def ellipsize(list: Iterable[String], len: Int): Seq[String] =
+    if(list.size > len){ list.take(len-1).toSeq :+ "..." } else { list.toSeq }
 
   def camelCaseToHuman(str: String) = 
   {
@@ -25,5 +28,17 @@ object StringUtils
       .r
       .replaceAllIn(str, { m => m.group(1) + " " + m.group(2) })
   }
+
+  def oxfordComma(elements: Seq[String], op: String = "and"): String =
+    elements match {
+      case Seq() => ""
+      case Seq(a) => a
+      case Seq(a, b) => s"$a $op $b"
+      case _ => 
+      {
+        val reversed = elements.reverse
+        (reversed.tail.reverse :+ s"$op ${reversed.head}").mkString(", ")
+      }
+    }
 }
 

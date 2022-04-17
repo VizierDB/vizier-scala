@@ -26,6 +26,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.mimirdb.spark.InjectedSparkSQL
 import org.mimirdb.api.MimirAPI
 import info.vizierdb.catalog.ArtifactSummary
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object Query extends Command
   with LazyLogging
@@ -90,15 +91,22 @@ object Query extends Command
   def computeDependencies(sql: String): Seq[String] =
   {
     val (views, functions) = parser.getDependencies(sql)
-    return views.toSeq
+    return views.toSeq ++ functions.toSeq
   }
 
-  def predictProvenance(arguments: Arguments) =
-    Some( (
-      computeDependencies(arguments.get[String]("source")),
-      Seq(
-        arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
-      )
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) =
+    try {
+      ProvenancePrediction
+        .definitelyReads(
+          computeDependencies(arguments.get[String]("source")):_*
+        )
+        .definitelyWrites(
+          arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
+        )
+        .andNothingElse
+    } catch {
+      case t:Throwable => 
+        ProvenancePrediction.default
+    }
 }
 

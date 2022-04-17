@@ -14,7 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
-import play.api.libs.json.JsValue
+import play.api.libs.json._
 import org.mimirdb.api.request.{ UnloadRequest, UnloadResponse }
 import org.mimirdb.api.{ Tuple => MimirTuple }
 import info.vizierdb.VizierAPI
@@ -25,6 +25,7 @@ import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierException
 import org.mimirdb.api.request.QueryMimirRequest
 import org.mimirdb.api.request.CreateViewRequest
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object EmptyDataset extends Command
 {
@@ -48,10 +49,9 @@ object EmptyDataset extends Command
     ).handle
     context.message("Empty Dataset Created")
   }
-  def predictProvenance(arguments: Arguments) = 
-    Some( (
-      Seq.empty,
-      Seq(arguments.get[String]("name"))
-    ) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyWrites(arguments.get[String]("name"))
+      .andNothingElse
 }
 

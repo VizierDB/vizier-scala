@@ -36,7 +36,6 @@ import info.vizierdb.util.StupidReactJsonMap
 import org.locationtech.jts.geom.Geometry
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.types.StructField
-import info.vizierdb.catalog.serialized.ParameterArtifact
 
 case class Artifact(
   id: Identifier,
@@ -52,7 +51,8 @@ case class Artifact(
   def absoluteFile: File = Filestore.getAbsolute(projectId, id)
   def relativeFile: File = Filestore.getRelative(projectId, id)
   def file = absoluteFile
-  def parameter = json.as[ParameterArtifact]
+  def parameter = 
+    SparkPrimitive.decode(json, SparkSchema.decodeType(mimeType))
   def json = Json.parse(string)
   def summarize(name: String = null) = 
   {
@@ -196,18 +196,24 @@ case class ArtifactSummary(
         Map(
           "columns" -> 
             JsArray(
-              getSchema()
-                .schema
-                .zipWithIndex
-                .map { case (field, idx) => 
-                  Json.toJson(
-                    Map(
-                      "id" -> JsNumber(idx),
-                      "name" -> JsString(field.name),
-                      "type" -> JsString(SparkSchema.encodeType(field.dataType))
+              try { 
+                getSchema()
+                  .schema
+                  .zipWithIndex
+                  .map { case (field, idx) => 
+                    Json.toJson(
+                      Map(
+                        "id" -> JsNumber(idx),
+                        "name" -> JsString(field.name),
+                        "type" -> JsString(SparkSchema.encodeType(field.dataType))
+                      )
                     )
-                  )
-                }
+                  }
+              } catch { 
+                case t: Throwable => 
+                  t.printStackTrace()
+                  Seq.empty
+              }
             )
         )
       case _ => Map.empty
@@ -256,6 +262,20 @@ object Artifact
     Artifact.get(artifactId)
   }
 
+  def all(projectId: Option[Identifier] = None)(implicit session: DBSession): Iterable[Artifact] =
+  {
+    withSQL { 
+      val b = Artifact.syntax 
+      select
+        .from(Artifact as b)
+        .where(
+          sqls.toAndConditionOpt(
+            projectId.map { sqls.eq(b.projectId, _) }
+          )
+        )
+    }.map { apply(_) }.iterable.apply()    
+  }
+
   def get(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Artifact = getOption(target, projectId).get
   def getOption(target: Identifier, projectId: Option[Identifier] = None)(implicit session:DBSession): Option[Artifact] = 
     withSQL { 
@@ -300,6 +320,8 @@ object Artifact
         VizierAPI.urls.getDataset(projectId, artifactId)
       case ArtifactType.CHART => 
         VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
+      case ArtifactType.FILE => 
+        VizierAPI.urls.downloadFile(projectId, artifactId)
       case _ => 
         VizierAPI.urls.getArtifact(projectId, artifactId)
     }

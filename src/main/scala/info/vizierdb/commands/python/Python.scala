@@ -38,10 +38,16 @@ import info.vizierdb.catalog.ArtifactSummary
 import org.mimirdb.util.UnsupportedFeature
 import org.mimirdb.vizual.{ Command => VizualCommand }
 import org.mimirdb.api.request.VizualRequest
+import info.vizierdb.viztrails.ProvenancePrediction
+import org.mimirdb.util.ExperimentalOptions
 
 object Python extends Command
   with LazyLogging
 {
+  val PROP_INPUT_PROVENANCE = "input_provenance"
+  val PROP_OUTPUT_PROVENANCE = "output_provenance"
+
+
   def name: String = "Python Script"
   def parameters: Seq[Parameter] = Seq(
     CodeParameter(id = "source", language = "python", name = "Python Code"),
@@ -131,6 +137,7 @@ object Python extends Command
             withArtifact { artifact => 
               python.send("parameter",
                 "data" -> artifact.json,
+                "dataType" -> JsString(artifact.mimeType),
                 "artifactId" -> JsNumber(artifact.id)
               )
             }
@@ -228,11 +235,19 @@ object Python extends Command
             }
           case "save_artifact" =>
             {
+              val t = ArtifactType.withName( (event\"artifactType").as[String] )
               val artifact = context.output(
                 name = (event\"name").as[String],
-                t = ArtifactType.withName( (event\"artifactType").as[String] ),
+                t = t,
                 mimeType = (event\"mimeType").as[String],
-                data = (event\"data").as[String].getBytes
+                data = 
+                  t match { 
+                    case ArtifactType.PARAMETER => 
+                      // Parameters are just raw JSON data that gets saved as-is
+                      (event\"data").as[JsValue].toString.getBytes
+                    case _ => 
+                      (event\"data").as[String].getBytes
+                  }
               )
               python.send("artifactId","artifactId" -> JsNumber(artifact.id))
             }
@@ -270,7 +285,7 @@ object Python extends Command
             }
           case "create_file" =>
             {
-              val file:Artifact = context.outputFile(
+              val file:Artifact = context.outputFilePlaceholder(
                 (event \ "name").as[String],
                 (event \ "mime").asOpt[String].getOrElse { "application/octet-stream" },
                 JsObject(
@@ -313,6 +328,18 @@ object Python extends Command
     logger.debug("Done")
   }
 
-  def predictProvenance(arguments: Arguments) = None
+  def predictProvenance(arguments: Arguments, properties: JsObject) =
+    if(ExperimentalOptions.enabled("PARALLEL-PYTHON")){
+      (
+        (properties \ PROP_INPUT_PROVENANCE).asOpt[Seq[String]],
+        (properties \ PROP_OUTPUT_PROVENANCE).asOpt[Seq[String]]
+      ) match {
+        case (Some(input), Some(output)) => 
+          ProvenancePrediction.definitelyReads(input:_*)
+                              .definitelyWrites(output:_*)
+                              .andNothingElse
+        case _ => ProvenancePrediction.default
+      }
+    } else { ProvenancePrediction.default }
 }
 

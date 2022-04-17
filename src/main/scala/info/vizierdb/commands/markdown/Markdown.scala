@@ -18,6 +18,7 @@ import play.api.libs.json._
 import info.vizierdb.commands._
 import info.vizierdb.types._
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object Markdown extends Command
   with LazyLogging
@@ -35,9 +36,8 @@ object Markdown extends Command
     context.message(MIME.MARKDOWN, arguments.get[String]("source"))
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq.empty, 
-           Seq.empty) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction.empty
 
 }
 

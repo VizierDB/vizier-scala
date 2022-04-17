@@ -26,6 +26,7 @@ import org.mimirdb.caveats.implicits._
 import org.mimirdb.api.request.Query
 import org.apache.spark.unsafe.types.UTF8String
 import info.vizierdb.VizierException
+import info.vizierdb.viztrails.ProvenancePrediction
 
 object SimpleChart extends Command
 {
@@ -84,9 +85,10 @@ object SimpleChart extends Command
     )
   }
 
-  def predictProvenance(arguments: Arguments) = 
-    Some( (Seq(arguments.get[String]("dataset")), 
-           Seq.empty) )
+  def predictProvenance(arguments: Arguments, properties: JsObject) = 
+    ProvenancePrediction
+      .definitelyReads(arguments.get[String]("dataset"))
+      .andNothingElse
 
 }
 

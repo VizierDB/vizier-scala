@@ -22,7 +22,7 @@ import org.specs2.specification.BeforeAll
 import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
-import info.vizierdb.viztrails.MutableProject
+import info.vizierdb.MutableProject
 import info.vizierdb.commands.python.PythonProcess
 import org.apache.spark.sql.types._
 import org.mimirdb.api.MimirAPI
@@ -231,7 +231,7 @@ print(df['A'].sum())
            .getDataset()
            .data(0)(0) must beEqualTo("3")
   }
-
+    
   "Export types properly" >>
   {
     project.script("""

@@ -24,8 +24,8 @@ import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.catalog.{ Project, Module }
-import info.vizierdb.viztrails.{ Scheduler, MutableProject }
-
+import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.MutableProject 
 import info.vizierdb.commands.transform._
 
 class TransformCommandsSpec
@@ -74,8 +74,52 @@ class TransformCommandsSpec
     )
     project.waitUntilReadyAndThrowOnError
     val ds = project.artifact("s").getDataset()
-    ds.data.map { _(0) } must not contain("1")
+    ds.data.map { _(0) } must not contain(1.toShort)
+    ds.data.map { _(0) } must contain(2.toShort)
     ds.data must haveSize(3)
+  }
+
+  "split datasets" >> {
+    val project = MutableProject("Split Test")
+    project.load("test_data/r.csv","r")
+    project.append("transform", "split")(
+      SplitDataset.PARAM_DATASET -> "r",
+      SplitDataset.PARAM_PARTITIONS -> Seq(
+        Map(
+          SplitDataset.PARAM_CONDITION -> "cast(a as int) >= 2",
+          SplitDataset.PARAM_OUTPUT -> "s"
+        )
+      )
+    )
+    project.append("transform", "split")(
+      SplitDataset.PARAM_DATASET -> "r",
+      SplitDataset.PARAM_PARTITIONS -> Seq(
+        Map(
+          SplitDataset.PARAM_CONDITION -> "cast(a as int) >= 2",
+          SplitDataset.PARAM_OUTPUT -> "t",
+        )
+      ),
+      SplitDataset.PARAM_OTHERWISE -> "u"
+    )
+    project.waitUntilReadyAndThrowOnError
+
+    {
+      val ds = project.artifact("s").getDataset()
+      ds.data.map { _(0) } must not contain(1.toShort)
+      ds.data must haveSize(3)    
+    }
+    
+    {
+      val ds = project.artifact("t").getDataset()
+      ds.data.map { _(0) } must not contain(1.toShort)
+      ds.data.map { _(0) } must contain(2.toShort)
+      ds.data must haveSize(3)    
+    }
+    
+    {
+      val ds = project.artifact("u").getDataset()
+      ds.data.map { _(0).asInstanceOf[Short] } must contain(exactly(1.toShort, 1.toShort, 1.toShort, 1.toShort))
+    }
   }
 
 }
