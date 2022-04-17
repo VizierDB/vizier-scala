@@ -12,3 +12,4 @@ __pycache__
 /bin/vizier
 /src/main/resources/__pycache__
 .python-version
+maven
