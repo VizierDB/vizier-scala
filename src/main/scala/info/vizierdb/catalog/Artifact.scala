@@ -196,18 +196,24 @@ case class ArtifactSummary(
         Map(
           "columns" -> 
             JsArray(
-              getSchema()
-                .schema
-                .zipWithIndex
-                .map { case (field, idx) => 
-                  Json.toJson(
-                    Map(
-                      "id" -> JsNumber(idx),
-                      "name" -> JsString(field.name),
-                      "type" -> JsString(SparkSchema.encodeType(field.dataType))
+              try { 
+                getSchema()
+                  .schema
+                  .zipWithIndex
+                  .map { case (field, idx) => 
+                    Json.toJson(
+                      Map(
+                        "id" -> JsNumber(idx),
+                        "name" -> JsString(field.name),
+                        "type" -> JsString(SparkSchema.encodeType(field.dataType))
+                      )
                     )
-                  )
-                }
+                  }
+              } catch { 
+                case t: Throwable => 
+                  t.printStackTrace()
+                  Seq.empty
+              }
             )
         )
       case _ => Map.empty
