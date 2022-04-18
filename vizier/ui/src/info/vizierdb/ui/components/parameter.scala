@@ -274,7 +274,8 @@ case class CodeParameter(
           editor = CodeMirror.fromTextArea(n,
             js.Dictionary(
               "mode" -> CodeParameter.CODEMIRROR_FORMAT.getOrElse(language, "text/plain"),
-              "lineNumbers" -> true
+              "lineNumbers" -> true,
+              "viewportMargin" -> Double.PositiveInfinity,
             )
           ) 
           if(initialValue != null) { editor.setValue(initialValue) }

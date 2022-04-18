@@ -56,6 +56,13 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
   def StandardInterModule(position: => Int): Frag =
     InterModule(
       button(
+        FontAwesome("pencil-square-o"),
+        onclick := { _:dom.Event => 
+          moduleViewsWithEdits.insertTentative(position)
+                              .setDefaultModule("docs","markdown")
+        }
+      ).render,
+      button(
         FontAwesome("plus"),
         onclick := { _:dom.Event => 
           moduleViewsWithEdits.insertTentative(position)
@@ -76,15 +83,15 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
     div(`class` := "inter_module",
       div(
         `class` := "elements", 
-        span(`class` := "separator", "—"),
+        span(`class` := "separator", "———"),
         buttons,
-        span(`class` := "separator", "—"),
+        span(`class` := "separator", "———"),
       )
     )
 
 
   val root = 
-    div(id := "workflow",
+    div(`class` := "workflow_content",
       Rx { 
         if(subscription.awaitingReSync()) { div("Syncing workflow...") } 
         else { 

@@ -87,7 +87,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
   /**
    * A reactive DOM node of all of the messages displayed with this module
    */
-  val messageView = RxBufferView(ul(), messages.rxMap { _.root })
+  val messageView = RxBufferView(ul(`class` := "messages"), messages.rxMap { _.root })
   logger.trace(s"${messageView.root.childNodes.length} messages rendered")
 
   /**
@@ -225,26 +225,32 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
                 .getOrElse { 
                   div(
                     `class` := (if(hideSummary) { "summary hidden" } else { "summary" }),
-                    onclick := { _:dom.MouseEvent => openEditor() },
-                    pre(subscription.text()) 
+                    pre(
+                      subscription.text(),
+                      onclick := { _:dom.MouseEvent => openEditor() },
+                    )
                   )
                 }
       }.reactive,
-      div(`class` := "status", 
+      div(`class` := (if(hideSummary) { "status hidden" } else { "status" }), 
         span(`class` := "label", "Status: "),
         Rx { 
           val timestamps = subscription.timestamps()
           subscription.state() match {
             case ExecutionState.DONE => 
-              span(s"Completed ${timestamps.finishedAtString} (${timestamps.runtimeString})")
+              span(span(`class` := "state", "Completed"), 
+                   s" ${timestamps.finishedAtString} (${timestamps.runtimeString})")
             case ExecutionState.FROZEN => 
-              span(s"Frozen ${timestamps.createdAtString}")
+              span(span(`class` := "state", "Frozen"),
+                   s" ${timestamps.createdAtString}")
             case ExecutionState.CANCELLED | ExecutionState.ERROR =>
-              span(StringUtils.capitalize(subscription.state().toString()))
+              span(`class` := "state", StringUtils.capitalize(subscription.state().toString()))
             case ExecutionState.RUNNING =>
-              span(s"Running since ${timestamps.startedAtString}")
+              span(span(`class` := "state", "Running"),
+                   s" since ${timestamps.startedAtString}")
             case ExecutionState.WAITING | ExecutionState.STALE =>
-              span(s"Waiting to run since ${timestamps.createdAtString}")
+              span(span(`class` := "state", "Waiting"),
+                   s" to run since ${timestamps.createdAtString}")
           }
         }.reactive
       ),

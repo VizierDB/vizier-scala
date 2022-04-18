@@ -20,6 +20,7 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.types.ArtifactType
 import org.apache.spark.sql.{ DataFrame, Row }
+import org.apache.spark.sql.functions.expr
 import info.vizierdb.spark.caveats.QueryWithCaveats
 import info.vizierdb.spark.caveats.QueryWithCaveats.ResultTooBig
 import org.mimirdb.caveats.implicits._
@@ -69,7 +70,7 @@ object SimpleChart extends Command
     StringParameter(id = PARAM_NAME, name = "Chart Name", required = false),
     ListParameter(id = PARAM_SERIES, name = "Data Series", components = Seq(
       ColIdParameter(id = PARAM_SERIES_COLUMN, name = "Column"),
-      StringParameter(id = PARAM_SERIES_CONSTRAINT, name = "Constraint", required = false),
+      // StringParameter(id = PARAM_SERIES_CONSTRAINT, name = "Constraint", required = false),
       StringParameter(id = PARAM_SERIES_LABEL, name = "Label", required = false),
     )),
     RecordParameter(id = PARAM_XAXIS, name = "X Axis", components = Seq(
@@ -98,14 +99,32 @@ object SimpleChart extends Command
     val datasetName = arguments.get[String](PARAM_DATASET)
     val datasetArtifact = context.artifact(datasetName)
                                  .getOrElse { throw new VizierException(s"Unknown dataset $datasetName") }
-    val dataset = DB autoCommit { implicit s => datasetArtifact.dataframe }
+    var dataset = DB autoCommit { implicit s => datasetArtifact.dataframe }
     val schema = dataset.schema
-    val rows = dataset.take(MAX_RECORDS+1)
+
+    val filter = arguments.getRecord(PARAM_XAXIS)
+                          .get[String](PARAM_XAXIS_CONSTRAINT)
     val xaxis = arguments.getRecord(PARAM_XAXIS)
                          .get[Int](PARAM_XAXIS_COLUMN)
-    val yaxes = arguments.getList(PARAM_SERIES)
-                         .map { _.get[Int](PARAM_SERIES_COLUMN) }
+    val yaxes: Seq[(Int, String)] 
+              = arguments.getList(PARAM_SERIES)
+                         .map { y => 
+                            val col = y.get[Int](PARAM_SERIES_COLUMN)
+                            (
+                              col,
+                              y.get[String](PARAM_SERIES_LABEL) match { 
+                                case "" | null => schema(col).name
+                                case x => x.replaceAll("\\.", "")
+                              }
+                            )
+                          }
     val name = arguments.getOpt[String](PARAM_NAME).getOrElse { "untitled chart" }
+    
+    if(filter != ""){
+      dataset = dataset.filter(expr(filter))
+    }
+
+    val rows = dataset.take(MAX_RECORDS+1)
 
     if(rows.size > MAX_RECORDS){
       context.error(s"$datasetName has ${dataset.count} rows, but chart cells are limited to $MAX_RECORDS rows.  Either summarize the data first, or use a python cell to plot the data.")
@@ -114,9 +133,9 @@ object SimpleChart extends Command
 
     val data = 
       rows.map { row =>
-        (xaxis +: yaxes).map { idx => 
+        ((xaxis, schema(xaxis).name) +: yaxes).map { case (idx:Int, label:String) => 
           val column = schema(idx)
-          column.name -> SparkPrimitive.encode(row(idx), column.dataType)
+          label -> SparkPrimitive.encode(row(idx), column.dataType)
         }.toMap
       }.toSeq
     val chartOrMark:Either[Vega.BasicChart,AnyMark] = 
@@ -124,7 +143,7 @@ object SimpleChart extends Command
         case CHART_TYPE_BAR => Left(Vega.multiBarChart(
                                   data,
                                   schema(xaxis).name,
-                                  yaxes.map { schema(_).name }
+                                  yaxes.map { _._2 }
                                 ))
         case CHART_TYPE_AREA => Right(MarkArea)
         case CHART_TYPE_SCATTER => Right(MarkPoint)
@@ -134,6 +153,7 @@ object SimpleChart extends Command
                                           point = Some(MarkDefPointAsBool(true))
                                         ))
       }
+
     val chart = 
       chartOrMark match {
         case Left(chart) => chart
@@ -141,14 +161,19 @@ object SimpleChart extends Command
                                         mark,
                                         data,
                                         schema(xaxis).name,
-                                        yaxes.map { schema(_).name }
+                                        yaxes.map { _._2 },
+                                        ylabel = ""
                                       )
       }
     chart.root.autosize = Some(AutosizeTypeFitX)
 
+    val identifier =
+      (name match {
+        case "" => datasetName+"_by_"+schema(xaxis).name
+        case _ => name
+      }).replaceAll("[^a-zA-Z0-9]+", "_").toLowerCase
 
-
-    context.chart(chart, identifier = name.replaceAll("[^a-zA-Z0-9]+", "_").toLowerCase)
+    context.chart(chart, identifier = identifier)
 
     // val schema = context.datasetSchema(datasetName).getOrElse {
     //   throw new VizierException(s"Unknown Dataset $datasetName")

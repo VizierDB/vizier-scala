@@ -17,7 +17,7 @@ import info.vizierdb.nativeTypes.JsValue
 sealed trait Message
   { def root: dom.Node }
 
-case class TextMessage(text: String, clazz: String = "message") extends Message
+case class TextMessage(text: String, clazz: String = "message text") extends Message
 {
   // println(s"Text Message of type $clazz\n${text.take(200)}")
   val root = 
@@ -31,21 +31,22 @@ case class TextMessage(text: String, clazz: String = "message") extends Message
 object TextMessage
 {
   def error(text: String) = 
-    TextMessage(text, "message error")
+    TextMessage(text, "message text error")
 }
 
 //////////////////////////////////////////////////////////////
 
 case class DatasetMessage(content: Dataset) extends Message
 {
-  val root = div(`class` := "message", content.root)
+  val root = div(`class` := "message dataset", content.root)
 }
 
 //////////////////////////////////////////////////////////////
 
 case class MarkdownMessage(content: String) extends Message
 {
-  val root:dom.html.Div = (div("Rendering..."):dom.Node).asInstanceOf[dom.html.Div]
+  val root:dom.html.Div = 
+    div(`class` := "message markdown", "Rendering...").render
   root.innerHTML = Marked(content)
 }
 

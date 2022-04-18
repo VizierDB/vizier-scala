@@ -20,6 +20,7 @@ class TentativeModule(
 )(implicit owner: Ctx.Owner)
   extends ModuleEditorDelegate
 {
+  var defaultModule: Option[(String, String)] = None
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)
   val visibleArtifacts = Var[Rx[Map[String, serialized.ArtifactSummary]]](Var(Map.empty))
@@ -48,6 +49,27 @@ class TentativeModule(
   {
     editList.dropTentative(this)
   }
+  def setDefaultModule(packageId: String, commandId: String)
+  {
+    defaultModule = Some((packageId, commandId))
+  }
+  def showCommandList(packages: Seq[serialized.PackageDescription])
+  {
+    defaultModule match {
+      case None => 
+        activeView() = Some(Left(new CommandList(packages, this)))
+      case Some( (packageId, commandId) ) => 
+        selectCommand(
+          packageId,
+          packages.find { _.id == packageId }
+                  .getOrElse { Vizier.error(s"Couldn't load package '$packageId'") }
+                  .commands
+                  .find { _.id == commandId }
+                  .getOrElse { Vizier.error(s"Couldn't load command '$commandId'") }
+        )
+        defaultModule = None
+    }
+  }
 
   def cancelEditor()
   {
@@ -59,7 +81,7 @@ class TentativeModule(
   {
     defaultPackageList match {
       case Some(packages) => 
-        activeView() = Some(Left(new CommandList(packages, this)))
+        showCommandList(packages)
       case None =>
         editList
           .project
@@ -69,7 +91,7 @@ class TentativeModule(
             editList.project.activeBranch.now.get,
           )
           .onSuccess { case packages => 
-            activeView() = Some(Left(new CommandList(packages, this)))
+            showCommandList(packages)
           }
     }
   }
