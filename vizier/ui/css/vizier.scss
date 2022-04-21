@@ -733,6 +733,7 @@ $menu_height: 32px;
         ul.messages
         {
           padding-left: 0px;
+          overflow-x: scroll;
 
           .message.markdown
           {

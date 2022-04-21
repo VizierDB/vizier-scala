@@ -143,7 +143,8 @@ object SimpleChart extends Command
         case CHART_TYPE_BAR => Left(Vega.multiBarChart(
                                   data,
                                   schema(xaxis).name,
-                                  yaxes.map { _._2 }
+                                  yaxes.map { _._2 },
+                                  ylabel = ""
                                 ))
         case CHART_TYPE_AREA => Right(MarkArea)
         case CHART_TYPE_SCATTER => Right(MarkPoint)

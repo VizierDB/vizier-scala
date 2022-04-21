@@ -19,7 +19,7 @@ object vizier extends ScalaModule with PublishModule {
   val VERSION       = "2.0.0-SNAPSHOT"
   val PLAY_JS       = ivy"com.typesafe.play::play-json:2.9.2"
                            
-  val MIMIR_CAVEATS = ivy"org.mimirdb::mimir-caveats::0.3.5"
+  val MIMIR_CAVEATS = ivy"org.mimirdb::mimir-caveats::0.3.6"
                           .exclude(
                             "org.slf4j" -> "*",
                             "org.mortbay.jetty" -> "*",

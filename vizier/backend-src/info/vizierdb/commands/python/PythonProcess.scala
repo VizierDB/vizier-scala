@@ -186,6 +186,7 @@ object PythonProcess
         System.err.println("\nYour installed python is missing dependencies. Python cells may not work properly.")
         System.err.println("\nThe following command will install required dependencies.")
         val deps = ret.split("\n")
+                      .filter { _ != "" }
                       .map { "'"+_+"'" }
                       .mkString(" ")
         System.err.println(s"  ${PythonProcess.PYTHON_COMMAND} -m pip install $deps")
