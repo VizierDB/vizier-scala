@@ -139,10 +139,18 @@ object Vizier
     val command: Seq[String] = 
       System.getProperty("os.name").toLowerCase match {
         case "linux"  => Seq("xdg-open", VizierAPI.urls.ui.toString)
-        case "darwin" => Seq("open", VizierAPI.urls.ui.toString)
-        case _ => return
+        case "darwin" | "mac os x" => Seq("open", VizierAPI.urls.ui.toString)
+        case _ => { println(s"please open ${VizierAPI.urls.ui.toString} in your browser to start using Vizier (you are runnning Vizier on [${System.getProperty("os.name").toLowerCase}])") 
+          return
+        }
       }
-    Process(command).!
+    try {
+      println("Opening Vizier in your brower...")
+      Process(command).!
+    }
+    catch {
+      case e: Exception => println(s"... failed to open browers using <$command>. Don't worry, just open ${VizierAPI.urls.ui.toString} manually in your browser.")
+    }
   }
 
   def main(args: Array[String]) 
