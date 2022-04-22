@@ -24,6 +24,9 @@ import org.apache.sedona.sql.utils.GeometrySerializer
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.types.{ UserDefinedType, BinaryType }
 import info.vizierdb.VizierException
+import org.apache.spark.ml.linalg
+import info.vizierdb.serialized.MLVector
+import info.vizierdb.serializers.mlvectorFormat
 
 object SparkPrimitive
   extends Object
@@ -135,8 +138,18 @@ object SparkPrimitive
           }
         } else if(t.isInstanceOf[ImageUDT]){
           JsString(base64Encode(ImageUDT.serialize(k.asInstanceOf[BufferedImage]).asInstanceOf[Array[Byte]]))
+        } else if(t.getClass().getName() == "org.apache.spark.ml.linalg.VectorUDT"
+                  || t.getClass().getName() == "org.apache.spark.mllib.linalg.VectorUDT") {
+          Json.toJson(
+            k match {
+              case linalg.SparseVector(size, indices, values) =>
+                MLVector(true, size, indices, values)
+              case linalg.DenseVector(values) =>
+                MLVector(false, 0, Seq(), values)
+            }
+          )
         } else {
-          throw new VizierException(s"Unsupported UDT: $t")
+          throw new VizierException(s"Unsupported UDT: $t (${t.getClass().getName()}")
         }
       }
 
@@ -206,8 +219,16 @@ object SparkPrimitive
           geometryFormatMapper.readGeometry(k.as[String]) // parse as WKT
         } else if(t.isInstanceOf[ImageUDT]){
           ImageUDT.deserialize(base64Decode(k.as[String]))
+        } else if(t.getClass().getName() == "org.apache.spark.ml.linalg.VectorUDT"
+                  || t.getClass().getName() == "org.apache.spark.mllib.linalg.VectorUDT") {
+          val v = k.as[MLVector]
+          if(v.sparse){
+            new linalg.SparseVector(v.size, v.indices.toArray, v.values.toArray)
+          } else {
+            new linalg.DenseVector(v.values.toArray)
+          }
         } else {
-          throw new VizierException(s"Unsupported UDT: $t")
+          throw new VizierException(s"Unsupported UDT: $t (${t.getClass().getName}")
         }
       }
 

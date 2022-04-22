@@ -103,6 +103,7 @@ object vizier extends ScalaModule with PublishModule {
     ivy"org.apache.logging.log4j:log4j-core:2.17.1",
     ivy"org.apache.logging.log4j:log4j-1.2-api:2.17.1",
     ivy"org.apache.logging.log4j:log4j-jcl:2.17.1",
+    ivy"org.slf4j:jul-to-slf4j:1.7.36",
   )
 
 /*************************************************

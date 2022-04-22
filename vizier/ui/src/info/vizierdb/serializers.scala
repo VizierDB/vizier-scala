@@ -177,4 +177,5 @@ object serializers
       case JsBoolean(b) => b
       case JsNull => null
     }
+  implicit val mlvectorFormat: Format[serialized.MLVector] = Json.format
 }

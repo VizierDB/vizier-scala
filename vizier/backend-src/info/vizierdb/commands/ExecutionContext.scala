@@ -40,6 +40,10 @@ import info.vizierdb.catalog.JavascriptMessage
 import java.io.FileOutputStream
 import java.io.BufferedOutputStream
 import java.io.OutputStream
+import org.apache.spark.ml.PipelineStage
+import org.apache.spark.ml.Pipeline
+import info.vizierdb.spark.PipelineModelConstructor
+import info.vizierdb.spark.LoadConstructor
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -139,6 +143,109 @@ class ExecutionContext(
   def dataframeOpt(name: String, registerInput: Boolean = true): Option[DataFrame] =
     artifact(name, registerInput)
       .map { a => DB.readOnly { implicit s => a.dataframe } }
+
+
+  /**
+   * Define and fit SparkML Pipeline
+   */
+  def pipeline(
+    input: String, 
+    output: String = null,
+    properties: Map[String,JsObject] = Map.empty
+  )(stages: PipelineStage*): Artifact =
+    outputPipeline(
+      input = input, 
+      output = output,
+      properties = properties,
+      pipeline = new Pipeline().setStages(stages.toArray)
+    )
+
+  def outputPipeline(
+    input: String, 
+    pipeline: Pipeline, 
+    output: String = null,
+    properties: Map[String,JsObject] = Map.empty
+  ): Artifact =
+  {
+    val inputArtifact = artifact(input).getOrElse { 
+                          throw new VizierException(s"Dataset $input does not exist")
+                        }
+
+    val inputDataframe = 
+      DB.autoCommit { implicit s => inputArtifact.dataframe }
+
+    // Release the database lock while fitting
+    logger.debug("Fitting pipeline")
+    val model = pipeline.fit(inputDataframe)
+
+    val outputArtifact = 
+      DB.autoCommit { implicit s =>
+
+        logger.debug("Creating pipeline placeholder artifact")
+        // Create a placeholder
+        var artifact = Artifact.make(
+          projectId,
+          ArtifactType.DATASET,
+          MIME.RAW,
+          Array()
+        )
+
+        logger.debug(s"Saving pipeline model to ${artifact.absoluteFile}")
+        // Output the model
+        model.save(artifact.absoluteFile.toString)
+
+        // Fill out the placeholder
+        artifact = artifact.replaceData(
+          Json.toJson(Dataset(
+            new PipelineModelConstructor(
+              input = inputArtifact.id,
+              url = FileArgument(fileid = Some(artifact.id)),
+              projectId = projectId
+            ),
+            properties = properties
+          ))
+        )
+
+        /* return */ artifact
+      }
+
+    this.output(Option(output).getOrElse(input), outputArtifact)
+
+    return outputArtifact
+  }
+
+  def outputDataframe(name: String, dataframe: DataFrame, properties: Map[String,JsObject] = Map.empty): Artifact =
+  {
+    val artifact =
+      DB.autoCommit { implicit s =>
+        // Create a placeholder
+        val artifact = Artifact.make(
+          projectId,
+          ArtifactType.DATASET,
+          MIME.RAW,
+          Array()
+        )
+
+        artifact.replaceData(
+          Json.toJson(Dataset(
+            new LoadConstructor(
+              url = FileArgument(fileid = Some(artifact.id)),
+              format = "parquet",
+              sparkOptions = Map(),
+              contextText = Some(name),
+              proposedSchema = Some(dataframe.schema),
+              projectId = projectId
+            ),
+            properties = properties
+          ))
+        )
+      }
+
+    dataframe.write
+             .parquet(artifact.absoluteFile.toString)
+
+    return artifact
+  }
 
   /** 
    * Retrieve the schema for the specified dataset

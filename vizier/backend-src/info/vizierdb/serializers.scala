@@ -6,6 +6,7 @@ import info.vizierdb.spark.{ SparkSchema, SparkPrimitive }
 import java.time.format.{ DateTimeFormatter, DateTimeParseException }
 import java.time.{ ZonedDateTime, LocalDateTime, ZoneId }
 import info.vizierdb.types.Identifier
+import org.apache.spark.mllib.linalg
 
 object serializers
 {
@@ -201,4 +202,5 @@ object serializers
     }
   )
   implicit val filesystemObjectFormat = Json.format[serialized.FilesystemObject]
+  implicit val mlvectorFormat: Format[serialized.MLVector] = Json.format  
 }
