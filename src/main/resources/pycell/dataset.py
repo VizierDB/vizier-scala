@@ -687,8 +687,8 @@ def export_from_native_type(value: Any, data_type: str, context="the value") -> 
   if value is None:
     return None
   elif data_type == DATATYPE_GEOMETRY:
-    from shapely.geometry import asShape  # type: ignore[import]
-    return asShape(value).wkt
+    from shapely.geometry import shape  # type: ignore[import]
+    return shape(value).wkt
   elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
     import base64
     return base64.b64encode(bytes(value)).decode('utf-8')

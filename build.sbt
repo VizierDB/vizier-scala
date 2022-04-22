@@ -1,7 +1,7 @@
 scalaVersion := "2.12.12"
 
-val VIZIER_VERSION = "1.2.0-SNAPSHOT"
-val MIMIR_VERSION = "1.1.1"
+val VIZIER_VERSION = "1.2.1-SNAPSHOT"
+val MIMIR_VERSION = "1.2.0"
 val CAVEATS_VERSION = "0.3.4"
 
 // Project and subprojects
@@ -144,7 +144,7 @@ pomPostProcess := { (node:XNode) =>
 // your own local ivy cache
 
 publishMavenStyle := true
-publishTo := Some(MavenCache("local-maven",  file("/var/www/maven_repo/")))
+publishTo := Some(MavenCache("local-maven",  file("maven/")))
 
 // publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
