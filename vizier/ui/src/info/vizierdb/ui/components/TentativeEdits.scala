@@ -12,7 +12,7 @@ import info.vizierdb.types._
 sealed trait WorkflowElement
 { 
   def isInjected = true 
-  def visibleArtifacts: Rx[Map[String, serialized.ArtifactSummary]]
+  def visibleArtifacts: Rx[Map[String, (serialized.ArtifactSummary, Module)]]
   def root: dom.Node
 }
 case class WorkflowModule(module: Module) extends WorkflowElement
@@ -76,7 +76,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   }
 
   val derive = WorkflowModule(_)
-  val allArtifacts = Var[Rx[Map[String, serialized.ArtifactSummary]]](Var(Map.empty))
+  val allArtifacts = Var[Rx[Map[String, (serialized.ArtifactSummary, Module)]]](Var(Map.empty))
   val allStates = Var[Rx[ExecutionState.T]](Var(ExecutionState.DONE))
   val state = allStates.flatMap { x => x }
 
@@ -94,7 +94,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   private def refreshModuleState(from: Int = 0)
   {
-    val visibleArtifacts:Rx[Map[String, serialized.ArtifactSummary]] = 
+    val visibleArtifacts:Rx[Map[String, (serialized.ArtifactSummary, Module)]] = 
       if(from <= 0){
         Var(Map.empty)
       } else {
@@ -116,8 +116,8 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
             val outputs = module.outputs
             val oldArtifacts = artifacts
 
-            val insertions: Rx[Map[String, serialized.ArtifactSummary]] = 
-              outputs.map { _.filter { _._2.isDefined }.mapValues { _.get }.toMap }
+            val insertions: Rx[Map[String, (serialized.ArtifactSummary, Module)]] = 
+              outputs.map { _.filter { _._2.isDefined }.mapValues { x => (x.get, module) }.toMap }
             val deletions: Rx[Set[String]] = 
               outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
 

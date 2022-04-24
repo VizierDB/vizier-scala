@@ -29,7 +29,6 @@ class ModuleSubscription(
   var arguments = initial.command.arguments
   lazy val text = Var(initial.text)
   val timestamps = Var(initial.timestamps)
-  def links = initial.links
   def toc = initial.toc
   val outputs = Var[Map[String,Option[serialized.ArtifactSummary]]](
     initial.artifacts.map { x => x.name -> Some(x) }.toMap

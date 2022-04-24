@@ -69,7 +69,7 @@ class TableOfContents(workflow: Workflow)
             .flatMap { x => x }
             .map { artifacts => 
               div(`class` := "the_artifacts",
-                artifacts.map { case (name, artifact) => 
+                artifacts.map { case (name, (artifact, _)) => 
                   div(`class` := "artifact",
                     span(`class` := "label",
                       FontAwesome(ArtifactType.icon(artifact.category)),

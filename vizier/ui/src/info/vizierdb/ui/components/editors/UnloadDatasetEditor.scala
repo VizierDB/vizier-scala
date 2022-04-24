@@ -81,7 +81,7 @@ class UnloadDatasetEditor(
       name = "Dataset: ",
       artifactType = ArtifactType.DATASET,
       artifacts = delegate.visibleArtifacts
-                          .flatMap { x => x.map { _.mapValues { _.t } } },
+                          .flatMap { x => x.map { _.mapValues { _._1.t } } },
       required = true,
       hidden = false,
     )

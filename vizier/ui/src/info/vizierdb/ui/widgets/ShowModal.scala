@@ -35,4 +35,9 @@ object ShowModal
       button("Cancel", `class` := "cancel").render,
       button("OK", `class` := "confirm", onclick := { _:dom.Element => handler }).render
     )
+
+  def acknowledge(body: Frag*): Unit =
+    apply(body:_*)(
+      button("OK", `class` := "confirm").render
+    )
 }

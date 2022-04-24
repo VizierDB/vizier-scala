@@ -17,11 +17,11 @@ case class PipelineModelConstructor(
 
   override def dependencies: Set[Identifier] = Set(input)
 
+  def pipeline: PipelineModel = 
+    PipelineModel.load(url.getPath(projectId, noRelativePaths = true)._1)
+
   override def construct(context: Identifier => DataFrame): DataFrame = 
-  {
-    val pipeline = PipelineModel.load(url.getPath(projectId, noRelativePaths = true)._1)
     pipeline.transform(context(input))
-  }
 
 
 }

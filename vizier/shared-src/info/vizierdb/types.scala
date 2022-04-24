@@ -48,6 +48,17 @@ object types
     }
 
     def encode(t: T) = t.toString().toLowerCase()
+
+    def icon(t: T) = 
+      t match {
+        case CREATE => "check-circle"
+        case APPEND => "arrow-circle-down"
+        case DELETE => "minus-circle"
+        case INSERT => "plus-circle"
+        case UPDATE => "pencil-square"
+        case FREEZE => "snowflake"
+      }
+
   }
 
   object ExecutionState extends Enumeration

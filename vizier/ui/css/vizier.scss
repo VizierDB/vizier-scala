@@ -51,6 +51,11 @@ $inter_module_hover_layer: $tooltip_layer;
 $menu_layer: 1500;
 $modal_layer: 2000;
 
+/*********** Sizes ***************/
+
+$max_workflow_width: 800px;
+
+
 /*********** Fonts ***************/
 
 @font-face
@@ -164,7 +169,7 @@ div.project_list_wrapper
 {
   border: 1px solid gray;
   border-radius: 5px;
-  max-width: 800px;
+  max-width: $max_workflow_width;
   margin-left: auto;
   margin-right: auto;
 }
@@ -308,7 +313,7 @@ $menu_height: 32px;
       {
         margin-left: auto;
         margin-right: auto;
-        max-width: 800px;
+        max-width: $max_workflow_width;
       }
     }
 
@@ -326,6 +331,7 @@ $menu_height: 32px;
   height: 100vh;
   background-color: rgba(#fff, 0.6);
   display: block;
+  z-index: $modal_layer;
 
   .body
   {
@@ -336,12 +342,15 @@ $menu_height: 32px;
     margin-right: auto;
     width: auto;
     max-width: 600px;
+    max-height: 400px;
     display: block;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     box-shadow: 2px 2px 5px lightgrey;
+    z-index: $modal_layer;
+    overflow-y: scroll;
 
     .buttons
     {
@@ -712,6 +721,11 @@ $menu_height: 32px;
         min-width: 300px;
         flex-grow: 1;
 
+        .summary
+        {
+          overflow-x: scroll;
+        }
+
         .summary.hidden
         {
           visibility: hidden;
@@ -886,6 +900,9 @@ div.data_table
       display: inline-block;
       height: 40px;
       margin-left: -2px;
+      overflow-wrap: anywhere;
+      overflow-y: hidden;
+      overflow-x: hidden;
 
       .title
       {
@@ -1034,6 +1051,7 @@ div.caveat_modal
   background: #fff;
   text-align: center;
   overflow-y: scroll;
+  z-index: $modal_layer;
 }
 
 div.caveat_modal .spinner

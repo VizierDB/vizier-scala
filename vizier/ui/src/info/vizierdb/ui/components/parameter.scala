@@ -159,11 +159,11 @@ object Parameter
   {
     def visibleArtifactsByType = editor.delegate
                                        .visibleArtifacts
-                                       .map { _().mapValues { _.t } }
+                                       .map { _().mapValues { _._1.t } }
     tree.parameter match {
       case param: serialized.SimpleParameterDescription =>
         param.datatype match {
-          case "colid"   => new ColIdParameter(param, editor.delegate.visibleArtifacts.flatMap { x => x }, editor.selectedDataset)
+          case "colid"   => new ColIdParameter(param, editor.delegate.visibleArtifacts.flatMap { _.map { _.mapValues { _._1 } } }, editor.selectedDataset)
           case "list"    => new ListParameter(param, tree.children, this.apply(_, editor))
           case "record"  => new RecordParameter(param, tree.children, this.apply(_, editor))
           case "string"  => new StringParameter(param)

@@ -9,6 +9,9 @@ import org.mimirdb.caveats.Caveats
 import org.apache.spark.sql.types.UDTRegistration
 import java.awt.image.BufferedImage
 import info.vizierdb.spark.udt.ImageUDT
+import org.apache.spark.sql.functions.udf
+import org.apache.spark.ml.linalg.{SparseVector, Vector, Vectors}
+import org.apache.spark.mllib.linalg.{Vector => OldVector}
 
 object InitSpark
 {
@@ -38,6 +41,25 @@ object InitSpark
     System.setProperty("geospark.global.charset", "utf8")
     Caveats.registerAllUDFs(sparkSession)
     UDTRegistration.register(classOf[BufferedImage].getName, classOf[ImageUDT].getName)
+
+    sparkSession.udf.register("vector_to_array", vectorToArrayUdf)
+    sparkSession.udf.register("array_to_vector", arrayToVectorUdf)
   }
 
+  // For some blasted reason these are private in 
+  // https://github.com/apache/spark/blob/master/mllib/src/main/scala/org/apache/spark/ml/functions.scala
+  val vectorToArrayUdf = udf { vec: Any =>
+    vec match {
+      case v: Vector => v.toArray
+      case v: OldVector => v.toArray
+      case v => throw new IllegalArgumentException(
+        "function vector_to_array requires a non-null input argument and input type must be " +
+        "`org.apache.spark.ml.linalg.Vector` or `org.apache.spark.mllib.linalg.Vector`, " +
+        s"but got ${ if (v == null) "null" else v.getClass.getName }.")
+    }
+  }.asNonNullable()
+
+  val arrayToVectorUdf = udf { array: Seq[Double] =>
+    Vectors.dense(array.toArray)
+  }
 }

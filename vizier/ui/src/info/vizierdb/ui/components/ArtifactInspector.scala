@@ -14,7 +14,7 @@ import info.vizierdb.ui.widgets.FontAwesome
  */
 class ArtifactInspector(
   var position: Int,
-  val visibleArtifacts: Var[Rx[Map[String, ArtifactSummary]]],
+  val visibleArtifacts: Var[Rx[Map[String, (ArtifactSummary, Module)]]],
   val editList: TentativeEdits
 )(implicit owner: Ctx.Owner)
 {
@@ -24,7 +24,7 @@ class ArtifactInspector(
     selected().flatMap { name =>
       val a = visibleArtifacts() 
       val b = a()
-      b.get(name)
+      b.get(name).map { _._1 }
     }
   }
 
@@ -52,7 +52,7 @@ class ArtifactInspector(
       visibleArtifacts.flatMap { _.map { m => 
         div(
           `class` := "artifact_picker",
-          m.map { case (name, summary) =>
+          m.map { case (name, (summary, _)) =>
             div(`class` := "option", 
               FontAwesome(ArtifactType.icon(summary.category)),
               name,

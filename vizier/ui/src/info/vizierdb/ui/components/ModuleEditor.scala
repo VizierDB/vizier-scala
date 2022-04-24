@@ -180,5 +180,5 @@ trait ModuleEditorDelegate
   def setTentativeModuleId(newId: Identifier): Unit
   def position: Int
   def isLast: Boolean
-  def visibleArtifacts: Var[Rx[Map[String, serialized.ArtifactSummary]]]
+  def visibleArtifacts: Var[Rx[Map[String, (serialized.ArtifactSummary, Module)]]]
 }

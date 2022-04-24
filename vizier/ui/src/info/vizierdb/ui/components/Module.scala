@@ -50,7 +50,7 @@ class Module(val subscription: ModuleSubscription, workflow: Workflow)
   /**
    * A reactive list of artifacts visible at this cell
    */
-  val visibleArtifacts = Var[Rx[Map[String, ArtifactSummary]]](Var(Map.empty))
+  val visibleArtifacts = Var[Rx[Map[String, (ArtifactSummary, Module)]]](Var(Map.empty))
 
   /**
    * A reactive list of all of the outputs produced by this cell

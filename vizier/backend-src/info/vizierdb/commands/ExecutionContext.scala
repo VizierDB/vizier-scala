@@ -44,6 +44,7 @@ import org.apache.spark.ml.PipelineStage
 import org.apache.spark.ml.Pipeline
 import info.vizierdb.spark.PipelineModelConstructor
 import info.vizierdb.spark.LoadConstructor
+import org.apache.spark.ml.PipelineModel
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -152,7 +153,7 @@ class ExecutionContext(
     input: String, 
     output: String = null,
     properties: Map[String,JsObject] = Map.empty
-  )(stages: PipelineStage*): Artifact =
+  )(stages: PipelineStage*): (Artifact, PipelineModel) =
     outputPipeline(
       input = input, 
       output = output,
@@ -165,7 +166,7 @@ class ExecutionContext(
     pipeline: Pipeline, 
     output: String = null,
     properties: Map[String,JsObject] = Map.empty
-  ): Artifact =
+  ): (Artifact, PipelineModel) =
   {
     val inputArtifact = artifact(input).getOrElse { 
                           throw new VizierException(s"Dataset $input does not exist")
@@ -211,7 +212,7 @@ class ExecutionContext(
 
     this.output(Option(output).getOrElse(input), outputArtifact)
 
-    return outputArtifact
+    return (outputArtifact, model)
   }
 
   def outputDataframe(name: String, dataframe: DataFrame, properties: Map[String,JsObject] = Map.empty): Artifact =
@@ -541,6 +542,21 @@ class ExecutionContext(
       ).toString.getBytes
     )
   }
+
+  def dataset(name: String): Option[Dataset] = 
+    artifact(name).map { a => 
+      DB.autoCommit { implicit s => 
+        a.datasetDescriptor
+      }
+    }
+
+  def datasetPipeline(name: String): Option[PipelineModel] =
+    dataset(name).flatMap { 
+      _.constructor match {
+        case p:PipelineModelConstructor => Some(p.pipeline)
+        case _ => None
+      }
+    }
 
   /**
    * Display HTML, along with embedded javascript

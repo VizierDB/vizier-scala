@@ -144,7 +144,9 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
                   project.branchActiveWorkflow(nameInput.value)
                 }
               }),
-              MenuItem("History", { () => println("Stop")}, icon = "history", enabled = false),
+              MenuItem("History", { () => 
+                  ShowModal.acknowledge(new History(project).root)
+                }, icon = "history"),
               Separator,
             ) ++ project.branches().map { case (id, branch) => 
               MenuItem(
