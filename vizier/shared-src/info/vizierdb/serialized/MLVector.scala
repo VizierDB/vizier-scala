@@ -14,13 +14,15 @@ case class MLVector(
     s"[${iterator.take(len).mkString(", ")}${if(length > len){ s", ... ${length-len} more" } else { "" }} ]"
   }
 
+  def vectorLength = length
+
   def iterator = 
     if(sparse){  
       new Iterator[Double]{
         val nextShownIdx = indices.iterator.buffered
         val valueIter = values.iterator
         var idx = 0
-        def hasNext: Boolean = idx < size
+        def hasNext: Boolean = idx < vectorLength
         def next: Double =
         {
           if(!nextShownIdx.hasNext) { return 0.0 }

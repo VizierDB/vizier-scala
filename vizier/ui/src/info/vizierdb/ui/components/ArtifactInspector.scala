@@ -7,6 +7,7 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.serialized.ArtifactSummary
 import info.vizierdb.types._
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.ui.widgets.ScrollIntoView
 
 /**
  * A user interface widget to help users to inspect the contents of artifacts.  These are
@@ -17,6 +18,8 @@ class ArtifactInspector(
   val visibleArtifacts: Var[Rx[Map[String, (ArtifactSummary, Module)]]],
   val editList: TentativeEdits
 )(implicit owner: Ctx.Owner)
+  extends Object
+  with ScrollIntoView.CanScroll
 {
   val selected = Var[Option[String]](None)
 

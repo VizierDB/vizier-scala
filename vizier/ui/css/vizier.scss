@@ -37,6 +37,8 @@ $color_message_markdown_bg:    #f9f9f9;
 $color_message_text:           #eee;
 $color_message_text_bg:        #f9f9f9;
 
+$color_row_highlight:          #f6f6f6;
+
 
 a         { color: blue; }
 a:visited { color: blue; }
@@ -316,7 +318,6 @@ $menu_height: 32px;
         max-width: $max_workflow_width;
       }
     }
-
   }
 }
 
@@ -852,11 +853,54 @@ $menu_height: 32px;
   {
     .artifact
     {
+      display: flex;
+      flex-direction: row;
+      padding: 2px;
+
+      &:nth-child(2n)
+      {
+        background-color: $color_row_highlight;
+      }
+
       .label
       {
-        i.fa { 
+        flex-grow: 0;
+        flex-shrink: 1;
+
+        i.fa 
+        { 
           margin-right: 4px; 
           font-size: 12px;
+        }
+      }
+
+      .spacer
+      {
+        flex-grow: 1;
+        flex-shrink: 1;
+      }
+
+      .actions
+      {
+        flex-grow: 0;
+        flex-shrink: 0;
+        margin-right: 16px;
+
+        a:active
+        {
+          i.fa
+          {
+            transform: scale(0.95);
+          }
+        }
+
+        i.fa
+        {
+          border-radius: 4px;
+          border: solid 1px gray;
+          padding: 2px;
+          font-size: 12px;
+          margin-right: 4px;
         }
       }
     }

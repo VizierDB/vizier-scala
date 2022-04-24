@@ -17,12 +17,14 @@ import info.vizierdb.util.StringUtils
 import java.awt.Font
 import info.vizierdb.ui.widgets.Tooltip
 import info.vizierdb.ui.widgets.PopUpButton
+import info.vizierdb.ui.widgets.ScrollIntoView
 
 class Module(val subscription: ModuleSubscription, workflow: Workflow)
             (implicit owner: Ctx.Owner)
   extends Object
   with Logging
   with ModuleEditorDelegate
+  with ScrollIntoView.CanScroll
 {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 

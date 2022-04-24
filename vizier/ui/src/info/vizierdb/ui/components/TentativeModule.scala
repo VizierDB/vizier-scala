@@ -12,6 +12,7 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.util.Trie
+import info.vizierdb.ui.widgets.ScrollIntoView
 
 class TentativeModule(
   var position: Int, 
@@ -19,6 +20,7 @@ class TentativeModule(
   defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
 )(implicit owner: Ctx.Owner)
   extends ModuleEditorDelegate
+  with ScrollIntoView.CanScroll
 {
   var defaultModule: Option[(String, String)] = None
 
@@ -45,13 +47,15 @@ class TentativeModule(
   {
     activeView() = Some(Right(ModuleEditor(packageId, command, this)))
   }
-  def cancelSelectCommand()
+  def cancelSelectCommand(): TentativeModule =
   {
     editList.dropTentative(this)
+    return this
   }
-  def setDefaultModule(packageId: String, commandId: String)
+  def setDefaultModule(packageId: String, commandId: String): TentativeModule = 
   {
     defaultModule = Some((packageId, commandId))
+    return this
   }
   def showCommandList(packages: Seq[serialized.PackageDescription])
   {

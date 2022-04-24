@@ -12,14 +12,26 @@ class TableOfContents(workflow: Workflow)
                      (implicit owner: Ctx.Owner)
 {
 
+  def LinkToModule(module: Module, body: Frag*): Frag =
+    a(
+        // The href exists for copyable links
+      href := s"#${module.id_attr}", 
+
+      // The onclick animates the scroll nicely
+      onclick := { evt:dom.Event => 
+        module.scrollIntoView
+        false // prevent the default "href" behavior
+      },
+
+      body
+    )
+
   def ModuleSummary(module: Module): Frag =
     Rx {
       val clazz = s"${module.subscription.state().toString.toLowerCase}_state"
       module.toc.map { toc => 
                       li(`class` := clazz + toc.titleLevel.map { " level_"+_ }.getOrElse { "" },
-                        a(
-                          href := s"#${module.id_attr}", toc.title,
-                        ),
+                        LinkToModule(module, toc.title),
                         onmouseover := { _:dom.Event => module.highlight() = true },
                         onmouseout := { _:dom.Event => module.highlight() = false }
                       )
@@ -63,20 +75,37 @@ class TableOfContents(workflow: Workflow)
                 }
     )
 
+
+
   val artifactNodes = 
     workflow.moduleViewsWithEdits
             .allArtifacts
             .flatMap { x => x }
             .map { artifacts => 
               div(`class` := "the_artifacts",
-                artifacts.map { case (name, (artifact, _)) => 
+                artifacts.map { case (name, (artifact, module)) => 
                   div(`class` := "artifact",
                     span(`class` := "label",
                       FontAwesome(ArtifactType.icon(artifact.category)),
                       name match {
                         case "" => s"Untitled ${artifact.category.toString.toLowerCase}"
                         case _ => name
-                      }
+                      },
+                    ),
+                    span(`class` := "spacer"),
+                    span(`class` := "actions",
+                      artifact.category match {
+                        case ArtifactType.DATASET => 
+                          Seq[Frag](
+                            a(
+                              href := s"spreadsheet.html?project=${workflow.project.projectId}&dataset=${artifact.id}", 
+                              target := "_blank",
+                              FontAwesome("table")
+                            )
+                          )
+                        case _ => Seq[Frag]()
+                      },
+                      LinkToModule(module, FontAwesome("eye"))
                     )
                   )
                 }.toSeq

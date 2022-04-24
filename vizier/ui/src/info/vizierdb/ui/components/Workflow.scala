@@ -60,18 +60,21 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
         onclick := { _:dom.Event => 
           moduleViewsWithEdits.insertTentative(position)
                               .setDefaultModule("docs","markdown")
+                              .scrollIntoView()
         }
       ).render,
       button(
         FontAwesome("plus"),
         onclick := { _:dom.Event => 
           moduleViewsWithEdits.insertTentative(position)
+                              .scrollIntoView()
         }
       ).render,
       button(
         FontAwesome("binoculars"),
         onclick := { _:dom.Event => 
           moduleViewsWithEdits.insertInspector(position)
+                              .scrollIntoView()
         }
       ).render
     )
