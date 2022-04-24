@@ -1,6 +1,5 @@
 package info.vizierdb.serialized
 
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.nativeTypes.JsObject
 import info.vizierdb.nativeTypes.DateTime
 import info.vizierdb.types.{ Identifier, ExecutionState }
@@ -12,7 +11,6 @@ case class WorkflowSummary(
   actionModule: Option[Identifier],
   packageId: Option[String],
   commandId: Option[String],
-  links: HATEOAS.T
 )
 {
   def toDescription(
@@ -21,7 +19,6 @@ case class WorkflowSummary(
     datasets: Seq[ArtifactSummary],
     dataobjects: Seq[ArtifactSummary],
     readOnly: Boolean,
-    newLinks: HATEOAS.T
   ): WorkflowDescription =
     WorkflowDescription(
       id = id,
@@ -36,7 +33,6 @@ case class WorkflowSummary(
       datasets = datasets,
       dataobjects = dataobjects,
       readOnly = readOnly,
-      links = HATEOAS.merge(links, newLinks)
     )
 }
 
@@ -53,6 +49,5 @@ case class WorkflowDescription(
   datasets: Seq[ArtifactSummary],
   dataobjects: Seq[ArtifactSummary],
   readOnly: Boolean,
-  links: HATEOAS.T
 )
 

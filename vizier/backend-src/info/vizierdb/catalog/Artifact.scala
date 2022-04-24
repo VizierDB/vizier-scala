@@ -22,7 +22,6 @@ import info.vizierdb.types._
 import java.time.ZonedDateTime
 import info.vizierdb.artifacts.Dataset
 import info.vizierdb.catalog.binders._
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
 import info.vizierdb.spark.SparkPrimitive
@@ -535,7 +534,6 @@ object Artifact
     created: ZonedDateTime, 
     mimeType: String, 
     name: Option[String],
-    extraHateoas: Seq[(String, URL)] = Seq.empty
   ): serialized.StandardArtifact =
     serialized.StandardArtifact(
       key = artifactId,
@@ -544,18 +542,6 @@ object Artifact
       objType = mimeType,
       category = t,
       name = name.getOrElse { s"$t $artifactId" },
-      links = HATEOAS((
-        Seq(
-          HATEOAS.SELF -> urlForArtifact(artifactId, projectId, t)
-        ) ++ (t match {
-          case ArtifactType.DATASET => Seq(
-            HATEOAS.DATASET_FETCH_ALL -> VizierAPI.urls.getDataset(projectId, artifactId, limit = Some(-1)),
-            HATEOAS.DATASET_DOWNLOAD  -> VizierAPI.urls.downloadDataset(projectId, artifactId),
-            HATEOAS.ANNOTATIONS_GET   -> VizierAPI.urls.getDatasetCaveats(projectId, artifactId)
-          )
-          case _ => Seq()
-        }) ++ extraHateoas
-      ):_*)
     )
 
   /**
@@ -601,30 +587,6 @@ object Artifact
       rowCount = rowCount,
       offset = offset,
       properties = serialized.PropertyList.toPropertyList(data.properties),
-      extraLinks = HATEOAS(
-        HATEOAS.PAGE_FIRST -> (if(offset <= 0){ null }
-                               else { VizierAPI.urls.getDataset(
-                                        projectId, artifactId, 
-                                        offset = Some(0), 
-                                        limit = Some(limit)) }),
-        HATEOAS.PAGE_PREV  -> (if(offset <= 0){ null }
-                               else { VizierAPI.urls.getDataset(
-                                        projectId, artifactId, 
-                                        offset = Some(if(offset - limit > 0) { 
-                                                        (offset - limit) 
-                                                      } else { 0l }), 
-                                        limit = Some(limit)) }),
-        HATEOAS.PAGE_NEXT  -> (if(offset + limit >= rowCount){ null }
-                               else { VizierAPI.urls.getDataset(
-                                        projectId, artifactId, 
-                                        offset = Some(offset + limit), 
-                                        limit = Some(limit)) }),
-        HATEOAS.PAGE_LAST  -> (if(offset + limit >= rowCount){ null }
-                               else { VizierAPI.urls.getDataset(
-                                        projectId, artifactId, 
-                                        offset = Some(rowCount - (rowCount % limit)), 
-                                        limit = Some(limit)) }),
-      )
     )
   }
 

@@ -1,6 +1,5 @@
 package info.vizierdb.serialized
 
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.types.Identifier
 import info.vizierdb.nativeTypes.DateTime
 
@@ -13,7 +12,6 @@ case class BranchSummary(
   sourceModule: Option[Identifier],
   isDefault: Boolean,
   properties: PropertyList.T,
-  links: HATEOAS.T
 )
 {
   def toDescription(workflows: Seq[WorkflowSummary]) =
@@ -26,7 +24,6 @@ case class BranchSummary(
       sourceModule = sourceModule,
       isDefault = isDefault,
       properties = properties,
-      links = links,
       workflows = workflows
     )
 
@@ -45,7 +42,6 @@ case class BranchDescription(
   sourceModule: Option[Identifier],
   isDefault: Boolean,
   properties: PropertyList.T,
-  links: HATEOAS.T,
   workflows: Seq[WorkflowSummary]
 )
 {
@@ -57,5 +53,4 @@ case class BranchDescription(
 
 case class BranchList(
   branches: Seq[BranchSummary],
-  links: HATEOAS.T
 )

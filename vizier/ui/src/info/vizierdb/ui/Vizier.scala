@@ -158,7 +158,7 @@ object Vizier
       document.body.appendChild(
         div(id := "content",
             projects.map {
-              case Some(ProjectList(projects, _)) => 
+              case Some(ProjectList(projects)) => 
                 div(`class` := "project_list_wrapper",
                   ul(`class` := "project_list",
                     projects.zipWithIndex.map { case (projectRef, idx) =>

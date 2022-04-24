@@ -1,7 +1,6 @@
 package info.vizierdb.serialized
 
 import info.vizierdb.types.{ Identifier, ArtifactType }
-import info.vizierdb.shared.HATEOAS
 
 sealed trait ArtifactSummary
 {
@@ -10,7 +9,6 @@ sealed trait ArtifactSummary
   val objType: String
   val category: ArtifactType.T
   val name: String
-  val links: HATEOAS.T
   def t = category
 }
 
@@ -23,7 +21,6 @@ case class StandardArtifact(
   objType: String,
   category: ArtifactType.T,
   name: String,
-  links: HATEOAS.T
 ) extends ArtifactDescription
 {
   def toDatasetSummary(
@@ -36,7 +33,6 @@ case class StandardArtifact(
       objType = objType,
       category = category,
       name = name,
-      links = links,
       columns = columns
     )
 
@@ -46,7 +42,6 @@ case class StandardArtifact(
     rowCount: Long,
     offset: Long,
     properties: PropertyList.T,
-    extraLinks: HATEOAS.T
   ) = 
     DatasetDescription(
       key = key,
@@ -55,7 +50,6 @@ case class StandardArtifact(
       objType = objType,
       category = category,
       name = name,
-      links = links ++ extraLinks,
       columns = columns,
       rows = rows,
       rowCount = rowCount,
@@ -71,7 +65,6 @@ case class DatasetSummary(
   objType: String,
   category: ArtifactType.T,
   name: String,
-  links: HATEOAS.T,
   columns: Seq[DatasetColumn]
 ) extends ArtifactSummary
 
@@ -82,7 +75,6 @@ case class DatasetDescription(
   objType: String,
   category: ArtifactType.T,
   name: String,
-  links: HATEOAS.T,
   columns: Seq[DatasetColumn],
   rows: Seq[DatasetRow],
   rowCount: Long,

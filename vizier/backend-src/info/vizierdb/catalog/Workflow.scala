@@ -20,7 +20,6 @@ import java.time.ZonedDateTime
 import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import java.time.format.DateTimeFormatter
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.serialized
 import info.vizierdb.delta.{ UpdateCell, DeltaBus }
@@ -246,13 +245,6 @@ case class Workflow(
       datasets    = datasets   .flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:JsResultException => e.printStackTrace(); None } },
       dataobjects = dataobjects.flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:JsResultException => e.printStackTrace(); None } },
       readOnly = !branch.headId.equals(id),
-      newLinks = HATEOAS(
-        HATEOAS.WORKFLOW_CANCEL -> (
-          if(isRunning) { 
-            VizierAPI.urls.cancelWorkflow(branch.projectId, branchId, id) 
-          } else { null }
-        )
-      ),
     )
   }
   def summarize(implicit session: DBSession): serialized.WorkflowSummary = 
@@ -268,14 +260,6 @@ case class Workflow(
       actionModule = actionModule.map { _.id },
       packageId    = actionModule.map { _.packageId },
       commandId    = actionModule.map { _.commandId },
-      links        = HATEOAS(
-        HATEOAS.SELF             -> VizierAPI.urls.getWorkflow(branch.projectId, branchId, id),
-        HATEOAS.WORKFLOW_APPEND  -> VizierAPI.urls.appendWorkflow(branch.projectId, branchId, id),
-        HATEOAS.WORKFLOW_BRANCH  -> VizierAPI.urls.getBranch(branch.projectId, branchId),
-        HATEOAS.BRANCH_HEAD      -> VizierAPI.urls.getBranchHead(branch.projectId, branchId),
-        HATEOAS.WORKFLOW_PROJECT -> VizierAPI.urls.getProject(branch.projectId),
-        HATEOAS.FILE_UPLOAD      -> VizierAPI.urls.uploadFile(branch.projectId),
-      )
     )
 
   def deleteWorkflow(implicit session: DBSession): Unit =

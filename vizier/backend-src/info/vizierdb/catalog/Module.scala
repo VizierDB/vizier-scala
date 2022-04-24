@@ -22,7 +22,6 @@ import info.vizierdb.types._
 import info.vizierdb.commands.{ Commands, Parameter }
 import info.vizierdb.catalog.binders._
 import com.typesafe.scalalogging.LazyLogging
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.viztrails.Provenance
 import info.vizierdb.viztrails.ScopeSummary
@@ -171,22 +170,6 @@ case class Module(
         stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
       ),
       resultId = cell.resultId,
-      links = HATEOAS(
-        HATEOAS.SELF            -> VizierAPI.urls.getWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_INSERT   -> VizierAPI.urls.insertWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_DELETE   -> VizierAPI.urls.deleteWorkflowModule(projectId, branchId, workflowId, cell.position),
-        HATEOAS.MODULE_REPLACE  -> VizierAPI.urls.replaceWorkflowModule(projectId, branchId, workflowId, cell.position),
-        (if(cell.state.equals(ExecutionState.FROZEN)) {
-          HATEOAS.MODULE_THAW   -> VizierAPI.urls.thawWorkflowModules(projectId, branchId, workflowId, cell.position)
-        } else {
-          HATEOAS.MODULE_FREEZE -> VizierAPI.urls.freezeWorkflowModules(projectId, branchId, workflowId, cell.position)
-        }),
-        (if(cell.state.equals(ExecutionState.FROZEN)) {
-          HATEOAS.MODULE_THAW_ONE   -> VizierAPI.urls.thawOneWorkflowModule(projectId, branchId, workflowId, cell.position)
-        } else {
-          HATEOAS.MODULE_FREEZE_ONE -> VizierAPI.urls.freezeOneWorkflowModule(projectId, branchId, workflowId, cell.position)
-        }),
-      )
     )
   } 
 }

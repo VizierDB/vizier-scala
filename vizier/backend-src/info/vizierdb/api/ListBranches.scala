@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.Project
 import info.vizierdb.types.Identifier
@@ -34,9 +33,6 @@ object ListBranches
           case Some(project) => 
             serialized.BranchList(
               branches = project.branches.map { _.summarize },
-              links = HATEOAS(
-                HATEOAS.SELF -> VizierAPI.urls.listBranches(projectId)
-              )
             )
           case None => ErrorResponse.noSuchEntity
         }

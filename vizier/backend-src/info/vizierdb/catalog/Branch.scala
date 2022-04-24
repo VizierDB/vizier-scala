@@ -20,7 +20,6 @@ import java.time.ZonedDateTime
 import play.api.libs.json._
 import info.vizierdb.types._
 import java.time.format.DateTimeFormatter
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.catalog.binders._
 import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
@@ -499,12 +498,6 @@ case class Branch(
       sourceModule = createdFromModuleId,
       isDefault = Project.get(projectId).activeBranchId.equals(id),
       properties = serialized.PropertyList.toPropertyList(properties.value.toMap ++ Map("name" -> JsString(name))),
-      links = HATEOAS(
-        HATEOAS.SELF           -> VizierAPI.urls.getBranch(projectId, id),
-        HATEOAS.BRANCH_DELETE  -> VizierAPI.urls.deleteBranch(projectId, id),
-        HATEOAS.BRANCH_HEAD    -> VizierAPI.urls.getBranchHead(projectId, id),
-        HATEOAS.BRANCH_UPDATE  -> VizierAPI.urls.updateBranch(projectId, id),
-      )
     )
 
   /**

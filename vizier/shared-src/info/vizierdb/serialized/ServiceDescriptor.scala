@@ -1,6 +1,5 @@
 package info.vizierdb.serialized
 
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.nativeTypes.DateTime
 
 case class ServiceDescriptorDefaults(
@@ -20,5 +19,4 @@ case class ServiceDescriptor(
   startedAt: DateTime,
   defaults: ServiceDescriptorDefaults,
   environment: ServiceDescriptorEnvironment,
-  links: HATEOAS.T
 )

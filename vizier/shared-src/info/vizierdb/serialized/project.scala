@@ -1,6 +1,5 @@
 package info.vizierdb.serialized
 
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.types.Identifier
 import info.vizierdb.nativeTypes.DateTime
 import info.vizierdb.nativeTypes
@@ -11,7 +10,6 @@ case class ProjectSummary(
   lastModifiedAt: DateTime,
   defaultBranch: Identifier,
   properties: PropertyList.T,
-  links: HATEOAS.T
 )
 {
   def toDescription(branches: Seq[BranchSummary]) =
@@ -21,7 +19,6 @@ case class ProjectSummary(
       lastModifiedAt = lastModifiedAt,
       defaultBranch = defaultBranch,
       properties = properties,
-      links = links,
       branches = branches
     )
 
@@ -36,7 +33,6 @@ case class ProjectDescription(
   lastModifiedAt: DateTime,
   defaultBranch: Identifier,
   properties: PropertyList.T,
-  links: HATEOAS.T,
   branches: Seq[BranchSummary]
 )
 {
@@ -47,5 +43,4 @@ case class ProjectDescription(
 
 case class ProjectList(
   projects: Seq[ProjectSummary],
-  links: HATEOAS.T
 )

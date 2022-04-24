@@ -21,7 +21,6 @@ import java.time.ZonedDateTime
 
 import java.time.format.DateTimeFormatter
 import info.vizierdb.catalog.binders._
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
 import info.vizierdb.util.StupidReactJsonMap
@@ -195,15 +194,6 @@ case class Project(
       lastModifiedAt = modified,
       defaultBranch = activeBranchId,
       properties = serialized.PropertyList.toPropertyList(properties.value.toMap ++ Map("name" -> JsString(name))),
-      links = HATEOAS(
-        HATEOAS.SELF           -> VizierAPI.urls.getProject(id),
-        HATEOAS.API_HOME       -> VizierAPI.urls.serviceDescriptor,
-        HATEOAS.API_DOC        -> VizierAPI.urls.apiDoc,
-        HATEOAS.PROJECT_DELETE -> VizierAPI.urls.deleteProject(id),
-        HATEOAS.PROJECT_UPDATE -> VizierAPI.urls.updateProject(id),
-        HATEOAS.BRANCH_CREATE  -> VizierAPI.urls.createBranch(id),
-        HATEOAS.FILE_UPLOAD    -> VizierAPI.urls.uploadFile(id)
-      ),
     )
 
   def deleteProject(implicit session: DBSession)

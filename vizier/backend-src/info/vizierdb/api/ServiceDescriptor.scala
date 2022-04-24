@@ -18,7 +18,6 @@ import java.time.format.DateTimeFormatter
 import play.api.libs.json._
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import info.vizierdb.VizierAPI
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.commands.Commands
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
@@ -41,13 +40,6 @@ object ServiceDescriptor
         backend = VizierAPI.BACKEND,
         packages = Commands.describe
       ),
-      links = HATEOAS(
-        HATEOAS.SELF           -> VizierAPI.urls.serviceDescriptor,
-        HATEOAS.API_DOC        -> VizierAPI.urls.apiDoc,
-        HATEOAS.PROJECT_CREATE -> VizierAPI.urls.createProject,
-        HATEOAS.PROJECT_LIST   -> VizierAPI.urls.listProjects,
-        HATEOAS.PROJECT_IMPORT -> VizierAPI.urls.importProject,
-      )
     )
 }
 
