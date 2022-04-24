@@ -1,6 +1,7 @@
 package info.vizierdb.serialized
 
 import info.vizierdb.types.{ Identifier, ArtifactType }
+import info.vizierdb.nativeTypes.{ CellDataType, JsValue }
 
 sealed trait ArtifactSummary
 {
@@ -56,7 +57,30 @@ case class StandardArtifact(
       offset = offset,
       properties = properties
     )
+
+  def toParameterDescription(
+    parameter: ParameterArtifact
+  ) =
+    ParameterArtifactDescription(
+      key = key,
+      id = id,
+      projectId = projectId,
+      objType = objType,
+      category = category,
+      name = name,
+      parameter = parameter      
+    )
 }
+
+case class ParameterArtifactDescription(
+  key: Identifier,
+  id: Identifier,
+  projectId: Identifier,
+  objType: String,
+  name: String,
+  category: ArtifactType.T = ArtifactType.PARAMETER,
+  parameter: ParameterArtifact
+) extends ArtifactDescription
 
 case class DatasetSummary(
   key: Identifier,

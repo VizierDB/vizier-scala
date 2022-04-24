@@ -437,13 +437,32 @@ with open(API_PROXY_FILE, "w") as f:
         supported = False
     if return_type.startswith("FILE"):
       supported = False
+
+    path_fields_with_scala, regexp, query_fields = extract_path_fields(path)
+    path_format, query_vars = path_format_string(path)
+    action = group + "".join([
+      word.capitalize()
+      for word in action.split("_")
+    ])
+    
+    # provide all route URLs, even if we can't API them for now
+    print(f"  /** {verb} {path} **/")
+
+    # URL-generator link
+    print(f"  def {action}URL(")
+    for (fieldName, fieldType, fieldTypeBase) in path_fields_with_scala:
+      print(f"    {fieldName}:{fieldTypeBase},")
+    for (fieldName, fieldType) in query_fields:
+      print(f"    {fieldName}:Option[{scala_type_for_field_type(fieldType)}] = None,")
+    print("  ):String =")
+    print("    makeUrl(s\"" + path_format + "\"" + (")" if len(query_vars) == 0 else ","))
+    for qvar in query_vars:
+      print("                      \"" + qvar + "\" -> " + qvar + ".map { _.toString },")
+    if len(query_vars) > 0:
+      print("                     )")
+
     if supported:
-      action = group + "".join([
-        word.capitalize()
-        for word in action.split("_")
-      ])
-      path_fields_with_scala, regexp, query_fields = extract_path_fields(path)
-      print(f"  /** {verb} {path} **/")
+      # Callback
       print(f"  def {action}(")
       for (fieldName, fieldType, fieldTypeBase) in path_fields_with_scala:
         print(f"    {fieldName}:{fieldTypeBase},")
@@ -458,12 +477,12 @@ with open(API_PROXY_FILE, "w") as f:
       else:
         print("  ):Unit =")
       print("  {")
-      path_format, query_vars = path_format_string(path)
-      print("    val url = makeUrl(s\"" + path_format + "\"" + (")" if len(query_vars) == 0 else ","))
-      for qvar in query_vars:
-        print("                      \"" + qvar + "\" -> " + qvar + ".map { _.toString },")
-      if len(query_vars) > 0:
-        print("                     )")
+      print(f"    val url = {action}URL(")
+      for (fieldName, fieldType, fieldTypeBase) in path_fields_with_scala:
+        print(f"      {fieldName},")
+      for (fieldName, fieldType) in query_fields:
+        print(f"      {fieldName},")
+      print("    )")
       print("    Ajax." + verb.lower() + "(")
       print("      url = url,")
       if len(body_fields) > 0:

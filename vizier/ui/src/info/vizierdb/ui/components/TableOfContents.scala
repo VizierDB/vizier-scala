@@ -7,6 +7,7 @@ import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.types._
+import info.vizierdb.ui.Vizier
 
 class TableOfContents(workflow: Workflow)
                      (implicit owner: Ctx.Owner)
@@ -94,18 +95,47 @@ class TableOfContents(workflow: Workflow)
                     ),
                     span(`class` := "spacer"),
                     span(`class` := "actions",
+                      // Jump to Module
+                      LinkToModule(module, FontAwesome("eye")),
+
+                      // Category-specific actions
                       artifact.category match {
                         case ArtifactType.DATASET => 
+
+                          // Spreadsheet view
                           Seq[Frag](
                             a(
-                              href := s"spreadsheet.html?project=${workflow.project.projectId}&dataset=${artifact.id}", 
+                              href := Vizier.links.spreadsheet(workflow.project.projectId, artifact.id), 
                               target := "_blank",
                               FontAwesome("table")
                             )
                           )
                         case _ => Seq[Frag]()
                       },
-                      LinkToModule(module, FontAwesome("eye"))
+
+                      // Download
+                      a(
+                        href := (
+                          artifact.category match {
+                            case ArtifactType.DATASET =>
+                              Vizier.api.artifactGetCsvURL(
+                                workflow.project.projectId,
+                                artifact.id,
+                              )
+                            case ArtifactType.FILE =>
+                              Vizier.api.artifactGetFileURL(
+                                workflow.project.projectId,
+                                artifact.id,
+                              )
+                            case _ => 
+                              Vizier.api.artifactGetURL(
+                                      workflow.project.projectId,
+                                      artifact.id,
+                              )
+                          }
+                        ),
+                        target := "_blank",
+                        FontAwesome("download"))
                     )
                   )
                 }.toSeq

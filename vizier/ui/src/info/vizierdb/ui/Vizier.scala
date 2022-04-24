@@ -12,7 +12,7 @@ import play.api.libs.json._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.ui.rxExtras.RxBufferView
-import info.vizierdb.ui.network.{ API, BranchSubscription, SpreadsheetClient }
+import info.vizierdb.ui.network.{ API, ClientURLs, BranchSubscription, SpreadsheetClient }
 import info.vizierdb.ui.components.Project
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
@@ -25,15 +25,31 @@ import info.vizierdb.ui.components.dataset.TableView
 import info.vizierdb.nativeTypes
 import info.vizierdb.ui.widgets.Spinner
 
+
+/**
+ * Methods for initializing each Vizier interface and managing global state
+ * 
+ * This class serves two roles:
+ * 1. It contains a set of methods allowing easy access to global state (e.g., api, links)
+ * 2. It contains one method for each 'page' of the UI that connects to the API and sets up
+ *    the DOM.
+ */
 @JSExportTopLevel("Vizier")
-object Vizier 
+object Vizier
   extends Object
   with Logging
 {
-  implicit val ctx = Ctx.Owner.safe()
-  // implicit val dataCtx = new Ctx.Data(new Rx.Dynamic[Int]( (owner, data) => 42, None ))
+  implicit val ctx = Ctx.Owner.safe() 
 
-  lazy val api = API("http://localhost:5000/vizier-db/api/v1")
+  var api:API = null
+  var links:ClientURLs = null
+
+  @JSExport("init")
+  def init(url: String = "http://localhost:5000/") =
+  {
+    api = API(url+"vizier-db/api/v1")
+    links = ClientURLs(url)
+  }
 
   lazy val arguments: Map[String, String] = 
     dom.window.location.search

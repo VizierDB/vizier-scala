@@ -173,9 +173,13 @@ case class Artifact(
             base = base
           )
         }
-        case ArtifactType.BLOB | ArtifactType.FUNCTION | ArtifactType.FILE | ArtifactType.CHART => 
-          base
-      }
+
+      case ArtifactType.PARAMETER =>
+        base.toParameterDescription(parameter)
+        
+      case _ =>
+        base
+    }
 
   }
 

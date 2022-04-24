@@ -68,11 +68,24 @@ object serializers
   implicit val commandArgumentFormat: Format[serialized.CommandArgument] = Json.format
   // implicit val commandArgumentListFormat: Format[serialized.CommandArgumentList.T] = Json.format
 
+  implicit val datasetColumnFormat: Format[serialized.DatasetColumn] = Json.format
+  implicit val datasetRowFormat: Format[serialized.DatasetRow] = Json.format
+  implicit val datasetAnnotationFormat: Format[serialized.DatasetAnnotation] = Json.format
+
+
+  implicit val standardArtifactFormat: Format[serialized.StandardArtifact] = Json.format
+  implicit val datasetSummaryFormat: Format[serialized.DatasetSummary] = Json.format
+  implicit val datasetDescriptionFormat: Format[serialized.DatasetDescription] = Json.format
+  implicit val parameterArtifactFormat: Format[serialized.ParameterArtifact] = Json.format
+
+  implicit val parameterArtifactDescriptionFormat: Format[serialized.ParameterArtifactDescription] = Json.format
   implicit val artifactSummaryFormat = Format[serialized.ArtifactSummary](
     new Reads[serialized.ArtifactSummary]{
       def reads(j: JsValue): JsResult[serialized.ArtifactSummary] =
         if( (j \ "columns").isDefined ) {
           JsSuccess(j.as[serialized.DatasetSummary])
+        } else if( (j \ "parameter").isDefined ) {
+          JsSuccess(j.as[serialized.ParameterArtifactDescription])          
         } else {
           JsSuccess(j.as[serialized.StandardArtifact])
         }
@@ -83,6 +96,7 @@ object serializers
           case a:serialized.StandardArtifact => Json.toJson(a)
           case a:serialized.DatasetSummary => Json.toJson(a)
           case a:serialized.DatasetDescription => Json.toJson(a)
+          case a:serialized.ParameterArtifactDescription => Json.toJson(a)
         }
     }
   )
@@ -91,6 +105,8 @@ object serializers
       def reads(j: JsValue): JsResult[serialized.ArtifactDescription] =
         if( (j \ "columns").isDefined ) {
           JsSuccess(j.as[serialized.DatasetDescription])
+        } else if( (j \ "parameter").isDefined ) {
+          JsSuccess(j.as[serialized.ParameterArtifactDescription])          
         } else {
           JsSuccess(j.as[serialized.StandardArtifact])
         }
@@ -100,6 +116,7 @@ object serializers
         v match {
           case a:serialized.StandardArtifact => Json.toJson(a)
           case a:serialized.DatasetDescription => Json.toJson(a)
+          case a:serialized.ParameterArtifactDescription => Json.toJson(a)
         }
     }
   )
@@ -120,15 +137,6 @@ object serializers
   implicit val moduleOutputDescriptionFormat: Format[serialized.ModuleOutputDescription] = Json.format
   implicit val moduleDescriptionFormat: Format[serialized.ModuleDescription] = Json.format
 
-
-  implicit val datasetColumnFormat: Format[serialized.DatasetColumn] = Json.format
-  implicit val datasetRowFormat: Format[serialized.DatasetRow] = Json.format
-  implicit val datasetAnnotationFormat: Format[serialized.DatasetAnnotation] = Json.format
-
-  implicit val standardArtifactFormat: Format[serialized.StandardArtifact] = Json.format
-  implicit val datasetSummaryFormat: Format[serialized.DatasetSummary] = Json.format
-  implicit val datasetDescriptionFormat: Format[serialized.DatasetDescription] = Json.format
-  implicit val parameterArtifactFormat: Format[serialized.ParameterArtifact] = Json.format
 
   implicit val workflowSummaryFormat: Format[serialized.WorkflowSummary] = Json.format
   implicit val workflowDescriptionFormat: Format[serialized.WorkflowDescription] = Json.format

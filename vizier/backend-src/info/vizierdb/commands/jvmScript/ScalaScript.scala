@@ -36,9 +36,13 @@ import play.api.libs.json.JsObject
 object ScalaScript extends Command
 {
 
+  val ARG_SOURCE = "source"
+
   val STANDARD_PREFIX = 
-    """import info.vizierdb.commands.jvmScript.ScalaScript
-      |val vizierdb = ScalaScript.myExecutionContext
+    """import org.apache.spark.sql.types._
+      |import org.apache.spark.sql.functions._
+      |val vizierdb = info.vizierdb.commands.jvmScript.ScalaScript.myExecutionContext
+      |val spark = info.vizierdb.Vizier.sparkSession
       |def print(msg:Any) = vizierdb.message(msg.toString)
       |def println(msg:Any) = vizierdb.message(msg.toString+"\n")
       |""".stripMargin
@@ -67,12 +71,22 @@ object ScalaScript extends Command
 
   def name = "Scala Script"
   def parameters: Seq[Parameter] = Seq(
-    CodeParameter(id = "source", language = "scala", name = "Scala Code"),
+    CodeParameter(id = ARG_SOURCE, language = "scala", name = "Scala Code"),
   )
   def format(arguments: Arguments): String = 
-    arguments.pretty("source")
+    arguments.pretty(ARG_SOURCE)
   def title(arguments: Arguments): String = 
-    "Scala Code"
+  {
+    val src = arguments.get[String](ARG_SOURCE)
+    if(src.startsWith("//")){
+      src.drop(2)
+         .dropWhile { _ == ' ' }
+         .takeWhile { case '\n' | '\r' => false case _ => true }
+    } else {
+      "Scala Code"     
+    }
+  }
+    
 
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
@@ -84,7 +98,7 @@ object ScalaScript extends Command
     }
 
     try {
-      eval(arguments.get[String]("source"), context)
+      eval(arguments.get[String](ARG_SOURCE), context)
     } catch {
       // case e: scala.tools.reflect.ToolBoxError => 
       //   context.error(e.getMessage()) // sadly no line numbers here
