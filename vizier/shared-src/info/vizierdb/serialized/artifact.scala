@@ -2,6 +2,7 @@ package info.vizierdb.serialized
 
 import info.vizierdb.types.{ Identifier, ArtifactType }
 import info.vizierdb.nativeTypes.{ CellDataType, JsValue }
+import play.api.libs.json.JsString
 
 sealed trait ArtifactSummary
 {
@@ -58,28 +59,41 @@ case class StandardArtifact(
       properties = properties
     )
 
-  def toParameterDescription(
-    parameter: ParameterArtifact
+  def addPayload(
+    payload: JsValue
   ) =
-    ParameterArtifactDescription(
+    JsonArtifactDescription(
       key = key,
       id = id,
       projectId = projectId,
       objType = objType,
       category = category,
       name = name,
-      parameter = parameter      
+      payload = payload
+    )
+  
+  def addPayload(
+    payload: String
+  ) =
+    JsonArtifactDescription(
+      key = key,
+      id = id,
+      projectId = projectId,
+      objType = objType,
+      category = category,
+      name = name,
+      payload = JsString(payload)
     )
 }
 
-case class ParameterArtifactDescription(
+case class JsonArtifactDescription(
   key: Identifier,
   id: Identifier,
   projectId: Identifier,
   objType: String,
   name: String,
-  category: ArtifactType.T = ArtifactType.PARAMETER,
-  parameter: ParameterArtifact
+  category: ArtifactType.T,
+  payload: JsValue
 ) extends ArtifactDescription
 
 case class DatasetSummary(

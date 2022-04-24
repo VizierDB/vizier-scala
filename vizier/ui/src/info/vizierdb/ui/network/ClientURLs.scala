@@ -6,7 +6,7 @@ case class ClientURLs(baseUrl: String)
 {
   def makeUrl(path: String, query: (String, Any)*): String = 
     baseUrl + path + (
-      if(query.isEmpty) { "" }
+      if(query.forall { _._2 == null }) { "" }
       else{ "?" + query.filterNot { _._2 == null }.map { case (k, v) => k + "=" + v.toString }.mkString("&") }
     )
 
@@ -16,4 +16,8 @@ case class ClientURLs(baseUrl: String)
     makeUrl("project.html", "project" -> projectId)
   def spreadsheet(projectId: Identifier, datasetId: Identifier) = 
     makeUrl("spreadsheet.html", "project" -> projectId, "dataset" -> datasetId)
+  def settings =
+    makeUrl("settings.html")
+  def artifact(projectId: Identifier, artifactId: Identifier, name: String = null) =
+    makeUrl("artifact.html", "project" -> projectId, "artifact" -> artifactId, "name" -> name)
 }

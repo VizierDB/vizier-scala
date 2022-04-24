@@ -75,35 +75,6 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
         // MenuItem("Present Project", { () => println("Present...") }),
       ),
 
-      ////////////////// Run Menu ////////////////// 
-      Rx { 
-        val state = project.workflow().map { _.moduleViewsWithEdits.state() }
-                                      .getOrElse { ExecutionState.DONE }
-        val icon = 
-          state match {
-            case ExecutionState.RUNNING   => "play-circle"
-            case ExecutionState.ERROR     => "exclamation-circle"
-            case ExecutionState.CANCELLED => "pause-circle"
-            case _                        => "stop-circle"
-          }
-
-        Menu("left item", FontAwesome(icon))(
-          MenuItem("Stop Running", 
-            { () => project.branchSubscription.get.Client.workflowCancel() }, 
-            icon = "stop", 
-            enabled = (state == ExecutionState.RUNNING)
-          ),
-          MenuItem("Freeze Everything", 
-            { () => project.branchSubscription.get.Client.workflowFreezeFrom(0) }, 
-            icon = "snowflake-o"
-          ),
-          MenuItem("Thaw Everything", 
-            { () => project.branchSubscription.get.Client.workflowThawUpto(project.workflow.now.get.moduleViews.rxLength.now) }, 
-            icon = "sun-o"
-          ),
-        )
-      }.reactive,
-
       ////////////////// Branch Menu ////////////////// 
       Rx {
         val activeBranchId = project.activeBranch().getOrElse(-100)
@@ -169,6 +140,46 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 
       ////////////////// Spacer ////////////////// 
       div(`class` := "spacer"),
+
+
+      ////////////////// Run Menu ////////////////// 
+      Rx { 
+        val state = 
+          project.workflow().map { _.moduleViewsWithEdits.state() }
+                            .getOrElse { ExecutionState.DONE }
+        val connected = 
+          project.branchSubscription.map { _.connected() }
+                                    .getOrElse(false)
+        val (icon, stateClass) = 
+          if(connected) {
+            (
+              state match {
+                case ExecutionState.RUNNING   => "play-circle"
+                case ExecutionState.ERROR     => "exclamation-circle"
+                case ExecutionState.CANCELLED => "pause-circle"
+                case _                        => "stop-circle"
+              },
+              state.toString.toLowerCase
+            )
+          } else { ("plug", "disconnected") }
+
+
+        Menu(s"right item state_$stateClass", FontAwesome(icon))(
+          MenuItem("Stop Running", 
+            { () => project.branchSubscription.get.Client.workflowCancel() }, 
+            icon = "stop", 
+            enabled = (state == ExecutionState.RUNNING)
+          ),
+          MenuItem("Freeze Everything", 
+            { () => project.branchSubscription.get.Client.workflowFreezeFrom(0) }, 
+            icon = "snowflake-o"
+          ),
+          MenuItem("Thaw Everything", 
+            { () => project.branchSubscription.get.Client.workflowThawUpto(project.workflow.now.get.moduleViews.rxLength.now) }, 
+            icon = "sun-o"
+          ),
+        )
+      }.reactive,
 
       ////////////////// Help Menu ////////////////// 
       a(

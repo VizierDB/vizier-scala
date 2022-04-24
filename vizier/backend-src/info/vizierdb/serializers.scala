@@ -78,14 +78,14 @@ object serializers
   implicit val datasetDescriptionFormat: Format[serialized.DatasetDescription] = Json.format
   implicit val parameterArtifactFormat: Format[serialized.ParameterArtifact] = Json.format
 
-  implicit val parameterArtifactDescriptionFormat: Format[serialized.ParameterArtifactDescription] = Json.format
+  implicit val parameterArtifactDescriptionFormat: Format[serialized.JsonArtifactDescription] = Json.format
   implicit val artifactSummaryFormat = Format[serialized.ArtifactSummary](
     new Reads[serialized.ArtifactSummary]{
       def reads(j: JsValue): JsResult[serialized.ArtifactSummary] =
         if( (j \ "columns").isDefined ) {
           JsSuccess(j.as[serialized.DatasetSummary])
-        } else if( (j \ "parameter").isDefined ) {
-          JsSuccess(j.as[serialized.ParameterArtifactDescription])          
+        } else if( (j \ "payload").isDefined ) {
+          JsSuccess(j.as[serialized.JsonArtifactDescription])          
         } else {
           JsSuccess(j.as[serialized.StandardArtifact])
         }
@@ -96,7 +96,7 @@ object serializers
           case a:serialized.StandardArtifact => Json.toJson(a)
           case a:serialized.DatasetSummary => Json.toJson(a)
           case a:serialized.DatasetDescription => Json.toJson(a)
-          case a:serialized.ParameterArtifactDescription => Json.toJson(a)
+          case a:serialized.JsonArtifactDescription => Json.toJson(a)
         }
     }
   )
@@ -105,8 +105,8 @@ object serializers
       def reads(j: JsValue): JsResult[serialized.ArtifactDescription] =
         if( (j \ "columns").isDefined ) {
           JsSuccess(j.as[serialized.DatasetDescription])
-        } else if( (j \ "parameter").isDefined ) {
-          JsSuccess(j.as[serialized.ParameterArtifactDescription])          
+        } else if( (j \ "payload").isDefined ) {
+          JsSuccess(j.as[serialized.JsonArtifactDescription])          
         } else {
           JsSuccess(j.as[serialized.StandardArtifact])
         }
@@ -116,7 +116,7 @@ object serializers
         v match {
           case a:serialized.StandardArtifact => Json.toJson(a)
           case a:serialized.DatasetDescription => Json.toJson(a)
-          case a:serialized.ParameterArtifactDescription => Json.toJson(a)
+          case a:serialized.JsonArtifactDescription => Json.toJson(a)
         }
     }
   )

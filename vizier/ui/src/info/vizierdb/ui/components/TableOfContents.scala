@@ -8,6 +8,8 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.types._
 import info.vizierdb.ui.Vizier
+import info.vizierdb.util.StringUtils
+import info.vizierdb.ui.components.dataset.CaveatModal
 
 class TableOfContents(workflow: Workflow)
                      (implicit owner: Ctx.Owner)
@@ -67,7 +69,7 @@ class TableOfContents(workflow: Workflow)
 
 
   val moduleNodes =
-    RxBufferView(ol(), 
+    RxBufferView(ol(`class` := "the_modules"), 
       workflow.moduleViewsWithEdits
               .rxMap { 
                   case WorkflowModule(module) => ModuleSummary(module)
@@ -84,61 +86,96 @@ class TableOfContents(workflow: Workflow)
             .flatMap { x => x }
             .map { artifacts => 
               div(`class` := "the_artifacts",
-                artifacts.map { case (name, (artifact, module)) => 
-                  div(`class` := "artifact",
-                    span(`class` := "label",
-                      FontAwesome(ArtifactType.icon(artifact.category)),
+                artifacts
+                  .toSeq
+                  .map { case (name, (artifact, module)) =>
+                    (
                       name match {
                         case "" => s"Untitled ${artifact.category.toString.toLowerCase}"
                         case _ => name
                       },
-                    ),
-                    span(`class` := "spacer"),
-                    span(`class` := "actions",
-                      // Jump to Module
-                      LinkToModule(module, FontAwesome("eye")),
-
-                      // Category-specific actions
-                      artifact.category match {
-                        case ArtifactType.DATASET => 
-
-                          // Spreadsheet view
-                          Seq[Frag](
-                            a(
-                              href := Vizier.links.spreadsheet(workflow.project.projectId, artifact.id), 
-                              target := "_blank",
-                              FontAwesome("table")
-                            )
-                          )
-                        case _ => Seq[Frag]()
-                      },
-
-                      // Download
-                      a(
-                        href := (
-                          artifact.category match {
-                            case ArtifactType.DATASET =>
-                              Vizier.api.artifactGetCsvURL(
-                                workflow.project.projectId,
-                                artifact.id,
-                              )
-                            case ArtifactType.FILE =>
-                              Vizier.api.artifactGetFileURL(
-                                workflow.project.projectId,
-                                artifact.id,
-                              )
-                            case _ => 
-                              Vizier.api.artifactGetURL(
-                                      workflow.project.projectId,
-                                      artifact.id,
-                              )
-                          }
-                        ),
-                        target := "_blank",
-                        FontAwesome("download"))
+                      artifact,
+                      module
                     )
-                  )
-                }.toSeq
+                  }
+                  .sortBy { _._1 }
+                  .map { case (name, artifact, module) => 
+                    div(`class` := "artifact",
+                      onmouseover := { _:dom.Event => module.highlight() = true },
+                      onmouseout := { _:dom.Event => module.highlight() = false },
+                      span(`class` := "label",
+                        FontAwesome(ArtifactType.icon(artifact.category)),
+                        StringUtils.ellipsize(name, 12)
+                      ),
+                      span(`class` := "spacer"),
+                      span(`class` := "actions",
+                        // Category-specific actions
+                        artifact.category match {
+                          case ArtifactType.DATASET => Seq[Frag](
+                              // Caveat list
+                              a(
+                                href := Vizier.api.artifactDsGetAnnotationsURL(workflow.project.projectId, artifact.id),
+                                onclick := { _:dom.Event =>
+                                  CaveatModal(workflow.project.projectId, artifact.id,
+                                    row = None,
+                                    column = None
+                                  ).show()
+                                  /* return */ false // avoid link from triggering
+                                },
+                                FontAwesome("exclamation-triangle")
+                              ),
+
+                              // Spreadsheet view
+                              a(
+                                href := Vizier.links.spreadsheet(workflow.project.projectId, artifact.id), 
+                                target := "_blank",
+                                FontAwesome("table")
+                              )
+                            )
+
+                          case ArtifactType.FUNCTION | ArtifactType.VEGALITE => Seq[Frag](
+                              // "Pop-out"
+                              a(
+                                href := Vizier.links.artifact(workflow.project.projectId, artifact.id),
+                                target := "_blank",
+                                FontAwesome("share-square-o")
+                              )
+                            )
+
+                          case _ => Seq[Frag]()
+                        },
+
+                        // Download
+                        a(
+                          href := (
+                            artifact.category match {
+                              case ArtifactType.DATASET =>
+                                Vizier.api.artifactGetCsvURL(
+                                  workflow.project.projectId,
+                                  artifact.id,
+                                )
+                              case ArtifactType.FILE =>
+                                Vizier.api.artifactGetFileURL(
+                                  workflow.project.projectId,
+                                  artifact.id,
+                                )
+                              case _ => 
+                                Vizier.api.artifactGetURL(
+                                        workflow.project.projectId,
+                                        artifact.id,
+                                )
+                            }
+                          ),
+                          target := "_blank",
+                          FontAwesome("download")
+                        ),
+
+                        // Jump to Module
+                        LinkToModule(module, FontAwesome("eye")),
+
+                      )
+                    )
+                  }.toSeq
               )
             }
             .reactive
@@ -151,11 +188,11 @@ class TableOfContents(workflow: Workflow)
       id := "table_of_contents", 
       `class` := "contents",
       div(`class` := "module_list",
-        h3("Workflow"),
+        h3(`class` := "title", "Workflow"),
         moduleNodes.root
       ),
       div(`class` := "artifact_list",
-        h3("Artifacts"),
+        h3(`class` := "title", "Artifacts"),
         artifactNodes
       )
     )

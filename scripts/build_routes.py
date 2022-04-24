@@ -179,7 +179,7 @@ for idx, path, verb, handler, group, action, return_type, body_fields in routes:
   else:
     raise Exception(f"Unsupported return type {return_type}")
   
-  invokeHandler = f"case {matcher} => {invokeHandler}"
+  invokeHandler = f"case /*{group}:{action}*/ {matcher} => {invokeHandler}"
 
   if verb not in verbHandlers:
     verbHandlers[verb] = cast(List[str], [])
@@ -426,7 +426,7 @@ with open(API_PROXY_FILE, "w") as f:
   print("")
   print("  def makeUrl(path: String, query: (String, Option[String])*): String = ")
   print("    baseUrl + path + (")
-  print("      if(query.isEmpty) { \"\" }")
+  print("      if(query.forall { _._2.isEmpty }) { \"\" }")
   print("      else{ \"?\" + query.collect { case (k, Some(v)) => k + \"=\" + v }.mkString(\"&\") }")
   print("    )")
   print("")

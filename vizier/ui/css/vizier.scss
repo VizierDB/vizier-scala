@@ -37,8 +37,15 @@ $color_message_markdown_bg:    #f9f9f9;
 $color_message_text:           #eee;
 $color_message_text_bg:        #f9f9f9;
 
-$color_row_highlight:          #f6f6f6;
+$color_row_highlight:          #f3f3f3;
 
+$color_warning_on_dark:        #ff8f8f;
+
+$color_artifact_button:        $color_primary;
+$color_artifact_button_bg:     #f3f3f3;
+$color_artifact_button_border: #aaa;
+
+$color_layout_border:          lightgrey;
 
 a         { color: blue; }
 a:visited { color: blue; }
@@ -293,13 +300,12 @@ $menu_height: 32px;
     .table_of_contents
     {
       position: absolute;
-      left: calc(100vw - 240px);
+      left: calc(100vw - 248px);
       height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
-      width: 240px;
+      width: 248px;
       flex-grow: 0;
       flex-shrink: 0;
-      margin-left: 8px;
-      overflow-y: auto;
+      // margin-left: 8px;
     }
 
     .workflow
@@ -309,7 +315,8 @@ $menu_height: 32px;
       width: calc(100vw - 248px);
       height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
       overflow-y: auto;
-      border-right: solid 1px lightgrey;
+      border-right: solid 1px $color_layout_border;
+      margin-right: 0px;
 
       .workflow_content
       {
@@ -418,6 +425,11 @@ $menu_height: 32px;
     flex-grow: 0;
     cursor: pointer;
 
+    &.state_disconnected
+    {
+      color: $color_warning_on_dark;
+    }
+
     ul
     {
       visibility: hidden;
@@ -428,6 +440,7 @@ $menu_height: 32px;
       list-style: none;
       padding: 0px;
       padding: 0px;
+      color: white;
 
       a { text-decoration: none; }
 
@@ -811,96 +824,134 @@ $menu_height: 32px;
 
 /************ Table of Contents ************/
 
-#project .contents
+// This section includes only code pertaining to the inner layout 
+// of the contents area.  Options pertaining to the layout of the 
+// overall page (and how the contents is laid out in that context)
+// live above.
+#project .table_of_contents
 {
-  h3
+  display: block;
+
+  >.reactive
   {
-    margin: 12px 0px 4px 0px;
+    display: block;
+    height: 100%;
   }
 
-  .module_list
+  .contents
   {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 
-    ol
+    .title
     {
-      margin-top: 0px;
-      padding-left: 24px;
-
-      li
-      {
-        &.done_state      { color: $color_done; }
-        &.error_state     { color: $color_error; }
-        &.waiting_state   { color: $color_waiting; }
-        &.stale_state     { color: $color_waiting; }
-        &.cancelled_state { color: $color_error; }
-        &.frozen_state    { color: $color_frozen; }
-        &.running_state   { color: $color_running; }
-        &.tentative       { color: $color_tentative; }
-
-        a         { color: inherit; }
-        a:visited { color: inherit; }
-
-        &.level_1         { font-size: 140%; font-weight: bold; }
-        &.level_2         { font-size: 120%; font-weight: bold; }
-        &.level_3         { font-size: 110%; font-weight: bold; }
-        &.level_4         { font-weight: bold; }
-      }
-
+      margin: 0px 0px 4px 0px;
+      padding-top: 12px;
+      position: sticky;
+      top: 0px;
+      background-color: white;
     }
-  }
 
-  .artifact_list
-  {
-    .artifact
+    .module_list
     {
-      display: flex;
-      flex-direction: row;
-      padding: 2px;
+      flex-grow: 1;
+      flex-shrink: 1;
+      max-height: 50%;
+      overflow-y: auto;
+      padding-left: 8px;
 
-      &:nth-child(2n)
+      .the_modules
       {
-        background-color: $color_row_highlight;
-      }
+        margin-top: 0px;
+        padding-left: 32px;
 
-      .label
-      {
-        flex-grow: 0;
-        flex-shrink: 1;
-
-        i.fa 
-        { 
-          margin-right: 4px; 
-          font-size: 12px;
-        }
-      }
-
-      .spacer
-      {
-        flex-grow: 1;
-        flex-shrink: 1;
-      }
-
-      .actions
-      {
-        flex-grow: 0;
-        flex-shrink: 0;
-        margin-right: 16px;
-
-        a:active
+        li
         {
-          i.fa
-          {
-            transform: scale(0.95);
+          &.done_state      { color: $color_done; }
+          &.error_state     { color: $color_error; }
+          &.waiting_state   { color: $color_waiting; }
+          &.stale_state     { color: $color_waiting; }
+          &.cancelled_state { color: $color_error; }
+          &.frozen_state    { color: $color_frozen; }
+          &.running_state   { color: $color_running; }
+          &.tentative       { color: $color_tentative; }
+
+          a         { color: inherit; }
+          a:visited { color: inherit; }
+
+          &.level_1         { font-size: 140%; font-weight: bold; }
+          &.level_2         { font-size: 120%; font-weight: bold; }
+          &.level_3         { font-size: 110%; font-weight: bold; }
+          &.level_4         { font-weight: bold; }
+        }
+
+      }
+    }
+
+    .artifact_list
+    {
+      flex-grow: 1;
+      flex-shrink: 1;
+      min-height: 50%;
+      overflow-y: auto;
+      border-top: 1px solid $color_layout_border;
+      padding-left: 8px;
+
+      .artifact
+      {
+        display: flex;
+        flex-direction: row;
+        padding: 4px;
+        margin-right: 8px;
+
+        &:nth-child(2n)
+        {
+          background-color: $color_row_highlight;
+        }
+
+        .label
+        {
+          flex-grow: 0;
+          flex-shrink: 1;
+
+          i.fa 
+          { 
+            margin-right: 4px; 
+            font-size: 12px;
           }
         }
 
-        i.fa
+        .spacer
         {
-          border-radius: 4px;
-          border: solid 1px gray;
-          padding: 2px;
-          font-size: 12px;
-          margin-right: 4px;
+          flex-grow: 1;
+          flex-shrink: 1;
+        }
+
+        .actions
+        {
+          flex-grow: 0;
+          flex-shrink: 0;
+          // margin-right: 8px;
+
+          a:active
+          {
+            i.fa
+            {
+              transform: scale(0.95);
+            }
+          }
+
+          i.fa
+          {
+            border-radius: 4px;
+            border: solid 1px $color_artifact_button_border;
+            padding: 2px;
+            font-size: 12px;
+            margin-right: 4px;
+            color: $color_artifact_button;
+            background-color: $color_artifact_button_bg;
+          }
         }
       }
     }
@@ -1083,41 +1134,6 @@ div.modal_background
   background: #000;
   opacity: 0.3;
   z-index: $modal_layer;
-}
-
-div.caveat_modal
-{
-  position: fixed;
-  top: 30%;
-  left: 20%;
-  width: 60%;
-  height: 40%;
-  background: #fff;
-  text-align: center;
-  overflow-y: scroll;
-  z-index: $modal_layer;
-}
-
-div.caveat_modal .spinner
-{
-  margin-top: 30px;
-}
-
-div.caveat_modal div.caveat
-{
-  width: calc(100% - 20px);
-  text-align: left;
-  padding: 10px;
-  color: #300;
-}
-
-div.caveat_modal div.caveat.even_row
-{
-  background-color: #fff;
-}
-div.caveat_modal div.caveat.odd_row
-{
-  background-color: #eee;
 }
 
 /************ Editor ************/

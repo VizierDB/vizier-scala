@@ -143,7 +143,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
     div(id := "project",
       menu.root,
       div(`class` := "content",
-        tag("nav")(
+        div(
           `class` := "table_of_contents",
           tableOfContents.map { _.map { _.root } 
                                  .getOrElse { Spinner(size = 30):Frag } 

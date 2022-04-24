@@ -174,8 +174,12 @@ case class Artifact(
           )
         }
 
-      case ArtifactType.PARAMETER =>
-        base.toParameterDescription(parameter)
+      case ArtifactType.PARAMETER 
+         | ArtifactType.VEGALITE =>
+        base.addPayload(json)
+
+      case ArtifactType.FUNCTION =>
+        base.addPayload(string)
         
       case _ =>
         base

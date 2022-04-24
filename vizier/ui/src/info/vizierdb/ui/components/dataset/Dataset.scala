@@ -74,7 +74,7 @@ class Dataset(
 
   def this(description: DatasetDescription)
           (implicit owner: Ctx.Owner) =
-    this(description, Vizier.project.now.get.projectId)
+    this(description, description.projectId)
 
   def fetchRowsWithAPI(offset: Long, limit: Int): Future[Seq[DatasetRow]] = 
   {
@@ -94,7 +94,7 @@ class Dataset(
         `class` := "header",
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() }),
         a(
-          href := s"spreadsheet.html?project=$projectId&dataset=$datasetId", 
+          href := Vizier.links.spreadsheet(projectId, datasetId),
           target := "_blank",
           FontAwesome("table")
         )

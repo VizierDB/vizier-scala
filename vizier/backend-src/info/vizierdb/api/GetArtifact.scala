@@ -48,16 +48,19 @@ object GetArtifact
     branchId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
     workflowId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
     modulePosition: Option[Int] = None, // Not used... but necessary for routing compatibility
+    name: Option[String] = None,
   ): serialized.ArtifactDescription = 
   {
     val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
+        println(s"name: $name")
         DB.readOnly { implicit s => 
           artifact.describe(
             offset = offset, 
             limit = limit, 
-            forceProfiler = forceProfiler
+            forceProfiler = forceProfiler,
+            name = name.getOrElse { null },
           )
         }
       case None => 
@@ -76,13 +79,15 @@ object GetArtifact
     branchId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
     workflowId: Option[Identifier] = None, // Not used... but necessary for routing compatibility
     modulePosition: Option[Int] = None, // Not used... but necessary for routing compatibility
+    name: Option[String] = None,
   ): serialized.ArtifactDescription = apply(
     projectId = projectId,
     artifactId = artifactId,
     offset = offset,
     limit = limit,
     profile = profile,
-    expecting = Some(expectedType)
+    expecting = Some(expectedType),
+    name = name,
   )
 
   object Annotations
@@ -133,6 +138,7 @@ object GetArtifact
     offset: Option[Long] = None,
     limit: Option[Int] = None,
     profile: Option[String] = None,
+    name: Option[String] = None
   ): serialized.DatasetDescription =
     typed(ArtifactType.DATASET)(
       projectId = projectId,
@@ -140,6 +146,7 @@ object GetArtifact
       offset = offset,
       limit = limit,
       profile = profile,
+      name = name,
     ).asInstanceOf[serialized.DatasetDescription]
 
   object CSV

@@ -24,6 +24,7 @@ import info.vizierdb.ui.components.SettingsView
 import info.vizierdb.ui.components.dataset.TableView
 import info.vizierdb.nativeTypes
 import info.vizierdb.ui.widgets.Spinner
+import info.vizierdb.ui.components.DisplayArtifact
 
 
 /**
@@ -270,6 +271,27 @@ object Vizier
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       document.body.appendChild(settings.root)
       OnMount.trigger(document.body)
+    })
+  }
+
+  @JSExport("artifact")  
+  def artifact(): Unit =
+  {
+    val projectId = arguments.get("project").get.toLong
+    val artifactId = arguments.get("artifact").get.toLong
+    val name = arguments.get("name")
+    val artifact = api.artifactGet(projectId, artifactId, name = name)
+
+    document.addEventListener("DOMContentLoaded", { (e: dom.Event) =>
+      val root = Var[Frag](div(`class` := "display_artifact", Spinner(50)))
+
+      document.body.appendChild(root.reactive)
+      OnMount.trigger(document.body)
+
+      artifact.onComplete { 
+        case Success(a) => root() = new DisplayArtifact(a).root
+        case Failure(err) => Vizier.error(err.getMessage())
+      }
     })
   }
 

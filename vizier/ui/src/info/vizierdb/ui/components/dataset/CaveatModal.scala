@@ -10,6 +10,7 @@ import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.rxExtras.implicits._
 import scala.util.Success
 import scala.util.Failure
+import info.vizierdb.ui.widgets.ShowModal
 
 case class CaveatModal(
   projectId: Identifier, 
@@ -24,29 +25,23 @@ case class CaveatModal(
   val caveatsOrError = Var[Option[Either[Seq[Caveat],String]]](None)
 
 
-  val modal = 
+  val root = 
     div(
-      div(
-        `class` := "modal_background",
-        onclick := { _:dom.Event => hide() }
-      ),
-      div(
-        `class` := "caveat_modal",
-        margin := "auto",
-        caveatsOrError.map { 
-          case Some(Left(caveats)) => 
-            div(
-              caveats.zipWithIndex.map { case (caveat, idx) => 
-                div(
-                  `class` := s"caveat ${if(idx % 2 == 0){ "even_row" } else { "odd_row" }}",
-                  caveat.message
-                )
-              }:_*
-            ):Frag
-          case Some(Right(error)) => span(`class` := "error", error):Frag
-          case None => Spinner(50):Frag
-        }.reactive
-      )
+      `class` := "caveat_modal",
+      margin := "auto",
+      caveatsOrError.map { 
+        case Some(Left(caveats)) => 
+          div(
+            caveats.zipWithIndex.map { case (caveat, idx) => 
+              div(
+                `class` := s"caveat ${if(idx % 2 == 0){ "even_row" } else { "odd_row" }}",
+                caveat.message
+              )
+            }:_*
+          ):Frag
+        case Some(Right(error)) => span(`class` := "error", error):Frag
+        case None => Spinner(50):Frag
+      }.reactive
     ).render
 
   Vizier.api.artifactGetAnnotations(
@@ -59,13 +54,5 @@ case class CaveatModal(
     case Failure(e) => caveatsOrError() = Some(Right(e.getMessage))
   }
 
-  def show()
-  {
-    dom.document.body.appendChild(modal)
-  }
-
-  def hide()
-  {
-    dom.document.body.removeChild(modal)
-  }
+  def show() = ShowModal.acknowledge(root)
 }
