@@ -6,7 +6,6 @@ import info.vizierdb.ui.network._
 import info.vizierdb.types._
 import info.vizierdb.serialized
 import info.vizierdb.nativeTypes
-import info.vizierdb.shared.HATEOAS
 
 object BuildA
 {
@@ -64,7 +63,6 @@ object BuildA
         arguments = serialized.CommandArgumentList(arguments:_*)
       ),
       text = s"$packageId.$commandId",
-      links = HATEOAS(),
       outputs = serialized.ModuleOutputDescription(
         stdout = Seq.empty,
         stderr = Seq.empty,
@@ -82,7 +80,6 @@ object BuildA
           name = name,
           category = t,
           objType = "dataset/view",
-          links = HATEOAS()
         )
       },
       resultId = Some(1)

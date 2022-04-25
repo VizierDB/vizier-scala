@@ -8,6 +8,10 @@ import info.vizierdb.serialized.ArtifactSummary
 import info.vizierdb.types._
 import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.ui.widgets.ScrollIntoView
+import info.vizierdb.serialized.ArtifactDescription
+import scala.util.Success
+import scala.util.Failure
+import info.vizierdb.ui.Vizier
 
 /**
  * A user interface widget to help users to inspect the contents of artifacts.  These are
@@ -15,31 +19,17 @@ import info.vizierdb.ui.widgets.ScrollIntoView
  */
 class ArtifactInspector(
   var position: Int,
+  val workflow: Workflow,
   val visibleArtifacts: Var[Rx[Map[String, (ArtifactSummary, Module)]]],
-  val editList: TentativeEdits
 )(implicit owner: Ctx.Owner)
   extends Object
   with ScrollIntoView.CanScroll
 {
-  val selected = Var[Option[String]](None)
-
-  val summary: Rx[Option[ArtifactSummary]] = Rx {
-    selected().flatMap { name =>
-      val a = visibleArtifacts() 
-      val b = a()
-      b.get(name).map { _._1 }
-    }
-  }
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  val selected = Var[Either[(String, ArtifactDescription), String]](Right("Select an artifact..."))
 
   var nowShowing:Option[Identifier] = None
   val container = div(span()).render
-
-  summary.trigger { s => 
-    if(s.map { _.id } != nowShowing){ 
-      val data = div(s"Showing $s").render
-      container.replaceChild(data, container.lastChild)
-    }
-  }
 
   val root = 
     div(
@@ -48,7 +38,7 @@ class ArtifactInspector(
         `class` := "menu",
         button(
           FontAwesome("trash"),
-          onclick := { _:dom.Event => editList.dropInspector(this) }
+          onclick := { _:dom.Event => workflow.moduleViewsWithEdits.dropInspector(this) }
         ),
         div(`class` := "spacer")
       ),
@@ -59,11 +49,25 @@ class ArtifactInspector(
             div(`class` := "option", 
               FontAwesome(ArtifactType.icon(summary.category)),
               name,
-              onclick := { _:dom.Event => selected() = Some(name) }
+              onclick := { _:dom.Event => 
+                selected() = Right(s"Loading $name...")
+
+                workflow.project.api.artifactGet(
+                  workflow.project.projectId, 
+                  summary.id,
+                  name = Some(name)
+                ).onComplete {
+                  case Success(descr) => selected() = Left(name -> descr)
+                  case Failure(err) => Vizier.error(err.getMessage())
+                }
+              }
             )
           }.toSeq
         ) 
       }}.reactive,
-      container
+      selected.map { 
+        case Left( (_, descr) ) => new DisplayArtifact(descr).root 
+        case Right(msg) => span(msg).render
+      }.reactive
     ).render
 }

@@ -21,8 +21,8 @@ object WorkflowSpec extends TestSuite with TestFixtures
       val initialSize = modules.size 
       appendModule()
 
-      assert(modules.last.isRight)
-      val Right(editor) = modules.elements.last
+      assert(modules.last.isInstanceOf[WorkflowTentativeModule])
+      val WorkflowTentativeModule(editor) = modules.elements.last
       editor.cancelSelectCommand()
 
       assert(modules.size == initialSize)
@@ -79,7 +79,7 @@ object WorkflowSpec extends TestSuite with TestFixtures
         )
       )
       assert(modules.size == initialSize + 1)
-      assert(modules.last.isLeft)
+      assert(modules.last.isInstanceOf[WorkflowModule])
     }
 
   }

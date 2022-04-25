@@ -11,6 +11,7 @@ import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.ui.facades.VegaEmbed
 import info.vizierdb.serializers.playToNativeJson
 import info.vizierdb.ui.components.dataset.Dataset
+import info.vizierdb.serializers._
 
 /**
  * A module to display artifacts
@@ -37,6 +38,10 @@ class DisplayArtifact(description: serialized.ArtifactDescription)(implicit owne
       case (j:serialized.JsonArtifactDescription, ArtifactType.FUNCTION) => 
         pre(
           j.payload.as[String]
+        )
+      case (j:serialized.JsonArtifactDescription, ArtifactType.PARAMETER) => 
+        pre(
+          j.payload.as[serialized.ParameterArtifact].nativeValue.toString()
         )
       case (d:serialized.DatasetDescription, _) =>
         new Dataset(d).root

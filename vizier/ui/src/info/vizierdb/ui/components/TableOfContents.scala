@@ -61,8 +61,8 @@ class TableOfContents(workflow: Workflow)
     li(`class` := "tentative", 
       inspector.selected
                .map { _ match {
-                case None => span("Blank Inspector")
-                case Some(name) => span(s"Inspect ${name}")
+                case Left( (name, _) ) => span(s"Inspect ${name}")
+                case Right(_) => span("Blank Inspector")
                }}
                .reactive
     )

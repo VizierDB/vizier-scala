@@ -13,7 +13,6 @@ import scala.concurrent.{ Promise, Future }
 import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.serialized
 import info.vizierdb.serialized.SimpleParameterDescription
-import info.vizierdb.shared.HATEOAS
 import info.vizierdb.serializers._
 import info.vizierdb.delta.WorkflowDelta
 import info.vizierdb.api.websocket.NotificationWebsocketMessage
@@ -37,14 +36,14 @@ trait TestFixtures
   def appendModule(): TentativeModule =
   {
     modules.appendTentative(Some(TestFixtures.defaultPackages))
-    val Right(ret) = modules.last
+    val WorkflowTentativeModule(ret) = modules.last
     return ret
   }
 
   def insertModule(n: Int): TentativeModule =
   {
     modules.insertTentative(n, Some(TestFixtures.defaultPackages))
-    val Right(ret) = modules(n)
+    val WorkflowTentativeModule(ret) = modules(n)
     return ret
   }
 
@@ -152,7 +151,6 @@ object TestFixtures
       action = "create",
       actionModule = None,
       packageId = None,
-      commandId = None,
-      links = HATEOAS()
+      commandId = None
     )
 }

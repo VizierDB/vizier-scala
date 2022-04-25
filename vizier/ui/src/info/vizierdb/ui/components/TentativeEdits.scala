@@ -324,9 +324,9 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     val inspector = 
       new ArtifactInspector(
             position = n, 
+            workflow,
             if(n < 1){ Var(Var(Map.empty)) }
             else { Var(elements(n-1).visibleArtifacts) },
-            this
           )
     doInsertAll(n, Some(WorkflowArtifactInspector(inspector)))
     refreshModuleState()
