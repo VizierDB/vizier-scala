@@ -64,11 +64,11 @@ object CheckpointDataset extends Command
 
     context.outputDatasetWithFile(
       datasetName,
-      artifactId => 
+      artifact => 
         new MaterializeConstructor(
           input = input.id,
           schema = df.schema,
-          artifactId = artifactId,
+          artifactId = artifact.id,
           projectId = context.projectId,
           format = MaterializeConstructor.DEFAULT_FORMAT,
           options = Map.empty

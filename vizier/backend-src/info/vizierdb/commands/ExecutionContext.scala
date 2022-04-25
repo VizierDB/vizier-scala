@@ -45,6 +45,7 @@ import org.apache.spark.ml.Pipeline
 import info.vizierdb.spark.PipelineModelConstructor
 import info.vizierdb.spark.LoadConstructor
 import org.apache.spark.ml.PipelineModel
+import scala.io.Source
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -149,7 +150,7 @@ class ExecutionContext(
   /**
    * Define and fit SparkML Pipeline
    */
-  def pipeline(
+  def createPipeline(
     input: String, 
     output: String = null,
     properties: Map[String,JsObject] = Map.empty
@@ -179,73 +180,36 @@ class ExecutionContext(
     logger.debug("Fitting pipeline")
     val model = pipeline.fit(inputDataframe)
 
-    val outputArtifact = 
-      DB.autoCommit { implicit s =>
-
-        logger.debug("Creating pipeline placeholder artifact")
-        // Create a placeholder
-        var artifact = Artifact.make(
-          projectId,
-          ArtifactType.DATASET,
-          MIME.RAW,
-          Array()
-        )
-
-        logger.debug(s"Saving pipeline model to ${artifact.absoluteFile}")
-        // Output the model
-        model.save(artifact.absoluteFile.toString)
-
-        // Fill out the placeholder
-        artifact = artifact.replaceData(
-          Json.toJson(Dataset(
-            new PipelineModelConstructor(
-              input = inputArtifact.id,
-              url = FileArgument(fileid = Some(artifact.id)),
-              projectId = projectId
-            ),
-            properties = properties
-          ))
-        )
-
-        /* return */ artifact
-      }
-
-    this.output(Option(output).getOrElse(input), outputArtifact)
+    val outputArtifact = outputDatasetWithFile(
+        Option(output).getOrElse(input), 
+        { artifact => 
+          new PipelineModelConstructor(
+            input = inputArtifact.id,
+            url = FileArgument(fileid = Some(artifact.id)),
+            projectId = projectId
+          )
+        },
+        properties
+    )
 
     return (outputArtifact, model)
   }
 
   def outputDataframe(name: String, dataframe: DataFrame, properties: Map[String,JsObject] = Map.empty): Artifact =
   {
-    val artifact =
-      DB.autoCommit { implicit s =>
-        // Create a placeholder
-        val artifact = Artifact.make(
-          projectId,
-          ArtifactType.DATASET,
-          MIME.RAW,
-          Array()
-        )
+    outputDatasetWithFile(name, { artifact =>
+      dataframe.write
+               .parquet(artifact.absoluteFile.toString)
 
-        artifact.replaceData(
-          Json.toJson(Dataset(
-            new LoadConstructor(
-              url = FileArgument(fileid = Some(artifact.id)),
-              format = "parquet",
-              sparkOptions = Map(),
-              contextText = Some(name),
-              proposedSchema = Some(dataframe.schema),
-              projectId = projectId
-            ),
-            properties = properties
-          ))
-        )
-      }
-
-    dataframe.write
-             .parquet(artifact.absoluteFile.toString)
-
-    return artifact
+      new LoadConstructor(
+        url = FileArgument(fileid = Some(artifact.id)),
+        format = "parquet",
+        sparkOptions = Map(),
+        contextText = Some(name),
+        proposedSchema = Some(dataframe.schema),
+        projectId = projectId
+      )
+    }, properties)
   }
 
   /** 
@@ -286,12 +250,22 @@ class ExecutionContext(
    *
    * Parameters should be valid spark data values of the type provided.
    */
-  def parameter(name: String): Option[serialized.ParameterArtifact] =
+  def parameterOpt[T](name: String): Option[T] =
   {
     artifact(name)
       .filter { _.t == ArtifactType.PARAMETER }
-      .map { _.parameter }
+      .map { _.parameter.asInstanceOf[T] }
   }
+
+  /**
+   * Get a parameter artifact defined in an earlier cell
+   * 
+   * @param   name         The name of the artifact
+   *
+   * Parameters should be valid spark data values of the type provided.
+   */
+  def parameter[T](name: String): T =
+    parameterOpt[T](name).get
 
   /**
    * Set a parameter artifact for use in later cells
@@ -400,7 +374,7 @@ class ExecutionContext(
 
   def outputDatasetWithFile[T <: DataFrameConstructor](
     name: String,
-    constructor: Identifier => T,
+    constructor: Artifact => T,
     properties: Map[String, JsValue] = Map.empty
   )(implicit writes: Writes[T]): Artifact =
   {
@@ -415,7 +389,7 @@ class ExecutionContext(
         name,
         artifact.replaceData(
           Json.toJson(Dataset(
-            constructor(artifact.id),
+            constructor(artifact),
             properties
           )).toString.getBytes
         )
@@ -457,6 +431,21 @@ class ExecutionContext(
       fout.close()
     }
     return placeholder
+  }
+
+  /**
+   * Retrieve a file artifact
+   */
+  def file[T](name: String)(readFile: Source => T): T =
+  {
+    val fileArtifact = artifact(name).getOrElse { throw new VizierException(s"File $name does not exist")}
+    val data = fileArtifact.t match {
+                  case ArtifactType.FILE => Source.fromFile(fileArtifact.absoluteFile)
+                  case ArtifactType.BLOB => Source.fromBytes(fileArtifact.data)
+               }
+    val ret = readFile(data)
+    data.close()
+    return ret
   }
 
   /**
@@ -550,7 +539,7 @@ class ExecutionContext(
       }
     }
 
-  def datasetPipeline(name: String): Option[PipelineModel] =
+  def pipeline(name: String): Option[PipelineModel] =
     dataset(name).flatMap { 
       _.constructor match {
         case p:PipelineModelConstructor => Some(p.pipeline)
