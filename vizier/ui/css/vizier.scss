@@ -816,37 +816,87 @@ $menu_height: 32px;
           }
         }
 
-        .snippets
+        .snippet_container
         {
-          display: flex;
-          width: calc(100% - 16px - 10px);
-          border: 1px solid lightgrey;
-          padding: 8px;
           margin-bottom: 12px;
 
-          .group 
+          &.expanded
           {
-            margin-right: 16px;
-
-            .label
+            .header
             {
-              font-weight: bold;
-              margin-bottom: 4px;
+              border-bottom: none;
+              .toggle i.fa
+              {
+                transform: rotate(90deg);
+              }
+            }
+
+
+            .snippets
+            {
+              visibility: visible;
+              position: static;
+            }
+          }
+
+          .header
+          {
+            padding: 4px;
+            width: calc(100% - 8px - 10px);
+            background-color: lightgrey;
+            border: 1px solid lightgrey;
+            // color: white;
+            font-weight: bold;
+
+            .toggle
+            {
+              margin-right: 8px;
+              margin-left: 4px;
 
               i.fa
               {
-                margin-right: 4px;
+                transition-property: transform;
+                transition-duration: 0.5;
               }
             }
-            
-            .snippet
-            {
-              cursor: pointer;
-              color: $color_artifact_button;
+          }
 
-              &:active
+          .snippets
+          {
+            display: flex;
+            width: calc(100% - 16px - 10px);
+            border: 1px solid lightgrey;
+            border-top: none;
+            padding: 8px;
+            transition-property: visibility;
+            transition-duration: 0.5;
+            visibility: hidden;
+            position: absolute;
+
+            .group 
+            {
+              margin-right: 16px;
+
+              .label
               {
-                transform: scale(0.95);
+                font-weight: bold;
+                margin-bottom: 4px;
+
+                i.fa
+                {
+                  margin-right: 4px;
+                }
+              }
+              
+              .snippet
+              {
+                cursor: pointer;
+                color: $color_artifact_button;
+
+                &:active
+                {
+                  transform: scale(0.95);
+                }
               }
             }
           }

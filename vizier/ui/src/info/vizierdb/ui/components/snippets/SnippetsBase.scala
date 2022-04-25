@@ -21,19 +21,36 @@ abstract class SnippetsBase
    */
 
   def apply(handler: String => Unit) =
-    div(`class` := "snippets",
-      groups.map { case Group(icon, label, snippets) =>
-        div(`class` := "group",
-          div(`class` := "label", FontAwesome(icon), label),
-          snippets.map { case Snippet(name, snippet) =>
-            div(`class` := "snippet",
-              name,
-              onclick := { _:dom.Event => handler(snippet) }
+  {
+    val container = div(`class` := "snippet_container", 
+        div(`class` := "snippets",
+          groups.map { case Group(icon, label, snippets) =>
+            div(`class` := "group",
+              div(`class` := "label", FontAwesome(icon), label),
+              snippets.map { case Snippet(name, snippet) =>
+                div(`class` := "snippet",
+                  name,
+                  onclick := { _:dom.Event => handler(snippet) }
+                )
+              }
             )
           }
         )
-      }
-    ).render
+      ).render
+
+    container.insertBefore(
+      div(`class` := "header",
+        span(`class` := "toggle", FontAwesome("caret-right")), 
+        "Code Snippets",
+        onclick := { _:dom.Event =>
+          container.classList.toggle("expanded")
+        },
+      ).render,
+      container.firstChild
+    )
+
+    container
+  }
 
 
 }
