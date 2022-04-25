@@ -19,4 +19,7 @@ trait CodeMirrorEditor extends js.Object
   def getValue(): String = js.native
   def getValue(separator: String): String = js.native
   def setValue(content: String): String = js.native
+
+  def replaceSelection(replacement: String): Unit = js.native
+  def replaceSelection(replacement: String, select: String): Unit = js.native
 }

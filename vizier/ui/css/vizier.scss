@@ -815,6 +815,42 @@ $menu_height: 32px;
             min-height: 200px;
           }
         }
+
+        .snippets
+        {
+          display: flex;
+          width: calc(100% - 16px - 10px);
+          border: 1px solid lightgrey;
+          padding: 8px;
+          margin-bottom: 12px;
+
+          .group 
+          {
+            margin-right: 16px;
+
+            .label
+            {
+              font-weight: bold;
+              margin-bottom: 4px;
+
+              i.fa
+              {
+                margin-right: 4px;
+              }
+            }
+            
+            .snippet
+            {
+              cursor: pointer;
+              color: $color_artifact_button;
+
+              &:active
+              {
+                transform: scale(0.95);
+              }
+            }
+          }
+        }
       }
 
     }

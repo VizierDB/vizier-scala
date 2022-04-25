@@ -13,6 +13,8 @@ import info.vizierdb.ui.rxExtras.{ OnMount, RxBuffer, RxBufferView }
 import info.vizierdb.util.{ Logger, Logging }
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.ui.components.snippets.PythonSnippets
+import info.vizierdb.ui.components.snippets.SnippetsBase
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
@@ -280,7 +282,10 @@ case class CodeParameter(
           ) 
           if(initialValue != null) { editor.setValue(initialValue) }
         }
-      )
+      ),
+      CodeParameter.SNIPPETS.get(language).map { _.apply { snippet => 
+        editor.replaceSelection(snippet)
+      }}
     )
   def value = 
     JsString(
@@ -303,6 +308,10 @@ object CodeParameter
     "scala" -> "text/x-scala",
     "sql" -> "text/x-sql",
     "markdown" -> "text/x-markdown"
+  )
+
+  val SNIPPETS = Map[String, SnippetsBase](
+    "python" -> PythonSnippets
   )
 }
 
