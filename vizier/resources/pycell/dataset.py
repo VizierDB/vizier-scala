@@ -676,10 +676,16 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
     return base64.b64decode(value.encode('utf-8'))
   elif data_type == DATATYPE_DATETIME:
     from datetime import datetime
-    return datetime.fromisoformat(value)
+    try:
+      return datetime.fromisoformat(value)
+    except ValueError as e:
+      raise ValueError("Error importing datetime {}".format(value))
   elif data_type == DATATYPE_DATE:
     from datetime import date
-    return date.fromisoformat(value)
+    try:
+      return date.fromisoformat(value)
+    except ValueError as e:
+      raise ValueError("Error importing date {}".format(value))
   elif data_type == DATATYPE_IMAGE:
     from PIL import Image
     import base64

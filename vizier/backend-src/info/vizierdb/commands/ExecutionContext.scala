@@ -378,23 +378,23 @@ class ExecutionContext(
     properties: Map[String, JsValue] = Map.empty
   )(implicit writes: Writes[T]): Artifact =
   {
-    DB.autoCommit { implicit s =>
-      val artifact = Artifact.make(
+    val artifact = DB.autoCommit { implicit s =>
+      Artifact.make(
         projectId,
         ArtifactType.DATASET,
         MIME.RAW,
         Array[Byte]()
       )
-      output(
-        name,
-        artifact.replaceData(
-          Json.toJson(Dataset(
-            constructor(artifact),
-            properties
-          )).toString.getBytes
-        )
-      )
     }
+    val ds = Dataset(constructor(artifact), properties)
+    output(
+      name,
+      DB.autoCommit { implicit s =>
+        artifact.replaceData(
+          Json.toJson(ds).toString.getBytes
+        )
+      }
+    )
   }
 
   /**

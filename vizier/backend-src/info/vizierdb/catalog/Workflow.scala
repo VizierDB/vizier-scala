@@ -242,8 +242,8 @@ case class Workflow(
           workflowId = id,
           cells = cellsAndModules
         ),
-      datasets    = datasets   .flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:JsResultException => e.printStackTrace(); None } },
-      dataobjects = dataobjects.flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:JsResultException => e.printStackTrace(); None } },
+      datasets    = datasets   .flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:Throwable => e.printStackTrace(); None } },
+      dataobjects = dataobjects.flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:Throwable => e.printStackTrace(); None } },
       readOnly = !branch.headId.equals(id),
     )
   }

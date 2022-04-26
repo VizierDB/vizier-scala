@@ -50,31 +50,25 @@ object CheckpointDataset extends Command
 
     context.message("Checkpointing data...")
 
-    val staged = context.outputFilePlaceholder(
-      "datasetName",
-      mimeType = MIME.RAW,
-    )
-    Staging.stage( 
-            input = df, 
-            format = MaterializeConstructor.DEFAULT_FORMAT,
-            projectId = context.projectId,
-            artifactId = staged.id,
-          ) 
-    context.message("Dataset written, registering file...")
+    val artifact = context.outputDatasetWithFile(name, { artifact => 
+      Staging.stage( 
+        input = df, 
+        format = MaterializeConstructor.DEFAULT_FORMAT,
+        projectId = context.projectId,
+        artifactId = artifact.id,
+      ) 
+      context.message("Dataset written, registering file...")
+      new MaterializeConstructor(
+        input = input.id,
+        schema = df.schema,
+        artifactId = artifact.id,
+        projectId = context.projectId,
+        format = MaterializeConstructor.DEFAULT_FORMAT,
+        options = Map.empty
+      )
+    })
 
-    context.outputDatasetWithFile(
-      datasetName,
-      artifact => 
-        new MaterializeConstructor(
-          input = input.id,
-          schema = df.schema,
-          artifactId = artifact.id,
-          projectId = context.projectId,
-          format = MaterializeConstructor.DEFAULT_FORMAT,
-          options = Map.empty
-        )
-    )
-    context.message("Dataset Checkpointed")
+    context.message(s"Dataset Checkpointed as ${artifact.relativeFile}")
   }
   def predictProvenance(arguments: Arguments, properties: JsObject) = 
     ProvenancePrediction

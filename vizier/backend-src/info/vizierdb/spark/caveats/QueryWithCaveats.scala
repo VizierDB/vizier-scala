@@ -15,6 +15,7 @@ import org.mimirdb.caveats.implicits._
 import org.mimirdb.caveats.{ Constants => Caveats }
 import org.apache.spark.sql.types._
 import info.vizierdb.catalog.Artifact
+import org.apache.spark.sql.AnalysisException
 
 object QueryWithCaveats
   extends LazyLogging
@@ -22,7 +23,7 @@ object QueryWithCaveats
 {
   class ResultTooBig extends Exception("The dataset is too big to copy.  Try a sample or a LIMIT query instead.")
 
-  val RESULT_THRESHOLD = 10000
+  val RESULT_THRESHOLD = 15000
 
   def apply(
     query: String,

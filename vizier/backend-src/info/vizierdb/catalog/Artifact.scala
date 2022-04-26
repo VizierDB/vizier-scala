@@ -33,6 +33,8 @@ import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.spark.caveats.{ QueryWithCaveats, DataContainer }
 import info.vizierdb.spark.SparkSchema.fieldFormat
+import org.apache.spark.sql.AnalysisException
+import com.typesafe.scalalogging.LazyLogging
 
 case class Artifact(
   id: Identifier,
@@ -41,7 +43,7 @@ case class Artifact(
   created: ZonedDateTime,
   mimeType: String,
   data: Array[Byte]
-)
+) extends LazyLogging
 {
   /**
    * Interpret the artifact's value as a string
@@ -205,15 +207,31 @@ case class Artifact(
   {
     assert(t.equals(ArtifactType.DATASET))
     val descriptor = datasetDescriptor
-    QueryWithCaveats(
-      query = descriptor.construct(Artifact.dataframeContext),
-      includeCaveats = includeCaveats,
-      limit = limit,
-      offset = offset,
-      computedProperties = descriptor.properties,
-      cacheAs = None,
-      columns = None
-    )
+    try {
+      QueryWithCaveats(
+        query = descriptor.construct(Artifact.dataframeContext),
+        includeCaveats = includeCaveats,
+        limit = limit,
+        offset = offset,
+        computedProperties = descriptor.properties,
+        cacheAs = None,
+        columns = None
+      )
+    } catch {
+      case a:AnalysisException if includeCaveats => 
+        logger.debug(a.getStackTrace().map { _.toString }.mkString("\n"))
+        logger.warn(s"Error applying caveats (${a.getMessage}).  Trying without.")
+        QueryWithCaveats(
+          query = descriptor.construct(Artifact.dataframeContext),
+          includeCaveats = false,
+          limit = limit,
+          offset = offset,
+          computedProperties = descriptor.properties,
+          cacheAs = None,
+          columns = None
+        )
+    }
+
   }
 
   /**

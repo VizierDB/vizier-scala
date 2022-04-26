@@ -42,7 +42,7 @@ object SparkPrimitive
     val cal = Calendar.getInstance();
     cal.setTime(date)
     val y = cal.get(Calendar.YEAR)
-    val m = cal.get(Calendar.MONTH)
+    val m = cal.get(Calendar.MONTH)+1
     val d = cal.get(Calendar.DAY_OF_MONTH)
     f"$y%04d-$m%02d-$d%02d"
   }
@@ -51,7 +51,7 @@ object SparkPrimitive
     val cal = Calendar.getInstance()
     cal.setTime(timestamp)
     val y   = cal.get(Calendar.YEAR)
-    val m   = cal.get(Calendar.MONTH)
+    val m   = cal.get(Calendar.MONTH)+1 // Calendar.MONTH is 0-based
     val d   = cal.get(Calendar.DAY_OF_MONTH)
     val hr  = cal.get(Calendar.HOUR_OF_DAY)
     val min = cal.get(Calendar.MINUTE)
@@ -69,7 +69,7 @@ object SparkPrimitive
         val cal = Calendar.getInstance()
         cal.set(
           y.toInt, 
-          m.toInt, 
+          m.toInt-1, // Expects a value with Jan as 1
           d.toInt, 
           0, 0, 0
         )
@@ -85,7 +85,7 @@ object SparkPrimitive
         val secWithMsec = sec.toDouble
         cal.set(
           y.toInt, 
-          m.toInt, 
+          m.toInt-1, // Expects a value with Jan as 0
           d.toInt, 
           hr.toInt,
           min.toInt,

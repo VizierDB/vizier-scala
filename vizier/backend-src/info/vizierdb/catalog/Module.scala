@@ -146,8 +146,31 @@ case class Module(
     val messages: Seq[Message] = 
       cell.resultId.map { Result.outputs(_) }.toSeq.flatten
 
+    // Be a bit defensive here... if we can't retrieve the object, log it, but don't
+    // get in the way of the system doing its thing.
+    val datasetsSummaries  = 
+      datasets.flatMap { case (name, d) => 
+        try { Some(d.summarize(name)) } 
+        catch { case e:Throwable => e.printStackTrace(); None } 
+      }
+    val chartsSummaries    = 
+      charts.flatMap { case (name, d) => 
+        try { Some(d.summarize(name)) } 
+        catch { case e:Throwable => e.printStackTrace(); None } 
+      }
+    val artifactsSummaries = 
+      cell.outputs.flatMap { a => 
+        try { a.getSummary.map { _.summarize(a.userFacingName) } } 
+        catch { case e:Throwable => e.printStackTrace(); None } 
+      }
 
-    serialized.ModuleDescription(
+    val outputs = serialized.ModuleOutputDescription(
+      stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
+      stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
+    )
+
+
+    val descr = serialized.ModuleDescription(
       id = cell.moduleDescriptor,
       moduleId = id,
       state = ExecutionState.translateToClassicVizier(cell.state),
@@ -160,17 +183,16 @@ case class Module(
       text = description,
       toc = toc(cell),
       timestamps = timestamps,
-      datasets  = datasets    .flatMap { case (name, d) => try { Some(d.summarize(name)) } catch { case e:JsResultException => e.printStackTrace(); None } },
-      charts    = charts      .flatMap { case (name, d) => try { Some(d.summarize(name)) } catch { case e:JsResultException => e.printStackTrace(); None } },
-      artifacts = cell.outputs.flatMap { a => try { a.getSummary.map { _.summarize(a.userFacingName) } } catch { case e:JsResultException => e.printStackTrace(); None } },
+
+      datasets  = datasetsSummaries,
+      charts    = chartsSummaries,
+      artifacts = artifactsSummaries,
         // artifactSummaries.map { case (name, d) => d.summarize(name) },
 
-      outputs = serialized.ModuleOutputDescription(
-        stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
-        stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
-      ),
+      outputs = outputs,
       resultId = cell.resultId,
     )
+    return descr
   } 
 }
 object Module
