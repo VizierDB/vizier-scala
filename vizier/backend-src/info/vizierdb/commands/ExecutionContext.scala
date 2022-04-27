@@ -183,6 +183,10 @@ class ExecutionContext(
     val outputArtifact = outputDatasetWithFile(
         Option(output).getOrElse(input), 
         { artifact => 
+          logger.debug(s"Saving pipeline model to ${artifact.absoluteFile}")
+          // Output the model
+          model.save(artifact.absoluteFile.toString)
+
           new PipelineModelConstructor(
             input = inputArtifact.id,
             url = FileArgument(fileid = Some(artifact.id)),
@@ -254,7 +258,7 @@ class ExecutionContext(
   {
     artifact(name)
       .filter { _.t == ArtifactType.PARAMETER }
-      .map { _.parameter.asInstanceOf[T] }
+      .map { _.parameter.nativeValue.asInstanceOf[T] }
   }
 
   /**
