@@ -24,6 +24,7 @@ import info.vizierdb.api.response._
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.util.StupidReactJsonMap
+import info.vizierdb.catalog.CatalogDB
 
 object UpdateBranch
 {
@@ -34,7 +35,7 @@ object UpdateBranch
   ): serialized.BranchSummary =
   {
     val saneProperties = serialized.PropertyList.toMap(properties)
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       val branch: Branch = 
         Branch.getOption(projectId, branchId)
                .getOrElse { ErrorResponse.noSuchEntity }

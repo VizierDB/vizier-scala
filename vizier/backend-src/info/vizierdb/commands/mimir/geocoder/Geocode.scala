@@ -36,6 +36,7 @@ import org.apache.spark.sql.functions.{
   concat, 
   lit
 }
+import info.vizierdb.catalog.CatalogDB
 
 class Geocode(
   geocoders: Map[String, Geocoder], 
@@ -92,14 +93,14 @@ class Geocode(
          // Otherwise, try to load the old model.
       arguments.getOpt[Identifier](PARA_CACHE)
                .map { id => 
-                  DB.readOnly { implicit s => 
+                  CatalogDB.withDBReadOnly { implicit s => 
                     Artifact.get(id, Some(context.projectId))
                   } -> false
                }
                .getOrElse { 
          // If we don't have/can't use the old model, create a new one
          // Don't go through context to create it so we don't pollute the namespace.
-                 DB.autoCommit { implicit s => 
+                 CatalogDB.withDB { implicit s => 
                    val artifact = 
                      Artifact.make(
                        projectId = context.projectId,
@@ -139,7 +140,7 @@ class Geocode(
      */
     val cache = 
       if(freshArtifact){ null:DataFrame } else {
-        DB.autoCommit { implicit s => cacheArtifact.dataframe }
+        CatalogDB.withDB { implicit s => cacheArtifact.dataframe }
       }
 
     /**

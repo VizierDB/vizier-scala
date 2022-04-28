@@ -22,12 +22,13 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object ListBranches
 {
   def apply(projectId: Identifier): serialized.BranchList =
   {
-    DB.readOnly { implicit session => 
+    CatalogDB.withDBReadOnly { implicit session => 
       Project.getOption(projectId)
         match { 
           case Some(project) => 

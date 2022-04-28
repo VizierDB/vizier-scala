@@ -27,6 +27,7 @@ import info.vizierdb.serialized
 import info.vizierdb.spark.InlineDataConstructor
 import info.vizierdb.artifacts.Dataset
 import info.vizierdb.catalog.Artifact
+import info.vizierdb.catalog.CatalogDB
 
 object CreateDataset
 {
@@ -40,7 +41,7 @@ object CreateDataset
     annotations: Option[DatasetAnnotation]
   ): serialized.ArtifactSummary =
   {
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       val project = 
         Project.getOption(projectId)
                .getOrElse { ErrorResponse.noSuchEntity }

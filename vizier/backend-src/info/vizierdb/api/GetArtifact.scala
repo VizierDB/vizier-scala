@@ -28,11 +28,14 @@ import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.VizierException
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
+import com.typesafe.scalalogging.LazyLogging
 
 object GetArtifact
+  extends LazyLogging
 {
   def getArtifact(projectId: Long, artifactId: Long, expecting: Option[ArtifactType.T]): Option[Artifact] = 
-      DB.readOnly { implicit session => 
+      CatalogDB.withDBReadOnly { implicit session => 
         Artifact.getOption(artifactId, Some(projectId))
       }.filter { artifact => 
         expecting.isEmpty || expecting.get.equals(artifact.t)
@@ -54,8 +57,7 @@ object GetArtifact
     val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
-        println(s"name: $name")
-        DB.readOnly { implicit s => 
+        CatalogDB.withDBReadOnly { implicit s => 
           artifact.describe(
             offset = offset, 
             limit = limit, 
@@ -101,7 +103,7 @@ object GetArtifact
     {
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match { 
         case Some(artifact) => 
-          val df:DataFrame = DB.readOnly { implicit s => artifact.dataframe }
+          val df:DataFrame = CatalogDB.withDB { implicit s => artifact.dataframe }
           ExplainCaveats(
             df,
             rows = row.map { Seq(_) }.getOrElse { null },
@@ -125,7 +127,7 @@ object GetArtifact
     {
       getArtifact(projectId, artifactId, None) match {
         case Some(artifact) => 
-          DB.readOnly { implicit s => artifact.summarize() }
+          CatalogDB.withDBReadOnly { implicit s => artifact.summarize() }
         case None => 
           ErrorResponse.noSuchEntity
       }
@@ -165,7 +167,7 @@ object GetArtifact
             tempFile.delete()
           }
 
-          val df:DataFrame = DB.readOnly { implicit s =>
+          val df:DataFrame = CatalogDB.withDB { implicit s =>
                                 artifact.dataframe
                               }
           df.coalesce(1)

@@ -34,7 +34,7 @@ object TimerUtils
   {
     val (anonFuncRet, nanoTime) = time(anonFunc)
     val sep = if(context.equals("")){""} else {" "}
-    log(s"$descriptor: $nanoTime ns$sep$context")
+    log(s"$descriptor: ${nanoTime / 1000000000.0} s$sep$context")
     anonFuncRet
   }
 }

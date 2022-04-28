@@ -16,6 +16,7 @@ import org.mimirdb.caveats.{ Constants => Caveats }
 import org.apache.spark.sql.types._
 import info.vizierdb.catalog.Artifact
 import org.apache.spark.sql.AnalysisException
+import info.vizierdb.catalog.CatalogDB
 
 object QueryWithCaveats
   extends LazyLogging
@@ -272,7 +273,7 @@ object QueryWithCaveats
     functions: Map[String, Seq[Expression] => Expression] = Map.empty
   ): Seq[StructField] = { 
     val df = 
-      DB.readOnly { implicit s => 
+      CatalogDB.withDB { implicit s => 
         InjectedSparkSQL(query, views, functionMappings = functions)
       }
     df.schema

@@ -25,6 +25,7 @@ import info.vizierdb.api.response._
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.catalog.CatalogDB
 
 object InsertModule
 {
@@ -41,7 +42,7 @@ object InsertModule
     val command = Commands.get(packageId, commandId)
 
     val workflow: Workflow = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         val branch: (Branch) = 
           Branch.getOption(projectId, branchId)
                 .getOrElse { ErrorResponse.noSuchEntity }
@@ -69,7 +70,7 @@ object InsertModule
 
     Scheduler.schedule(workflow)
 
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
     }
   } 

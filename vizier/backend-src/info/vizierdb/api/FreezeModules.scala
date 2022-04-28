@@ -27,6 +27,7 @@ import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object FreezeModules
   extends Object
@@ -40,7 +41,7 @@ object FreezeModules
   ): serialized.WorkflowDescription =
   {
     val workflow: Workflow = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         logger.trace(s"Looking up branch $branchId")
         val branch:Branch =
           Branch.getOption(projectId, branchId)
@@ -68,7 +69,7 @@ object FreezeModules
 
     logger.trace("Building response")
 
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
     }
   } 

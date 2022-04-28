@@ -1,15 +1,16 @@
 package info.vizierdb.catalog.gc
 
 import java.io.File
+import scalikejdbc._
 import scala.io.Source
 import scala.util.hashing.MurmurHash3
-import scalikejdbc._
 import info.vizierdb.types._
 import info.vizierdb.catalog.Artifact
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.util.TimerUtils
 import scala.collection.mutable
 import info.vizierdb.catalog.{
+  CatalogDB,
   Module,
   ArtifactRef,
   InputArtifactRef,
@@ -88,7 +89,7 @@ object DedupFiles
     //   OutputArtifactRef
     //   FileArgument (in modules)
     //   Artifacts
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       withSQL { 
         val a = OutputArtifactRef.column
         update(OutputArtifactRef)
@@ -179,7 +180,7 @@ object DedupFiles
   def dedup(projectId: Option[Identifier] = None): Unit = 
   {
     val files = 
-      DB.readOnly { implicit s =>
+      CatalogDB.withDBReadOnly { implicit s =>
         Artifact.all(projectId)
                 .filter { _.t == ArtifactType.FILE }
                 .toSeq

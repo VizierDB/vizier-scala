@@ -22,13 +22,14 @@ import info.vizierdb.api.response._
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object ListProjects
 {
   def apply(): serialized.ProjectList =
     serialized.ProjectList(
       projects =
-        DB.readOnly { implicit session => 
+        CatalogDB.withDBReadOnly { implicit session => 
           Project.list.map { _.summarize }
         },
     )

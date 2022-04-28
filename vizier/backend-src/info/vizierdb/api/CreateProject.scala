@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object CreateProject
 {
@@ -30,7 +31,7 @@ object CreateProject
   {
     val saneProperties = serialized.PropertyList.toMap(properties)
     val project = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         Project.create(
           saneProperties.get("name")
                         .map { _.as[String] }

@@ -23,6 +23,7 @@ import play.api.libs.json.JsString
 import play.api.libs.json.JsObject
 import info.vizierdb.spark.vizual
 import info.vizierdb.spark.vizual.VizualScriptConstructor
+import info.vizierdb.catalog.CatalogDB
 
 object Geotag extends Command
 {
@@ -52,7 +53,7 @@ object Geotag extends Command
                       return
                     }
 
-    val schema = DB.autoCommit { implicit s => ds.datasetSchema }
+    val schema = CatalogDB.withDB { implicit s => ds.datasetSchema }
     val lat: StructField = schema(arguments.get[Int](PARAM_LATITUDE))
     val lon: StructField = schema(arguments.get[Int](PARAM_LONGITUDE))
     val outputCol = arguments.get[String](PARAM_COLNAME)

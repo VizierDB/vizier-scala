@@ -21,6 +21,7 @@ import info.vizierdb.catalog.{ Branch, Project }
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
+import info.vizierdb.catalog.CatalogDB
 
 object DeleteBranch
 {
@@ -29,7 +30,7 @@ object DeleteBranch
     branchId: Identifier
   ): Response =
   {
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       val p = 
         Project.getOption(projectId)
                .getOrElse { 
@@ -39,7 +40,7 @@ object DeleteBranch
         throw new IllegalArgumentException()
       }
     }
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       val b = 
         Branch.getOption(projectId = projectId, branchId = branchId)
                .getOrElse { 

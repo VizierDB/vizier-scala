@@ -25,6 +25,7 @@ import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.commands.Commands
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.catalog.CatalogDB
 
 object ReplaceModule
 {
@@ -39,7 +40,7 @@ object ReplaceModule
   ): serialized.WorkflowDescription =
   {
     val workflow: Workflow = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         val branch: Branch = 
           Branch.getOption(projectId, branchId)
                  .getOrElse { ErrorResponse.noSuchEntity }
@@ -69,7 +70,7 @@ object ReplaceModule
 
     Scheduler.schedule(workflow)
 
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
     }
   } 

@@ -24,6 +24,7 @@ import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.spark.caveats.{ QueryWithCaveats, DataContainer }
 import info.vizierdb.Vizier
+import info.vizierdb.catalog.CatalogDB
 
 object WorkflowSQL
   extends Object
@@ -43,7 +44,7 @@ object WorkflowSQL
     }
 
     val (datasets, functions) = 
-      DB.readOnly { implicit session => 
+      CatalogDB.withDBReadOnly { implicit session => 
         val workflow: Workflow = 
           (workflowId match {
             case Some(workflowIdActual) => 
@@ -77,7 +78,7 @@ object WorkflowSQL
     QueryWithCaveats(
       query = query.get,
       views = 
-        DB.readOnly { implicit s => 
+        CatalogDB.withDBReadOnly { implicit s => 
           datasets.mapValues { a => Artifact.get(a.id) }
                   .mapValues { a => val df = a.dataframe; { () => df } }
         },

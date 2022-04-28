@@ -30,7 +30,7 @@ object WorkflowTrace
     includeArtifacts: Boolean = true
   ): String =
   {
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       val branch = Branch.get(branchId)
       if(branch.projectId != projectId) {
         throw new IndexOutOfBoundsException() 

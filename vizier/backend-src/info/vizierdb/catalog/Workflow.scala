@@ -24,6 +24,8 @@ import info.vizierdb.VizierAPI
 import info.vizierdb.serialized
 import info.vizierdb.delta.{ UpdateCell, DeltaBus }
 import info.vizierdb.viztrails.{ StateTransition }
+import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.util.TimerUtils
 
 /**
  * One version of a workflow.  
@@ -40,6 +42,8 @@ case class Workflow(
   created: ZonedDateTime,
   aborted: Boolean
 )
+  extends LazyLogging
+  with TimerUtils
 {
   def projectId(implicit session: DBSession) = 
     Branch.get(branchId).projectId
@@ -234,16 +238,30 @@ case class Workflow(
       else { curr._1.state }
     }
 
+    val modules = logTime("Workflow.describe/Module.describeAll") {
+      Module.describeAll(
+        projectId = branch.projectId,
+        branchId = branchId,
+        workflowId = id,
+        cells = cellsAndModules
+      )
+    }
+
+    val datasetsSummary = logTime("Workflow.describe/Summarize datasets") {
+      datasets.flatMap { d => try { Some(d._1.summarize(name = d._2)) } 
+                              catch { case e:Throwable => e.printStackTrace(); None } }
+    }
+
+    val dataobjectsSummary = logTime("Workflow.describe/Summarize dataobjects") {
+      dataobjects.flatMap { d => try { Some(d._1.summarize(name = d._2)) } 
+                                 catch { case e:Throwable => e.printStackTrace(); None } }
+    }
+
     summary.toDescription(
       state = state,
-      modules = Module.describeAll(
-          projectId = branch.projectId,
-          branchId = branchId,
-          workflowId = id,
-          cells = cellsAndModules
-        ),
-      datasets    = datasets   .flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:Throwable => e.printStackTrace(); None } },
-      dataobjects = dataobjects.flatMap { d => try { Some(d._1.summarize(name = d._2)) } catch { case e:Throwable => e.printStackTrace(); None } },
+      modules = modules,
+      datasets    = datasetsSummary,
+      dataobjects = dataobjectsSummary,
       readOnly = !branch.headId.equals(id),
     )
   }

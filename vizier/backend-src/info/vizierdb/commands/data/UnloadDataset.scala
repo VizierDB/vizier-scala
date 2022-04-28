@@ -25,6 +25,7 @@ import java.io.File
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.viztrails.ProvenancePrediction
+import info.vizierdb.catalog.CatalogDB
 
 object UnloadDataset extends Command
   with LazyLogging
@@ -88,7 +89,7 @@ object UnloadDataset extends Command
                               context.error(s"Dataset $datasetName does not exist"); return
                             }
 
-      val published:PublishedArtifact = DB.autoCommit { implicit s => 
+      val published:PublishedArtifact = CatalogDB.withDB { implicit s => 
         PublishedArtifact.make(
           artifact = artifact, 
           name = optionList.find { _._1.equalsIgnoreCase("name") }
@@ -136,7 +137,7 @@ object UnloadDataset extends Command
 
 
     val df: DataFrame = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         var df = dataset.dataframe
         // Tempfile formats need to be coalesced into a single partition
         // before they are dumped out.

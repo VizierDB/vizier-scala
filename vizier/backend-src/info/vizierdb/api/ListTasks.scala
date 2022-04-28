@@ -21,12 +21,13 @@ import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object ListTasks
 {
   def apply(): Seq[serialized.WorkflowSummary] = 
   {
-    DB.readOnly { implicit session => 
+    CatalogDB.withDBReadOnly { implicit session => 
       Scheduler.running
                .map { workflow => workflow.summarize }
     }

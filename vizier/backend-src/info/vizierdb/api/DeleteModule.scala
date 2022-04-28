@@ -24,6 +24,7 @@ import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object DeleteModule
 {
@@ -35,7 +36,7 @@ object DeleteModule
   ): serialized.WorkflowDescription =
   {
     val workflow = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         val branch = 
           Branch.getOption(projectId = projectId, branchId = branchId)
                  .getOrElse { ErrorResponse.noSuchEntity }
@@ -53,7 +54,7 @@ object DeleteModule
     // The workflow must be scheduled AFTER the enclosing transaction finishes
     Scheduler.schedule(workflow)
 
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
     }
   }

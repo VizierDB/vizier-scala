@@ -28,6 +28,7 @@ import java.io.File
 import java.io.FileOutputStream
 import scala.io.Source
 import info.vizierdb.filestore.Filestore
+import info.vizierdb.catalog.CatalogDB
 
 case class ModelConfiguration(
   column: String,
@@ -113,14 +114,14 @@ object MissingValue
          // Otherwise, try to load the old model.
       arguments.getOpt[Identifier](PARAM_SAVED_MODEL)
                .map { id => 
-                  DB.readOnly { implicit s => 
+                  CatalogDB.withDBReadOnly { implicit s => 
                     Artifact.get(id, Some(context.projectId))
                   }
                }
                .getOrElse { 
          // If we don't have/can't use the old model, create a new one
          // Don't go through context to create it so we don't pollute the namespace.
-                 DB.autoCommit { implicit s => 
+                 CatalogDB.withDB { implicit s => 
                    Artifact.make(
                      projectId = context.projectId,
                      t = ArtifactType.FILE,
@@ -182,7 +183,7 @@ object MissingValue
     summary.close()
     assert(summaryFile.exists())
 
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       modelArtifact.updateFileProperty(
         PROP_MODELS,
         Json.toJson(existingModels ++ newModels)

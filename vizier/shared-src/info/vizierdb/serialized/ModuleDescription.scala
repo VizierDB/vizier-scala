@@ -13,8 +13,6 @@ case class ModuleDescription(
   text: String,
   toc: Option[TableOfContentsEntry],
   timestamps: Timestamps,
-  datasets: Seq[ArtifactSummary],
-  charts: Seq[ArtifactSummary],
   artifacts: Seq[ArtifactSummary],
   outputs: ModuleOutputDescription,
   resultId: Option[Identifier],

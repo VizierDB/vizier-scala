@@ -22,12 +22,13 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object GetBranch
 {
   def apply(projectId: Identifier, branchId: Identifier): serialized.BranchDescription =
   {
-    DB.readOnly { implicit session => 
+    CatalogDB.withDBReadOnly { implicit session => 
       Branch.getOption(projectId, branchId) match {
         case Some(branch) => branch.describe
         case None => ErrorResponse.noSuchEntity

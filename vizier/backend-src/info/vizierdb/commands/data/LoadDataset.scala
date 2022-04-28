@@ -14,7 +14,6 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
-import scalikejdbc._
 import play.api.libs.json._
 import info.vizierdb.commands._
 import info.vizierdb.VizierException
@@ -29,6 +28,7 @@ import info.vizierdb.filestore.Staging
 import info.vizierdb.spark.LoadConstructor
 import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.viztrails.ProvenancePrediction
+import info.vizierdb.catalog.CatalogDB
 
 object LoadDataset
   extends Command
@@ -101,14 +101,14 @@ object LoadDataset
                             }
         } else { url }
       val published: PublishedArtifact = 
-        DB.readOnly { implicit s => 
+        CatalogDB.withDBReadOnly { implicit s => 
           PublishedArtifact.getOption(exportName)
         }.getOrElse {
           context.error(s"No published dataset named ${exportName} exists")
           return
         }
 
-      val source = DB.readOnly { implicit s => published.artifact }
+      val source = CatalogDB.withDBReadOnly { implicit s => published.artifact }
 
       context.output(datasetName, source)
       context.displayDataset(datasetName)
@@ -215,7 +215,7 @@ object LoadDataset
        * Replace the proposed schema with the inferred/actual schema
        */
       context.updateArguments(
-        PARAM_FILE -> DB.readOnly { implicit s => file.withGuessedFilename(Some(context.projectId)) },
+        PARAM_FILE -> CatalogDB.withDBReadOnly { implicit s => file.withGuessedFilename(Some(context.projectId)) },
         "schema" -> dataframe.schema.map { field =>
           Map(
             "schema_column" -> field.name,

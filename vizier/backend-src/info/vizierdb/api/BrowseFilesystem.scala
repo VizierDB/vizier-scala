@@ -12,6 +12,7 @@ import java.nio.file.Path
 import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.VizierAPI
+import info.vizierdb.catalog.CatalogDB
 
 object BrowseFilesystem
 {
@@ -72,7 +73,7 @@ object BrowseFilesystem
         throw new NoSuchElementException(s"${elements.mkString("/")} is not a directory")
       }
       else {
-        DB.readOnly { implicit s => 
+        CatalogDB.withDBReadOnly { implicit s => 
           PublishedArtifact.list
             .map { case (artifactLabel, summary) =>
               FilesystemObject(

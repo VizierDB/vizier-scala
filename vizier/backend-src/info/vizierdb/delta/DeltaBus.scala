@@ -144,7 +144,6 @@ object DeltaBus
               projectId = projectId,
               branchId = workflow.branchId,
               workflowId = workflow.id,
-              artifacts = ScopeSummary.empty
             ),
             cell.position
           )
@@ -190,9 +189,7 @@ object DeltaBus
   )(implicit session: DBSession)
   {
     val projectId = workflow.projectId
-    var scope = ScopeSummary.empty
     for( (cell, module) <- workflow.cellsAndModulesInOrder ){
-      scope = scope.copyWithUpdatesForCell(cell)
       if(include(cell, module)){
         DeltaBus.notify(
           workflow.branchId,
@@ -202,7 +199,6 @@ object DeltaBus
               projectId = projectId,
               branchId = workflow.branchId,
               workflowId = workflow.id,
-              artifacts = scope
             ),
             cell.position
           )
@@ -215,20 +211,13 @@ object DeltaBus
    * Convenience method to announce a set of cell inserts
    * @param workflow     The [[Workflow]] at the head of the [[Branch]]
    *                     <b>after</b> the update.
-   * @param include      A filter function that returns true for all cells
-   *                     to announce as inserted.
    */
   def notifyCellAppend(
     workflow: Workflow
   )(implicit session: DBSession)
   {
     val projectId = workflow.projectId
-    var scope = ScopeSummary.empty
-    val cellsAndModules = workflow.cellsAndModulesInOrder
-    for( (cell, module) <- cellsAndModules ){
-      scope = scope.copyWithUpdatesForCell(cell)
-    }
-    val (cell, module) = cellsAndModules.last
+    val (cell, module) = workflow.cellsAndModulesInOrder.last
     DeltaBus.notify(
       workflow.branchId,
       InsertCell(
@@ -236,8 +225,7 @@ object DeltaBus
           cell = cell,
           projectId = projectId,
           branchId = workflow.branchId,
-          workflowId = workflow.id,
-          artifacts = scope
+          workflowId = cell.position,
         ),
         cell.position
       )

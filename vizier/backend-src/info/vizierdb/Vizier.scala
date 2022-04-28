@@ -49,6 +49,7 @@ import org.mimirdb.caveats.Caveat
 import info.vizierdb.util.StringUtils
 import info.vizierdb.spark.caveats.ExplainCaveats
 import info.vizierdb.api.BrowseFilesystem
+import info.vizierdb.catalog.CatalogDB
 
 object Vizier
   extends LazyLogging
@@ -118,12 +119,13 @@ object Vizier
       enabled = true,
       singleLineMode = true,
       logLevel = logLevel,
+      warningThresholdMillis = 100
     ) 
   }
 
   def bringDatabaseToSaneState()
   {
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       Cell.abortEverything()
     }
   }
@@ -168,7 +170,7 @@ object Vizier
     if(!config.basePath().exists) { config.basePath().mkdir() }
     initSQLite()
     Schema.initialize()
-    initORMLogging()
+    initORMLogging("warn")
     bringDatabaseToSaneState()
     if(config.workingDirectory.isDefined){
       System.setProperty("user.dir", config.workingDirectory())
@@ -258,7 +260,7 @@ object Vizier
           println("... execution finished.")
           if(config.run.showCaveats()){
             val caveats: Map[String, Seq[Caveat]] =
-              DB.autoCommit{ implicit s => 
+              CatalogDB.withDB { implicit s => 
                 project.artifacts
                        .toSeq
                        .filter { _._2.t.equals(ArtifactType.DATASET) }

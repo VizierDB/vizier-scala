@@ -32,6 +32,7 @@ import info.vizierdb.spark.vizual.{ VizualCommand, VizualScriptConstructor }
 import info.vizierdb.spark.caveats.QueryWithCaveats
 import info.vizierdb.util.ExperimentalOptions
 import info.vizierdb.viztrails.ProvenancePrediction
+import info.vizierdb.catalog.CatalogDB
 
 object Python extends Command
   with LazyLogging
@@ -112,7 +113,7 @@ object Python extends Command
             withArtifact { artifact => 
               python.send("dataset",
                 "data" -> Json.toJson(
-                  DB.autoCommit { implicit s => 
+                  CatalogDB.withDB { implicit s => 
                     artifact.datasetData(includeCaveats = true)
                   }
 
@@ -252,7 +253,7 @@ object Python extends Command
 
                 val connection = ArrowQuery(
                   QueryWithCaveats.build(
-                    DB.autoCommit { implicit s => artifact.dataframe },
+                    CatalogDB.withDB { implicit s => artifact.dataframe },
                     true
                   )
                 )

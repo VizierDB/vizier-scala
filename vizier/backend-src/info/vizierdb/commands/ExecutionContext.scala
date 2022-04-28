@@ -16,7 +16,6 @@ package info.vizierdb.commands
 
 import java.io.File
 import play.api.libs.json._
-import scalikejdbc._
 import info.vizierdb.types._
 import info.vizierdb.Vizier
 import info.vizierdb.catalog.{ Artifact, Workflow, Module, Cell, Result }
@@ -46,6 +45,7 @@ import info.vizierdb.spark.PipelineModelConstructor
 import info.vizierdb.spark.LoadConstructor
 import org.apache.spark.ml.PipelineModel
 import scala.io.Source
+import info.vizierdb.catalog.CatalogDB
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -99,7 +99,7 @@ class ExecutionContext(
       return Some(ret.get)
     }
     val ret = scope.get(name.toLowerCase()).map { id =>
-      DB readOnly { implicit s => id.materialize }
+      CatalogDB.withDBReadOnly { implicit s => id.materialize }
     }
     if(registerInput){ ret.foreach { a => inputs.put(name.toLowerCase(), a.id) } }
     return ret
@@ -144,7 +144,7 @@ class ExecutionContext(
    */
   def dataframeOpt(name: String, registerInput: Boolean = true): Option[DataFrame] =
     artifact(name, registerInput)
-      .map { a => DB.readOnly { implicit s => a.dataframe } }
+      .map { a => CatalogDB.withDBReadOnly { implicit s => a.dataframe } }
 
 
   /**
@@ -174,7 +174,7 @@ class ExecutionContext(
                         }
 
     val inputDataframe = 
-      DB.autoCommit { implicit s => inputArtifact.dataframe }
+      CatalogDB.withDB { implicit s => inputArtifact.dataframe }
 
     // Release the database lock while fitting
     logger.debug("Fitting pipeline")
@@ -224,14 +224,14 @@ class ExecutionContext(
    */
   def datasetSchema(name: String, registerInput: Boolean = true): Option[Seq[StructField]] =
     artifact(name, registerInput)
-      .map { a => DB.autoCommit { implicit s => a.datasetSchema }}
+      .map { a => CatalogDB.withDB { implicit s => a.datasetSchema }}
 
   /**
    * Retrieve all datasets in scope
    */
   def allDatasets: Map[String, Artifact] =
   {
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       (
         scope.filter { _._2.t == ArtifactType.DATASET }
              .filterNot { outputs contains _._1 }
@@ -328,7 +328,7 @@ class ExecutionContext(
    */
   def output(name: String, t: ArtifactType.T, data: Array[Byte], mimeType: String = "text/plain"): Artifact =
   { 
-    val artifact = DB autoCommit { implicit s => Artifact.make(projectId, t, mimeType, data) }
+    val artifact = CatalogDB.withDB { implicit s => Artifact.make(projectId, t, mimeType, data) }
     outputs.put(name.toLowerCase(), Some(artifact))
     return artifact
   }
@@ -382,7 +382,7 @@ class ExecutionContext(
     properties: Map[String, JsValue] = Map.empty
   )(implicit writes: Writes[T]): Artifact =
   {
-    val artifact = DB.autoCommit { implicit s =>
+    val artifact = CatalogDB.withDB { implicit s =>
       Artifact.make(
         projectId,
         ArtifactType.DATASET,
@@ -393,7 +393,7 @@ class ExecutionContext(
     val ds = Dataset(constructor(artifact), properties)
     output(
       name,
-      DB.autoCommit { implicit s =>
+      CatalogDB.withDB { implicit s =>
         artifact.replaceData(
           Json.toJson(ds).toString.getBytes
         )
@@ -507,7 +507,7 @@ class ExecutionContext(
   {
     val dataset = artifact(name).get
 
-    val data =  DB.readOnly { implicit s => 
+    val data =  CatalogDB.withDBReadOnly { implicit s => 
                   dataset.datasetData(
                     offset = Some(offset),
                     limit  = Some(limit),
@@ -515,7 +515,7 @@ class ExecutionContext(
                   )
                 }
     val rowCount: Long = 
-        DB.autoCommit { implicit s => 
+        CatalogDB.withDB { implicit s => 
           dataset.datasetProperty("count") { descriptor => 
             JsNumber(dataset.dataframe.count())
           }
@@ -538,7 +538,7 @@ class ExecutionContext(
 
   def dataset(name: String): Option[Dataset] = 
     artifact(name).map { a => 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         a.datasetDescriptor
       }
     }
@@ -611,7 +611,7 @@ class ExecutionContext(
   {
     val command = Commands.get(module.packageId, module.commandId)
     val newArgs = command.encodeArguments(args.toMap, module.arguments.value.toMap)
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       val (newCell, newModule) = cell.replaceArguments(newArgs)
       DeltaBus.notifyUpdateCellArguments(workflow, newCell, newModule)
     }
@@ -645,7 +645,7 @@ class ExecutionContext(
   def updateJsonArguments(args: (String, JsValue)*)
   {
     val newArgs = JsObject(module.arguments.value ++ args.toMap)
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       val (newCell, newModule) = cell.replaceArguments(newArgs)
       DeltaBus.notifyUpdateCellArguments(workflow, newCell, newModule)
     }

@@ -69,7 +69,7 @@ class BranchWatcherSocket
       DeltaBus.unsubscribe(subscription)
     }
     
-    val branch = DB.readOnly { implicit s => Branch.get(projectId, branchId) } 
+    val branch = CatalogDB.withDBReadOnly { implicit s => Branch.get(projectId, branchId) } 
     
     subscription = DeltaBus.subscribe(branchId, this.notify, s"Websocket $client")
   }

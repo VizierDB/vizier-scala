@@ -41,6 +41,7 @@ import scala.util.Failure
 import info.vizierdb.spreadsheet.SpreadsheetCallbacks
 import info.vizierdb.serialized.DatasetColumn
 import org.apache.spark.util.collection.ErrorMessage
+import info.vizierdb.catalog.CatalogDB
 
 @WebSocket
 class SpreadsheetSocket
@@ -81,7 +82,7 @@ class SpreadsheetSocket
           Future {
             logger.trace("Initializing spreadsheet!")
             spreadsheet = Spreadsheet(
-              DB.autoCommit { implicit s => 
+              CatalogDB.withDB { implicit s => 
                 Artifact.get(target = datasetId, projectId = Some(projectId))
                   .dataframe
               }

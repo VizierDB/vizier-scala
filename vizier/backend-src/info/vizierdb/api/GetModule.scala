@@ -24,6 +24,7 @@ import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object GetModule
 {
@@ -34,7 +35,7 @@ object GetModule
     workflowId: Option[Identifier] = None
   ): serialized.ModuleDescription =
   {
-    DB.readOnly { implicit session => 
+    CatalogDB.withDBReadOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
         workflowId match {
           case Some(workflowIdActual) => 
@@ -51,7 +52,6 @@ object GetModule
               projectId = projectId, 
               branchId = branchId, 
               workflowId = workflowMaybe.get.id,
-              artifacts = ScopeSummary(cell)
             )
         case None => ErrorResponse.noSuchEntity
       }

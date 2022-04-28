@@ -27,6 +27,7 @@ import info.vizierdb.Vizier
 import org.apache.spark.sql.{ DataFrame, SparkSession, AnalysisException }
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.viztrails.ProvenancePrediction
+import info.vizierdb.catalog.CatalogDB
 
 object Query extends Command
   with LazyLogging
@@ -84,7 +85,7 @@ object Query extends Command
                                       f -> functions(f) }
                         .toMap
                         .mapValues { id =>  
-                          DB.autoCommit { implicit s => 
+                          CatalogDB.withDB { implicit s => 
                             val a = Artifact.get(id, Some(context.projectId))
                             (
                               a.id,
@@ -104,7 +105,7 @@ object Query extends Command
         )
 
       val output = context.outputDataset(datasetName, view)
-      val df = DB.autoCommit { implicit s => output.dataframe }
+      val df = CatalogDB.withDB { implicit s => output.dataframe }
       // df.explain()
 
       logger.trace("View created; Gathering dependencies")

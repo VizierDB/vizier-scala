@@ -128,7 +128,6 @@ case class Module(
     projectId: Identifier, 
     branchId: Identifier, 
     workflowId: Identifier, 
-    artifacts: ScopeSummary
   )(implicit session:DBSession): serialized.ModuleDescription = 
   {
     val result = cell.result
@@ -138,26 +137,11 @@ case class Module(
       finishedAt = result.flatMap { _.finished }
     )
 
-    val artifactSummaries = artifacts.allArtifactSummaries.toSeq
-
-    val datasets    = artifactSummaries.filter { _._2.t.equals(ArtifactType.DATASET) }
-    val charts      = artifactSummaries.filter { _._2.t.equals(ArtifactType.CHART) }
-
     val messages: Seq[Message] = 
       cell.resultId.map { Result.outputs(_) }.toSeq.flatten
 
     // Be a bit defensive here... if we can't retrieve the object, log it, but don't
     // get in the way of the system doing its thing.
-    val datasetsSummaries  = 
-      datasets.flatMap { case (name, d) => 
-        try { Some(d.summarize(name)) } 
-        catch { case e:Throwable => e.printStackTrace(); None } 
-      }
-    val chartsSummaries    = 
-      charts.flatMap { case (name, d) => 
-        try { Some(d.summarize(name)) } 
-        catch { case e:Throwable => e.printStackTrace(); None } 
-      }
     val artifactsSummaries = 
       cell.outputs.flatMap { a => 
         try { a.getSummary.map { _.summarize(a.userFacingName) } } 
@@ -184,8 +168,6 @@ case class Module(
       toc = toc(cell),
       timestamps = timestamps,
 
-      datasets  = datasetsSummaries,
-      charts    = chartsSummaries,
       artifacts = artifactsSummaries,
         // artifactSummaries.map { case (name, d) => d.summarize(name) },
 
@@ -276,16 +258,13 @@ object Module
     cells: Seq[(Cell, Module)]
   )(implicit session: DBSession): Seq[serialized.ModuleDescription] =
   { 
-    var scope = ScopeSummary.empty
     cells.sortBy { _._1.position }
          .map { case (cell, module) => 
-           scope = scope.copyWithUpdatesForCell(cell)
            module.describe(
              cell = cell, 
              projectId = projectId,
              branchId = branchId,
              workflowId = workflowId,
-             artifacts = scope
            )
          }
   }

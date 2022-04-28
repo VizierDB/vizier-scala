@@ -52,7 +52,7 @@ class RunningCell(
       if(!this.cancel(true)){
         logger.warn(s"The JVM refuses to abort the currently running cell $this;  The cancellation will be registered now and vizier-visible effects will be suppressed, although the cell will likely continue running in the background")
       }
-      DB autoCommit { implicit session => 
+      CatalogDB.withDB { implicit session => 
         errorResult(startedCell, ExecutionState.CANCELLED)
       }
     } finally {
@@ -68,16 +68,16 @@ class RunningCell(
     try {
       processSynchronously match {
         case _ if aborted.get => 
-          DB autoCommit { implicit session => 
+          CatalogDB.withDB { implicit session => 
             errorResult(startedCell, ExecutionState.CANCELLED)
           }
         case Success(context) =>
-          DB autoCommit { implicit session => 
+          CatalogDB.withDB { implicit session => 
             logger.trace(s"Emitting normal result for cell $this")
             normalResult(startedCell, context)
           }
         case Failure(exc) => 
-          DB autoCommit { implicit session => 
+          CatalogDB.withDB { implicit session => 
             errorResult(startedCell)
           }
       }
@@ -131,7 +131,7 @@ class RunningCell(
   {
     logger.info(s"Processing $cell")
     val (command, arguments, context) =
-      DB autoCommit { implicit session =>
+      CatalogDB.withDB { implicit session =>
         val (startedCellTemp, result) = cell.start
         startedCell = startedCellTemp
         val workflow = startedCell.workflow
@@ -143,7 +143,7 @@ class RunningCell(
                             module, 
                             { (mimeType, data) => 
                                 if(!aborted.get){
-                                  DB.autoCommit { implicit s =>
+                                  CatalogDB.withDB { implicit s =>
                                     result.addMessage( 
                                       mimeType = mimeType, 
                                       data = data 
@@ -160,7 +160,7 @@ class RunningCell(
                             },
                             { message =>
                                 if(!aborted.get){
-                                  DB.autoCommit { implicit s =>
+                                  CatalogDB.withDB { implicit s =>
                                     result.addMessage( 
                                       message = message,
                                       stream = StreamType.STDERR

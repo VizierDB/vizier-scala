@@ -56,7 +56,7 @@ object ExportProject
     writeData("version.txt", ImportProject.VERSION.toString.getBytes)
 
     // File Artifacts
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       val p = 
         Project.getOption(projectId)
                .getOrElse { 

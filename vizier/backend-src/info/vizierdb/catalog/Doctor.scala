@@ -29,15 +29,15 @@ object Doctor
    */
   def checkup(): Seq[String] = 
   {
-    DB.readOnly { Project.list(_) }
-      .flatMap { checkProject(_) }
+    CatalogDB.withDBReadOnly { Project.list(_) }
+             .flatMap { checkProject(_) }
   }
 
   /**
    * Run tests for a single project
    */
   def checkProject(projectId: Identifier): Seq[String] =
-    checkProject( DB.readOnly { Project.get(projectId)(_) } )
+    checkProject( CatalogDB.withDBReadOnly { Project.get(projectId)(_) } )
 
   /**
    * Run tests for a single project
@@ -45,7 +45,7 @@ object Doctor
   def checkProject(project: Project): Seq[String] =
   {
     withErrors(s"In Project ${project.id}: ") { errors => 
-      val branches =  DB.readOnly { project.branches(_) }
+      val branches =  CatalogDB.withDBReadOnly { project.branches(_) }
       val branchIds = branches.map { _.id }.toSet
       val activeBranchId = project.activeBranchId
       errors.assert(branchIds(activeBranchId)){
@@ -59,8 +59,8 @@ object Doctor
           errors.assert(branch.createdFromBranchId.map { branchIds(_) }.getOrElse(true)){
             s"Branch created from a branch in a different project ${branch.createdFromBranchId}"
           }
-          val progenitorWorkflow = DB.readOnly { branch.createdFromWorkflow(_) }
-          val workflows = DB.readOnly { branch.workflows(_) }
+          val progenitorWorkflow = CatalogDB.withDBReadOnly { branch.createdFromWorkflow(_) }
+          val workflows = CatalogDB.withDBReadOnly { branch.workflows(_) }
           val workflowIds = workflows.map { _.id }.toSet
           val workflowsWithProgenitorById = (workflows ++ progenitorWorkflow).map { x => x.id -> x }.toMap
           val headId = branch.headId
@@ -77,22 +77,22 @@ object Doctor
               errors.assert(workflow.prevId.isEmpty || priorWorkflow.isDefined){
                 s"Workflow progenitor ${workflow.prevId.getOrElse("x")} not a part of this branch or its source (${workflowIds.mkString(", ")}; ${branch.createdFromWorkflowId.getOrElse("-")})"
               }
-              val priorWorkflowModules = DB.readOnly { implicit s => 
+              val priorWorkflowModules = CatalogDB.withDBReadOnly { implicit s => 
                                            priorWorkflow.map { _.modules } 
                                          }.getOrElse(Seq.empty)
-              val cellsAndModules = DB.readOnly { workflow.cellsAndModulesInOrder(_) }
+              val cellsAndModules = CatalogDB.withDBReadOnly { workflow.cellsAndModulesInOrder(_) }
               val moduleIds = cellsAndModules.map { _._2.id }.toSet
               val modulePrecursors = cellsAndModules.flatMap { _._2.revisionOfId }.toSet
               workflow.actionModuleId.foreach { actionModuleId => 
                 workflow.action match {
                   case ActionType.CREATE | ActionType.INSERT | ActionType.UPDATE | ActionType.APPEND => 
                     errors.assert(moduleIds(actionModuleId) || modulePrecursors(actionModuleId)){
-                      s"Workflow action module ${DB.readOnly { workflow.actionModule(_) }} not in the current workflow (module ids: ${moduleIds.mkString(", ")})"
+                      s"Workflow action module ${CatalogDB.withDBReadOnly { workflow.actionModule(_) }} not in the current workflow (module ids: ${moduleIds.mkString(", ")})"
                     }
                   case ActionType.FREEZE  => ()
                   case ActionType.DELETE => 
                     errors.assert(priorWorkflowModules.map { _.id }.contains(actionModuleId)){
-                      s"Workflow action module ${DB.readOnly { workflow.actionModule(_) }} not in the progenitor workflow ${priorWorkflow.map { _.id }.getOrElse("<none>")} (module ids: ${priorWorkflowModules.map { _.id }.mkString(", ")})"
+                      s"Workflow action module ${CatalogDB.withDBReadOnly { workflow.actionModule(_) }} not in the progenitor workflow ${priorWorkflow.map { _.id }.getOrElse("<none>")} (module ids: ${priorWorkflowModules.map { _.id }.mkString(", ")})"
                     }
                 }
               }

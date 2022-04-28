@@ -23,6 +23,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.{DataFrameConstructor, DataFrameConstructorCodec, DefaultProvenance}
 import info.vizierdb.viztrails.ProvenancePrediction
+import info.vizierdb.catalog.CatalogDB
 
 case class LensConstructor(
   lensClassName: String,
@@ -88,7 +89,7 @@ trait LensCommand
     
     val updatesFromTraining = 
       train(
-        DB.autoCommit { implicit s => dataset.dataframe },
+        CatalogDB.withDB { implicit s => dataset.dataframe },
         arguments,
         context
       )

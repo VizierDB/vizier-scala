@@ -26,6 +26,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.catalog.CatalogDB
 
 object AppendModule
   extends Object
@@ -43,7 +44,7 @@ object AppendModule
     val command = Commands.get(packageId, commandId)
 
     val (workflow, workflowIdToAbort): (Workflow, Option[Identifier]) = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         logger.trace(s"Looking up branch $branchId")
         val branch:Branch =
           Branch.getOption(projectId, branchId)
@@ -83,7 +84,7 @@ object AppendModule
 
     logger.trace("Building response")
 
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
     }
   } 

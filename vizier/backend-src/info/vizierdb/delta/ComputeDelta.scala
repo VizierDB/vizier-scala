@@ -35,7 +35,7 @@ object ComputeDelta
    *                          start state up to the branch head.
    */
   def apply(start: WorkflowState): Seq[WorkflowDelta] =
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       apply(start, getState(start.branchId), Branch.get(start.branchId).head)
     }
 
@@ -134,7 +134,6 @@ object ComputeDelta
         workflow.projectId,
         workflow.branchId,
         workflow.id,
-        ScopeSummary(cell)
       )
     }
 

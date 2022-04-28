@@ -24,13 +24,14 @@ import info.vizierdb.catalog.Project
 import java.io.FileOutputStream
 import info.vizierdb.api.response.FileResponse
 import info.vizierdb.api.handler._
+import info.vizierdb.catalog.CatalogDB
 
 object ExportProject
 {
   def apply(projectId: Identifier): Response =
   {
     val projectName = 
-      DB.readOnly { implicit s => 
+      CatalogDB.withDBReadOnly { implicit s => 
         Project.get(projectId)
                .name
       }

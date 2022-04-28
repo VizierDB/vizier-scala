@@ -21,6 +21,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.viztrails.ProvenancePrediction
+import info.vizierdb.catalog.CatalogDB
 
 object Aggregate
   extends SQLTemplateCommand
@@ -92,7 +93,7 @@ object Aggregate
     if(dataset.t != ArtifactType.DATASET){
       throw new RuntimeException(s"$datasetName is not a dataset")
     }
-    val datasetSchema = DB.autoCommit { implicit s => dataset.datasetSchema }
+    val datasetSchema = CatalogDB.withDB { implicit s => dataset.datasetSchema }
     def col(idx: Int) = s"`${datasetSchema(idx).name}`"
     def as(in: Option[String]) = in match { case None => "" 
                                             case Some(x) => s" AS `${x.replaceAll("[^a-zA-Z_0-9]", "")}`" }

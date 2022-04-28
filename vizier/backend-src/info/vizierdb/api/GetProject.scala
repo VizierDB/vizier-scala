@@ -22,12 +22,13 @@ import info.vizierdb.types.Identifier
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object GetProject
 {
   def apply(projectId: Identifier): serialized.ProjectDescription =
   {
-    DB.readOnly { implicit session => 
+    CatalogDB.withDBReadOnly { implicit session => 
       Project.getOption(projectId) match {
         case Some(project) => project.describe
         case None => ErrorResponse.noSuchEntity

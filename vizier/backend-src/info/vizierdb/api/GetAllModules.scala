@@ -23,6 +23,7 @@ import info.vizierdb.api.response._
 import info.vizierdb.api.handler.SimpleHandler
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object GetAllModules
 {
@@ -32,7 +33,7 @@ object GetAllModules
     workflowId: Option[Identifier] = None
   ): Seq[serialized.ModuleDescription] =
   {
-    DB.readOnly { implicit session => 
+    CatalogDB.withDBReadOnly { implicit session => 
       val workflowMaybe: Option[Workflow] = 
         workflowId match {
           case Some(workflowIdActual) => 

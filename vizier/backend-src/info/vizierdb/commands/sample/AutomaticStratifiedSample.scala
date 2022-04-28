@@ -21,6 +21,7 @@ import info.vizierdb.spark.SparkPrimitive
 import scala.util.Random
 import info.vizierdb.viztrails.ProvenancePrediction
 import play.api.libs.json.JsObject
+import info.vizierdb.catalog.CatalogDB
 
 object AutomaticStratifiedSample extends Command
   with LazyLogging
@@ -64,7 +65,7 @@ object AutomaticStratifiedSample extends Command
 
     context.message("Computing strata...")
 
-    val df = DB.autoCommit { implicit s => input.dataframe }
+    val df = CatalogDB.withDB { implicit s => input.dataframe }
     val col = df.schema(stratifyOn)
     val strata = df.groupBy(df(stratifyOn))
                    .count()

@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.catalog.CatalogDB
 
 object UpdateProject
 {
@@ -33,7 +34,7 @@ object UpdateProject
   ): serialized.ProjectSummary =
   {
     val project: Project = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         var project = Project.getOption(projectId)
                              .getOrElse { ErrorResponse.noSuchEntity }
         if(defaultBranch.isDefined){

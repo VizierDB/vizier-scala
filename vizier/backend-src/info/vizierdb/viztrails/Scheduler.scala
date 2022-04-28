@@ -134,44 +134,5 @@ object Scheduler
         cleanup(workflowId)
       }
   }
-
-  // class WorkflowExecution(workflowId: Identifier)
-  //   extends ForkJoinTask[Unit]
-  // {
-  //   var currentCellExecution = null
-
-  //   // Workflow caches dependent cells, so this should be able to avoid going to the DB entirely
-  //   def nextTarget: Option[Cell] = 
-  //     DB readOnly { implicit session =>
-  //       val c = Cell.syntax
-  //       withSQL {
-  //         select
-  //           .from(Cell as c)
-  //           .where.eq(c.state, ExecutionState.STALE)
-  //             .and.eq(c.workflowId, workflowId)
-  //           .orderBy(c.position)
-  //           .limit(1)
-  //       }.map { Cell(_) }.single.apply()
-  //     }
-
-  //   def aborted: Boolean =
-  //     DB readOnly { implicit session =>
-  //       val w = Workflow.syntax
-  //       withSQL { 
-  //         select(w.aborted)
-  //           .from(Workflow as w)
-  //           .where.eq(w.id, workflowId)
-  //       }.map { _.int(1) > 0 }.single.apply().getOrElse { true }
-  //     }
-  //     // catalogTransaction {
-  //     //   workflow.cells.filter { cell => /* println(cell); */ cell.state == ExecutionState.STALE }
-  //     //                 .toIterator
-  //     //                 .foldLeft(None:Option[Cell]) { 
-  //     //                   case (None, y) => Some(y)
-  //     //                   case (Some(x), y) if y.position < x.position => Some(y)
-  //     //                   case (Some(x), _) => Some(x)
-  //     //                 }
-  //     // }
-  // }
 }
 

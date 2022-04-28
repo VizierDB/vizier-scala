@@ -14,7 +14,6 @@
  * -- copyright-header:end -- */
 package info.vizierdb.commands.data
 
-import scalikejdbc._
 import play.api.libs.json._
 import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
@@ -27,6 +26,7 @@ import info.vizierdb.spark.MaterializeConstructor
 import info.vizierdb.Vizier
 import info.vizierdb.filestore.Staging
 import info.vizierdb.viztrails.ProvenancePrediction
+import info.vizierdb.catalog.CatalogDB
 
 object CheckpointDataset extends Command
 {
@@ -46,7 +46,7 @@ object CheckpointDataset extends Command
                             context.error(s"Dataset $datasetName does not exist"); return
                           }
 
-    val df = DB.readOnly { implicit s => input.dataframe }
+    val df = CatalogDB.withDB { implicit s => input.dataframe }
 
     context.message("Checkpointing data...")
 

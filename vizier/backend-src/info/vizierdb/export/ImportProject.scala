@@ -130,7 +130,7 @@ object ImportProject
 
 
       val projectId = 
-        DB.autoCommit { implicit s => 
+        CatalogDB.withDB { implicit s => 
           Project.create(
             name = exportedProject.name,
             properties = JsObject(exportedProject.propertyMap),
@@ -165,7 +165,7 @@ object ImportProject
       val modules = HashMap[String,Module]()
       val branches = HashMap[String,Branch]()
       val workflows = HashMap[(String,String),Workflow]()
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         for( exportedBranch <- exportedProject.branches ){
 
 
@@ -264,7 +264,7 @@ object ImportProject
         logger.info("Triggering workflow execution")
         val mutableProject = MutableProject(project.id)
         val head = mutableProject.head
-        DB.autoCommit { implicit s => head.discardResults() }
+        CatalogDB.withDB { implicit s => head.discardResults() }
         Scheduler.schedule(head)
         if(blockOnExecution){
           mutableProject.waitUntilReadyAndThrowOnError

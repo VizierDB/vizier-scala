@@ -27,7 +27,7 @@ object Schema
   {
     if(DB.getTable("metadata").isEmpty){ return 0 }
     else { 
-      DB.readOnly { implicit session => 
+      CatalogDB.withDBReadOnly { implicit session => 
         Metadata.getOption("schema") 
       }.map { _.toInt }.getOrElse { 0 } 
     }
@@ -44,7 +44,7 @@ object Schema
   def drop = 
   {
     val currentVersion = schemaVersion
-    DB autoCommit { implicit session => 
+    CatalogDB.withDB { implicit session => 
       for(migration <- MIGRATIONS.take(currentVersion).reverse){
         try {
           migration.drop
@@ -60,7 +60,7 @@ object Schema
   {
     logger.info(s"Initializing empty Vizier database")
 
-    DB autoCommit { implicit session =>
+    CatalogDB.withDB { implicit session =>
       for(table <- TABLES.values){
         val create = CreateTableMigration(table)
         logger.trace(create.sql)
@@ -76,7 +76,7 @@ object Schema
     val requiredMigrations = MIGRATIONS.drop(currentVersion)
     if(requiredMigrations.isEmpty){ return }
 
-    DB autoCommit { implicit session => 
+    CatalogDB.withDB { implicit session => 
       for((migration, idx) <- requiredMigrations.zipWithIndex){
         logger.info(s"Applying Migration ${idx + currentVersion}")
         logger.trace(migration.sql)

@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.serialized
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object CreateBranch
 {
@@ -37,7 +38,7 @@ object CreateBranch
       saneProperties.get("name")
                     .map { _.as[String] }
                     .getOrElse { "Untitled Branch" }
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       val (project, branch, workflow): (Project, Branch, Workflow) = 
         Project.getOption(projectId)
                .getOrElse { ErrorResponse.noSuchEntity }

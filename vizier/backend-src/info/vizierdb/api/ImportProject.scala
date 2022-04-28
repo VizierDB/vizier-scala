@@ -32,6 +32,7 @@ import info.vizierdb.util.Streams.closeAfter
 import info.vizierdb.api.handler._
 import info.vizierdb.api.handler.ClientConnection
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object ImportProject
 {
@@ -60,7 +61,7 @@ object ImportProject
         pid
       }
 
-    DB.readOnly { implicit session => 
+    CatalogDB.withDBReadOnly { implicit session => 
       Project.getOption(projectId) match {
         case Some(project) => project.describe
         case None => ErrorResponse.noSuchEntity

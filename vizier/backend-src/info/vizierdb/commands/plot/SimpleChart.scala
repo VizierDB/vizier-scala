@@ -39,6 +39,7 @@ import info.vizierdb.vega.{
 }
 import info.vizierdb.vega.MarkDefPointAsBool
 import info.vizierdb.vega.AutosizeTypeFitX
+import info.vizierdb.catalog.CatalogDB
 
 object SimpleChart extends Command
 {
@@ -99,7 +100,7 @@ object SimpleChart extends Command
     val datasetName = arguments.get[String](PARAM_DATASET)
     val datasetArtifact = context.artifact(datasetName)
                                  .getOrElse { throw new VizierException(s"Unknown dataset $datasetName") }
-    var dataset = DB autoCommit { implicit s => datasetArtifact.dataframe }
+    var dataset = CatalogDB.withDB { implicit s => datasetArtifact.dataframe }
     val schema = dataset.schema
 
     val filter = arguments.getRecord(PARAM_XAXIS)

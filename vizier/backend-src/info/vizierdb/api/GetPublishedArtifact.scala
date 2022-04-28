@@ -20,6 +20,7 @@ import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.api.response._
 import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.serialized.ArtifactDescription
+import info.vizierdb.catalog.CatalogDB
 
 object GetPublishedArtifact
 {
@@ -28,7 +29,7 @@ object GetPublishedArtifact
     connection: ClientConnection = null
   ): ArtifactDescription =
   {
-    val published:PublishedArtifact = DB.readOnly { implicit s =>
+    val published:PublishedArtifact = CatalogDB.withDBReadOnly { implicit s =>
       PublishedArtifact.getOption(artifactName)
                        .getOrElse { ErrorResponse.noSuchEntity }
     }

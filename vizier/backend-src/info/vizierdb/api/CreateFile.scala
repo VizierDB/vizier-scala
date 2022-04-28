@@ -27,6 +27,7 @@ import info.vizierdb.util.Streams
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
 
 object CreateFile
 {
@@ -42,7 +43,7 @@ object CreateFile
     content: InputStream,
     filename: String
   ): serialized.ArtifactSummary = {
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       val project = 
         Project.getOption(projectId)
                .getOrElse { ErrorResponse.noSuchEntity }

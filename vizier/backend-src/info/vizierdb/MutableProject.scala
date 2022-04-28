@@ -53,12 +53,12 @@ class MutableProject(
   /**
    * The current version of the [[Project]] represented by this mutable project
    */
-  def project: Project = DB readOnly { implicit s => Project.get(projectId) }
+  def project: Project = CatalogDB.withDBReadOnly { implicit s => Project.get(projectId) }
 
   /**
    * The current version of the active [[Branch]] being operated on by this mutable project
    */
-  def branch: Branch = DB readOnly { implicit s => activeBranch }
+  def branch: Branch = CatalogDB.withDBReadOnly { implicit s => activeBranch }
 
   /**
    * The current version of the active [[Branch]] being operated on by this mutable project
@@ -71,7 +71,7 @@ class MutableProject(
   /**
    * The head [[Workflow]] being operated on by this mutable project
    */
-  def head: Workflow = DB readOnly { implicit s => activeBranch.head }
+  def head: Workflow = CatalogDB.withDBReadOnly { implicit s => activeBranch.head }
 
   /**
    * Append a new command to the end of the workflow.  The existing workflow will be aborted
@@ -94,7 +94,7 @@ class MutableProject(
   def append(packageId: String, commandId: String, properties: Map[String, JsValue] = Map.empty)
             (args: (String, Any)*): (Branch, Workflow) =
   {
-    val (oldbranch, ret) = DB autoCommit { implicit s => 
+    val (oldbranch, ret) = CatalogDB.withDB { implicit s => 
       val oldbranch = activeBranch
       (oldbranch, oldbranch.append(packageId, commandId, properties = JsObject(properties))(args:_*)) 
     }
@@ -125,7 +125,7 @@ class MutableProject(
   def insert(position: Int, packageId: String, commandId: String, properties: Map[String, JsValue] = Map.empty)
             (args: (String, Any)*): (Branch, Workflow) =
   {
-    val (oldbranch, ret) = DB autoCommit { implicit s => 
+    val (oldbranch, ret) = CatalogDB.withDB { implicit s => 
       val oldbranch = activeBranch
       (oldbranch, oldbranch.insert(position, packageId, commandId, properties = JsObject(properties))(args:_*)) 
     }
@@ -156,7 +156,7 @@ class MutableProject(
   def update(position: Int, packageId: String, commandId: String, properties: Map[String, JsValue] = Map.empty)
             (args: (String, Any)*): (Branch, Workflow) =
   {
-    val (oldbranch, ret) = DB autoCommit { implicit s => 
+    val (oldbranch, ret) = CatalogDB.withDB { implicit s => 
       val oldbranch = activeBranch
       (oldbranch, oldbranch.update(position, packageId, commandId, properties = JsObject(properties))(args:_*)) 
     }
@@ -174,7 +174,7 @@ class MutableProject(
    */
   def freezeFrom(position: Int): (Branch, Workflow) =
   {
-    val (oldbranch, ret) = DB autoCommit { implicit s => 
+    val (oldbranch, ret) = CatalogDB.withDB { implicit s => 
       val oldbranch = activeBranch
       (oldbranch, oldbranch.freezeFrom(position)) 
     }
@@ -188,7 +188,7 @@ class MutableProject(
    */
   def invalidateAllCells: (Branch, Workflow) =
   {
-    val (oldbranch, ret) = DB autoCommit { implicit s => 
+    val (oldbranch, ret) = CatalogDB.withDB { implicit s => 
       val oldbranch = activeBranch
       (oldbranch, activeBranch.invalidate()) 
     }
@@ -205,7 +205,7 @@ class MutableProject(
     if(cells.isEmpty){ 
       throw new IllegalArgumentException("Invalidating no cells")
     }
-    val (oldbranch, ret) = DB autoCommit { implicit s => 
+    val (oldbranch, ret) = CatalogDB.withDB { implicit s => 
       val oldbranch = activeBranch
       (oldbranch, activeBranch.invalidate(cells.toSet)) 
     }
@@ -223,7 +223,7 @@ class MutableProject(
    */
   def thawUpto(position: Int): (Branch, Workflow) =
   {
-    val (oldbranch, ret) = DB autoCommit { implicit s => 
+    val (oldbranch, ret) = CatalogDB.withDB { implicit s => 
       val oldbranch = activeBranch
       (oldbranch, oldbranch.thawUpto(position)) 
     }
@@ -249,7 +249,7 @@ class MutableProject(
   {
     waitUntilReady
     val workflow = head
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       for(cell <- workflow.cellsInOrder){
         if(cell.state == ExecutionState.ERROR) {
           throw new RuntimeException(
@@ -271,7 +271,7 @@ class MutableProject(
    */
   def apply(idx: Int): Option[Seq[Message]] =
   {
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       activeBranch
              .head
              .cellByPosition(idx)
@@ -284,7 +284,7 @@ class MutableProject(
    */
   def timestamps: Seq[Timestamps] =
   {
-    DB.readOnly { implicit s =>
+    CatalogDB.withDBReadOnly { implicit s =>
       activeBranch.head
                   .cellsInOrder
                   .map { _.timestamps }
@@ -348,7 +348,7 @@ class MutableProject(
     val realName = name.getOrElse { file.getName() }
     val realMimetype = URLConnection.guessContentTypeFromName(realName)
     val artifact = 
-      DB.autoCommit { implicit s => 
+      CatalogDB.withDB { implicit s => 
         Artifact.make(
           projectId = projectId,
           ArtifactType.FILE,
@@ -460,7 +460,7 @@ class MutableProject(
   def lastOutput =
   {
     val workflow = head
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       workflow.cells.reverse.head.messages
     }
   }
@@ -478,7 +478,7 @@ class MutableProject(
   def artifactRefs: Seq[ArtifactRef] = 
   {
     val workflow = head
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       workflow.outputArtifacts
     }
   }
@@ -489,7 +489,7 @@ class MutableProject(
   def artifactSummaries: Map[String, ArtifactSummary] = 
   {
     val refs = artifactRefs
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       refs.map { ref => ref.userFacingName -> ref.getSummary.get }
           .toMap
     }
@@ -514,7 +514,7 @@ class MutableProject(
   def artifacts: Map[String, Artifact] =
   {
     val refs = artifactRefs
-    DB.readOnly { implicit s => 
+    CatalogDB.withDBReadOnly { implicit s => 
       refs.map { ref => ref.userFacingName -> ref.get.get }
     }.toMap
   }
@@ -527,7 +527,7 @@ class MutableProject(
   def artifact(artifactName: String): Artifact = 
   {
     val ref = artifactRef(artifactName)
-    return DB.readOnly { implicit s => ref.get.get }
+    return CatalogDB.withDBReadOnly { implicit s => ref.get.get }
   }
 
   /**
@@ -536,7 +536,7 @@ class MutableProject(
   def dataframe(artifactName: String): DataFrame =
   {
     val ref = artifactRef(artifactName)
-    return DB.autoCommit { implicit s => ref.get.get.dataframe }
+    return CatalogDB.withDB { implicit s => ref.get.get.dataframe }
   }
 
   /**
@@ -545,7 +545,7 @@ class MutableProject(
   def datasetData(artifactName: String): DataContainer =
   {
     val ref = artifactRef(artifactName)
-    return DB.autoCommit { implicit s => ref.get.get.datasetData() }
+    return CatalogDB.withDB { implicit s => ref.get.get.datasetData() }
   }
 
   /**
@@ -562,7 +562,7 @@ class MutableProject(
     artifact.t match {
       case ArtifactType.DATASET => {
         import org.mimirdb.caveats.implicits._
-        val df = DB.autoCommit { implicit s => artifact.dataframe }
+        val df = CatalogDB.withDB { implicit s => artifact.dataframe }
         df.showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
       }
       case _ => throw new VizierException(s"Show unsupported for ${artifact.t}")
@@ -575,7 +575,7 @@ class MutableProject(
   def snapshot: WorkflowState =
   {
     val b = branch
-    DB.readOnly { implicit s => ComputeDelta.getState(b) }
+    CatalogDB.withDBReadOnly { implicit s => ComputeDelta.getState(b) }
   }
 
   /**
@@ -594,11 +594,11 @@ class MutableProject(
   {
     nameOrBranchId match { 
       case MutableProject.NUMERIC(num) => 
-        DB.readOnly { implicit s =>
+        CatalogDB.withDBReadOnly { implicit s =>
           Branch.getOption(projectId, num.toLong)
         }
       case name => 
-        DB.readOnly { implicit s =>
+        CatalogDB.withDBReadOnly { implicit s =>
           Branch.withName(projectId, name)
         }
     }
@@ -618,7 +618,7 @@ object MutableProject
    * @return            The constructed MutableProject
    */
   def apply(name: String): MutableProject = 
-    new MutableProject(DB.autoCommit { implicit s => Project.create(name).id })
+    new MutableProject(CatalogDB.withDB { implicit s => Project.create(name).id })
 
   /**
    * Create a MutableProject for an existing project
@@ -639,7 +639,7 @@ object MutableProject
     nameOrProjectId match { 
       case NUMERIC(num) => Some(apply(num.toLong))
       case name => 
-        DB.readOnly { implicit s =>
+        CatalogDB.withDBReadOnly { implicit s =>
           Project.withName(name).map { _.id }.map { apply(_) }
         }
     }

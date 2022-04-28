@@ -21,12 +21,13 @@ import info.vizierdb.catalog.Project
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler._
+import info.vizierdb.catalog.CatalogDB
 
 object DeleteProject
 {
   def apply(projectId: Identifier): Response =
   {
-    DB.autoCommit { implicit s => 
+    CatalogDB.withDB { implicit s => 
       val p = 
         Project.getOption(projectId)
                .getOrElse { 

@@ -12,6 +12,7 @@ import info.vizierdb.catalog.ArtifactRef
 import java.util.concurrent.{ ArrayBlockingQueue, ForkJoinTask }
 import scala.collection.JavaConverters._
 import info.vizierdb.delta.DeltaBus
+import info.vizierdb.catalog.CatalogDB
 
 class RunningWorkflow(workflow: Workflow)
   extends ForkJoinTask[Unit]
@@ -69,7 +70,7 @@ class RunningWorkflow(workflow: Workflow)
 
         logger.trace("Recomputing Cell States")
 
-        DB autoCommit { implicit session => updatePendingTasks }
+        CatalogDB.withDB { implicit session => updatePendingTasks }
 
       } while( ! pendingTasks.isEmpty )
     } catch {
