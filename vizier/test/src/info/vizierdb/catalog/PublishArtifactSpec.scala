@@ -57,7 +57,7 @@ class PublishArtifactSpec extends Specification with BeforeAll
     val description = GetPublishedArtifact(
       artifactName = EXPORT_NAME
     )
-    description.id must beEqualTo(project.artifactRef("r").artifactId.get)
+    description.id must beEqualTo(project.artifact("r").id)
 
   }
 
@@ -74,6 +74,6 @@ class PublishArtifactSpec extends Specification with BeforeAll
     )
     project.waitUntilReadyAndThrowOnError
 
-    project.artifactRefs.map { _.userFacingName } must contain(IMPORT_NAME)
+    project.artifacts.keys must contain(IMPORT_NAME)
   }
 }

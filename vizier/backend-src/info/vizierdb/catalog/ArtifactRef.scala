@@ -50,7 +50,7 @@ object InputArtifactRef
   override def columns = Schema.columns(table)
   override def tableName: String = "Input"
 
-  def inputArtifactsForWorkflow(
+  def inputArtifactIdsForWorkflow(
     workflowId: Identifier
   )(implicit session: DBSession): Map[Cell.Position, Map[String, Identifier]] =
   {
@@ -76,6 +76,24 @@ object OutputArtifactRef
   def apply(rs: WrappedResultSet): ArtifactRef = autoConstruct(rs, (OutputArtifactRef.syntax).resultName)
   override def columns = Schema.columns(table)
   override def tableName: String = "Output"
+
+  def outputArtifactRefsForWorkflow(
+    workflowId: Identifier
+  )(implicit session: DBSession): Map[Cell.Position, Seq[ArtifactRef]] =
+  {
+    val c = Cell.syntax
+    val o = OutputArtifactRef.syntax
+    withSQL {
+      select
+        .from(Cell as c)
+        .join(OutputArtifactRef as o)
+        .where.eq(c.workflowId, workflowId)
+          .and.eq(o.resultId, c.resultId)
+    }.map { rs => (rs.int(c.resultName.position), OutputArtifactRef(rs)) }
+     .list.apply()
+     .groupBy { _._1 }
+     .mapValues { _.map { _._2 } }
+  }
 
   def outputArtifactsForWorkflow(
     workflowId: Identifier

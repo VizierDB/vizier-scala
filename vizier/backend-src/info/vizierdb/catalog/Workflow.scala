@@ -249,7 +249,7 @@ case class Workflow(
 
     val messagesByCell = Message.messagesForWorkflow(id)
     val inputsByCell:Map[Cell.Position, Map[String, Identifier]] = 
-      InputArtifactRef.inputArtifactsForWorkflow(id)
+      InputArtifactRef.inputArtifactIdsForWorkflow(id)
     val outputsByCell:Map[Cell.Position, Map[String, Artifact]] = 
       OutputArtifactRef.outputArtifactsForWorkflow(id)
 

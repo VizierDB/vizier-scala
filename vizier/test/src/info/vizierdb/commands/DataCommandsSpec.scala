@@ -99,7 +99,7 @@ class DataCommandsSpec
       """.stripMargin)
 
     project.waitUntilReadyAndThrowOnError
-    project.artifactRefs.map { _.userFacingName } must contain("test.csv")
+    project.artifacts.keys must contain("test.csv")
 
     val f = File.createTempFile("test", ".csv")
     if(f.exists){

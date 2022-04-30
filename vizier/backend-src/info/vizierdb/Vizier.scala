@@ -260,16 +260,18 @@ object Vizier
           println("... execution finished.")
           if(config.run.showCaveats()){
             val caveats: Map[String, Seq[Caveat]] =
-              CatalogDB.withDB { implicit s => 
-                project.artifacts
-                       .toSeq
-                       .filter { _._2.t.equals(ArtifactType.DATASET) }
-                       .map { case (name, artifact) =>
-                          name -> ExplainCaveats(artifact.dataframe)
-                       }
-                       .filterNot { _._2.isEmpty }
-                       .toMap
-              }
+              project.artifacts
+                     .toSeq
+                     .filter { _._2.t.equals(ArtifactType.DATASET) }
+                     .map { case (name, artifact) =>
+                        name -> ExplainCaveats(
+                          CatalogDB.withDB { implicit s => 
+                            artifact.dataframe
+                          }
+                        )
+                      }
+                     .filterNot { _._2.isEmpty }
+                     .toMap
             if(!caveats.isEmpty){
               System.err.println("\nThere were potential problems with generated datasets")
               for( (artifact, caveats) <- caveats ){
