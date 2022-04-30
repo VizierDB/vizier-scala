@@ -25,18 +25,18 @@ case class StandardArtifact(
   name: String,
 ) extends ArtifactDescription
 {
-  def toDatasetSummary(
-    columns: Seq[DatasetColumn]
-  ) =
-    DatasetSummary(
-      key = key,
-      id = id,
-      projectId = projectId,
-      objType = objType,
-      category = category,
-      name = name,
-      columns = columns
-    )
+  // def toDatasetSummary(
+  //   columns: Seq[DatasetColumn]
+  // ) =
+  //   DatasetSummary(
+  //     key = key,
+  //     id = id,
+  //     projectId = projectId,
+  //     objType = objType,
+  //     category = category,
+  //     name = name,
+  //     columns = columns
+  //   )
 
   def toDatasetDescription(
     columns: Seq[DatasetColumn],
@@ -96,15 +96,15 @@ case class JsonArtifactDescription(
   payload: JsValue
 ) extends ArtifactDescription
 
-case class DatasetSummary(
-  key: Identifier,
-  id: Identifier,
-  projectId: Identifier,
-  objType: String,
-  category: ArtifactType.T,
-  name: String,
-  columns: Seq[DatasetColumn]
-) extends ArtifactSummary
+// case class DatasetSummary(
+//   key: Identifier,
+//   id: Identifier,
+//   projectId: Identifier,
+//   objType: String,
+//   category: ArtifactType.T,
+//   name: String,
+//   columns: Seq[DatasetColumn]
+// ) extends ArtifactSummary
 
 case class DatasetDescription(
   key: Identifier,

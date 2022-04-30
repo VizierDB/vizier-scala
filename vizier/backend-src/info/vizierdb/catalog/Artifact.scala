@@ -99,22 +99,23 @@ case class Artifact(
                   mimeType = mimeType, 
                   name = Option(name)
                 )
-    t match {
-      case ArtifactType.DATASET => 
-        base.toDatasetSummary(
-          columns = datasetSchema
-                     .zipWithIndex
-                     .map { case (field, idx) => 
-                              serialized.DatasetColumn(
-                                id = idx, 
-                                name = field.name, 
-                                `type` = field.dataType
-                              ) 
-                          }
-        )
-      case _ => base
+    // t match {
+    //   case ArtifactType.DATASET => 
+    //     base.toDatasetSummary(
+    //       columns = datasetSchema
+    //                  .zipWithIndex
+    //                  .map { case (field, idx) => 
+    //                           serialized.DatasetColumn(
+    //                             id = idx, 
+    //                             name = field.name, 
+    //                             `type` = field.dataType
+    //                           ) 
+    //                       }
+    //     )
+    //   case _ => base
 
-    }
+    // }
+    return base
   }
 
   /**
@@ -422,7 +423,7 @@ case class ArtifactSummary(
 )
 {
   def nameInBackend = Artifact.nameInBackend(t, id)
-  def summarize(name: String = null)(implicit session: DBSession): serialized.ArtifactSummary = 
+  def summarize(name: String = null): serialized.ArtifactSummary = 
   {
     val extras:Map[String,JsValue] = t match {
       case _ => Map.empty
@@ -435,22 +436,23 @@ case class ArtifactSummary(
                   mimeType = mimeType, 
                   name = Option(name)
                 )
-    t match {
-      case ArtifactType.DATASET => 
-        base.toDatasetSummary(
-          columns = materialize.datasetSchema
-                     .zipWithIndex
-                     .map { case (field, idx) => 
-                              serialized.DatasetColumn(
-                                id = idx, 
-                                name = field.name, 
-                                `type` = field.dataType
-                              ) 
-                          }
-        )
-      case _ => base
+    // t match {
+    //   case ArtifactType.DATASET => 
+    //     base.toDatasetSummary(
+    //       columns = materialize.datasetSchema
+    //                  .zipWithIndex
+    //                  .map { case (field, idx) => 
+    //                           serialized.DatasetColumn(
+    //                             id = idx, 
+    //                             name = field.name, 
+    //                             `type` = field.dataType
+    //                           ) 
+    //                       }
+    //     )
+    //   case _ => base
 
-    }
+    // }
+    return base
   }
   def absoluteFile: File = Filestore.getAbsolute(projectId, id)
   def relativeFile: File = Filestore.getRelative(projectId, id)

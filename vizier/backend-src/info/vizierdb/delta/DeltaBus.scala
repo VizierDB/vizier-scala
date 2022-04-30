@@ -22,6 +22,8 @@ import info.vizierdb.catalog.{ Workflow, Module, Cell, ArtifactRef, Message }
 import scalikejdbc.interpolation.SQLSyntax
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.serialized.Timestamps
+import info.vizierdb.catalog.Result
+import info.vizierdb.catalog.ArtifactSummary
 
 /**
  * A central hub for notifications about state changes on branches.  
@@ -119,37 +121,52 @@ object DeltaBus
   )
 
   /**
-   * Convenience method to announce a set of cell updates
-   * @param workflow     The [[Workflow]] at the head of the [[Branch]]
-   *                     <b>after</b> the update.
-   * @param include      A filter function that returns true for all cells
-   *                     to announce as part of the update.
+   * Convenience method to announce cell update
+   * 
+   * @param cell         The newly inserted cell
+   * @param module       The module referenced by the newly inserted cell
+   * @param result       The result object referenced by the newly inserted cell (if it exists)
+   * @param messages     The messages (if any) generaetd by the newly inserted cell
+   * @param inputs       Identifiers of the artifacts read by this cell, along with their names
+   * @param outputs      [[ArtifactSummary]]s of artifacts written by this cell, along with their names
+   * @param projectId    The id of the [[Project]] housing the branch housing the upddated workflow.
+   * @param branchId     The id of the [[Branch]] housing the updated workflow
+   * @param workflowId   The id of the <b>updated</b> [[Workflow]].
+   * 
+   * Nearly all of the above parameters can be inferred from the "cell" object, but doing so
+   * requires multiple expensive round trips into the Catalog to retrieve values that the 
+   * caller frequently already has access to.  Convenience methods exist on cell to retrieve
+   * the values in question, so we're going to place an extra burden on the caller to explicitly
+   * pay that cost if they feel it is necessary.
    */
   def notifyCellUpdates(
-    workflow: Workflow
-  )(
-    include: (Cell, Module) => Boolean
+    cell: Cell, 
+    module: Module,
+    result: Option[Result], 
+    messages: Seq[Message],
+    inputs: Seq[(String, Identifier)],
+    outputs: Seq[(String, ArtifactSummary)],
+    projectId: Identifier,
+    branchId: Identifier,
+    workflowId: Identifier
   )(implicit session: DBSession)
   {
-    val projectId = workflow.projectId
-    var scope = ScopeSummary.empty
-    for( (cell, module) <- workflow.cellsAndModulesInOrder ){
-      scope = scope.copyWithUpdatesForCell(cell)
-      if(include(cell, module)){
-        DeltaBus.notify(
-          workflow.branchId,
-          UpdateCell(
-            module.describe(
-              cell = cell,
-              projectId = projectId,
-              branchId = workflow.branchId,
-              workflowId = workflow.id,
-            ),
-            cell.position
-          )
-        )
-      }
-    }
+    DeltaBus.notify(
+      branchId,
+      UpdateCell(
+        module.describe(
+          cell = cell,
+          result = result,
+          messages = messages,
+          inputs = inputs,
+          outputs = outputs,
+          projectId = projectId,
+          branchId = branchId,
+          workflowId = workflowId,
+        ),
+        cell.position
+      )
+    )
   }
 
   /**
@@ -177,55 +194,89 @@ object DeltaBus
 
   /**
    * Convenience method to announce a set of cell inserts
-   * @param workflow     The [[Workflow]] at the head of the [[Branch]]
-   *                     <b>after</b> the update.
-   * @param include      A filter function that returns true for all cells
-   *                     to announce as inserted.
+   * @param cell         The newly inserted cell
+   * @param module       The module referenced by the newly inserted cell
+   * @param result       The result object referenced by the newly inserted cell (if it exists)
+   * @param messages     The messages (if any) generaetd by the newly inserted cell
+   * @param inputs       Identifiers of the artifacts read by this cell, along with their names
+   * @param outputs      [[ArtifactSummary]]s of artifacts written by this cell, along with their names
+   * @param projectId    The id of the [[Project]] housing the branch housing the upddated workflow.
+   * @param branchId     The id of the [[Branch]] housing the updated workflow
+   * @param workflowId   The id of the <b>updated</b> [[Workflow]].
+   * 
+   * Nearly all of the above parameters can be inferred from the "cell" object, but doing so
+   * requires multiple expensive round trips into the Catalog to retrieve values that the 
+   * caller frequently already has access to.  Convenience methods exist on cell to retrieve
+   * the values in question, so we're going to place an extra burden on the caller to explicitly
+   * pay that cost if they feel it is necessary.
+   * 
    */
   def notifyCellInserts(
-    workflow: Workflow
-  )(
-    include: (Cell, Module) => Boolean
+    cell: Cell, 
+    module: Module,
+    result: Option[Result], 
+    messages: Seq[Message],
+    inputs: Seq[(String, Identifier)],
+    outputs: Seq[(String, ArtifactSummary)],
+    projectId: Identifier,
+    branchId: Identifier,
+    workflowId: Identifier
   )(implicit session: DBSession)
   {
-    val projectId = workflow.projectId
-    for( (cell, module) <- workflow.cellsAndModulesInOrder ){
-      if(include(cell, module)){
-        DeltaBus.notify(
-          workflow.branchId,
-          InsertCell(
-            module.describe(
-              cell = cell,
-              projectId = projectId,
-              branchId = workflow.branchId,
-              workflowId = workflow.id,
-            ),
-            cell.position
-          )
-        )
-      }
-    }
+    DeltaBus.notify(
+      branchId,
+      InsertCell(
+        module.describe(
+          cell = cell,
+          result = result,
+          messages = messages,
+          inputs = inputs,
+          outputs = outputs,
+          projectId = projectId,
+          branchId = branchId,
+          workflowId = workflowId,
+        ),
+        cell.position
+      )
+    )
   }
 
   /**
    * Convenience method to announce a set of cell inserts
-   * @param workflow     The [[Workflow]] at the head of the [[Branch]]
-   *                     <b>after</b> the update.
+   * @param cell         The newly inserted cell
+   * @param module       The module referenced by the newly inserted cell
+   * @param result       The result object referenced by the newly inserted cell (if it exists)
+   * @param messages     The messages (if any) generaetd by the newly inserted cell
+   * @param inputs       Identifiers of the artifacts read by this cell, along with their names
+   * @param outputs      [[ArtifactSummary]]s of artifacts written by this cell, along with their names
+   * @param projectId    The id of the [[Project]] housing the branch housing the upddated workflow.
+   * @param branchId     The id of the [[Branch]] housing the updated workflow
+   * @param workflowId   The id of the <b>updated</b> [[Workflow]].
    */
   def notifyCellAppend(
-    workflow: Workflow
+    cell: Cell, 
+    module: Module,
+    result: Option[Result], 
+    messages: Seq[Message],
+    inputs: Seq[(String, Identifier)],
+    outputs: Seq[(String, ArtifactSummary)],
+    projectId: Identifier,
+    branchId: Identifier,
+    workflowId: Identifier
   )(implicit session: DBSession)
   {
-    val projectId = workflow.projectId
-    val (cell, module) = workflow.cellsAndModulesInOrder.last
     DeltaBus.notify(
-      workflow.branchId,
+      branchId,
       InsertCell(
         module.describe(
           cell = cell,
+          result = result,
+          messages = messages,
+          inputs = inputs,
+          outputs = outputs,
           projectId = projectId,
-          branchId = workflow.branchId,
-          workflowId = cell.position,
+          branchId = branchId,
+          workflowId = workflowId,
         ),
         cell.position
       )

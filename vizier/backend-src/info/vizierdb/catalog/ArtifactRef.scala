@@ -39,6 +39,9 @@ case class ArtifactRef(
     }
   }
 
+  def tuple: Option[(String, Identifier)] =
+    artifactId.map { (userFacingName -> _) }
+
   def getSummary(implicit session: DBSession): Option[ArtifactSummary] =
     artifactId.map { Artifact.lookupSummary(_).get }
 }
@@ -49,6 +52,25 @@ object InputArtifactRef
   def apply(rs: WrappedResultSet): ArtifactRef = autoConstruct(rs, (InputArtifactRef.syntax).resultName)
   override def columns = Schema.columns(table)
   override def tableName: String = "Input"
+
+  def inputArtifactsForWorkflow(
+    workflowId: Identifier
+  )(implicit session: DBSession): Map[Cell.Position, Map[String, Identifier]] =
+  {
+    val c = Cell.syntax
+    val i = InputArtifactRef.syntax
+    withSQL {
+      select
+        .from(Cell as c)
+        .join(InputArtifactRef as i)
+        .where.eq(c.workflowId, workflowId)
+          .and.eq(i.resultId, c.resultId)
+    }.map { rs => (rs.int(c.resultName.position), InputArtifactRef(rs)) }
+     .list.apply()
+     .groupBy { _._1 }
+     .mapValues { _.flatMap { _._2.tuple }.toMap }
+  }
+
 }
 
 object OutputArtifactRef
@@ -57,5 +79,32 @@ object OutputArtifactRef
   def apply(rs: WrappedResultSet): ArtifactRef = autoConstruct(rs, (OutputArtifactRef.syntax).resultName)
   override def columns = Schema.columns(table)
   override def tableName: String = "Output"
+
+  def outputArtifactsForWorkflow(
+    workflowId: Identifier
+  )(implicit session: DBSession): Map[Cell.Position, Map[String, ArtifactSummary]] =
+  {
+    val c = Cell.syntax
+    val s = ArtifactSummary.syntax
+    val o = OutputArtifactRef.syntax
+
+    withSQL {
+      select
+        .from(Cell as c)
+        .join(OutputArtifactRef as o)
+        .join(ArtifactSummary as s)
+        .where.eq(c.workflowId, workflowId)
+          .and.eq(o.resultId, c.resultId)
+          .and.eq(o.artifactId, s.id)
+    }.map { rs => (
+        rs.int(c.resultName.position), (
+          rs.string(o.resultName.userFacingName),
+          ArtifactSummary(rs)
+        )
+      ) }
+     .list.apply()
+     .groupBy { _._1 }
+     .mapValues { _.map { _._2 }.toMap }
+  }
 }
 

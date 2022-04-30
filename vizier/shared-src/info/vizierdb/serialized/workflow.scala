@@ -16,8 +16,7 @@ case class WorkflowSummary(
   def toDescription(
     state: ExecutionState.T,
     modules: Seq[ModuleDescription],
-    datasets: Seq[ArtifactSummary],
-    dataobjects: Seq[ArtifactSummary],
+    artifacts: Seq[ArtifactSummary],
     readOnly: Boolean,
   ): WorkflowDescription =
     WorkflowDescription(
@@ -30,8 +29,7 @@ case class WorkflowSummary(
       state = ExecutionState.translateToClassicVizier(state),
       statev2 = state,
       modules = modules,
-      datasets = datasets,
-      dataobjects = dataobjects,
+      artifacts = artifacts,
       readOnly = readOnly,
     )
 }
@@ -46,8 +44,7 @@ case class WorkflowDescription(
   state: Int,
   statev2: ExecutionState.T,
   modules: Seq[ModuleDescription],
-  datasets: Seq[ArtifactSummary],
-  dataobjects: Seq[ArtifactSummary],
+  artifacts: Seq[ArtifactSummary],
   readOnly: Boolean,
 )
 

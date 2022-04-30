@@ -123,32 +123,42 @@ case class Module(
     }):serialized.CommandArgumentList.T
 
 
+  /**
+   * Generate a description of the module with a specified cell
+   * 
+   * @param cell        The [[Cell]] to base the description on
+   * @param result      The [[Result]] object for the [[Cell]] if one exists
+   * @param messages    The [[Messages]] associated with the [[Result]]
+   * @param outputs     [[ArtifactSummary]]s for the [[OutputArtifactRef]]s 
+   *                    associated with the [[Result]] 
+   * @param projectId   The id of the [[Project]] housing the cell's branch
+   * @param branchId    The id of the [[Branch]] housing the cell
+   * 
+   * Virtually all of the above parameters can be retrieved given the cell
+   * parameter.  However, doing so requires multiple expensive round trips
+   * into the catalog.  As a result, and given the fact that the caller often
+   * has these values available, or a more efficient way to look them up, 
+   * we're going to add a little friction to the call in the name of efficiency.
+   */
   def describe(
-    cell: Cell, 
+    cell: Cell,
+    result: Option[Result], 
+    messages: Seq[Message],
+    outputs: Seq[(String, ArtifactSummary)],
+    inputs: Seq[(String, Identifier)],
     projectId: Identifier, 
     branchId: Identifier, 
     workflowId: Identifier, 
   )(implicit session:DBSession): serialized.ModuleDescription = 
   {
-    val result = cell.result
+
     val timestamps = serialized.Timestamps(
       createdAt = cell.created,
       startedAt = result.map { _.started },
       finishedAt = result.flatMap { _.finished }
     )
 
-    val messages: Seq[Message] = 
-      cell.resultId.map { Result.outputs(_) }.toSeq.flatten
-
-    // Be a bit defensive here... if we can't retrieve the object, log it, but don't
-    // get in the way of the system doing its thing.
-    val artifactsSummaries = 
-      cell.outputs.flatMap { a => 
-        try { a.getSummary.map { _.summarize(a.userFacingName) } } 
-        catch { case e:Throwable => e.printStackTrace(); None } 
-      }
-
-    val outputs = serialized.ModuleOutputDescription(
+    val messageDescription = serialized.ModuleOutputDescription(
       stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
       stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
     )
@@ -168,10 +178,11 @@ case class Module(
       toc = toc(cell),
       timestamps = timestamps,
 
-      artifacts = artifactsSummaries,
+      artifacts = outputs.map { case (name, summ) => summ.summarize(name) },
         // artifactSummaries.map { case (name, d) => d.summarize(name) },
+      dependencies = inputs.toMap,
 
-      outputs = outputs,
+      outputs = messageDescription,
       resultId = cell.resultId,
     )
     return descr
@@ -250,24 +261,6 @@ object Module
         .from(Module as w)
         .where.eq(w.id, target) 
     }.map { apply(_) }.single.apply()
-
-  def describeAll(
-    projectId: Identifier, 
-    branchId: Identifier, 
-    workflowId: Identifier,
-    cells: Seq[(Cell, Module)]
-  )(implicit session: DBSession): Seq[serialized.ModuleDescription] =
-  { 
-    cells.sortBy { _._1.position }
-         .map { case (cell, module) => 
-           module.describe(
-             cell = cell, 
-             projectId = projectId,
-             branchId = branchId,
-             workflowId = workflowId,
-           )
-         }
-  }
 
 
 }

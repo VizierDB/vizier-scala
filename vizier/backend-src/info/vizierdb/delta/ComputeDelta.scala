@@ -130,10 +130,14 @@ object ComputeDelta
     {
       val cell = workflow.cellByPosition(position).get
       cell.module.describe(
-        cell,
-        workflow.projectId,
-        workflow.branchId,
-        workflow.id,
+        cell = cell,
+        result = cell.result,
+        messages = cell.messages.toSeq,
+        outputs = cell.outputSummaries.toSeq,
+        inputs = cell.inputs.flatMap { _.tuple }.toSeq,
+        projectId = workflow.projectId,
+        branchId = workflow.branchId,
+        workflowId = workflow.id,
       )
     }
 

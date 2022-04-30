@@ -104,6 +104,29 @@ case class Workflow(
         .orderBy(c.position)
     }.map { rs => (Cell(rs), Module(rs)) }
      .list.apply()
+  def cellsModulesAndResultsInOrder(implicit session: DBSession): Seq[(Cell, Module, Option[Result])] =
+  {
+    val c = Cell.syntax
+    val m = Module.syntax
+    val r = Result.syntax
+    withSQL {
+      select(c.resultAll, m.resultAll, r.resultAll)
+        .from(Cell as c)
+        .join(Module as m)
+        .leftJoin(Result as r)
+        .on(c.resultId, r.id)
+        .where.eq(c.workflowId, id)
+          .and.eq(m.id, c.moduleId)
+        .orderBy(c.position)
+    }.map { rs => 
+        (
+          Cell(rs), 
+          Module(rs),
+          (if(rs.getOpt[Identifier](r.resultName.id).isDefined){ Some(Result(rs)) } else { None })
+        )
+      }
+     .list.apply()
+  }
      
   def cellByPosition(position: Int)(implicit session: DBSession): Option[Cell] =
     withSQL {
@@ -113,6 +136,20 @@ case class Workflow(
         .where.eq(c.position, position)
           .and.eq(c.workflowId, id)
     }.map { Cell(_) }.single.apply()
+
+  def lastCell(implicit session: DBSession): Option[Cell] =
+    withSQL {
+      val c1 = Cell.syntax
+      val c2 = Cell.syntax
+      select
+        .from(Cell as c1)
+        .where.eq(c1.position, 
+          sqls"""(SELECT max(${c2.position})
+                  FROM ${Cell as c2}
+                  WHERE ${c2.workflowId} = $id)""")
+          .and.eq(c1.workflowId, id)
+    }.map { Cell(_) }.single.apply()
+
 
   def cellByModuleId(moduleId: Identifier)(implicit session: DBSession): Option[Cell] =
     {
@@ -223,45 +260,50 @@ case class Workflow(
   def describe(implicit session: DBSession): serialized.WorkflowDescription = 
   {
     val branch = Branch.get(branchId)
-    val cellsAndModules = cellsAndModulesInOrder
-    val artifacts = allArtifacts.map { a => a.artifactId.get -> a.userFacingName }
-                                .toMap
-                                .toSeq
-                                .map { case (id: Identifier, name: String) => 
-                                          (Artifact.lookupSummary(id).get, name) }
-    val (datasets, dataobjects) =
-      artifacts.partition { _._1.t.equals(ArtifactType.DATASET) }
+    val cellsModulesAndResults = cellsModulesAndResultsInOrder
+
+    val messagesByCell = Message.messagesForWorkflow(id)
+    val inputsByCell:Map[Cell.Position, Map[String, Identifier]] = 
+      InputArtifactRef.inputArtifactsForWorkflow(id)
+    val outputsByCell:Map[Cell.Position, Map[String, ArtifactSummary]] = 
+      OutputArtifactRef.outputArtifactsForWorkflow(id)
+
     val summary = makeSummary(branch, actionModuleId.map { Module.get(_) })
 
-    val state = cellsAndModules.foldLeft(ExecutionState.DONE) { (prev, curr) =>
+    val state = cellsModulesAndResults.foldLeft(ExecutionState.DONE) { (prev, curr) =>
       if(!prev.equals(ExecutionState.DONE)){ prev }
       else { curr._1.state }
     }
 
     val modules = logTime("Workflow.describe/Module.describeAll") {
-      Module.describeAll(
-        projectId = branch.projectId,
-        branchId = branchId,
-        workflowId = id,
-        cells = cellsAndModules
-      )
+      cellsModulesAndResults.map { case (cell, module, result) =>
+        module.describe(
+          cell = cell,
+          messages = messagesByCell.getOrElse(cell.position, Seq.empty),
+          result = result,
+          outputs = outputsByCell.getOrElse(cell.position, Map.empty).toSeq,
+          inputs = inputsByCell.getOrElse(cell.position, Map.empty).toSeq,
+          projectId = branch.projectId,
+          branchId = branch.id,
+          workflowId = id
+        )
+      }
     }
+    val artifacts: Map[String, ArtifactSummary] = 
+      cellsModulesAndResults.foldLeft(
+        Map[String,ArtifactSummary]()
+      ) { 
+        case (scope:Map[String,ArtifactSummary], (cell, _, _)) =>
+          val current:Map[String, ArtifactSummary] =
+            outputsByCell.getOrElse(cell.position, Map.empty) 
+          scope ++ current
+      }
 
-    val datasetsSummary = logTime("Workflow.describe/Summarize datasets") {
-      datasets.flatMap { d => try { Some(d._1.summarize(name = d._2)) } 
-                              catch { case e:Throwable => e.printStackTrace(); None } }
-    }
-
-    val dataobjectsSummary = logTime("Workflow.describe/Summarize dataobjects") {
-      dataobjects.flatMap { d => try { Some(d._1.summarize(name = d._2)) } 
-                                 catch { case e:Throwable => e.printStackTrace(); None } }
-    }
 
     summary.toDescription(
       state = state,
       modules = modules,
-      datasets    = datasetsSummary,
-      dataobjects = dataobjectsSummary,
+      artifacts   = artifacts.toSeq.map { case (name, summ) => summ.summarize(name) },
       readOnly = !branch.headId.equals(id),
     )
   }

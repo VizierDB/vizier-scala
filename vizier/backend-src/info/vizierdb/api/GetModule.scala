@@ -49,6 +49,10 @@ object GetModule
         case Some(cell) => 
             cell.module.describe(
               cell = cell, 
+              result = cell.result,
+              messages = cell.messages.toSeq,
+              outputs = cell.outputSummaries.toSeq,
+              inputs = cell.inputs.flatMap { _.tuple },
               projectId = projectId, 
               branchId = branchId, 
               workflowId = workflowMaybe.get.id,
