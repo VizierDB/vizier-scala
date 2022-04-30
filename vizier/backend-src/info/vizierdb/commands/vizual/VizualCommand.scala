@@ -50,11 +50,14 @@ trait VizualCommand
                             throw new IllegalArgumentException(s"No such dataset '$datasetName'")
                          }
 
+    val materializedScript = script(arguments, context)
+
     val output = context.outputDataset(
       datasetName,
       VizualScriptConstructor(
-        script(arguments, context),
+        materializedScript,
         Some(input.id),
+        VizualScriptConstructor.getSchema(Some(input.datasetSchema), materializedScript)
       )
     )
     logger.debug(s"${this.getClass().getName()} -> $input -> $output")

@@ -74,7 +74,7 @@ object serializers
 
 
   implicit val standardArtifactFormat: Format[serialized.StandardArtifact] = Json.format
-  // implicit val datasetSummaryFormat: Format[serialized.DatasetSummary] = Json.format
+  implicit val datasetSummaryFormat: Format[serialized.DatasetSummary] = Json.format
   implicit val datasetDescriptionFormat: Format[serialized.DatasetDescription] = Json.format
   implicit val parameterArtifactFormat: Format[serialized.ParameterArtifact] = Json.format
 
@@ -82,10 +82,9 @@ object serializers
   implicit val artifactSummaryFormat = Format[serialized.ArtifactSummary](
     new Reads[serialized.ArtifactSummary]{
       def reads(j: JsValue): JsResult[serialized.ArtifactSummary] =
-        // if( (j \ "columns").isDefined ) {
-        //   JsSuccess(j.as[serialized.DatasetSummary])
-        // } else 
-        if( (j \ "payload").isDefined ) {
+        if( (j \ "columns").isDefined ) {
+          JsSuccess(j.as[serialized.DatasetSummary])
+        } else if( (j \ "payload").isDefined ) {
           JsSuccess(j.as[serialized.JsonArtifactDescription])          
         } else {
           JsSuccess(j.as[serialized.StandardArtifact])
@@ -95,7 +94,7 @@ object serializers
       def writes(v: serialized.ArtifactSummary): JsValue =
         v match {
           case a:serialized.StandardArtifact => Json.toJson(a)
-          // case a:serialized.DatasetSummary => Json.toJson(a)
+          case a:serialized.DatasetSummary => Json.toJson(a)
           case a:serialized.DatasetDescription => Json.toJson(a)
           case a:serialized.JsonArtifactDescription => Json.toJson(a)
         }

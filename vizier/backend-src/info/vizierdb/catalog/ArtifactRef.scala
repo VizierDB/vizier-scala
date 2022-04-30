@@ -41,9 +41,6 @@ case class ArtifactRef(
 
   def tuple: Option[(String, Identifier)] =
     artifactId.map { (userFacingName -> _) }
-
-  def getSummary(implicit session: DBSession): Option[ArtifactSummary] =
-    artifactId.map { Artifact.lookupSummary(_).get }
 }
 
 object InputArtifactRef
@@ -82,24 +79,24 @@ object OutputArtifactRef
 
   def outputArtifactsForWorkflow(
     workflowId: Identifier
-  )(implicit session: DBSession): Map[Cell.Position, Map[String, ArtifactSummary]] =
+  )(implicit session: DBSession): Map[Cell.Position, Map[String, Artifact]] =
   {
     val c = Cell.syntax
-    val s = ArtifactSummary.syntax
+    val s = Artifact.syntax
     val o = OutputArtifactRef.syntax
 
     withSQL {
       select
         .from(Cell as c)
         .join(OutputArtifactRef as o)
-        .join(ArtifactSummary as s)
+        .join(Artifact as s)
         .where.eq(c.workflowId, workflowId)
           .and.eq(o.resultId, c.resultId)
           .and.eq(o.artifactId, s.id)
     }.map { rs => (
         rs.int(c.resultName.position), (
           rs.string(o.resultName.userFacingName),
-          ArtifactSummary(rs)
+          Artifact(rs)
         )
       ) }
      .list.apply()

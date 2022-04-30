@@ -8,6 +8,7 @@ import info.vizierdb.spark.{
 }
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructField
+import info.vizierdb.spark.SparkSchema.fieldFormat
 
 import info.vizierdb.types._
 
@@ -39,6 +40,9 @@ case class Dataset(
     copy(
       properties = properties ++ prop.toMap
     )
+
+  def schema = 
+    constructor.schema
 }
 
 object Dataset

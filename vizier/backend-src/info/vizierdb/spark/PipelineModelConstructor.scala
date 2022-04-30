@@ -6,11 +6,14 @@ import info.vizierdb.commands.FileArgument
 import org.apache.spark.sql.DataFrame
 import play.api.libs.json.JsValue
 import org.apache.spark.ml.PipelineModel
+import org.apache.spark.sql.types.StructField
+import info.vizierdb.spark.SparkSchema.fieldFormat
 
 case class PipelineModelConstructor(
   input: Identifier,
   url: FileArgument,
-  projectId: Identifier
+  projectId: Identifier,
+  schema: Seq[StructField]
 ) extends DataFrameConstructor 
   with DefaultProvenance
 {

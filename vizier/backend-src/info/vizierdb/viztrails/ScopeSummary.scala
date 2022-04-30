@@ -104,19 +104,19 @@ case class ScopeSummary(
     (scope.values ++ Seq(openWorldPrediction))
              .forall { _.isRunnable } 
 
-  def allArtifactSummaries(implicit session: DBSession): Map[String, ArtifactSummary] = 
-    artifactSummariesFor(scope.keys)
+  def allArtifacts(implicit session: DBSession): Map[String, Artifact] = 
+    artifactsFor(scope.keys)
 
-  def artifactSummariesFor
+  def artifactsFor
     (artifacts: Iterable[String])
     (implicit session: DBSession): 
-      Map[String, ArtifactSummary] =
+      Map[String, Artifact] =
   {
     val identifiers: Map[String, Identifier] =
       artifacts.map { name => name.toLowerCase -> apply(name.toLowerCase) }
                .collect { case (name, ExactArtifactVersion(id)) => name -> id }
                .toMap
-    val summaries = Artifact.lookupSummaries(identifiers.values.toSeq)
+    val summaries = Artifact.getAll(identifiers.values.toSeq)
                             .map { summary => summary.id -> summary }
                             .toMap 
     return identifiers.mapValues { summaries(_) }

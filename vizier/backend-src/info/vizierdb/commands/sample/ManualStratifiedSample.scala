@@ -77,7 +77,8 @@ object ManualStratifiedSample extends Command
       SampleConstructor(
         seed = seed,
         mode = StratifiedOn(stratifyOn, strata),
-        input = input.id
+        input = input.id,
+        schema = input.datasetSchema
       )
     )
 

@@ -98,7 +98,7 @@ class RunningCell(
   /**
    * Translate the provided scope into a scope for an [[ExecutionContext]]
    */
-  def inputArtifacts(implicit session: DBSession): Map[String, ArtifactSummary] =
+  def inputArtifacts(implicit session: DBSession): Map[String, Artifact] =
   {
     // We can assume that we're not here unless the module has already been 
     // deemed to be runnable.  
@@ -111,10 +111,10 @@ class RunningCell(
     if(predictedProvenance.openWorldReads){
       assert(scope.openWorldPrediction.equals(ArtifactDoesNotExist))
       logger.trace("Using all artifacts in scope")
-      scope.allArtifactSummaries
+      scope.allArtifacts
     } else {
       logger.trace(s"Using only artifacts: ${predictedProvenance.reads}")
-      scope.artifactSummariesFor(predictedProvenance.reads)
+      scope.artifactsFor(predictedProvenance.reads)
     }
   }
 

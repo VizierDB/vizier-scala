@@ -22,7 +22,6 @@ import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.spark.{ InjectedSparkSQL, ViewConstructor }
-import info.vizierdb.catalog.ArtifactSummary
 import info.vizierdb.Vizier
 import org.apache.spark.sql.{ DataFrame, SparkSession, AnalysisException }
 import info.vizierdb.catalog.Artifact
@@ -67,10 +66,9 @@ object Query extends Command
     val scope = context.allDatasets
     val functions = context.scope
                            .toSeq
-                           .filter { case (name, summary) => 
-                                      summary.t == ArtifactType.FUNCTION }
-                           .map { case (name, summary:ArtifactSummary) => name -> summary.id }
+                           .filter { _._2.t == ArtifactType.FUNCTION }
                            .toMap
+                           .mapValues { _.id }
     val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
     val query = arguments.get[String]("source")
 
@@ -96,12 +94,16 @@ object Query extends Command
                         }
       logger.trace(s"${fnDeps.keys.size} function dependencies: ${fnDeps.keys.mkString(", ")}")
 
+      val datasetIds = 
+        scope.values.map { d => d.id -> d }.toMap
+
       val view = 
         ViewConstructor(
           datasets = scope.mapValues { _.id },
           functions = fnDeps,
           query = query,
-          projectId = context.projectId
+          projectId = context.projectId,
+          context = { id => datasetIds(id).datasetSchema }
         )
 
       val output = context.outputDataset(datasetName, view)

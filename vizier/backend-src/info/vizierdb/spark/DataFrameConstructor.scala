@@ -4,6 +4,7 @@ package info.vizierdb.spark
 import play.api.libs.json.{ JsValue, Format }
 import org.apache.spark.sql.{ SparkSession, DataFrame } 
 import info.vizierdb.types.Identifier
+import org.apache.spark.sql.types.StructField
 
 /**
  * A generic view definition for the Mimir Catalog.  Used by Catalog.put and related operations
@@ -51,6 +52,13 @@ trait DataFrameConstructor
    * Return the set of identifiers **actually** referenced by this df
    */
   def dependencies: Set[Identifier]
+
+  /**
+   * Return the schema of the generated dataframe
+   * 
+   * (This should be cached, independently of upstream dataframes)
+   */
+  def schema: Seq[StructField]
 
 }
 

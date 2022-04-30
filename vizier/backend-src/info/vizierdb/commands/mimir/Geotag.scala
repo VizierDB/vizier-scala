@@ -53,7 +53,7 @@ object Geotag extends Command
                       return
                     }
 
-    val schema = CatalogDB.withDB { implicit s => ds.datasetSchema }
+    val schema = ds.datasetSchema
     val lat: StructField = schema(arguments.get[Int](PARAM_LATITUDE))
     val lon: StructField = schema(arguments.get[Int](PARAM_LONGITUDE))
     val outputCol = arguments.get[String](PARAM_COLNAME)
@@ -76,7 +76,8 @@ object Geotag extends Command
             comment = None
           )
         ),
-        Some(ds.id)
+        Some(ds.id),
+        schema :+ StructField(outputCol, GeometryUDT)
       )
     )
 

@@ -57,7 +57,8 @@ trait SQLTemplateCommand
           datasets = deps.mapValues { _.id },
           functions = Map.empty,
           query = sql, 
-          projectId = context.projectId
+          projectId = context.projectId,
+          context = deps.map { case (_, d) => d.id -> d.datasetSchema }.toMap.apply(_)
         )
       )
 

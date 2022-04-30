@@ -133,7 +133,7 @@ object ComputeDelta
         cell = cell,
         result = cell.result,
         messages = cell.messages.toSeq,
-        outputs = cell.outputSummaries.toSeq,
+        outputs = cell.outputArtifacts.toSeq,
         inputs = cell.inputs.flatMap { _.tuple }.toSeq,
         projectId = workflow.projectId,
         branchId = workflow.branchId,

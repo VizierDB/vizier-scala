@@ -93,26 +93,20 @@ object PublishedArtifact
     }
   }
  
-  def list(implicit session: DBSession): Seq[(String, ArtifactSummary)] =
+  def list(implicit session: DBSession): Seq[(String, Artifact)] =
   {
+    val b = PublishedArtifact.syntax
+    val a = Artifact.syntax
     withSQL { 
-      val b = PublishedArtifact.syntax
-      val a = Artifact.syntax
-      select(b.name, a.id, a.projectId, a.t, a.created, a.mimeType)
+      select
         .from(PublishedArtifact as b)
           .join(Artifact as a)
         .where.eq(b.artifactId, a.id)
           .and.eq(b.projectId, a.projectId)
-    }.map { r => 
+    }.map { rs => 
       (
-        r.get[String](1), 
-        ArtifactSummary(
-          r.get[Identifier](2),
-          r.get[Identifier](3), 
-          r.get[ArtifactType.T](4),
-          r.get[ZonedDateTime](5),
-          r.get[String](6)
-        )
+        rs.string(b.resultName.name), 
+        Artifact(rs)
       )
     }.list.apply()
   }

@@ -24,7 +24,6 @@ import info.vizierdb.catalog.binders._
 import info.vizierdb.vega.Chart
 import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.DatasetMessage
-import info.vizierdb.catalog.ArtifactSummary
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{ StructField, DataType }
@@ -49,7 +48,7 @@ import info.vizierdb.catalog.CatalogDB
 
 class ExecutionContext(
   val projectId: Identifier,
-  val scope: Map[String, ArtifactSummary],
+  val scope: Map[String, Artifact],
   workflow: Workflow,
   cell: Cell,
   module: Module,
@@ -98,9 +97,7 @@ class ExecutionContext(
       }
       return Some(ret.get)
     }
-    val ret = scope.get(name.toLowerCase()).map { id =>
-      CatalogDB.withDBReadOnly { implicit s => id.materialize }
-    }
+    val ret = scope.get(name.toLowerCase())
     if(registerInput){ ret.foreach { a => inputs.put(name.toLowerCase(), a.id) } }
     return ret
   }
@@ -187,10 +184,13 @@ class ExecutionContext(
           // Output the model
           model.save(artifact.absoluteFile.toString)
 
-          new PipelineModelConstructor(
-            input = inputArtifact.id,
-            url = FileArgument(fileid = Some(artifact.id)),
-            projectId = projectId
+          (
+            new PipelineModelConstructor(
+              input = inputArtifact.id,
+              url = FileArgument(fileid = Some(artifact.id)),
+              projectId = projectId,
+              schema = model.transform(inputDataframe).schema
+            ), 
           )
         },
         properties
@@ -204,14 +204,15 @@ class ExecutionContext(
     outputDatasetWithFile(name, { artifact =>
       dataframe.write
                .parquet(artifact.absoluteFile.toString)
-
-      new LoadConstructor(
-        url = FileArgument(fileid = Some(artifact.id)),
-        format = "parquet",
-        sparkOptions = Map(),
-        contextText = Some(name),
-        proposedSchema = Some(dataframe.schema),
-        projectId = projectId
+      (
+        new LoadConstructor(
+          url = FileArgument(fileid = Some(artifact.id)),
+          format = "parquet",
+          sparkOptions = Map(),
+          contextText = Some(name),
+          proposedSchema = Some(dataframe.schema),
+          projectId = projectId
+        ),
       )
     }, properties)
   }
@@ -234,8 +235,7 @@ class ExecutionContext(
     CatalogDB.withDBReadOnly { implicit s => 
       (
         scope.filter { _._2.t == ArtifactType.DATASET }
-             .filterNot { outputs contains _._1 }
-             .mapValues { _.materialize } ++
+             .filterNot { outputs contains _._1 } ++
         outputs.filter { _._2.isDefined }
                .mapValues { _.get }
                .filter { _._2.t == ArtifactType.DATASET }
@@ -371,14 +371,14 @@ class ExecutionContext(
       ArtifactType.DATASET,
       Json.toJson(Dataset(
         constructor,
-        properties
+        properties,
       )).toString.getBytes,
       mimeType = MIME.RAW
     )
 
   def outputDatasetWithFile[T <: DataFrameConstructor](
     name: String,
-    constructor: Artifact => T,
+    gen: Artifact => T,
     properties: Map[String, JsValue] = Map.empty
   )(implicit writes: Writes[T]): Artifact =
   {
@@ -390,7 +390,11 @@ class ExecutionContext(
         Array[Byte]()
       )
     }
-    val ds = Dataset(constructor(artifact), properties)
+    val constructor = gen(artifact)
+    val ds = Dataset(
+              constructor,
+              properties
+             )
     output(
       name,
       CatalogDB.withDB { implicit s =>

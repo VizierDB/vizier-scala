@@ -27,7 +27,6 @@ import info.vizierdb.spark.arrow.ArrowQuery
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.catalog.ArtifactRef
-import info.vizierdb.catalog.ArtifactSummary
 import info.vizierdb.spark.vizual.{ VizualCommand, VizualScriptConstructor }
 import info.vizierdb.spark.caveats.QueryWithCaveats
 import info.vizierdb.util.ExperimentalOptions
@@ -163,14 +162,16 @@ object Python extends Command
               )
             }
           case "vizual_script" => 
-            def handler(inputId: Option[Identifier]): Unit = {
+            def handler(inputId: Option[Identifier], inputSch: Option[Seq[StructField]]): Unit = {
               val output = (event\"output").as[String]
+              val script = (event\"script").as[Seq[VizualCommand]]
 
               val artifact = context.outputDataset( 
                 name = output,
                 constructor = VizualScriptConstructor(
-                  script = (event\"script").as[Seq[VizualCommand]],
-                  input = inputId
+                   script = script,
+                   input = inputId,
+                   VizualScriptConstructor.getSchema(inputSch, script)
                 )
               )
               logger.trace(s"Visual being used to create dataset: $output (artifact ${artifact.id})")
@@ -181,14 +182,14 @@ object Python extends Command
             }
             ((event\"name").asOpt[String]:Option[String]) match {
               case None => 
-                handler(None)
+                handler(None, None)
               case Some(ds) => 
                 withNamedArtifact(ds) { existingDs => 
                   assert(
                     (event\"identifier").as[Long] == existingDs.id,
                     s"Vizual script for ${(event\"output")} with out-of-sync identifier (Python has ${(event\"identifier")}; Spark has ${existingDs.id})"
                   )
-                  handler(Some(existingDs.id)) 
+                  handler(Some(existingDs.id), Some(existingDs.datasetSchema)) 
                 }
             }
 

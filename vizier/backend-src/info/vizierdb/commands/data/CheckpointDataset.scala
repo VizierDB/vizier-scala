@@ -58,6 +58,7 @@ object CheckpointDataset extends Command
         artifactId = artifact.id,
       ) 
       context.message("Dataset written, registering file...")
+
       new MaterializeConstructor(
         input = input.id,
         schema = df.schema,

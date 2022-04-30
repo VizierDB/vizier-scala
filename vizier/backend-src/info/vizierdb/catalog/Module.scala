@@ -144,7 +144,7 @@ case class Module(
     cell: Cell,
     result: Option[Result], 
     messages: Seq[Message],
-    outputs: Seq[(String, ArtifactSummary)],
+    outputs: Seq[(String, Artifact)],
     inputs: Seq[(String, Identifier)],
     projectId: Identifier, 
     branchId: Identifier, 

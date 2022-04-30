@@ -46,15 +46,16 @@ object CreateDataset
         Project.getOption(projectId)
                .getOrElse { ErrorResponse.noSuchEntity }
 
+      val schema = columns.map { datasetColumnToStructField(_) }
       val artifact = Artifact.make(
         project.id, 
         ArtifactType.DATASET,
         MIME.DATASET_VIEW,
         Json.toJson(Dataset(
           InlineDataConstructor(
-            schema = columns.map { datasetColumnToStructField(_) },
+            schema = schema,
             data = rows.map { _.values }
-          )
+          ),
         )).toString.getBytes
       )
 

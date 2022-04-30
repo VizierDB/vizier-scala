@@ -24,12 +24,14 @@ import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.{DataFrameConstructor, DataFrameConstructorCodec, DefaultProvenance}
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.spark.SparkSchema.fieldFormat
 
 case class LensConstructor(
   lensClassName: String,
   target: Identifier,
   arguments: JsObject,
-  projectId: Identifier
+  projectId: Identifier,
+  schema: Seq[StructField]
 ) extends DataFrameConstructor
   with DefaultProvenance
 {
@@ -87,12 +89,15 @@ trait LensCommand
 
     context.message(s"Saving results...")
     
+    val input = CatalogDB.withDB { implicit s => dataset.dataframe }
+
     val updatesFromTraining = 
       train(
-        CatalogDB.withDB { implicit s => dataset.dataframe },
+        input,
         arguments,
         context
       )
+
     val updatedArguments = 
       if(updatesFromTraining.isEmpty){ arguments }
       else { context.updateArguments(updatesFromTraining.toSeq:_*) }
@@ -104,6 +109,7 @@ trait LensCommand
         target = dataset.id,
         arguments = updatedArguments.asJson,
         projectId = context.projectId,
+        schema = build(input, updatedArguments, context.projectId).schema
       )
     )
     context.displayDataset(datasetName)

@@ -471,41 +471,6 @@ class MutableProject(
   def lastOutputString =
     lastOutput.map { _.dataString }.mkString("\n")
 
-  /**
-   * Retrieve [[ArtifactRef]]erences to all artifacts output by the entire workflow (the scope)
-   * @return              A collection of [[ArtifactRef]]s in the final cell's output scope.
-   */
-  def artifactRefs: Seq[ArtifactRef] = 
-  {
-    val workflow = head
-    CatalogDB.withDBReadOnly { implicit s => 
-      workflow.outputArtifacts
-    }
-  }
-  /**
-   * Retrieve [[ArtifactSummary]]s to all artifacts output by the entire workflow (the scope)
-   * @return              A collection of [[ArtifactSummary]]s in the final cell's output scope.
-   */
-  def artifactSummaries: Map[String, ArtifactSummary] = 
-  {
-    val refs = artifactRefs
-    CatalogDB.withDBReadOnly { implicit s => 
-      refs.map { ref => ref.userFacingName -> ref.getSummary.get }
-          .toMap
-    }
-  }
-
-  /**
-   * Retrieve the [[ArtifactRef]] for a specific name
-   * @param  artifactName  The name of an artifact output by the workflow
-   * @return               The [[ArtifactRef]] for the specified artifact
-   */
-  def artifactRef(artifactName: String): ArtifactRef =
-    artifactRefs.find { _.userFacingName.equalsIgnoreCase(artifactName) }
-            .getOrElse { 
-              throw new VizierException(s"No Such Artifact $artifactName")
-            }
-
 
   /**
    * Retrieve all [[Artifact]]s output by the entire workflow (the scope)
@@ -513,10 +478,10 @@ class MutableProject(
    */
   def artifacts: Map[String, Artifact] =
   {
-    val refs = artifactRefs
+    val workflow = head
     CatalogDB.withDBReadOnly { implicit s => 
-      refs.map { ref => ref.userFacingName -> ref.get.get }
-    }.toMap
+      workflow.outputArtifacts
+    }
   }
 
   /**
@@ -525,18 +490,15 @@ class MutableProject(
    * @return              The [[Artifact]] identified by artifactName in the workflow's output
    */
   def artifact(artifactName: String): Artifact = 
-  {
-    val ref = artifactRef(artifactName)
-    return CatalogDB.withDBReadOnly { implicit s => ref.get.get }
-  }
+    artifacts(artifactName)
 
   /**
    * Retrieve the spark dataframe corresponding to a specific artifact
    */
   def dataframe(artifactName: String): DataFrame =
   {
-    val ref = artifactRef(artifactName)
-    return CatalogDB.withDB { implicit s => ref.get.get.dataframe }
+    val a = artifact(artifactName)
+    return CatalogDB.withDB { implicit s => a.dataframe }
   }
 
   /**
@@ -544,8 +506,8 @@ class MutableProject(
    */
   def datasetData(artifactName: String): DataContainer =
   {
-    val ref = artifactRef(artifactName)
-    return CatalogDB.withDB { implicit s => ref.get.get.datasetData() }
+    val a = artifact(artifactName)
+    return CatalogDB.withDB { implicit s => a.datasetData() }
   }
 
   /**

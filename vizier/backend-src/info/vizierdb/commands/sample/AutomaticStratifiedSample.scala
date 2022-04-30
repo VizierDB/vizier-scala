@@ -101,7 +101,8 @@ object AutomaticStratifiedSample extends Command
                           goalPerBin.toDouble / size
                         }.toSeq
                       ),
-                      input = input.id
+                      input = input.id,
+                      schema = df.schema
                     )
                   )
     if(seedMaybe.isEmpty) { 

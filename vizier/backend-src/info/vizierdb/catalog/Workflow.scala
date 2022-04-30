@@ -208,28 +208,13 @@ case class Workflow(
     copy(aborted = true)
   }
 
-  def outputArtifacts(implicit session: DBSession): Seq[ArtifactRef] =
+  def outputArtifacts(implicit session: DBSession): Map[String,Artifact] =
   {
-    val c = Cell.syntax
-    val o = OutputArtifactRef.syntax
-    withSQL {
-      select(o.resultAll)
-        .from(Cell as c)
-        .join(OutputArtifactRef as o)
-        .where.eq(c.resultId, o.resultId)
-          .and.eq(c.workflowId, id)
-        .orderBy(c.position.desc)
-    }.map { OutputArtifactRef(_) }
-     .list.apply()
-     .foldLeft(Map[String, ArtifactRef]()) { 
-      (scope:Map[String, ArtifactRef], artifact) =>
-        // Thanks to the orderBy above, the first version of each identifier
-        // that we encounter should be the right one.
-        if(scope contains artifact.userFacingName) { scope }
-        else { scope ++ Map(artifact.userFacingName -> artifact) }
-     }
-     .filter { _._2.artifactId.isDefined }
-     .values.toSeq
+    OutputArtifactRef.outputArtifactsForWorkflow(id)
+                     .toSeq
+                     .sortBy { _._1 }
+                     .map { _._2 }
+                     .foldLeft(Map[String,Artifact]()) { _ ++ _ }
   }
 
   def allArtifacts(implicit session: DBSession): Seq[ArtifactRef] =
@@ -265,7 +250,7 @@ case class Workflow(
     val messagesByCell = Message.messagesForWorkflow(id)
     val inputsByCell:Map[Cell.Position, Map[String, Identifier]] = 
       InputArtifactRef.inputArtifactsForWorkflow(id)
-    val outputsByCell:Map[Cell.Position, Map[String, ArtifactSummary]] = 
+    val outputsByCell:Map[Cell.Position, Map[String, Artifact]] = 
       OutputArtifactRef.outputArtifactsForWorkflow(id)
 
     val summary = makeSummary(branch, actionModuleId.map { Module.get(_) })
@@ -289,12 +274,12 @@ case class Workflow(
         )
       }
     }
-    val artifacts: Map[String, ArtifactSummary] = 
+    val artifacts: Map[String, Artifact] = 
       cellsModulesAndResults.foldLeft(
-        Map[String,ArtifactSummary]()
+        Map[String,Artifact]()
       ) { 
-        case (scope:Map[String,ArtifactSummary], (cell, _, _)) =>
-          val current:Map[String, ArtifactSummary] =
+        case (scope:Map[String,Artifact], (cell, _, _)) =>
+          val current:Map[String, Artifact] =
             outputsByCell.getOrElse(cell.position, Map.empty) 
           scope ++ current
       }

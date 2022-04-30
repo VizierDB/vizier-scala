@@ -17,7 +17,7 @@ package info.vizierdb.api
 import scalikejdbc.DB
 import play.api.libs.json._
 import info.vizierdb.VizierAPI
-import info.vizierdb.catalog.{ Branch, Workflow, Artifact, ArtifactSummary }
+import info.vizierdb.catalog.{ Branch, Workflow, Artifact }
 import info.vizierdb.types.{ Identifier, ArtifactType }
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.response._
@@ -53,14 +53,8 @@ object WorkflowSQL
               Branch.getOption(projectId, branchId).map { _.head }
           }).getOrElse { ErrorResponse.noSuchEntity }
 
-        val artifacts: Seq[(String, ArtifactSummary)] = 
-          workflow.outputArtifacts
-                  .map { a => a.userFacingName -> a.getSummary }
-                  // if summary returns None, this is a delete
-                  .flatMap { 
-                    case (_, None) => None
-                    case (name, Some(summary)) => Some(name -> summary) 
-                  }
+        val artifacts: Seq[(String, Artifact)] = 
+          workflow.outputArtifacts.toSeq
 
         val datasets = 
           artifacts.filter { _._2.t.equals(ArtifactType.DATASET) }

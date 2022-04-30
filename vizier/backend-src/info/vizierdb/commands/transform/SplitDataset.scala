@@ -91,7 +91,8 @@ object SplitDataset
             datasets = Map("INPUT" -> inputDataset.id),
             functions = Map.empty,
             query = s"SELECT * FROM INPUT WHERE ${outputCondition}",
-            projectId = context.projectId
+            projectId = context.projectId,
+            context = { _ => inputDataset.datasetSchema }
           )
         )
         logger.trace("Rendering dataset summary")

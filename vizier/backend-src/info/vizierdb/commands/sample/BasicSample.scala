@@ -62,7 +62,8 @@ object BasicSample extends Command
       SampleConstructor(
         seed = seed,
         Uniform(probability),
-        input = input.id
+        input = input.id,
+        schema = input.datasetSchema
       )
     )
 

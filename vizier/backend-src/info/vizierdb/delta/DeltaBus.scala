@@ -18,12 +18,11 @@ import scalikejdbc.DBSession
 import scala.collection.mutable
 import info.vizierdb.types._
 import com.typesafe.scalalogging.LazyLogging
-import info.vizierdb.catalog.{ Workflow, Module, Cell, ArtifactRef, Message }
+import info.vizierdb.catalog.{ Workflow, Module, Cell, Artifact, ArtifactRef, Message }
 import scalikejdbc.interpolation.SQLSyntax
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.serialized.Timestamps
 import info.vizierdb.catalog.Result
-import info.vizierdb.catalog.ArtifactSummary
 
 /**
  * A central hub for notifications about state changes on branches.  
@@ -128,7 +127,7 @@ object DeltaBus
    * @param result       The result object referenced by the newly inserted cell (if it exists)
    * @param messages     The messages (if any) generaetd by the newly inserted cell
    * @param inputs       Identifiers of the artifacts read by this cell, along with their names
-   * @param outputs      [[ArtifactSummary]]s of artifacts written by this cell, along with their names
+   * @param outputs      [[Artifact]]s written by this cell, along with their names
    * @param projectId    The id of the [[Project]] housing the branch housing the upddated workflow.
    * @param branchId     The id of the [[Branch]] housing the updated workflow
    * @param workflowId   The id of the <b>updated</b> [[Workflow]].
@@ -145,7 +144,7 @@ object DeltaBus
     result: Option[Result], 
     messages: Seq[Message],
     inputs: Seq[(String, Identifier)],
-    outputs: Seq[(String, ArtifactSummary)],
+    outputs: Seq[(String, Artifact)],
     projectId: Identifier,
     branchId: Identifier,
     workflowId: Identifier
@@ -199,7 +198,7 @@ object DeltaBus
    * @param result       The result object referenced by the newly inserted cell (if it exists)
    * @param messages     The messages (if any) generaetd by the newly inserted cell
    * @param inputs       Identifiers of the artifacts read by this cell, along with their names
-   * @param outputs      [[ArtifactSummary]]s of artifacts written by this cell, along with their names
+   * @param outputs      [[Artifact]]s written by this cell, along with their names
    * @param projectId    The id of the [[Project]] housing the branch housing the upddated workflow.
    * @param branchId     The id of the [[Branch]] housing the updated workflow
    * @param workflowId   The id of the <b>updated</b> [[Workflow]].
@@ -217,7 +216,7 @@ object DeltaBus
     result: Option[Result], 
     messages: Seq[Message],
     inputs: Seq[(String, Identifier)],
-    outputs: Seq[(String, ArtifactSummary)],
+    outputs: Seq[(String, Artifact)],
     projectId: Identifier,
     branchId: Identifier,
     workflowId: Identifier
@@ -248,7 +247,7 @@ object DeltaBus
    * @param result       The result object referenced by the newly inserted cell (if it exists)
    * @param messages     The messages (if any) generaetd by the newly inserted cell
    * @param inputs       Identifiers of the artifacts read by this cell, along with their names
-   * @param outputs      [[ArtifactSummary]]s of artifacts written by this cell, along with their names
+   * @param outputs      [[Artifact]]s written by this cell, along with their names
    * @param projectId    The id of the [[Project]] housing the branch housing the upddated workflow.
    * @param branchId     The id of the [[Branch]] housing the updated workflow
    * @param workflowId   The id of the <b>updated</b> [[Workflow]].
@@ -259,7 +258,7 @@ object DeltaBus
     result: Option[Result], 
     messages: Seq[Message],
     inputs: Seq[(String, Identifier)],
-    outputs: Seq[(String, ArtifactSummary)],
+    outputs: Seq[(String, Artifact)],
     projectId: Identifier,
     branchId: Identifier,
     workflowId: Identifier

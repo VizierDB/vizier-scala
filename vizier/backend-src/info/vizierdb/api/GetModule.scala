@@ -51,7 +51,7 @@ object GetModule
               cell = cell, 
               result = cell.result,
               messages = cell.messages.toSeq,
-              outputs = cell.outputSummaries.toSeq,
+              outputs = cell.outputArtifacts.toSeq,
               inputs = cell.inputs.flatMap { _.tuple },
               projectId = projectId, 
               branchId = branchId, 
