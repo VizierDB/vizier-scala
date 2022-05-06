@@ -67,10 +67,14 @@ object vizier extends ScalaModule with PublishModule {
 
 
     ////////////////////// Import/Export Support ///////////
-    ivy"org.apache.commons:commons-compress:1.20",
+    ivy"org.apache.commons:commons-compress:1.21",
     PLAY_JS.exclude(
                "com.fasterxml.jackson.core" -> "*",
              ),
+
+    ivy"com.crealytics::spark-excel:0.13.3+17-b51cc0ac+20200722-1201-SNAPSHOT".exclude(
+               "javax.servlet" -> "*",
+             ), 
 
     ////////////////////// Interfacing /////////////////////
     ivy"org.rogach::scallop:3.4.0",
