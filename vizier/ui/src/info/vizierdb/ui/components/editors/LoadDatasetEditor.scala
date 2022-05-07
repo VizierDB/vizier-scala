@@ -184,6 +184,7 @@ class LoadDatasetEditor(
       case "json" => DatasetFormat.JSON
       case "csv"  => DatasetFormat.CSV
       case "tsv"  => DatasetFormat.CSV
+      case "xlsx" => DatasetFormat.Excel
       case _      => DatasetFormat.Text
     }
 
