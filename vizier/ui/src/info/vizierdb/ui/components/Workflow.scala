@@ -19,7 +19,7 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
 
   val moduleViews = 
     subscription.modules
-                .rxMap { module => new Module(module, this) }
+                .rxMap { module => new Module(module) }
 
   val moduleViewsWithEdits = new TentativeEdits(moduleViews, project, this)
 
@@ -92,7 +92,12 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
       )
     )
 
-
+  /**
+   * The root DOM node of the workflow
+   * 
+   * Note.  This should closely mirrir [[StaticWorkflow]].  Any CSS-related changes applied here
+   * should be propagated there as well.
+   */
   val root = 
     div(`class` := "workflow_content",
       Rx { 

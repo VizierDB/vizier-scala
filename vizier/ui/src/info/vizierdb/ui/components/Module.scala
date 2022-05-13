@@ -19,7 +19,7 @@ import info.vizierdb.ui.widgets.Tooltip
 import info.vizierdb.ui.widgets.PopUpButton
 import info.vizierdb.ui.widgets.ScrollIntoView
 
-class Module(val subscription: ModuleSubscription, workflow: Workflow)
+class Module(val subscription: ModuleSubscription)
             (implicit owner: Ctx.Owner)
   extends Object
   with Logging
