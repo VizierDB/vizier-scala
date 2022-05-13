@@ -49,6 +49,7 @@ case class BranchDescription(
     properties.find { _.key == "name" }
               .map { _.value.as[String] }
               .getOrElse { "Untitled Branch" }
+  def head = workflows.last
 }
 
 case class BranchList(

@@ -20,4 +20,6 @@ case class ClientURLs(baseUrl: String)
     makeUrl("settings.html")
   def artifact(projectId: Identifier, artifactId: Identifier, name: String = null) =
     makeUrl("artifact.html", "project" -> projectId, "artifact" -> artifactId, "name" -> name)
+  def workflow(projectId: Identifier, branchId: Identifier, workflowId: Identifier) =
+    makeUrl("workflow.html", "project" -> projectId, "branch" -> branchId, "workflow" -> workflowId)
 }

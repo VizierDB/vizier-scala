@@ -25,6 +25,8 @@ import info.vizierdb.ui.components.dataset.TableView
 import info.vizierdb.nativeTypes
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.components.DisplayArtifact
+import scala.concurrent.Future
+import info.vizierdb.ui.components.StaticWorkflow
 
 
 /**
@@ -69,6 +71,7 @@ object Vizier
 
   def error(message: String) =
   {
+    println(s"ERROR: $message")
     throw new Exception(message)
   }
 
@@ -290,6 +293,50 @@ object Vizier
 
       artifact.onComplete { 
         case Success(a) => root() = new DisplayArtifact(a).root
+        case Failure(err) => Vizier.error(err.getMessage())
+      }
+    })
+  }
+
+  @JSExport("static_workflow")
+  def staticWorkflow(): Unit =
+  {
+    val projectId = arguments.get("project").get.toLong
+    val branchIdMaybe = arguments.get("branch").map { _.toLong }
+    val workflowIdMaybe = arguments.get("workflow").map { _.toLong }
+
+    val branchId = 
+      branchIdMaybe.map { Future(_) }
+                   .getOrElse { 
+                       api.projectGet(projectId)
+                          .map { _.defaultBranch }
+                   }
+
+    val workflowId =
+      workflowIdMaybe.map { Future(_) }
+                     .getOrElse { 
+                       branchId.flatMap { Vizier.api.branchGet(projectId, _) }
+                               .map { _.head.id }
+                     }
+
+    val workflow = 
+      branchId.flatMap { b => 
+        workflowId.flatMap { w => 
+          println(s"Getting workflow: ($projectId, $b, $w)")
+          api.workflowGet(projectId, b, w)
+        }
+      }
+
+    document.addEventListener("DOMContentLoaded", { (e: dom.Event) =>
+      val root = Var[Frag](div(`class` := "display_workflow", Spinner(50)))
+
+      document.body.appendChild(root.reactive)
+      OnMount.trigger(document.body)
+
+      workflow.onComplete { 
+        case Success(w) => 
+          println(s"Got workflow: $w")
+          root() = new StaticWorkflow(projectId, w).root
         case Failure(err) => Vizier.error(err.getMessage())
       }
     })

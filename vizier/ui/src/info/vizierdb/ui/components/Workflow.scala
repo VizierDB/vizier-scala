@@ -95,7 +95,7 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
   /**
    * The root DOM node of the workflow
    * 
-   * Note.  This should closely mirrir [[StaticWorkflow]].  Any CSS-related changes applied here
+   * Note.  This should closely mirror [[StaticWorkflow]].  Any CSS-related changes applied here
    * should be propagated there as well.
    */
   val root = 

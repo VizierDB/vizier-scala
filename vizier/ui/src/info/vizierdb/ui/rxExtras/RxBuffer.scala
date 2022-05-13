@@ -40,6 +40,9 @@ object RxBuffer
   with Logging
 {
   def apply[A](initial: A*): RxBufferVar[A] = 
+    ofSeq(initial)
+
+  def ofSeq[A](initial: Iterable[A]): RxBufferVar[A] = 
   {
     val ret = new RxBufferVar[A]()
     ret.appendAll(initial)

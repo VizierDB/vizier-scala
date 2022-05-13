@@ -139,6 +139,12 @@ class Project(val projectId: Identifier, autosubscribe: Boolean = true)
 
   val menu = new MenuBar(this)
 
+  /**
+   * The root DOM node of the project
+   * 
+   * Note.  This should closely mirror [[StaticWorkflow]].  Any CSS-related changes applied here
+   * should be propagated there as well.
+   */
   val root = 
     div(id := "project",
       menu.root,

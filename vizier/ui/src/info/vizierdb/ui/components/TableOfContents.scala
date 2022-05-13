@@ -10,10 +10,24 @@ import info.vizierdb.types._
 import info.vizierdb.ui.Vizier
 import info.vizierdb.util.StringUtils
 import info.vizierdb.ui.components.dataset.CaveatModal
+import info.vizierdb.ui.rxExtras.RxBuffer
+import info.vizierdb.serialized
 
-class TableOfContents(workflow: Workflow)
-                     (implicit owner: Ctx.Owner)
+class TableOfContents(
+  projectId: Identifier,
+  modules: RxBuffer[WorkflowElement],
+  artifacts: Rx[Map[String, (serialized.ArtifactSummary, Module)]],
+)(implicit owner: Ctx.Owner)
 {
+
+  def this(wf: Workflow)(implicit owner: Ctx.Owner)
+  {
+    this(
+      wf.project.projectId,
+      wf.moduleViewsWithEdits,
+      wf.moduleViewsWithEdits.allArtifacts.flatMap { x => x }
+    )
+  }
 
   def LinkToModule(module: Module, body: Frag*): Frag =
     a(
@@ -70,21 +84,17 @@ class TableOfContents(workflow: Workflow)
 
   val moduleNodes =
     RxBufferView(ol(`class` := "the_modules"), 
-      workflow.moduleViewsWithEdits
-              .rxMap { 
-                  case WorkflowModule(module) => ModuleSummary(module)
-                  case WorkflowTentativeModule(edit) => TentativeSummary(edit)
-                  case WorkflowArtifactInspector(inspector) => InspectorSummary(inspector)
-                }
+      modules.rxMap { 
+                case WorkflowModule(module) => ModuleSummary(module)
+                case WorkflowTentativeModule(edit) => TentativeSummary(edit)
+                case WorkflowArtifactInspector(inspector) => InspectorSummary(inspector)
+              }
     )
 
 
 
   val artifactNodes = 
-    workflow.moduleViewsWithEdits
-            .allArtifacts
-            .flatMap { x => x }
-            .map { artifacts => 
+    artifacts.map { artifacts => 
               div(`class` := "the_artifacts",
                 artifacts
                   .toSeq
@@ -114,9 +124,9 @@ class TableOfContents(workflow: Workflow)
                           case ArtifactType.DATASET => Seq[Frag](
                               // Caveat list
                               a(
-                                href := Vizier.api.artifactDsGetAnnotationsURL(workflow.project.projectId, artifact.id),
+                                href := Vizier.api.artifactDsGetAnnotationsURL(projectId, artifact.id),
                                 onclick := { _:dom.Event =>
-                                  CaveatModal(workflow.project.projectId, artifact.id,
+                                  CaveatModal(projectId, artifact.id,
                                     row = None,
                                     column = None
                                   ).show()
@@ -127,7 +137,7 @@ class TableOfContents(workflow: Workflow)
 
                               // Spreadsheet view
                               a(
-                                href := Vizier.links.spreadsheet(workflow.project.projectId, artifact.id), 
+                                href := Vizier.links.spreadsheet(projectId, artifact.id), 
                                 target := "_blank",
                                 FontAwesome("table")
                               )
@@ -136,7 +146,7 @@ class TableOfContents(workflow: Workflow)
                           case ArtifactType.FUNCTION | ArtifactType.VEGALITE => Seq[Frag](
                               // "Pop-out"
                               a(
-                                href := Vizier.links.artifact(workflow.project.projectId, artifact.id),
+                                href := Vizier.links.artifact(projectId, artifact.id),
                                 target := "_blank",
                                 FontAwesome("share-square-o")
                               )
@@ -151,17 +161,17 @@ class TableOfContents(workflow: Workflow)
                             artifact.category match {
                               case ArtifactType.DATASET =>
                                 Vizier.api.artifactGetCsvURL(
-                                  workflow.project.projectId,
+                                  projectId,
                                   artifact.id,
                                 )
                               case ArtifactType.FILE =>
                                 Vizier.api.artifactGetFileURL(
-                                  workflow.project.projectId,
+                                  projectId,
                                   artifact.id,
                                 )
                               case _ => 
                                 Vizier.api.artifactGetURL(
-                                        workflow.project.projectId,
+                                        projectId,
                                         artifact.id,
                                 )
                             }

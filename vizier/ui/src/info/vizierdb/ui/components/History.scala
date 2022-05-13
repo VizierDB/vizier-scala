@@ -59,6 +59,11 @@ class History(
               FontAwesome(ActionType.icon(action)),
               span(`class` := "description", 
                 action.toString, " ", (wf.packageId ++ wf.commandId).mkString(".")
+              ),
+              a(
+                href := Vizier.links.workflow(projectId, branch.id, wf.id),
+                target := "_blank",
+                FontAwesome("share-square-o")
               )
             )
           }
