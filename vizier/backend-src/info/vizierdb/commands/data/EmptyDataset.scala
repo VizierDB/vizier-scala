@@ -37,10 +37,11 @@ object EmptyDataset extends Command
     s"Initialize ${arguments.pretty("name")}"
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
+    val schema = Seq(StructField("unnamed_column", StringType))
     context.outputDataset(
       arguments.get[String]("name"),
       InlineDataConstructor(
-        schema = Seq(StructField("unnamed_column", StringType)),
+        schema = schema,
         data = Seq(Seq(JsString("")))
       )
     )

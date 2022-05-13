@@ -4,6 +4,8 @@ import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
 import info.vizierdb.types._
 import info.vizierdb.spark._
+import org.apache.spark.sql.types.StructField
+import info.vizierdb.spark.SparkSchema.fieldFormat
 
 
 case class Uniform(probability:Double) extends SamplingMode
@@ -104,7 +106,8 @@ object SamplingMode
 case class SampleConstructor(
   seed: Long,
   mode: SamplingMode,
-  input: Identifier
+  input: Identifier,
+  schema: Seq[StructField],
 ) extends DataFrameConstructor 
   with DefaultProvenance
 {

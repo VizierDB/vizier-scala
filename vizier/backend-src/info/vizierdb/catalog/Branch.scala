@@ -109,7 +109,17 @@ case class Branch(
       abortPrevWorkflow = true,
       addModules = Seq(module.id -> Workflow.getLength(headId)),
     )
-    DeltaBus.notifyCellAppend(ret._2)
+    DeltaBus.notifyCellAppend(
+      cell = ret._2.lastCell.get,
+      module = module,
+      result = None,
+      messages = Seq.empty,
+      inputs = Seq.empty,
+      outputs = Seq.empty,
+      projectId = projectId,
+      branchId = id,
+      workflowId = ret._2.id
+    )
     return ret
   }
 
@@ -131,7 +141,17 @@ case class Branch(
       recomputeCellsFrom = position,
       addModules = Seq(module.id -> position)
     )
-    DeltaBus.notifyCellInserts(ret._2){ (cell, _) => cell.position == position }
+    DeltaBus.notifyCellInserts(
+      cell = ret._2.cellByPosition(position).get,
+      module = module,
+      result = None,
+      messages = Seq.empty,
+      inputs = Seq.empty,
+      outputs = Seq.empty,
+      projectId = projectId,
+      branchId = id,
+      workflowId = ret._2.id
+    )
     for(cell <- ret._2.cellsWhere(sqls"position > ${position}")){
       DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }
@@ -156,7 +176,17 @@ case class Branch(
       keepCells = sqls"position <> $position",
       addModules = Seq(module.id -> position)
     )
-    DeltaBus.notifyCellUpdates(ret._2) { (cell, _) => cell.position == position }
+    DeltaBus.notifyCellUpdates(
+      cell = ret._2.cellByPosition(position).get,
+      module = module,
+      result = None,
+      messages = Seq.empty,
+      inputs = Seq.empty,
+      outputs = Seq.empty,
+      projectId = projectId,
+      branchId = id,
+      workflowId = ret._2.id
+    )
     for(cell <- ret._2.cellsWhere(sqls"position > ${position}")){
       DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
     }

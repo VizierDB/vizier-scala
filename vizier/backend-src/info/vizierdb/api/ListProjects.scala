@@ -29,9 +29,8 @@ object ListProjects
   def apply(): serialized.ProjectList =
     serialized.ProjectList(
       projects =
-        CatalogDB.withDBReadOnly { implicit session => 
-          Project.list.map { _.summarize }
-        },
+        CatalogDB.withDBReadOnly { implicit session => Project.list }
+                 .map { _.summarize }
     )
 }
 

@@ -108,7 +108,7 @@ for row in ds.rows:
 
 ds.save("Q")
 """)
-    project.artifactRefs.map { _.userFacingName } must contain("q")
+    project.artifacts.keys must contain("q")
 
     project.lastOutputString.split("\n").toSeq must contain(eachOf(
       "success: A(short) / None",
@@ -121,11 +121,11 @@ ds.save("Q")
 
     project.lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)")
 
-    project.artifactRefs.map { _.userFacingName } must contain("test_r")
+    project.artifacts.keys must contain("test_r")
     project.script("""
 vizierdb.drop_dataset("test_r")
 """)
-    project.artifactRefs.map { _.userFacingName } must not contain("test_r")
+    project.artifacts.keys must not contain("test_r")
   }
 
   "basic 'show' outputs" >> 
@@ -224,7 +224,7 @@ print(df['A'].sum())
       |  return x + 1
       |vizierdb.export_module(addOne)
     """.stripMargin)
-    project.artifactSummaries.keys must contain("addone")
+    project.artifacts.keys must contain("addone")
     project.sql("SELECT addOne(2)" -> "functionTest")
     project.waitUntilReadyAndThrowOnError
     project.datasetData("functionTest").data(0)(0) must beEqualTo("3")

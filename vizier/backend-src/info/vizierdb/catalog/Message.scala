@@ -49,13 +49,13 @@ case class DatasetMessage(
       case Some(cache) => 
         {
           val base = 
-            Artifact.summarize(
-              artifactId = artifactId, 
-              projectId = projectId, 
-              t = ArtifactType.DATASET, 
-              created = created, 
-              mimeType = MIME.DATASET_VIEW, 
-              name = name
+            serialized.StandardArtifact(
+              key       = artifactId,
+              id        = artifactId,
+              projectId = projectId,
+              objType   = MIME.DATASET_VIEW,
+              category  = ArtifactType.DATASET,
+              name      = name.getOrElse { s"Unnamed Dataset $artifactId" },
             )
           Artifact.translateDatasetContainerToVizierClassic(
             projectId = projectId,
@@ -135,5 +135,24 @@ object Message
 {
   def apply(rs: WrappedResultSet): Message = autoConstruct(rs, (Message.syntax).resultName)
   override def columns = Schema.columns(table)
+
+  def messagesForWorkflow(
+    workflowId: Identifier
+  )(implicit session: DBSession): Map[Cell.Position, Seq[Message]] =
+  {
+    val m = Message.syntax
+    val c = Cell.syntax
+    withSQL {
+      select
+        .from(Cell as c)
+        .join(Message as m)
+        .where.eq(c.workflowId, workflowId)
+          .and.eq(m.resultId, c.resultId)
+    }.map { rs => (rs.int(c.resultName.position), Message(rs)) }
+     .list.apply()
+     .groupBy { _._1 }
+     .mapValues { _.map { _._2 } }    
+  }
+
 }
 

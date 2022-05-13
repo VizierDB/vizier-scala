@@ -13,6 +13,8 @@ import java.util.concurrent.{ ArrayBlockingQueue, ForkJoinTask }
 import scala.collection.JavaConverters._
 import info.vizierdb.delta.DeltaBus
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.catalog.InputArtifactRef
+import info.vizierdb.catalog.OutputArtifactRef
 
 class RunningWorkflow(workflow: Workflow)
   extends ForkJoinTask[Unit]
@@ -70,7 +72,7 @@ class RunningWorkflow(workflow: Workflow)
 
         logger.trace("Recomputing Cell States")
 
-        CatalogDB.withDB { implicit session => updatePendingTasks }
+        updatePendingTasks()
 
       } while( ! pendingTasks.isEmpty )
     } catch {
@@ -86,12 +88,21 @@ class RunningWorkflow(workflow: Workflow)
   def getRawResult(): Unit = ()
   def setRawResult(x: Unit) {}
 
-  def updatePendingTasks(implicit session: DBSession)
+  def updatePendingTasks(): Unit =
   {
     var scope = ScopeSummary.empty
     val runnable = mutable.Set[Cell.Position]()
 
-    for((cell, module) <- workflow.cellsAndModulesInOrder){
+    val (cellsAndModules, inputs, outputs) = 
+      CatalogDB.withDBReadOnly { implicit s => 
+        (
+          workflow.cellsAndModulesInOrder,
+          InputArtifactRef.inputArtifactIdsForWorkflow(workflowId = workflow.id),
+          OutputArtifactRef.outputArtifactRefsForWorkflow(workflowId = workflow.id),
+        )
+      }
+
+    for((cell, module) <- cellsAndModules){
       logger.debug(s"Updating execution state for $cell [${module.packageId}.${module.commandId}]; Scope:$scope")
       var updatedState = 
         cell.state
@@ -102,8 +113,11 @@ class RunningWorkflow(workflow: Workflow)
       def transitionToState(newState: ExecutionState.T)
       {
         updatedState = newState
-        val updated = cell.updateState(newState)
-        DeltaBus.notifyStateChange(workflow, cell.position, newState, updated.timestamps)
+        val (updated, timestamps) = CatalogDB.withDB { implicit s => 
+          val updated = cell.updateState(newState)
+          (updated, updated.timestamps)
+        }
+        DeltaBus.notifyStateChange(workflow, cell.position, newState, timestamps)
       }
 
       cell.state match { 
@@ -182,9 +196,7 @@ class RunningWorkflow(workflow: Workflow)
               logger.trace("In a state without valid provenance.")
               None
             } else {
-              Some(cell.inputs
-                       .collect { case ArtifactRef(_, Some(id), name) => name -> id }
-                       .toMap)
+              Some(inputs.getOrElse(cell.position, Map.empty))
             }
 
           // This is the answer to question 1 above.  Note that we're combining the
@@ -256,7 +268,7 @@ class RunningWorkflow(workflow: Workflow)
 
       scope = scope.copyWithUpdatesFromCellMetadata(
         state = updatedState,
-        outputs = cell.outputs,
+        outputs = outputs.getOrElse(cell.position, Seq.empty),
         predictedProvenance = predictedProvenance
       )
     }

@@ -91,14 +91,16 @@ case class Artifact(
     val extras:Map[String,JsValue] = t match {
       case _ => Map.empty
     }
-    val base = Artifact.summarize(
-                  artifactId = id, 
-                  projectId = projectId, 
-                  t = t, 
-                  created = created, 
-                  mimeType = mimeType, 
-                  name = Option(name)
-                )
+    val base = 
+      serialized.StandardArtifact(
+        key       = id,
+        id        = id,
+        projectId = projectId,
+        objType   = mimeType,
+        category  = t,
+        name      = Option(name).getOrElse { s"$t $id" },
+      )
+
     t match {
       case ArtifactType.DATASET => 
         base.toDatasetSummary(
@@ -139,14 +141,15 @@ case class Artifact(
   )(implicit session: DBSession): serialized.ArtifactDescription = 
   {
     val base = 
-      Artifact.summarize(
-        artifactId = id, 
-        projectId = projectId, 
-        t = t, 
-        created = created, 
-        mimeType = mimeType, 
-        name = Option(name)
+      serialized.StandardArtifact(
+        key       = id,
+        id        = id,
+        projectId = projectId,
+        objType   = mimeType,
+        category  = t,
+        name      = Option(name).getOrElse { s"$t $id" },
       )
+
     t match { 
       case ArtifactType.DATASET => 
         {
@@ -329,13 +332,8 @@ case class Artifact(
   /**
    * Retrieve the schema of the specified dataset
    */
-  def datasetSchema(implicit session: DBSession):Seq[StructField] =
-    datasetProperty("schema") { descriptor =>
-      Json.toJson(
-        descriptor.construct(Artifact.dataframeContext)
-                  .schema:Seq[StructField]
-      )
-    }.as[Seq[StructField]]
+  def datasetSchema:Seq[StructField] =
+    datasetDescriptor.schema
 
   /**
    * Delete this artifact.
@@ -413,60 +411,6 @@ case class Artifact(
 
 }
 
-case class ArtifactSummary(
-  id: Identifier,
-  projectId: Identifier, 
-  t: ArtifactType.T,
-  created: ZonedDateTime,
-  mimeType: String,
-)
-{
-  def nameInBackend = Artifact.nameInBackend(t, id)
-  def summarize(name: String = null)(implicit session: DBSession): serialized.ArtifactSummary = 
-  {
-    val extras:Map[String,JsValue] = t match {
-      case _ => Map.empty
-    }
-    val base = Artifact.summarize(
-                  artifactId = id, 
-                  projectId = projectId, 
-                  t = t, 
-                  created = created, 
-                  mimeType = mimeType, 
-                  name = Option(name)
-                )
-    t match {
-      case ArtifactType.DATASET => 
-        base.toDatasetSummary(
-          columns = materialize.datasetSchema
-                     .zipWithIndex
-                     .map { case (field, idx) => 
-                              serialized.DatasetColumn(
-                                id = idx, 
-                                name = field.name, 
-                                `type` = field.dataType
-                              ) 
-                          }
-        )
-      case _ => base
-
-    }
-  }
-  def absoluteFile: File = Filestore.getAbsolute(projectId, id)
-  def relativeFile: File = Filestore.getRelative(projectId, id)
-  def file = absoluteFile
-  def url: URL = Artifact.urlForArtifact(artifactId = id, projectId = projectId, t = t)
-
-  def materialize(implicit session: DBSession): Artifact = Artifact.get(id, Some(projectId))
-}
-object ArtifactSummary
-  extends SQLSyntaxSupport[ArtifactSummary]
-{
-  def apply(rs: WrappedResultSet): ArtifactSummary = autoConstruct(rs, (ArtifactSummary.syntax).resultName)
-  override def columns = Schema.columns(table).filterNot { _.equals("data") }  
-  override def tableName: String = Artifact.tableName
-}
-
 object Artifact
   extends SQLSyntaxSupport[Artifact]
 {
@@ -517,29 +461,21 @@ object Artifact
         )
     }.map { apply(_) }.single.apply()
 
+  def getAll(targets: Iterable[Identifier], projectId: Option[Identifier] = None)(implicit session: DBSession): Seq[Artifact] =
+    withSQL {
+      val b = Artifact.syntax
+      select
+        .from(Artifact as b)
+        .where(
+          sqls.toAndConditionOpt(
+            Some(sqls.in(b.id, targets.toSeq)),
+            projectId.map { sqls.eq(b.projectId, _) }
+          )
+        )
+    }.map { apply(_)}.list.apply() 
+
   def nameInBackend(t: ArtifactType.T, artifactId: Identifier): String =
     s"${t}_${artifactId}"
-
-  def lookupSummary(target: Identifier)(implicit session:DBSession): Option[ArtifactSummary] =
-  {
-    withSQL {
-      val a = ArtifactSummary.syntax
-      select
-        .from(ArtifactSummary as a)
-        .where.eq(a.id, target)
-    }.map { ArtifactSummary(_) }
-     .single.apply()
-  }
-  def lookupSummaries(targets: Seq[Identifier])(implicit session:DBSession): Seq[ArtifactSummary] =
-  {
-    withSQL {
-      val a = ArtifactSummary.syntax
-      select
-        .from(ArtifactSummary as a)
-        .where.in(a.id, targets)
-    }.map { ArtifactSummary(_) }
-     .list.apply()
-  }
 
   def urlForArtifact(artifactId: Identifier, projectId: Identifier, t: ArtifactType.T): URL =
     t match {
@@ -552,23 +488,6 @@ object Artifact
       case _ => 
         VizierAPI.urls.getArtifact(projectId, artifactId)
     }
-
-  def summarize(
-    artifactId: Identifier, 
-    projectId: Identifier, 
-    t: ArtifactType.T, 
-    created: ZonedDateTime, 
-    mimeType: String, 
-    name: Option[String],
-  ): serialized.StandardArtifact =
-    serialized.StandardArtifact(
-      key = artifactId,
-      id = artifactId,
-      projectId = projectId,
-      objType = mimeType,
-      category = t,
-      name = name.getOrElse { s"$t $artifactId" },
-    )
 
   /**
    * Translate a Mimir DataContainer to something the frontend UI wants to see

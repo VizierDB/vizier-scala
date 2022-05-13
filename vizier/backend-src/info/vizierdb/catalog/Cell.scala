@@ -58,11 +58,33 @@ case class Cell(
       val i = InputArtifactRef.syntax
       select.from(InputArtifactRef as i).where.eq(i.resultId, resultId)
     }.map { InputArtifactRef(_) }.list.apply()
+  def inputArtifacts(implicit session: DBSession): Seq[(String, Artifact)] = 
+  {
+    val i = InputArtifactRef.syntax
+    val a = Artifact.syntax
+    withSQL { 
+      select.from(InputArtifactRef as i)
+            .join(Artifact as a)
+            .where.eq(i.resultId, resultId)
+              .and.eq(i.artifactId, a.id)
+    }.map { rs => rs.string(i.resultName.userFacingName) -> Artifact(rs) }.list.apply()
+  }
   def outputs(implicit session: DBSession): Seq[ArtifactRef] = 
     withSQL { 
       val o = OutputArtifactRef.syntax
       select.from(OutputArtifactRef as o).where.eq(o.resultId, resultId)
     }.map { OutputArtifactRef(_) }.list.apply()
+  def outputArtifacts(implicit session: DBSession): Seq[(String, Artifact)] = 
+  {
+    val o = OutputArtifactRef.syntax
+    val a = Artifact.syntax
+    withSQL { 
+      select.from(OutputArtifactRef as o)
+            .join(Artifact as a)
+            .where.eq(o.resultId, resultId)
+              .and.eq(o.artifactId, a.id)
+    }.map { rs => rs.string(o.resultName.userFacingName) -> Artifact(rs) }.list.apply()
+  }
   def messages(implicit session: DBSession):Iterable[Message] = 
     withSQL { 
       val m = Message.syntax

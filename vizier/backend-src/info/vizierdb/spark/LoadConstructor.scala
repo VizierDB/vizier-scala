@@ -38,10 +38,10 @@ case class LoadConstructor(
       projectId = projectId,
       noRelativePaths = true
     )
+  lazy val schema = construct().schema
 
-  def construct(
-    context: Identifier => DataFrame
-  ): DataFrame =
+  def construct(context: Identifier => DataFrame): DataFrame = construct()
+  def construct(): DataFrame =
   {
     var df =
       format match {
@@ -51,6 +51,7 @@ case class LoadConstructor(
 
     return df
   }
+
 
   def dependencies = Set.empty
 
