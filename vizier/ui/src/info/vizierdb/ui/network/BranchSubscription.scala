@@ -18,11 +18,11 @@ import info.vizierdb.delta
 import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
 import info.vizierdb.ui.components.Project
+import info.vizierdb.ui.Vizier
 
 class BranchSubscription(
   project: Project, 
   branchId: Identifier, 
-  val api: API
 )
   extends Object
   with Logging
@@ -39,8 +39,8 @@ class BranchSubscription(
   
   protected[ui] def getSocket(): dom.WebSocket =
   {
-    logger.info(s"Connecting to ${api.websocket}")
-    val s = new dom.WebSocket(api.websocket)
+    logger.info(s"Connecting to ${Vizier.api.websocket}")
+    val s = new dom.WebSocket(Vizier.api.websocket)
     s.onopen = onConnected
     s.onclose = onClosed
     s.onerror = onError
@@ -78,7 +78,7 @@ class BranchSubscription(
     modules ++= workflow.modules
                         .zipWithIndex
                         .map { case (initialState, idx) =>
-                          new ModuleSubscription(initialState, this, idx) 
+                          new ModuleSubscription(initialState, Left(this), idx) 
                         }
     awaitingReSync() = false
   }
@@ -135,7 +135,7 @@ class BranchSubscription(
               case delta.InsertCell(cell, position) =>
                 modules.insert(
                   position,
-                  new ModuleSubscription(cell, this, position)
+                  new ModuleSubscription(cell, Left(this), position)
                 )
                 modules.drop(position)
                   .zipWithIndex
@@ -146,7 +146,7 @@ class BranchSubscription(
               case delta.UpdateCell(cell, position) => 
                 modules.update(
                   position,
-                  new ModuleSubscription(cell, this, position)
+                  new ModuleSubscription(cell, Left(this), position)
                 )
              
               /////////////////////////////////////////////////

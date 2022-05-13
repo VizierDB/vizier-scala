@@ -12,11 +12,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.ui.components.Module
 import info.vizierdb.ui.components.TentativeEdits
 import info.vizierdb.ui.components.Workflow
+import info.vizierdb.ui.components.StaticWorkflow
 
 
 class ModuleSubscription(
   initial: serialized.ModuleDescription, 
-  val branch: BranchSubscription,
+  val branch: Either[BranchSubscription, StaticWorkflow],
   var position: Int
 )
   extends Object
@@ -40,33 +41,37 @@ class ModuleSubscription(
     ):_* )
   logger.debug(s"${messages.length} Messages; ${outputs.now.size} outputs; $outputs")
 
+  def isEditable = branch.isLeft
+
+  def client = 
+    branch match { 
+      case Left(l) => l.Client 
+      case Right(_) => throw new IllegalArgumentException("Trying to edit a static module")
+    }
+
   /**
    * Delete this module from the workflow
    */
-  def delete(): Unit = 
-    branch.Client.workflowDelete(position)
+  def delete(): Unit = client.workflowDelete(position)
 
   /**
    * Freeze the current cell
    */
-  def freezeCell(): Unit = 
-    branch.Client.workflowFreezeOne(position)
+  def freezeCell(): Unit = client.workflowFreezeOne(position)
 
   /**
    * Freeze all cells starting with current cell
    */
-  def freezeFrom(): Unit = 
-    branch.Client.workflowFreezeFrom(position)
+  def freezeFrom(): Unit = client.workflowFreezeFrom(position)
 
   /**
    * Thaw the current cell
    */
-  def thawCell(): Unit = 
-    branch.Client.workflowThawOne(position)
+  def thawCell(): Unit = client.workflowThawOne(position)
 
   /**
    * Thaw all cells upto current cell
    */
-  def thawUpto(): Unit = 
-    branch.Client.workflowThawUpto(position)
+  def thawUpto(): Unit = client.workflowThawUpto(position)
+
 }

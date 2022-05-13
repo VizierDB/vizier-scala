@@ -17,7 +17,7 @@ import play.api.libs.json.JsString
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.Vizier
 
-class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = true)
+class Project(val projectId: Identifier, autosubscribe: Boolean = true)
              (implicit owner: Ctx.Owner)
   extends Object
   with Logging
@@ -57,7 +57,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
 
   def setProjectName(name: String): Unit =
   {
-    api.projectUpdate(projectId,
+    Vizier.api.projectUpdate(projectId,
       serialized.PropertyList
                 .toPropertyList(
                   properties.now ++ Map("name" -> JsString(name))
@@ -68,7 +68,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
   def refresh(andThen: => Unit): Unit =
   {
     println("Refreshing")
-    api.projectGet(projectId)
+    Vizier.api.projectGet(projectId)
        .onComplete {
         case Success(result) => println("Refreshed"); load(result); println("Loaded"); andThen
         case Failure(err) => Vizier.error(err.toString)
@@ -77,7 +77,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
 
   def setActiveBranch(id: Identifier): Unit =
   {
-    api.projectUpdate(projectId,
+    Vizier.api.projectUpdate(projectId,
       serialized.PropertyList
                 .toPropertyList(
                   properties.now
@@ -91,7 +91,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
   {
     val branchId = activeBranch.now.get
     val branch = branches.now.get(branchId).get
-    api.branchUpdate(projectId, branchId,
+    Vizier.api.branchUpdate(projectId, branchId,
       serialized.PropertyList
                 .toPropertyList(
                   serialized.PropertyList.toMap(
@@ -104,7 +104,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
   def branchActiveWorkflow(name: String): Unit =
   {
     val branchId = activeBranch.now.get
-    api.branchCreate(projectId, 
+    Vizier.api.branchCreate(projectId, 
       source = Some(serialized.BranchSource(
         branchId,
         workflowId = None, // Branch the workflow head
@@ -131,7 +131,7 @@ class Project(val projectId: Identifier, val api: API, autosubscribe: Boolean = 
       branchSubscription.foreach { _.close() }
       branchSubscription = 
         activeBranch.now.map { branch =>
-          new BranchSubscription(this, branch, api)
+          new BranchSubscription(this, branch)
         }
       workflow() = branchSubscription.map { new Workflow(_, this) }
     }

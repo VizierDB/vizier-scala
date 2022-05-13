@@ -14,7 +14,6 @@ import info.vizierdb.ui.widgets.FontAwesome
 
 
 class History(
-  api: API, 
   projectId: Identifier, 
   initialBranchId: Option[Identifier], 
   branches: Rx[Seq[(String, Identifier)]]
@@ -25,7 +24,6 @@ class History(
   def this(project: Project)(implicit owner: Ctx.Owner) =
   {
     this(
-      project.api, 
       project.projectId, 
       project.activeBranch.now.orElse { project.branches.now.headOption.map { _._1 } },
       project.branches.map { _.toSeq.map { case (_, b) => (b.name, b.id) } }
@@ -37,7 +35,7 @@ class History(
   branchId.trigger { _ match {
     case None => branch() = None
     case Some(branchId) =>
-      api.branchGet(projectId, branchId)
+      Vizier.api.branchGet(projectId, branchId)
          .onComplete { 
             case Success(branch) => 
               this.branch() = Some(branch)

@@ -92,7 +92,7 @@ object Vizier
         projectRequest
             .onComplete { 
               case Success(response) => 
-                project() = Some(new Project(projectId, api).load(response))
+                project() = Some(new Project(projectId).load(response))
                 logger.debug(s"Project: ${project.now.get}")
                 document.addEventListener("keydown", { (evt:dom.KeyboardEvent) => 
                   if(evt.key == "Enter" && evt.ctrlKey){

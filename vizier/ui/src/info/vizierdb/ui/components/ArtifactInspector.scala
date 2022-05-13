@@ -52,7 +52,7 @@ class ArtifactInspector(
               onclick := { _:dom.Event => 
                 selected() = Right(s"Loading $name...")
 
-                workflow.project.api.artifactGet(
+                Vizier.api.artifactGet(
                   workflow.project.projectId, 
                   summary.id,
                   name = Some(name)

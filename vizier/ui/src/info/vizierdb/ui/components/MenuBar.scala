@@ -7,6 +7,7 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types._
 import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.ui.widgets.ShowModal
+import info.vizierdb.ui.Vizier
 
 
 class MenuBar(project: Project)(implicit owner: Ctx.Owner)
@@ -67,7 +68,7 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 
         //////////////// Rename
         MenuItem("Export Project...", { () => 
-          dom.window.open(project.api.makeUrl(s"/projects/${project.projectId}/export "), "_self")
+          dom.window.open(Vizier.api.makeUrl(s"/projects/${project.projectId}/export "), "_self")
         }),
 
         //////////////// Rename

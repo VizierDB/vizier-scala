@@ -87,8 +87,7 @@ class TentativeModule(
       case Some(packages) => 
         showCommandList(packages)
       case None =>
-        editList
-          .project
+        Vizier
           .api
           .workflowHeadSuggest(
             editList.project.projectId,

@@ -111,9 +111,7 @@ class Module(val subscription: ModuleSubscription)
   { 
     val packageId = subscription.packageId
     val commandId = subscription.commandId
-    subscription
-      .branch
-      .api
+    Vizier.api
       .packages
       .onSuccess { case packages =>
         val command = 
@@ -143,15 +141,17 @@ class Module(val subscription: ModuleSubscription)
    * A connection to the server
    */
   def client: BranchWatcherAPIProxy = 
-    subscription
-      .branch
-      .Client
+    subscription.client
 
   /**
    * Returns true if this is the last module in the workflow.
    */
   def isLast: Boolean = 
-    subscription.position == subscription.branch.modules.size
+    subscription.position == 
+      (subscription.branch match {
+        case Left(branch) => branch.modules.size
+        case Right(workflow) => workflow.modules.size
+      })
 
   /**
    * This module's position in the workflow
@@ -167,58 +167,53 @@ class Module(val subscription: ModuleSubscription)
     `class` := "module",
     div(
       `class` := "menu",
-      // button(
-      //   FontAwesome("angle-up"),
-      //   br(),
-      //   FontAwesome("plus"),
-      //   onclick := { (_:dom.MouseEvent) => subscription.addCellAbove(workflow) },
-      //   Tooltip("Add cell above")
-      // ),
-      button(
-        FontAwesome("pencil-square-o"), 
-        onclick := { _:dom.MouseEvent => openEditor() },
-        Tooltip("Edit cell")
-      ),
-      PopUpButton(
+      if(subscription.isEditable){ Seq(
         button(
-          subscription.state
-                      .map { _ == types.ExecutionState.FROZEN }
-                      .map { f => (if(f) { FontAwesome("play") } 
-                                   else  { FontAwesome("snowflake-o") }) }
-                      .reactive
-        ).render,
-        button(
-          FontAwesome("arrow-circle-left"),
-          onclick := { (_:dom.MouseEvent) => 
-            if(subscription.state.now == types.ExecutionState.FROZEN){ subscription.thawCell() } 
-            else                                                     { subscription.freezeCell() }
-          }
-        ).render,
-        button(
-          subscription.state
-                      .map { _ == types.ExecutionState.FROZEN }
-                      .map { if(_) { FontAwesome("arrow-circle-up") } 
-                             else  { FontAwesome("arrow-circle-down") } }
-                      .reactive,
-          onclick := { (_:dom.MouseEvent) => 
-            if(subscription.state.now == types.ExecutionState.FROZEN){ subscription.thawCell() } 
-            else                                                     { subscription.freezeCell() }
-          }
-        ).render,
-      ),
-      PopUpButton(
-        button(
-          `class` := "to_confirm",
-          FontAwesome("trash-o"), 
-          Tooltip("Delete this cell")
-        ).render,
-        button(
-          `class` := "confirm",
-          FontAwesome("check"),
-          onclick := { _:dom.Event => subscription.delete(); }
-        ).render
-      ),
-      div(`class` := "spacer")
+          FontAwesome("pencil-square-o"), 
+          onclick := { _:dom.MouseEvent => openEditor() },
+          Tooltip("Edit cell")
+        ),
+        PopUpButton(
+          button(
+            subscription.state
+                        .map { _ == types.ExecutionState.FROZEN }
+                        .map { f => (if(f) { FontAwesome("play") } 
+                                     else  { FontAwesome("snowflake-o") }) }
+                        .reactive
+          ).render,
+          button(
+            FontAwesome("arrow-circle-left"),
+            onclick := { (_:dom.MouseEvent) => 
+              if(subscription.state.now == types.ExecutionState.FROZEN){ subscription.thawCell() } 
+              else                                                     { subscription.freezeCell() }
+            }
+          ).render,
+          button(
+            subscription.state
+                        .map { _ == types.ExecutionState.FROZEN }
+                        .map { if(_) { FontAwesome("arrow-circle-up") } 
+                               else  { FontAwesome("arrow-circle-down") } }
+                        .reactive,
+            onclick := { (_:dom.MouseEvent) => 
+              if(subscription.state.now == types.ExecutionState.FROZEN){ subscription.thawCell() } 
+              else                                                     { subscription.freezeCell() }
+            }
+          ).render,
+        ),
+        PopUpButton(
+          button(
+            `class` := "to_confirm",
+            FontAwesome("trash-o"), 
+            Tooltip("Delete this cell")
+          ).render,
+          button(
+            `class` := "confirm",
+            FontAwesome("check"),
+            onclick := { _:dom.Event => subscription.delete(); }
+          ).render
+        ),
+        div(`class` := "spacer")
+      )} else { Seq.empty }:Seq[Frag]
     ),
     div(
       `class` := "module_body",
@@ -229,7 +224,9 @@ class Module(val subscription: ModuleSubscription)
                     `class` := (if(hideSummary) { "summary hidden" } else { "summary" }),
                     pre(
                       subscription.text(),
-                      onclick := { _:dom.MouseEvent => openEditor() },
+                      if(subscription.isEditable){
+                        Seq(onclick := { _:dom.MouseEvent => openEditor() })
+                      } else { Seq.empty }:Seq[Frag],
                     )
                   )
                 }
@@ -258,7 +255,7 @@ class Module(val subscription: ModuleSubscription)
       ),
       div(
         `class` := "messages",
-        (if(hideSummary) { onclick := { _:dom.MouseEvent => openEditor() } }
+        (if(hideSummary && subscription.isEditable) { onclick := { _:dom.MouseEvent => openEditor() } }
          else { attr("ignore") := "ignored" }),
         messageView.root
       ),

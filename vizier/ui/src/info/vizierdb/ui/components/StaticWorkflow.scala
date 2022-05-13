@@ -9,12 +9,12 @@ import info.vizierdb.ui.network.ModuleSubscription
 
 class StaticWorkflow(workflow: serialized.WorkflowDescription)(implicit owner: Ctx.Owner)
 {
-  val moduleViews = 
+  val modules = 
     workflow.modules
   					.zipWithIndex
   					.map { case (mod, idx) => 
   						new Module(
-  							new ModuleSubscription(mod, branch = null, idx),
+  							new ModuleSubscription(mod, Right(this), idx)
   						)
   					}
 
