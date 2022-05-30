@@ -85,7 +85,7 @@ class SpreadsheetSocket
               CatalogDB.withDB { implicit s => 
                 Artifact.get(target = datasetId, projectId = Some(projectId))
                   .dataframe
-              }
+              }()
             )
             spreadsheet.callbacks += this
             logger.trace("Spreadsheet initialized!")

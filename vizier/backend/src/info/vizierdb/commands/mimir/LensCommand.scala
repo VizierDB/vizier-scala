@@ -89,7 +89,7 @@ trait LensCommand
 
     context.message(s"Saving results...")
     
-    val input = CatalogDB.withDB { implicit s => dataset.dataframe }
+    val input = CatalogDB.withDB { implicit s => dataset.dataframe }()
 
     val updatesFromTraining = 
       train(

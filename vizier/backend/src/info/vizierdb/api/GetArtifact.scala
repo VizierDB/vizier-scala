@@ -64,7 +64,14 @@ object GetArtifact
             forceProfiler = forceProfiler,
             name = name.getOrElse { null },
           )
-        }
+
+          // The parens below are part of the magic... artifact.describe()
+          // returns a constructor to handle the database scoping; The 
+          // constructor contains a bunch of code that may be slow-running,
+          // but does not require database access.  The constructor code
+          // needs to be run OUTSIDE of the database access block, which
+          // is what happens when the apply method is called below.
+        }()
       case None => 
         ErrorResponse.noSuchEntity
     }
@@ -103,7 +110,7 @@ object GetArtifact
     {
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match { 
         case Some(artifact) => 
-          val df:DataFrame = CatalogDB.withDB { implicit s => artifact.dataframe }
+          val df:DataFrame = CatalogDB.withDB { implicit s => artifact.dataframe }()
           ExplainCaveats(
             df,
             rows = row.map { Seq(_) }.getOrElse { null },
@@ -169,7 +176,7 @@ object GetArtifact
 
           val df:DataFrame = CatalogDB.withDB { implicit s =>
                                 artifact.dataframe
-                              }
+                              }()
           df.coalesce(1)
             .write
              .option("header", true)

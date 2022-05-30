@@ -72,6 +72,6 @@ object ReplaceModule
 
     CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
-    }
+    }()
   } 
 }

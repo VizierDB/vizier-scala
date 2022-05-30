@@ -140,7 +140,7 @@ class Geocode(
      */
     val cache = 
       if(freshArtifact){ null:DataFrame } else {
-        CatalogDB.withDB { implicit s => cacheArtifact.dataframe }
+        CatalogDB.withDB { implicit s => cacheArtifact.dataframe }()
       }
 
     /**

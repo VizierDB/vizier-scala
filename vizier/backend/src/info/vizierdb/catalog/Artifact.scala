@@ -79,8 +79,18 @@ case class Artifact(
    * @param  session   Dataframe construction may need to retrieve a series of other, dependent
    *                   artifacts, so the caller needs to provide a database session.
    */
-  def dataframe(implicit session:DBSession) = 
-    datasetDescriptor.construct(Artifact.dataframeContext)
+  def dataframe(implicit session:DBSession):() => DataFrame = 
+  {
+    val descriptor = datasetDescriptor
+    val deps = descriptor.transitiveDependencies(
+                 Map(id -> descriptor), 
+                 Artifact.get(_:Identifier).datasetDescriptor
+               )
+    def construct(x: Identifier): DataFrame = 
+      deps(x).construct(construct)
+
+    { () => descriptor.construct(construct) }
+  }
 
   /**
    * Retrieve a summary (an abbreviated [[description]]) of the specified artifact
@@ -138,7 +148,7 @@ case class Artifact(
     offset: Option[Long] = None, 
     limit: Option[Int] = None, 
     forceProfiler: Boolean = false
-  )(implicit session: DBSession): serialized.ArtifactDescription = 
+  )(implicit session: DBSession): () => serialized.ArtifactDescription = 
   {
     val base = 
       serialized.StandardArtifact(
@@ -156,38 +166,53 @@ case class Artifact(
           val actualLimit = 
             limit.getOrElse { VizierAPI.MAX_DOWNLOAD_ROW_LIMIT }
 
-          val data =  datasetData(
-                        offset = offset, 
-                        limit = Some(actualLimit), 
-                        forceProfiler = forceProfiler, 
-                        includeCaveats = true
-                      )
-          val rowCount: Long = 
-              data.properties
-                  .get("count")
-                  .map { _.as[Long] }
-                  .getOrElse { dataframe.count() }
+          val dataConstructor =  
+              datasetData(
+                offset = offset, 
+                limit = Some(actualLimit), 
+                forceProfiler = forceProfiler, 
+                includeCaveats = true
+              )(session)
 
-          Artifact.translateDatasetContainerToVizierClassic(
-            projectId = projectId,
-            artifactId = id,
-            data = data,
-            offset = offset.getOrElse { 0 },
-            limit = actualLimit,
-            rowCount = rowCount,
-            base = base
-          )
+          val df = dataframe
+
+          { () => 
+            val data = dataConstructor()
+            val rowCount: Long = 
+                data.properties
+                    .get("count")
+                    .map { _.as[Long] }
+                    .getOrElse { df().count() }
+
+            Artifact.translateDatasetContainerToVizierClassic(
+              projectId = projectId,
+              artifactId = id,
+              data = data,
+              offset = offset.getOrElse { 0 },
+              limit = actualLimit,
+              rowCount = rowCount,
+              base = base
+            )
+          }
         }
 
       case ArtifactType.PARAMETER 
          | ArtifactType.VEGALITE =>
-        base.addPayload(json)
+      {
+        val ret = base.addPayload(json)
+        
+        { () => ret }
+      }
 
       case ArtifactType.FUNCTION =>
-        base.addPayload(string)
+      {
+        val ret = base.addPayload(string)
+        
+        { () => ret }
+      }
         
       case _ =>
-        base
+        () => base
     }
 
   }
@@ -200,39 +225,51 @@ case class Artifact(
    * @param  forceProfiler  (optional) True to ensure that result profiler
    *                        statistics.
    * @param  includeCaveats (optional) True to include caveats in the result
+   * @return                A nullary constructor method for the dataset.  This
+   *                        method can be invoked outside of the CatalogDB context
+   *                        to allow the database lock to be released.
    */
   def datasetData(
     offset: Option[Long] = None, 
     limit: Option[Int] = None,
     forceProfiler: Boolean = false,
     includeCaveats: Boolean = false
-  )(implicit session:DBSession): DataContainer = 
+  )(implicit session: DBSession): () => DataContainer = 
   {
     assert(t.equals(ArtifactType.DATASET))
     val descriptor = datasetDescriptor
-    try {
-      QueryWithCaveats(
-        query = descriptor.construct(Artifact.dataframeContext),
-        includeCaveats = includeCaveats,
-        limit = limit,
-        offset = offset,
-        computedProperties = descriptor.properties,
-        cacheAs = None,
-        columns = None
-      )
-    } catch {
-      case a:AnalysisException if includeCaveats => 
-        logger.debug(a.getStackTrace().map { _.toString }.mkString("\n"))
-        logger.warn(s"Error applying caveats (${a.getMessage}).  Trying without.")
+    val deps = descriptor.transitiveDependencies(
+                 Map(id -> descriptor), 
+                 Artifact.get(_:Identifier).datasetDescriptor
+               )
+    def construct(x: Identifier): DataFrame = 
+      deps(x).construct(construct)
+
+    { () => 
+      try {
         QueryWithCaveats(
-          query = descriptor.construct(Artifact.dataframeContext),
-          includeCaveats = false,
+          query = descriptor.construct(construct),
+          includeCaveats = includeCaveats,
           limit = limit,
           offset = offset,
           computedProperties = descriptor.properties,
           cacheAs = None,
           columns = None
         )
+      } catch {
+        case a:AnalysisException if includeCaveats => 
+          logger.debug(a.getStackTrace().map { _.toString }.mkString("\n"))
+          logger.warn(s"Error applying caveats (${a.getMessage}).  Trying without.")
+          QueryWithCaveats(
+            query = descriptor.construct(construct),
+            includeCaveats = false,
+            limit = limit,
+            offset = offset,
+            computedProperties = descriptor.properties,
+            cacheAs = None,
+            columns = None
+          )
+      }
     }
 
   }
@@ -534,11 +571,5 @@ object Artifact
       properties = serialized.PropertyList.toPropertyList(data.properties),
     )
   }
-
-  /**
-   * Retrieve a mapping of dataframe constructors
-   */
-  def dataframeContext(implicit session:DBSession): (Identifier => DataFrame) =
-    get(_).dataframe
 }
 

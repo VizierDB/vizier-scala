@@ -42,7 +42,7 @@ class CSVLoaderSpec
 
   "Detect Schemas and Headers" >> 
   {
-    val l = LoadSparkCSV.train(
+    val l = LoadSparkCSV.infer(
       url = FileArgument(url = Some("test_data/r.csv")),
       projectId = 0,
       "R",

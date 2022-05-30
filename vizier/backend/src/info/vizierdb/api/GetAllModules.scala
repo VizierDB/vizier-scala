@@ -42,10 +42,10 @@ object GetAllModules
             Branch.getOption(projectId, projectId).map { _.head }
         } 
       workflowMaybe match {
-        case Some(workflow) => workflow.describe.modules
+        case Some(workflow) => workflow.describe
         case None => ErrorResponse.noSuchEntity
       }
-    }
+    }().modules
   } 
 }
 

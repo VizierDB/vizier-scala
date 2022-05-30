@@ -43,6 +43,22 @@ case class Dataset(
 
   def schema = 
     constructor.schema
+
+  def transitiveDependencies(
+    discovered: Map[Identifier, Dataset], 
+    ctx: Identifier => Dataset
+  ): Map[Identifier, Dataset] = 
+  {
+    val newDeps = 
+      constructor.dependencies
+                 .filterNot { discovered contains _ }
+                 .map { x => x -> ctx(x) }
+                 .toMap
+    newDeps.values
+           .foldRight(discovered ++ newDeps) { _.transitiveDependencies(_, ctx) }
+  }
+
+
 }
 
 object Dataset

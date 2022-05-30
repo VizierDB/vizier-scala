@@ -56,7 +56,7 @@ object DeleteModule
 
     CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
-    }
+    }()
   }
 }
 

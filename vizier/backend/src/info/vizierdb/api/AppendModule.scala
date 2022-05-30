@@ -86,7 +86,7 @@ object AppendModule
 
     CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
-    }
+    }()
   } 
 }
 

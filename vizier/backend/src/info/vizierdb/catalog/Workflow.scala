@@ -165,46 +165,12 @@ case class Workflow(
   def length(implicit session: DBSession): Int = Workflow.getLength(id)
   def abortIfNeeded(implicit session:DBSession): Workflow =
   {
-    val pendingCellCount = withSQL {
-      val c = Cell.syntax
-      select(sqls"count(*)")
-        .from(Cell as c)
-        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq)
-          .and.eq(c.workflowId, id)
-    }.map { _.long(1) }.single.apply().getOrElse { 0l }
-    if(pendingCellCount > 0){ abort }
-    else { this }
+    Workflow.abortIfNeeded(branchId = branchId, workflowId = id)
+    copy(aborted = true)
   }
   def abort(implicit session:DBSession): Workflow =
   {
-    withSQL {
-      val w = Workflow.column
-      update(Workflow)
-        .set(w.aborted -> 1)
-        .where.eq(w.id, id)
-    }.update.apply()
-    for(cell <- cellsWhere(sqls.in(sqls"state", ExecutionState.PENDING_STATES.toSeq))) {
-      DeltaBus.notifyStateChange(
-        this, 
-        cell.position, 
-        ExecutionState.CANCELLED,
-        cell.timestamps
-      )
-    }
-    val stateTransitions = 
-      StateTransition.forAll( 
-        ExecutionState.PENDING_STATES -> ExecutionState.CANCELLED 
-      )
-    withSQL {
-      val c = Cell.column
-      update(Cell)
-        .set(
-          c.state -> StateTransition.updateState(stateTransitions),
-          c.resultId -> StateTransition.updateResult(stateTransitions)
-        )
-        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq.map { _.id })
-          .and.eq(c.workflowId, id)
-    }.update.apply()
+    Workflow.abort(branchId = branchId, workflowId = id)
     copy(aborted = true)
   }
 
@@ -242,7 +208,7 @@ case class Workflow(
           .and.eq(c.workflowId, id)
     }.map { _ => 1 }.list.apply().size > 0
 
-  def describe(implicit session: DBSession): serialized.WorkflowDescription = 
+  def describe(implicit session: DBSession): () => serialized.WorkflowDescription = 
   {
     val branch = Branch.get(branchId)
     val cellsModulesAndResults = cellsModulesAndResultsInOrder
@@ -284,13 +250,13 @@ case class Workflow(
           scope ++ current
       }
 
-
-    summary.toDescription(
-      state = state,
-      modules = modules,
-      artifacts   = artifacts.toSeq.map { case (name, summ) => summ.summarize(name) },
-      readOnly = !branch.headId.equals(id),
-    )
+    () => 
+      summary.toDescription(
+        state = state,
+        modules = modules.map { _() },
+        artifacts   = artifacts.toSeq.map { case (name, summ) => summ.summarize(name) },
+        readOnly = !branch.headId.equals(id),
+      )
   }
   def summarize(implicit session: DBSession): serialized.WorkflowSummary = 
   {
@@ -454,6 +420,60 @@ object Workflow
           .and.eq(b.id, w.branchId)  
           .and.eq(b.projectId, projectId)
     }.map { apply(_) }.single.apply()
+
+
+  def abortIfNeeded(branchId: Identifier, workflowId: Identifier)(implicit session:DBSession): Unit =
+  {
+    val pendingCellCount = withSQL {
+      val c = Cell.syntax
+      select(sqls"count(*)")
+        .from(Cell as c)
+        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq)
+          .and.eq(c.workflowId, workflowId)
+    }.map { _.long(1) }.single.apply().getOrElse { 0l }
+    if(pendingCellCount > 0){ abort(branchId, workflowId) }
+  }
+  def abort(branchId: Identifier, workflowId: Identifier)(implicit session:DBSession): Unit =
+  {
+    withSQL {
+      val w = Workflow.column
+      update(Workflow)
+        .set(w.aborted -> 1)
+        .where.eq(w.id, workflowId)
+    }.update.apply()
+
+    val affectedCells = withSQL {
+      val c = Cell.syntax
+      select
+        .from(Cell as c)
+        .where.eq(c.workflowId, workflowId)
+          .and.in(sqls"state", ExecutionState.PENDING_STATES.toSeq)
+    }.map { Cell(_) }.list.apply()
+
+
+    for(cell <- affectedCells) {
+      DeltaBus.notifyStateChange(
+        branchId = branchId, 
+        cell.position, 
+        ExecutionState.CANCELLED,
+        cell.timestamps
+      )
+    }
+    val stateTransitions = 
+      StateTransition.forAll( 
+        ExecutionState.PENDING_STATES -> ExecutionState.CANCELLED 
+      )
+    withSQL {
+      val c = Cell.column
+      update(Cell)
+        .set(
+          c.state -> StateTransition.updateState(stateTransitions),
+          c.resultId -> StateTransition.updateResult(stateTransitions)
+        )
+        .where.in(c.state, ExecutionState.PENDING_STATES.toSeq.map { _.id })
+          .and.eq(c.workflowId, workflowId)
+    }.update.apply()
+  }
 
 }
 

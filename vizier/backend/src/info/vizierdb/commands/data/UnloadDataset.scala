@@ -137,8 +137,9 @@ object UnloadDataset extends Command
 
 
     val df: DataFrame = 
-      CatalogDB.withDB { implicit s => 
-        var df = dataset.dataframe
+      {
+        var df = 
+          CatalogDB.withDB { implicit s => dataset.dataframe }()
         // Tempfile formats need to be coalesced into a single partition
         // before they are dumped out.
         if(TEMPFILE_FORMATS(format)){

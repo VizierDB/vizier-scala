@@ -35,31 +35,33 @@ object GetModule
     workflowId: Option[Identifier] = None
   ): serialized.ModuleDescription =
   {
-    CatalogDB.withDBReadOnly { implicit session => 
-      val workflowMaybe: Option[Workflow] = 
-        workflowId match {
-          case Some(workflowIdActual) => 
-            Workflow.getOption(projectId, branchId, workflowIdActual)
-          case None => 
-            Branch.getOption(projectId, projectId).map { _.head }
-        } 
-      val cellMaybe: Option[Cell] = 
-        workflowMaybe.flatMap { _.cellByPosition(modulePosition) }
-      cellMaybe match {
-        case Some(cell) => 
-            cell.module.describe(
-              cell = cell, 
-              result = cell.result,
-              messages = cell.messages.toSeq,
-              outputs = cell.outputArtifacts.toSeq,
-              inputs = cell.inputs.flatMap { _.tuple },
-              projectId = projectId, 
-              branchId = branchId, 
-              workflowId = workflowMaybe.get.id,
-            )
-        case None => ErrorResponse.noSuchEntity
+    val ret: () => serialized.ModuleDescription =
+      CatalogDB.withDBReadOnly { implicit session => 
+        val workflowMaybe: Option[Workflow] = 
+          workflowId match {
+            case Some(workflowIdActual) => 
+              Workflow.getOption(projectId, branchId, workflowIdActual)
+            case None => 
+              Branch.getOption(projectId, projectId).map { _.head }
+          } 
+        val cellMaybe: Option[Cell] = 
+          workflowMaybe.flatMap { _.cellByPosition(modulePosition) }
+        cellMaybe match {
+          case Some(cell) => 
+              cell.module.describe(
+                cell = cell, 
+                result = cell.result,
+                messages = cell.messages.toSeq,
+                outputs = cell.outputArtifacts.toSeq,
+                inputs = cell.inputs.flatMap { _.tuple },
+                projectId = projectId, 
+                branchId = branchId, 
+                workflowId = workflowMaybe.get.id,
+              )
+          case None => ErrorResponse.noSuchEntity
+        }
       }
-    }
+    return ret()
   } 
 }
 

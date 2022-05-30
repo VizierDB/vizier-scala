@@ -35,6 +35,8 @@ class DataCommandsSpec
 {
   def beforeAll = SharedTestResources.init
 
+  sequential
+
   "load, unload, and query data" >> {
     val project = MutableProject("Data Project")
 

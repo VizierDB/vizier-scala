@@ -138,7 +138,7 @@ object ComputeDelta
         projectId = workflow.projectId,
         branchId = workflow.branchId,
         workflowId = workflow.id,
-      )
+      )(session)()
     }
 
     for(i <- 0 until lhs.size + rhs.size + 1){

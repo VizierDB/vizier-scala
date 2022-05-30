@@ -29,6 +29,10 @@ import info.vizierdb.spark.LoadConstructor
 import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.spark.load.LoadSparkCSV
+import spire.syntax.action
+import info.vizierdb.spark.load.LoadSparkDataset
+import info.vizierdb.spark.DataFrameConstructor
 
 object LoadDataset
   extends Command
@@ -117,10 +121,12 @@ object LoadDataset
 
 
     val proposedSchema =
-      arguments.getList("schema").map { arg => 
+      arguments.getList(TemplateParameters.PARAM_SCHEMA).map { arg => 
           StructField(
-            arg.get[String]("schema_column"),
-            SparkSchema.decodeType(arg.get[String]("schema_datatype"))
+            arg.get[String](TemplateParameters.PARAM_SCHEMA_COLUMN),
+            SparkSchema.decodeType(
+              arg.get[String](TemplateParameters.PARAM_SCHEMA_TYPE)
+            )
           )
         }
     
@@ -129,12 +135,10 @@ object LoadDataset
     logger.debug(s"Source: $file")
     logger.debug(s"${if(relative){"RELATIVE"}else{"ABSOLUTE"}} PATH: $path")
 
-
     var actualFile = file
     var finalSparkOptions = 
       defaultLoadOptions(
-        storageFormat, 
-        arguments.get[Boolean](PARAM_HEADERS)
+        storageFormat,
       ) ++ arguments.getList(PARAM_OPTIONS)
                     .map { option => 
                       option.get[String](PARAM_OPTION_KEY) ->
@@ -181,45 +185,44 @@ object LoadDataset
         storageFormat     = stagedConfig._3
       }
 
-      var loadConstructor = LoadConstructor(
-        url = actualFile,
-        format = storageFormat,
-        sparkOptions = finalSparkOptions,
-        contextText = Some(datasetName),
-        proposedSchema = Some(
-                          arguments.getList(TemplateParameters.PARAM_SCHEMA)
-                                   .map { col =>
-                                      StructField(
-                                        col.get[String](TemplateParameters.PARAM_SCHEMA_COLUMN),
-                                        SparkSchema.decodeType(
-                                          col.get[String](TemplateParameters.PARAM_SCHEMA_TYPE)
-                                        )
-                                      )
-                                   }
-                        ),
-        projectId = context.projectId
-      )
-      if(arguments.get[Boolean](PARAM_GUESS_TYPES)){
-        loadConstructor = loadConstructor.withInferredTypes
-      }
+      var (loadConstructor:DataFrameConstructor, serializer) = 
+        storageFormat match {
+          case DatasetFormat.CSV => 
+            LoadSparkCSV.infer(
+              url = actualFile,
+              projectId = context.projectId,
+              contextText = datasetName,
+              header = arguments.getOpt[Boolean](PARAM_HEADERS),
+              proposedSchema = proposedSchema,
+              sparkOptions = finalSparkOptions
+            ) -> LoadSparkCSV.format
 
-      val dataframe = loadConstructor.construct(_ => throw new VizierException("Internal error; Load Constructor should not be chaining dataframes"))
+          case _ =>
+            LoadSparkDataset.infer(
+              url = actualFile,
+              format = storageFormat,
+              schema =  if(proposedSchema.isEmpty){ None }
+                        else { Some(proposedSchema) },
+              sparkOptions = finalSparkOptions,
+              projectId = context.projectId
+            ) -> LoadSparkDataset.format
+        }
 
       context.outputDataset(
         name = arguments.get[String](PARAM_NAME),
         constructor = loadConstructor,
         properties = Map.empty
-      )
+      )(serializer.asInstanceOf[Format[DataFrameConstructor]])
 
       /** 
        * Replace the proposed schema with the inferred/actual schema
        */
       context.updateArguments(
         PARAM_FILE -> CatalogDB.withDBReadOnly { implicit s => file.withGuessedFilename(Some(context.projectId)) },
-        "schema" -> dataframe.schema.map { field =>
+        TemplateParameters.PARAM_SCHEMA -> loadConstructor.schema.map { field =>
           Map(
-            "schema_column" -> field.name,
-            "schema_datatype" -> SparkSchema.encodeType(field.dataType)
+            TemplateParameters.PARAM_SCHEMA_COLUMN -> field.name,
+            TemplateParameters.PARAM_SCHEMA_TYPE -> SparkSchema.encodeType(field.dataType)
           )
         }
       )
@@ -256,12 +259,10 @@ object LoadDataset
   
   def defaultLoadOptions(
     format: DatasetFormat.T, 
-    header: Boolean
   ): Map[String,String] = 
   {
     format match {
-      case DatasetFormat.CSV | DatasetFormat.Excel =>
-        defaultLoadCSVOptions ++ Map("header" -> header.toString)
+      case DatasetFormat.CSV | DatasetFormat.Excel => defaultLoadCSVOptions
       case DatasetFormat.GSheet => defaultLoadGoogleSheetOptions
       case _ => Map()
     }

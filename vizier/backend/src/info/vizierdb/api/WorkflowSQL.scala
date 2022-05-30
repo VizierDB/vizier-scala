@@ -73,8 +73,7 @@ object WorkflowSQL
       query = query.get,
       views = 
         CatalogDB.withDBReadOnly { implicit s => 
-          datasets.mapValues { a => Artifact.get(a.id) }
-                  .mapValues { a => val df = a.dataframe; { () => df } }
+          datasets.mapValues { a => Artifact.get(a.id).dataframe }
         },
       includeCaveats = true,
     )

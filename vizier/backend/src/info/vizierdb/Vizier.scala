@@ -267,7 +267,7 @@ object Vizier
                         name -> ExplainCaveats(
                           CatalogDB.withDB { implicit s => 
                             artifact.dataframe
-                          }
+                          }()
                         )
                       }
                      .filterNot { _._2.isEmpty }

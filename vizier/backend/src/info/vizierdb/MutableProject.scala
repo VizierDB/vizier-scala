@@ -498,7 +498,7 @@ class MutableProject(
   def dataframe(artifactName: String): DataFrame =
   {
     val a = artifact(artifactName)
-    return CatalogDB.withDB { implicit s => a.dataframe }
+    return CatalogDB.withDB { implicit s => a.dataframe }()
   }
 
   /**
@@ -507,7 +507,8 @@ class MutableProject(
   def datasetData(artifactName: String): DataContainer =
   {
     val a = artifact(artifactName)
-    return CatalogDB.withDB { implicit s => a.datasetData() }
+    val data = CatalogDB.withDB { implicit s => a.datasetData() }
+    return data()
   }
 
   /**
@@ -524,7 +525,7 @@ class MutableProject(
     artifact.t match {
       case ArtifactType.DATASET => {
         import org.mimirdb.caveats.implicits._
-        val df = CatalogDB.withDB { implicit s => artifact.dataframe }
+        val df = CatalogDB.withDB { implicit s => artifact.dataframe }()
         df.showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
       }
       case _ => throw new VizierException(s"Show unsupported for ${artifact.t}")
@@ -580,7 +581,9 @@ object MutableProject
    * @return            The constructed MutableProject
    */
   def apply(name: String): MutableProject = 
-    new MutableProject(CatalogDB.withDB { implicit s => Project.create(name).id })
+    new MutableProject(
+      CatalogDB.withDB { implicit s => Project.create(name).id }
+    )
 
   /**
    * Create a MutableProject for an existing project

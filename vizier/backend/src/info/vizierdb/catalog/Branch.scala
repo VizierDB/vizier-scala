@@ -359,6 +359,7 @@ case class Branch(
   )(implicit session: DBSession): (Branch, Workflow) = {
     val w = Workflow.column
     val now = ZonedDateTime.now()
+    val createdAtReal = createdAt.getOrElse { now }
     val workflowId = withSQL {
       insertInto(Workflow)
         .namedValues(
@@ -366,15 +367,23 @@ case class Branch(
           w.branchId -> id,
           w.action -> action,
           w.actionModuleId -> actionModuleId,
-          w.created -> createdAt.getOrElse { now },
+          w.created -> createdAtReal,
           w.aborted -> false
         )
     }.updateAndReturnGeneratedKey.apply()
-    val workflow = Workflow.get(workflowId)
+    val workflow = Workflow(
+      id = workflowId,
+      prevId = prevId,
+      branchId = id,
+      action = action,
+      actionModuleId = actionModuleId,
+      created = createdAtReal,
+      aborted = false
+    )
 
     if(setHead) { 
-      Branch.setHead(id, workflowId)
-      return (Branch.get(id), workflow)
+      val now = Branch.setHead(id, workflowId)
+      return (copy(headId = workflowId, modified = now), workflow)
     } else {
       return (this, workflow)
     }
@@ -434,7 +443,7 @@ case class Branch(
       actionModuleId = module.map { _.id }
     )
     if(abortPrevWorkflow){
-      Workflow.get(prevWorkflowId).abortIfNeeded
+      Workflow.abortIfNeeded(branchId = id, workflowId = prevWorkflowId)
     }
 
 
@@ -634,7 +643,7 @@ object Branch
    * This method is here mainly to facilitate the manual manipulation needed
    * for import/export.
    */
-  private[vizierdb] def setHead(branchId: Identifier, workflowId: Identifier)(implicit session: DBSession) =
+  private[vizierdb] def setHead(branchId: Identifier, workflowId: Identifier)(implicit session: DBSession): ZonedDateTime =
   {
     val now = ZonedDateTime.now()
     val b = Branch.column
@@ -643,6 +652,7 @@ object Branch
         .set(b.modified -> now, b.headId -> workflowId)
         .where.eq(b.id, branchId)
     }.update.apply()
+    now
   }
 }
 

@@ -162,7 +162,7 @@ object DeltaBus
           projectId = projectId,
           branchId = branchId,
           workflowId = workflowId,
-        ),
+        )(session)(),
         cell.position
       )
     )
@@ -234,7 +234,7 @@ object DeltaBus
           projectId = projectId,
           branchId = branchId,
           workflowId = workflowId,
-        ),
+        )(session)(),
         cell.position
       )
     )
@@ -276,7 +276,7 @@ object DeltaBus
           projectId = projectId,
           branchId = branchId,
           workflowId = workflowId,
-        ),
+        )(session)(),
         cell.position
       )
     )
@@ -306,9 +306,29 @@ object DeltaBus
     position: Int,
     newState: ExecutionState.T,
     newTimestamps: Timestamps,
-  )
+  ):Unit = 
+    notifyStateChange(
+      branchId = workflow.branchId, 
+      position = position,
+      newState = newState,
+      newTimestamps = newTimestamps
+    )
+
+
+  /**
+   * Convenience method to announce a cell state change
+   * @param workflow     The [[Workflow]] at the head of the [[Branch]]
+   * @param position     The position of the cell being updated.
+   * @param newState     The new state that the cell is transitioning to.
+   */
+  def notifyStateChange(
+    branchId: Identifier,
+    position: Int,
+    newState: ExecutionState.T,
+    newTimestamps: Timestamps,
+  ): Unit =
   {
-    DeltaBus.notify(workflow.branchId, UpdateCellState(position, newState, newTimestamps))
+    DeltaBus.notify(branchId, UpdateCellState(position, newState, newTimestamps))
   }
 
   /**
@@ -330,7 +350,7 @@ object DeltaBus
         mimeType = mimeType, 
         stream = stream, 
         data = data
-      ).describe
+      ).describe(session)()
     ))
   }
 
