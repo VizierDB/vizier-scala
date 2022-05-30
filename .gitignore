@@ -20,3 +20,4 @@ __pycache__
 /vizier/ui/src/info/vizierdb/ui/network/BranchWatcherAPIProxy.scala
 /vizier/ui/src/info/vizierdb/ui/network/API.scala
 /mill.*
+/.ammonite

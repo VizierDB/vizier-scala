@@ -45,7 +45,7 @@ object vizier extends ScalaModule with PublishModule {
   }
 
   def sources = T.sources(
-    millSourcePath / "backend-src",
+    millSourcePath / "backend" / "src",
     millSourcePath / "shared-src"
   )
   def resources = T.sources(
@@ -118,6 +118,10 @@ object vizier extends ScalaModule with PublishModule {
     with TestModule.Specs2 
   {
     def scalaVersion = vizier.scalaVersion
+  
+    def sources = T.sources(
+      millSourcePath / os.up / "backend" / "test",
+    )
 
     def scalacOptions = Seq("-Yrangepos")
     def ivyDeps = Agg(
