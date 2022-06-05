@@ -20,6 +20,8 @@ import info.vizierdb.{ Vizier, VizierAPI, VizierURLs, Config }
 import info.vizierdb.catalog.Schema
 import java.nio.file.{ Files, Paths }
 import scala.sys.process.Process
+import info.vizierdb.commands.mimir.geocoder.Geocode
+import info.vizierdb.commands.mimir.geocoder.TestCaseGeocoder
 
 object SharedTestResources
 {
@@ -33,6 +35,7 @@ object SharedTestResources
         GlobalSettings.loggingSQLAndTime = LoggingSQLAndTimeSettings(
           enabled = true,
           singleLineMode = true,
+          // logLevel = "warn",
           logLevel = "trace",
         ) 
         Vizier.config = Config(Seq())
@@ -46,6 +49,12 @@ object SharedTestResources
         // Normal initialization
         Vizier.initSQLite()
         Vizier.initSpark()
+        Geocode.init(
+          geocoders = Seq(
+            TestCaseGeocoder
+          )
+        ) 
+
         VizierAPI.urls = 
           new VizierURLs(
             new URL(s"http://localhost:5000/"), 

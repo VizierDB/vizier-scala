@@ -23,6 +23,8 @@ import info.vizierdb.commands.FileArgument
 import info.vizierdb.commands.FileParameter
 import info.vizierdb.spark.DataFrameCache
 import info.vizierdb.spark.LoadConstructor
+import info.vizierdb.spark.load.LoadSparkCSV
+import info.vizierdb.spark.load.LoadSparkDataset
 
 object DedupFiles 
   extends LazyLogging
@@ -166,6 +168,29 @@ object DedupFiles
                 ).as[JsObject]
               )
             ))
+          case l@LoadSparkCSV(f@FileArgument(Some(fileid), _, _, _),_, _, _, _, _)
+            if(artifactIdsToRename.contains(fileid)) =>
+            a.replaceData(Json.toJson(
+              dataset.copy(
+                parameters = Json.toJson(
+                  l.copy(
+                    url = f.copy(fileid = Some(canonicalArtifact.id))
+                  )
+                ).as[JsObject]
+              )
+            ))
+          case l@LoadSparkDataset(f@FileArgument(Some(fileid), _, _, _),_, _, _, _)
+            if(artifactIdsToRename.contains(fileid)) =>
+            a.replaceData(Json.toJson(
+              dataset.copy(
+                parameters = Json.toJson(
+                  l.copy(
+                    url = f.copy(fileid = Some(canonicalArtifact.id))
+                  )
+                ).as[JsObject]
+              )
+            ))
+
           case _ => /* only update matching constructors */
         }
       }

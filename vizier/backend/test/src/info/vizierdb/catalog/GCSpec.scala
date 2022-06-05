@@ -31,35 +31,36 @@ class GCSpec extends Specification with BeforeAll
 
     project.load(
       "test_data/r.csv",
-      "R1",
+      "r1",
       inferTypes = false,
       waitForResult = false,
       copyFile = true
     )
     project.load(
       "test_data/r.csv",
-      "R2",
+      "r2",
       inferTypes = false,
       waitForResult = false,
       copyFile = true
     )
     project.load(
       "test_data/simple.json",
-      "R3",
+      "r3",
       format = "json",
       inferTypes = false,
       waitForResult = false,
       copyFile = true
     )
 
+    println("Waiting for load")
     project.waitUntilReadyAndThrowOnError
+    println("Done loading")
 
     DedupFiles(project.projectId)
 
-    project.dataframe("R1").count() must beEqualTo(7l)
-    project.dataframe("R2").explain()
-    ok
-    // project.dataframe("R2").count() must beEqualTo(7l)
+    project.dataframe("r1").count() must beEqualTo(7l)
+    project.dataframe("r2").explain()
+    project.dataframe("r2").count() must beEqualTo(7l)
   }
 
 }

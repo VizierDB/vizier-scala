@@ -23,6 +23,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.Cast
 import org.apache.spark.sql.catalyst.expressions.BoundReference
 import org.apache.spark.sql.catalyst.InternalRow
+import scala.collection.mutable
 
 case class LoadSparkCSV(
   url: FileArgument,
@@ -96,11 +97,54 @@ object LoadSparkCSV
   implicit val format: Format[LoadSparkCSV] = Json.format
   def apply(v: JsValue): DataFrameConstructor = v.as[LoadSparkCSV]
 
-  def train(
+  def applyProposedSchema(
+    baseSchema: Seq[StructField], 
+    proposedSchema: Seq[StructField]
+  ): Seq[StructField] =
+  {
+    if(proposedSchema.isEmpty){ return baseSchema }
+
+    proposedSchema.take(baseSchema.size) ++
+      cleanSchema(baseSchema).drop(proposedSchema.size)
+  }
+
+  def cleanSchema(baseSchema: Seq[StructField]): Seq[StructField] =
+  {
+    var schema = baseSchema
+    
+    schema = schema.map { col =>
+      col.copy( name = 
+        LoadSparkDataset.cleanColumnName(col.name)
+      )
+    }
+
+    val duplicateKeys = 
+      mutable.Map(
+        schema.groupBy { _.name.toLowerCase }
+              .filter { _._2.size > 2 }
+              .keys
+              .map { _ -> 1 }
+              .toSeq:_*
+      )
+
+    schema = schema.map { col =>
+      val name = col.name.toLowerCase
+      if(duplicateKeys.contains(name)){
+        val idx = duplicateKeys(name)
+        duplicateKeys(name) += 1
+        col.copy( name = s"${col.name}_$idx" )
+      } else { col }
+    }
+
+    return schema
+  }
+
+  def infer(
     url: FileArgument, 
     projectId: Identifier, 
     contextText: String,
     header: Option[Boolean],
+    proposedSchema: Seq[StructField] = Seq.empty,
     sparkOptions: Map[String, String] = Map.empty
   ): LoadSparkCSV =
   {
@@ -115,24 +159,24 @@ object LoadSparkCSV
 
     val head = data.take(1).headOption.map { _.getAs[String](0) }
     val schema = 
-        TextInputCSVDataSource.inferFromDataset(
-          spark, 
-          data.map { _.getAs[String](0) },
-          head,
-          new CSVOptions(
-            OPTIONS ++ sparkOptions ++ Map(
-              "header" -> header.getOrElse(true).toString,
-              "inferSchema" -> true.toString()
-            ),
-            spark.sessionState.conf.csvColumnPruning,
-            spark.sessionState.conf.sessionLocalTimeZone
+      applyProposedSchema(
+        cleanSchema(
+          TextInputCSVDataSource.inferFromDataset(
+            spark, 
+            data.map { _.getAs[String](0) },
+            head,
+            new CSVOptions(
+              OPTIONS ++ sparkOptions ++ Map(
+                "header" -> header.getOrElse(true).toString,
+                "inferSchema" -> true.toString()
+              ),
+              spark.sessionState.conf.csvColumnPruning,
+              spark.sessionState.conf.sessionLocalTimeZone
+            )
           )
-        ).map { column => 
-          StructField(
-            LoadSparkDataset.cleanColumnName(column.name), 
-            column.dataType
-          )
-        }
+        ),
+        proposedSchema
+      )
 
     val hasHeader: Boolean =
       if(head.isEmpty) { false }
@@ -162,6 +206,7 @@ object LoadSparkCSV
       schema = schema,
       projectId = projectId,
       contextText = Some(contextText), 
+      sparkOptions = sparkOptions
     )
   }
 }

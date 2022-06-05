@@ -72,6 +72,6 @@ object InsertModule
 
     CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
-    }
-  } 
+    }()
+  }
 }

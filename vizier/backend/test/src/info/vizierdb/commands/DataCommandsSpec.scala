@@ -35,6 +35,8 @@ class DataCommandsSpec
 {
   def beforeAll = SharedTestResources.init
 
+  sequential
+
   "load, unload, and query data" >> {
     val project = MutableProject("Data Project")
 
@@ -146,6 +148,24 @@ class DataCommandsSpec
     )
 
     project.dataframe("test").count() must beGreaterThan(1l)
+  }
+
+  "load csv with non-standard delimiters" >> {
+    val project = MutableProject("Load Nonstandard CSV")
+
+    project.load(
+      file = "test_data/semicolons.csv",
+      name = "test", 
+      format = "csv",
+      arguments = Seq("delimiter" -> ";")
+    )
+
+    val df = project.dataframe("test")
+
+    // df.show()?
+    df.collect().map { _.getString(0) }.toSet must contain(exactly("Fall 2015"))
+
+    ok
   }
 }
 

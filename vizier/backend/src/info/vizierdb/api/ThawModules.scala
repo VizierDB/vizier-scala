@@ -69,7 +69,7 @@ object ThawModules
 
     CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
-    }
+    }()
   } 
 }
 

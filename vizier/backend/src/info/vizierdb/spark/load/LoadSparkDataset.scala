@@ -23,12 +23,14 @@ case class LoadSparkDataset(
   with DefaultProvenance
 {
   override def construct(context: Identifier => DataFrame): DataFrame = 
+  {
     Vizier.sparkSession
           .read
           .format(format)
-          .schema(StructType(schema.toArray))
+          .schema(StructType(schema))
           .options(sparkOptions)
           .load(url.getPath(projectId, noRelativePaths = true)._1)
+  }
 
   override def dependencies: Set[Identifier] = Set.empty
 }
@@ -47,4 +49,28 @@ object LoadSparkDataset
     name.replaceAll(LEADING_WHITESPACE, "")
         .replaceAll(INVALID_LEADING_CHARS, "_")
         .replaceAll(INVALID_INNER_CHARS, "_")
+
+  def infer(
+    url: FileArgument,
+    format: String,
+    schema: Option[Seq[StructField]],
+    sparkOptions: Map[String, String] = Map.empty,
+    projectId: Identifier
+  ): LoadSparkDataset =
+  {
+    LoadSparkDataset(
+      url, 
+      format,
+      schema.getOrElse {
+        Vizier.sparkSession
+              .read
+              .format(format)
+              .options(sparkOptions)
+              .load(url.getPath(projectId, noRelativePaths = true)._1)
+              .schema
+      },
+      sparkOptions,
+      projectId
+    )
+  }
 }

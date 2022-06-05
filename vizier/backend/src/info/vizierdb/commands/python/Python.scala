@@ -114,7 +114,7 @@ object Python extends Command
                 "data" -> Json.toJson(
                   CatalogDB.withDB { implicit s => 
                     artifact.datasetData(includeCaveats = true)
-                  }
+                  }()
 
                 ),
                 "artifactId" -> JsNumber(artifact.id)
@@ -254,7 +254,7 @@ object Python extends Command
 
                 val connection = ArrowQuery(
                   QueryWithCaveats.build(
-                    CatalogDB.withDB { implicit s => artifact.dataframe },
+                    CatalogDB.withDB { implicit s => artifact.dataframe }(),
                     true
                   )
                 )

@@ -58,7 +58,7 @@ object CancelWorkflow
 
     CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
-    }
+    }()
   } 
 }
 

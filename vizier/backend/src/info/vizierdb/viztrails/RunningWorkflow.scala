@@ -15,6 +15,7 @@ import info.vizierdb.delta.DeltaBus
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.catalog.InputArtifactRef
 import info.vizierdb.catalog.OutputArtifactRef
+import java.util.concurrent.atomic.AtomicBoolean
 
 class RunningWorkflow(workflow: Workflow)
   extends ForkJoinTask[Unit]
@@ -24,10 +25,12 @@ class RunningWorkflow(workflow: Workflow)
   val pendingTasks = mutable.Map[Cell.Position, RunningCell]()
   val completionMessages = new ArrayBlockingQueue[Cell.Position](50)
   completionMessages.add(-1)
+  var aborted = new AtomicBoolean(false)
 
   def abort()
   {
     cancel(true)
+    aborted.set(true)
     for(task <- pendingTasks.values){
       logger.trace(s"Aborting task $task")
       task.abort() 
@@ -56,6 +59,7 @@ class RunningWorkflow(workflow: Workflow)
           case x => {
             val otherCompletions = new java.util.ArrayList[Cell.Position]()
             completionMessages.drainTo(otherCompletions)
+            logger.trace(s"Workflow ${workflow.id}: Got completion events for ${(x +: otherCompletions.asScala).mkString(", ")}")
             for(position <- (x +: otherCompletions.asScala)){
               logger.trace(s"Workflow ${workflow.id}: Completing cell at position $position")
               pendingTasks.remove(position) match {
@@ -74,7 +78,9 @@ class RunningWorkflow(workflow: Workflow)
 
         updatePendingTasks()
 
-      } while( ! pendingTasks.isEmpty )
+        logger.trace(s"Waiting on pending cells: ${pendingTasks.values.map { _.cell.toString }.mkString(", ")}")        
+
+      } while( !aborted.get && !pendingTasks.isEmpty )
     } catch {
       case e: Exception => 
         logger.error(s"Error processing workflow ${workflow.id}: $e")
@@ -196,6 +202,7 @@ class RunningWorkflow(workflow: Workflow)
               logger.trace("In a state without valid provenance.")
               None
             } else {
+              logger.trace("Prior result is valid.")
               Some(inputs.getOrElse(cell.position, Map.empty))
             }
 
@@ -265,6 +272,8 @@ class RunningWorkflow(workflow: Workflow)
           }
         }
       }
+
+      logger.trace("Moving to next cell")
 
       scope = scope.copyWithUpdatesFromCellMetadata(
         state = updatedState,

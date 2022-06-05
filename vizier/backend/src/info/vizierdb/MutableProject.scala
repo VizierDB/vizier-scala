@@ -35,6 +35,8 @@ import info.vizierdb.spark.caveats.DataContainer
 import info.vizierdb.serialized.Timestamps
 import info.vizierdb.commands.FileArgument
 import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.commands.data.LoadDataset
+import info.vizierdb.commands.TemplateParameters
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -309,24 +311,32 @@ class MutableProject(
     inferTypes: Boolean = true,
     schema: Seq[(String, DataType)] = Seq.empty,
     waitForResult: Boolean = true,
-    copyFile: Boolean = false
+    copyFile: Boolean = false,
+    arguments: Seq[(String, String)] = Seq.empty,
   ){
     append("data", "load")(
-      "file" -> (
+      LoadDataset.PARAM_FILE -> (
         if(copyFile){
           FileArgument( fileid = Some(addFile(file = new File(file), name = Some(name)).id) )
         } else {
           FileArgument( url = Some(file) )
         }
       ),
-      "name" -> name,
-      "loadFormat" -> format,
-      "loadInferTypes" -> inferTypes,
-      "loadDetectHeaders" -> true,
-      "schema" -> 
+      LoadDataset.PARAM_NAME -> name,
+      LoadDataset.PARAM_FORMAT -> format,
+      LoadDataset.PARAM_GUESS_TYPES -> inferTypes,
+      LoadDataset.PARAM_HEADERS -> true,
+      LoadDataset.PARAM_OPTIONS -> 
+        arguments.map { case (arg, value) =>
+          Map(
+            LoadDataset.PARAM_OPTION_KEY -> arg,
+            LoadDataset.PARAM_OPTION_VALUE -> value
+          )
+        },
+      TemplateParameters.PARAM_SCHEMA -> 
         schema.map { case (name, dataType) => Map(
-          "schema_column" -> name, 
-          "schema_type" -> SparkSchema.encodeType(dataType)
+          TemplateParameters.PARAM_SCHEMA_COLUMN -> name, 
+          TemplateParameters.PARAM_SCHEMA_TYPE -> SparkSchema.encodeType(dataType)
         )}
     )
     if(waitForResult) { waitUntilReadyAndThrowOnError }
@@ -498,7 +508,7 @@ class MutableProject(
   def dataframe(artifactName: String): DataFrame =
   {
     val a = artifact(artifactName)
-    return CatalogDB.withDB { implicit s => a.dataframe }
+    return CatalogDB.withDB { implicit s => a.dataframe }()
   }
 
   /**
@@ -507,7 +517,8 @@ class MutableProject(
   def datasetData(artifactName: String): DataContainer =
   {
     val a = artifact(artifactName)
-    return CatalogDB.withDB { implicit s => a.datasetData() }
+    val data = CatalogDB.withDB { implicit s => a.datasetData() }
+    return data()
   }
 
   /**
@@ -524,7 +535,7 @@ class MutableProject(
     artifact.t match {
       case ArtifactType.DATASET => {
         import org.mimirdb.caveats.implicits._
-        val df = CatalogDB.withDB { implicit s => artifact.dataframe }
+        val df = CatalogDB.withDB { implicit s => artifact.dataframe }()
         df.showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
       }
       case _ => throw new VizierException(s"Show unsupported for ${artifact.t}")
@@ -580,7 +591,9 @@ object MutableProject
    * @return            The constructed MutableProject
    */
   def apply(name: String): MutableProject = 
-    new MutableProject(CatalogDB.withDB { implicit s => Project.create(name).id })
+    new MutableProject(
+      CatalogDB.withDB { implicit s => Project.create(name).id }
+    )
 
   /**
    * Create a MutableProject for an existing project

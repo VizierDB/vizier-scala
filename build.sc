@@ -122,6 +122,9 @@ object vizier extends ScalaModule with PublishModule {
     def sources = T.sources(
       millSourcePath / os.up / "backend" / "test",
     )
+    def resources = T.sources(
+      millSourcePath / os.up / "backend" / "test" / "resources",
+    )
 
     def scalacOptions = Seq("-Yrangepos")
     def ivyDeps = Agg(

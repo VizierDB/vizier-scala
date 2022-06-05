@@ -35,7 +35,7 @@ case class DatasetMessage(
   created: ZonedDateTime
 )
 {
-  def describe(implicit session: DBSession): serialized.ArtifactDescription =
+  def describe(implicit session: DBSession): () => serialized.ArtifactDescription =
   {
     // how we proceed depends on whether we have a cached data container
     dataCache match { 
@@ -57,15 +57,17 @@ case class DatasetMessage(
               category  = ArtifactType.DATASET,
               name      = name.getOrElse { s"Unnamed Dataset $artifactId" },
             )
-          Artifact.translateDatasetContainerToVizierClassic(
-            projectId = projectId,
-            artifactId = artifactId,
-            data = cache,
-            offset = offset,
-            limit = cache.data.size,
-            rowCount = rowCount,
-            base = base
-          )
+
+          () => 
+            Artifact.translateDatasetContainerToVizierClassic(
+              projectId = projectId,
+              artifactId = artifactId,
+              data = cache,
+              offset = offset,
+              limit = cache.data.size,
+              rowCount = rowCount,
+              base = base
+            )
         }
 
     }
@@ -104,30 +106,39 @@ case class Message(
   def dataString: String = new String(data)
   def dataJson: JsValue = Json.parse(data)
 
-  def describe(implicit session: DBSession): serialized.MessageDescription = 
+  def describe(implicit session: DBSession): () => serialized.MessageDescription = 
     try { 
       val t = MessageType.decode(mimeType)
-      serialized.MessageDescription(
-        `type` = t,
-        value = (t match {
-          case MessageType.DATASET => Json.toJson(Json.parse(data).as[DatasetMessage].describe)
-          case MessageType.CHART => dataJson
-          case MessageType.JAVASCRIPT => dataJson
-          case MessageType.HTML => JsString(new String(data))
-          case MessageType.TEXT => JsString(new String(data))
-          case MessageType.MARKDOWN => JsString(new String(data))
-          case MessageType.VEGALITE => dataJson
-          case MessageType.PNG_IMAGE => JsString(new String(data))
+      val value = 
+        (t match {
+          case MessageType.DATASET => 
+            val base: () => serialized.ArtifactDescription = 
+              Json.parse(data).as[DatasetMessage].describe
+
+            { () => Json.toJson(base()) }
+          case MessageType.CHART => { () => dataJson }
+          case MessageType.JAVASCRIPT => { () => dataJson }
+          case MessageType.HTML => { () => JsString(new String(data)) }
+          case MessageType.TEXT => { () => JsString(new String(data)) }
+          case MessageType.MARKDOWN => { () => JsString(new String(data)) }
+          case MessageType.VEGALITE => { () => dataJson }
+          case MessageType.PNG_IMAGE => { () => JsString(new String(data)) }
         })
-      )
+
+      () => 
+        serialized.MessageDescription(
+          `type` = t,
+          value = value()
+        )
     } catch {
       case e: Throwable => 
         logger.error(s"Error retrieving message: ${e.getMessage}\n${e.getStackTraceString}")
         e.printStackTrace()
-        serialized.MessageDescription(
-          `type` = MessageType.TEXT,
-          value  = JsString(s"Error retrieving message: $e")
-        )
+        () => 
+          serialized.MessageDescription(
+            `type` = MessageType.TEXT,
+            value  = JsString(s"Error retrieving message: $e")
+          )
     }
 }
 object Message 

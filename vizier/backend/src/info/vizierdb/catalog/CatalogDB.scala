@@ -16,7 +16,7 @@ import info.vizierdb.util.TimerUtils
 object CatalogDB
   extends LazyLogging
 {
-  val WARNING_CUTOFF = 100*1000*1000 // ns  (10 ms)
+  val WARNING_CUTOFF = 1000*1000*1000 // ns  (1000 ms)
 
   def traceLongHolds[T](op : => T): T =
   {

@@ -116,7 +116,6 @@ object types
     val PROVENANCE_VALID_STATES: Set[T] = Set(
       DONE,
       WAITING,
-      STALE,
       CANCELLED,
       FROZEN
     )

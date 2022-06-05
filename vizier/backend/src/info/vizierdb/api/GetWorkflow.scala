@@ -45,7 +45,7 @@ object GetWorkflow
         case Some(workflow) => workflow.describe
         case None => ErrorResponse.noSuchEntity
       }
-    }
+    }()
   } 
 }
 

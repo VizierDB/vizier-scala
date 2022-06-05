@@ -141,7 +141,7 @@ class ExecutionContext(
    */
   def dataframeOpt(name: String, registerInput: Boolean = true): Option[DataFrame] =
     artifact(name, registerInput)
-      .map { a => CatalogDB.withDBReadOnly { implicit s => a.dataframe } }
+      .map { a => CatalogDB.withDBReadOnly { implicit s => a.dataframe }() }
 
 
   /**
@@ -171,7 +171,7 @@ class ExecutionContext(
                         }
 
     val inputDataframe = 
-      CatalogDB.withDB { implicit s => inputArtifact.dataframe }
+      CatalogDB.withDB { implicit s => inputArtifact.dataframe }()
 
     // Release the database lock while fitting
     logger.debug("Fitting pipeline")
@@ -517,13 +517,17 @@ class ExecutionContext(
                     limit  = Some(limit),
                     includeCaveats = true
                   )
-                }
+                }()
     val rowCount: Long = 
         CatalogDB.withDB { implicit s => 
-          dataset.datasetProperty("count") { descriptor => 
-            JsNumber(dataset.dataframe.count())
+          dataset.datasetProperty("count")
+        }.map { _.as[Long] }
+         .getOrElse {
+            val df = CatalogDB.withDB { implicit s => dataset.dataframe }()
+            val count = df.count()
+            CatalogDB.withDB { implicit s => dataset.updateDatasetProperty("count", JsNumber(count)) }
+            count
           }
-        }.as[Long]
 
     message(MIME.DATASET_VIEW, 
       Json.toJson(

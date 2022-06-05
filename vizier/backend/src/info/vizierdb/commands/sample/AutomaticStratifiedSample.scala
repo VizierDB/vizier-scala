@@ -65,7 +65,7 @@ object AutomaticStratifiedSample extends Command
 
     context.message("Computing strata...")
 
-    val df = CatalogDB.withDB { implicit s => input.dataframe }
+    val df = CatalogDB.withDB { implicit s => input.dataframe }()
     val col = df.schema(stratifyOn)
     val strata = df.groupBy(df(stratifyOn))
                    .count()

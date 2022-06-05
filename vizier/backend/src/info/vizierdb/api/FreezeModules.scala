@@ -71,7 +71,7 @@ object FreezeModules
 
     CatalogDB.withDBReadOnly { implicit s => 
       workflow.describe
-    }
+    }()
   } 
 }
 

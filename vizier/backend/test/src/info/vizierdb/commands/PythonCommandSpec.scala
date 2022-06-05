@@ -26,6 +26,7 @@ import info.vizierdb.MutableProject
 import info.vizierdb.commands.python.PythonProcess
 import org.apache.spark.sql.types._
 import info.vizierdb.util.FeatureSupported
+import info.vizierdb.spark.caveats.DataContainer
 
 class PythonCommandSpec
   extends Specification
@@ -173,7 +174,8 @@ print(df['A'].sum())
     {
       val art = project.artifact("little_data")
       art.t must beEqualTo(ArtifactType.DATASET)
-      val ds = DB.autoCommit { implicit s => art.datasetData() }
+      val ds: DataContainer = 
+        (DB.autoCommit { implicit s => art.datasetData() })()()
       ds.schema must containTheSameElementsAs(Seq(
         StructField("a", LongType),
         StructField("c", StringType)
@@ -186,7 +188,7 @@ print(df['A'].sum())
     
     {
       val art = project.artifact("big_data")
-      val df = DB.autoCommit { implicit s => art.dataframe }
+      val df = DB.autoCommit { implicit s => art.dataframe }()()
       df.columns.toSeq must containTheSameElementsAs(Seq("b"))
       df.count() must beEqualTo(10000)
       df.distinct().count() must beEqualTo(10000)

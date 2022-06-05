@@ -112,6 +112,9 @@ case class Project(
 
     logger.debug(s"Branching project $id: From branch $fromBranch, workflow $sourceWorkflowId; ${if(isInitialBranch){ "(initial)" } else { "" }}")
 
+    val createdAtReal = createdAt.getOrElse { now }
+    val modifiedAtReal = modifiedAt.orElse { createdAt }.getOrElse { now }
+
     val branchId = withSQL {
       insertInto(Branch)
         .namedValues(
@@ -119,25 +122,42 @@ case class Project(
           b.name -> name, 
           b.properties -> properties, 
           b.headId -> 0, 
-          b.created -> createdAt.getOrElse { now }, 
-          b.modified -> modifiedAt.orElse { createdAt }.getOrElse { now },
+          b.created -> createdAtReal, 
+          b.modified -> modifiedAtReal,
           b.createdFromBranchId -> sourceBranch.map { _.id },
           b.createdFromWorkflowId -> sourceWorkflowId
         )
     }.updateAndReturnGeneratedKey.apply()
 
+    var branch = Branch(
+      id = branchId,
+      projectId = id,
+      name = name,
+      properties = properties,
+      headId = 0l,
+      created = createdAtReal,
+      modified = modifiedAtReal,
+      createdFromBranchId = sourceBranch.map { _.id },
+      createdFromWorkflowId = sourceWorkflowId
+    )
+
     if(skipWorkflowInitialization){
       logger.debug("Skipping workflow initialization")
-      return (this, Branch.get(branchId), null)
+      return (this, branch, null)
     }
-    var (branch, workflow) = {
-      var branch = Branch.get(branchId)
+    val workflow = {
       if(isInitialBranch){ 
         logger.debug("Initializing blank workflow")
-        branch.initWorkflow() }
-      else { 
+        branch.initWorkflow() match { case (b, w) =>
+          branch = b
+          w
+        }
+      } else { 
         logger.debug(s"Cloning workflow $sourceWorkflowId")
-        branch.cloneWorkflow(sourceWorkflowId.get)
+        branch.cloneWorkflow(sourceWorkflowId.get) match { case (b, w) =>
+          branch = b
+          w
+        }
       }
     }
 
@@ -224,20 +244,28 @@ object Project
     dontCreateDefaultBranch: Boolean = false
   )(implicit session:DBSession): Project = 
   {
-    val project = get(
-      withSQL {
-        val p = Project.column
-        val now = ZonedDateTime.now()
-        insertInto(Project)
-          .namedValues(
-            p.name -> name, 
-            p.activeBranchId -> 0, 
-            p.properties -> properties, 
-            p.created -> createdAt.getOrElse { now }, 
-            p.modified -> modifiedAt.orElse { createdAt }.getOrElse { now }
-          )
-      }.updateAndReturnGeneratedKey.apply()
-    )
+    val now = ZonedDateTime.now()
+    val createdAtReal = createdAt.getOrElse { now }
+    val modifiedAtReal = modifiedAt.orElse { createdAt }.getOrElse { now }
+    val project = 
+      Project(
+        id = withSQL {
+          val p = Project.column
+          insertInto(Project)
+            .namedValues(
+              p.name -> name, 
+              p.activeBranchId -> 0, 
+              p.properties -> properties, 
+              p.created -> createdAtReal, 
+              p.modified -> modifiedAtReal
+            )
+        }.updateAndReturnGeneratedKey.apply(),
+        name = name,
+        activeBranchId = 0l,
+        properties = properties,
+        created = createdAtReal,
+        modified = modifiedAtReal
+      )
     if(dontCreateDefaultBranch){
       return project
     } else {

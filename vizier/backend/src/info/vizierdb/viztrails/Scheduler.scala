@@ -25,12 +25,13 @@ import info.vizierdb.catalog.binders._
 import info.vizierdb.catalog.{ Workflow, Cell, Result }
 import info.vizierdb.delta.{ DeltaBus, DeltaOutputArtifact }
 import info.vizierdb.util.UnsupportedFeature
+import info.vizierdb.Vizier
 
 object Scheduler
   extends LazyLogging
 {
-  val workflowWorkers = new ForkJoinPool(10)
-  val cellWorkers     = new ForkJoinPool(30)
+  lazy val workflowWorkers = new ForkJoinPool(Vizier.config.supervisorThreads())
+  lazy val cellWorkers     = new ForkJoinPool(Vizier.config.workerThreads())
   val runningWorkflows = scala.collection.mutable.Map[Identifier,RunningWorkflow]()
 
   /**

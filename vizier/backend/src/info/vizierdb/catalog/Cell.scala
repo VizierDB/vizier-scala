@@ -247,21 +247,31 @@ object Cell
     workflowId: Identifier,
     position: Int,
     moduleId: Identifier,
-    resultId: Option[Identifier],
-    state: ExecutionState.T,
-    created: ZonedDateTime
-  )(implicit session: DBSession): Identifier = 
-      withSQL {
-        val c = Cell.column
-        insertInto(Cell)
-          .namedValues(
-            c.workflowId -> workflowId,
-            c.position -> position,
-            c.moduleId -> moduleId,
-            c.resultId -> None,
-            c.state -> ExecutionState.STALE,
-            c.created -> ZonedDateTime.now()
-          )
-      }.updateAndReturnGeneratedKey.apply()
+    resultId: Option[Identifier] = None,
+    state: ExecutionState.T = ExecutionState.STALE,
+    created: ZonedDateTime = ZonedDateTime.now()
+  )(implicit session: DBSession): Cell = 
+  {    
+    withSQL {
+      val c = Cell.column
+      insertInto(Cell)
+        .namedValues(
+          c.workflowId -> workflowId,
+          c.position -> position,
+          c.moduleId -> moduleId,
+          c.resultId -> resultId,
+          c.state -> state,
+          c.created -> created
+        )
+    }.updateAndReturnGeneratedKey.apply()
+    Cell(
+      workflowId = workflowId,
+      position = position,
+      moduleId = moduleId,
+      resultId = resultId,
+      state = state,
+      created = created
+    )
+  }
 }
 

@@ -75,7 +75,7 @@ case class Module(
 
   val TOC_HEADER = "(#+) *(.+)".r
 
-  def toc(cell: Cell)(implicit session:DBSession): Option[serialized.TableOfContentsEntry] =
+  def toc(cell: Cell): Option[serialized.TableOfContentsEntry] =
   {
     (packageId, commandId) match {
       case ("docs", "markdown") => 
@@ -149,7 +149,7 @@ case class Module(
     projectId: Identifier, 
     branchId: Identifier, 
     workflowId: Identifier, 
-  )(implicit session:DBSession): serialized.ModuleDescription = 
+  )(implicit session: DBSession): () => serialized.ModuleDescription = 
   {
 
     val timestamps = serialized.Timestamps(
@@ -158,34 +158,37 @@ case class Module(
       finishedAt = result.flatMap { _.finished }
     )
 
-    val messageDescription = serialized.ModuleOutputDescription(
-      stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe },
-      stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
-    )
+    val stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe }
+    val stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
+    val artifacts = outputs.map { case (name, summ) => summ.summarize(name) }
 
+    {
+    () => 
+      serialized.ModuleDescription(
+        id = cell.moduleDescriptor,
+        moduleId = id,
+        state = ExecutionState.translateToClassicVizier(cell.state),
+        statev2 = cell.state,
+        command = serialized.CommandDescription(
+          packageId = packageId,
+          commandId = commandId,
+          arguments = argumentList,
+        ),
+        text = description,
+        toc = toc(cell),
+        timestamps = timestamps,
 
-    val descr = serialized.ModuleDescription(
-      id = cell.moduleDescriptor,
-      moduleId = id,
-      state = ExecutionState.translateToClassicVizier(cell.state),
-      statev2 = cell.state,
-      command = serialized.CommandDescription(
-        packageId = packageId,
-        commandId = commandId,
-        arguments = argumentList,
-      ),
-      text = description,
-      toc = toc(cell),
-      timestamps = timestamps,
+        artifacts = artifacts,
+          // artifactSummaries.map { case (name, d) => d.summarize(name) },
+        dependencies = inputs.toMap,
 
-      artifacts = outputs.map { case (name, summ) => summ.summarize(name) },
-        // artifactSummaries.map { case (name, d) => d.summarize(name) },
-      dependencies = inputs.toMap,
-
-      outputs = messageDescription,
-      resultId = cell.resultId,
-    )
-    return descr
+        outputs = serialized.ModuleOutputDescription(
+          stdout = stdout.map { _() },
+          stderr = stderr.map { _() }
+        ),
+        resultId = cell.resultId,
+      )
+    }
   } 
 }
 object Module
@@ -236,20 +239,27 @@ object Module
     if(!argErrors.isEmpty){
       throw new VizierException(s"Error in command: $packageId.$commandId($arguments)\n${argErrors.mkString("\n")}")
     }
-    get(
-      withSQL {
-        logger.trace(s"Creating Module: ${packageId}.${commandId}(${arguments})")
-        val m = Module.column
-        insertInto(Module)
-          .namedValues(
-            m.packageId -> packageId,
-            m.commandId -> commandId,
-            m.arguments -> arguments,
-            m.properties -> properties,
-            m.revisionOfId -> revisionOfId
-          )
-      }.updateAndReturnGeneratedKey.apply()
+    Module(
+      id = 
+        withSQL {
+          logger.trace(s"Creating Module: ${packageId}.${commandId}(${arguments})")
+          val m = Module.column
+          insertInto(Module)
+            .namedValues(
+              m.packageId -> packageId,
+              m.commandId -> commandId,
+              m.arguments -> arguments,
+              m.properties -> properties,
+              m.revisionOfId -> revisionOfId
+            )
+        }.updateAndReturnGeneratedKey.apply(),
+      packageId = packageId,
+      commandId = commandId,
+      arguments = arguments,
+      properties = properties,
+      revisionOfId = revisionOfId
     )
+
   }
 
 

@@ -46,7 +46,7 @@ object CheckpointDataset extends Command
                             context.error(s"Dataset $datasetName does not exist"); return
                           }
 
-    val df = CatalogDB.withDB { implicit s => input.dataframe }
+    val df = CatalogDB.withDB { implicit s => input.dataframe }()
 
     context.message("Checkpointing data...")
 

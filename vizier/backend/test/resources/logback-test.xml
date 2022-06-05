@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+  
+  <!--
+    This file controlls logging defaults for Mimir-API when deployed.
+  -->
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!--+++++++++++++++++++++++  Vizier  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.Vizier"                            level="WARN" />
+  <logger name="info.vizierdb.VizierAPI$"                        level="DEBUG" />
+  <logger name="info.vizierdb.VizierServlet$"                    level="DEBUG" />
+  <logger name="info.vizierdb.VizierUIServlet$"                  level="TRACE" />
+  <logger name="info.vizierdb.api.handler.Route"                 level="TRACE" />
+  <logger name="info.vizierdb.Config$"                           level="WARN" />
+  <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="WARN" />
+  <logger name="info.vizierdb.api.AppendModule"                  level="WARN" />
+  <logger name="info.vizierdb.catalog.Project"                   level="INFO" />
+  <logger name="info.vizierdb.catalog.Branch"                    level="INFO" />
+  <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
+  <logger name="info.vizierdb.catalog.Workflow"                  level="DEBUG" />
+  <logger name="info.vizierdb.viztrails.Scheduler$"              level="INFO" />
+  <logger name="info.vizierdb.viztrails.RunningWorkflow"         level="INFO" />
+  <logger name="info.vizierdb.viztrails.RunningCell"             level="INFO" />
+  <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
+  <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
+  <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="TRACE" />
+  <logger name="info.vizierdb.spreadsheet.UpdateOverlay"         level="DEBUG" />
+  <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="TRACE" />
+
+  <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.commands.python.Python$"           level="INFO" />
+  <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
+  <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />
+  <logger name="info.vizierdb.commands.python.PythonInterface"   level="WARN" />
+  <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="INFO" />
+  <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
+  <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
+  <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
+  <logger name="info.vizierdb.commands.data.LoadDataset$"        level="WARN" />
+
+  <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
+  <logger name="org.mimirdb.spark.PythonUDFBuilder"              level="WARN" />
+  <logger name="org.mimirdb.api.request.Explain"                 level="WARN" />
+  <logger name="org.mimirdb.caveats.enumerate.EnumeratePlanCaveats$"
+                                                                 level="WARN" />
+
+  <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />
+
+  <!--+++++++++++++++++++++++  Import/Export  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.export.ImportProject$"             level="DEBUG" />
+  <logger name="info.vizierdb.catalog.gc.DedupFiles$"            level="TRACE" />
+
+  <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
+  <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />
+  <logger name="info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyConnection" level="DEBUG" />
+
+  <!--+++++++++++++++++++++++  Jetty  +++++++++++++++++++++++++-->
+  <logger name="org.eclipse.jetty.server.Server"                 level="WARN" />
+  <logger name="org.eclipse.jetty.server.handler.ContextHandler" level="WARN" />
+  <logger name="org.eclipse.jetty.server.ResourceService"        level="WARN" />
+  <logger name="org.eclipse.jetty.servlet.ServletHandler"        level="WARN" />
+  <logger name="org.eclipse.jetty.servlet.DefaultServlet"        level="WARN" />
+  <logger name="org.eclipse.jetty.server.session"                level="WARN" />
+
+    
+  <root level="WARN">
+    <appender-ref ref="STDOUT" />
+  </root>
+ 
+</configuration>
