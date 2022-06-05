@@ -500,7 +500,7 @@ class MutableProject(
    * @return              The [[Artifact]] identified by artifactName in the workflow's output
    */
   def artifact(artifactName: String): Artifact = 
-    artifacts(artifactName)
+    artifacts.find { _._1.equalsIgnoreCase(artifactName) }.get._2
 
   /**
    * Retrieve the spark dataframe corresponding to a specific artifact
