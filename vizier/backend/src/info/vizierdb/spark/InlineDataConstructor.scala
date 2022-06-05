@@ -9,6 +9,7 @@ import org.apache.spark.sql.types._
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import info.vizierdb.types._
 import info.vizierdb.Vizier
+import info.vizierdb.catalog.Artifact
 
 case class InlineDataConstructor(
   schema: Seq[StructField],
@@ -17,7 +18,7 @@ case class InlineDataConstructor(
   with DefaultProvenance
 {
   def construct(
-    context: Identifier => DataFrame
+    context: Identifier => Artifact
   ): DataFrame =
   {
     val types = schema.map { _.dataType }

@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.Cast
 import org.apache.spark.sql.catalyst.expressions.BoundReference
 import org.apache.spark.sql.catalyst.InternalRow
 import scala.collection.mutable
+import info.vizierdb.catalog.Artifact
 
 case class LoadSparkCSV(
   url: FileArgument,
@@ -36,7 +37,7 @@ case class LoadSparkCSV(
   with LazyLogging
   with DefaultProvenance
 {
-  override def construct(context: Identifier => DataFrame): DataFrame = 
+  override def construct(context: Identifier => Artifact): DataFrame = 
   {
     AnnotateWithSequenceNumber.withSequenceNumber(
       Vizier.sparkSession

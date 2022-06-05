@@ -11,6 +11,7 @@ import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.SparkSchema.fieldFormat
 
 import info.vizierdb.types._
+import info.vizierdb.catalog.Artifact
 
 case class Dataset(
   deserializer: String,
@@ -30,10 +31,10 @@ case class Dataset(
     deserializerInstance(parameters)
   }
 
-  def construct(context: Identifier => DataFrame) =
+  def construct(context: Identifier => Artifact) =
     constructor.construct(context)
 
-  def provenance(context: Identifier => DataFrame) =
+  def provenance(context: Identifier => Artifact) =
     constructor.provenance(context)
 
   def withProperty(prop: (String, JsValue)*): Dataset =
@@ -45,9 +46,9 @@ case class Dataset(
     constructor.schema
 
   def transitiveDependencies(
-    discovered: Map[Identifier, Dataset], 
-    ctx: Identifier => Dataset
-  ): Map[Identifier, Dataset] = 
+    discovered: Map[Identifier, Artifact], 
+    ctx: Identifier => Artifact
+  ): Map[Identifier, Artifact] = 
   {
     val newDeps = 
       constructor.dependencies
@@ -55,7 +56,14 @@ case class Dataset(
                  .map { x => x -> ctx(x) }
                  .toMap
     newDeps.values
-           .foldRight(discovered ++ newDeps) { _.transitiveDependencies(_, ctx) }
+           .foldRight(discovered ++ newDeps) { (dep, accum) =>
+              dep match {
+                case ds if ds.t == ArtifactType.DATASET => 
+                  ds.datasetDescriptor
+                    .transitiveDependencies(accum, ctx)
+                case _ => accum
+              }
+            }
   }
 
 

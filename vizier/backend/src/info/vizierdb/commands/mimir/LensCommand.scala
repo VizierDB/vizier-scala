@@ -25,6 +25,7 @@ import info.vizierdb.spark.{DataFrameConstructor, DataFrameConstructorCodec, Def
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.spark.SparkSchema.fieldFormat
+import _root_.info.vizierdb.catalog.Artifact
 
 case class LensConstructor(
   lensClassName: String,
@@ -35,7 +36,7 @@ case class LensConstructor(
 ) extends DataFrameConstructor
   with DefaultProvenance
 {
-  def construct(context: Identifier => DataFrame): DataFrame =
+  def construct(context: Identifier => Artifact): DataFrame =
   {
     val lensClazz = 
       Class.forName(lensClassName)
@@ -46,7 +47,7 @@ case class LensConstructor(
            .asInstanceOf[LensCommand]
 
     return lens.build(
-      context(target),
+      context(target).dataframeFromContext(context),
       Arguments(arguments, lens.parameters),
       projectId
     )

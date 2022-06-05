@@ -5,6 +5,7 @@ import play.api.libs.json.{ JsValue, Format }
 import org.apache.spark.sql.{ SparkSession, DataFrame } 
 import info.vizierdb.types.Identifier
 import org.apache.spark.sql.types.StructField
+import info.vizierdb.catalog.Artifact
 
 /**
  * A generic view definition for the Mimir Catalog.  Used by Catalog.put and related operations
@@ -25,7 +26,7 @@ trait DataFrameConstructor
    * When `Catalog.put` is called, one of its parameters is a list of dependencies.  Only dependent
    * tables will be present in the context.
    */
-  def construct(context: Identifier => DataFrame): DataFrame
+  def construct(context: Identifier => Artifact): DataFrame
 
   /**
    * Return the full provenance of the DataFrame.
@@ -38,7 +39,7 @@ trait DataFrameConstructor
    * involve more computation than necessary.  If the intent is to compute
    * values, use construct()
    */
-  def provenance(context: Identifier => DataFrame): DataFrame
+  def provenance(context: Identifier => Artifact): DataFrame
 
   /**
    * The companion object including a deserialization method.
@@ -69,7 +70,7 @@ trait DataFrameConstructorCodec
 
 trait DefaultProvenance
 {
-  def construct(context: (Identifier => DataFrame)): DataFrame
-  def provenance(context: (Identifier => DataFrame)): DataFrame =
+  def construct(context: (Identifier => Artifact)): DataFrame
+  def provenance(context: (Identifier => Artifact)): DataFrame =
     construct(context)
 }

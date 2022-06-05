@@ -8,6 +8,7 @@ import play.api.libs.json.JsValue
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.SparkSchema.fieldFormat
+import info.vizierdb.catalog.Artifact
 
 case class PipelineModelConstructor(
   input: Identifier,
@@ -23,8 +24,8 @@ case class PipelineModelConstructor(
   def pipeline: PipelineModel = 
     PipelineModel.load(url.getPath(projectId, noRelativePaths = true)._1)
 
-  override def construct(context: Identifier => DataFrame): DataFrame = 
-    pipeline.transform(context(input))
+  override def construct(context: Identifier => Artifact): DataFrame = 
+    pipeline.transform(context(input).dataframeFromContext(context))
 
 
 }

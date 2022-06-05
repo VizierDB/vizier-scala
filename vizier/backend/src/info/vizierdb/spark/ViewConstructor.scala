@@ -31,11 +31,11 @@ case class ViewConstructor(
   lazy val lowerCaseDatasets = datasets.map { case (k, v) => k.toLowerCase -> v }.toMap
   lazy val lowerCaseFunctions = functions.map { case (k, v) => k.toLowerCase -> v }.toMap
 
-  def construct(context: Identifier => DataFrame): DataFrame =
+  def construct(context: Identifier => Artifact): DataFrame =
   {
     var df = ViewConstructor.buildBase(
                 query,
-                datasets.mapValues { id => () => context(id) },
+                datasets.mapValues { id => () => context(id).dataframeFromContext(context) },
                 functions
               )
     df = AnnotateImplicitHeuristics(df)

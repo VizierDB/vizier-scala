@@ -6,6 +6,7 @@ import info.vizierdb.types._
 import info.vizierdb.spark._
 import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.SparkSchema.fieldFormat
+import info.vizierdb.catalog.Artifact
 
 
 case class Uniform(probability:Double) extends SamplingMode
@@ -111,8 +112,8 @@ case class SampleConstructor(
 ) extends DataFrameConstructor 
   with DefaultProvenance
 {
-  def construct(context: Identifier => DataFrame): DataFrame =
-    mode(context(input), seed)
+  def construct(context: Identifier => Artifact): DataFrame =
+    mode(context(input).dataframeFromContext(context), seed)
 
   def dependencies = Set(input)
 }

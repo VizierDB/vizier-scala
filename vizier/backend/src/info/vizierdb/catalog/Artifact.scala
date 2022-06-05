@@ -83,14 +83,14 @@ case class Artifact(
   {
     val descriptor = datasetDescriptor
     val deps = descriptor.transitiveDependencies(
-                 Map(id -> descriptor), 
-                 Artifact.get(_:Identifier).datasetDescriptor
+                 Map(id -> this), 
+                 Artifact.get(_:Identifier)
                )
-    def construct(x: Identifier): DataFrame = 
-      deps(x).construct(construct)
-
-    { () => descriptor.construct(construct) }
+    return { () => descriptor.construct(deps) }
   }
+
+  def dataframeFromContext(ctx: Identifier => Artifact): DataFrame =
+    datasetDescriptor.construct(ctx)
 
   /**
    * Retrieve a summary (an abbreviated [[description]]) of the specified artifact
@@ -239,16 +239,14 @@ case class Artifact(
     assert(t.equals(ArtifactType.DATASET))
     val descriptor = datasetDescriptor
     val deps = descriptor.transitiveDependencies(
-                 Map(id -> descriptor), 
-                 Artifact.get(_:Identifier).datasetDescriptor
+                 Map(id -> this), 
+                 Artifact.get(_:Identifier)
                )
-    def construct(x: Identifier): DataFrame = 
-      deps(x).construct(construct)
 
-    { () => 
+    return { () => 
       try {
         QueryWithCaveats(
-          query = descriptor.construct(construct),
+          query = descriptor.construct(deps(_)),
           includeCaveats = includeCaveats,
           limit = limit,
           offset = offset,
@@ -261,7 +259,7 @@ case class Artifact(
           logger.debug(a.getStackTrace().map { _.toString }.mkString("\n"))
           logger.warn(s"Error applying caveats (${a.getMessage}).  Trying without.")
           QueryWithCaveats(
-            query = descriptor.construct(construct),
+            query = descriptor.construct(deps(_)),
             includeCaveats = false,
             limit = limit,
             offset = offset,

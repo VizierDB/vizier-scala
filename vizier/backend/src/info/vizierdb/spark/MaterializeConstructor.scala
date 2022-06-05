@@ -11,6 +11,7 @@ import info.vizierdb.spark.SparkSchema.fieldFormat
 import info.vizierdb.types._
 import info.vizierdb.filestore.Filestore
 import info.vizierdb.Vizier
+import info.vizierdb.catalog.Artifact
 
 case class MaterializeConstructor(
   input: Identifier,
@@ -23,7 +24,7 @@ case class MaterializeConstructor(
   extends DataFrameConstructor
 {
   def construct(
-    context: Identifier => DataFrame
+    context: Identifier => Artifact
   ): DataFrame = 
   {
     var parser = Vizier.sparkSession.read.format(format)
@@ -42,9 +43,12 @@ case class MaterializeConstructor(
   }
 
   def provenance(
-    context: Identifier => DataFrame
+    context: Identifier => Artifact
   ): DataFrame = 
     context(input)
+      .datasetDescriptor
+      .constructor
+      .provenance(context)
 
   def dependencies = Set(input)
 }

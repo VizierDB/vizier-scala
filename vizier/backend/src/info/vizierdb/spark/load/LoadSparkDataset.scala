@@ -11,6 +11,7 @@ import info.vizierdb.spark.SparkSchema.fieldFormat
 import org.apache.spark.sql.DataFrame
 import info.vizierdb.Vizier
 import org.apache.spark.sql.types.StructType
+import info.vizierdb.catalog.Artifact
 
 case class LoadSparkDataset(
   url: FileArgument,
@@ -22,7 +23,7 @@ case class LoadSparkDataset(
   with LazyLogging
   with DefaultProvenance
 {
-  override def construct(context: Identifier => DataFrame): DataFrame = 
+  override def construct(context: Identifier => Artifact): DataFrame = 
   {
     Vizier.sparkSession
           .read

@@ -19,6 +19,7 @@ import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import org.mimirdb.caveats.implicits._
 import org.mimirdb.lenses.inference.InferTypes
+import info.vizierdb.catalog.Artifact
 
 case class LoadConstructor(
   url: FileArgument,
@@ -40,7 +41,7 @@ case class LoadConstructor(
     )
   lazy val schema = construct().schema
 
-  def construct(context: Identifier => DataFrame): DataFrame = construct()
+  def construct(context: Identifier => Artifact): DataFrame = construct()
   def construct(): DataFrame =
   {
     var df =

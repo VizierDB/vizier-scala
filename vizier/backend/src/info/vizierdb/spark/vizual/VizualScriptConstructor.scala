@@ -9,6 +9,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import org.apache.spark.sql.types.StructType
+import info.vizierdb.catalog.Artifact
 
 case class VizualScriptConstructor(
   script: Seq[VizualCommand],
@@ -18,9 +19,9 @@ case class VizualScriptConstructor(
   extends DataFrameConstructor
   with DefaultProvenance
 {
-  def construct(context: Identifier => DataFrame): DataFrame =
+  def construct(context: Identifier => Artifact): DataFrame =
     ExecOnSpark(
-      input.map { context(_) }
+      input.map { context(_).dataframeFromContext(context) }
            .getOrElse { Vizier.sparkSession.emptyDataFrame },
       script
     )
