@@ -144,7 +144,7 @@ case class Module(
     cell: Cell,
     result: Option[Result], 
     messages: Seq[Message],
-    outputs: Seq[(String, Artifact)],
+    outputs: Seq[(String, Option[Artifact])],
     inputs: Seq[(String, Identifier)],
     projectId: Identifier, 
     branchId: Identifier, 
@@ -160,7 +160,8 @@ case class Module(
 
     val stdout = messages.filter { _.stream.equals(StreamType.STDOUT) }.map { _.describe }
     val stderr = messages.filter { _.stream.equals(StreamType.STDERR) }.map { _.describe }
-    val artifacts = outputs.map { case (name, summ) => summ.summarize(name) }
+    val artifacts = outputs.flatMap { case (name, summ) => summ.map { _.summarize(name) } }
+    val deleted = outputs.collect { case (name, None) => name }
 
     {
     () => 
@@ -179,6 +180,7 @@ case class Module(
         timestamps = timestamps,
 
         artifacts = artifacts,
+        deleted = deleted,
           // artifactSummaries.map { case (name, d) => d.summarize(name) },
         dependencies = inputs.toMap,
 

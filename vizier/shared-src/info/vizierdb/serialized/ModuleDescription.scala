@@ -14,6 +14,7 @@ case class ModuleDescription(
   toc: Option[TableOfContentsEntry],
   timestamps: Timestamps,
   artifacts: Seq[ArtifactSummary],
+  deleted: Seq[String],
   dependencies: Map[String,Identifier],
   outputs: ModuleOutputDescription,
   resultId: Option[Identifier],

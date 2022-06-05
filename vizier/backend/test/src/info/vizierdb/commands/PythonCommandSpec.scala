@@ -112,7 +112,7 @@ ds.save("Q")
     project.artifacts.keys must contain("q")
 
     project.lastOutputString.split("\n").toSeq must contain(eachOf(
-      "success: A(short) / None",
+      "success: A(int) / None",
       "A at: 0",
       "1 at: 1",
       "<1, 1>"
@@ -120,7 +120,7 @@ ds.save("Q")
 
     project.script("ds = vizierdb[\"Q\"];print(ds)")
 
-    project.lastOutputString must beEqualTo("<A(short), C(short)> (7 rows)")
+    project.lastOutputString must beEqualTo("<A(int), C(int)> (7 rows)")
 
     project.artifacts.keys must contain("test_r")
     project.script("""

@@ -97,7 +97,7 @@ object OutputArtifactRef
 
   def outputArtifactsForWorkflow(
     workflowId: Identifier
-  )(implicit session: DBSession): Map[Cell.Position, Map[String, Artifact]] =
+  )(implicit session: DBSession): Map[Cell.Position, Map[String, Option[Artifact]]] =
   {
     val c = Cell.syntax
     val s = Artifact.syntax
@@ -107,14 +107,17 @@ object OutputArtifactRef
       select
         .from(Cell as c)
         .join(OutputArtifactRef as o)
-        .join(Artifact as s)
+        .leftJoin(Artifact as s)
+          .on(o.artifactId, s.id)
         .where.eq(c.workflowId, workflowId)
           .and.eq(o.resultId, c.resultId)
-          .and.eq(o.artifactId, s.id)
-    }.map { rs => (
+    }.map { rs => 
+        println(s"Parsing $rs")
+      (
         rs.int(c.resultName.position), (
           rs.string(o.resultName.userFacingName),
-          Artifact(rs)
+          rs.longOpt(s.resultName.id)
+            .map { _ => Artifact(rs) }
         )
       ) }
      .list.apply()

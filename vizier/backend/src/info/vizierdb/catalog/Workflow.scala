@@ -180,7 +180,9 @@ case class Workflow(
                      .toSeq
                      .sortBy { _._1 }
                      .map { _._2 }
-                     .foldLeft(Map[String,Artifact]()) { _ ++ _ }
+                     .foldLeft(Map[String,Option[Artifact]]()) { _ ++ _ }
+                     .collect { case (name, Some(artifact)) => name -> artifact}
+                     .toMap
   }
 
   def allArtifacts(implicit session: DBSession): Seq[ArtifactRef] =
@@ -216,7 +218,7 @@ case class Workflow(
     val messagesByCell = Message.messagesForWorkflow(id)
     val inputsByCell:Map[Cell.Position, Map[String, Identifier]] = 
       InputArtifactRef.inputArtifactIdsForWorkflow(id)
-    val outputsByCell:Map[Cell.Position, Map[String, Artifact]] = 
+    val outputsByCell:Map[Cell.Position, Map[String, Option[Artifact]]] = 
       OutputArtifactRef.outputArtifactsForWorkflow(id)
 
     val summary = makeSummary(branch, actionModuleId.map { Module.get(_) })
@@ -242,13 +244,15 @@ case class Workflow(
     }
     val artifacts: Map[String, Artifact] = 
       cellsModulesAndResults.foldLeft(
-        Map[String,Artifact]()
+        Map[String,Option[Artifact]]()
       ) { 
-        case (scope:Map[String,Artifact], (cell, _, _)) =>
-          val current:Map[String, Artifact] =
+        case (scope:Map[String,Option[Artifact]], (cell, _, _)) =>
+          val current:Map[String, Option[Artifact]] =
             outputsByCell.getOrElse(cell.position, Map.empty) 
           scope ++ current
       }
+      .filter { _._2.isDefined }
+      .mapValues { _.get }
 
     () => 
       summary.toDescription(

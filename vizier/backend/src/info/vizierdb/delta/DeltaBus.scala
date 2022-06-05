@@ -144,7 +144,7 @@ object DeltaBus
     result: Option[Result], 
     messages: Seq[Message],
     inputs: Seq[(String, Identifier)],
-    outputs: Seq[(String, Artifact)],
+    outputs: Seq[(String, Option[Artifact])],
     projectId: Identifier,
     branchId: Identifier,
     workflowId: Identifier
@@ -216,7 +216,7 @@ object DeltaBus
     result: Option[Result], 
     messages: Seq[Message],
     inputs: Seq[(String, Identifier)],
-    outputs: Seq[(String, Artifact)],
+    outputs: Seq[(String, Option[Artifact])],
     projectId: Identifier,
     branchId: Identifier,
     workflowId: Identifier
@@ -258,7 +258,7 @@ object DeltaBus
     result: Option[Result], 
     messages: Seq[Message],
     inputs: Seq[(String, Identifier)],
-    outputs: Seq[(String, Artifact)],
+    outputs: Seq[(String, Option[Artifact])],
     projectId: Identifier,
     branchId: Identifier,
     workflowId: Identifier
