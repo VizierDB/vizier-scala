@@ -15,6 +15,7 @@ import breeze.linalg.View
 import info.vizierdb.Vizier
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.StructType
+import info.vizierdb.VizierException
 
 case class ViewConstructor(
   datasets: Map[String, Identifier],
@@ -26,6 +27,9 @@ case class ViewConstructor(
 ) extends DataFrameConstructor
   with DefaultProvenance
 {
+
+  lazy val lowerCaseDatasets = datasets.map { case (k, v) => k.toLowerCase -> v }.toMap
+  lazy val lowerCaseFunctions = functions.map { case (k, v) => k.toLowerCase -> v }.toMap
 
   def construct(context: Identifier => DataFrame): DataFrame =
   {
@@ -42,8 +46,15 @@ case class ViewConstructor(
   lazy val (viewDeps, fnDeps): (Set[String], Set[String]) =
       InjectedSparkSQL.getDependencies(query)
   lazy val dependencies:Set[Identifier] = {
-    viewDeps.map { _.toLowerCase }.map { datasets(_) }.toSet ++
-      fnDeps.map { _.toLowerCase }.map { functions(_)._1 }.toSet
+    viewDeps.map { _.toLowerCase }.map { x =>
+        lowerCaseDatasets.getOrElse(x, 
+          throw new VizierException(s"Internal Error: Undefined view $x; looking in: ${datasets.keys.mkString(", ")}")
+        )
+      }.toSet ++
+      fnDeps.map { _.toLowerCase }.map { x => 
+        lowerCaseFunctions.getOrElse(x,
+          throw new VizierException(s"Internal Error: Undefined function $x; looking in: ${datasets.keys.mkString(", ")}")
+        )._1 }.toSet
   }
 }
 object ViewConstructor
