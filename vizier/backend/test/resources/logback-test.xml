@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration debug="true">
-
-<?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false">
   
   <!--
@@ -27,9 +24,9 @@
   <logger name="info.vizierdb.catalog.Branch"                    level="INFO" />
   <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
   <logger name="info.vizierdb.catalog.Workflow"                  level="DEBUG" />
-  <logger name="info.vizierdb.viztrails.Scheduler$"              level="WARN" />
-  <logger name="info.vizierdb.viztrails.RunningWorkflow"         level="WARN" />
-  <logger name="info.vizierdb.viztrails.RunningCell"             level="WARN" />
+  <logger name="info.vizierdb.viztrails.Scheduler$"              level="INFO" />
+  <logger name="info.vizierdb.viztrails.RunningWorkflow"         level="INFO" />
+  <logger name="info.vizierdb.viztrails.RunningCell"             level="INFO" />
   <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
   <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
   <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="TRACE" />
@@ -58,7 +55,7 @@
 
   <!--+++++++++++++++++++++++  Import/Export  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.export.ImportProject$"             level="DEBUG" />
-  <logger name="info.vizierdb.catalog.gc.DedupFiles$"            level="WARN" />
+  <logger name="info.vizierdb.catalog.gc.DedupFiles$"            level="TRACE" />
 
   <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
   <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />

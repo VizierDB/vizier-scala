@@ -35,6 +35,8 @@ import info.vizierdb.spark.caveats.DataContainer
 import info.vizierdb.serialized.Timestamps
 import info.vizierdb.commands.FileArgument
 import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.commands.data.LoadDataset
+import info.vizierdb.commands.TemplateParameters
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -309,24 +311,32 @@ class MutableProject(
     inferTypes: Boolean = true,
     schema: Seq[(String, DataType)] = Seq.empty,
     waitForResult: Boolean = true,
-    copyFile: Boolean = false
+    copyFile: Boolean = false,
+    arguments: Seq[(String, String)] = Seq.empty,
   ){
     append("data", "load")(
-      "file" -> (
+      LoadDataset.PARAM_FILE -> (
         if(copyFile){
           FileArgument( fileid = Some(addFile(file = new File(file), name = Some(name)).id) )
         } else {
           FileArgument( url = Some(file) )
         }
       ),
-      "name" -> name,
-      "loadFormat" -> format,
-      "loadInferTypes" -> inferTypes,
-      "loadDetectHeaders" -> true,
-      "schema" -> 
+      LoadDataset.PARAM_NAME -> name,
+      LoadDataset.PARAM_FORMAT -> format,
+      LoadDataset.PARAM_GUESS_TYPES -> inferTypes,
+      LoadDataset.PARAM_HEADERS -> true,
+      LoadDataset.PARAM_OPTIONS -> 
+        arguments.map { case (arg, value) =>
+          Map(
+            LoadDataset.PARAM_OPTION_KEY -> arg,
+            LoadDataset.PARAM_OPTION_VALUE -> value
+          )
+        },
+      TemplateParameters.PARAM_SCHEMA -> 
         schema.map { case (name, dataType) => Map(
-          "schema_column" -> name, 
-          "schema_type" -> SparkSchema.encodeType(dataType)
+          TemplateParameters.PARAM_SCHEMA_COLUMN -> name, 
+          TemplateParameters.PARAM_SCHEMA_TYPE -> SparkSchema.encodeType(dataType)
         )}
     )
     if(waitForResult) { waitUntilReadyAndThrowOnError }

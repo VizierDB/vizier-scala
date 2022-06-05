@@ -206,6 +206,7 @@ object LoadSparkCSV
       schema = schema,
       projectId = projectId,
       contextText = Some(contextText), 
+      sparkOptions = sparkOptions
     )
   }
 }

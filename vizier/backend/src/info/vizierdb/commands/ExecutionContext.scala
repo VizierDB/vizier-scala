@@ -520,10 +520,14 @@ class ExecutionContext(
                 }()
     val rowCount: Long = 
         CatalogDB.withDB { implicit s => 
-          dataset.datasetProperty("count") { descriptor => 
-            JsNumber(dataset.dataframe(s)().count())
+          dataset.datasetProperty("count")
+        }.map { _.as[Long] }
+         .getOrElse {
+            val df = CatalogDB.withDB { implicit s => dataset.dataframe }()
+            val count = df.count()
+            CatalogDB.withDB { implicit s => dataset.updateDatasetProperty("count", JsNumber(count)) }
+            count
           }
-        }.as[Long]
 
     message(MIME.DATASET_VIEW, 
       Json.toJson(

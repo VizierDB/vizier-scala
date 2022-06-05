@@ -295,19 +295,10 @@ case class Artifact(
    * called with a specific name, the `construct` function will be called to generate
    * a value.  The value will be cached for subsequent calls.
    */
-  def datasetProperty(name: String)(construct: Dataset => JsValue)(implicit session: DBSession): JsValue = 
+  def datasetProperty(name: String): Option[JsValue] = 
   {
     assert(t.equals(ArtifactType.DATASET))
-    val descriptor = datasetDescriptor
-    if(descriptor.properties contains name){
-      descriptor.properties(name)
-    } else {
-      val propValue:JsValue = construct(descriptor)
-
-      // Cache the result
-      replaceData(Json.toJson(descriptor.withProperty(name -> propValue)))
-      propValue      
-    }
+    datasetDescriptor.properties.get(name)
   }
   /**
    * Update the specified dataset property
@@ -316,7 +307,7 @@ case class Artifact(
    */
   def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Unit =
   {
-    assert(t.equals(ArtifactType.FILE))
+    assert(t.equals(ArtifactType.DATASET))
     replaceData(Json.toJson(datasetDescriptor.withProperty(name -> value)))
   }
 

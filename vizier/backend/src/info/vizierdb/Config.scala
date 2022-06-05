@@ -100,6 +100,24 @@ class Config(arguments: Seq[String])
     default = None
   )
 
+  val supervisorThreads = opt[Int]("supervisor-threads",
+    descr = "Configure the number of supervisor threads (concurrently executing workflows; default 2)",
+    default = Some(
+      Option(defaults.getProperty("supervisor-threads"))
+        .map { _.toInt }
+        .getOrElse { 3 },
+    )
+  )
+
+  val workerThreads = opt[Int]("worker-threads",
+    descr = "Configure the number of worker threads (concurrently executing cells; default 5)",
+    default = Some(
+      Option(defaults.getProperty("worker-threads"))
+        .map { _.toInt }
+        .getOrElse { 9 }
+    ),
+  )
+
   def workingDirectoryFile = 
     new File(workingDirectory.getOrElse("."))
 

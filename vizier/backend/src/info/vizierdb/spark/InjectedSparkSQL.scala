@@ -27,7 +27,7 @@ object InjectedSparkSQL
 {
   lazy val spark = Vizier.sparkSession
 
-  object GetViewReferences extends GetDependencies[String]
+  object getViewReferences extends GetDependencies[String]
   {
     val byPlan: PartialFunction[LogicalPlan, Set[String]] = 
       { case UnresolvedRelation(Seq(identifier), options, isStreaming) => 
@@ -36,7 +36,7 @@ object InjectedSparkSQL
       { case s => Set[String]() }  
   }
 
-  object GetFunctionReferences extends GetDependencies[String]
+  object getFunctionReferences extends GetDependencies[String]
   {
     val byPlan: PartialFunction[LogicalPlan, Set[String]] = 
       { case p => Set[String]() }
@@ -54,12 +54,16 @@ object InjectedSparkSQL
     return logicalPlan    
   }
 
+  def getUserDefinedFunctionReferences(logicalPlan: LogicalPlan): Set[String] =
+    getFunctionReferences(logicalPlan)
+      .filterNot { spark.catalog.functionExists(_) }
+
   def getDependencies(sqlText: String): (Set[String], Set[String]) =
   {
     val logicalPlan = parse(sqlText)
     return (
-      GetViewReferences(logicalPlan),
-      GetFunctionReferences(logicalPlan)
+      getViewReferences(logicalPlan),
+      getUserDefinedFunctionReferences(logicalPlan)
     )
   }
 

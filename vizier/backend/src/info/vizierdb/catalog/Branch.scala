@@ -102,7 +102,7 @@ case class Branch(
    */
   def append(module: Module)(implicit session: DBSession): (Branch, Workflow) = 
   {
-    val ret = modify(
+    val (branch, workflow, cells) = modify(
       module = Some(module),
       action = ActionType.APPEND,
       prevWorkflowId = headId,
@@ -110,7 +110,7 @@ case class Branch(
       addModules = Seq(module.id -> Workflow.getLength(headId)),
     )
     DeltaBus.notifyCellAppend(
-      cell = ret._2.lastCell.get,
+      cell = cells.head,
       module = module,
       result = None,
       messages = Seq.empty,
@@ -118,9 +118,9 @@ case class Branch(
       outputs = Seq.empty,
       projectId = projectId,
       branchId = id,
-      workflowId = ret._2.id
+      workflowId = workflow.id
     )
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -132,7 +132,7 @@ case class Branch(
    */
   def insert(position: Int, module: Module)(implicit session: DBSession): (Branch, Workflow) =
   {
-    val ret = modify(
+    val (branch, workflow, cells) = modify(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
@@ -142,7 +142,7 @@ case class Branch(
       addModules = Seq(module.id -> position)
     )
     DeltaBus.notifyCellInserts(
-      cell = ret._2.cellByPosition(position).get,
+      cell = cells.head,
       module = module,
       result = None,
       messages = Seq.empty,
@@ -150,12 +150,17 @@ case class Branch(
       outputs = Seq.empty,
       projectId = projectId,
       branchId = id,
-      workflowId = ret._2.id
+      workflowId = workflow.id
     )
-    for(cell <- ret._2.cellsWhere(sqls"position > ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
+    for(cell <- workflow.cellsWhere(sqls"position > ${position}")){
+      DeltaBus.notifyStateChange(
+        workflow, 
+        cell.position, 
+        cell.state, 
+        cell.timestamps
+      )
     }
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -167,7 +172,7 @@ case class Branch(
    */
   def update(position: Int, module: Module)(implicit session: DBSession): (Branch, Workflow) = 
   {
-    val ret = modify(
+    val (branch, workflow, cells) = modify(
       module = Some(module),
       action = ActionType.INSERT,
       prevWorkflowId = headId,
@@ -177,7 +182,7 @@ case class Branch(
       addModules = Seq(module.id -> position)
     )
     DeltaBus.notifyCellUpdates(
-      cell = ret._2.cellByPosition(position).get,
+      cell = cells.head,
       module = module,
       result = None,
       messages = Seq.empty,
@@ -185,12 +190,17 @@ case class Branch(
       outputs = Seq.empty,
       projectId = projectId,
       branchId = id,
-      workflowId = ret._2.id
+      workflowId = workflow.id
     )
-    for(cell <- ret._2.cellsWhere(sqls"position > ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
+    for(cell <- workflow.cellsWhere(sqls"position > ${position}")){
+      DeltaBus.notifyStateChange(
+        workflow, 
+        cell.position, 
+        cell.state, 
+        cell.timestamps
+      )
     }
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -207,7 +217,7 @@ case class Branch(
       } else {
         StateTransition( sqls.in(sqls"position", cells.toSeq), DONE -> STALE )
       }
-    val ret =
+    val (branch, workflow, _) =
       modify(
         module = None,
         action = ActionType.INSERT,
@@ -216,10 +226,15 @@ case class Branch(
         recomputeCellsFrom = 0,
         updateState = stateUpdate
       )
-    for(cell <- ret._2.cells){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
+    for(cell <- workflow.cells){
+      DeltaBus.notifyStateChange(
+        workflow, 
+        cell.position, 
+        cell.state, 
+        cell.timestamps
+      )
     }
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -230,7 +245,7 @@ case class Branch(
    */
   def delete(position: Int)(implicit session: DBSession): (Branch, Workflow) =
   {
-    val ret = modify(
+    val (branch, workflow, _) = modify(
       module = None,
       action = ActionType.DELETE,
       prevWorkflowId = headId,
@@ -239,11 +254,16 @@ case class Branch(
       recomputeCellsFrom = position,
       keepCells = sqls"position <> $position"
     )
-    DeltaBus.notifyCellDelete(ret._2, position)
-    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
+    DeltaBus.notifyCellDelete(workflow, position)
+    for(cell <- workflow.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(
+        workflow, 
+        cell.position, 
+        cell.state, 
+        cell.timestamps
+      )
     }
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -258,7 +278,7 @@ case class Branch(
    */
   def freezeOne(position: Int)(implicit session: DBSession): (Branch, Workflow) =
   {
-    val ret = modify(
+    val (branch, workflow, _) = modify(
       module = None,
       action = ActionType.DELETE,
       prevWorkflowId = headId,
@@ -267,10 +287,15 @@ case class Branch(
         StateTransition.forAll(sqls"position = $position" , FROZEN),
       recomputeCellsFrom = position+1
     )
-    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
+    for(cell <- workflow.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(
+        workflow, 
+        cell.position, 
+        cell.state, 
+        cell.timestamps
+      )
     }
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -281,7 +306,7 @@ case class Branch(
    */
   def thawOne(position: Int)(implicit session: DBSession): (Branch, Workflow) =
   {
-    val ret = modify(
+    val (branch, workflow, _) = modify(
       module = None,
       action = ActionType.INSERT,
       prevWorkflowId = headId,
@@ -290,10 +315,15 @@ case class Branch(
         StateTransition( sqls"position = $position", FROZEN -> WAITING ),
       recomputeCellsFrom = position+1
     )
-    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
+    for(cell <- workflow.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(
+        workflow, 
+        cell.position, 
+        cell.state, 
+        cell.timestamps
+      )
     }
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -309,7 +339,7 @@ case class Branch(
   def freezeFrom(position: Int)
                 (implicit session: DBSession): (Branch, Workflow) =
   {
-    val ret = modify(
+    val (branch, workflow, _) = modify(
       module = None,
       action = ActionType.FREEZE,
       prevWorkflowId = headId,
@@ -317,10 +347,15 @@ case class Branch(
       updateState = 
         StateTransition.forAll(sqls"position >= $position", FROZEN)
     )
-    for(cell <- ret._2.cellsWhere(sqls"position >= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
+    for(cell <- workflow.cellsWhere(sqls"position >= ${position}")){
+      DeltaBus.notifyStateChange(
+        workflow, 
+        cell.position, 
+        cell.state, 
+        cell.timestamps
+      )
     }
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -332,7 +367,7 @@ case class Branch(
   def thawUpto(position: Int)
               (implicit session: DBSession): (Branch, Workflow) =
   {
-    val ret = modify(
+    val (branch, workflow, _) = modify(
       module = None,
       action = ActionType.FREEZE,
       prevWorkflowId = headId,
@@ -341,10 +376,15 @@ case class Branch(
         StateTransition(sqls"position <= $position", FROZEN -> WAITING),
       recomputeCellsFrom = position + 1
     )
-    for(cell <- ret._2.cellsWhere(sqls"position <= ${position}")){
-      DeltaBus.notifyStateChange(ret._2, cell.position, cell.state, cell.timestamps)
+    for(cell <- workflow.cellsWhere(sqls"position <= ${position}")){
+      DeltaBus.notifyStateChange(
+        workflow, 
+        cell.position, 
+        cell.state, 
+        cell.timestamps
+      )
     }
-    return ret
+    return (branch, workflow)
   }
 
   /**
@@ -429,9 +469,9 @@ case class Branch(
     updateState: Seq[StateTransition] = Seq.empty,
     recomputeCellsFrom: Int = -1,
     keepCells: SQLSyntax = sqls"1=1",
-    addModules: Iterable[(Identifier, Int)] = Seq(),
+    addModules: Iterable[(Identifier, Cell.Position)] = Seq(),
     abortPrevWorkflow: Boolean = false
-  )(implicit session: DBSession): (Branch, Workflow) = 
+  )(implicit session: DBSession): (Branch, Workflow, Seq[Cell]) = 
   {
 
     logger.debug(s"Workflow $action: From $prevWorkflowId")
@@ -469,18 +509,21 @@ case class Branch(
            .where.eq(c.workflowId, prevWorkflowId).and(Some(keepCells))
         }
     }.update.apply()
-    for((moduleId, position) <- addModules){
-      Cell.make(
-        workflowId = workflow.id,
-        position = position,
-        moduleId = moduleId,
-        resultId = None,
-        state = ExecutionState.STALE,
-        created = ZonedDateTime.now()
-      )
-    }
 
-    return (branch, workflow)
+    val now = ZonedDateTime.now()
+    val newCells: Seq[Cell] = 
+      addModules.map { case (moduleId, position) =>
+        Cell.make(
+          workflowId = workflow.id,
+          position = position,
+          moduleId = moduleId,
+          resultId = None,
+          state = ExecutionState.STALE,
+          created = now
+        )
+      }.toSeq
+
+    return (branch, workflow, newCells)
   }
 
   /**
@@ -497,7 +540,10 @@ case class Branch(
    * @return                   The updated Branch object and the new head [[Workflow]]
    */
   private[vizierdb] def cloneWorkflow(workflowId: Identifier)(implicit session: DBSession): (Branch, Workflow) =
-    modify(None, ActionType.CREATE, workflowId)
+  {
+    val (branch, workflow, _) = modify(None, ActionType.CREATE, workflowId)
+    return (branch, workflow)
+  }
 
   /**
    * Enumerate the [[Workflow]]s of this branch

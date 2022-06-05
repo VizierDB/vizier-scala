@@ -89,9 +89,7 @@ class RunningCell(
         return false
     } finally {
       logger.debug(s"Cell: $cell complete.  Signalling workflow")
-      if(!aborted.get){
-        workflowTask.completionMessages.add(cell.position)
-      }
+      workflowTask.completionMessages.add(cell.position)
     }
   }
 
