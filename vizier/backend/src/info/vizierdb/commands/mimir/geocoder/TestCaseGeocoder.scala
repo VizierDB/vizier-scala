@@ -3,7 +3,8 @@ package info.vizierdb.commands.mimir.geocoder
 import scala.util.Random
 import play.api.libs.json._
 
-object TestCaseGeocoder extends Geocoder("TEST", "No-op Test Geocoder")
+class TestCaseGeocoder(name: String) 
+  extends Geocoder(name, s"No-op $name Geocoder")
 {
   def apply(house: String, street: String, city: String, state: String): Seq[Double] =
   {
@@ -26,4 +27,9 @@ object TestCaseGeocoder extends Geocoder("TEST", "No-op Test Geocoder")
     } else { Seq() }
 
   }
+}
+
+object TestCaseGeocoder extends TestCaseGeocoder("TEST")
+{
+  def apply(name: String) = new TestCaseGeocoder(name)
 }

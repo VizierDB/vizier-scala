@@ -51,7 +51,8 @@ object SharedTestResources
         Vizier.initSpark()
         Geocode.init(
           geocoders = Seq(
-            TestCaseGeocoder
+            TestCaseGeocoder("GOOGLE"),
+            TestCaseGeocoder("OSM")
           )
         ) 
 

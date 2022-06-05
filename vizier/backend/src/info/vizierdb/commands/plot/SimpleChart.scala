@@ -104,7 +104,8 @@ object SimpleChart extends Command
     val schema = dataset.schema
 
     val filter = arguments.getRecord(PARAM_XAXIS)
-                          .get[String](PARAM_XAXIS_CONSTRAINT)
+                          .getOpt[String](PARAM_XAXIS_CONSTRAINT)
+                          .getOrElse { "" }
     val xaxis = arguments.getRecord(PARAM_XAXIS)
                          .get[Int](PARAM_XAXIS_COLUMN)
     val yaxes: Seq[(Int, String)] 
@@ -113,9 +114,9 @@ object SimpleChart extends Command
                             val col = y.get[Int](PARAM_SERIES_COLUMN)
                             (
                               col,
-                              y.get[String](PARAM_SERIES_LABEL) match { 
-                                case "" | null => schema(col).name
-                                case x => x.replaceAll("\\.", "")
+                              y.getOpt[String](PARAM_SERIES_LABEL) match { 
+                                case None | Some("") => schema(col).name
+                                case Some(x) => x.replaceAll("\\.", "")
                               }
                             )
                           }
