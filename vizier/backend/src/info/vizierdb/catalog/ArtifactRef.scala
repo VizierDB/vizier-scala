@@ -115,7 +115,7 @@ object OutputArtifactRef
         println(s"Parsing $rs")
       (
         rs.int(c.resultName.position), (
-          rs.string(o.resultName.userFacingName),
+          rs.string(o.resultName.userFacingName).toLowerCase,
           rs.longOpt(s.resultName.id)
             .map { _ => Artifact(rs) }
         )

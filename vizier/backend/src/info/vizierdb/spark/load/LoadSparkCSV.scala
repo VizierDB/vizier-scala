@@ -146,7 +146,8 @@ object LoadSparkCSV
     contextText: String,
     header: Option[Boolean],
     proposedSchema: Seq[StructField] = Seq.empty,
-    sparkOptions: Map[String, String] = Map.empty
+    sparkOptions: Map[String, String] = Map.empty,
+    guessTypes: Boolean = false,
   ): LoadSparkCSV =
   {
     val spark = Vizier.sparkSession
@@ -159,25 +160,30 @@ object LoadSparkCSV
 
 
     val head = data.take(1).headOption.map { _.getAs[String](0) }
-    val schema = 
-      applyProposedSchema(
-        cleanSchema(
-          TextInputCSVDataSource.inferFromDataset(
-            spark, 
-            data.map { _.getAs[String](0) },
-            head,
-            new CSVOptions(
-              OPTIONS ++ sparkOptions ++ Map(
-                "header" -> header.getOrElse(true).toString,
-                "inferSchema" -> true.toString()
-              ),
-              spark.sessionState.conf.csvColumnPruning,
-              spark.sessionState.conf.sessionLocalTimeZone
-            )
-          )
-        ),
-        proposedSchema
-      )
+    var schema:Seq[StructField] = 
+      TextInputCSVDataSource.inferFromDataset(
+        spark, 
+        data.map { _.getAs[String](0) },
+        head,
+        new CSVOptions(
+          OPTIONS ++ sparkOptions ++ Map(
+            "header" -> header.getOrElse(true).toString,
+            "inferSchema" -> true.toString()
+          ),
+          spark.sessionState.conf.csvColumnPruning,
+          spark.sessionState.conf.sessionLocalTimeZone
+        )
+      ).fields
+
+    schema = 
+      cleanSchema(schema)
+
+    if(!guessTypes){ 
+      schema = schema.map { _.copy(dataType = StringType) }
+    }
+
+    schema = 
+      applyProposedSchema(schema, proposedSchema)
 
     val hasHeader: Boolean =
       if(head.isEmpty) { false }

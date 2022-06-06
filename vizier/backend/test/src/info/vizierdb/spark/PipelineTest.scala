@@ -22,7 +22,7 @@ class PipelineTest
     project.load("test_data/r.csv","r")
 
     project.script(
-      """val a = vizierdb.pipeline("r")(
+      """val a = vizierdb.createPipeline("r")(
         |  new org.apache.spark.ml.feature.OneHotEncoder()
         |    .setInputCols(Array("A"))
         |    .setOutputCols(Array("D"))

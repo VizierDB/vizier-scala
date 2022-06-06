@@ -56,7 +56,7 @@ object LoadSparkDataset
     format: String,
     schema: Option[Seq[StructField]],
     sparkOptions: Map[String, String] = Map.empty,
-    projectId: Identifier
+    projectId: Identifier,
   ): LoadSparkDataset =
   {
     LoadSparkDataset(

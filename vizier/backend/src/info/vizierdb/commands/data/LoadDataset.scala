@@ -194,7 +194,8 @@ object LoadDataset
               contextText = datasetName,
               header = arguments.getOpt[Boolean](PARAM_HEADERS),
               proposedSchema = proposedSchema,
-              sparkOptions = finalSparkOptions
+              sparkOptions = finalSparkOptions,
+              guessTypes = arguments.get[Boolean](PARAM_GUESS_TYPES)
             ) -> LoadSparkCSV.format
 
           case _ =>
@@ -204,7 +205,7 @@ object LoadDataset
               schema =  if(proposedSchema.isEmpty){ None }
                         else { Some(proposedSchema) },
               sparkOptions = finalSparkOptions,
-              projectId = context.projectId
+              projectId = context.projectId,
             ) -> LoadSparkDataset.format
         }
 

@@ -83,7 +83,7 @@ case class Cell(
             .leftJoin(Artifact as a)
               .on(o.artifactId, a.id)
             .where.eq(o.resultId, resultId)
-    }.map { rs => rs.string(o.resultName.userFacingName) -> 
+    }.map { rs => rs.string(o.resultName.userFacingName).toLowerCase -> 
                     rs.anyOpt(a.resultName.id).map { _ => Artifact(rs)} 
           }.list.apply()
   }
