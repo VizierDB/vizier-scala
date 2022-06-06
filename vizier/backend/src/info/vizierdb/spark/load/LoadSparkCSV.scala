@@ -147,7 +147,7 @@ object LoadSparkCSV
     header: Option[Boolean],
     proposedSchema: Seq[StructField] = Seq.empty,
     sparkOptions: Map[String, String] = Map.empty,
-    guessTypes: Boolean = false,
+    guessTypes: Boolean = true,
   ): LoadSparkCSV =
   {
     val spark = Vizier.sparkSession
