@@ -48,6 +48,58 @@ class SpreadsheetSerialization
     extends Specification
     with BeforeAll
 {
+      def spreadsheetEquals(a: Spreadsheet, b: Spreadsheet): Boolean = {
+    var equals = true
+    val aSchema = a.schema.map((OutputColumn.unapply(_))) 
+    val bSchema = b.schema.map((OutputColumn.unapply(_)))
+
+    val aUpdates = a.overlay.updates.toSeq
+    val bUpdates = b.overlay.updates.toSeq
+    
+    val aDag = a.overlay.dag.map(kv => (kv._1,kv._2.data.toSet)).toMap
+    val bDag = b.overlay.dag.map(kv => (kv._1,kv._2.data.toSet)).toMap
+
+    val aData = a.overlay.data.map(kv => (kv._1,kv._2.toSet)).toMap
+    val bData = b.overlay.data.map(kv => (kv._1,kv._2.toSet)).toMap
+
+    val aTriggers = a.overlay.triggers.map(kv => (kv._1,kv._2.toSet)).toMap
+    val bTriggers = b.overlay.triggers.map(kv => (kv._1,kv._2.toSet)).toMap
+
+    val aFrame = a.overlay.frame
+    val bFrame = b.overlay.frame
+
+    if(aSchema != bSchema) {
+      println("schemas are not equal")
+      println(s"${aSchema}\n\u2260\n${bSchema}")
+      equals = false
+    }
+    if(aUpdates != bUpdates) {
+      println("updates are not equal")
+      println(s"${aUpdates}\n\u2260\n${bUpdates}")
+      equals = false
+    }
+    if(aDag != bDag) {
+      println("dags are not equal")
+      println(s"${aDag}\n\u2260\n${bDag}")
+      equals = false
+    }
+    if(aData != bData) {
+      println("data are not equal")
+      println(s"${aData}\n\u2260\n${bData}")
+      equals = false
+    }
+    if(aTriggers != bTriggers) {
+      println("triggers are not equal")
+      println(s"${aTriggers}\n\u2260\n${bTriggers}")
+      equals = false
+    }
+    if(aFrame != bFrame) {
+      println("frames are not equal")
+      println(s"${aFrame}\n\u2260\n${bFrame}")
+      equals = false
+    }
+    equals
+  }
 
     
     def beforeAll = SharedTestResources.init
@@ -177,111 +229,9 @@ class SpreadsheetSerialization
             val rules = v.data.values.map(_._2)
             for (rule <- rules) postSerialization.overlay.updates.put(rule.id, rule)
         }
-        Spreadsheet.spreadsheetEquals(preSerialization, postSerialization) must beTrue
+        spreadsheetEquals(preSerialization, postSerialization) must beTrue
         ok
         }
 
-        /**
-        //"nothing test to be deleted soon" >> {
-        {
-        lazy val project = MutableProject("Spreadsheet serialization test")
-        project.load("test_data/r.csv", "L")
-        val spreadsheet = Spreadsheet(project.dataframe("L"))
-        spreadsheet.overlay.subscribe(RangeSet(0, 19))
-
-        var schema = spreadsheet.schema
-        var jsonSchema = Json.toJson(schema)
-        println("Schema BEFORE:")
-        println(jsonSchema)
-
-        var dag = spreadsheet.overlay.dag
-        var jsonDAG = Json.toJson(dag)
-        println("Dag BEFORE:")
-        println(jsonDAG)
-
-        var frame = spreadsheet.overlay.frame
-        var jsonRF = Json.toJson(frame)
-        println("frame BEFORE:")
-        println(jsonRF)
-
-        //spreadsheet.overlay.addColumn(A)
-        //spreadsheet.overlay.update((2), A(1).ref + 1)
-        //spreadsheet.overlay.update(A(1), lit(1))
-        //spreadsheet.overlay.addColumn(B)
-       // spreadsheet.overlay.update(B(1, 2), (A offsetBy 0).ref)
-        //spreadsheet.overlay.addColumn(C)
-     //   spreadsheet.overlay.update(C(1, 2), (A offsetBy 0).ref + (B offsetBy 1).ref)
-        //spreadsheet.overlay.addColumn(A)
-    //    spreadsheet.overlay.update(A(2), A(1).ref + 1)
-    //    spreadsheet.overlay.update(A(1), lit(1))
-        //spreadsheet.overlay.addColumn(B)
-  //      spreadsheet.overlay.update(B(1, 2), (A offsetBy 0).ref)
-        //spreadsheet.overlay.addColumn(C)
-   //     spreadsheet.overlay.update(C(1, 2), (A offsetBy 0).ref + (B offsetBy 1).ref)
-   //     spreadsheet.overlay.update(A(1), lit(3))
-     //   spreadsheet.overlay.update(B(3), lit(2))
-
-
-        spreadsheet.editCell(spreadsheet.indexOfColumn("A"), 2, JsString("=A1+1"))
-        spreadsheet.editCell(spreadsheet.indexOfColumn("A"), 1, JsString("5"))
-
-        //Static dependencies
-        schema = spreadsheet.schema
-        jsonSchema = Json.toJson(schema)
-        println(s"\n\nSchema AFTER dependencies:\n${jsonSchema}\n")
-
-        dag = spreadsheet.overlay.dag
-        jsonDAG = Json.toJson(dag)
-        println(s"\n\nDag AFTER dependencies:\n${jsonDAG}\n")
-
-        frame = spreadsheet.overlay.frame
-        jsonRF = Json.toJson(frame)
-        println(s"\n\nFrame AFTER dependencies:\n${jsonRF}\n")
-
-        //Row deletion
-        spreadsheet.overlay.deleteRows(8, 3)
-        schema = spreadsheet.schema
-        jsonSchema = Json.toJson(schema)
-        println(s"\n\nSchema AFTER row deletion:\n${jsonSchema}\n")
-
-        dag = spreadsheet.overlay.dag
-        jsonDAG = Json.toJson(dag)
-        println(s"\n\nDag AFTER row deletion:\n${jsonDAG}\n")
-
-        frame = spreadsheet.overlay.frame
-        jsonRF = Json.toJson(frame)
-        println(s"\n\nFrame AFTER row deletion:\n${jsonRF}\n")
-
-        //Row moves
-        spreadsheet.overlay.moveRows(from = 5, to = 9, count = 3)
-        schema = spreadsheet.schema
-        jsonSchema = Json.toJson(schema)
-        println(s"\n\nSchema AFTER row MOVES:\n${jsonSchema}\n")
-
-        dag = spreadsheet.overlay.dag
-        jsonDAG = Json.toJson(dag)
-        println(s"\n\nDag AFTER row MOVES:\n${jsonDAG}\n")
-
-        frame = spreadsheet.overlay.frame
-        jsonRF = Json.toJson(frame)
-        println(s"\n\nFrame AFTER row MOVES:\n${jsonRF}\n")
-
-        //Column deletion
-        spreadsheet.deleteColumn("B")
-        schema = spreadsheet.schema
-        jsonSchema = Json.toJson(schema)
-        println(s"\n\nSchema AFTER column deletion:\n${jsonSchema}\n")
-
-        dag = spreadsheet.overlay.dag
-        jsonDAG = Json.toJson(dag)
-        println(s"\n\nDag AFTER column deletion:\n${jsonDAG}\n")
-
-        frame = spreadsheet.overlay.frame
-        jsonRF = Json.toJson(frame)
-        println(s"\n\nFrame AFTER column deletion:\n${jsonRF}\n")
-
-        ok
-        }
-        **/
     }
 }

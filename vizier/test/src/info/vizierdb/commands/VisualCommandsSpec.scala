@@ -36,14 +36,14 @@ class VizualCommandSpec
   {
 
     project.load("test_data/explosions.csv", "R")
-    // project.show("R")
+    project.show("R")
     
     val rowids = project.datasetData("R").prov
     
     project.sql("""
       SELECT A, explode(split(B, '/')) AS grade FROM R
     """ -> "S")
-    // project.show("S")
+    project.show("S")
 
     project.vizual("R", 
       (
@@ -53,7 +53,7 @@ class VizualCommandSpec
         }
       ):_*
     )
-    // project.show("R")
+    project.show("R")
 
     project.sql("""
       SELECT S.A, S.grade, R.C
@@ -62,7 +62,7 @@ class VizualCommandSpec
        AND S.A NOT LIKE 'g%'
       ORDER BY S.grade
     """ -> "S")
-    // project.show("S")
+    project.show("S")
 
     project.dataframe("S")
            .collect
