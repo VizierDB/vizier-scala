@@ -187,7 +187,7 @@ class TableView(
    */
   val header = div(
     `class` := "table_header",
-    height := s"${headerHeight}px",
+    height := s"${headerHeight.min(700)}px",
     width := "100%",
     div()
   ).render
@@ -206,6 +206,7 @@ class TableView(
     div(
       OnMount { _ => updateScroller() },
       `class` := "data_table",
+      width := s"${innerWidth}px",
       onscroll := { _:dom.Node => requestScrollUpdate() },
       tableContents
     ).render
@@ -214,7 +215,7 @@ class TableView(
    */
   def rebuildHeaderRow()
   {
-    tableContents.style.width = s"${innerWidth+20}px"
+    tableContents.style.width = s"${innerWidth}px"
     header.replaceChild(
       div(
         ( Seq[Frag](
