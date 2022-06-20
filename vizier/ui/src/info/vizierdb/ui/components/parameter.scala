@@ -946,11 +946,17 @@ class DataTypeParameter(
     )(DataTypes.BY_NAME:_*)
       .render.asInstanceOf[dom.html.Select]
 
-  def value = 
-    JsString(inputNode[dom.html.Select].value)
-  def set(v: JsValue): Unit = 
-    inputNode[dom.html.Select].value = v.as[String]
+  var unexpected: Option[JsValue] = None
 
+  def value = 
+    unexpected.getOrElse {
+      JsString(inputNode[dom.html.Select].value)
+    }
+  def set(v: JsValue): Unit = 
+    v match {
+      case JsString(s) => inputNode[dom.html.Select].value = s
+      case _ => unexpected = Some(v)
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////

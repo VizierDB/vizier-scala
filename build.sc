@@ -88,6 +88,9 @@ object vizier extends ScalaModule with PublishModule {
     ivy"com.github.andyglow::scala-jsonschema::0.7.1",
     ivy"com.github.andyglow::scala-jsonschema-play-json::0.7.1",
 
+    // XML Import
+    ivy"com.databricks::spark-xml::0.15.0",
+
     // GIS
     ivy"org.apache.sedona::sedona-core-3.0:1.1.1-incubating",
     ivy"org.apache.sedona::sedona-sql-3.0:1.1.1-incubating",
