@@ -1067,14 +1067,14 @@ div.data_table
     position: sticky;
     z-index: $table_header_layer;
 
-    .gutter
-    {
-      background-color: #ddd;
-      height: 40px;
-      margin-top: -10px;
-      padding: 0px;
-      vertical-align: middle;
-    }
+    // .gutter
+    // {
+    //   background-color: #ddd;
+    //   height: 40px;
+    //   margin-top: -10px;
+    //   padding: 0px;
+    //   vertical-align: middle;
+    // }
 
     div.cell
     {
@@ -1107,18 +1107,14 @@ div.data_table
   
   div.gutter 
   {
-    display: inline-block;
-    height: 40px;
     font-size: 70%;
-    border-left: none;
-    text-align: center;
-    vertical-align: middle;
-    position: sticky;
-    left: 0;
-    padding-top: 5px;
-    margin-top: -5px;
-    border-right: 2px solid #aaa;  
-    z-index: $table_gutter_layer;
+    display: inline-block;
+    border-left: 2px solid #aaa;  
+    display: inline-block;
+    margin-left: -2px;
+    overflow-wrap: anywhere;
+    overflow-y: hidden;
+    overflow-x: hidden;
   }
 
   div.table_body
@@ -1169,6 +1165,11 @@ div.data_table
         &.null
         {
           background-color: #e9dfdf;
+          
+          span {
+            display: flex;
+            justify-content: center;
+          }
         }
         &.error
         {
