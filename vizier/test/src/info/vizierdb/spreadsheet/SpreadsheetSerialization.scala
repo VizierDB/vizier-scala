@@ -109,6 +109,7 @@ class SpreadsheetSerialization
     val A = ColumnRef(1, "A")
     val B = ColumnRef(2, "B")
     val C = ColumnRef(3, "C")
+    val D = ColumnRef(4, "D")
 
     "Test everything" >> {
         //"Schema serialization" >> {
@@ -232,6 +233,62 @@ class SpreadsheetSerialization
         spreadsheetEquals(preSerialization, postSerialization) must beTrue
         ok
         }
+        
+        //"add columns" >> {
+        {
+        lazy val project = MutableProject("Spreadsheet serialization test")
+        project.load("test_data/r.csv", "B")
+        val preSerialization = Spreadsheet(project.dataframe("B"))
+        preSerialization.insertColumn("D", None)
+        val spreadsheetConstructor = SpreadsheetConstructor(Some(project.projectId), preSerialization.overlay.dag, preSerialization.overlay.frame, preSerialization.schema)
+        val jsonConstructor = Json.toJson(spreadsheetConstructor)
+        val readableConstructor = Json.prettyPrint(jsonConstructor)
+        println(readableConstructor)
+        val constructorFromJson: JsResult[SpreadsheetConstructor] = jsonConstructor.validate[SpreadsheetConstructor]
+        var cDeserialized: SpreadsheetConstructor = null
+        var postSerialization: Spreadsheet = null
+        constructorFromJson match {
+            case JsSuccess(s, _) => cDeserialized = s
+            case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
+        }
+        postSerialization = Spreadsheet(project.dataframe("B"))
+        postSerialization.overlay.dag ++= cDeserialized.dag
+        postSerialization.overlay.frame = cDeserialized.frame
+        for((k,v) <- postSerialization.overlay.dag) {
+            val rules = v.data.values.map(_._2)
+            for (rule <- rules) postSerialization.overlay.updates.put(rule.id, rule)
+        }
+        spreadsheetEquals(preSerialization, postSerialization) must beTrue
+
+        ok
+        }
+
+        /**
+        //"row deletion" >> {
+        {
+        lazy val project = MutableProject("Spreadsheet serialization test")
+        project.load("test_data/r.csv", "A")
+        val preSerialization = Spreadsheet(project.dataframe("A"))
+        preSerialization.overlay.deleteRows(2,3)
+        val spreadsheetConstructor = SpreadsheetConstructor(Some(project.projectId), preSerialization.overlay.dag, preSerialization.overlay.frame, preSerialization.schema)
+        val jsonConstructor = Json.toJson(spreadsheetConstructor)
+        val readableConstructor = Json.prettyPrint(jsonConstructor)
+        //println(readableConstructor)
+        val constructorFromJson: JsResult[SpreadsheetConstructor] = jsonConstructor.validate[SpreadsheetConstructor]
+        var cDeserialized: SpreadsheetConstructor = null
+        var postSerialization: Spreadsheet = null
+        constructorFromJson match {
+            case JsSuccess(s, _) => cDeserialized = s
+            case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
+        }
+        postSerialization = Spreadsheet(project.dataframe("A"))
+        postSerialization.overlay.frame = cDeserialized.frame
+        spreadsheetEquals(preSerialization, postSerialization) must beTrue
+        ok
+        }
+        **/
+
+  
 
     }
 }

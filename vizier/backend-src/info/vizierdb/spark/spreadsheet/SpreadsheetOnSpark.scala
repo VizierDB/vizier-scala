@@ -19,7 +19,8 @@ import org.rogach.scallop.throwError
 import scala.util.{Try, Success, Failure}
 
 object SpreadsheetOnSpark extends LazyLogging{
-    def apply(input: DataFrame, dag: mutable.Map[ColumnRef,RangeMap[UpdateRule]], frame: ReferenceFrame, schema: mutable.ArrayBuffer[OutputColumn]){
-        
+    def apply(input: DataFrame, dag: mutable.Map[ColumnRef,RangeMap[UpdateRule]], frame: ReferenceFrame, schema: mutable.ArrayBuffer[OutputColumn]): DataFrame =
+    {
+        ???
     }
 }
