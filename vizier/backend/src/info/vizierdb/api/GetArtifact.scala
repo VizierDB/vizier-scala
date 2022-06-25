@@ -30,6 +30,7 @@ import info.vizierdb.VizierException
 import info.vizierdb.serialized
 import info.vizierdb.catalog.CatalogDB
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.spark.SafeExport
 
 object GetArtifact
   extends LazyLogging
@@ -174,9 +175,12 @@ object GetArtifact
             tempFile.delete()
           }
 
-          val df:DataFrame = CatalogDB.withDB { implicit s =>
+          var df:DataFrame = CatalogDB.withDB { implicit s =>
                                 artifact.dataframe
                               }()
+
+          df = SafeExport.csv(df)
+
           df.coalesce(1)
             .write
              .option("header", true)
