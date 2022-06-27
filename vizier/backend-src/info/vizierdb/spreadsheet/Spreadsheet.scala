@@ -51,7 +51,7 @@ class Spreadsheet(data: SpreadsheetDataSource)
       sourceValue = { (column, row) => 
         columns(column.id).source match {
           case SourceDataset(idx, _) => Await.result(data(idx, row), Duration.Inf)
-          case DefaultValue(v) => v
+          case DefaultValue(v, dT) => v
         }
       },
       cellModified = { (column, row) =>

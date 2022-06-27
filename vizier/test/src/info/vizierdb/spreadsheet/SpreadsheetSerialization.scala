@@ -224,8 +224,6 @@ class SpreadsheetSerialization
         }
         postSerialization = Spreadsheet(project.dataframe("W"))
         postSerialization.overlay.dag ++= cDeserialized.dag
-        postSerialization.overlay.frame = cDeserialized.frame
-
         for((k,v) <- postSerialization.overlay.dag) {
             val rules = v.data.values.map(_._2)
             for (rule <- rules) postSerialization.overlay.updates.put(rule.id, rule)
@@ -243,7 +241,7 @@ class SpreadsheetSerialization
         val spreadsheetConstructor = SpreadsheetConstructor(Some(project.projectId), preSerialization.overlay.dag, preSerialization.overlay.frame, preSerialization.schema)
         val jsonConstructor = Json.toJson(spreadsheetConstructor)
         val readableConstructor = Json.prettyPrint(jsonConstructor)
-        println(readableConstructor)
+        //println(readableConstructor)
         val constructorFromJson: JsResult[SpreadsheetConstructor] = jsonConstructor.validate[SpreadsheetConstructor]
         var cDeserialized: SpreadsheetConstructor = null
         var postSerialization: Spreadsheet = null
@@ -252,18 +250,13 @@ class SpreadsheetSerialization
             case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
         }
         postSerialization = Spreadsheet(project.dataframe("B"))
-        postSerialization.overlay.dag ++= cDeserialized.dag
-        postSerialization.overlay.frame = cDeserialized.frame
-        for((k,v) <- postSerialization.overlay.dag) {
-            val rules = v.data.values.map(_._2)
-            for (rule <- rules) postSerialization.overlay.updates.put(rule.id, rule)
-        }
+        postSerialization.schema += cDeserialized.schema(3)
         spreadsheetEquals(preSerialization, postSerialization) must beTrue
 
         ok
         }
 
-        /**
+        
         //"row deletion" >> {
         {
         lazy val project = MutableProject("Spreadsheet serialization test")
@@ -286,7 +279,7 @@ class SpreadsheetSerialization
         spreadsheetEquals(preSerialization, postSerialization) must beTrue
         ok
         }
-        **/
+        
 
   
 

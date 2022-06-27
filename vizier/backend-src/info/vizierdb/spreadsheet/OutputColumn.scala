@@ -4,6 +4,7 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.DataType
 import play.api.libs.json._
 import info.vizierdb.spark.SparkSchema._
+import info.vizierdb.spark.SparkPrimitive._
 import info.vizierdb.serializers._
 
 class OutputColumn(val source: ColumnSource, var output: StructField, val id: Long, var position: Int)
@@ -29,7 +30,7 @@ object OutputColumn
   def mapFrom(idx: Int, field: StructField, id: Long, position: Int) = 
     new OutputColumn(SourceDataset(idx, field), field, id, position)
   def withDefaultValue(field: StructField, defaultValue: Any, id: Long, position: Int) = 
-    new OutputColumn(DefaultValue(defaultValue), field, id, position)
+    new OutputColumn(DefaultValue(defaultValue, field.dataType), field, id, position)
 }
 
 
@@ -44,42 +45,48 @@ case class SourceDataset(idx: Int, schema: StructField)
 object SourceDataset {
   implicit val sourceDataSetFormat: Format[SourceDataset] = Json.format
 }
-case class DefaultValue(defaultValue: Any)
+case class DefaultValue(defaultValue: Any, dataType: DataType)
   extends ColumnSource
 
 object DefaultValue{
-  def apply(defaultValue: Any): DefaultValue = {
-    return new DefaultValue(defaultValue)
+  def apply(defaultValue: Any, dataType: DataType): DefaultValue = {
+    return new DefaultValue(defaultValue, dataType)
   }
 
-  implicit val defaultValueWrites = new Writes[DefaultValue] {
+    implicit val defaultValueWrites = new Writes[DefaultValue] {
     def writes(dV: DefaultValue): JsValue =
       {
-        val t = encodeType(dV.defaultValue.asInstanceOf[StructField].dataType)
+        val t = encodeType(dV.dataType)
         Json.obj(
-          "name" -> dV.defaultValue.asInstanceOf[StructField].name,
+          "name" -> encode(dV.defaultValue, dV.dataType),
           "type" -> t,
           "baseType" -> t
         )
       }
   }
-  implicit val defaultValueReads = new Reads[DefaultValue]  {
+
+    implicit val defaultValueReads = new Reads[DefaultValue]  {
       def reads(j: JsValue): JsResult[DefaultValue] = 
       {
         val fields = j.as[Map[String, JsValue]]
-        return JsSuccess(DefaultValue(StructField(
-          fields
-            .get("name")
-            .getOrElse { return JsError("Expected name field") }
-            .as[String],
-          decodeType(
+        val dType = decodeType(
             fields
               .get("type")
               .getOrElse { return JsError("Expected type field") }
               .as[String]
-          ).asInstanceOf[DataType]
-        )))
+        )
+        return JsSuccess(DefaultValue(
+          decode(
+            fields
+              .get("name")
+              .getOrElse { return JsError("Expected name field") },
+              dType
+          ),
+          dType
+          ))
       }
     }
+
+
   implicit val defaultValueFormat: Format[DefaultValue] = Format(defaultValueReads, defaultValueWrites)
 }
