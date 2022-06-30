@@ -107,10 +107,16 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
         })
       } 
 
+    logger.trace(s"Refreshing module state from $from")
     allArtifacts() =
       elements
         .zipWithIndex
-        .drop(Math.max(from-1, 0))
+        // to get the visible artifacts for cell x, we need to combine
+        // the visible artifacts at cell x-1 with x-1's outputs.  We could
+        // do this above when we compute the initial visible artifacts, but 
+        // starting one cell early (i.e., at from-1) achieves the same goal
+        // without duplicating the artfact update logic.
+        .drop(Math.max((from-1), 0))
         .foldLeft(visibleArtifacts) {
           case (artifacts, (WorkflowModule(module), idx)) =>
             val outputs = module.outputs
@@ -129,14 +135,17 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
             }
             module.visibleArtifacts.now.kill()
             module.visibleArtifacts() = artifacts
+            logger.trace(s"Module @ ${module.position} is at index $idx; visible artifacts = ${artifacts.now.keys.mkString(", ")}")
             /* return */ updatedArtifacts
           case (artifacts, (WorkflowTentativeModule(tentative), idx)) => 
             // println(s"WorkflowTentativeModule sees: ${artifacts.now.mkString(", ")}")
+            logger.trace(s"A Tentative Module is at index $idx; visible artifacts = ${artifacts.now.keys.mkString(", ")}")
             tentative.visibleArtifacts.now.kill()
             tentative.visibleArtifacts() = artifacts
             tentative.position = idx
             /* return */ artifacts
           case (artifacts, (WorkflowArtifactInspector(inspector), idx)) =>
+            logger.trace(s"An artifact inspector is at index $idx; visible artifacts = ${artifacts.now.keys.mkString(", ")}")
             inspector.visibleArtifacts.now.kill()
             inspector.visibleArtifacts() = artifacts
             inspector.position = idx

@@ -95,7 +95,7 @@ mill vizier.test
 mill vizier.ui.test
 ```
 
-The UI test cases require `node`.  Install it and then 
+The UI test cases require `node` and `jsdom`.  Install it and then 
 ```
 npm install jsdom
 ```

@@ -22,7 +22,7 @@ trait TestFixtures
 {
   implicit val ctx = Ctx.Owner.Unsafe
 
-  val project = new Project(1, MockAPI, autosubscribe = false)
+  val project = new Project(1, autosubscribe = false)
   project.branchSubscription = Some(MockBranchSubscription)
   project.workflow() = Some(new Workflow(MockBranchSubscription, project))
   def workflow = project.workflow.now.get
@@ -61,8 +61,8 @@ trait TestFixtures
     var request: Seq[String] = null
     val height = MockBranchSubscription.expectedMessages.size
     MockBranchSubscription.expectedMessages.push( 
-      actualRequest => {
-        request = actualRequest
+      (requestPath, requestArgs) => {
+        request = requestPath
         Json.toJson(response)
       }
     )
@@ -76,35 +76,22 @@ trait TestFixtures
 
 
   object MockBranchSubscription
-    extends BranchSubscription(project, 1, Vizier.api)
+    extends BranchSubscription(project, 1)
   {
 
-    val expectedMessages = mutable.Stack[Seq[String] => JsValue]()
+    val expectedMessages = mutable.Stack[(Seq[String], Map[String, JsValue]) => JsValue]()
 
     override def getSocket(): dom.WebSocket =
     {
       return null
     }
 
-    def makeRequest(request: Seq[String]): Promise[JsValue] =
+    override def makeRequest(leafPath: Seq[String], args: Map[String, JsValue]): Future[JsValue] =
     {
       assert(expectedMessages.size > 0, "Unexpected message sent")
       val handleRequest = expectedMessages.pop()
-      return MockPromise(handleRequest(request))
+      return MockPromise(handleRequest(leafPath, args)).future
     }
-  }
-
-  object MockAPI
-    extends API("")
-  {
-    override def packages(): Future[Seq[serialized.PackageDescription]] =
-      MockFuture(TestFixtures.defaultPackages)
-
-    def project(projectId: Identifier): Future[serialized.ProjectDescription] =
-      ???
-
-    def branch(projectId: Identifier, branchId: Identifier): Future[serialized.BranchDescription] =
-      ???
   }
 }
 
@@ -144,8 +131,7 @@ object TestFixtures
           "output" -> JsString("foo")
         )
       ),
-      datasets = Seq(),
-      dataobjects = Seq(),
+      artifacts = Seq(),
       readOnly = false,
       createdAt = new js.Date(),
       action = "create",

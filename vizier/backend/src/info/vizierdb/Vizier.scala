@@ -170,7 +170,7 @@ object Vizier
     if(!config.basePath().exists) { config.basePath().mkdir() }
     initSQLite()
     Schema.initialize()
-    initORMLogging("warn")
+    // initORMLogging("warn")
     bringDatabaseToSaneState()
     if(config.workingDirectory.isDefined){
       System.setProperty("user.dir", config.workingDirectory())

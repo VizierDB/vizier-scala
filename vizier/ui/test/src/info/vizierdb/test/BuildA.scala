@@ -69,8 +69,6 @@ object BuildA
       ),
       toc = None,
       timestamps = serialized.Timestamps(new js.Date()),
-      datasets = Seq.empty, // Technically this should be a subset of the below, but we want to deprecate it
-      charts = Seq.empty, // Technically this should be a subset of the below, but we want to deprecate it
       artifacts = artifacts.map { case (name, t) =>
         val id = getNextArtifactId
         serialized.StandardArtifact(
@@ -82,7 +80,9 @@ object BuildA
           objType = "dataset/view",
         )
       },
-      resultId = Some(1)
+      resultId = Some(1),
+      deleted = Seq.empty,
+      dependencies = Map.empty
     )
 
   def WorkflowByInserting(

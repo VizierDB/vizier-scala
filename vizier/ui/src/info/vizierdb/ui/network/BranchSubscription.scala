@@ -118,12 +118,12 @@ class BranchSubscription(
           /*************************************************************/
 
           case websocket.NormalWebsocketResponse(id, message) => 
-            Client.reportSuccess(id, message)
+            reportSuccess(id, message)
 
           /*************************************************************/
 
           case websocket.ErrorWebsocketResponse(id, error, detail) =>
-            Client.reportError(id, error, detail)
+            reportError(id, error, detail)
 
           /*************************************************************/
 
@@ -232,42 +232,46 @@ class BranchSubscription(
         }
   }
 
+  val BASE_PATH = Seq("info", "vizierdb", "api", "websocket", "BranchWatcherAPI")
+  var nextMessageId = 0l;
+  val messageCallbacks = mutable.Map[Long, Promise[JsValue]]()
+
+  def reportSuccess(id: Long, message: JsValue) =
+    messageCallbacks.remove(id) match {
+      case Some(promise) => promise.success(message)
+      case None => logger.warn(s"Response to unsent messageId: ${id}")
+    }
+
+  def reportError(id: Long, error: String, detail: Option[String] = None) =
+    messageCallbacks.remove(id) match {
+      case Some(promise) => logger.warn(s"Error Response: $error"); 
+                            promise.failure(new Exception(error))
+      case None => logger.warn(s"ERROR Response to unsent messageId: ${id}")
+    }
+
+  def logRequest: (Long, Future[JsValue]) =
+  {
+    val id = nextMessageId; 
+    nextMessageId += 1
+    val response = Promise[JsValue]()
+    messageCallbacks.put(id, response) 
+    return (id, response.future)
+  }
+
+  def makeRequest(leafPath: Seq[String], args: Map[String, JsValue]): Future[JsValue] =
+  {
+    val (id, response) = logRequest
+    val request = websocket.WebsocketRequest(id, BASE_PATH++leafPath, args)
+    logger.trace(s"${request.path.mkString("/")} <- Request ${request.id}")
+    socket.send(Json.toJson(request).toString)
+    return response
+  }
+
+
   object Client extends BranchWatcherAPIProxy
   {
-    var nextMessageId = 0l;
-    val messageCallbacks = mutable.Map[Long, Promise[JsValue]]()
-    val BASE_PATH = Seq("info", "vizierdb", "api", "websocket", "BranchWatcherAPI")
-
-    def reportSuccess(id: Long, message: JsValue) =
-      messageCallbacks.remove(id) match {
-        case Some(promise) => promise.success(message)
-        case None => logger.warn(s"Response to unsent messageId: ${id}")
-      }
-
-    def reportError(id: Long, error: String, detail: Option[String] = None) =
-      messageCallbacks.remove(id) match {
-        case Some(promise) => logger.warn(s"Error Response: $error"); 
-                              promise.failure(new Exception(error))
-        case None => logger.warn(s"ERROR Response to unsent messageId: ${id}")
-      }
-
-    def logRequest: (Long, Future[JsValue]) =
-    {
-      val id = nextMessageId; 
-      nextMessageId += 1
-      val response = Promise[JsValue]()
-      messageCallbacks.put(id, response) 
-      return (id, response.future)
-    }
-
     def sendRequest(leafPath: Seq[String], args: Map[String, JsValue]): Future[JsValue] =
-    {
-      val (id, response) = logRequest
-      val request = websocket.WebsocketRequest(id, BASE_PATH++leafPath, args)
-      logger.trace(s"${request.path.mkString("/")} <- Request ${request.id}")
-      socket.send(Json.toJson(request).toString)
-      return response
-    }
+      makeRequest(leafPath, args)
 
     def ping(): Future[Long] =
       sendRequest(Seq("ping"), Map.empty).map { _.as[Long] }
