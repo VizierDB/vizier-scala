@@ -7,6 +7,7 @@ import info.vizierdb.types._
 import scala.annotation.tailrec
 import info.vizierdb.util.LazyIterator
 import info.vizierdb.ui.widgets.ScrollIntoView
+import info.vizierdb.util.Logging
 
 
 trait NoWorkflowOutputs
@@ -20,6 +21,7 @@ trait NoWorkflowOutputs
 abstract class WorkflowElement(implicit owner: Ctx.Owner)
   extends Object
   with ScrollIntoView.CanScroll
+  with Logging
 { 
   val root: dom.html.Element
   def id_attr: String
@@ -37,11 +39,24 @@ abstract class WorkflowElement(implicit owner: Ctx.Owner)
   def isInjected = !this.isInstanceOf[Module]
   
   val visibleArtifacts = Var[Map[String, (serialized.ArtifactSummary, WorkflowElement)]](Map.empty)
+
+  /**
+   * Pointer to the preceding element (if one exists).  This is private so that ALL mutations
+   * happen through the operators in this class
+   */
   private var next: Option[WorkflowElement] = None
+  /**
+   * Pointer to the following element (if one exists).  This is private so that ALL mutations
+   * happen through the operators in this class
+   */
   private var prev: Option[WorkflowElement] = None
+
+  def safeNext = next
+  def safePrev = prev
 
   def propagateAllMyArtifacts(): Unit =
   {
+    logger.trace(s"Propagating from $this: \n   Output: ${outputs.now}\n   Visible: ${visibleArtifacts.now}")
   	next.foreach { _.replaceArtifacts( visibleArtifactsAfterSelf ) }
   }
 
@@ -55,8 +70,10 @@ abstract class WorkflowElement(implicit owner: Ctx.Owner)
 
   def replaceArtifacts(inputs: Map[String, (serialized.ArtifactSummary, WorkflowElement)]): Unit =
   {
+    logger.trace(s"Updating artifacts at $this to : ${inputs.keys.mkString(", ")}")
   	visibleArtifacts() = inputs
-  	propagateAllMyArtifacts()
+    logger.trace(s"Visible now ${visibleArtifacts.now}")
+    propagateAllMyArtifacts()
   }
 
   def propagateMyExecutionState()
@@ -184,8 +201,8 @@ abstract class WorkflowElement(implicit owner: Ctx.Owner)
   	this.prev = None
   	outputs.kill()
   	visibleArtifacts.kill()
-  	other.propagateAllMyArtifacts()
-  	other.propagateMyExecutionState()
+  	other.prev.getOrElse{ other }.propagateAllMyArtifacts()
+  	other.prev.getOrElse{ other }.propagateMyExecutionState()
     other.initTriggers()
   	other.displayPosition = displayPosition
   }
@@ -203,6 +220,7 @@ abstract class WorkflowElement(implicit owner: Ctx.Owner)
    */
   def removeSelf(): (Option[WorkflowElement], Option[WorkflowElement]) =
   {
+    logger.debug(s"Removing $this from list")
   	next.foreach { _.prev = this.prev }
   	prev.foreach { _.next = this.next }
   	outputs.kill()

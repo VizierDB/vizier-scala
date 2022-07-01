@@ -104,6 +104,11 @@ class Module(val subscription: ModuleSubscription)
     subscription.packageId == "docs"
 
   /**
+   * Retrieve a moduledescription for this module
+   */
+  def description = subscription.description
+
+  /**
    * Allocate an editor for the module and place it in editing mode.
    */
   def openEditor(): Unit =

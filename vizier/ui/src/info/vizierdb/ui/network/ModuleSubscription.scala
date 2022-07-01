@@ -41,6 +41,28 @@ class ModuleSubscription(
     ):_* )
   logger.debug(s"${messages.length} Messages; ${outputs.now.size} outputs; $outputs")
 
+  def description =
+    serialized.ModuleDescription(
+      id = id.toString,
+      moduleId = id,
+      state = ExecutionState.translateToClassicVizier(state.now),
+      statev2 = state.now,
+      command = initial.command,
+      text = text.now,
+      toc = toc,
+      timestamps = timestamps.now,
+      artifacts = outputs.now.values.collect { case Some(s) => s }.toSeq,
+      deleted = outputs.now.collect { case (k, None) => k }.toSeq,
+      dependencies = initial.dependencies,
+      outputs = serialized.ModuleOutputDescription(
+        stdout = messages.filter { _.stream == StreamType.STDOUT }
+                         .map { _.removeType },
+        stderr = messages.filter { _.stream == StreamType.STDERR }
+                         .map { _.removeType }
+      ),
+      resultId = initial.resultId
+    )
+
   def isEditable = branch.isLeft
 
   def client = 

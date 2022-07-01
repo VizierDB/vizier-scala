@@ -57,15 +57,17 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     val id_attr = "workflow_tail"
     val root = div(id := id_attr).render
     def tentativeModuleId: Option[Identifier] = None
-
-    def safePrev = 
-      reverseIterator.drop(1).take(1).toSeq.headOption
   }
 
   def state = Tail.accumulatedExecutionState
   def allArtifacts = Tail.visibleArtifacts
 
-  override def apply(idx: Int) = iterator.drop(idx-1).next
+  override def apply(idx: Int): WorkflowElement = 
+  {
+    var ret: WorkflowElement = first;
+    for(i <- 0 until idx) { ret = ret.safeNext.get }
+    return ret
+  }
   override def iterator = first.iterator.takeWhile { _ ne Tail }
   override def reverseIterator = Tail.reverseIterator.drop(1)
   override def length = Tail.displayPosition
@@ -127,7 +129,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   def findReplacementCandidate(targetId: Identifier, node: WorkflowElement): Option[WorkflowElement] =
   {
     logger.trace(
-      s"Finding replacement in ${node.reverseIterator.takeWhile { _.isInjected }.mkString("; ")}"
+      s"Finding replacement starting from $node in ${node.reverseIterator.takeWhile { _.isInjected }.mkString("; ")}"
     )
     node.reverseIterator
         .takeWhile { _.isInjected }
@@ -152,7 +154,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     assert(n <= baseElements.size)
     val replacementSearchStart = 
       if(n == baseElements.size){ Tail }
-      else { baseElements(n) }
+      else { baseElements(n).safePrev.getOrElse { baseElements(n) } }
 
     // If this isn't a replacement, then insert it after the first
     // preceding real Module.
@@ -216,6 +218,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   {
     logger.trace(s"ON REMOVE: $n")
     val module = baseElements.remove(n)
+    logger.trace(s"  remove at position ${module.displayPosition}")
     val (oldPrev, oldNext) = module.removeSelf()
     if(oldPrev.isEmpty) { 
       assert(oldNext.isDefined)

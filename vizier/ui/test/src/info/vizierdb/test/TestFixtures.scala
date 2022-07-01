@@ -28,9 +28,17 @@ trait TestFixtures
   def workflow = project.workflow.now.get
   def modules = workflow.moduleViewsWithEdits
 
+  if(Vizier.api == null){
+    Vizier.api = new API("[BASE_URL]/vizier-db/api/v1")
+  }
+  if(Vizier.links == null){
+    Vizier.links = ClientURLs("[BASE_URL]")
+  }
+
   def init(workflow: serialized.WorkflowDescription = TestFixtures.defaultWorkflow) =
   {
     MockBranchSubscription.onSync(workflow)
+
   }
 
   def prependTentative(): TentativeModule =
@@ -51,13 +59,15 @@ trait TestFixtures
   }
 
 
-  def pushResponse[T, M](response: M)(op: => T)(implicit writes: Writes[M]): (Seq[String], T) =
+  def pushResponse[T, M](response: M)(op: => T)(implicit writes: Writes[M]): (Seq[String], Map[String, JsValue], T) =
   {
-    var request: Seq[String] = null
+    var savedRequestPath: Seq[String] = null
+    var savedRequestArgs: Map[String, JsValue] = null
     val height = MockBranchSubscription.expectedMessages.size
     MockBranchSubscription.expectedMessages.push( 
       (requestPath, requestArgs) => {
-        request = requestPath
+        savedRequestPath = requestPath
+        savedRequestArgs = requestArgs
         Json.toJson(response)
       }
     )
@@ -65,7 +75,7 @@ trait TestFixtures
     assert(MockBranchSubscription.expectedMessages.size == height, 
           s"Expecting ${Math.abs(MockBranchSubscription.expectedMessages.size - height)} ${if(MockBranchSubscription.expectedMessages.size > height){ "fewer" } else { "more" }} messages than were sent."
         )
-    return (request, ret)
+    return (savedRequestPath, savedRequestArgs, ret)
   }
 
 

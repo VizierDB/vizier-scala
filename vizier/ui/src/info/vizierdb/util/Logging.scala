@@ -53,6 +53,9 @@ object Logging extends Enumeration
     "info.vizierdb.ui.network.SpreadsheetClient" -> TRACE,
     "info.vizierdb.ui.components.TentativeEdits" -> INFO,
     "info.vizierdb.ui.components.DefaultModuleEditor" -> INFO,
+    "info.vizierdb.ui.components.Module" -> INFO,
+    "info.vizierdb.ui.components.TentativeModule" -> INFO,
+    "info.vizierdb.ui.components.TentativeEdits$Tail$" -> INFO,
   )
 
   @inline
