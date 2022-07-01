@@ -12,17 +12,18 @@ import info.vizierdb.serialized.ArtifactDescription
 import scala.util.Success
 import scala.util.Failure
 import info.vizierdb.ui.Vizier
+import info.vizierdb.serialized
 
 /**
  * A user interface widget to help users to inspect the contents of artifacts.  These are
  * created by [[Module]] and typically attached to one as well.
  */
 class ArtifactInspector(
-  var position: Int,
   val workflow: Workflow,
-  val visibleArtifacts: Var[Rx[Map[String, (ArtifactSummary, Module)]]],
+  val id_attr: String
 )(implicit owner: Ctx.Owner)
-  extends Object
+  extends WorkflowElement
+  with NoWorkflowOutputs
   with ScrollIntoView.CanScroll
 {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
@@ -30,10 +31,12 @@ class ArtifactInspector(
 
   var nowShowing:Option[Identifier] = None
   val container = div(span()).render
+  val tentativeModuleId: Option[Identifier] = None
 
   val root = 
     div(
       `class` := "module inspector", 
+      id := id_attr,
       div(
         `class` := "menu",
         button(
@@ -42,7 +45,7 @@ class ArtifactInspector(
         ),
         div(`class` := "spacer")
       ),
-      visibleArtifacts.flatMap { _.map { m => 
+      visibleArtifacts.map { m => 
         div(
           `class` := "artifact_picker",
           m.map { case (name, (summary, _)) =>
@@ -64,7 +67,7 @@ class ArtifactInspector(
             )
           }.toSeq
         ) 
-      }}.reactive,
+      }.reactive,
       selected.map { 
         case Left( (_, descr) ) => new DisplayArtifact(descr).root 
         case Right(msg) => span(msg).render

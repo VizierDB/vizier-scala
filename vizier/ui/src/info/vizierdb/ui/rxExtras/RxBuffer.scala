@@ -4,13 +4,9 @@ import rx.Var
 import scala.collection.mutable
 import info.vizierdb.util.Logging
 
-abstract class RxBuffer[A]
+trait RxBuffer[A]
   extends Seq[A]
 {
-  val elements = mutable.Buffer[A]()
-  def apply(idx: Int) = elements(idx)
-  def iterator = elements.iterator
-  def length = { elements.length }
   lazy val rxLength = {
     val x = Var[Int](0)
     deliverUpdatesTo(new RxBufferTrigger[A] {
@@ -30,7 +26,7 @@ abstract class RxBuffer[A]
   def rxMap[B](f: A => B): DerivedRxBuffer[A, B] =
   { 
     val ret = new DerivedRxBuffer(f)
-    ret.onInsertAll(0, elements)
+    ret.onInsertAll(0, iterator.toSeq)
     deliverUpdatesTo(ret)
     return ret
   }
@@ -55,6 +51,10 @@ object RxBuffer
 abstract class RxBufferBase[A,B]
   extends RxBuffer[B]
 {
+  val elements = mutable.Buffer[B]()
+  def apply(idx: Int) = elements(idx)
+  def iterator = elements.iterator
+  def length = { elements.length }
   var id = { RxBuffer.idCounter += 1; RxBuffer.idCounter }
   private val watchers = mutable.Buffer[RxBufferWatcher[B]]()
 

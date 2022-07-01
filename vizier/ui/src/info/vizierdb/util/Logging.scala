@@ -4,45 +4,33 @@ import scala.collection.mutable
 
 trait Logging
 {
-  lazy val logger = new Logger(getClass.getName)
+  lazy val logger = Logging.logger(getClass.getName)
 }
 
-class Logger(loggerName: String)
+class Logger(val loggerName: String, var level: Int)
 {
-  // println(loggerName)
-  val level = idx(Logging.get(loggerName))
+
+  def this(loggerName: String, level: Logging.Level) =
+    this(loggerName, Logging.toIdx(level))
+
+  def set(newLevel: Logging.Level) = 
+    level = Logging.toIdx(newLevel)
+
+  def get = Logging.fromIdx(level)
 
   @inline
   private def log(at: Int, msg: => String)
   {
     if(level <= at){
-      println(s"[${fromIdx(at)}] ${loggerName}: $msg")
+      println(s"[${Logging.fromIdx(at)}] ${loggerName}: $msg")
     }
   }
-  @inline
-  private def idx(l: Logging.Level) = 
-    l match {
-      case Logging.TRACE => 0
-      case Logging.DEBUG => 1
-      case Logging.INFO => 2
-      case Logging.WARN => 3
-      case Logging.ERROR => 4
-    }
-  @inline
-  private def fromIdx(idx: Int): Logging.Level =
-    idx match {
-      case 0 => Logging.TRACE
-      case 1 => Logging.DEBUG
-      case 2 => Logging.INFO 
-      case 3 => Logging.WARN 
-      case _ => Logging.ERROR
-    }
 
-  def trace(msg: => String) = log(idx(Logging.TRACE), msg)
-  def debug(msg: => String) = log(idx(Logging.DEBUG), msg)
-  def info(msg: => String)  = log(idx(Logging.INFO), msg)
-  def warn(msg: => String)  = log(idx(Logging.WARN), msg)
-  def error(msg: => String) = log(idx(Logging.ERROR), msg)
+  def trace(msg: => String) = log(Logging.toIdx(Logging.TRACE), msg)
+  def debug(msg: => String) = log(Logging.toIdx(Logging.DEBUG), msg)
+  def info(msg: => String)  = log(Logging.toIdx(Logging.INFO), msg)
+  def warn(msg: => String)  = log(Logging.toIdx(Logging.WARN), msg)
+  def error(msg: => String) = log(Logging.toIdx(Logging.ERROR), msg)
 
   override def toString = s"$loggerName -> $level"
 }
@@ -58,7 +46,7 @@ object Logging extends Enumeration
 
   val DEFAULT = INFO
 
-  val levels = mutable.Map[String, Level](
+  val defaultLevels = Map[String, Level](
     "info.vizierdb.ui.network.BranchSubscription" -> INFO,
     "info.vizierdb.test.TestFixtures$MockBranchSubscription$" -> INFO,
     "info.vizierdb.ui.components.dataset.TableView" -> INFO,
@@ -67,9 +55,62 @@ object Logging extends Enumeration
     "info.vizierdb.ui.components.DefaultModuleEditor" -> INFO,
   )
 
-  def get(logger: String) = 
-    levels.getOrElseUpdate(logger, DEFAULT)
+  @inline
+  private[util] def toIdx(l: Logging.Level) = 
+    l match {
+      case Logging.TRACE => 0
+      case Logging.DEBUG => 1
+      case Logging.INFO => 2
+      case Logging.WARN => 3
+      case Logging.ERROR => 4
+    }
+  @inline
+  private[util] def fromIdx(idx: Int): Logging.Level =
+    idx match {
+      case 0 => Logging.TRACE
+      case 1 => Logging.DEBUG
+      case 2 => Logging.INFO 
+      case 3 => Logging.WARN 
+      case _ => Logging.ERROR
+    }
 
-  def set(logger: String, level: Level) =
-    levels.put(logger, level)
+  val loggers = mutable.Map[String, Logger]()
+
+  def logger(name: String): Logger = 
+    loggers.getOrElseUpdate(name, 
+      new Logger(name, defaultLevels.getOrElse(name, DEFAULT)))
+
+  def get(name: String): Level = 
+    logger(name).get
+
+  def set(name: String, level: Level) =
+    logger(name).set(level)
+
+  def test[T](name: String, level: Level)(op: => T): T =
+  {
+    val old = get(name)
+    set(name, level)
+    val ret = op
+    set(name, old)
+    return ret
+  }
+
+  def trace[T](names: String*)(op: => T): T =
+  {
+    val old = names.map { x => x -> get(x) }
+    names.foreach { set(_, TRACE) }
+    val ret = op
+    old.foreach { case (logger, oldlvl) => set(logger, oldlvl) }
+    return ret
+  }
+
+  def debug[T](names: String*)(op: => T): T =
+  {
+    val old = names.map { x => x -> get(x) }
+    names.foreach { set(_, DEBUG) }
+    val ret = op
+    old.foreach { case (logger, oldlvl) => set(logger, oldlvl) }
+    return ret
+  }
+
 }

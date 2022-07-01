@@ -21,10 +21,9 @@ import info.vizierdb.ui.widgets.ScrollIntoView
 
 class Module(val subscription: ModuleSubscription)
             (implicit owner: Ctx.Owner)
-  extends Object
+  extends WorkflowElement
   with Logging
   with ModuleEditorDelegate
-  with ScrollIntoView.CanScroll
 {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
@@ -50,14 +49,14 @@ class Module(val subscription: ModuleSubscription)
   def setTentativeModuleId(newId: Identifier) = tentativeModuleId = Some(newId)
 
   /**
-   * A reactive list of artifacts visible at this cell
-   */
-  val visibleArtifacts = Var[Rx[Map[String, (ArtifactSummary, Module)]]](Var(Map.empty))
-
-  /**
    * A reactive list of all of the outputs produced by this cell
    */
   val outputs = subscription.outputs
+
+  /**
+   * The current execution state of the cell
+   */
+  val executionState = subscription.state
 
   /**
    * True if the cell should be emphasized, visually
@@ -144,19 +143,9 @@ class Module(val subscription: ModuleSubscription)
     subscription.client
 
   /**
-   * Returns true if this is the last module in the workflow.
-   */
-  def isLast: Boolean = 
-    subscription.position == 
-      (subscription.branch match {
-        case Left(branch) => branch.modules.size
-        case Right(workflow) => workflow.modules.size
-      })
-
-  /**
    * This module's position in the workflow
    */
-  def position: Int =
+  def position: Var[Int] =
     subscription.position
 
   /**

@@ -16,7 +16,7 @@ import info.vizierdb.serialized
 class TableOfContents(
   projectId: Identifier,
   modules: RxBuffer[WorkflowElement],
-  artifacts: Rx[Map[String, (serialized.ArtifactSummary, Module)]],
+  artifacts: Rx[Map[String, (serialized.ArtifactSummary, WorkflowElement)]],
 )(implicit owner: Ctx.Owner)
 {
 
@@ -25,18 +25,18 @@ class TableOfContents(
     this(
       wf.project.projectId,
       wf.moduleViewsWithEdits,
-      wf.moduleViewsWithEdits.allArtifacts.flatMap { x => x }
+      wf.moduleViewsWithEdits.allArtifacts.map { x => x }
     )
   }
 
-  def LinkToModule(module: Module, body: Frag*): Frag =
+  def LinkToModule(element: WorkflowElement, body: Frag*): Frag =
     a(
         // The href exists for copyable links
-      href := s"#${module.id_attr}", 
+      href := s"#${element.id_attr}", 
 
       // The onclick animates the scroll nicely
       onclick := { evt:dom.Event => 
-        module.scrollIntoView
+        element.scrollIntoView
         false // prevent the default "href" behavior
       },
 
@@ -85,9 +85,10 @@ class TableOfContents(
   val moduleNodes =
     RxBufferView(ol(`class` := "the_modules"), 
       modules.rxMap { 
-                case WorkflowModule(module) => ModuleSummary(module)
-                case WorkflowTentativeModule(edit) => TentativeSummary(edit)
-                case WorkflowArtifactInspector(inspector) => InspectorSummary(inspector)
+                case module:Module => ModuleSummary(module)
+                case edit:TentativeModule => TentativeSummary(edit)
+                case inspector:ArtifactInspector => InspectorSummary(inspector)
+                case _ => div().render
               }
     )
 
@@ -109,10 +110,20 @@ class TableOfContents(
                     )
                   }
                   .sortBy { _._1 }
-                  .map { case (name, artifact, module) => 
+                  .map { case (name, artifact, element) => 
                     div(`class` := "artifact",
-                      onmouseover := { _:dom.Event => module.highlight() = true },
-                      onmouseout := { _:dom.Event => module.highlight() = false },
+                      onmouseover := { _:dom.Event => 
+                        element match { 
+                          case module:Module => module.highlight() = true
+                          case _ => ()
+                        }
+                      },
+                      onmouseout := { _:dom.Event => 
+                        element match { 
+                          case module:Module => module.highlight() = false
+                          case _ => ()
+                        }
+                      },
                       span(`class` := "label",
                         FontAwesome(ArtifactType.icon(artifact.category)),
                         StringUtils.ellipsize(name, 12)
@@ -181,7 +192,7 @@ class TableOfContents(
                         ),
 
                         // Jump to Module
-                        LinkToModule(module, FontAwesome("eye")),
+                        LinkToModule(element, FontAwesome("eye")),
 
                       )
                     )

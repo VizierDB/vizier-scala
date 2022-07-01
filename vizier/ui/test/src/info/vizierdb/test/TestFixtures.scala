@@ -33,19 +33,14 @@ trait TestFixtures
     MockBranchSubscription.onSync(workflow)
   }
 
-  def appendModule(): TentativeModule =
-  {
-    modules.appendTentative(Some(TestFixtures.defaultPackages))
-    val WorkflowTentativeModule(ret) = modules.last
-    return ret
-  }
+  def prependTentative(): TentativeModule =
+    modules.prependTentative(Some(TestFixtures.defaultPackages))
 
-  def insertModule(n: Int): TentativeModule =
-  {
-    modules.insertTentative(n, Some(TestFixtures.defaultPackages))
-    val WorkflowTentativeModule(ret) = modules(n)
-    return ret
-  }
+  def appendTentative(): TentativeModule =
+    modules.appendTentative(Some(TestFixtures.defaultPackages))
+
+  def insertTentativeAfter(element: WorkflowElement): TentativeModule =
+    modules.insertTentativeAfter(element, Some(TestFixtures.defaultPackages))
 
   def signalDelta(delta: WorkflowDelta) =
   {

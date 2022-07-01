@@ -11,6 +11,8 @@ import scala.concurrent.Await
 import info.vizierdb.serializers._
 import info.vizierdb.serialized.CommandArgumentList
 import info.vizierdb.delta
+import info.vizierdb.util.Logging
+import scala.reflect.ClassTag
 
 object WorkflowSpec extends TestSuite with TestFixtures
 {
@@ -19,11 +21,10 @@ object WorkflowSpec extends TestSuite with TestFixtures
     test("Cancel edits") {
 
       val initialSize = modules.size 
-      appendModule()
+      prependTentative()
 
-      assert(modules.last.isInstanceOf[WorkflowTentativeModule])
-      val WorkflowTentativeModule(editor) = modules.elements.last
-      editor.cancelSelectCommand()
+      assert(modules.last.isInstanceOf[TentativeModule])
+      modules.last.asInstanceOf[TentativeModule].cancelSelectCommand()
 
       assert(modules.size == initialSize)
 
@@ -32,7 +33,7 @@ object WorkflowSpec extends TestSuite with TestFixtures
     test("Basic Edit Flow") {
 
       val initialSize = modules.size 
-      val editor = appendModule()
+      val editor = appendTentative()
       editor.selectCommand("debug", 
         TestFixtures.command("debug", "drop")
       )
@@ -47,8 +48,9 @@ object WorkflowSpec extends TestSuite with TestFixtures
               .get
               .value
               .as[String]
-              .equals("foo")
+              .equals("foo"),
       )
+
 
       val derivedModule =
         BuildA.Module(
@@ -72,15 +74,89 @@ object WorkflowSpec extends TestSuite with TestFixtures
 
       assert(modules.size == initialSize + 1)
 
-      signalDelta(
-        delta.InsertCell(
-          position = initialSize,
-          cell = derivedModule
+      Logging.debug(
+        // "info.vizierdb.ui.components.TentativeEdits"
+      ) {
+        signalDelta(
+          delta.InsertCell(
+            position = initialSize,
+            cell = derivedModule
+          )
         )
-      )
+      }
+      modules.first.validate()
       assert(modules.size == initialSize + 1)
-      assert(modules.last.isInstanceOf[WorkflowModule])
+      assert(modules.last.isInstanceOf[Module])
+
+      println(modules.mkString(", "))
+
+      Logging.debug(
+        // "info.vizierdb.ui.components.TentativeEdits"
+      ) {
+        signalDelta(
+          delta.InsertCell(
+            position = initialSize,
+            cell = 
+              BuildA.Module(
+                packageId = "debug",
+                commandId = "dummy",
+              )("dataset" -> JsString("foo")),
+          )
+        )
+      }
+
+      println(modules.mkString(", "))
+      modules.first.validate()
+      assert(modules.size == initialSize + 2)
+
+      for(i <- modules.baseElements)
+      {
+        assert(modules.find { _ eq i }.isDefined)
+      }
+      for(i <- modules.collect { case m:Module => m })
+      {
+        assert(modules.baseElements.find { _ eq i }.isDefined)
+      }
+
     }
 
+    test("Safe Deletions") {
+      Logging.debug(
+        "info.vizierdb.ui.components.TentativeEdits"
+      ) {
+        var loopBlocker = 0
+        println(modules.mkString(", "))
+        while(modules.size < 5 && loopBlocker < 5){
+          println(s"Modules: ${modules.size}")
+          signalDelta(
+            delta.InsertCell(
+              cell = 
+                BuildA.Module(
+                  packageId = "debug",
+                  commandId = "dummy",
+                )("dataset" -> JsString("foo")),
+              position = modules.size,
+            )
+          )
+          loopBlocker += 1
+        }
+
+        println(modules.mkString(", "))
+        val target = modules.baseElements(2)
+
+        modules.first.validate()
+        signalDelta(
+          delta.DeleteCell(2)
+        )
+
+        println(modules.mkString(", "))
+
+        modules.first.validate()
+        assert(modules.find { _ eq target }.isEmpty)
+
+      }
+
+    }
   }
+
 }

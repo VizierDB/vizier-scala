@@ -15,20 +15,20 @@ import info.vizierdb.util.Trie
 import info.vizierdb.ui.widgets.ScrollIntoView
 
 class TentativeModule(
-  var position: Int, 
   val editList: TentativeEdits, 
+  val id_attr: String,
   defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
 )(implicit owner: Ctx.Owner)
-  extends ModuleEditorDelegate
+  extends WorkflowElement
+  with NoWorkflowOutputs
+  with ModuleEditorDelegate
   with ScrollIntoView.CanScroll
 {
   var defaultModule: Option[(String, String)] = None
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)
-  val visibleArtifacts = Var[Rx[Map[String, (serialized.ArtifactSummary, Module)]]](Var(Map.empty))
   val selectedDataset = Var[Option[String]](None)
   var id: Option[Identifier] = None
-  def isLast = position >= editList.size - 1
 
   val editor: Rx[Option[ModuleEditor]] = 
     Rx { activeView() match {
@@ -40,6 +40,8 @@ class TentativeModule(
   def setTentativeModuleId(newId: Identifier) = id = Some(newId)
   def tentativeModuleId = id
   def realModuleId = None
+
+
 
   loadPackages()
 
@@ -116,6 +118,7 @@ class TentativeModule(
   // }
 
   val root = div(`class` := "module tentative",
+    attr("id") := id_attr,
     div(
       `class` := "menu",
       // button("x"),
