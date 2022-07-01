@@ -24,4 +24,9 @@ case class MessageDescriptionWithStream(
 )
 {
   def t = `type`
+  def removeType =
+    MessageDescription(
+      `type` = `type`,
+      value = value
+    )
 }

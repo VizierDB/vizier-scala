@@ -25,24 +25,11 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
 
   val moduleNodes =
     RxBufferView(div(`class` := "module_list"), 
-      moduleViewsWithEdits.rxMap { 
-        case WorkflowModule(module) => 
-          div(
-            module.root,
-            StandardInterModule(
-              moduleViewsWithEdits.sourceToTargetPosition(module.subscription.position)+1
-            )
-          )
-        case WorkflowTentativeModule(edit) => 
-          div(
-            edit.root,
-            StandardInterModule(edit.position+1)
-          )
-        case WorkflowArtifactInspector(inspect) => 
-          div(
-            inspect.root,
-            StandardInterModule(inspect.position+1)
-          )
+      moduleViewsWithEdits.rxMap { element =>
+        div(
+          element.root,
+          StandardInterModule(element)
+        )
       }
     )
 
@@ -53,12 +40,12 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
   //   }
   // }
 
-  def StandardInterModule(position: => Int): Frag =
+  def StandardInterModule(prevElement: WorkflowElement): Frag =
     InterModule(
       button(
         FontAwesome("pencil-square-o"),
         onclick := { _:dom.Event => 
-          moduleViewsWithEdits.insertTentative(position)
+          moduleViewsWithEdits.insertTentativeAfter(prevElement)
                               .setDefaultModule("docs","markdown")
                               .scrollIntoView()
         }
@@ -66,14 +53,14 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
       button(
         FontAwesome("plus"),
         onclick := { _:dom.Event => 
-          moduleViewsWithEdits.insertTentative(position)
+          moduleViewsWithEdits.insertTentativeAfter(prevElement)
                               .scrollIntoView()
         }
       ).render,
       button(
         FontAwesome("binoculars"),
         onclick := { _:dom.Event => 
-          moduleViewsWithEdits.insertInspector(position)
+          moduleViewsWithEdits.insertInspectorAfter(prevElement)
                               .scrollIntoView()
         }
       ).render
@@ -107,7 +94,7 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
             InterModule(
               button(
                 FontAwesome("plus"),
-                onclick := { _:dom.Event => moduleViewsWithEdits.insertTentative(0) }
+                onclick := { _:dom.Event => moduleViewsWithEdits.prependTentative() }
               ).render
             ),
             moduleViewsWithEdits

@@ -1,36 +1,14 @@
 package info.vizierdb.ui.components
 
 import org.scalajs.dom
+import scalatags.JsDom.all._
 import rx._
 import info.vizierdb.ui.rxExtras._
 import info.vizierdb.types.Identifier
 import info.vizierdb.serialized
 import info.vizierdb.util.Logging
 import info.vizierdb.types._
-
-
-sealed trait WorkflowElement
-{ 
-  def isInjected = true 
-  def visibleArtifacts: Rx[Map[String, (serialized.ArtifactSummary, Module)]]
-  def root: dom.Node
-}
-case class WorkflowModule(module: Module) extends WorkflowElement
-{
-  def visibleArtifacts = module.visibleArtifacts.now
-  override def isInjected = false
-  def root = module.root
-}
-case class WorkflowTentativeModule(module: TentativeModule) extends WorkflowElement
-{
-  def visibleArtifacts = module.visibleArtifacts.now
-  def root = module.root
-}
-case class WorkflowArtifactInspector(inspector: ArtifactInspector) extends WorkflowElement
-{
-  def visibleArtifacts = inspector.visibleArtifacts.now
-  def root = inspector.root
-}
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * A wrapper around an [[RxBuffer]] of [[Module]] objects that allows "new"
@@ -61,7 +39,7 @@ case class WorkflowArtifactInspector(inspector: ArtifactInspector) extends Workf
  */
 class TentativeEdits(val project: Project, val workflow: Workflow)
                     (implicit owner: Ctx.Owner)
-  extends RxBufferBase[Module,WorkflowElement]
+  extends RxBuffer[WorkflowElement]
      with RxBufferWatcher[Module]
      with Logging
 {
@@ -70,137 +48,51 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
           (implicit owner: Ctx.Owner)
   {
     this(project, workflow)
-    this.onInsertAll(0, input.elements)
+    input.iterator.foreach { this.onAppend(_) }
     input.deliverUpdatesTo(this)
-    refreshModuleState()
   }
 
-  val derive = WorkflowModule(_)
-  val allArtifacts = Var[Rx[Map[String, (serialized.ArtifactSummary, Module)]]](Var(Map.empty))
-  val allStates = Var[Rx[ExecutionState.T]](Var(ExecutionState.DONE))
-  val state = allStates.flatMap { x => x }
-
-  /**
-   * Retrieve a list of all "tentative" modules currently being edited
-   */
-  def edits: Iterable[TentativeModule] = elements.collect { case WorkflowTentativeModule(x) => x }
-
-  /**
-   * Update all module state for the workflow
-   * 
-   * Postconditions:
-   * - All [[TentativeModule]]s' `visibleArtifacts` fields are valid
-   * - All [[TentativeModule]]s' `position` fields are valid
-   */
-  private def refreshModuleState(from: Int = 0)
+  object Tail extends WorkflowElement()(owner) with NoWorkflowOutputs
   {
-    val visibleArtifacts:Rx[Map[String, (serialized.ArtifactSummary, Module)]] = 
-      if(from <= 0){
-        Var(Map.empty)
-      } else {
-        elements(from-1).visibleArtifacts
-      }
-    allStates() = 
-      Rx {
-        ExecutionState.merge( elements.collect { 
-          case WorkflowModule(module) => module.subscription.state()
-        })
-      } 
-
-    logger.trace(s"Refreshing module state from $from")
-    allArtifacts() =
-      elements
-        .zipWithIndex
-        // to get the visible artifacts for cell x, we need to combine
-        // the visible artifacts at cell x-1 with x-1's outputs.  We could
-        // do this above when we compute the initial visible artifacts, but 
-        // starting one cell early (i.e., at from-1) achieves the same goal
-        // without duplicating the artfact update logic.
-        .drop(Math.max((from-1), 0))
-        .foldLeft(visibleArtifacts) {
-          case (artifacts, (WorkflowModule(module), idx)) =>
-            val outputs = module.outputs
-            val oldArtifacts = artifacts
-
-            val insertions: Rx[Map[String, (serialized.ArtifactSummary, Module)]] = 
-              outputs.map { _.filter { _._2.isDefined }.mapValues { x => (x.get, module) }.toMap }
-            val deletions: Rx[Set[String]] = 
-              outputs.map { _.filter { _._2.isEmpty }.keys.toSet }
-
-            // println(s"WorkflowModule starting with: ${artifacts.now.mkString(", ")} and adding ${insertions.now.mkString(", ")}")
-
-            val updatedArtifacts = Rx { 
-              val ret = (artifacts() -- deletions()) ++ insertions()
-              ret
-            }
-            module.visibleArtifacts.now.kill()
-            module.visibleArtifacts() = artifacts
-            logger.trace(s"Module @ ${module.position} is at index $idx; visible artifacts = ${artifacts.now.keys.mkString(", ")}")
-            /* return */ updatedArtifacts
-          case (artifacts, (WorkflowTentativeModule(tentative), idx)) => 
-            // println(s"WorkflowTentativeModule sees: ${artifacts.now.mkString(", ")}")
-            logger.trace(s"A Tentative Module is at index $idx; visible artifacts = ${artifacts.now.keys.mkString(", ")}")
-            tentative.visibleArtifacts.now.kill()
-            tentative.visibleArtifacts() = artifacts
-            tentative.position = idx
-            /* return */ artifacts
-          case (artifacts, (WorkflowArtifactInspector(inspector), idx)) =>
-            logger.trace(s"An artifact inspector is at index $idx; visible artifacts = ${artifacts.now.keys.mkString(", ")}")
-            inspector.visibleArtifacts.now.kill()
-            inspector.visibleArtifacts() = artifacts
-            inspector.position = idx
-            /* return */ artifacts
-        }
+    val id_attr = "workflow_tail"
+    val root = div(id := id_attr).render
+    def tentativeModuleId: Option[Identifier] = None
   }
 
-  /**
-   * Convert a position identifier in the original list to the corresponding 
-   * position in this list.  This will be the first position with n [[Module]]
-   * objects to the left of it
-   */
-  def sourceToTargetPosition(n: Int): Int =
-    elements.foldLeft( (0, 0) ) {
-      case ((sourceModules, idx), _) if sourceModules > n                  => return idx
-      case ((sourceModules, idx), WorkflowModule(_)) if sourceModules == n => return idx
-      case ((sourceModules, idx), WorkflowModule(_))                       => (sourceModules+1, idx+1)
-      case ((sourceModules, idx), WorkflowTentativeModule(_))              => (sourceModules, idx+1)
-      case ((sourceModules, idx), WorkflowArtifactInspector(_))            => (sourceModules, idx+1)
-    }._2
+  def state = Tail.accumulatedExecutionState
+  def allArtifacts = Tail.visibleArtifacts
 
-  /**
-   * Find a candidate position for replacement.
-   * 
-   * Any [[TentativeModule]] in a contiguous run starting at the specified position 
-   * is a potential candidate for replacement.  A potential candidate is to be
-   * replaced if an id has been assigned to it, and it is the same as the id of the
-   * inserted module.
-   */
-  def findInsertCandidate(targetPosition: Int, id: Identifier): Option[TentativeModule] = 
+  override def apply(idx: Int): WorkflowElement = 
   {
-    logger.trace(s"FIND INSERT: $id @ $targetPosition")
-    elements.take(targetPosition)
-            .reverse
-            .takeWhile { _.isInjected }
-            .collect { case WorkflowTentativeModule(t) => t }
-            .find { t => 
-              logger.trace(s"CHECK: ${t.id}")
-              t.id.isDefined && t.id.get.equals(id) 
-            }
+    var ret: WorkflowElement = first;
+    for(i <- 0 until idx) { ret = ret.safeNext.get }
+    return ret
+  }
+  override def iterator = first.iterator.takeWhile { _ ne Tail }
+  override def reverseIterator = Tail.reverseIterator.drop(1)
+  override def length = Tail.displayPosition
+  override def last = Tail.safePrev.get
+  override def head = first
+
+  var first: WorkflowElement = Tail
+  val baseElements = ArrayBuffer[Module]()
+  var tempAttrDomId = 0l
+
+  def nextTempElementDomId: String =
+  {
+    val ret = s"element_${tempAttrDomId}"
+    tempAttrDomId += 1
+    return ret
   }
 
-  /**
-   * Find a candidate position for append.
-   * 
-   * Any [[TentativeModule]] in a contiguous run from the end is a potential candidate 
-   * for replacement.  A potential candidate is to be replaced if an id has been 
-   * assigned to it, and it is the same as the id of the appended module.
-   */
-  def findAppendCandidate(id: Identifier): Option[TentativeModule] = 
-    elements.reverse
-            .takeWhile { _.isInjected }
-            .collect { case WorkflowTentativeModule(t) => t }
-            .find { t => t.id.isDefined && t.id.get.equals(id) }
+  private val watchers = ArrayBuffer[RxBufferWatcher[WorkflowElement]]()
 
+  def deliverUpdatesTo[T2 <: RxBufferWatcher[WorkflowElement]](handler: T2): T2 =
+  {
+    watchers += handler
+    RxBuffer.logger.trace(s"Registered watcher on $this (now ${watchers.size} watchers)")
+    return handler
+  }
 
   /**
    * Prepend the specified module to the list
@@ -208,36 +100,98 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    * This is implemented via insertAll to keep the code simple
    */
   override def onPrepend(sourceElem: Module): Unit = 
-    onInsertAll(0, Seq(sourceElem))
+    onInsertOne(0, sourceElem)
 
   /**
    * Insert an item into the list
-   * 
-   * Apart from basic list management, this function does three bits of bookkeeping:
-   * 1. Translating the target position.
-   * 2. Replacing TentativeModules that have been updated
-   * 3. Updating visibleArtifacts fields.
    */
-  override def onInsertAll(n: Int, sourceElems: Traversable[Module]): Unit = 
+  override def onInsertAll(n: Int, modules: Traversable[Module]): Unit = 
   {
-    var targetPosition = sourceToTargetPosition(n)
-    logger.trace(s"ON INSERT ALL: $n")
-    for(sourceElem <- sourceElems) {
-      findInsertCandidate(targetPosition, sourceElem.id) match {
-        case Some(tentativeModule) => 
-          logger.trace(s"REPLACING: $tentativeModule")
-          doUpdate(tentativeModule.position, WorkflowModule(sourceElem))
-        case None => {
-          logger.trace(s"IN-PLACE: $sourceElem")
-          doInsertAll(targetPosition, Seq(WorkflowModule(sourceElem)))
-          targetPosition = targetPosition + 
-                              elements.drop(targetPosition)
-                                      .takeWhile { _.isInjected }
-                                      .size + 1
+    var idx = n
+    for(m <- modules){
+      onInsertOne(idx, m)
+      idx += 1
+    }
+  }
+
+  override def onClear()
+  {
+    while(!baseElements.isEmpty){ onRemove(baseElements.size-1) }
+  }
+
+  /**
+   * Working backwards from [[node]] find a node with the target identifier  
+   * 
+   * This operation works backward from the specified node to find a [[TentativeModule]]
+   * with the specified tentative identifier.  The search stops as soon as it hits
+   * a "real" Module to avoid inserting into the wrong place in the list.
+   */
+  def findReplacementCandidate(targetId: Identifier, node: WorkflowElement): Option[WorkflowElement] =
+  {
+    logger.trace(
+      s"Finding replacement starting from $node in ${node.reverseIterator.takeWhile { _.isInjected }.mkString("; ")}"
+    )
+    node.reverseIterator
+        .takeWhile { _.isInjected }
+        .find { curr => 
+          logger.trace(s"Checking to see if $curr can replace $targetId")
+          curr.tentativeModuleId.isDefined && curr.tentativeModuleId.get == targetId
         }
+  }
+
+  /**
+   * Insert a single "real" module at the specified source position
+   * 
+   * This function works with [[WorkflowElement]] to manage the bookkeeping
+   * of the list.  Most of the bookkeeping happens in 
+   * [[WorkflowElement]]'s <tt>linkElementAfterSelf</tt> and <tt>replaceSelfWithElement</tt>
+   * methods.  This method is mainly concerned with finding the correct point to
+   * do the insertion and maintaining [[first]], [[last]], and [[baseElements]]
+   */
+  def onInsertOne(n: Int, module: Module): Unit =
+  {
+    logger.debug(s"INSERT @ $n / ${baseElements.size} of $module")
+    assert(n <= baseElements.size)
+    val replacementSearchStart = 
+      if(n == baseElements.size){ Tail }
+      else { baseElements(n).safePrev.getOrElse { baseElements(n) } }
+
+    // If this isn't a replacement, then insert it after the first
+    // preceding real Module.
+    val insertionPoint =
+      replacementSearchStart.prevRealModuleExcludingSelf
+
+    logger.debug(s"Starting replacement search at $replacementSearchStart; inserting at $insertionPoint")
+
+    findReplacementCandidate(module.id, replacementSearchStart) match {
+
+      // Possibility one: We found a TentativeModule with the same ID
+      case Some(replacement) => 
+        logger.debug(s"Insert will replace $replacement")
+        if(replacement.isFirst){ first = module }
+        replacement.replaceSelfWithElement(module)
+        watchers.foreach { _.onUpdate(module.displayPosition, module) }
+
+      // ... or there is no matching TentativeModule
+      case None => insertionPoint match {
+
+        // Possibility two: Insert at the head
+        case None => 
+          logger.debug(s"Insert will be at head")
+          module.linkSelfToHead(first)
+          first = module
+          watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
+
+        // Possibility three: Insert elsewhere
+        case Some(prev) =>
+          logger.debug(s"Insert will be after $prev")
+          prev.linkElementAfterSelf(module)
+          watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
+
       }
     }
-    refreshModuleState()
+    if(n == baseElements.size){ baseElements.append(module) }
+    else { baseElements.insert(n, module) }
   }
 
   /**
@@ -250,12 +204,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   override def onAppend(sourceElem: Module): Unit = 
   {
-    logger.trace(s"ON APPEND: $sourceElem")
-    findAppendCandidate(sourceElem.id) match {
-      case Some(tentativeModule) => doUpdate(tentativeModule.position, WorkflowModule(sourceElem))
-      case None => doAppend(WorkflowModule(sourceElem))
-    }
-    refreshModuleState(elements.size - 1)
+    onInsertOne(baseElements.size, sourceElem)
   }
 
   /**
@@ -268,8 +217,14 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   override def onRemove(n: Int): Unit =
   {
     logger.trace(s"ON REMOVE: $n")
-    super.onRemove(sourceToTargetPosition(n))
-    refreshModuleState()
+    val module = baseElements.remove(n)
+    logger.trace(s"  remove at position ${module.displayPosition}")
+    val (oldPrev, oldNext) = module.removeSelf()
+    if(oldPrev.isEmpty) { 
+      assert(oldNext.isDefined)
+      first = oldNext.get
+    }
+    watchers.foreach { _.onRemove(module.displayPosition) }
   }
 
   /**
@@ -279,67 +234,65 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    * 1. Translating the target position.
    * 2. Updating visibleArtifacts fields.
    */
-  override def onUpdate(n: Int, sourceElem: Module): Unit =
+  override def onUpdate(n: Int, replacement: Module): Unit =
   {
     logger.trace(s"ON UPDATE: $n")
-    super.onUpdate(sourceToTargetPosition(n), sourceElem)
-    refreshModuleState()
+    val module = baseElements(n)
+    baseElements(n) = replacement
+    module.replaceSelfWithElement(module)
+    watchers.foreach { _.onUpdate(module.displayPosition, replacement) }
   }
 
-  /**
-   * Append a [[TentativeModule]] to the end of the workflow
-   */
-  def appendTentative(
+  def prependTentative(
     defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
   ): TentativeModule =
   {
     val module = 
-      new TentativeModule(
-            position = elements.size, 
-            editList = this, 
-            defaultPackageList = defaultPackageList
-          )
-    doAppend(WorkflowTentativeModule(module))
-    refreshModuleState()
+      new TentativeModule(this, nextTempElementDomId, defaultPackageList)
+    module.linkElementAfterSelf(first)
+    first = module
+    watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
     return module
   }
 
   /**
    * Insert a [[TentativeModule]] at the specified position (indexed with target indices)
    */
-  def insertTentative(
-    n: Int,
+  def insertTentativeAfter(
+    prev: WorkflowElement,
     defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
   ): TentativeModule =
   {
     val module = 
-      new TentativeModule(
-            position = n, 
-            editList = this,
-            defaultPackageList = defaultPackageList
-          )
-    doInsertAll(n, Some(WorkflowTentativeModule(module)))
-    refreshModuleState()
+      new TentativeModule(this, nextTempElementDomId, defaultPackageList)
+    prev.linkElementAfterSelf(module)
+    watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
     return module
   }
 
   /**
+   * Insert a [[TentativeModule]] at the end of the workflow
+   */
+  def appendTentative(
+    defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
+  ): TentativeModule =
+    Tail.safePrev match {
+      case None => prependTentative(defaultPackageList)
+      case Some(s) => insertTentativeAfter(s, defaultPackageList)
+    }
+
+  /**
    * Insert an [[ArtifactInspector]] at the specified position (indexed with target indices)
    */
-  def insertInspector(
-    n: Int,
+  def insertInspectorAfter(
+    prev: WorkflowElement,
   ): ArtifactInspector =
   {
-    val inspector = 
-      new ArtifactInspector(
-            position = n, 
-            workflow,
-            if(n < 1){ Var(Var(Map.empty)) }
-            else { Var(elements(n-1).visibleArtifacts) },
-          )
-    doInsertAll(n, Some(WorkflowArtifactInspector(inspector)))
-    refreshModuleState()
-    return inspector
+    val module = 
+      new ArtifactInspector(workflow, nextTempElementDomId)
+    prev.linkElementAfterSelf(module)
+    watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
+    return module
   }
 
   /**
@@ -347,8 +300,11 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def dropTentative(m: TentativeModule) = 
   {
-    super.onRemove(m.position)
-    refreshModuleState()
+    val (oldPrev, oldNext) = m.removeSelf()
+    if(oldPrev.isEmpty) { 
+      assert(oldNext.isDefined)
+      first = oldNext.get
+    }
   }
 
   /**
@@ -356,8 +312,11 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def dropInspector(m: ArtifactInspector) = 
   {
-    super.onRemove(m.position)
-    refreshModuleState()
+    val (oldPrev, oldNext) = m.removeSelf()
+    if(oldPrev.isEmpty) { 
+      assert(oldNext.isDefined)
+      first = oldNext.get
+    }
   }
 
   /**
@@ -365,11 +324,10 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def saveAllCells() =
   {
-    elements.flatMap {
-      case WorkflowModule(module) => module.editor.now
-      case WorkflowTentativeModule(module) => module.editor.now
-      case WorkflowArtifactInspector(module) => None
-    }.foreach { _.saveState() }
+    first.iterator.collect {
+      case m:Module => m.editor.now
+      case m:TentativeModule => m.editor.now
+    }.flatten.foreach { _.saveState() }
   }
 
 }

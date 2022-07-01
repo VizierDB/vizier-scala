@@ -78,7 +78,7 @@ class BranchSubscription(
     modules ++= workflow.modules
                         .zipWithIndex
                         .map { case (initialState, idx) =>
-                          new ModuleSubscription(initialState, Left(this), idx) 
+                          new ModuleSubscription(initialState, Left(this), Var(idx))
                         }
     awaitingReSync() = false
   }
@@ -135,27 +135,31 @@ class BranchSubscription(
               case delta.InsertCell(cell, position) =>
                 modules.insert(
                   position,
-                  new ModuleSubscription(cell, Left(this), position)
+                  new ModuleSubscription(cell, Left(this), Var(position))
                 )
-                modules.drop(position)
-                  .zipWithIndex
-                  .foreach { case (module, offset) => module.position = position+offset }
+                modules.drop(position+1)
+                       .zipWithIndex
+                       .foreach { case (module, offset) => 
+                          module.position() = position+offset+1
+                        }
 
               /////////////////////////////////////////////////
 
               case delta.UpdateCell(cell, position) => 
                 modules.update(
                   position,
-                  new ModuleSubscription(cell, Left(this), position)
+                  new ModuleSubscription(cell, Left(this), Var(position))
                 )
              
               /////////////////////////////////////////////////
 
               case delta.DeleteCell(position) =>
                 modules.remove(position)
-                modules.drop(position-1)
+                modules.drop(position)
                        .zipWithIndex
-                       .foreach { case (module, offset) => module.position = position+offset }
+                       .foreach { case (module, offset) => 
+                          module.position() = position+offset 
+                        }
              
               /////////////////////////////////////////////////
 

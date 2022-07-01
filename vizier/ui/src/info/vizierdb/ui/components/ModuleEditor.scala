@@ -37,12 +37,12 @@ trait ModuleEditor
     val response = 
       if(delegate.realModuleId.isDefined) {
         delegate.client.workflowReplace(
-          modulePosition = delegate.position,
+          modulePosition = delegate.insertPosition,
           packageId = packageId,
           commandId = commandId,
           arguments = currentState
         )
-      } else if(delegate.isLast){
+      } else if(delegate.needsAppendToInsert){
         delegate.client.workflowAppend(
           packageId = packageId,
           commandId = commandId,
@@ -50,7 +50,7 @@ trait ModuleEditor
         )
       } else {
         delegate.client.workflowInsert(
-          modulePosition = delegate.position,
+          modulePosition = delegate.insertPosition,
           packageId = packageId,
           commandId = commandId,
           arguments = currentState
@@ -64,7 +64,7 @@ trait ModuleEditor
           delegate.setTentativeModuleId(workflow.actionModule.get)
         } else {
           logger.debug(s"no action module... falling back: ${workflow.modules.size}")
-          delegate.setTentativeModuleId(workflow.modules(delegate.position).moduleId)
+          delegate.setTentativeModuleId(workflow.modules(delegate.insertPosition).moduleId)
         }
         logger.debug(s"New module id is... ${delegate.tentativeModuleId}")
       case f:Failure[_] =>
@@ -178,7 +178,7 @@ trait ModuleEditorDelegate
   def realModuleId: Option[Identifier]
   def tentativeModuleId: Option[Identifier]
   def setTentativeModuleId(newId: Identifier): Unit
-  def position: Int
-  def isLast: Boolean
-  def visibleArtifacts: Var[Rx[Map[String, (serialized.ArtifactSummary, Module)]]]
+  def insertPosition: Int
+  def needsAppendToInsert: Boolean
+  def visibleArtifacts: Rx[Map[String, (serialized.ArtifactSummary, WorkflowElement)]]
 }

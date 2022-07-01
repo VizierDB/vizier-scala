@@ -18,7 +18,7 @@ import info.vizierdb.ui.components.StaticWorkflow
 class ModuleSubscription(
   initial: serialized.ModuleDescription, 
   val branch: Either[BranchSubscription, StaticWorkflow],
-  var position: Int
+  val position: Var[Int]
 )
   extends Object
   with Logging
@@ -41,6 +41,28 @@ class ModuleSubscription(
     ):_* )
   logger.debug(s"${messages.length} Messages; ${outputs.now.size} outputs; $outputs")
 
+  def description =
+    serialized.ModuleDescription(
+      id = id.toString,
+      moduleId = id,
+      state = ExecutionState.translateToClassicVizier(state.now),
+      statev2 = state.now,
+      command = initial.command,
+      text = text.now,
+      toc = toc,
+      timestamps = timestamps.now,
+      artifacts = outputs.now.values.collect { case Some(s) => s }.toSeq,
+      deleted = outputs.now.collect { case (k, None) => k }.toSeq,
+      dependencies = initial.dependencies,
+      outputs = serialized.ModuleOutputDescription(
+        stdout = messages.filter { _.stream == StreamType.STDOUT }
+                         .map { _.removeType },
+        stderr = messages.filter { _.stream == StreamType.STDERR }
+                         .map { _.removeType }
+      ),
+      resultId = initial.resultId
+    )
+
   def isEditable = branch.isLeft
 
   def client = 
@@ -52,26 +74,26 @@ class ModuleSubscription(
   /**
    * Delete this module from the workflow
    */
-  def delete(): Unit = client.workflowDelete(position)
+  def delete(): Unit = client.workflowDelete(position.now)
 
   /**
    * Freeze the current cell
    */
-  def freezeCell(): Unit = client.workflowFreezeOne(position)
+  def freezeCell(): Unit = client.workflowFreezeOne(position.now)
 
   /**
    * Freeze all cells starting with current cell
    */
-  def freezeFrom(): Unit = client.workflowFreezeFrom(position)
+  def freezeFrom(): Unit = client.workflowFreezeFrom(position.now)
 
   /**
    * Thaw the current cell
    */
-  def thawCell(): Unit = client.workflowThawOne(position)
+  def thawCell(): Unit = client.workflowThawOne(position.now)
 
   /**
    * Thaw all cells upto current cell
    */
-  def thawUpto(): Unit = client.workflowThawUpto(position)
+  def thawUpto(): Unit = client.workflowThawUpto(position.now)
 
 }

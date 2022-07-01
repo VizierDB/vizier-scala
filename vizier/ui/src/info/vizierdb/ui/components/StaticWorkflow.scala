@@ -18,7 +18,7 @@ class StaticWorkflow(projectId: Identifier, workflow: serialized.WorkflowDescrip
               (
                 moduleDescription, 
     						new Module(
-    							new ModuleSubscription(moduleDescription, Right(this), idx)
+    							new ModuleSubscription(moduleDescription, Right(this), Var(idx))
     						)
               )
   					}
@@ -34,7 +34,7 @@ class StaticWorkflow(projectId: Identifier, workflow: serialized.WorkflowDescrip
   val tableOfContents =
     new TableOfContents(
       projectId = projectId,
-      modules = RxBuffer.ofSeq(modules.map { m => WorkflowModule(m._2):WorkflowElement }),
+      modules = RxBuffer.ofSeq(modules.map { _._2 }),
       Var[Map[String, (serialized.ArtifactSummary, Module)]](artifacts)
     )
   /**
