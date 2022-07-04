@@ -82,6 +82,13 @@ object vizier extends ScalaModule with PublishModule {
     ////////////////////// API Support /////////////////////
     ivy"javax.servlet:javax.servlet-api:3.1.0",
     ivy"org.eclipse.jetty.websocket:websocket-server:9.4.44.v20210927",
+    ivy"com.typesafe.akka::akka-http:10.2.9",
+    ivy"de.heikoseeberger::akka-http-play-json:1.39.2",
+    ivy"ch.megard::akka-http-cors:1.1.3",
+    ivy"com.typesafe.akka::akka-stream:2.6.19",
+    ivy"com.typesafe.akka::akka-actor:2.6.19",
+    ivy"com.typesafe.akka::akka-actor-typed:2.6.19",
+
 
     ////////////////////// Command-Specific Libraries //////
     // Json Import

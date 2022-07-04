@@ -17,7 +17,7 @@ package info.vizierdb.api
 import java.time.format.DateTimeFormatter
 import play.api.libs.json._
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
-import info.vizierdb.VizierAPI
+import info.vizierdb.api.akka.VizierServer
 import info.vizierdb.commands.Commands
 import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
@@ -28,16 +28,16 @@ object ServiceDescriptor
 {
   def apply(): serialized.ServiceDescriptor =
     serialized.ServiceDescriptor(
-      name = VizierAPI.NAME,
-      startedAt = VizierAPI.started,
+      name = VizierServer.NAME,
+      startedAt = VizierServer.started,
       defaults = serialized.ServiceDescriptorDefaults(
-        maxFileSize = VizierAPI.MAX_UPLOAD_SIZE,
-        maxDownloadRowLimit = VizierAPI.MAX_DOWNLOAD_ROW_LIMIT
+        maxFileSize = VizierServer.MAX_UPLOAD_SIZE,
+        maxDownloadRowLimit = VizierServer.MAX_DOWNLOAD_ROW_LIMIT
       ),
       environment = serialized.ServiceDescriptorEnvironment(
-        name = VizierAPI.SERVICE_NAME,
-        version = VizierAPI.VERSION,
-        backend = VizierAPI.BACKEND,
+        name = VizierServer.NAME,
+        version = VizierServer.VERSION,
+        backend = VizierServer.BACKEND,
         packages = Commands.describe
       ),
     )
