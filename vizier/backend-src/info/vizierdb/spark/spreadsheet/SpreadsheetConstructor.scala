@@ -19,6 +19,7 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import org.rogach.scallop.throwError
 import scala.util.{Try, Success, Failure}
+import info.vizierdb.Vizier
 
 case class SpreadsheetConstructor ( 
   input: Option[Identifier],
@@ -29,9 +30,17 @@ case class SpreadsheetConstructor (
 extends DataFrameConstructor
   with DefaultProvenance 
   {
-    def construct(context: Identifier => DataFrame): DataFrame = ???
+    def construct(context: Identifier => DataFrame): DataFrame = 
+    {
+      println("spreadsheetconstructor")
+      SpreadsheetOnSpark(
+      input.map{ context(_) }
+           .getOrElse { Vizier.sparkSession.emptyDataFrame },
+           dag, frame, schema
+      )
+    }
 
-    def testConstruct: Spreadsheet = ???
+    //def testConstruct: Spreadsheet = ???
     def dependencies = input.toSet
 }
 object SpreadsheetConstructor 

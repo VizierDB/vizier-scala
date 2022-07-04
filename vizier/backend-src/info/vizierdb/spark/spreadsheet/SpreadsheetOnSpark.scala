@@ -21,24 +21,30 @@ import scala.util.{Try, Success, Failure}
 object SpreadsheetOnSpark extends LazyLogging{
     def apply(input: DataFrame, dag: mutable.Map[ColumnRef,RangeMap[UpdateRule]], frame: ReferenceFrame, schema: mutable.ArrayBuffer[OutputColumn]): DataFrame =
     {
+        var output = input
+        //input.explain(true)
+        //output.explain(true)
+        //println("spreadsheetonspark")
+        //println(s"\nSchema: \n${schema.map((OutputColumn.unapply(_)))}")
         //Insert columns
         for(outputColumn <- schema) {
             outputColumn.source match {
                 case DefaultValue(defalutValue, dataType) =>
                     {
+                        //println("outputColumn is DefaultValue")
                         val position = Some(outputColumn.position)
                         val column = outputColumn.output.name
-                        
                         val columns = 
-                            input.columns
-                                .map { input(_) }
+                            output.columns
+                                .map { output(_) }
                                 .toSeq
                         val (pre, post):(Seq[Column], Seq[Column]) = 
                             position.map { columns.splitAt(_) }
                                     .getOrElse { (columns, Seq()) }
-                        input.select( ((pre :+ lit(null).cast(Some(dataType).getOrElse { StringType }).as(column)) ++ post):_* )
+                        output = output.select( ((pre :+ lit(null).cast(Some(dataType).getOrElse { StringType }).as(column)) ++ post):_* )
+                        //output.show()
                     }
-                case _ =>
+                case _ => //println("other")
             }
         }
         //Update reference frames
@@ -46,13 +52,17 @@ object SpreadsheetOnSpark extends LazyLogging{
             transformation match {
                 case DeleteRows(position, count) =>
                     {
-                        def deleteRow(rowid: Long): Unit = {
-                            AnnotateWithRowIds.withRowId(input) { df => 
+                        def deleteRow(rowid: Long): DataFrame = {
+                            output = AnnotateWithRowIds.withRowId(output) { df => 
+                                println(col(AnnotateWithRowIds.ATTRIBUTE))
+                                println(lit(rowid))
                                 df.filter(col(AnnotateWithRowIds.ATTRIBUTE) =!= lit(rowid))
                             }
+                            output
                         }
                         for(row <- position until position + count) {
-                            deleteRow(position)
+                            output = deleteRow(position)
+                            println(s"deleting row at position: ${position}")
                         }
                     }
                 case InsertRows(position, count, insertId) =>
@@ -137,7 +147,12 @@ object SpreadsheetOnSpark extends LazyLogging{
         //Apply dag ops
         
         //Remove columns
-        input
+
+
+        //input.show()
+        //input.explain(true)
+        //output.explain(true)
+        output
 
     }
     def userFacingToInternalType(value: Any, dataType: DataType): Any =
