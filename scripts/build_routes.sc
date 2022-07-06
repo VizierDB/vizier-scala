@@ -100,15 +100,29 @@ case class PathVariable(identifier: String, dataType: String) extends PathCompon
 
   def toParam = 
     Param(identifier, scalaType)
+
+  def cast(target: String) = 
+    dataType match {
+      case "int"  => s"$target.toInt"
+      case "long" => s"$target.toLong"
+      case "subpath" => target
+      case "string" => target
+    }
 }
 
 case class Param(identifier: String, scalaType: String)
 {
   def typedIdentifier = s"$identifier:$scalaType"
+
+  def nativeScalaType = 
+    scalaType.replaceAll("UndefOr", "Option")
+
+  def typedNativeIdentifier = s"$identifier:$nativeScalaType"
+
 }
 case class Route(
   path : Seq[PathComponent],
-  pathArguments: Seq[PathVariable],
+  pathQueryParams: Seq[PathVariable],
   verb : String,
   domain: String,
   action: String,
@@ -120,7 +134,7 @@ case class Route(
 {
   def allParams = Seq[Seq[Param]](
     path.collect { case p:PathVariable => (p:PathVariable).toParam },
-    pathArguments.map { _.toParam },
+    pathQueryParams.map { _.toParam },
     jsonParams
   ).flatten
 
@@ -133,7 +147,7 @@ case class Route(
   def jsonParamClass: Option[String] =
     jsonParamClassName.map { clazz => 
       s"""case class $clazz(
-         |  ${jsonParams.map { _.typedIdentifier }.mkString(",\n  ")}
+         |  ${jsonParams.map { _.typedNativeIdentifier }.mkString(",\n  ")}
          |)""".stripMargin
     }
 }
@@ -146,7 +160,7 @@ val ROUTES: Seq[Route] =
       val components = description.split("\\s+")
       val pathAndArguments = components(0).split("\\?")
       val path = pathAndArguments(0).split("/").toSeq
-      val arguments:Seq[PathVariable] = 
+      val pathQuery:Seq[PathVariable] = 
         if(pathAndArguments.size > 1){ 
           pathAndArguments(1).split("&")
                              .map { _.split(":").toSeq }
@@ -177,7 +191,7 @@ val ROUTES: Seq[Route] =
           case PATH_VARIABLE(identifier, dataType) => PathVariable(identifier, dataType)
           case x => PathLiteral(x)
         },
-        pathArguments = arguments,
+        pathQueryParams = pathQuery,
         verb = components(1),
         domain = components(2),
         action = components(3),
@@ -192,8 +206,9 @@ val ROUTES: Seq[Route] =
 //////////////////  Akka Routes   /////////////////////
 ///////////////////////////////////////////////////////
 
-def akkaRouteHandler(route: Route): String =
+def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
 {
+  val (route: Route, idx: Int) = routeAndIndex
   val path = 
     route.path.map {
       case PathLiteral(component) => s"\"$component\""
@@ -236,21 +251,31 @@ def akkaRouteHandler(route: Route): String =
       s"$identifier = fileEntity"
     }
 
+  val queryStringParamOutputs =
+    route.pathQueryParams.map { param =>
+      s"${param.identifier} = query.get(\"${param.identifier}\").map { x => ${param.cast("x")} }"
+    }
+
+  if(!queryStringParamOutputs.isEmpty){
+    extractors.append("extractRequest { httpRequest => val query = httpRequest.getUri.query.toMap.asScala")
+  }
+
   val allParams =
     pathParamOutputs ++
     jsonParamOutputs ++
-    fileParamOutputs
+    fileParamOutputs ++
+    queryStringParamOutputs
 
-  s"""  val ${route.action}Route =
+  s"""  val ${route.action}Route${idx} =
      |    path(${path.mkString(" / ")}) { ${extractors.map { "\n      "+_ }.mkString}
-     |        ${route.verb.toLowerCase} { complete {
+     |        ${route.verb.toLowerCase} { 
      |          ${route.handler}(${allParams.mkString(", ")})
-     |        } }${if(extractors.isEmpty){""} else { "\n      "+extractors.map { _ => "}" }.mkString(" ") }}
+     |        }${if(extractors.isEmpty){""} else { "\n      "+extractors.map { _ => "}" }.mkString(" ") }}
      |    }
      |  """.stripMargin
 }
 
-val routesByDomain = ROUTES.take(5).groupBy { _.domain }
+val routesByDomain = ROUTES.groupBy { _.domain }
 
 for( (domain, routes) <- routesByDomain )
 {
@@ -274,7 +299,11 @@ for( (domain, routes) <- routesByDomain )
        |import info.vizierdb.api._
        |import info.vizierdb.serialized
        |import info.vizierdb.serializers._
+       |import info.vizierdb.types._
        |import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport._
+       |import VizierServer.RouteImplicits._
+       |import scala.jdk.CollectionConverters._
+       |import info.vizierdb.spark.caveats.CaveatFormat._
        |
        |object $clazz
        |{
@@ -284,10 +313,10 @@ for( (domain, routes) <- routesByDomain )
                 .map { n => s"  implicit val ${n}Format: Format[$n] = Json.format"}
                 .mkString("\n")}
        |
-       |${routes.map { akkaRouteHandler(_)}.mkString("\n\n")}
+       |${routes.zipWithIndex.map { akkaRouteHandler(_)}.mkString("\n\n")}
        |
        |  val routes = concat(
-       |    ${routes.map { _.action+"Route" }.mkString(",\n    ")}
+       |    ${routes.zipWithIndex.map { case (route, idx) => s"${route.action}Route$idx" }.mkString(",\n    ")}
        |  )
        |}
        """.stripMargin

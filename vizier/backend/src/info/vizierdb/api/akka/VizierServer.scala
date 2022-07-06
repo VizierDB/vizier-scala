@@ -18,28 +18,17 @@ import akka.util.ByteString
 import java.io.{ InputStream, FileInputStream, File }
 import akka.http.scaladsl.server.directives.FileInfo
 import akka.http.scaladsl.server.Route
+import info.vizierdb.api.Response
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import info.vizierdb.util.OutputStreamIterator
+import info.vizierdb.VizierException
+import scala.collection.immutable
+import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport._
 
 object VizierServer
 {
   implicit val system = ActorSystem(Behaviors.empty, "server")
   implicit val executionContext = system.executionContext
-
-  def withFile(fieldName: String)( handler: ((InputStream, String)) => Route ): Route =
-  {
-    def tempDestination(fileInfo: FileInfo): File =
-      File.createTempFile(fileInfo.fileName, ".tmp")
-    storeUploadedFiles(fieldName, tempDestination){ files => 
-      try {
-        val (metadata, file) = files.head
-        val input = new FileInputStream(file)
-        try {
-          handler( (input, metadata.fileName) )
-        } finally { input.close() }
-      } finally {
-        files.foreach { _._2.delete() }
-      }
-    }
-  }
   
   lazy val allowAnyConnection = Vizier.config.devel() || Vizier.config.connectFromAnyHost()
   lazy val host = 
@@ -78,5 +67,71 @@ object VizierServer
       )
 
     started = ZonedDateTime.now()
+  }
+
+  def withFile(fieldName: String)( handler: ((InputStream, String)) => Route ): Route =
+  {
+    def tempDestination(fileInfo: FileInfo): File =
+      File.createTempFile(fileInfo.fileName, ".tmp")
+    storeUploadedFiles(fieldName, tempDestination){ files => 
+      try {
+        val (metadata, file) = files.head
+        val input = new FileInputStream(file)
+        try {
+          handler( (input, metadata.fileName) )
+        } finally { input.close() }
+      } finally {
+        files.foreach { _._2.delete() }
+      }
+    }
+  }
+
+  object RouteImplicits 
+  {
+    implicit def jsonResponseToAkkaResponse[T](json: T)(implicit writes: Writes[T]): Route =
+    {
+      complete(json)
+    }
+
+    implicit def vizierResponseToAkkaResponse(vizierResp: Response): Route =
+    {
+
+      val responseEntity = 
+        HttpEntity.Default(
+          contentType = 
+            ContentType.parse(vizierResp.contentType)
+                       .getOrElse {
+                        throw new VizierException(s"Internal error: Can't parse content type ${vizierResp.contentType}")
+                       },
+          contentLength = vizierResp.contentLength,
+          data = Source.fromIterator { () =>
+            val buffer = new OutputStreamIterator()
+            executionContext.execute(
+              new Runnable {
+                def run() =
+                {
+                  vizierResp.write(buffer)
+                }
+              }
+            )
+            buffer.iterator
+          }
+        )
+
+      complete(
+        status = vizierResp.status,
+        headers = immutable.Seq.empty ++ (
+          vizierResp.headers
+                    .map { case (h, v) => HttpHeader.parse(h, v) match {
+                                                      case HttpHeader.ParsingResult.Ok(h, _) => h
+                                                      case err => 
+                                                        throw new VizierException(s"Internal error: Can't parse header $h: $v\n${err.errors.mkString("\n")}")
+                                                    } }
+        ),
+        responseEntity
+      )
+    }
+
+    implicit def optionIfNeeded[T](v: T): Option[T] = Some(v)
   }
 }

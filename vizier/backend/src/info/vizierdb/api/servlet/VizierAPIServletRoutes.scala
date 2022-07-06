@@ -126,7 +126,7 @@ trait VizierAPIServletRoutes extends HttpServlet {
         case /*artifact:download_subfile*/ ROUTE_PATTERN_60(projectId, artifactId, tail) => GetArtifact.File(projectId = projectId.toLong, artifactId = artifactId.toLong, tail = tail)
         case /*published:download_published*/ ROUTE_PATTERN_61(artifactName) => RawJsonResponse(Json.toJson(GetPublishedArtifact(artifactName = artifactName):serialized.ArtifactDescription))
         case /*service:list*/ "/tasks" => RawJsonResponse(Json.toJson(ListTasks():Seq[serialized.WorkflowSummary]))
-        case /*fs:get*/ "/filesystem" => RawJsonResponse(Json.toJson(BrowseFilesystem():Seq[serialized.FilesystemObject]))
+        case /*fs:get_root*/ "/filesystem" => RawJsonResponse(Json.toJson(BrowseFilesystem():Seq[serialized.FilesystemObject]))
         case /*fs:get*/ ROUTE_PATTERN_65(path) => RawJsonResponse(Json.toJson(BrowseFilesystem(path = path):Seq[serialized.FilesystemObject]))
         case _ => fourOhFour(request)
       }
