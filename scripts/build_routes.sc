@@ -232,13 +232,13 @@ def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
           s"${p.identifier} = ${p.identifier}")
     }.unzip
 
+
   var extractors = mutable.ArrayBuffer[String]()
 
-  if(!pathParamInputs.isEmpty) {
-    extractors.append(
-      s"(${pathParamInputs.mkString(", ")}) => {"
-    )
-  }
+  val pathParamTuple =
+    if(!pathParamInputs.isEmpty) {
+      s"(${pathParamInputs.mkString(", ")}) => "
+    } else { "" }
 
   val jsonParamOutputs =
     route.jsonParams.map { param =>
@@ -246,7 +246,6 @@ def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
     }
 
   if(!jsonParamOutputs.isEmpty){
-    extractors.append("decodeRequest {")
     extractors.append(
       s"entity(as[${route.jsonParamClassName.get}]) { jsonEntity => "
     )
@@ -274,8 +273,8 @@ def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
     queryStringParamOutputs
 
   s"""  val ${route.action}Route${idx} =
-     |    ${if(path.isEmpty){""} else { s"path(${path.mkString(" / ")}) {"}} ${extractors.map { "\n      "+_ }.mkString}
-     |        ${route.verb.toLowerCase} { 
+     |    ${if(path.isEmpty){""} else { s"path(${path.mkString(" / ")}) {"}} ${pathParamTuple}
+     |        ${route.verb.toLowerCase} { ${extractors.map { "\n      "+_ }.mkString}
      |          ${route.handler}(${allParams.mkString(", ")})
      |        }${if(extractors.isEmpty){""} else { "\n      "+extractors.map { _ => "}" }.mkString(" ") }}
      |    ${if(path.isEmpty){""} else { "}" }}
@@ -491,7 +490,7 @@ def websocketAPICall(route: Route): String =
 
   val pathFormat =
     (Seq(
-      "s\""+route.path.map {
+      "s\"/"+route.path.map {
         case PathLiteral(lit) => lit
         case PathVariable(id, _) => "${"+id+"}"
       }.mkString("/")+"\""
@@ -502,7 +501,9 @@ def websocketAPICall(route: Route): String =
   val ajaxArgs = 
     Seq("url = url") ++
     (if(route.jsonParams.isEmpty) { Seq() } else {
-      Seq("data = Json.obj(\n"+
+      Seq(
+        """headers = Map("Content-Type" -> "application/json")""",
+        "data = Json.obj(\n"+
         route.jsonParams.map { p =>
           s"""  "${p.identifier}" -> ${p.identifier},"""
         }.mkString("\n")+"\n).toString"
