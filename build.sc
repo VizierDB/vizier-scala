@@ -27,7 +27,6 @@ object vizier extends ScalaModule with PublishModule {
                           )
 
   def scalaVersion = "2.12.15"
-  def moduleDeps = Seq(vega)
 
   def repositoriesTask = T.task { super.repositoriesTask() ++ Seq(
     MavenRepository("https://maven.mimirdb.org/"),
@@ -103,6 +102,9 @@ object vizier extends ScalaModule with PublishModule {
     ivy"org.geotools:gt-main:24.0",
     ivy"org.geotools:gt-referencing:24.0",
     ivy"org.geotools:gt-epsg-hsql:24.0",
+
+    // Charts
+    ivy"info.vizierdb::vega:1.0.0",
 
     // Scala Cell
     ivy"org.scala-lang:scala-compiler:${scalaVersion}",
@@ -329,29 +331,6 @@ object vizier extends ScalaModule with PublishModule {
       println(s"Generated UI resource dir: $target")
       target
     }
-  }
-
-  object vega extends ScalaModule with PublishModule {
-    def publishVersion = vizier.VERSION
-    def scalaVersion = vizier.scalaVersion
-
-    def sources = T.sources(
-      vizier.millSourcePath / "vega-src"
-    )
-
-    override def pomSettings = PomSettings(
-      description = "Vizier Vega/Vega-Lite Support",
-      organization = "info.vizierdb",
-      url = "http://vizierdb.info",
-      licenses = Seq(License.`Apache-2.0`),
-      versionControl = VersionControl.github("vizierdb", "vizier-scala"),
-      developers = Seq(
-        Developer("okennedy", "Oliver Kennedy", "https://odin.cse.buffalo.edu"),
-      )
-    )
-    def ivyDeps = Agg(
-      vizier.PLAY_JS
-    )
   }
 }
 
