@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Project, Artifact }
 import info.vizierdb.types._
 import info.vizierdb.serialized.{ DatasetColumn, DatasetRow, DatasetAnnotation }

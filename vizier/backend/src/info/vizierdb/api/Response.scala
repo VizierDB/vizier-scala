@@ -12,13 +12,13 @@ abstract class Response
   def status: Int
   def contentType: String
   def headers: Seq[(String, String)]
-  def contentLength: Option[Int]
+  def contentLength: Int
 
   def write(output: OutputStream):Unit
   def write(output: HttpServletResponse):Unit =
   {
     output.setStatus(status)
-    if(contentLength.isDefined){ output.setContentLength(contentLength.get) }
+    output.setContentLength(contentLength)
     for((header, value) <- headers){
       output.addHeader(header, value)
     }
@@ -35,7 +35,7 @@ abstract class BytesResponse
   def getBytes: Array[Byte]
 
   lazy val byteBuffer = getBytes
-  def contentLength: Option[Int] = Some(byteBuffer.size)
+  def contentLength: Int = byteBuffer.size
 
   def write(os: OutputStream)
   {

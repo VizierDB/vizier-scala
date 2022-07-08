@@ -22,7 +22,6 @@ object vizier extends ScalaModule with PublishModule {
   val MIMIR_CAVEATS = ivy"org.mimirdb::mimir-caveats::0.3.6"
                           .exclude(
                             "org.slf4j" -> "*",
-                            "org.mortbay.jetty" -> "*",
                             "com.typesafe.play" -> "*",
                             "log4j" -> "*",
                           )
@@ -80,8 +79,12 @@ object vizier extends ScalaModule with PublishModule {
     ivy"org.rogach::scallop:3.4.0",
 
     ////////////////////// API Support /////////////////////
-    ivy"javax.servlet:javax.servlet-api:3.1.0",
-    ivy"org.eclipse.jetty.websocket:websocket-server:9.4.44.v20210927",
+    ivy"com.typesafe.akka::akka-http:10.2.9",
+    ivy"de.heikoseeberger::akka-http-play-json:1.39.2",
+    ivy"ch.megard::akka-http-cors:1.1.3",
+    ivy"com.typesafe.akka::akka-stream:2.6.19",
+    ivy"com.typesafe.akka::akka-actor:2.6.19",
+    ivy"com.typesafe.akka::akka-actor-typed:2.6.19",
 
     ////////////////////// Command-Specific Libraries //////
     // Json Import
@@ -142,12 +145,12 @@ object vizier extends ScalaModule with PublishModule {
 /*************************************************
  *** Backend Resources
  *************************************************/
-  def buildRoutesScript = T.sources { os.pwd / "scripts" / "build_routes.py" }
+  def buildRoutesScript = T.sources { os.pwd / "scripts" / "build_routes.sc" }
   def routesFile        = T.sources { millSourcePath / "resources" / "vizier-routes.txt" }
 
   def routes = T { 
     println("Recompiling routes from "+routesFile().head.path); 
-    os.proc("python3", buildRoutesScript().head.path.toString)
+    os.proc("amm", buildRoutesScript().head.path.toString)
                                           .call( stdout = os.Inherit, stderr = os.Inherit) 
   }
 

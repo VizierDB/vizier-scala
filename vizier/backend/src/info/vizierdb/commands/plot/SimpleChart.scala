@@ -16,7 +16,6 @@ package info.vizierdb.commands.plot
 
 import scalikejdbc._
 import play.api.libs.json._
-import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.types.ArtifactType
 import org.apache.spark.sql.{ DataFrame, Row }

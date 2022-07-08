@@ -16,7 +16,6 @@ package info.vizierdb.commands.sql
 
 import scalikejdbc._
 import play.api.libs.json._
-import info.vizierdb.VizierAPI
 import info.vizierdb.types._
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore

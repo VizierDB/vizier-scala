@@ -24,6 +24,6 @@ case class NoContentResponse() extends Response
   val status = HttpServletResponse.SC_NO_CONTENT
   def write(output: OutputStream): Unit = {}
   val contentType: String = "text/plain"
-  val contentLength: Option[Int] = Some(0)
+  val contentLength: Int = 0
 }
 

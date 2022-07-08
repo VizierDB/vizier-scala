@@ -30,7 +30,7 @@ case class FileResponse(
   val headers = Seq(
     "Content-Disposition" -> ("attachment; filename=\""+name+"\"")
   )
-  def contentLength: Option[Int] = Some(file.length().toInt)
+  def contentLength: Int = file.length().toInt
 
   def write(os: OutputStream)
   {

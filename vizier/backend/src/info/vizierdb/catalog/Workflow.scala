@@ -20,7 +20,6 @@ import java.time.ZonedDateTime
 import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import java.time.format.DateTimeFormatter
-import info.vizierdb.VizierAPI
 import info.vizierdb.serialized
 import info.vizierdb.delta.{ UpdateCell, DeltaBus }
 import info.vizierdb.viztrails.{ StateTransition }

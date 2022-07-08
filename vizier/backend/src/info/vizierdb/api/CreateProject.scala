@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import scalikejdbc.DB
 import play.api.libs.json._
-import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.Project
 import info.vizierdb.types.Identifier
 import javax.servlet.http.HttpServletResponse

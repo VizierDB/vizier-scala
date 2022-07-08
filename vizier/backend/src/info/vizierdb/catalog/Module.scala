@@ -22,7 +22,6 @@ import info.vizierdb.types._
 import info.vizierdb.commands.{ Commands, Parameter }
 import info.vizierdb.catalog.binders._
 import com.typesafe.scalalogging.LazyLogging
-import info.vizierdb.VizierAPI
 import info.vizierdb.viztrails.Provenance
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.serialized

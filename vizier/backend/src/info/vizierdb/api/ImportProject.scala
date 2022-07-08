@@ -18,13 +18,11 @@ import java.io.File
 import scalikejdbc.DB
 import play.api.libs.json._
 import java.io.InputStream
-import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.{ Project, Artifact }
 import info.vizierdb.types._
 import javax.servlet.http.{ HttpServletRequest, HttpServletResponse }
 import java.io.FileOutputStream
 import info.vizierdb.util.Streams
-import org.eclipse.jetty.server.{ Request => JettyRequest }
 import info.vizierdb.api.response._
 import java.io.FileInputStream
 import info.vizierdb.export.{ ImportProject => DoImport }

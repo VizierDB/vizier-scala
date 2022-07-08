@@ -16,7 +16,6 @@ package info.vizierdb.api
 
 import play.api.libs.json._
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
-import info.vizierdb.VizierAPI
 import info.vizierdb.commands.Commands
 import info.vizierdb.api.handler._
 import info.vizierdb.api.response._

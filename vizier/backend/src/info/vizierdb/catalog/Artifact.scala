@@ -22,7 +22,6 @@ import info.vizierdb.types._
 import java.time.ZonedDateTime
 import info.vizierdb.artifacts.Dataset
 import info.vizierdb.catalog.binders._
-import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
 import info.vizierdb.spark.SparkPrimitive
 import info.vizierdb.filestore.Filestore
@@ -35,6 +34,7 @@ import info.vizierdb.spark.caveats.{ QueryWithCaveats, DataContainer }
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import org.apache.spark.sql.AnalysisException
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.api.akka.VizierServer
 
 case class Artifact(
   id: Identifier,
@@ -164,7 +164,7 @@ case class Artifact(
       case ArtifactType.DATASET => 
         {
           val actualLimit = 
-            limit.getOrElse { VizierAPI.MAX_DOWNLOAD_ROW_LIMIT }
+            limit.getOrElse { VizierServer.MAX_DOWNLOAD_ROW_LIMIT }
 
           val dataConstructor =  
               datasetData(
@@ -506,13 +506,13 @@ object Artifact
   def urlForArtifact(artifactId: Identifier, projectId: Identifier, t: ArtifactType.T): URL =
     t match {
       case ArtifactType.DATASET => 
-        VizierAPI.urls.getDataset(projectId, artifactId)
+        Vizier.urls.getDataset(projectId, artifactId)
       case ArtifactType.CHART => 
-        VizierAPI.urls.getChartView(projectId, 0, 0, 0, artifactId)
+        Vizier.urls.getChartView(projectId, 0, 0, 0, artifactId)
       case ArtifactType.FILE => 
-        VizierAPI.urls.downloadFile(projectId, artifactId)
+        Vizier.urls.downloadFile(projectId, artifactId)
       case _ => 
-        VizierAPI.urls.getArtifact(projectId, artifactId)
+        Vizier.urls.getArtifact(projectId, artifactId)
     }
 
   /**

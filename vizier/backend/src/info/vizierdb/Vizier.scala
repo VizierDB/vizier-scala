@@ -17,6 +17,7 @@ package info.vizierdb
 import scalikejdbc._
 import java.sql.DriverManager
 import java.io._
+import java.net.URL
 import java.util.Properties
 
 import com.typesafe.scalalogging.LazyLogging
@@ -50,12 +51,14 @@ import info.vizierdb.util.StringUtils
 import info.vizierdb.spark.caveats.ExplainCaveats
 import info.vizierdb.api.BrowseFilesystem
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.api.akka.VizierServer
 
 object Vizier
   extends LazyLogging
 {
   var config: Config = null
   var sparkSession: SparkSession = null
+  var urls: VizierURLs = null
 
   def initSQLite(db: String = "Vizier.db") = 
   {
@@ -134,8 +137,8 @@ object Vizier
   {
     val command: Seq[String] = 
       System.getProperty("os.name").toLowerCase match {
-        case "linux"  => Seq("xdg-open", VizierAPI.urls.ui.toString)
-        case "darwin" => Seq("open", VizierAPI.urls.ui.toString)
+        case "linux"  => Seq("xdg-open", urls.ui.toString)
+        case "darwin" => Seq("open", urls.ui.toString)
         case _ => return
       }
     Process(command).!
@@ -224,7 +227,7 @@ object Vizier
 
         //////////////////// Run ////////////////////
         } else if(subcommand.equals(config.run)) {
-          VizierAPI.init()
+          VizierServer.run()
           val project = 
             MutableProject.find(config.run.project())
                           .getOrElse { 
@@ -296,7 +299,13 @@ object Vizier
       //////////////// SPIN UP THE SERVER //////////////////
       case None => 
         println("Starting server...")
-        VizierAPI.init()
+        VizierServer.run()
+
+        urls = new VizierURLs(
+          ui = new URL(VizierServer.publicURL),
+          base = new URL(s"${VizierServer.publicURL}vizier-db/api/v1/"),
+          api = None
+        )
 
         if(!config.serverMode.getOrElse(false)){
           // Disable local filesystem browsing if running in server
@@ -305,13 +314,15 @@ object Vizier
         }
         BrowseFilesystem.mountPublishedArtifacts()
 
-        println(s"... server running at < ${VizierAPI.urls.ui} >")
+        println(s"... server running at < ${urls.ui} >")
 
         // Don't auto-launch the UI if we're asked not to
         // or if we're in server mode.
         if(!config.noUI() && !config.serverMode()){ launchUIIfPossible() }
 
-        VizierAPI.server.join()
+        while(true){
+          Thread.sleep(100000)
+        }
     }
   }
 }

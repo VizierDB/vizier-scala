@@ -31,7 +31,7 @@ case class CORSPreflightResponse(methodStrings: String*)
   )
 
   def write(os: OutputStream) = {}
-  val contentLength: Option[Int] = None
+  val contentLength: Int = 0
   val contentType: String = "text/plain"
   val status = HttpServletResponse.SC_OK
 }

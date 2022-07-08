@@ -22,7 +22,6 @@ import info.vizierdb.catalog.{ Artifact, Workflow, Module, Cell, Result }
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
 import info.vizierdb.vega.Chart
-import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.DatasetMessage
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
@@ -45,6 +44,7 @@ import info.vizierdb.spark.LoadConstructor
 import org.apache.spark.ml.PipelineModel
 import scala.io.Source
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.api.akka.VizierServer
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -507,7 +507,7 @@ class ExecutionContext(
    * @param   offset    (optional) The position to start the display at
    * @param   limit     (optional) The maximum number of rows to show
    */
-  def displayDataset(name: String, offset: Long = 0l, limit: Int = VizierAPI.DEFAULT_DISPLAY_ROWS) = 
+  def displayDataset(name: String, offset: Long = 0l, limit: Int = VizierServer.DEFAULT_DISPLAY_ROWS) = 
   {
     val dataset = artifact(name).get
 
