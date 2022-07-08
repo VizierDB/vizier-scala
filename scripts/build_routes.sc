@@ -119,6 +119,8 @@ case class Param(identifier: String, scalaType: String)
 
   def typedNativeIdentifier = s"$identifier:$nativeScalaType"
 
+  def isOptional =
+    scalaType.startsWith("UndefOr") || scalaType.startsWith("Option")
 }
 case class Route(
   path : Seq[PathComponent],
@@ -133,10 +135,13 @@ case class Route(
 )
 {
   def allParams = Seq[Seq[Param]](
-    path.collect { case p:PathVariable => (p:PathVariable).toParam },
+    pathParams,
     pathQueryParams.map { _.toParam },
     jsonParams
   ).flatten
+
+  def pathParams = 
+    path.collect { case p:PathVariable => (p:PathVariable).toParam }
 
   def jsonParamClassName: Option[String] =
     if(jsonParams.isEmpty){ None }
@@ -150,6 +155,8 @@ case class Route(
          |  ${jsonParams.map { _.typedNativeIdentifier }.mkString(",\n  ")}
          |)""".stripMargin
     }
+  
+  def actionLabel = s"${domain}${action.split("_").map { _.capitalize }.mkString}"
 }
 
 val PATH_VARIABLE = "\\{(\\w+):(\\w+)\\}".r
@@ -209,14 +216,14 @@ val ROUTES: Seq[Route] =
 def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
 {
   val (route: Route, idx: Int) = routeAndIndex
-  val path = 
+  var path: Seq[String] = 
     route.path.map {
       case PathLiteral(component) => s"\"$component\""
       case PathVariable(_, "int") => "IntNumber"
       case PathVariable(_, "long") => "LongNumber"
       case PathVariable(_, "subpath") => "Remaining"
       case PathVariable(_, "string") => "Segment"
-    } :+ "PathEnd"
+    }
 
   val (pathParamInputs, pathParamOutputs) = 
     route.path.collect { 
@@ -267,11 +274,11 @@ def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
     queryStringParamOutputs
 
   s"""  val ${route.action}Route${idx} =
-     |    path(${path.mkString(" / ")}) { ${extractors.map { "\n      "+_ }.mkString}
+     |    ${if(path.isEmpty){""} else { s"path(${path.mkString(" / ")}) {"}} ${extractors.map { "\n      "+_ }.mkString}
      |        ${route.verb.toLowerCase} { 
      |          ${route.handler}(${allParams.mkString(", ")})
      |        }${if(extractors.isEmpty){""} else { "\n      "+extractors.map { _ => "}" }.mkString(" ") }}
-     |    }
+     |    ${if(path.isEmpty){""} else { "}" }}
      |  """.stripMargin
 }
 
@@ -281,7 +288,6 @@ for( (domain, routes) <- routesByDomain )
 {
   val file = DOMAIN_ROUTES(domain)
   val clazz = file.baseName
-  println(s"$domain -- $clazz --> $file")
 
   val jsonParamClasses =
     routes.flatMap { _.jsonParamClass.map { _.split("\n")
@@ -322,7 +328,6 @@ for( (domain, routes) <- routesByDomain )
        """.stripMargin
 
   os.write.over(file, data)
-  println(data)
 }
 
 {
@@ -346,7 +351,235 @@ for( (domain, routes) <- routesByDomain )
        |  )
        |}
        """.stripMargin
-  println(data)
   os.write.over(file, data)
   routesByDomain.keys
+}
+
+///////////////////////////////////////////////////////
+////////////////  Websocket Proxy   ///////////////////
+///////////////////////////////////////////////////////
+
+val WEBSOCKET_INTERNAL_ARGS = Set("projectId", "branchId")
+val WEBSOCKET_ROUTES =
+    ROUTES.filter { r => (r.domain == "workflow") && 
+                         (r.action.startsWith("head_")) }
+val UNDEFOR = "UndefOr\\[([^\\]]+)\\]".r
+
+def renderWebsocketRouteHandler(route: Route): (String, String) = 
+{
+  val action = route.actionLabel.replace("Head", "")
+
+  val parameters = 
+    route.allParams
+         .map { 
+            case Param(name, "FILE") => 
+              Param(name, "(Array[Byte], String)")
+            case Param(name, UNDEFOR(body)) => 
+              Param(name, s"Option[$body]")
+            case x => x
+          }
+
+  val request =
+    parameters.filter { x => WEBSOCKET_INTERNAL_ARGS.contains(x.identifier) }
+              .map { x => s"${x.identifier} = ${x.identifier}"}
+
+  val internal =
+    parameters.filterNot { x => WEBSOCKET_INTERNAL_ARGS.contains(x.identifier) }
+              .map { x => s"${x.identifier} = args(\"${x.identifier}\").as[${x.scalaType}]" }
+
+  val callString =
+    (request ++ internal).mkString(", ")
+
+  val fieldString =
+    parameters.filterNot { x => WEBSOCKET_INTERNAL_ARGS.contains(x.identifier) }
+              .map { _.typedIdentifier }.mkString(", ")
+
+  val jsonString =
+    parameters.filterNot { x => WEBSOCKET_INTERNAL_ARGS.contains(x.identifier) }
+              .map { p =>
+                s"\"${p.identifier}\" -> Json.toJson(${p.identifier})"
+              }
+              .mkString(", ")
+
+  (
+    s"""    case "${action}" => 
+       |      Json.toJson(${route.handler}(${callString}):${route.returns})
+       """.stripMargin,
+    s"""  def ${action}(${fieldString}): Future[${route.returns}] =
+     |    sendRequest(Seq("${action}"), Map(${jsonString}))
+     |       .map { _.as[${route.returns}] }
+     """.stripMargin
+  )
+}
+
+{
+  val file = WEBSOCKET_IMPL
+
+  val data: String = 
+    s"""package info.vizierdb.api.websocket
+       |$AUTOGEN_HEADER
+       |import play.api.libs.json._
+       |import info.vizierdb.types._
+       |import info.vizierdb.api.handler._
+       |import info.vizierdb.api._
+       |import info.vizierdb.serialized
+       |import info.vizierdb.serializers._
+       |import info.vizierdb.spark.caveats.DataContainer
+       |
+       |abstract class BranchWatcherAPIRoutes
+       |{
+       |  implicit def liftToOption[T](x: T): Option[T] = Some(x)
+       |  def projectId: Identifier
+       |  def branchId: Identifier
+       |
+       |  def route(path: Seq[String], args: Map[String, JsValue]): JsValue =
+       |    path.last match {
+       |${WEBSOCKET_ROUTES.map { renderWebsocketRouteHandler(_)._1 }
+                          .mkString("\n")}
+       |    }
+       |}
+       """.stripMargin
+
+  os.write.over(file, data)
+}
+
+{
+  val file = WEBSOCKET_PROXY
+
+  val data: String = 
+    s"""package info.vizierdb.ui.network
+       |$AUTOGEN_HEADER
+       |import play.api.libs.json._
+       |import info.vizierdb.types._
+       |import info.vizierdb.serialized
+       |import info.vizierdb.serializers._
+       |import scala.concurrent.Future
+       |import info.vizierdb.spark.caveats.DataContainer
+       |import scala.concurrent.ExecutionContext.Implicits.global
+       |
+       |abstract class BranchWatcherAPIProxy
+       |{
+       |  def sendRequest(leafPath: Seq[String], args: Map[String, JsValue]): Future[JsValue]
+       |
+       |${WEBSOCKET_ROUTES.map { renderWebsocketRouteHandler(_)._2 }
+                          .mkString("\n")}
+       |}
+       """.stripMargin
+
+  os.write.over(file, data)
+}
+
+///////////////////////////////////////////////////////
+////////////  Websocket API Frontend  /////////////////
+///////////////////////////////////////////////////////
+
+def websocketAPICall(route: Route): String =
+{
+  val routeString = 
+    route.path.map { 
+      case PathLiteral(lit) => lit
+      case PathVariable(_, t) => s"{{${t.toString}}}"
+    }.mkString("/")
+
+  val urlPathParams =
+    route.pathParams.map { p => s"${p.identifier}:${p.nativeScalaType}" } ++
+    route.pathQueryParams.map { p => s"${p.identifier}:Option[${p.scalaType}] = None" }
+
+  val urlInvocation = 
+    route.pathParams.map { p => s"${p.identifier}" } ++
+    route.pathQueryParams.map { p => s"${p.identifier}" }
+
+  val pathFormat =
+    (Seq(
+      "s\""+route.path.map {
+        case PathLiteral(lit) => lit
+        case PathVariable(id, _) => "${"+id+"}"
+      }.mkString("/")+"\""
+    ) ++ route.pathQueryParams.map { p =>
+      s""""${p.identifier}" -> ${p.identifier}.map { _.toString }"""
+    }).mkString(", ")
+
+  val ajaxArgs = 
+    Seq("url = url") ++
+    (if(route.jsonParams.isEmpty) { Seq() } else {
+      Seq("data = Json.obj(\n"+
+        route.jsonParams.map { p =>
+          s"""  "${p.identifier}" -> ${p.identifier},"""
+        }.mkString("\n")+"\n).toString"
+      )
+    })
+
+  val allParams = 
+    route.pathParams.map { _.typedNativeIdentifier } ++
+    route.jsonParams.map { p => p.typedNativeIdentifier + (if(p.isOptional) { "= None" } else { "" }) } ++
+    route.pathQueryParams.map { p => s"${p.identifier}:Option[${p.scalaType}] = None" }
+
+  val url = 
+    s"""  def ${route.actionLabel}URL(${urlPathParams.map { "\n    " + _ }.mkString(",")}${if(urlPathParams.size > 0){"\n  "} else { "" }}): String =
+       |    makeUrl(${pathFormat})
+       """.stripMargin
+  
+  val shouldIncludeBase = 
+    !route.allParams.exists { _.scalaType.startsWith("FILE") } &&
+    !route.returns.startsWith("FILE")
+
+  val base = 
+    if(shouldIncludeBase){
+      s"""  def ${route.actionLabel}(
+         |${allParams.map { "    "+_ }.mkString(", \n")}
+         |  ): ${if(route.returns == "Unit") { "Unit" } else { s"Future[${route.returns}]" }} =
+         |  {
+         |    val url = ${route.actionLabel}URL(${urlInvocation.mkString(", ")})
+         |    Ajax.${route.verb.toLowerCase}(
+         |${ajaxArgs.map { "      "+_ }.mkString(",\n")}
+         |    )${if(route.returns == "Unit") { "" } 
+                 else { s".map { xhr => \n      Json.parse(xhr.responseText)\n          .as[${route.returns}]\n    }" }}
+         |  }
+         """.stripMargin
+    } else { "" }
+
+
+  s"/** ${route.verb} ${routeString} **/\n${url}\n${base}"
+}
+
+{
+  val file = API_PROXY
+
+  val data: String =
+    s"""package info.vizierdb.ui.network
+       |import scala.scalajs.js
+       |import play.api.libs.json._
+       |import org.scalajs.dom.ext.Ajax
+       |
+       |import info.vizierdb.types._
+       |import scala.concurrent.Future
+       |import scala.concurrent.ExecutionContext.Implicits.global
+       |
+       |import info.vizierdb.serialized
+       |import info.vizierdb.ui.components.Parameter
+       |import info.vizierdb.util.Logging
+       |import info.vizierdb.serializers._
+       |import info.vizierdb.spark.caveats.DataContainer
+       |import info.vizierdb.nativeTypes.Caveat
+       |
+       |case class API(baseUrl: String)
+       |  extends Object
+       |  with Logging
+       |  with APIExtras
+       |{
+       |
+       |  def makeUrl(path: String, query: (String, Option[String])*): String = 
+       |    baseUrl + path + (
+       |      if(query.forall { _._2.isEmpty }) { "" }
+       |      else { 
+       |        "?" + query.collect { 
+       |                case (k, Some(v)) => k + "=" + v 
+       |              }.mkString("&") 
+       |      }
+       |    )
+       |${ROUTES.map { websocketAPICall(_) }.mkString("\n")}
+       |}
+       """.stripMargin
+
+  os.write.over(file, data)
 }

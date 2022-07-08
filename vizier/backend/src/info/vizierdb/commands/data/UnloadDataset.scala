@@ -17,7 +17,6 @@ package info.vizierdb.commands.data
 import scalikejdbc._
 import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
-import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.types._
 import info.vizierdb.filestore.Filestore
@@ -26,6 +25,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.Vizier
 
 object UnloadDataset extends Command
   with LazyLogging
@@ -214,7 +214,7 @@ object UnloadDataset extends Command
     outputArtifactIfNeeded match {
       case Some(artifact) => 
         context.message("text/html",
-          s"<div><a href='${VizierAPI.urls.downloadFile(context.projectId, artifact.id)}' download='${datasetName}'>Download ${datasetName}</a></div>" 
+          s"<div><a href='${Vizier.urls.downloadFile(context.projectId, artifact.id)}' download='${datasetName}'>Download ${datasetName}</a></div>" 
         )
       case None => 
          context.message("Export Successful")

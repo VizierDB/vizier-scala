@@ -15,7 +15,6 @@
 package info.vizierdb.commands.data
 
 import play.api.libs.json.JsValue
-import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import java.io.File

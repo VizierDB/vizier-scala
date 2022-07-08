@@ -21,7 +21,6 @@ import java.time.ZonedDateTime
 
 import java.time.format.DateTimeFormatter
 import info.vizierdb.catalog.binders._
-import info.vizierdb.VizierAPI
 import info.vizierdb.Vizier
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.serialized

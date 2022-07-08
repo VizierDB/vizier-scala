@@ -21,7 +21,6 @@ import play.api.libs.json._
 import info.vizierdb.types._
 import java.time.format.DateTimeFormatter
 import info.vizierdb.catalog.binders._
-import info.vizierdb.VizierAPI
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.viztrails.{ Scheduler, StateTransition, ScopeSummary }
 import info.vizierdb.delta.{ DeltaBus, UpdateBranchProperties }

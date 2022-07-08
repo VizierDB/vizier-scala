@@ -11,7 +11,6 @@ import java.io.File
 import java.nio.file.Path
 import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.types.ArtifactType
-import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.CatalogDB
 
 object BrowseFilesystem
@@ -87,7 +86,7 @@ object BrowseFilesystem
                 internalPath = 
                   artifactLabel,
                 externalPath = 
-                  VizierAPI.urls.publishedArtifact(artifactLabel).toString,
+                  Vizier.urls.publishedArtifact(artifactLabel).toString,
                 hasChildren = false,
                 icon = 
                   summary.t match {

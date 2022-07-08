@@ -17,11 +17,11 @@ package info.vizierdb.catalog
 import scalikejdbc._
 import java.net.URL
 import play.api.libs.json._
-import info.vizierdb.VizierAPI
 import info.vizierdb.types._
 import info.vizierdb.catalog.binders._
 import com.google.gson.JsonObject
 import java.time.ZonedDateTime
+import info.vizierdb.Vizier
 
 case class PublishedArtifact(
   name: String,
@@ -30,7 +30,7 @@ case class PublishedArtifact(
   properties: JsObject,
 )
 {
-  def url = VizierAPI.urls.publishedArtifact(name)
+  def url = Vizier.urls.publishedArtifact(name)
   def artifact(implicit session: DBSession) = Artifact.get(target = artifactId, projectId = Some(projectId))
 }
 
@@ -85,7 +85,7 @@ object PublishedArtifact
   def nameFromURL(url: String): Option[String] = 
   {
     val base = 
-      VizierAPI.urls.publishedArtifact("").toString
+      Vizier.urls.publishedArtifact("").toString
     if(url.startsWith(base)){
       Some(url.drop(base.length).split("/").head)
     } else { 

@@ -15,7 +15,6 @@
 package info.vizierdb.commands.plot
 
 import play.api.libs.json._
-import info.vizierdb.VizierAPI
 import info.vizierdb.commands._
 import info.vizierdb.filestore.Filestore
 import com.typesafe.scalalogging.LazyLogging

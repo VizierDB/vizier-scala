@@ -1,7 +1,7 @@
 package info.vizierdb.api.akka
 
 import play.api.libs.json._
-import akka.actor.typed.ActorSystem
+import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -22,14 +22,20 @@ import info.vizierdb.api.Response
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import info.vizierdb.util.OutputStreamIterator
 import info.vizierdb.VizierException
+import info.vizierdb.api.websocket.BranchWatcherSocket
+import info.vizierdb.api.spreadsheet.SpreadsheetSocket
 import scala.collection.immutable
 import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
+import java.util.concurrent.Executors
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 
 object VizierServer
 {
-  implicit val system = ActorSystem(Behaviors.empty, "server")
-  implicit val executionContext = system.executionContext
-  
+  implicit val system = ActorSystem("vizier")
+  implicit val executionContext: ExecutionContextExecutor = 
+    ExecutionContext.fromExecutor(Executors.newFixedThreadPool(16))
+
   lazy val allowAnyConnection = Vizier.config.devel() || Vizier.config.connectFromAnyHost()
   lazy val host = 
       if(allowAnyConnection){ "0.0.0.0" }
@@ -40,6 +46,7 @@ object VizierServer
   val NAME = "vizier-scala/akka"
   val MAX_UPLOAD_SIZE = 1024*1024*100 // 100MB
   val MAX_FILE_MEMORY = 1024*1024*10  // 10MB
+  val DEFAULT_DISPLAY_ROWS = 20
   val MAX_DOWNLOAD_ROW_LIMIT = QueryWithCaveats.RESULT_THRESHOLD
   val BACKEND = "SCALA"
   val VERSION = Vizier.config.VERSION
@@ -52,18 +59,50 @@ object VizierServer
   {
     val mainServer = 
       Http().newServerAt(host, port).bind(
-        concat(
-          pathPrefix("vizier-db" / "api" / "v1") {
-            AllRoutes.routes
-          },
-          path(PathEnd) {
-            redirect(
-              s"${publicURL}index.html",
-              MovedPermanently
-            )
-          },
-          getFromResourceDirectory("ui"),
-        )
+        // Most modern web browsers will use the CORS protocol to test whether
+        // the server will accept a request before actually issuing the request.
+        // https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
+        // If the server doesn't respond to the CORS request, the client will 
+        // fail the base request.  akka-http-cors will generate these responses
+        // automatically.
+        cors() {
+          concat(
+
+            // API requests
+            pathPrefix("vizier-db" / "api" / "v1") {
+
+              // Websockets
+              concat(
+                path("websocket") {
+                  extractClientIP { ip => 
+                    println("Websocket!")
+                    handleWebSocketMessages(BranchWatcherSocket.monitor(ip.toString))
+                  }
+                },
+                path("spreadsheet") {
+                  extractClientIP { ip => 
+                    println("Spreadsheet!")
+                    handleWebSocketMessages(SpreadsheetSocket.monitor(ip.toString))
+                  }
+                },
+
+                // All the other API routes
+                AllRoutes.routes
+              )
+            },
+
+            // Requests for the root.
+            path(PathEnd) {
+              redirect(
+                s"${publicURL}index.html",
+                MovedPermanently
+              )
+            },
+
+            // Raw file requests get directed to the ui directory
+            getFromResourceDirectory("ui"),
+          )
+        }
       )
 
     started = ZonedDateTime.now()

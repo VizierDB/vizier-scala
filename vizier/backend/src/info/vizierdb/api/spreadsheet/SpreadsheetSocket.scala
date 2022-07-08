@@ -16,21 +16,6 @@ package info.vizierdb.api.spreadsheet
 
 import scalikejdbc._
 import com.typesafe.scalalogging.LazyLogging
-import org.eclipse.jetty.websocket.api.Session
-import org.eclipse.jetty.websocket.api.annotations.{
-  OnWebSocketClose,
-  OnWebSocketConnect,
-  OnWebSocketMessage,
-  WebSocket,
-}
-import org.eclipse.jetty.websocket.servlet.{
-  WebSocketCreator, 
-  ServletUpgradeRequest, 
-  ServletUpgradeResponse,
-  WebSocketServlet,
-  WebSocketServletFactory
-}
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory
 import play.api.libs.json._
 import info.vizierdb.spreadsheet.Spreadsheet
 import info.vizierdb.catalog.Artifact
@@ -42,36 +27,44 @@ import info.vizierdb.spreadsheet.SpreadsheetCallbacks
 import info.vizierdb.serialized.DatasetColumn
 import org.apache.spark.util.collection.ErrorMessage
 import info.vizierdb.catalog.CatalogDB
+import scala.concurrent.ExecutionContext
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.{Materializer, OverflowStrategy}
+import org.reactivestreams.Publisher
 
-@WebSocket
-class SpreadsheetSocket
+class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, system: ActorSystem, mat: Materializer)
   extends SpreadsheetCallbacks
   with LazyLogging
 {
-
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-
-  private var session: Session = null
-  lazy val client = session.getRemoteAddress.toString
-
   var spreadsheet: Spreadsheet = null
 
-  @OnWebSocketConnect
-  def onOpen(session: Session) 
-  { 
-    logger.debug(s"Websocket opened: $session")
-    this.session = session 
-  }
-  @OnWebSocketClose
-  def onClose(closeCode: Int, message: String) 
-  {
-    logger.debug(s"Websocket closed with code $closeCode: $message")
-  }
+  logger.debug(s"[$client] Websocket opened")
+  
+  val (remote, publisher): (ActorRef, Publisher[TextMessage.Strict]) =
+        Source.actorRef[String](16, OverflowStrategy.fail)
+          .map(msg => TextMessage.Strict(msg))
+          .toMat(Sink.asPublisher(false))(Keep.both)
+          .run()
+    
+  val sink: Sink[Message, Any] = Flow[Message]
+      .map {
+        case TextMessage.Strict(msg) =>
+          onText(msg)
+        case _ => 
+          logger.error(s"[$client] Unexpected websocket message")
+      }
+      .to(Sink.onComplete { msg => {
+        logger.debug(s"[$client] Websocket closed: $msg")
+      }})
 
-  @OnWebSocketMessage
+  val flow = 
+    Flow.fromSinkAndSource(sink, Source.fromPublisher(publisher))
+
   def onText(data: String): Unit =
   {
-    logger.trace(s"Websocket received ${data.length()} bytes: ${data.take(20)}")    
+    logger.trace(s"[$client] Websocket received ${data.length()} bytes: ${data.take(20)}")
 
     try {
       Json.parse(data).as[SpreadsheetRequest] match {
@@ -123,7 +116,7 @@ class SpreadsheetSocket
   {
     synchronized {
       logger.trace(s"SEND: ${message.toString.take(200)}")
-      session.getRemote.sendString(Json.stringify(Json.toJson(message)))
+      remote ! Json.stringify(Json.toJson(message))
     } 
   }
   
@@ -202,23 +195,6 @@ class SpreadsheetSocket
 
 object SpreadsheetSocket
 {
-  object Creator extends WebSocketCreator
-  {
-    override def createWebSocket(
-      request: ServletUpgradeRequest, 
-      response: ServletUpgradeResponse
-    ): Object = 
-    {
-      new SpreadsheetSocket()
-    }
-  }
-
-  object Servlet extends WebSocketServlet {
-    def configure(factory: WebSocketServletFactory)
-    {
-      factory.getPolicy().setIdleTimeout(100000)
-      factory.setCreator(Creator)
-    }
-
-  }
+  def monitor(client: String)(implicit ec: ExecutionContext, system: ActorSystem, mat: Materializer): Flow[Message, Message, Any] =
+    new SpreadsheetSocket(client).flow
 }

@@ -14,21 +14,6 @@
  * -- copyright-header:end -- */
 package info.vizierdb.api.websocket
 
-import org.eclipse.jetty.websocket.api.Session
-import org.eclipse.jetty.websocket.api.annotations.{
-  OnWebSocketClose,
-  OnWebSocketConnect,
-  OnWebSocketMessage,
-  WebSocket,
-}
-import org.eclipse.jetty.websocket.servlet.{
-  WebSocketCreator, 
-  ServletUpgradeRequest, 
-  ServletUpgradeResponse,
-  WebSocketServlet,
-  WebSocketServletFactory
-}
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory
 import scalikejdbc.DB
 import scala.collection.mutable
 import play.api.libs.json._
@@ -40,8 +25,11 @@ import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Success, Failure }
-
-// https://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/jetty-websocket/websocket-server/src/test/java/org/eclipse/jetty/websocket/server/examples/echo/ExampleEchoServer.java
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.{Materializer, OverflowStrategy}
+import org.reactivestreams.Publisher
 
 case class SubscribeRequest(
   projectId: String,
@@ -52,20 +40,50 @@ object SubscribeRequest {
   implicit val format: Format[SubscribeRequest] = Json.format
 }
 
-@WebSocket
-class BranchWatcherSocket
+class BranchWatcherSocket(client: String)(implicit system: ActorSystem, mat: Materializer)
   extends LazyLogging
 {
-  logger.trace("Websocket allocated")
-  private var session: Session = null
+  
+  logger.debug(s"[$client] Websocket opened")
+
+  // TODO: Review DeltaBus in the context of the actor system.  It may be
+  // convenient to rewrite each branch as an actor (and on that note, we
+  // might be able to get better performance around the whole JDBC business
+  // if we revisit the internals as actors as well).  That's a substantial
+  // rewrite, so for now, let's create an actor that will bridge deltabus to
+  // the publisher API, which can then be Source-ified, as suggested here:
+  // https://amdelamar.com/blog/websockets-with-akka-http/
+  // https://github.com/amdelamar/akka-websockets-demo/blob/master/src/main/scala/com/amdelamar/chat/ChatRoom.scala
+  val (remote, publisher): (ActorRef, Publisher[TextMessage.Strict]) =
+        Source.actorRef[String](16, OverflowStrategy.fail)
+          .map(msg => TextMessage.Strict(msg))
+          .toMat(Sink.asPublisher(false))(Keep.both)
+          .run()
+    
+  val sink: Sink[Message, Any] = Flow[Message]
+      .map {
+        case TextMessage.Strict(msg) =>
+          onText(msg)
+        case _ => 
+          logger.error(s"[$client] Unexpected websocket message")
+      }
+      .to(Sink.onComplete { msg => {
+        logger.debug(s"[$client] Websocket closed: $msg")
+        if(subscription != null){
+          DeltaBus.unsubscribe(subscription)
+        }
+      }})
+
+  val flow = 
+    Flow.fromSinkAndSource(sink, Source.fromPublisher(publisher))
+
   var subscription: DeltaBus.Subscription = null
-  lazy val client = session.getRemoteAddress.toString
 
 
   def registerSubscription(projectId: Identifier, branchId: Identifier): Unit = 
   {
     if(subscription != null){
-      logger.warn(s"Websocket ($client) overriding existing subscription")
+      logger.warn(s"[$client] Websocket overriding existing subscription")
       DeltaBus.unsubscribe(subscription)
     }
     
@@ -74,41 +92,25 @@ class BranchWatcherSocket
     subscription = DeltaBus.subscribe(branchId, this.notify, s"Websocket $client")
   }
 
-  @OnWebSocketConnect
-  def onOpen(session: Session) 
-  { 
-    logger.debug(s"Websocket opened: $session")
-    this.session = session 
-  }
-  @OnWebSocketClose
-  def onClose(closeCode: Int, message: String) 
-  {
-    logger.debug(s"Websocket closed with code $closeCode: $message")
-    if(subscription != null){
-      DeltaBus.unsubscribe(subscription)
-    }
-  }
-
   implicit val requestFormat = Json.format[WebsocketRequest]
   implicit val normalResponseWrites = Json.writes[NormalWebsocketResponse]
   implicit val errorResponseWrites = Json.writes[ErrorWebsocketResponse]
   implicit val notificationResponseWrites = Json.writes[NotificationWebsocketMessage]
   implicit val responseWrites = Json.writes[WebsocketResponse]
 
-  @OnWebSocketMessage
   def onText(data: String)
   {
-    logger.trace(s"Websocket received ${data.length()} bytes: ${data.take(20)}")
+    logger.trace(s"[$client] Websocket received ${data.length()} bytes: ${data.take(20)}")
     val request = Json.parse(data).as[WebsocketRequest]
     try { 
-      logger.debug(s"Processing Websocket Request: ${request.path.last} (${Router.projectId} / ${Router.branchId})")
+      logger.debug(s"[$client] Processing Websocket Request: ${request.path.last} (${Router.projectId} / ${Router.branchId})")
       whilePausingNotifications {
         val result = Router.route(request.path, request.args)
         send(NormalWebsocketResponse(request.id, result))
       }
     } catch {
       case error: Throwable =>
-        logger.warn(s"Websocket error: $error")
+        logger.warn(s"[$client] Websocket error: $error")
         send(ErrorWebsocketResponse(request.id, error.getMessage.toString()))
     }
   }
@@ -120,8 +122,8 @@ class BranchWatcherSocket
    */
   def send(message: WebsocketResponse) =
   {
-    logger.trace(s"SEND: ${message.toString.take(200)}")
-    session.getRemote.sendString(Json.stringify(Json.toJson(message)))
+    logger.trace(s"[$client] SEND: ${message.toString.take(200)}")
+    remote ! Json.stringify(Json.toJson(message))
   }
 
   /**
@@ -136,7 +138,7 @@ class BranchWatcherSocket
       op
     } finally {
       synchronized {
-        logger.trace(s"Clearing buffer of ${myBuffer.size} messages")
+        logger.trace(s"[$client] Clearing buffer of ${myBuffer.size} messages")
         myBuffer.foreach { delta => 
           send(NotificationWebsocketMessage(delta)) }
         notificationBuffer = oldBuffer
@@ -183,7 +185,7 @@ class BranchWatcherSocket
 
     override def route(path: Seq[String], args: Map[String, JsValue]) =
     {
-      logger.trace(s"Request for ${path.mkString("/")}")
+      logger.trace(s"[$client] Request for ${path.mkString("/")}")
       path.last match {
         case "subscribe" => Json.toJson(subscribe(args("projectId").as[Identifier], args("branchId").as[Identifier]))
         case "ping" => Json.toJson(ping())
@@ -202,25 +204,8 @@ object BranchWatcherSocket
   val OP_PING = "ping"
   val OP_PONG = "pong"
 
-  object Creator extends WebSocketCreator
-  {
-    override def createWebSocket(
-      request: ServletUpgradeRequest, 
-      response: ServletUpgradeResponse
-    ): Object = 
-    {
+  def monitor(client: String)(implicit system: ActorSystem, mat: Materializer): Flow[Message, Message, Any] =
+    new BranchWatcherSocket(client).flow
 
-      new BranchWatcherSocket()
-    }
-  }
-
-  object Servlet extends WebSocketServlet {
-    def configure(factory: WebSocketServletFactory)
-    {
-      factory.getPolicy().setIdleTimeout(100000)
-      factory.setCreator(Creator)
-    }
-
-  }
 }
 

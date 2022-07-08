@@ -18,7 +18,6 @@ import scalikejdbc._
 import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
 
-import info.vizierdb.VizierAPI
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.types.{ Identifier, ArtifactType }
 import org.mimirdb.caveats.Caveat
