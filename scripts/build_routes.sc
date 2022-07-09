@@ -1,11 +1,14 @@
 import scala.collection.mutable
+import $ivy.`com.typesafe.play::play-json:2.9.2`, play.api.libs.json._
+
 
 // Utilities for processing vizier-routes.txt into source code
 
-val SOURCE_DIR  = os.pwd / "vizier"
-val BACKEND_DIR = SOURCE_DIR / "backend" / "src" / "info" / "vizierdb"
-val UI_DIR      = SOURCE_DIR / "ui"      / "src" / "info" / "vizierdb"
-val INPUT       = SOURCE_DIR / "shared" / "resources" / "vizier-routes.txt"
+val SOURCE_DIR   = os.pwd / "vizier"
+val BACKEND_DIR  = SOURCE_DIR / "backend" / "src" / "info" / "vizierdb"
+val UI_DIR       = SOURCE_DIR / "ui"      / "src" / "info" / "vizierdb"
+val RESOURCE_DIR = SOURCE_DIR / "shared" / "resources"
+val INPUT        = RESOURCE_DIR / "vizier-routes.txt"
 
 // vizier-routes.txt contains a list of routes with information about the
 // structure of the request, handler information, and other metadata.
@@ -63,6 +66,8 @@ val MAIN_ROUTES   = SERVER_ROUTES / "AllRoutes.scala"
 // is here:
 val WEBSOCKET_IMPL = BACKEND_DIR / "api" / "websocket" / "BranchWatcherAPIRoutes.scala"
 
+val SWAGGER = RESOURCE_DIR / "vizier.swagger"
+
 ///////////////////////   UI    ///////////////////////
 
 // We ensure typesafe invocation of API methods in the frontend by
@@ -88,6 +93,9 @@ val AUTOGEN_HEADER =
 sealed trait PathComponent
 
 case class PathLiteral(value: String) extends PathComponent
+{
+  override def toString = value
+}
 case class PathVariable(identifier: String, dataType: String) extends PathComponent
 {
   def scalaType = 
@@ -108,6 +116,8 @@ case class PathVariable(identifier: String, dataType: String) extends PathCompon
       case "subpath" => target
       case "string" => target
     }
+
+  override def toString = s"{${identifier}}"
 }
 
 case class Param(identifier: String, scalaType: String)
@@ -157,6 +167,8 @@ case class Route(
     }
   
   def actionLabel = s"${domain}${action.split("_").map { _.capitalize }.mkString}"
+
+  def pathString = path.mkString("/")
 }
 
 val PATH_VARIABLE = "\\{(\\w+):(\\w+)\\}".r
@@ -583,4 +595,202 @@ def websocketAPICall(route: Route): String =
        """.stripMargin
 
   os.write.over(file, data)
+}
+
+///////////////////////////////////////////////////////
+/////////////////  Swagger API  ///////////////////////
+///////////////////////////////////////////////////////
+
+{
+  val file = SWAGGER
+  val info = Json.obj(
+    "title" -> "Vizier DB",
+    "description" -> "A 'data-centric' microkernel notebook",
+    "version" -> "v1.1",
+    "contact" -> Json.obj(
+      "name" -> "University at Buffalo, Illinois Institute of Technology, New York University, Breadcrumb Analytics",
+      "url" -> "https://vizierdb.info",
+    ),
+  )
+
+  def dataTypeToSwaggerType(dataType: String): String =
+    dataType match {
+      case "long"     => "long" 
+      case "int"      => "integer"
+      case "subpath"  => "string"
+      case "string"   => "string"
+
+    }
+
+  val IS_FILE = "FILE\\[([^\\]]+)\\]".r
+  val UNDEFOR = "UndefOr\\[([^\\]]+)\\]".r
+  val SEQ = "Seq\\[([^\\]]+)\\]".r
+  val SERIALIZED = "serialized\\.(.*)".r
+
+  def scalaTypeToMimeType(scalaType: String): String =
+    scalaType match {
+      case IS_FILE("*") => "application/octet-stream"
+      case IS_FILE(mime) => mime
+      case _ => "application/json"
+    }
+
+  val definitions = mutable.Map[String, JsValue]()
+
+  def typeRef(t: String): JsObject =
+  {
+    assert(definitions contains t, s"Unimplemented type schema $t")
+    Json.obj("$ref" -> s"#/definitions/$t")
+  }
+
+
+  def define(t: (String, JsObject)): Unit =
+    definitions.put(t._1, t._2)
+
+  def mkPrim(t: String) = Json.obj("type" -> t)
+
+  def mkObject(opt: Set[String] = Set.empty)(props: (String, JsValue)*) =
+    Json.obj(
+      "type" -> "object",
+      "required" -> JsArray(props.map { _._1 }.filterNot { opt contains _ }.map { JsString(_) }),
+      "properties" -> JsObject(props.toMap)
+    )
+
+  def mkArray(elem: JsValue) = Json.obj("type" -> "array", "items" -> elem)
+
+  define { "Identifier" -> Json.obj(
+    "type" -> "string",
+    "description" -> "An opaque identifier"
+  )}
+  define { "CommandArgument" -> mkObject()(
+    "id" -> mkPrim("string"),
+    "value" -> Json.obj(),
+  )}
+  define { "Property" -> mkObject()(
+    "key" -> mkPrim("string"),
+    "value" -> Json.obj(),
+  )}
+  define { "CellDataType" -> Json.obj(
+    "type" -> "string",
+    "description" -> "A Vizier-serialized spark data type.  See https://github.com/VizierDB/vizier-scala/blob/v2.0/vizier/backend/src/info/vizierdb/spark/SparkSchema.scala"
+  )}
+  define { "DatasetColumn" -> mkObject()(
+    "id" -> Json.obj("type" -> "long"),
+    "name" -> Json.obj("type" -> "string"),
+    "type" -> typeRef("CellDataType")
+  )}
+  define { "RowIdentifier" -> Json.obj(
+    "type" -> "string",
+    "description" -> "An opaque, persistent, unique identifier for this row"
+  )}
+  define { "DatasetRow" -> mkObject(opt = Set("rowAnnotationFlags", "rowIsAnnotated"))(
+    "id" -> typeRef("RowIdentifier"),
+    "values" -> mkArray(Json.obj()),
+    "rowAnnotationFlags" -> mkArray(mkPrim("boolean")),
+    "rowIsAnnotated" -> mkPrim("boolean")
+  )}
+  define { "DatasetAnnotation" -> mkObject()(
+    "columnId" -> mkPrim("integer"),
+    "rowId" -> typeRef("RowIdentifier"),
+    "key" -> mkPrim("string"),
+    "value" -> mkPrim("string")
+  )}
+  define { "BranchSource" -> mkObject(opt = Set("workflowId", "moduleId"))(
+    "branchId"   -> typeRef("Identifier"),
+    "workflowId" -> typeRef("Identifier"),
+    "moduleId"   -> typeRef("Identifier")
+  )}
+
+  val aliases = Map(
+    "CommandArgumentList.T" -> "Seq[CommandArgument]",
+    "PropertyList.T" -> "Seq[Property]",
+  )
+
+  def scalaTypeToSchema(scalaType: String): JsObject =
+  {
+    scalaType match {
+      case t if aliases contains t => scalaTypeToSchema(aliases(t))
+      case ref if definitions contains ref => typeRef(ref)
+      case SERIALIZED(t) => scalaTypeToSchema(t)
+      case UNDEFOR(elem) => scalaTypeToSchema(elem)
+      case SEQ(elem) => Json.obj("type" -> "array", "items" -> scalaTypeToSchema(elem))
+      case "String" => Json.obj("type" -> "string")
+    }
+  }
+
+  val paths = 
+    JsObject(
+      ROUTES.groupBy { "/"+_.pathString }
+            .map { case (path, routes) => path -> 
+              JsObject(
+                routes.map { route => route.verb.toLowerCase -> 
+                    Json.obj(
+                      "summary" -> route.action,
+                      "produces" -> Json.arr(
+                        scalaTypeToMimeType(route.returns)
+                      ),
+                      "parameters" -> JsArray(
+                        (
+                          if(route.jsonParams.isEmpty) { Seq.empty }
+                          else { Seq(
+                            Json.obj(
+                              "name" -> "Body",
+                              "in" -> "body",
+                              "required" -> true,
+                              "schema" -> Json.obj(
+                                "type" -> "object",
+                                "required" -> JsArray(
+                                  route.jsonParams
+                                       .filterNot { _.isOptional }
+                                       .map { _.identifier }
+                                       .map { JsString(_) }
+                                ),
+                                "properties" -> JsObject(
+                                  route.jsonParams.map { p =>
+                                    p.identifier -> 
+                                      scalaTypeToSchema(p.scalaType)
+                                  }.toMap
+                                )
+                              )
+                            )
+                          ) }
+                        ) ++
+                        route.pathQueryParams.map { p => 
+                          Json.obj(
+                            "name" -> p.identifier,
+                            "in" -> "query",
+                            "required" -> false,
+                            "format" -> dataTypeToSwaggerType(p.dataType)
+                          )
+                        }
+                      )
+                    )
+                  }
+                  .toMap ++ 
+                Map(
+                  "parameters" -> JsArray(
+                    routes.head.path.collect {
+                      case PathVariable(id, dataType) => 
+                        Json.obj(
+                          "name" -> id,
+                          "in" -> "path",
+                          "required" -> true,
+                          "format" -> dataTypeToSwaggerType(dataType)
+                        )
+                    }
+                  )
+                )
+              )
+
+            }
+    )
+
+  val root = Json.obj(
+    "swagger" -> "2.0",
+    "basePath" -> "vizier-db/api/v1",
+    "info" -> info,
+    "paths" -> paths,
+    "definitions" -> definitions,
+  )
+
+  os.write.over(file, Json.prettyPrint(root))
 }
