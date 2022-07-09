@@ -1245,6 +1245,8 @@ table.parameter_list
     }
   }
 
+  // Keep the labels for accessibility's sake, but don't include them
+  // in the layout.
   td label
   {
     display: none;
