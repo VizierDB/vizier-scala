@@ -163,20 +163,22 @@ object Parameter
     def visibleArtifactsByType = editor.delegate
                                        .visibleArtifacts
                                        .map { _.mapValues { _._1.t } }
+    
     tree.parameter match {
       case param: serialized.SimpleParameterDescription =>
         param.datatype match {
-          case "colid"   => new ColIdParameter(param, editor.delegate.visibleArtifacts.map { _.mapValues { _._1 } }, editor.selectedDataset)
-          case "list"    => new ListParameter(param, tree.children, this.apply(_, editor))
-          case "record"  => new RecordParameter(param, tree.children, this.apply(_, editor))
-          case "string"  => new StringParameter(param)
-          case "int"     => new IntParameter(param)
-          case "decimal" => new DecimalParameter(param)
-          case "bool"    => new BooleanParameter(param)
-          case "rowid"   => new RowIdParameter(param)
-          case "fileid"  => new FileParameter(param)
-          case "dataset" => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
-          case _         => new UnsupportedParameter(param)
+          case "colid"    => new ColIdParameter(param, editor.delegate.visibleArtifacts.map { _.mapValues { _._1 } }, editor.selectedDataset)
+          case "list"     => new ListParameter(param, tree.children, this.apply(_, editor))
+          case "record"   => new RecordParameter(param, tree.children, this.apply(_, editor))
+          case "string"   => new StringParameter(param)
+          case "int"      => new IntParameter(param)
+          case "decimal"  => new DecimalParameter(param)
+          case "bool"     => new BooleanParameter(param)
+          case "rowid"    => new RowIdParameter(param)
+          case "fileid"   => new FileParameter(param)
+          case "dataset"  => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
+          case "datatype" => new DataTypeParameter(param)
+          case _          => new UnsupportedParameter(param)
         }
 
       case param: serialized.CodeParameterDescription =>
@@ -936,7 +938,7 @@ class DataTypeParameter(
   val hidden: Boolean
 ) extends Parameter
 {
-  def this(parameter: serialized.EnumerableParameterDescription)
+  def this(parameter: serialized.ParameterDescription)
   {
     this(
       id = parameter.id,

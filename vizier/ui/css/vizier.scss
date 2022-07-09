@@ -1233,15 +1233,24 @@ div.modal_background
 
 /* The last child of a parameter list is a "template" placeholder to allow
    adding more records by just typing */
-table.parameter_list tbody tr:last-child
+table.parameter_list 
 {
-  opacity: 0.6;
+  tbody tr:last-child
+  {
+    opacity: 0.6;
+
+    button.delete_row
+    {
+      display: none;
+    }
+  }
+
+  td label
+  {
+    display: none;
+  }
 }
 
-table.parameter_list tbody tr:last-child button.delete_row
-{
-  visibility: hidden;
-}
 
 
 .editor_actions
