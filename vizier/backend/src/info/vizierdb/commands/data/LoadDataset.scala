@@ -43,7 +43,6 @@ object LoadDataset
   val PARAM_NAME = "name"
   val PARAM_FORMAT = "loadFormat"
   val PARAM_GUESS_TYPES = "loadInferTypes"
-  val PARAM_HEADERS = "loadDetectHeaders"
   val PARAM_ANNOTATE_ERRORS = "loadDataSourceErrors"
   val PARAM_OPTIONS = "loadOptions"
   val PARAM_OPTION_KEY = "loadOptionKey"
@@ -65,7 +64,6 @@ object LoadDataset
                         default = Some(0)),
     TemplateParameters.SCHEMA,
     BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(false)),
-    BooleanParameter(name = "File Has Headers", id = PARAM_HEADERS, default = Some(false)),
     BooleanParameter(name = "Annotate Load Errors", id = PARAM_ANNOTATE_ERRORS, default = Some(false)),
     ListParameter(name = "Load Options", id = PARAM_OPTIONS, required = false, components = Seq(
       StringParameter(name = "Option Key", id  = PARAM_OPTION_KEY),
@@ -192,7 +190,8 @@ object LoadDataset
               url = actualFile,
               projectId = context.projectId,
               contextText = datasetName,
-              header = arguments.getOpt[Boolean](PARAM_HEADERS),
+              header = finalSparkOptions.get("header")
+                                        .map { _.toLowerCase == "true" },
               proposedSchema = proposedSchema,
               sparkOptions = finalSparkOptions,
               guessTypes = arguments.get[Boolean](PARAM_GUESS_TYPES)

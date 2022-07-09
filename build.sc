@@ -44,10 +44,10 @@ object vizier extends ScalaModule with PublishModule {
 
   def sources = T.sources(
     millSourcePath / "backend" / "src",
-    millSourcePath / "shared-src"
+    millSourcePath / "shared" / "src"
   )
   def resources = T.sources(
-    millSourcePath / "resources",
+    millSourcePath / "shared" / "resources",
     ui.resourceDir()
   )
 
@@ -148,7 +148,7 @@ object vizier extends ScalaModule with PublishModule {
  *** Backend Resources
  *************************************************/
   def buildRoutesScript = T.sources { os.pwd / "scripts" / "build_routes.sc" }
-  def routesFile        = T.sources { millSourcePath / "resources" / "vizier-routes.txt" }
+  def routesFile        = T.sources { millSourcePath / "shared" / "resources" / "vizier-routes.txt" }
 
   def routes = T { 
     println("Recompiling routes from "+routesFile().head.path); 
@@ -195,7 +195,7 @@ object vizier extends ScalaModule with PublishModule {
 
     def sources = T.sources(
       millSourcePath / "src",
-      vizier.millSourcePath / "shared-src"
+      vizier.millSourcePath / "shared" / "src"
     )
   
     override def compile = T {

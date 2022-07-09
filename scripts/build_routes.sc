@@ -2,9 +2,10 @@ import scala.collection.mutable
 
 // Utilities for processing vizier-routes.txt into source code
 
-val SOURCE_DIR = os.pwd / "vizier"
+val SOURCE_DIR  = os.pwd / "vizier"
 val BACKEND_DIR = SOURCE_DIR / "backend" / "src" / "info" / "vizierdb"
 val UI_DIR      = SOURCE_DIR / "ui"      / "src" / "info" / "vizierdb"
+val INPUT       = SOURCE_DIR / "shared" / "resources" / "vizier-routes.txt"
 
 // vizier-routes.txt contains a list of routes with information about the
 // structure of the request, handler information, and other metadata.
@@ -48,7 +49,6 @@ val UI_DIR      = SOURCE_DIR / "ui"      / "src" / "info" / "vizierdb"
 // a file, the handler needs to be able to return a file.
 //
 
-val INPUT = SOURCE_DIR / "resources" / "vizier-routes.txt"
 
 /////////////////////// Backend /////////////////////// 
 // Vizier uses Akka to route http requests to handlers.

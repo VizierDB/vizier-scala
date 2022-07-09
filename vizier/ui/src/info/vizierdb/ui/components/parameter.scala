@@ -914,7 +914,12 @@ class StringParameter(
       }
     )
   def set(v: JsValue): Unit = 
-    inputNode[dom.html.Input].value = v.as[String]
+    inputNode[dom.html.Input].value = v match {
+      case JsString(s) => s
+      case _ => 
+        println(s"WARNING: String parameter $name ($id) is being set to non-string value $v")
+        v.toString
+    }
   def setHint(s: String): Unit =
     inputNode[dom.html.Input].placeholder = s
 }

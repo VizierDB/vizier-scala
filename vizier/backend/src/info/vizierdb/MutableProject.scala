@@ -313,6 +313,7 @@ class MutableProject(
     waitForResult: Boolean = true,
     copyFile: Boolean = false,
     arguments: Seq[(String, String)] = Seq.empty,
+    header: Boolean = true,
   ){
     append("data", "load")(
       LoadDataset.PARAM_FILE -> (
@@ -325,14 +326,21 @@ class MutableProject(
       LoadDataset.PARAM_NAME -> name,
       LoadDataset.PARAM_FORMAT -> format,
       LoadDataset.PARAM_GUESS_TYPES -> inferTypes,
-      LoadDataset.PARAM_HEADERS -> true,
-      LoadDataset.PARAM_OPTIONS -> 
+      LoadDataset.PARAM_OPTIONS -> (
         arguments.map { case (arg, value) =>
           Map(
             LoadDataset.PARAM_OPTION_KEY -> arg,
             LoadDataset.PARAM_OPTION_VALUE -> value
           )
-        },
+        } ++ Seq(
+          if(header){ 
+            Map(
+              LoadDataset.PARAM_OPTION_KEY -> "header",
+              LoadDataset.PARAM_OPTION_VALUE -> "true"
+            )
+          } else { Map.empty },
+        )
+      ),
       TemplateParameters.PARAM_SCHEMA -> 
         schema.map { case (name, dataType) => Map(
           TemplateParameters.PARAM_SCHEMA_COLUMN -> name, 
