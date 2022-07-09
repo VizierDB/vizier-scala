@@ -91,10 +91,18 @@ object VizierServer
               )
             },
 
-            // Requests for the root.
+            // Requests for the root should go to index.html
             path(PathEnd) {
               redirect(
                 s"${publicURL}index.html",
+                MovedPermanently
+              )
+            },
+
+            // Requests for the root should go to index.html
+            path("projects" / LongNumber) { (projectId) =>
+              redirect(
+                s"${publicURL}project.html?projectId=${projectId}",
                 MovedPermanently
               )
             },

@@ -76,7 +76,9 @@ Vizier tracks how cells use artifacts and inter-cell dependencies.  When a cell 
 
 ### Compiling
 
-To use this repository you'll need [Scala 2](https://www.scala-lang.org/download/scala2.html) and [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation).  
+To use this repository you'll need [Scala 2](https://www.scala-lang.org/download/scala2.html), [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation), and [Ammonite](http://ammonite.io/).  
+
+An easy way to install all three is with [Coursier](https://get-coursier.io/docs/cli-installation) (`cs setup`).
 
 Some useful commands for using this repository
 
@@ -95,7 +97,7 @@ mill vizier.test
 mill vizier.ui.test
 ```
 
-The UI test cases require `node` and `jsdom`.  Install it and then 
+The UI test cases require `node` and `jsdom`.  Install [node](https://nodejs.org/en/download/) and then 
 ```
 npm install jsdom
 ```
@@ -103,6 +105,11 @@ npm install jsdom
 To run a single test case:
 ```
 mill vizier.test.testOnly [classname]
+```
+
+To run a single example:
+```
+mill vizier.test.testOnly [classname] -- ex "[any text in the example label]"
 ```
 
 ##### Run Vizier

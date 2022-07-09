@@ -16,7 +16,7 @@ package info.vizierdb.test
 
 import java.net.URL
 import scalikejdbc.{ GlobalSettings, LoggingSQLAndTimeSettings }
-import info.vizierdb.{ Vizier, VizierAPI, VizierURLs, Config }
+import info.vizierdb.{ Vizier, VizierURLs, Config }
 import info.vizierdb.catalog.Schema
 import java.nio.file.{ Files, Paths }
 import scala.sys.process.Process
@@ -56,7 +56,7 @@ object SharedTestResources
           )
         ) 
 
-        VizierAPI.urls = 
+        Vizier.urls = 
           new VizierURLs(
             new URL(s"http://localhost:5000/"), 
             new URL(s"http://localhost:5000/vizier-db/api/v1/"), 

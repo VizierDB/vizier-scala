@@ -57,7 +57,7 @@ $table_gutter_layer: 1;
 $toc_layer: 10;
 $tooltip_layer: 1250;
 $inter_module_hover_layer: $tooltip_layer;
-$menu_layer: 1500;
+$menu_layer: 2500;
 $modal_layer: 2000;
 
 /*********** Sizes ***************/
@@ -475,6 +475,11 @@ $menu_height: 32px;
           // cursor: not-allowed;
         }
 
+      }
+
+      &:hover
+      {
+        visibility: visible;
       }
     }
 
@@ -1376,6 +1381,67 @@ table.parameter_list tbody tr:last-child button.delete_row
         margin-left: 10px;
         flex: 1 1 auto;
       }
+    }
+  }
+}
+
+/************ History Panel ************/
+
+.history 
+{
+  width:      400px;
+  max-height: 400px;
+  overflow-y: scroll;
+  // background-color: white;
+  padding: 8px;
+  padding-bottom: 16px;
+
+  .workflow
+  {
+    display: flex;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+
+    a
+    {
+
+      i.fa
+      {
+        flex-grow: 0;
+        flex-shrink: 0;
+        border-radius: 4px;
+        border: solid 1px $color_artifact_button_border;
+        padding: 2px;
+        font-size: 12px;
+        margin-right: 4px;
+        color: $color_artifact_button;
+        background-color: $color_artifact_button_bg;
+      }
+
+      &:active i.fa
+      {
+        transform: scale(0.95);
+      }
+    }
+
+
+    .description
+    {
+      margin-left: 4px;
+      flex-grow: 1;
+    }
+
+    a
+    {
+      flex-grow: 0;
+      flex-shrink: 0;
+    }
+
+    &:nth-child(2n)
+    {
+      background-color: $color_row_highlight;
     }
   }
 }

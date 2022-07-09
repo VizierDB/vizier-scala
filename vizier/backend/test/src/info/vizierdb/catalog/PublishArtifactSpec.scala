@@ -18,12 +18,12 @@ import scalikejdbc._
 import play.api.libs.json._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
-import info.vizierdb.VizierAPI
 import info.vizierdb.api._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.MutableProject
 import info.vizierdb.commands.data.{ UnloadDataset, LoadDataset }
 import info.vizierdb.commands.FileArgument
+import info.vizierdb.Vizier
 
 class PublishArtifactSpec extends Specification with BeforeAll
 {
@@ -67,7 +67,7 @@ class PublishArtifactSpec extends Specification with BeforeAll
     project.append("data", "load")(
       LoadDataset.PARAM_FILE -> 
         FileArgument(
-          url = Some(VizierAPI.urls.publishedArtifact(EXPORT_NAME).toString)
+          url = Some(Vizier.urls.publishedArtifact(EXPORT_NAME).toString)
         ),
       LoadDataset.PARAM_NAME -> IMPORT_NAME,
       LoadDataset.PARAM_FORMAT -> "publish_local"
