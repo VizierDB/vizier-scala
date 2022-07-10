@@ -110,6 +110,11 @@ object Vizier
                       }
                     }
                     evt.stopPropagation()
+                  } else if (evt.keyCode == 116 /* f5 */) {
+                    // disable reload https://github.com/VizierDB/vizier-scala/issues/159
+                    evt.preventDefault()
+                  } else {
+                    println(s"KEY: ${evt.keyCode}")
                   }
                 })
 
