@@ -304,7 +304,7 @@ object Vizier
         urls = new VizierURLs(
           ui = new URL(VizierServer.publicURL),
           base = new URL(s"${VizierServer.publicURL}vizier-db/api/v1/"),
-          api = None
+          api = Some(new URL(s"${VizierServer.publicURL}swagger/index.html"))
         )
 
         if(!config.serverMode.getOrElse(false)){

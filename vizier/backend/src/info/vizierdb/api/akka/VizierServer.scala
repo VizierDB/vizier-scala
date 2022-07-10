@@ -66,50 +66,69 @@ object VizierServer
         // fail the base request.  akka-http-cors will generate these responses
         // automatically.
         cors() {
-          concat(
+          redirectToNoTrailingSlashIfPresent(StatusCodes.MovedPermanently) {
+            concat(
 
-            // API requests
-            pathPrefix("vizier-db" / "api" / "v1") {
+              // API requests
+              pathPrefix("vizier-db" / "api" / "v1") {
 
-              // Websockets
-              concat(
-                path("websocket") {
-                  extractClientIP { ip => 
-                    println("Websocket!")
-                    handleWebSocketMessages(BranchWatcherSocket.monitor(ip.toString))
-                  }
-                },
-                path("spreadsheet") {
-                  extractClientIP { ip => 
-                    println("Spreadsheet!")
-                    handleWebSocketMessages(SpreadsheetSocket.monitor(ip.toString))
-                  }
-                },
+                // Websockets
+                concat(
+                  path("websocket") {
+                    extractClientIP { ip => 
+                      println("Websocket!")
+                      handleWebSocketMessages(BranchWatcherSocket.monitor(ip.toString))
+                    }
+                  },
+                  path("spreadsheet") {
+                    extractClientIP { ip => 
+                      println("Spreadsheet!")
+                      handleWebSocketMessages(SpreadsheetSocket.monitor(ip.toString))
+                    }
+                  },
 
-                // All the other API routes
-                AllRoutes.routes
-              )
-            },
+                  // All the other API routes
+                  AllRoutes.routes
+                )
+              },
 
-            // Requests for the root should go to index.html
-            path(PathEnd) {
-              redirect(
-                s"${publicURL}index.html",
-                MovedPermanently
-              )
-            },
+              // Swagger requests
+              path("swagger") { 
+                redirect(
+                  s"swagger/index.html",
+                  MovedPermanently
+                )
+              },
+              path("swagger/") { 
+                redirect(
+                  s"swagger/index.html",
+                  MovedPermanently
+                )
+              },
+              pathPrefix("swagger") {
+                getFromResourceDirectory("swagger")
+              },
 
-            // Requests for the root should go to index.html
-            path("projects" / LongNumber) { (projectId) =>
-              redirect(
-                s"${publicURL}project.html?projectId=${projectId}",
-                MovedPermanently
-              )
-            },
+              // Requests for the root should go to index.html
+              path(PathEnd) {
+                redirect(
+                  s"${publicURL}index.html",
+                  MovedPermanently
+                )
+              },
 
-            // Raw file requests get directed to the ui directory
-            getFromResourceDirectory("ui"),
-          )
+              // Requests for the root should go to index.html
+              path("projects" / LongNumber) { (projectId) =>
+                redirect(
+                  s"${publicURL}project.html?projectId=${projectId}",
+                  MovedPermanently
+                )
+              },
+
+              // Raw file requests get directed to the ui directory
+              getFromResourceDirectory("ui"),
+            )
+          }
         }
       )
 

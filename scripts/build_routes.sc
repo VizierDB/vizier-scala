@@ -1,6 +1,6 @@
 import scala.collection.mutable
 import $ivy.`com.typesafe.play::play-json:2.9.2`, play.api.libs.json._
-
+import $ivy.`io.swagger:swagger-codegen:2.4.27`, io.swagger
 
 // Utilities for processing vizier-routes.txt into source code
 
@@ -66,7 +66,8 @@ val MAIN_ROUTES   = SERVER_ROUTES / "AllRoutes.scala"
 // is here:
 val WEBSOCKET_IMPL = BACKEND_DIR / "api" / "websocket" / "BranchWatcherAPIRoutes.scala"
 
-val SWAGGER = RESOURCE_DIR / "vizier.swagger"
+val SWAGGER_BASE = RESOURCE_DIR / "swagger"
+val SWAGGER_FILE = SWAGGER_BASE / "vizier-api.json"
 
 ///////////////////////   UI    ///////////////////////
 
@@ -373,7 +374,8 @@ for( (domain, routes) <- routesByDomain )
 val WEBSOCKET_INTERNAL_ARGS = Set("projectId", "branchId")
 val WEBSOCKET_ROUTES =
     ROUTES.filter { r => (r.domain == "workflow") && 
-                         (r.action.startsWith("head_")) }
+                         (r.action.startsWith("head_")) &&
+                         (r.action != "head_graph") }
 val UNDEFOR = "UndefOr\\[([^\\]]+)\\]".r
 
 def renderWebsocketRouteHandler(route: Route): (String, String) = 
@@ -602,20 +604,9 @@ def websocketAPICall(route: Route): String =
 ///////////////////////////////////////////////////////
 
 {
-  val file = SWAGGER
-  val info = Json.obj(
-    "title" -> "Vizier DB",
-    "description" -> "A 'data-centric' microkernel notebook",
-    "version" -> "v1.1",
-    "contact" -> Json.obj(
-      "name" -> "University at Buffalo, Illinois Institute of Technology, New York University, Breadcrumb Analytics",
-      "url" -> "https://vizierdb.info",
-    ),
-  )
-
   def dataTypeToSwaggerType(dataType: String): String =
     dataType match {
-      case "long"     => "long" 
+      case "long"     => "integer" 
       case "int"      => "integer"
       case "subpath"  => "string"
       case "string"   => "string"
@@ -674,7 +665,7 @@ def websocketAPICall(route: Route): String =
     "description" -> "A Vizier-serialized spark data type.  See https://github.com/VizierDB/vizier-scala/blob/v2.0/vizier/backend/src/info/vizierdb/spark/SparkSchema.scala"
   )}
   define { "DatasetColumn" -> mkObject()(
-    "id" -> Json.obj("type" -> "long"),
+    "id" -> Json.obj("type" -> "integer"),
     "name" -> Json.obj("type" -> "string"),
     "type" -> typeRef("CellDataType")
   )}
@@ -720,13 +711,17 @@ def websocketAPICall(route: Route): String =
   val paths = 
     JsObject(
       ROUTES.groupBy { "/"+_.pathString }
+            .toSeq.sortBy { _._1 }
             .map { case (path, routes) => path -> 
               JsObject(
                 routes.map { route => route.verb.toLowerCase -> 
                     Json.obj(
-                      "summary" -> route.action,
+                      "operationId" -> route.actionLabel,
                       "produces" -> Json.arr(
                         scalaTypeToMimeType(route.returns)
+                      ),
+                      "tags" -> Json.arr(
+                        route.domain
                       ),
                       "parameters" -> JsArray(
                         (
@@ -759,7 +754,7 @@ def websocketAPICall(route: Route): String =
                             "name" -> p.identifier,
                             "in" -> "query",
                             "required" -> false,
-                            "format" -> dataTypeToSwaggerType(p.dataType)
+                            "type" -> dataTypeToSwaggerType(p.dataType)
                           )
                         }
                       )
@@ -774,7 +769,7 @@ def websocketAPICall(route: Route): String =
                           "name" -> id,
                           "in" -> "path",
                           "required" -> true,
-                          "format" -> dataTypeToSwaggerType(dataType)
+                          "type" -> dataTypeToSwaggerType(dataType)
                         )
                     }
                   )
@@ -784,13 +779,45 @@ def websocketAPICall(route: Route): String =
             }
     )
 
+  val info = Json.obj(
+    "title" -> "Vizier DB",
+    "description" -> "A 'data-centric' microkernel notebook",
+    "version" -> "v1.1",
+    "contact" -> Json.obj(
+      "name" -> "University at Buffalo, Illinois Institute of Technology, New York University, Breadcrumb Analytics",
+      "url" -> "https://vizierdb.info",
+      "email" -> "info@vizierdb.info"
+    ),
+  )
+
   val root = Json.obj(
     "swagger" -> "2.0",
     "basePath" -> "vizier-db/api/v1",
     "info" -> info,
     "paths" -> paths,
+    "host" -> "localhost:5000/",
+    "schemes" -> "http",
     "definitions" -> definitions,
   )
 
-  os.write.over(file, Json.prettyPrint(root))
+  val spec = Json.prettyPrint(root)
+
+  os.makeDir.all(SWAGGER_BASE)
+  os.write.over(SWAGGER_FILE, spec)
+
+  /////////// Doc file /////////////
+
+  val configurator = new swagger.codegen.config.CodegenConfigurator()
+
+  configurator.setLang("html2")
+  configurator.setInputSpec(SWAGGER_FILE.toString)
+  configurator.setOutputDir(SWAGGER_BASE.toString)
+  configurator.setIgnoreFileOverride("./.swagger-codegen-ignore")
+
+  // input.setSwagger
+
+  new swagger.codegen.DefaultGenerator()
+             .opts(configurator.toClientOptInput())
+             .generate
+
 }
