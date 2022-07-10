@@ -21,6 +21,7 @@ import scala.util.matching.Regex
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.commands.ExecutionContext
 import info.vizierdb.Vizier
+import scala.sys.process._
 
 // Note: Scala does have a ProcessBuilder.  However, Scala's ProcessBuilder
 // (inherited from SBT) is optimized for shell-like streaming pipes between 
@@ -198,10 +199,14 @@ object PythonProcess
     }
   }
 
-  def apply(): PythonProcess =
+  def apply(envName: String = null): PythonProcess =
   {
+    val python = 
+      Option(envName).map { venv.python(_).toString }
+                     .getOrElse { PYTHON_COMMAND }
+
     val cmd = 
-      new JProcessBuilder(PYTHON_COMMAND, scriptPath)
+      new JProcessBuilder(python, scriptPath)
 
     if(Vizier.config.workingDirectory.isDefined){
       cmd.directory(new File(Vizier.config.workingDirectory()))
@@ -210,19 +215,86 @@ object PythonProcess
     return new PythonProcess(cmd.start())
   }
 
-  def run(script: String, pythonPath: String = PYTHON_COMMAND): String =
+  def run(
+    script: String, 
+    pythonPath: String = null, 
+    envName: String = null
+  ): String =
   {
+    val python =
+      Option(pythonPath).getOrElse { 
+        Option(envName).map { venv.python(_).toString }
+                       .getOrElse { PYTHON_COMMAND }
+      }
+
     val ret = new StringBuffer()
 
-    val cmd = new JProcessBuilder(pythonPath).start()
+    val cmd = new JProcessBuilder(python).start()
     val out = cmd.getOutputStream()
     out.write(script.getBytes())
     out.close()
+
+    val err = 
+      Source.fromInputStream(cmd.getErrorStream())
+            .getLines()
+            .mkString("\n")
+
+    if(err != ""){
+      System.err.println(err)
+    }
 
     Source.fromInputStream(cmd.getInputStream())
           .getLines()
           .mkString("\n")
   }
+
+  object venv
+  {
+    def dir(envName: String): File = 
+      new File(Vizier.config.pythonVenvDirFile, envName)
+
+    def bin(envName: String): File =
+      new File(dir(envName), "bin")
+
+    def python(envName: String): File =
+      new File(bin(envName), "python3")
+
+    def create(
+      envName: String, 
+      overwrite: Boolean = false
+    ): Unit =
+    {
+      var command = 
+        Seq(
+          PYTHON_COMMAND,
+          "-m", "venv",
+          "--upgrade-deps",
+          "--copies",
+        )
+      if(overwrite){ command = command :+ "--clear" }
+
+      command = command :+ dir(envName).toString
+
+      command.!!
+    }
+
+    def install(
+      envName: String,
+      packageSpec: String,
+    ): Unit =
+    {
+      var command =
+        Seq(
+          python(envName).toString,
+          "-m", "pip",
+          "install", packageSpec
+        )
+
+      command.!!
+    }
+  }
+
+
 
 }
 

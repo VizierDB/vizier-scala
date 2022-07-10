@@ -119,8 +119,18 @@ class Config(arguments: Seq[String])
     ),
   )
 
+  val cacheDirOverride = opt[String]("cache-dir",
+    descr = "Set vizier's cache directory (default ./.vizier-cache)"
+  )
+
   def workingDirectoryFile = 
     new File(workingDirectory.getOrElse("."))
+  
+  lazy val cacheDirFile = 
+    cacheDirOverride.map { new File(_) }
+                    .getOrElse { 
+                      new File(workingDirectoryFile, ".vizier-cache")
+                    }
 
   val sparkHost = opt[String]("spark-host",
     descr = "Spark master node",
@@ -132,6 +142,7 @@ class Config(arguments: Seq[String])
   val stagingDir = "staging"
   val stagingDirIsRelativeToDataDir = true
   lazy val dataDirFile = new File(dataDir)
+  lazy val pythonVenvDirFile = new File(cacheDirFile, "python")
 
   def resolveToDataDir(path: String) = { new File(dataDirFile, path).getAbsoluteFile }
 

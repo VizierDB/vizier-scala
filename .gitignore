@@ -25,3 +25,4 @@ __pycache__
 /.ammonite
 /vizier/shared/resources/vizier.swagger
 /vizier/shared/resources/swagger
+/.vizier-cache
