@@ -197,7 +197,9 @@ class SpreadsheetSerialization
         val jsonPostSerialization = Json.toJson(postSerialization)
         val readablePostSerialization = Json.prettyPrint(jsonPostSerialization)
         val immutableDAG = preSerialization.map(kv => (kv._1,kv._2.data.toSet)).toMap
+        println(immutableDAG)
         val immutableDAGPostSerialization = postSerialization.map(kv => (kv._1,kv._2.data.toSet)).toMap
+        println(immutableDAGPostSerialization)
         immutableDAG must_== immutableDAGPostSerialization
         }
     

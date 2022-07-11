@@ -61,6 +61,7 @@ class SpreadsheetConstruction
     val D = ColumnRef(4, "D")
     
     "Test everything" >> {
+
      //"Insert a single column" >> 
      {
         lazy val project = MutableProject("Spreadsheet serialization test")
@@ -79,11 +80,16 @@ class SpreadsheetConstruction
             case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
         }
         println("After inserting column D:")
-        SpreadsheetOnSpark(project.dataframe("A"), cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).show()
+      
+        val id = project.artifactRef("A").artifactId
+        val newFrame = DB.autoCommit { implicit s => 
+                SpreadsheetConstructor(id, cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).construct(iden => Artifact.get(id.get, Some(project.projectId)).dataframe)
+              }
+        newFrame.show()
         ok
      }
 
-     //"Delete a single row"
+     //"Delete a single row" >>
      {
         lazy val project = MutableProject("Spreadsheet serialization test")
         project.load("test_data/r.csv", "B")
@@ -100,13 +106,70 @@ class SpreadsheetConstruction
             case JsSuccess(s, _) => cDeserialized = s
             case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
         }
-        SpreadsheetOnSpark(project.dataframe("B"), cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).show()
+        //SpreadsheetOnSpark(project.dataframe("B"), cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).show()
+        println("after deleting row 2:")
+        val id = project.artifactRef("B").artifactId
+        val newFrame = DB.autoCommit { implicit s => 
+                SpreadsheetConstructor(id, cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).construct(iden => Artifact.get(id.get, Some(project.projectId)).dataframe)
+              }
+        newFrame.show()
         ok
      }
 
+     //"Insert a single row" >>
+     {
+        lazy val project = MutableProject("Spreadsheet serialization test")
+        project.load("test_data/r.csv", "C")
+        val preSerialization = Spreadsheet(project.dataframe("C"))
+        preSerialization.insertRows(5, 1)
+        val spreadsheetConstructor = SpreadsheetConstructor(Some(project.projectId), preSerialization.overlay.dag, preSerialization.overlay.frame, preSerialization.schema)
+        val jsonConstructor = Json.toJson(spreadsheetConstructor)
+        val readableConstructor = Json.prettyPrint(jsonConstructor)
+        //println(readableConstructor)
+        val constructorFromJson: JsResult[SpreadsheetConstructor] = jsonConstructor.validate[SpreadsheetConstructor]
+        var cDeserialized: SpreadsheetConstructor = null
+        var postSerialization: Spreadsheet = null
+        constructorFromJson match {
+            case JsSuccess(s, _) => cDeserialized = s
+            case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
+        }
+        //SpreadsheetOnSpark(project.dataframe("B"), cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).show()
+        println("after inserting at row 5:")
+        val id = project.artifactRef("C").artifactId
+        val newFrame = DB.autoCommit { implicit s => 
+                SpreadsheetConstructor(id, cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).construct(iden => Artifact.get(id.get, Some(project.projectId)).dataframe)
+              }
+        newFrame.show()
+        ok
 
+     }
 
-
+     //Move a single row >>
+     {
+        lazy val project = MutableProject("Spreadsheet serialization test")
+        project.load("test_data/r.csv", "D")
+        val preSerialization = Spreadsheet(project.dataframe("D"))
+        preSerialization.moveRows(5, 2, 1)
+        val spreadsheetConstructor = SpreadsheetConstructor(Some(project.projectId), preSerialization.overlay.dag, preSerialization.overlay.frame, preSerialization.schema)
+        val jsonConstructor = Json.toJson(spreadsheetConstructor)
+        val readableConstructor = Json.prettyPrint(jsonConstructor)
+        //println(readableConstructor)
+        val constructorFromJson: JsResult[SpreadsheetConstructor] = jsonConstructor.validate[SpreadsheetConstructor]
+        var cDeserialized: SpreadsheetConstructor = null
+        var postSerialization: Spreadsheet = null
+        constructorFromJson match {
+            case JsSuccess(s, _) => cDeserialized = s
+            case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
+        }
+        //SpreadsheetOnSpark(project.dataframe("B"), cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).show()
+        println("after moving row 5 to position 2:")
+        val id = project.artifactRef("D").artifactId
+        val newFrame = DB.autoCommit { implicit s => 
+                SpreadsheetConstructor(id, cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).construct(iden => Artifact.get(id.get, Some(project.projectId)).dataframe)
+              }
+        newFrame.show()
+        ok
+     }
 
     }
 }

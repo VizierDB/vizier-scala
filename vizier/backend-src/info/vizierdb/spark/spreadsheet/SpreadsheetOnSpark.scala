@@ -21,11 +21,10 @@ import scala.util.{Try, Success, Failure}
 object SpreadsheetOnSpark extends LazyLogging{
     def apply(input: DataFrame, dag: mutable.Map[ColumnRef,RangeMap[UpdateRule]], frame: ReferenceFrame, schema: mutable.ArrayBuffer[OutputColumn]): DataFrame =
     {
+        println("Input Dataframe:")
+        input.show()
         var output = input
-        //input.explain(true)
-        //output.explain(true)
-        //println("spreadsheetonspark")
-        //println(s"\nSchema: \n${schema.map((OutputColumn.unapply(_)))}")
+
         //Insert columns
         for(outputColumn <- schema) {
             outputColumn.source match {
@@ -47,31 +46,29 @@ object SpreadsheetOnSpark extends LazyLogging{
                 case _ => //println("other")
             }
         }
+
         //Update reference frames
         for(transformation <- frame.transformations) {
             transformation match {
                 case DeleteRows(position, count) =>
                     {
                         def deleteRow(rowid: Long): DataFrame = {
-                            output = AnnotateWithRowIds.withRowId(output) { df => 
-                                println(col(AnnotateWithRowIds.ATTRIBUTE))
-                                println(lit(rowid))
-                                df.filter(col(AnnotateWithRowIds.ATTRIBUTE) =!= lit(rowid))
+                            output = AnnotateWithSequenceNumber.withSequenceNumber(output) { df => 
+                                df.filter(col(AnnotateWithSequenceNumber.ATTRIBUTE) =!= lit(rowid))
                             }
                             output
                         }
                         for(row <- position until position + count) {
-                            output = deleteRow(position)
-                            println(s"deleting row at position: ${position}")
+                            output = deleteRow(position - 1)
                         }
                     }
                 case InsertRows(position, count, insertId) =>
                     {
                         val values = None
-                        def insertRow: Unit = {
+                        def insertRow: DataFrame = {
                             val newRowData = 
-                                input.schema
-                                    .zip(values.getOrElse { input.columns.toSeq.map { _ => JsNull } })
+                                output.schema
+                                    .zip(values.getOrElse { output.columns.toSeq.map { _ => JsNull } })
                                     .map { case (field, value) => 
                                     new Column(Literal(
                                         userFacingToInternalType(SparkPrimitive.decode(value, field.dataType), field.dataType),
@@ -79,79 +76,77 @@ object SpreadsheetOnSpark extends LazyLogging{
                                     )).as(field.name)
                                     }
                             if(position < 0){
-                                input.union(
-                                input.sqlContext
+                                output.union(
+                                output.sqlContext
                                     .range(1)
                                     .select(newRowData:_*)
                                 )
                             } else {
-                                AnnotateWithSequenceNumber.withSequenceNumber(input){ df =>
+                                output = AnnotateWithSequenceNumber.withSequenceNumber(output){ df =>
                                 val seq = df(AnnotateWithSequenceNumber.ATTRIBUTE)
                                 val oldRowData =
-                                    input.columns.map { df(_) } :+ 
+                                    output.columns.map { df(_) } :+ 
                                     when(seq >= position, seq + 1)
                                         .otherwise(seq)
                                         .as(AnnotateWithSequenceNumber.ATTRIBUTE)
                                 val newRowDataWithAttribute = 
                                     newRowData :+ lit(position).as(AnnotateWithSequenceNumber.ATTRIBUTE)
                                 val newRow = 
-                                    input.sqlContext
+                                    output.sqlContext
                                         .range(1)
                                         .select(newRowDataWithAttribute:_*)
 
-                                df.select(oldRowData:_*)
+                                    df.select(oldRowData:_*)
                                     .union(newRow)
                                     .sort(col(AnnotateWithSequenceNumber.ATTRIBUTE).asc)
                                 }
                             }
+                            output
                         }
                         for(insert <- 1 to count) {
-                            insertRow
+                            output = insertRow
                         }
                     }
                 case MoveRows(from, to, count) =>
                     {
-                        def moveRow(row: Long, position: Long): Unit = {
-                            AnnotateWithRowIds.withRowId(input) { rowDF =>
+                        def moveRow(row: Long, position: Long): DataFrame = {
+                            output = AnnotateWithSequenceNumber.withSequenceNumber(output) { rowDF =>
                                 val targetDropped = 
-                                rowDF.filter( rowDF(AnnotateWithRowIds.ATTRIBUTE) =!= lit(row) )
-                                AnnotateWithSequenceNumber.withSequenceNumber(targetDropped){ df =>
-                                val seq = df(AnnotateWithSequenceNumber.ATTRIBUTE)
+                                    rowDF.filter( rowDF(AnnotateWithSequenceNumber.ATTRIBUTE) =!= row )
+                                val seq = targetDropped(AnnotateWithSequenceNumber.ATTRIBUTE)
                                 val oldRowData =
-                                    input.columns.map { df(_) } :+ 
-                                    when(seq >= position, seq + 1)
-                                        .otherwise(seq)
-                                        .as(AnnotateWithSequenceNumber.ATTRIBUTE) :+
-                                    df(AnnotateWithRowIds.ATTRIBUTE)
+                                    output.columns.map { targetDropped(_) } :+ 
+                                        when(seq >= position, seq + 1)
+                                            .otherwise(seq)
+                                            .as(AnnotateWithSequenceNumber.ATTRIBUTE) 
                                 val replacedRowData = 
-                                    input.columns
+                                    output.columns
                                         .map { rowDF(_) } :+
-                                            lit(position).as(AnnotateWithSequenceNumber.ATTRIBUTE) :+
-                                    df(AnnotateWithRowIds.ATTRIBUTE)
+                                            lit(position).as(AnnotateWithSequenceNumber.ATTRIBUTE) 
                                 val replacedRow = 
-                                    rowDF.filter( rowDF(AnnotateWithRowIds.ATTRIBUTE) === lit(row) )
+                                    rowDF.filter( rowDF(AnnotateWithSequenceNumber.ATTRIBUTE) === row )
                                         .select(replacedRowData:_*)
 
-                                df.select(oldRowData:_*)
+                                targetDropped.select(oldRowData:_*)
                                     .union(replacedRow)
                                     .sort(col(AnnotateWithSequenceNumber.ATTRIBUTE).asc)
-                                }
                             }
+                            output
                         }
                         for(move <- 1 to count) {
-                            moveRow(from, to)
+                            output = moveRow(from - 1, to - 1)
                         }
                     }
             }   
         }
         //Apply dag ops
         
+
+
+
         //Remove columns
 
-
-        //input.show()
-        //input.explain(true)
-        //output.explain(true)
+        
         output
 
     }
