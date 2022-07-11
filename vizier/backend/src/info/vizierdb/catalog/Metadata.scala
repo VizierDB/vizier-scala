@@ -25,13 +25,13 @@ object Metadata extends SQLSyntaxSupport[Metadata]
     new Metadata(rs.string(p.key), rs.string(p.value))
 
   def getOption(key: String)(implicit session: DBSession): Option[String] =
-    sql"SELECT value FROM Metadata WHERE key = $key"
+    sql"SELECT `value` FROM Metadata WHERE `key` = $key"
       .map { _.string(1) }
       .single()
 
   def get(key: String)(implicit session: DBSession): String = getOption(key).get
 
   def put(key: String, value: String)(implicit session: DBSession) = 
-    sql"INSERT OR REPLACE INTO Metadata(key, value) VALUES($key, $value)".execute.apply()
+    sql"MERGE INTO Metadata(`key`, `value`) KEY(`key`) VALUES($key, $value)".execute.apply()
 }
 

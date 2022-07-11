@@ -62,7 +62,7 @@ object vizier extends ScalaModule with PublishModule {
     ivy"org.scalikejdbc::scalikejdbc::4.0.0",
     ivy"org.scalikejdbc::scalikejdbc-syntax-support-macro::4.0.0",
     ivy"org.xerial:sqlite-jdbc:3.36.0.3",
-
+    ivy"com.h2database:h2:2.1.214",
 
     ////////////////////// Import/Export Support ///////////
     ivy"org.apache.commons:commons-compress:1.21",

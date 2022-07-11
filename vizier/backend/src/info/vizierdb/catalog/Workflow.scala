@@ -112,6 +112,7 @@ case class Workflow(
       select(c.resultAll, m.resultAll, r.resultAll)
         .from(Cell as c)
         .join(Module as m)
+        .on(m.id, c.moduleId)
         .leftJoin(Result as r)
         .on(c.resultId, r.id)
         .where.eq(c.workflowId, id)

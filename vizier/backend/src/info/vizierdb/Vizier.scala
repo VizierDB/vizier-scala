@@ -60,7 +60,7 @@ object Vizier
   var sparkSession: SparkSession = null
   var urls: VizierURLs = null
 
-  def initSQLite(db: String = "Vizier.db") = 
+  def initSQLite(db: String = "Vizier.h2") = 
   {
     // Instead of using the default SQLite driver, we're going to use the following workaround.
     // Specifically, The SQLite driver doesn't like it when you change the READ-ONLY status of a 
@@ -69,12 +69,12 @@ object Vizier
     // slightly slower, 
     DriverManager.registerDriver(SQLiteNoReadOnlyDriver)
     ConnectionPool.singleton(
-      url = "no-read-only:jdbc:sqlite:" + new File(config.basePath(), db).toString,
+      url = "jdbc:h2:" + new File(config.basePath(), db).getAbsolutePath.toString,
       user = "",
       password = "",
       settings = ConnectionPoolSettings(
         initialSize = 1,
-        maxSize = 1,
+        maxSize = 10,
 
         // If you are here to up the connection time-out period because you're getting connection
         // timeouts, read this first please:
