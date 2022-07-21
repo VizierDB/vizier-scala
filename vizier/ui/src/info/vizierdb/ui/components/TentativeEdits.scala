@@ -236,10 +236,11 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   override def onUpdate(n: Int, replacement: Module): Unit =
   {
-    logger.trace(s"ON UPDATE: $n")
+    logger.trace(s"ON UPDATE: $n; ")
     val module = baseElements(n)
     baseElements(n) = replacement
-    module.replaceSelfWithElement(module)
+    module.replaceSelfWithElement(replacement)
+    logger.trace(s"... displayed at ${module.displayPosition}")
     watchers.foreach { _.onUpdate(module.displayPosition, replacement) }
   }
 

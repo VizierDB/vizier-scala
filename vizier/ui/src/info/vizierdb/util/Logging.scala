@@ -1,6 +1,8 @@
 package info.vizierdb.util
 
 import scala.collection.mutable
+import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.annotation.JSExportTopLevel
 
 trait Logging
 {
@@ -35,6 +37,7 @@ class Logger(val loggerName: String, var level: Int)
   override def toString = s"$loggerName -> $level"
 }
 
+@JSExportTopLevel("Logging")
 object Logging extends Enumeration
 {
   type Level = Value
@@ -88,6 +91,14 @@ object Logging extends Enumeration
 
   def set(name: String, level: Level) =
     logger(name).set(level)
+
+  @JSExport("enable")
+  def enable(name: String) =
+    set(name, TRACE)
+
+  @JSExport("disable")
+  def disable(name: String) =
+    set(name, ERROR)
 
   def test[T](name: String, level: Level)(op: => T): T =
   {
