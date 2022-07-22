@@ -1551,10 +1551,10 @@ table.parameter_list
         padding-top: 4px;
         padding-bottom: 4px;
 
-        &:nth-child(2n+1)
-        {
-          background-color: $color_row_highlight;
-        }
+        // &:nth-child(2n+1)
+        // {
+        //   background-color: $color_row_highlight;
+        // }
 
         label
         {
