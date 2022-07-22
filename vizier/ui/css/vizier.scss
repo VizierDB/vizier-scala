@@ -1578,9 +1578,9 @@ table.parameter_list
 
       button
       {
-        margin-left: calc(100% - 124px);
+        margin-left: calc(100% - 154px);
         height: 32px;
-        width: 120px;
+        width: 150px;
         border-radius: 0px;
         border: none;
         color: white;
@@ -1589,6 +1589,7 @@ table.parameter_list
         transition-property: transform;
         transition-duration: 0.1;
         background-color: $color_button_confirm;
+        cursor: pointer;
 
         &:active
         {

@@ -9,8 +9,8 @@ import info.vizierdb.ui.rxExtras.implicits._
 class SettingsView(implicit owner: Ctx.Owner)
 {
   val tabs = Seq[SettingsTab](
-    APIKeys,
-    PythonSettings
+    new GeneralSettings(this),
+    new PythonSettings(this)
   )
 
   val activeTabIdx = Var[Int](0)

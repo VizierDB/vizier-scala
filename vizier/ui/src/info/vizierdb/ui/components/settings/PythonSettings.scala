@@ -4,7 +4,7 @@ import scala.scalajs.js.annotation._
 import scalatags.JsDom.all._
 import org.scalajs.dom
 
-object PythonSettings extends SettingsTab
+class PythonSettings(parent: SettingsView) extends SettingsTab
 {
 
   def title = "Python"

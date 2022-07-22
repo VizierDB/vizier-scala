@@ -4,10 +4,20 @@ import scala.scalajs.js.annotation._
 import scalatags.JsDom.all._
 import org.scalajs.dom
 
-object APIKeys extends SettingsTab
+class GeneralSettings(parent: SettingsView) extends SettingsTab
 {
 
-  val title = "Remote APIs"
+  val title = "General"
+
+  object Notifications
+  {
+    val enabled = input(id := "notifications_enabled", `type` := "checkbox").render
+
+    def save(evt: dom.Event): Unit =
+    {
+      println("Saving Notifications")
+    }
+  }
 
   object OSM
   {
@@ -39,7 +49,18 @@ object APIKeys extends SettingsTab
     }
   }
 
-  val root = div(`class` := "api_keys",
+  val root = div(`class` := "general",
+    div(`class` := "group",
+      div(`class` := "title", "Notifications"),
+      div(`class` := "setting",
+        label(`for` := "notifications_enabled", "... when a slow cell finishes"),
+        Notifications.enabled,
+      ),      
+      button(`class` := "save",
+        onclick := Notifications.save _,
+        "Save Notifications"
+      )
+    ),
     div(`class` := "group",
       div(`class` := "title", "Open Street Map"),
       div(`class` := "description",
