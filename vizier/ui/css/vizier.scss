@@ -14,6 +14,7 @@ $button_shadow: #bbb;
 /****** Color Scheme - Revised ******/
 $color_primary:                #214478;
 $color_primary_highlight:      #2e6098;
+$color_primary_faded:          #689eda;
 
 $color_done:                   #488ec8; // #36338d;
 $color_error:                  #9d284c;
@@ -1453,6 +1454,149 @@ table.parameter_list
     &:nth-child(2n)
     {
       background-color: $color_row_highlight;
+    }
+  }
+}
+
+/************ Settings Page ************/
+
+.settings
+{
+  max-width: 720px;
+  min-width: 300px;
+  margin-right: auto;
+  margin-left: auto;
+  margin-top: 16px;
+
+  .tabs
+  {
+    height: 36px;
+    width: 100%;
+    background-color: white;
+    display: flex;
+    flex-direction: row;
+
+    span.reactive
+    {
+      flex-grow: 0;
+    }
+
+    .tab {
+      color: white;
+      height: calc(100% - 8px);
+      margin-right: 4px;
+      vertical-align: middle;
+      padding-left: 16px;
+      padding-right: 16px;
+      padding-top: 8px;
+      font-weight: bold;
+      cursor: pointer;
+
+      &.active 
+      {
+        background-color: $color_primary;
+      }
+
+      &.inactive
+      {
+        background-color: $color_primary_faded;
+        height: calc(100% - 10px);
+      }
+    }
+
+    .spacer
+    {
+      flex-grow: 1;
+    }
+  }
+
+  .content
+  {
+    border: solid 2px $color_primary;
+    padding: 8px;
+
+    .group
+    {
+      margin-top: 16px;
+
+      &:nth-child(1)
+      {
+        margin-top: 0px;
+      }
+
+      .title
+      {
+        font-size: 140%;
+        font-weight: bold;
+      }
+
+      .description
+      {
+        font-size: 80%;
+        margin-left:  32px;
+        margin-right: 32px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        padding: 4px;
+
+        border: solid 1px #ddd;
+        border-radius: 4px;
+        background-color: #f6f6f6;
+        color: grey;
+      }
+
+      .setting
+      {
+
+        padding-top: 4px;
+        padding-bottom: 4px;
+
+        &:nth-child(2n+1)
+        {
+          background-color: $color_row_highlight;
+        }
+
+        label
+        {
+          display: inline-block;
+          width: 200px;
+          text-align: right;
+          padding-right: 8px;
+          font-weight: bold;
+        }
+
+        input[type="checkbox"]
+        {
+          margin-left: 0px;
+        }
+
+        input[type="text"]
+        {
+          width: calc(100% - 220px);
+        }
+      }
+
+      button
+      {
+        margin-left: calc(100% - 124px);
+        height: 32px;
+        width: 120px;
+        border-radius: 0px;
+        border: none;
+        color: white;
+        font-weight: bold;
+        // background-color: grey;
+        transition-property: transform;
+        transition-duration: 0.1;
+        background-color: $color_button_confirm;
+
+        &:active
+        {
+          transform: scale(0.95);
+        }
+
+
+      }
     }
   }
 }

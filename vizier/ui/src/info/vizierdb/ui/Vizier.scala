@@ -20,7 +20,7 @@ import info.vizierdb.serialized.ProjectList
 import info.vizierdb.serialized.PropertyList
 import info.vizierdb.ui.components.dataset.Dataset
 import info.vizierdb.ui.components.MenuBar
-import info.vizierdb.ui.components.SettingsView
+import info.vizierdb.ui.components.settings.SettingsView
 import info.vizierdb.ui.components.dataset.TableView
 import info.vizierdb.nativeTypes
 import info.vizierdb.ui.widgets.Spinner

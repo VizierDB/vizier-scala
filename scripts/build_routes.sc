@@ -91,6 +91,11 @@ val AUTOGEN_HEADER =
 ////////////// Read vizier-routes.txt /////////////////
 ///////////////////////////////////////////////////////
 
+val UNDEFOR = "UndefOr\\[([^\\]]+)\\]".r
+val IS_FILE = "FILE\\[([^\\]]+)\\]".r
+val SEQ = "Seq\\[([^\\]]+)\\]".r
+val SERIALIZED = "serialized\\.(.*)".r
+
 sealed trait PathComponent
 
 case class PathLiteral(value: String) extends PathComponent
@@ -126,13 +131,47 @@ case class Param(identifier: String, scalaType: String)
   def typedIdentifier = s"$identifier:$scalaType"
 
   def nativeScalaType = 
-    scalaType.replaceAll("UndefOr", "Option")
+    scalaType match {
+      case "FILE" => "Array[Byte]"
+      case UNDEFOR(body) => s"Option[$body]"
+      case "JSON" => "JsValue"
+      case x => x
+    }
 
   def typedNativeIdentifier = s"$identifier:$nativeScalaType"
 
   def isOptional =
     scalaType.startsWith("UndefOr") || scalaType.startsWith("Option")
 }
+
+sealed trait BodyType
+{
+  def toParams: Seq[Param]
+}
+case class FileBody(label: String) extends BodyType
+{
+  def toParam = Param(label, "FILE")
+  def toParams = Seq(toParam)
+}
+case class RawJsonBody(label: String) extends BodyType
+{
+  def toParam = Param(label, "JSON")
+  def toParams = Seq(toParam)
+}
+case class RawStringBody(label: String) extends BodyType
+{
+  def toParam = Param(label, "String")
+  def toParams = Seq(toParam)
+}
+case class JsonParamBody(params: Seq[Param]) extends BodyType
+{
+  def toParams = params
+}
+case object EmptyBody extends BodyType
+{
+  def toParams = Seq.empty
+}
+
 case class Route(
   path : Seq[PathComponent],
   pathQueryParams: Seq[PathVariable],
@@ -141,30 +180,35 @@ case class Route(
   action: String,
   handler: String,
   returns: String,
-  jsonParams: Seq[Param],
-  fileParam: Option[String],
+  body: BodyType,
 )
 {
   def allParams = Seq[Seq[Param]](
     pathParams,
     pathQueryParams.map { _.toParam },
-    jsonParams
+    body.toParams
   ).flatten
 
   def pathParams = 
     path.collect { case p:PathVariable => (p:PathVariable).toParam }
 
+  def bodyParams =
+    body.toParams
+
   def jsonParamClassName: Option[String] =
-    if(jsonParams.isEmpty){ None }
-    else { 
+    if(body.isInstanceOf[JsonParamBody]){
       Some(s"${action.capitalize}Parameter")
-    }
+    } else { None }
 
   def jsonParamClass: Option[String] =
-    jsonParamClassName.map { clazz => 
-      s"""case class $clazz(
-         |  ${jsonParams.map { _.typedNativeIdentifier }.mkString(",\n  ")}
-         |)""".stripMargin
+    body match {
+      case JsonParamBody(params) =>
+        Some(
+          s"""case class ${jsonParamClassName.get}(
+             |  ${params.map { _.typedNativeIdentifier }.mkString(",\n  ")}
+             |)""".stripMargin
+        )
+      case _ => None
     }
   
   def actionLabel = s"${domain}${action.split("_").map { _.capitalize }.mkString}"
@@ -201,10 +245,14 @@ val ROUTES: Seq[Route] =
             }
         }
 
-      val paramIsFile =
-        !jsonParams.filter { _.scalaType == "FILE" }.isEmpty
-
-      assert(!paramIsFile || jsonParams.size == 1)
+      val body =
+        jsonParams match {
+          case Seq(Param(label, "FILE"))   => FileBody(label)
+          case Seq(Param(label, "JSON"))   => RawJsonBody(label)
+          case Seq(Param(label, "STRING")) => RawStringBody(label)
+          case Seq()                       => EmptyBody
+          case params                      => JsonParamBody(params) 
+        }
 
       Route(
         path = path.drop(1).map {  
@@ -217,8 +265,7 @@ val ROUTES: Seq[Route] =
         action = components(3),
         handler = components(4),
         returns = components(5),
-        jsonParams = if(paramIsFile){ Seq() } else { jsonParams },
-        fileParam = if(paramIsFile){ Some(jsonParams(0).identifier) } else { None }
+        body = body,
       )
     }
 
@@ -253,21 +300,25 @@ def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
       s"(${pathParamInputs.mkString(", ")}) => "
     } else { "" }
 
-  val jsonParamOutputs =
-    route.jsonParams.map { param =>
-      s"${param.identifier} = jsonEntity.${param.identifier}"
-    }
-
-  if(!jsonParamOutputs.isEmpty){
-    extractors.append(
-      s"entity(as[${route.jsonParamClassName.get}]) { jsonEntity => "
-    )
-  }
-
-  val fileParamOutputs = 
-    route.fileParam.map { identifier => 
-      extractors.append(s"VizierServer.withFile(\"${identifier}\") { fileEntity => ")
-      s"$identifier = fileEntity"
+  val bodyParamOutputs: Seq[String] =
+    route.body match {
+      case EmptyBody => Seq.empty
+      case JsonParamBody(params) =>
+        extractors.append(
+          s"entity(as[${route.jsonParamClassName.get}]) { jsonEntity => "
+        )
+        params.map { param =>
+          s"${param.identifier} = jsonEntity.${param.identifier}"
+        }
+      case FileBody(identifier) =>
+        extractors.append(s"VizierServer.withFile(\"${identifier}\") { fileEntity => ")
+        Seq(s"$identifier = fileEntity")
+      case RawJsonBody(identifier) =>
+        extractors.append(s"entity(as[JsValue]) { jsonEntity =>")
+        Seq(s"$identifier = jsonEntity")
+      case RawStringBody(identifier) =>
+        extractors.append(s"entity(as[String]) { stringEntity =>")
+        Seq(s"$identifier = stringEntity")
     }
 
   val queryStringParamOutputs =
@@ -281,8 +332,7 @@ def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
 
   val allParams =
     pathParamOutputs ++
-    jsonParamOutputs ++
-    fileParamOutputs ++
+    bodyParamOutputs ++
     queryStringParamOutputs
 
   s"""  val ${route.action}Route${idx} =
@@ -376,7 +426,6 @@ val WEBSOCKET_ROUTES =
     ROUTES.filter { r => (r.domain == "workflow") && 
                          (r.action.startsWith("head_")) &&
                          (r.action != "head_graph") }
-val UNDEFOR = "UndefOr\\[([^\\]]+)\\]".r
 
 def renderWebsocketRouteHandler(route: Route): (String, String) = 
 {
@@ -513,20 +562,37 @@ def websocketAPICall(route: Route): String =
     }).mkString(", ")
 
   val ajaxArgs = 
-    Seq("url = url") ++
-    (if(route.jsonParams.isEmpty) { Seq() } else {
-      Seq(
-        """headers = Map("Content-Type" -> "application/json")""",
-        "data = Json.obj(\n"+
-        route.jsonParams.map { p =>
-          s"""  "${p.identifier}" -> ${p.identifier},"""
-        }.mkString("\n")+"\n).toString"
-      )
+    Seq("url = url") ++ (
+    route.body match {
+      case EmptyBody => Seq()
+      case JsonParamBody(params) => 
+        Seq(
+          """headers = Map("Content-Type" -> "application/json")""",
+          "data = Json.obj(\n"+
+          params.map { p =>
+            s"""  "${p.identifier}" -> ${p.identifier},"""
+          }.mkString("\n")+"\n).toString"
+        )
+      case RawJsonBody(identifier) =>
+        Seq(
+          """headers = Map("Content-Type" -> "application/json")""",
+          s"data = $identifier.toString"
+        )
+      case RawStringBody(identifier) =>
+        Seq(
+          """headers = Map("Content-Type" -> "text/plain")""",
+          s"data = $identifier"
+        )
+      case FileBody(identifier) =>
+        Seq(
+          """headers = Map("Content-Type" -> "application/octet-stream")""",
+          s"data = $identifier"
+        )
     })
 
   val allParams = 
     route.pathParams.map { _.typedNativeIdentifier } ++
-    route.jsonParams.map { p => p.typedNativeIdentifier + (if(p.isOptional) { "= None" } else { "" }) } ++
+    route.bodyParams.map { p => p.typedNativeIdentifier + (if(p.isOptional) { "= None" } else { "" }) } ++
     route.pathQueryParams.map { p => s"${p.identifier}:Option[${p.scalaType}] = None" }
 
   val url = 
@@ -613,10 +679,6 @@ def websocketAPICall(route: Route): String =
 
     }
 
-  val IS_FILE = "FILE\\[([^\\]]+)\\]".r
-  val UNDEFOR = "UndefOr\\[([^\\]]+)\\]".r
-  val SEQ = "Seq\\[([^\\]]+)\\]".r
-  val SERIALIZED = "serialized\\.(.*)".r
 
   def scalaTypeToMimeType(scalaType: String): String =
     scalaType match {
@@ -690,6 +752,10 @@ def websocketAPICall(route: Route): String =
     "workflowId" -> typeRef("Identifier"),
     "moduleId"   -> typeRef("Identifier")
   )}
+  define { "JsValue" -> Json.obj(
+    "type" -> "any",
+    "description" -> "the value, encoded as Json"
+  )}
 
   val aliases = Map(
     "CommandArgumentList.T" -> "Seq[CommandArgument]",
@@ -705,6 +771,7 @@ def websocketAPICall(route: Route): String =
       case UNDEFOR(elem) => scalaTypeToSchema(elem)
       case SEQ(elem) => Json.obj("type" -> "array", "items" -> scalaTypeToSchema(elem))
       case "String" => Json.obj("type" -> "string")
+      case "JSON" => Json.obj("type" -> "object", "additionalProperties" -> true)
     }
   }
 
@@ -725,29 +792,56 @@ def websocketAPICall(route: Route): String =
                       ),
                       "parameters" -> JsArray(
                         (
-                          if(route.jsonParams.isEmpty) { Seq.empty }
-                          else { Seq(
-                            Json.obj(
-                              "name" -> "Body",
-                              "in" -> "body",
-                              "required" -> true,
-                              "schema" -> Json.obj(
-                                "type" -> "object",
-                                "required" -> JsArray(
-                                  route.jsonParams
-                                       .filterNot { _.isOptional }
-                                       .map { _.identifier }
-                                       .map { JsString(_) }
-                                ),
-                                "properties" -> JsObject(
-                                  route.jsonParams.map { p =>
-                                    p.identifier -> 
-                                      scalaTypeToSchema(p.scalaType)
-                                  }.toMap
+                          route.body match {
+                            case EmptyBody => Seq.empty
+                            case JsonParamBody(params) => 
+                              Seq(Json.obj(
+                                "name" -> "Body",
+                                "in" -> "body",
+                                "required" -> true,
+                                "schema" -> Json.obj(
+                                  "type" -> "object",
+                                  "required" -> JsArray(
+                                    params.filterNot { _.isOptional }
+                                          .map { _.identifier }
+                                          .map { JsString(_) }
+                                  ),
+                                  "properties" -> JsObject(
+                                    params.map { p =>
+                                      p.identifier -> 
+                                        scalaTypeToSchema(p.scalaType)
+                                    }.toMap
+                                  )
                                 )
-                              )
-                            )
-                          ) }
+                              ))
+                            case RawJsonBody(label) =>
+                              Seq(Json.obj(
+                                "name" -> label,
+                                "in" -> "body",
+                                "required" -> true,
+                                "schema" -> Json.obj(
+                                  // "type" -> "any"
+                                )
+                              ))
+                            case RawStringBody(label) =>
+                              Seq(Json.obj(
+                                "name" -> label,
+                                "in" -> "body",
+                                "required" -> true,
+                                "schema" -> Json.obj(
+                                  "type" -> "string"
+                                )
+                              ))
+                            case FileBody(label) =>
+                              Seq(Json.obj(
+                                "name" -> label,
+                                "in" -> "body",
+                                "required" -> true,
+                                "schema" -> Json.obj(
+                                  "type" -> "file"
+                                )
+                              ))
+                          }
                         ) ++
                         route.pathQueryParams.map { p => 
                           Json.obj(
