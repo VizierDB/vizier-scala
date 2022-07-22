@@ -272,4 +272,7 @@ class Module(val subscription: ModuleSubscription)
   //
   subscription.state.trigger { refreshClasses() }
   highlight.trigger { refreshClasses() }
+
+  override def toString: String =
+    s"${subscription.packageId}.${subscription.commandId} @ $position [$id]"
 }

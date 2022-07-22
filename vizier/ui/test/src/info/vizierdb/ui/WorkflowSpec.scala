@@ -248,21 +248,67 @@ object WorkflowSpec extends TestSuite with TestFixtures
         // "info.vizierdb.ui.components.TentativeModule",
         // "info.vizierdb.ui.components.TentativeEdits$Tail$"
       ) {
-        println(modules.mkString(", "))
+        // println(modules.mkString(", "))
         val target = modules.baseElements(modules.baseElements.size-1)
-        println(target)
+        // println(target)
         modules.first.validate()
         signalDelta(
           delta.DeleteCell(modules.baseElements.size-1)
         )
 
-        println(modules.mkString(", "))
+        // println(modules.mkString(", "))
 
         modules.first.validate()
         assert(modules.find { _ eq target }.isEmpty)
 
       }
 
+    }
+
+
+    test("Double-updates") {
+      Logging.trace(
+        //
+      ) {
+        // println(modules.zipWithIndex.mkString("\n"))
+        assert(modules.baseElements.size >= 2) 
+        signalDelta(
+          delta.UpdateCell(
+            cell = 
+              BuildA.Module(
+                packageId = "debug",
+                commandId = "dummy",
+              )("dataset" -> JsString("shazbot")),
+            position = 1
+          )
+        )
+        // println("------")
+        // println(modules.zipWithIndex.mkString("\n"))
+        assert(modules(1).isInstanceOf[Module])
+        assert(modules(1).asInstanceOf[Module]
+                         .subscription
+                         .arguments
+                         .filter { _.id == "dataset" }
+                         .map { _.value.as[String] }
+                         .contains("shazbot"))
+        signalDelta(
+          delta.UpdateCell(
+            cell = 
+              BuildA.Module(
+                packageId = "debug",
+                commandId = "dummy",
+              )("dataset" -> JsString("cool cool cool")),
+            position = 1
+          )
+        )
+        assert(modules(1).isInstanceOf[Module])
+        assert(modules(1).asInstanceOf[Module]
+                         .subscription
+                         .arguments
+                         .filter { _.id == "dataset" }
+                         .map { _.value.as[String] }
+                         .contains("cool cool cool"))
+      }
     }
   }
 
