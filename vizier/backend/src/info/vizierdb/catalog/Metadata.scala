@@ -36,7 +36,7 @@ object Metadata extends SQLSyntaxSupport[Metadata]
 
   def all(implicit session: DBSession): Map[String, String] = 
     sql"SELECT key, value FROM Metadata"
-      .map { result => result.string(0) -> result.string(1) }
+      .map { result => result.string(1) -> result.string(2) }
       .list()
       .toMap
 }

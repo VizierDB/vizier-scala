@@ -29,6 +29,8 @@ import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 import java.util.concurrent.Executors
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
+import akka.stream.Materializer
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 
 object VizierServer
 {
@@ -161,7 +163,6 @@ object VizierServer
 
     implicit def vizierResponseToAkkaResponse(vizierResp: Response): Route =
     {
-
       val responseEntity = 
         HttpEntity.Default(
           contentType = 
@@ -177,6 +178,7 @@ object VizierServer
                 def run() =
                 {
                   vizierResp.write(buffer)
+                  buffer.close()
                 }
               }
             )
@@ -199,5 +201,12 @@ object VizierServer
     }
 
     implicit def optionIfNeeded[T](v: T): Option[T] = Some(v)
+  }
+
+  implicit val stringRequestUnmarshaller = new Unmarshaller[HttpRequest, String] {
+    override def apply(
+      request: HttpRequest
+    )(implicit ec: ExecutionContext, m: Materializer): Future[String] =
+      Unmarshaller.stringUnmarshaller(request.entity)
   }
 }

@@ -214,6 +214,12 @@ case class Route(
   def actionLabel = s"${domain}${action.split("_").map { _.capitalize }.mkString}"
 
   def pathString = path.mkString("/")
+
+  def returnsAsScalaType =
+    returns match {
+      case "STRING" => "String"
+      case x => x
+    }
 }
 
 val PATH_VARIABLE = "\\{(\\w+):(\\w+)\\}".r
@@ -273,11 +279,102 @@ val ROUTES: Seq[Route] =
 //////////////////  Akka Routes   /////////////////////
 ///////////////////////////////////////////////////////
 
-def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
+sealed trait AkkaDirective
 {
-  val (route: Route, idx: Int) = routeAndIndex
+  def render(prefix: String, outputs: Seq[String]): String
+  def push(lead: String, outputs:Seq[String] = Seq.empty): AkkaStack =
+    AkkaStack(lead, this, outputs)
+}
+case class AkkaBody(render: Seq[String] => Seq[String]) extends AkkaDirective
+{
+  def render(prefix: String, outputs: Seq[String]): String =
+    this.render(outputs).map { prefix + _ }.mkString("\n")
+}
+case class AkkaStack(lead: String, body: AkkaDirective, outputs: Seq[String] = Seq.empty) extends AkkaDirective
+{
+  def render(prefix: String, outputs: Seq[String]): String =
+    prefix + lead + "\n" + 
+    body.render(prefix+"  ", outputs ++ this.outputs) + "\n" + 
+    prefix + "}"
+}
+case class AkkaConcat(body: Seq[AkkaDirective]) extends AkkaDirective
+{
+  def render(prefix: String, outputs: Seq[String]): String =
+    prefix + "concat(\n" + 
+    body.map { _.render(prefix+"  ", outputs) }.mkString(",\n") + "\n" + 
+    prefix + ")"
+}
+
+def akkaRouteHandler(routes: Seq[Route]): String =
+{
+
+  val handlers =
+    routes.map { route => 
+      var handler: AkkaDirective = 
+        AkkaBody( outputs => {
+          val ret = 
+            s"${route.handler}(${outputs.mkString(", ")})"
+          route.returns match {
+            case "STRING" => Seq(
+              "info.vizierdb.api.response.StringResponse(",
+              "  " + ret + ",",
+              "  contentType = \"text/plain\"",
+              ")"
+            )
+            case _ => Seq(ret)
+          }
+        })
+
+      route.body match {
+        case EmptyBody => ()
+        case JsonParamBody(params) =>
+          handler = handler.push(
+            s"entity(as[${route.jsonParamClassName.get}]) { jsonEntity => ",
+            outputs = 
+              params.map { param =>
+                s"${param.identifier} = jsonEntity.${param.identifier}"
+              }
+          )
+        case FileBody(identifier) =>
+          handler = handler.push(
+            s"VizierServer.withFile(\"${identifier}\") { fileEntity => ",
+            outputs = Seq(s"$identifier = fileEntity")
+          )
+        case RawJsonBody(identifier) =>
+          handler = handler.push(
+            s"entity(as[JsValue]) { jsonEntity =>",
+            outputs = Seq(s"$identifier = jsonEntity")
+          )
+        case RawStringBody(identifier) =>
+          handler = handler.push(
+            s"entity(VizierServer.stringRequestUnmarshaller) { stringEntity =>",
+            outputs = Seq(s"$identifier = stringEntity")
+          )
+      }
+
+      handler = handler.push(s"${route.verb.toLowerCase()} {")
+
+      /* return */ handler
+    }
+
+  var handler: AkkaDirective = 
+    handlers match {
+      case Seq(x) => x
+      case x => AkkaConcat(x)
+    }
+
+  if(!routes.head.pathQueryParams.isEmpty){
+    handler = handler.push(
+      "extractRequest { httpRequest => val query = httpRequest.getUri.query.toMap.asScala",
+      outputs = 
+        routes.head.pathQueryParams.map { param =>
+          s"${param.identifier} = query.get(\"${param.identifier}\").map { x => ${param.cast("x")} }"
+        }
+    )
+  }
+
   var path: Seq[String] = 
-    route.path.map {
+    routes.head.path.map {
       case PathLiteral(component) => s"\"$component\""
       case PathVariable(_, "int") => "IntNumber"
       case PathVariable(_, "long") => "LongNumber"
@@ -286,62 +383,26 @@ def akkaRouteHandler(routeAndIndex: (Route, Int)): String =
     }
 
   val (pathParamInputs, pathParamOutputs) = 
-    route.path.collect { 
+    routes.head.path.collect { 
       case p:PathVariable => 
         (p.toParam.typedIdentifier, 
           s"${p.identifier} = ${p.identifier}")
     }.unzip
 
-
-  var extractors = mutable.ArrayBuffer[String]()
-
-  val pathParamTuple =
-    if(!pathParamInputs.isEmpty) {
-      s"(${pathParamInputs.mkString(", ")}) => "
-    } else { "" }
-
-  val bodyParamOutputs: Seq[String] =
-    route.body match {
-      case EmptyBody => Seq.empty
-      case JsonParamBody(params) =>
-        extractors.append(
-          s"entity(as[${route.jsonParamClassName.get}]) { jsonEntity => "
-        )
-        params.map { param =>
-          s"${param.identifier} = jsonEntity.${param.identifier}"
-        }
-      case FileBody(identifier) =>
-        extractors.append(s"VizierServer.withFile(\"${identifier}\") { fileEntity => ")
-        Seq(s"$identifier = fileEntity")
-      case RawJsonBody(identifier) =>
-        extractors.append(s"entity(as[JsValue]) { jsonEntity =>")
-        Seq(s"$identifier = jsonEntity")
-      case RawStringBody(identifier) =>
-        extractors.append(s"entity(as[String]) { stringEntity =>")
-        Seq(s"$identifier = stringEntity")
+  if(!path.isEmpty){
+    if(pathParamInputs.isEmpty){
+      handler = handler.push(
+        s"path(${path.mkString(" / ")}) {"
+      )
+    } else { 
+      handler = handler.push(
+        s"path(${path.mkString(" / ")}) { (${pathParamInputs.mkString(", ")}) =>",
+        outputs = pathParamOutputs
+      )
     }
-
-  val queryStringParamOutputs =
-    route.pathQueryParams.map { param =>
-      s"${param.identifier} = query.get(\"${param.identifier}\").map { x => ${param.cast("x")} }"
-    }
-
-  if(!queryStringParamOutputs.isEmpty){
-    extractors.append("extractRequest { httpRequest => val query = httpRequest.getUri.query.toMap.asScala")
   }
 
-  val allParams =
-    pathParamOutputs ++
-    bodyParamOutputs ++
-    queryStringParamOutputs
-
-  s"""  val ${route.action}Route${idx} =
-     |    ${if(path.isEmpty){""} else { s"path(${path.mkString(" / ")}) {"}} ${pathParamTuple}
-     |        ${route.verb.toLowerCase} { ${extractors.map { "\n      "+_ }.mkString}
-     |          ${route.handler}(${allParams.mkString(", ")})
-     |        }${if(extractors.isEmpty){""} else { "\n      "+extractors.map { _ => "}" }.mkString(" ") }}
-     |    ${if(path.isEmpty){""} else { "}" }}
-     |  """.stripMargin
+  s"  val ${routes.head.action}_route =\n${handler.render("    ", Seq.empty)}"
 }
 
 val routesByDomain = ROUTES.groupBy { _.domain }
@@ -356,6 +417,11 @@ for( (domain, routes) <- routesByDomain )
                                              .map { "  " + _ }
                                              .mkString("\n") } }
           .mkString("\n\n")
+
+  val routesByPath = 
+    routes.groupBy { _.path.toString }
+          .map { _._2 }
+          .toIndexedSeq
   val data = 
     s"""package info.vizierdb.api.akka
        |$AUTOGEN_HEADER
@@ -364,6 +430,8 @@ for( (domain, routes) <- routesByDomain )
        |import akka.http.scaladsl.server.Directives._
        |import akka.http.scaladsl.model.headers.`Content-Type`
        |import akka.http.scaladsl.model.HttpHeader
+       |import akka.http.scaladsl.model.HttpEntity
+       |import akka.http.scaladsl.unmarshalling._
        |import info.vizierdb.api._
        |import info.vizierdb.serialized
        |import info.vizierdb.serializers._
@@ -381,10 +449,12 @@ for( (domain, routes) <- routesByDomain )
                 .map { n => s"  implicit val ${n}Format: Format[$n] = Json.format"}
                 .mkString("\n")}
        |
-       |${routes.zipWithIndex.map { akkaRouteHandler(_)}.mkString("\n\n")}
+       |${routesByPath
+                .map { akkaRouteHandler(_) }
+                .mkString("\n\n")}
        |
        |  val routes = concat(
-       |    ${routes.zipWithIndex.map { case (route, idx) => s"${route.action}Route$idx" }.mkString(",\n    ")}
+       |    ${routesByPath.map { routes => s"${routes.head.action}_route" }.mkString(",\n    ")}
        |  )
        |}
        """.stripMargin
@@ -465,11 +535,11 @@ def renderWebsocketRouteHandler(route: Route): (String, String) =
 
   (
     s"""    case "${action}" => 
-       |      Json.toJson(${route.handler}(${callString}):${route.returns})
+       |      Json.toJson(${route.handler}(${callString}):${route.returnsAsScalaType})
        """.stripMargin,
-    s"""  def ${action}(${fieldString}): Future[${route.returns}] =
+    s"""  def ${action}(${fieldString}): Future[${route.returnsAsScalaType}] =
      |    sendRequest(Seq("${action}"), Map(${jsonString}))
-     |       .map { _.as[${route.returns}] }
+     |       .map { _.as[${route.returnsAsScalaType}] }
      """.stripMargin
   )
 }
@@ -602,19 +672,19 @@ def websocketAPICall(route: Route): String =
   
   val shouldIncludeBase = 
     !route.allParams.exists { _.scalaType.startsWith("FILE") } &&
-    !route.returns.startsWith("FILE")
+    !route.returnsAsScalaType.startsWith("FILE")
 
   val base = 
     if(shouldIncludeBase){
       s"""  def ${route.actionLabel}(
          |${allParams.map { "    "+_ }.mkString(", \n")}
-         |  ): ${if(route.returns == "Unit") { "Unit" } else { s"Future[${route.returns}]" }} =
+         |  ): ${if(route.returnsAsScalaType == "Unit") { "Unit" } else { s"Future[${route.returnsAsScalaType}]" }} =
          |  {
          |    val url = ${route.actionLabel}URL(${urlInvocation.mkString(", ")})
          |    Ajax.${route.verb.toLowerCase}(
          |${ajaxArgs.map { "      "+_ }.mkString(",\n")}
-         |    )${if(route.returns == "Unit") { "" } 
-                 else { s".map { xhr => \n      Json.parse(xhr.responseText)\n          .as[${route.returns}]\n    }" }}
+         |    )${if(route.returnsAsScalaType == "Unit") { "" } 
+                 else { s".map { xhr => \n      Json.parse(xhr.responseText)\n          .as[${route.returnsAsScalaType}]\n    }" }}
          |  }
          """.stripMargin
     } else { "" }

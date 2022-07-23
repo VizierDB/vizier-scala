@@ -30,6 +30,9 @@ class OutputStreamIterator
     }
   }
 
+  override def close(): Unit = 
+    closed.set(true)
+
   object iterator
     extends Iterator[ByteString]
   {

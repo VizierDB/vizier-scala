@@ -1515,6 +1515,17 @@ table.parameter_list
     border: solid 2px $color_primary;
     padding: 8px;
 
+    .reactive
+    {
+      display: block;
+      width: 100%;
+      .loading
+      {
+        display: block;
+        text-align: center;
+      }
+    }
+
     .group
     {
       margin-top: 16px;
@@ -1585,11 +1596,15 @@ table.parameter_list
         border: none;
         color: white;
         font-weight: bold;
-        // background-color: grey;
+        background-color: grey;
         transition-property: transform;
         transition-duration: 0.1;
-        background-color: $color_button_confirm;
         cursor: pointer;
+
+        &.changed 
+        {
+          background-color: $color_button_confirm;
+        }
 
         &:active
         {

@@ -6,8 +6,9 @@ object SetRegistryKey
 {
   def apply(key: String, value: String): Boolean =
   {
-    CatalogDB.withDBReadOnly { implicit session => 
+    CatalogDB.withDB { implicit session => 
       Metadata.put(key, value)
     }
+    true
   }
 }

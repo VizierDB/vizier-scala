@@ -8,8 +8,9 @@ class PythonSettings(parent: SettingsView) extends SettingsTab
 {
 
   def title = "Python"
-  def root = div(`class` := "api_keys",
+  val root = div(`class` := "api_keys",
     div(`class` := "settings_block", "NOTHING HERE"
     )
   ).render
+  def load(): Unit = {}
 }

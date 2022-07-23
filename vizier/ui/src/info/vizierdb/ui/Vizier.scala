@@ -79,13 +79,6 @@ object Vizier
   {
 
   }
-
-  try {
-    dom.experimental.Notification.requestPermission((x: String) => Unit)
-  } catch {
-    case t:Throwable => 
-      println(s"Unable to initialize notifications: ${t.getMessage}")
-  }
   
   @JSExport("project_view")
   def projectView(): Unit = 
