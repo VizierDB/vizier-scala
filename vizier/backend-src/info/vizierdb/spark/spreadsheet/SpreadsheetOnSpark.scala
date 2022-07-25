@@ -140,7 +140,25 @@ object SpreadsheetOnSpark extends LazyLogging{
             }   
         }
         //Apply dag ops
-        
+        var adjacencyList = mutable.Map[(ColumnRef, RangeSet), mutable.Map[ColumnRef, RangeSet]]()
+        for ((column, rule) <- dag) 
+        {
+            println(s"\nCOLUMN: ${column}\nRULE: ${rule}")
+            for((start, end) <- rule.data) 
+            {
+                val outNodes = end._2.triggeringRanges(start, end._1)
+                println(s"start: ${start}")
+                println(s"end._1: ${end._1}")
+                println(s"end._2: ${end._2}")
+                println(s"result of rvalues: ${end._2.rvalues}")
+                println(s"Result of triggeringRanges: \n${outNodes}")
+                for((columnRef, rangeSet) <- outNodes) 
+                {
+                    adjacencyList(columnRef, rangeSet)(column) = RangeSet(start, end._1)
+                }
+            }
+        }
+        println(s"Adjacency list: \n${adjacencyList}")
 
 
 

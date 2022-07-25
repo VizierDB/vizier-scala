@@ -55,12 +55,14 @@ class SpreadsheetConstruction
 {
     def beforeAll = SharedTestResources.init
     implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-    val A = ColumnRef(1, "A")
-    val B = ColumnRef(2, "B")
-    val C = ColumnRef(3, "C")
-    val D = ColumnRef(4, "D")
+    val A = ColumnRef(0, "A")
+    val B = ColumnRef(1, "B")
+    val C = ColumnRef(2, "C")
+    val D = ColumnRef(3, "D")
     
     "Test everything" >> {
+
+    /**
 
      //"Insert a single column" >> 
      {
@@ -88,7 +90,9 @@ class SpreadsheetConstruction
         newFrame.show()
         ok
      }
+     **/
 
+     /**
      //"Delete a single row" >>
      {
         lazy val project = MutableProject("Spreadsheet serialization test")
@@ -115,7 +119,9 @@ class SpreadsheetConstruction
         newFrame.show()
         ok
      }
+     **/
 
+     /**
      //"Insert a single row" >>
      {
         lazy val project = MutableProject("Spreadsheet serialization test")
@@ -143,7 +149,8 @@ class SpreadsheetConstruction
         ok
 
      }
-
+     **/
+    /**
      //Move a single row >>
      {
         lazy val project = MutableProject("Spreadsheet serialization test")
@@ -170,6 +177,48 @@ class SpreadsheetConstruction
         newFrame.show()
         ok
      }
+**/
+     //Dag ops >>
+     {
+        lazy val project = MutableProject("Spreadsheet serialization test")
+        project.load("test_data/r.csv", "E")
+        val preSerialization = Spreadsheet(project.dataframe("E"))
+        preSerialization.overlay.subscribe(RangeSet(0, 19))
+        println(preSerialization.overlay.data)
+        //preSerialization.overlay.update(B(1), lit(77))
+        preSerialization.overlay.update(A(1, 5), lit(77))
+        preSerialization.overlay.update(A(2), lit(99))
+        preSerialization.overlay.update(B(1), lit(77))
+        preSerialization.overlay.update(B(1, 5), (A offsetBy 0).ref + lit(7))
+        preSerialization.overlay.update(B(2), lit(33))
+        preSerialization.overlay.update(C(1, 2), (B offsetBy 0).ref + (A offsetBy 0).ref)
+        val d = preSerialization.overlay.dag
+        val printableDag = d.map(kv => (kv._1,kv._2.data.toSet)).toMap
+        println(s"\nDAG: ${d}")
+
+        val spreadsheetConstructor = SpreadsheetConstructor(Some(project.projectId), preSerialization.overlay.dag, preSerialization.overlay.frame, preSerialization.schema)
+        val jsonConstructor = Json.toJson(spreadsheetConstructor)
+        val readableConstructor = Json.prettyPrint(jsonConstructor)
+        //println(readableConstructor)
+        val constructorFromJson: JsResult[SpreadsheetConstructor] = jsonConstructor.validate[SpreadsheetConstructor]
+        var cDeserialized: SpreadsheetConstructor = null
+        var postSerialization: Spreadsheet = null
+        constructorFromJson match {
+            case JsSuccess(s, _) => cDeserialized = s
+            case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
+        }
+        val id = project.artifactRef("E").artifactId
+        val newFrame = DB.autoCommit { implicit s => 
+                SpreadsheetConstructor(id, cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).construct(iden => Artifact.get(id.get, Some(project.projectId)).dataframe)
+              }
+        newFrame.show()
+
+
+        
+        
+        ok
+     }
+     
 
     }
 }
