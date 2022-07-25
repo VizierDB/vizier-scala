@@ -23,6 +23,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.Literal
 import scala.concurrent.duration._
+import org.apache.spark.sql.catalyst.expressions.Add
 
 class UpdateOverlaySpec
   extends Specification
@@ -42,6 +43,20 @@ class UpdateOverlaySpec
     val overlay = new UpdateOverlay( (_, _) => 0 )
     overlay.subscribe(RangeSet(0, 19))
     return overlay
+  }
+
+  "Rvalues" >> {
+    val rvalue1: RValue = SingleCell(A, 0)
+    val rvalue2: RValue = OffsetCell(A, 0)
+    val rule = UpdateRule(
+                  Add(
+                    RValueExpression(rvalue1),
+                    RValueExpression(rvalue2)
+                  ), 
+                  ReferenceFrame(),
+                  0
+                )
+    rule.rvalues must contain(exactly(rvalue1, rvalue2))
   }
 
 
