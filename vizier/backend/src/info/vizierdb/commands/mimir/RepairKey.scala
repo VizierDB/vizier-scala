@@ -77,7 +77,7 @@ object RepairKey
         .map { 
           case field if field.equalsIgnoreCase(keyName) => output(field)
           case field => {
-            df(field).caveatIf(
+            output(field).caveatIf(
               concat(
                 output(field),
                 lit(" could be one of "),
