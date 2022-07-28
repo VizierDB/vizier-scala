@@ -10,9 +10,10 @@ case class ColumnRef(id: Long)
   def apply(from: Long, to: Long) = ColumnRange(this, from, to)
   def offsetBy(by: Int) = OffsetCell(this, by)
   
-
-  override def toString = Option(label).getOrElse { id.toString }
-  
+  //override def toString = Option(label).getOrElse { id.toString }
+  override def toString = "`" + label.replaceAll("`", "``") + "`"
+  //val newLabel: String = Option(label).getOrElse { id.toString }
+  //override def toString = "`" + newLabel.replaceAll("`", "``") + "`"
 }
 object ColumnRef
 {
@@ -22,6 +23,8 @@ object ColumnRef
     ret.label = label
     return ret
   }
+
+
   implicit val columRefWrites = new Writes[ColumnRef] {
     def writes(columnRef: ColumnRef) = Json.obj (
       "id" -> columnRef.id,

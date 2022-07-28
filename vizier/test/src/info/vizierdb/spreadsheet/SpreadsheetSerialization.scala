@@ -112,6 +112,7 @@ class SpreadsheetSerialization
     val D = ColumnRef(4, "D")
 
     "Test everything" >> {
+      /**
         //"Schema serialization" >> {
         {
         lazy val project = MutableProject("Schema Serialization Test")
@@ -281,7 +282,38 @@ class SpreadsheetSerialization
         spreadsheetEquals(preSerialization, postSerialization) must beTrue
         ok
         }
-        
+        **/
+        //"Expression serialization" >>
+        {
+          //val rvalue: RValue = SingleCell(A, 0)
+         // val rvalue: RValue = OffsetCell(A, 0)
+         val rvalue: RValue = (A offsetBy 0)
+          val rule = UpdateRule(
+                        RValueExpression(rvalue),
+                        ReferenceFrame(),
+                        0
+                      )
+          
+          val jsonRule = Json.toJson(rule)
+          val readableRule = Json.prettyPrint(jsonRule)
+          println(rvalue)
+          println(rule.expression)
+          println(readableRule)
+          println(rule.expression)
+          println(rule.expression.getClass.getName)
+          val ruleFromJson: JsResult[UpdateRule] = jsonRule.validate[UpdateRule]
+          var postSerialization: UpdateRule = null
+          ruleFromJson match {
+              case JsSuccess(s, _) => postSerialization = s
+              case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
+          }
+          val jsonPostSerialization = Json.toJson(postSerialization)
+          val readablePostSerialization = Json.prettyPrint(jsonPostSerialization)
+          println(readablePostSerialization)
+          println(postSerialization.expression)
+          println(postSerialization.expression.getClass.getName)
+          ok
+        }
 
   
 

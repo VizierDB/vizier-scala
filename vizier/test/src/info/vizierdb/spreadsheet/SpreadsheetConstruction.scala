@@ -178,6 +178,7 @@ class SpreadsheetConstruction
         ok
      }
 **/
+
      //Dag ops >>
      {
         lazy val project = MutableProject("Spreadsheet serialization test")
@@ -212,12 +213,23 @@ class SpreadsheetConstruction
                 SpreadsheetConstructor(id, cDeserialized.dag, cDeserialized.frame, cDeserialized.schema).construct(iden => Artifact.get(id.get, Some(project.projectId)).dataframe)
               }
         newFrame.show()
-
-
-        
         
         ok
      }
+    {
+    val rvalue: RValue = SingleCell(A, 0)
+    println("ok")
+    println(s"${rvalue}")
+    val rule = UpdateRule(
+                  RValueExpression(rvalue), 
+                  ReferenceFrame(),
+                  0
+                )
+                
+    println(rule.rvalues)
+    rule.rvalues must contain(exactly(rvalue))
+  }
+
      
 
     }

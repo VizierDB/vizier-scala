@@ -9,6 +9,7 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedException
 case class RValueExpression(rvalue: RValue)
   extends Expression with Unevaluable
 {
+  //override def toString = 
   def children: Seq[Expression] = Seq.empty
 
   protected def withNewChildrenInternal(newChildren: IndexedSeq[Expression]): Expression = this
