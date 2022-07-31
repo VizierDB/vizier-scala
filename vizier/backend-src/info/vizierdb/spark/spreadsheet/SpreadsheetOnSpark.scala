@@ -146,6 +146,11 @@ object SpreadsheetOnSpark extends LazyLogging{
             println(s"\nCOLUMN: ${column}\nRULE: ${rule}")
             for((start, end) <- rule.data) 
             {
+                println("\nOddity:")
+                end._2.expression.foreach { node =>
+                    println(s"xxx: ${node.getClass.getName}")
+                }
+                println("\n")
                 val outNodes = end._2.triggeringRanges(start, end._1)
                 println(s"start: ${start}")
                 println(s"end._1: ${end._1}")

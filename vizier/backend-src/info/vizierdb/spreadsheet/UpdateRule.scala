@@ -126,36 +126,47 @@ object UpdateRule {
     def reads(j: JsValue): JsResult[UpdateRule] = {
       val id = (j \ "id").as[Long]
       val frame = (j \ "frame").as[ReferenceFrame]
-      println((expr((j \ "expression").as[String]).expr).toString)
       val expression = expr((j \ "expression").as[String]).expr.transform{
         case UnresolvedFunction(Seq("rvalueexpression"), Seq(expressionDetails), _, _, _) =>
           {
-          println("rvalueexpression")
-          println(expressionDetails(0).toString)
-          println(expressionDetails(0).getClass.getName)
+          //println("rvalueexpression")
           expressionDetails(0) match {
-            case UnresolvedFunction(Seq("OffsetCell"), Seq(offsetDetails), _, _, _) =>
+            case UnresolvedFunction(Seq("OffsetCell"), offsetDetails, _, _, _) =>
               {
-                println("offset cell")
-                val columnName = offsetDetails(0).nodeName
-                //val offset: Int = offsetDetails(1).nodeName.as[Int]
-                val offset = 0
-                val rvalue: RValue = OffsetCell(ColumnRef(0), offset)
+                //println("offset cell")
+                val refDetails = offsetDetails(0).toString().replaceAll("'", "").split(", ")
+                val columnLabel = refDetails(0)
+                val columnId = refDetails(1).toInt
+                val columnRef = ColumnRef(columnId)
+                columnRef.label = columnLabel
+                val offset = offsetDetails(1).asInstanceOf[Literal].value.asInstanceOf[Int]
+                val rvalue: RValue = OffsetCell(columnRef, offset)
                 RValueExpression(rvalue)
               }
-            case UnresolvedFunction(Seq("SingleCell"), Seq(offsetDetails), _, _, _) =>
+            case UnresolvedFunction(Seq("SingleCell"), rowDetails, _, _, _) =>
               {
-                println("single cell")
-                null
+                //println("single cell")
+                println(rowDetails(0).toString)
+                val refDetails = rowDetails(0).toString().replaceAll("'", "").split(", ")
+                val columnLabel = refDetails(0)
+                val columnId = refDetails(1).toInt
+                val columnRef = ColumnRef(columnId)
+                columnRef.label = columnLabel
+                val row = rowDetails(1).asInstanceOf[Literal].value.asInstanceOf[Int]
+                val rvalue: RValue = SingleCell(columnRef, row)
+                RValueExpression(rvalue)
               }
             case _ => 
               {
-                println("other")
+                println("Couldn't identify RValue expression")
                 null
               }
 
           } 
-        }     
+        }  
+         case UnresolvedFunction(Seq("rvalueexpression"), _, _, _, _) =>   
+          println("some undefined rvalueexpression")
+          null
         }
         JsSuccess(UpdateRule(expression, frame, id))
       }

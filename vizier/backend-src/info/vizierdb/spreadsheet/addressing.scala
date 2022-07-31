@@ -11,7 +11,7 @@ case class ColumnRef(id: Long)
   def offsetBy(by: Int) = OffsetCell(this, by)
   
   //override def toString = Option(label).getOrElse { id.toString }
-  override def toString = "`" + label.replaceAll("`", "``") + "`"
+  override def toString = "`" + label.replaceAll("`", "``") + ", " + id + "`"
   //val newLabel: String = Option(label).getOrElse { id.toString }
   //override def toString = "`" + newLabel.replaceAll("`", "``") + "`"
 }
@@ -74,8 +74,8 @@ case class SingleCell(column: ColumnRef, row: Long) extends LValue with RValue
   def offsetLBy(offset: Long): LValue = 
     copy(row = row + offset)
   def toRangeSet: RangeSet = RangeSet(row, row)
-  override def toString =
-    s"[${column}:$row]"
+ // override def toString =
+   // s"[${column}:$row]"
 }
 case class ColumnRange(column: ColumnRef, from: Long, to: Long) extends LValue
 {

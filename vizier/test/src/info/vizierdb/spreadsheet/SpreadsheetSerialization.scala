@@ -283,10 +283,12 @@ class SpreadsheetSerialization
         ok
         }
         **/
-        //"Expression serialization" >>
+        
+        //"Offset rule serialization" >>
         {
           //val rvalue: RValue = SingleCell(A, 0)
          // val rvalue: RValue = OffsetCell(A, 0)
+         println("\nA offsetBy 0:\n")
          val rvalue: RValue = (A offsetBy 0)
           val rule = UpdateRule(
                         RValueExpression(rvalue),
@@ -296,11 +298,12 @@ class SpreadsheetSerialization
           
           val jsonRule = Json.toJson(rule)
           val readableRule = Json.prettyPrint(jsonRule)
-          println(rvalue)
-          println(rule.expression)
+          //println(rvalue)
+          //println(rule.expression)
+          //println(rule)
           println(readableRule)
-          println(rule.expression)
-          println(rule.expression.getClass.getName)
+          //println(rule.expression)
+          //println(rule.expression.getClass.getName)
           val ruleFromJson: JsResult[UpdateRule] = jsonRule.validate[UpdateRule]
           var postSerialization: UpdateRule = null
           ruleFromJson match {
@@ -309,12 +312,41 @@ class SpreadsheetSerialization
           }
           val jsonPostSerialization = Json.toJson(postSerialization)
           val readablePostSerialization = Json.prettyPrint(jsonPostSerialization)
-          println(readablePostSerialization)
-          println(postSerialization.expression)
-          println(postSerialization.expression.getClass.getName)
+          //println(readablePostSerialization)
+          //println(postSerialization.expression)
+          //println(postSerialization.expression.getClass.getName)
+          //println(postSerialization.rvalues)
+          rule must_== postSerialization
+        }
+        
+        //"Single cell rule serialization" >>
+        {
+          println("\nSingle cell:\n")
+          val rvalue: RValue = (A apply 7)
+          val rule = UpdateRule(
+                        RValueExpression(rvalue),
+                        ReferenceFrame(),
+                        0
+                      )
+          val jsonRule = Json.toJson(rule)
+          val readableRule = Json.prettyPrint(jsonRule)
+          //println(rule)
+          println(readableRule)
+          val ruleFromJson: JsResult[UpdateRule] = jsonRule.validate[UpdateRule]
+          var postSerialization: UpdateRule = null
+          ruleFromJson match {
+              case JsSuccess(s, _) => postSerialization = s
+              case e: JsError         => println(s"Errors: ${JsError.toJson(e)}")
+          }
+          val jsonPostSerialization = Json.toJson(postSerialization)
+          val readablePostSerialization = Json.prettyPrint(jsonPostSerialization)
+          //println(readablePostSerialization)
+          //println(postSerialization.expression)
+          //println(postSerialization.expression.getClass.getName)
+          //println(postSerialization.rvalues)
+          rule must_== postSerialization
           ok
         }
-
   
 
     }
