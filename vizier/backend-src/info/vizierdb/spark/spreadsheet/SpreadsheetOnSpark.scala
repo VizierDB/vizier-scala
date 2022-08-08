@@ -140,6 +140,8 @@ object SpreadsheetOnSpark extends LazyLogging{
             }   
         }
         //Apply dag ops
+        /**
+        println("")
         var adjacencyList = mutable.Map[(ColumnRef, RangeSet), mutable.Map[ColumnRef, RangeSet]]()
         for ((column, rule) <- dag) 
         {
@@ -164,7 +166,145 @@ object SpreadsheetOnSpark extends LazyLogging{
             }
         }
         println(s"Adjacency list: \n${adjacencyList}")
+        //
+       // var adjList = //Rule -> dependant cells
+        **/
+        var adjacencyList = mutable.Map[(ColumnRef, Long, Long), mutable.ArrayBuffer[(ColumnRef, Long, Long, UpdateRule)]]()
+        for ((column, rule) <- dag) 
+        {
+            println(s"DAG column: ${column}")
+            println(s"DAG RangeMap[UpdateRule]: ${rule}")
+            for((start, end) <- rule.data) 
+            {
+                val startOfChildNode = start
+                val endOfChildNode = end._1
+                val childUpdateRule = end._2
 
+                println(s"Start of child node: ${startOfChildNode}")
+                println(s"End of child node: ${endOfChildNode}")
+                println(s"Child node UpdateRule: ${childUpdateRule}\n")
+
+                val resultOfTriggeringRanges = childUpdateRule.triggeringRanges(startOfChildNode, endOfChildNode, childUpdateRule.frame)
+                println(s"Result of UpdateRule.triggeringRanges (Map[ColumnRef, RangeSet]):\n${resultOfTriggeringRanges}")
+                for((columnRef, rangeSet) <- resultOfTriggeringRanges)
+                {
+                    for(range <- rangeSet)
+                    {
+                        val parentNode = (columnRef, range._1, range._2)
+                        val childNode = (column, startOfChildNode, endOfChildNode, childUpdateRule)
+                        println(s"Fully formed parent node: ${parentNode}")
+                        println(s"Fully formed child node: ${childNode}")
+                        adjacencyList.getOrElseUpdate(parentNode, new mutable.ArrayBuffer[(ColumnRef, Long, Long, UpdateRule)]) += childNode
+                    }
+                }
+            }
+
+        }
+        println(s"Adjacency list: \n")
+        for((columnRef, listOfColumnRefs) <- adjacencyList){
+            println(s"${columnRef} -> ")
+            for(value <- listOfColumnRefs)
+            {
+                print(s"(ColumnRef: ${value._1}, start: ${value._2}, end: ${value._3}, UpdateRule: ${value._4}), \n")
+            }
+            println("")
+        }
+        /**
+        val explored = mutable.Map[(ColumnRef, Long, Long), Boolean]()
+        for((node, neighbors) <- adjacencyList)
+            {
+                explored(node) = false
+                println(s"Outside loop key: ${node}")
+                for(neighbor <- neighbors)
+                {
+                    explored((neighbor._1, neighbor._2, neighbor._3)) = false
+                }
+            }
+        def bfsOne(start: (ColumnRef, Long, Long)): Unit = {
+            
+            val q = mutable.Queue[(ColumnRef, Long, Long)]()
+            
+            q.enqueue(start)
+            explored(start) = true
+            while(!q.isEmpty)
+            {
+                val next = q.dequeue
+                if(adjacencyList isDefinedAt next){
+                    for(neighbor <- adjacencyList(next)){
+                        if(explored((neighbor._1, neighbor._2, neighbor._3)) == true)
+                        {
+                            println(s"CYCLE DETECTED: ${next} to ${(neighbor._1, neighbor._2, neighbor._3)}")
+                        }
+                        else {
+                            println(s"${(neighbor._1, neighbor._2, neighbor._3)} DISCOVERED FROM PARENT ${next}")
+                            explored((neighbor._1, neighbor._2, neighbor._3)) = true
+                        }
+                        q.enqueue((neighbor._1, neighbor._2, neighbor._3))
+                    }
+                } else {
+                    println(s"${next} has no dependencies")
+                }
+
+
+            }
+        }
+        def bfs(graph:  mutable.Map[(ColumnRef, Long, Long), mutable.ArrayBuffer[(ColumnRef, Long, Long, UpdateRule)]]): Unit = {
+            for((vertex, e) <- explored)
+            {
+                println(s"${vertex}: ${e}")
+                if(e == false){
+                    bfsOne(vertex)
+                }
+            }
+        }
+        bfs(adjacencyList)
+
+        **/
+
+
+        /**
+        def topologicalOrdering(graph:  mutable.Map[(ColumnRef, Long, Long), mutable.ArrayBuffer[(ColumnRef, Long, Long, UpdateRule)]]): mutable.ArrayBuffer[(ColumnRef, Long, Long)] =
+        {
+            var topOrdering = mutable.ArrayBuffer[(ColumnRef, Long, Long)]()
+            var remaining = mutable.Map[(ColumnRef, Long, Long), mutable.ArrayBuffer[(ColumnRef, Long, Long, UpdateRule)]]()
+            var baseCase = true
+            for((node, neighbors) <- graph)
+            {
+                println(s"Outside loop key: ${node}")
+                for(neighbor <- neighbors)
+                {
+                    val neighborKey = (neighbor._1, neighbor._2, neighbor._3)
+                    println(s"neighborKey ${neighborKey}")
+                    if(graph.getOrElse(neighborKey, null) == null)
+                    {
+                        println(s"${neighborKey} was not a member of input graph")
+                        topOrdering += neighborKey
+                        
+                    } 
+                    else
+                    {
+                        println(s"${neighborKey} WAS a member of input graph")
+                        remaining += ((neighborKey, graph(neighborKey)))
+                        baseCase = false
+                    }
+                }
+            }
+            if(baseCase) {
+                println(s"Base case with topOrdering: ${topOrdering}")
+                return topOrdering
+            } 
+            else 
+            {
+                println("Not the base case")
+                println(s"Concatenating topologicalOrdering: ${topOrdering}")
+                println(s"With topologicalOrdering(remaining). Remaining: ${remaining}")
+                return topOrdering ++ topologicalOrdering(remaining)
+            }
+            
+        }
+        val topOrdering = topologicalOrdering(adjacencyList)
+        println(s"Topological ordering: ${topOrdering}")
+        **/
 
 
         //Remove columns
