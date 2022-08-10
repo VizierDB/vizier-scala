@@ -18,6 +18,8 @@ case class ClientURLs(baseUrl: String)
     makeUrl("spreadsheet.html", "project" -> projectId, "dataset" -> datasetId)
   def settings =
     makeUrl("settings.html")
+  def settings(tab: String) =
+    makeUrl(s"settings.html?tab=$tab")
   def artifact(projectId: Identifier, artifactId: Identifier, name: String = null) =
     makeUrl("artifact.html", "project" -> projectId, "artifact" -> artifactId, "name" -> name)
   def workflow(projectId: Identifier, branchId: Identifier, workflowId: Identifier) =

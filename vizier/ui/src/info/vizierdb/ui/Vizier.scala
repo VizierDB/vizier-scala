@@ -273,7 +273,7 @@ object Vizier
   @JSExport("settings")
   def settings(): Unit =
   {
-    val settings = new SettingsView()
+    val settings = new SettingsView(arguments.get("tab"))
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
       document.body.appendChild(settings.root)
       OnMount.trigger(document.body)

@@ -10,7 +10,7 @@ import info.vizierdb.ui.Vizier
 import scala.util.Failure
 import scala.util.Success
 
-class SettingsView(implicit owner: Ctx.Owner)
+class SettingsView(initialTab: Option[String] = None)(implicit owner: Ctx.Owner)
 {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
   
@@ -23,6 +23,19 @@ class SettingsView(implicit owner: Ctx.Owner)
   val activeTabIdx = Var[Option[Int]](None)
   val activeTab = activeTabIdx.map { _.map { tabs(_) } }
 
+  def switchTo(slug: String): Unit =
+  {
+    switchTo(tabs.indexWhere { _.slug == slug })
+  }
+
+  def switchTo(idx: Int): Unit =
+  {
+    if(idx >= 0 && idx < tabs.size){ 
+      activeTabIdx() = Some(idx) 
+      dom.window.history.replaceState(null, "", Vizier.links.settings(tabs(idx).slug))
+    }
+  }
+
   var registry: Map[String, String] = Map.empty
 
   Vizier.api
@@ -31,7 +44,10 @@ class SettingsView(implicit owner: Ctx.Owner)
           case Failure(err) => Vizier.error(err.getMessage())
           case Success(incoming) => registry = incoming
                                     tabs.foreach { _.load() }
-                                    activeTabIdx() = Some(0)
+                                    initialTab match {
+                                      case Some(slug) => switchTo(slug)
+                                      case None => activeTabIdx() = Some(0)
+                                    }
         }
 
 
@@ -46,7 +62,7 @@ class SettingsView(implicit owner: Ctx.Owner)
               )
             } else {
               div(`class` := "tab inactive", tab.title, 
-                onclick := { evt:dom.Event => activeTabIdx() = Some(idx); evt.stopPropagation() }
+                onclick := { evt:dom.Event => switchTo(idx); evt.stopPropagation() }
               )
             }
           }.reactive
