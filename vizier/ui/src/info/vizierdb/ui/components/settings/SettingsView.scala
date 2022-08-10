@@ -50,6 +50,17 @@ class SettingsView(initialTab: Option[String] = None)(implicit owner: Ctx.Owner)
                                     }
         }
 
+  def updateRegistry(key: String, value: String)(onSuccess: () => Unit)
+  {
+    Vizier.api.configSetRegistryKey(key, value)
+          .onComplete {
+            case Failure(err) => Vizier.error(err.toString())
+            case Success(_) => 
+              registry = registry ++ Map(key -> value)
+              onSuccess()
+          }
+  }
+
 
   val root = 
     div(`class` := "settings",

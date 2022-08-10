@@ -22,7 +22,8 @@ class APIKeySettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
           id := "osm_url", 
           `type` := "text",
           placeholder := "https://your.server.org/search",
-          onchange := { _:dom.Event => changed() = true }
+          onchange := { _:dom.Event => changed() = true },
+          onkeyup := { _:dom.Event => changed() = true }
         ).render
 
     val changed = Var[Boolean](false)
@@ -34,7 +35,7 @@ class APIKeySettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     def save(evt: dom.Event): Unit =
     {
-      println("Saving OSM")
+      parent.updateRegistry("osm_url", url.value)( () => changed() = false )
     }
   }
 
@@ -44,7 +45,8 @@ class APIKeySettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
           id := "google_api", 
           `type` := "text",
           placeholder := "a4db08b7-5729-[this is a sample]-f2df493465a1",
-          onchange := { _:dom.Event => changed() = true }
+          onchange := { _:dom.Event => changed() = true },
+          onkeyup := { _:dom.Event => changed() = true }
         ).render
 
     val changed = Var[Boolean](false)
@@ -56,7 +58,7 @@ class APIKeySettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     def save(evt: dom.Event): Unit =
     {
-      println("Saving Google")
+      parent.updateRegistry("google_key", apikey.value)( () => changed() = false )
     }
   }
 
