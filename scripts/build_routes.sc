@@ -1,6 +1,9 @@
 import scala.collection.mutable
 import $ivy.`com.typesafe.play::play-json:2.9.2`, play.api.libs.json._
 import $ivy.`io.swagger:swagger-codegen:2.4.27`, io.swagger
+import $file.lib.regexp, regexp.{ UNDEFOR, IS_FILE, SEQ, SERIALIZED }
+import $file.lib.routes, routes._
+
 
 // Utilities for processing vizier-routes.txt into source code
 
@@ -91,266 +94,22 @@ val AUTOGEN_HEADER =
 ////////////// Read vizier-routes.txt /////////////////
 ///////////////////////////////////////////////////////
 
-val UNDEFOR = "UndefOr\\[([^\\]]+)\\]".r
-val IS_FILE = "FILE\\[([^\\]]+)\\]".r
-val SEQ = "Seq\\[([^\\]]+)\\]".r
-val SERIALIZED = "serialized\\.(.*)".r
-
-sealed trait PathComponent
-
-case class PathLiteral(value: String) extends PathComponent
-{
-  override def toString = value
-}
-case class PathVariable(identifier: String, dataType: String) extends PathComponent
-{
-  def scalaType = 
-    dataType match {
-      case "int" => "Int"
-      case "long" => "Long"
-      case "subpath" => "String"
-      case "string" => "String"
-    }
-
-  def toParam = 
-    Param(identifier, scalaType)
-
-  def cast(target: String) = 
-    dataType match {
-      case "int"  => s"$target.toInt"
-      case "long" => s"$target.toLong"
-      case "subpath" => target
-      case "string" => target
-    }
-
-  override def toString = s"{${identifier}}"
-}
-
-case class Param(identifier: String, scalaType: String)
-{
-  def typedIdentifier = s"$identifier:$scalaType"
-
-  def nativeScalaType = 
-    scalaType match {
-      case "FILE" => "Array[Byte]"
-      case UNDEFOR(body) => s"Option[$body]"
-      case "JSON" => "JsValue"
-      case x => x
-    }
-
-  def typedNativeIdentifier = s"$identifier:$nativeScalaType"
-
-  def isOptional =
-    scalaType.startsWith("UndefOr") || scalaType.startsWith("Option")
-}
-
-sealed trait BodyType
-{
-  def toParams: Seq[Param]
-}
-case class FileBody(label: String) extends BodyType
-{
-  def toParam = Param(label, "FILE")
-  def toParams = Seq(toParam)
-}
-case class RawJsonBody(label: String) extends BodyType
-{
-  def toParam = Param(label, "JSON")
-  def toParams = Seq(toParam)
-}
-case class RawStringBody(label: String) extends BodyType
-{
-  def toParam = Param(label, "String")
-  def toParams = Seq(toParam)
-}
-case class JsonParamBody(params: Seq[Param]) extends BodyType
-{
-  def toParams = params
-}
-case object EmptyBody extends BodyType
-{
-  def toParams = Seq.empty
-}
-
-case class Route(
-  path : Seq[PathComponent],
-  pathQueryParams: Seq[PathVariable],
-  verb : String,
-  domain: String,
-  action: String,
-  handler: String,
-  returns: String,
-  body: BodyType,
-)
-{
-  def allParams = Seq[Seq[Param]](
-    pathParams,
-    pathQueryParams.map { _.toParam },
-    body.toParams
-  ).flatten
-
-  def pathParams = 
-    path.collect { case p:PathVariable => (p:PathVariable).toParam }
-
-  def bodyParams =
-    body.toParams
-
-  def jsonParamClassName: Option[String] =
-    if(body.isInstanceOf[JsonParamBody]){
-      Some(s"${action.capitalize}Parameter")
-    } else { None }
-
-  def jsonParamClass: Option[String] =
-    body match {
-      case JsonParamBody(params) =>
-        Some(
-          s"""case class ${jsonParamClassName.get}(
-             |  ${params.map { _.typedNativeIdentifier }.mkString(",\n  ")}
-             |)""".stripMargin
-        )
-      case _ => None
-    }
-  
-  def actionLabel = s"${domain}${action.split("_").map { _.capitalize }.mkString}"
-
-  def pathString = path.mkString("/")
-
-  def returnsAsScalaType =
-    returns match {
-      case "STRING" => "String"
-      case x => x
-    }
-}
-
-val PATH_VARIABLE = "\\{(\\w+):(\\w+)\\}".r
-
-val ROUTES: Seq[Route] = 
-  os.read(INPUT).split("\n")
-    .map { description => 
-      val components = description.split("\\s+")
-      val pathAndArguments = components(0).split("\\?")
-      val path = pathAndArguments(0).split("/").toSeq
-      val pathQuery:Seq[PathVariable] = 
-        if(pathAndArguments.size > 1){ 
-          pathAndArguments(1).split("&")
-                             .map { _.split(":").toSeq }
-                             .map {
-                              case Seq(identifier, dataType) => PathVariable(identifier, dataType)
-                             }
-        } else { Seq.empty }
-      assert(path.isEmpty || path(0) == "")
-
-      val jsonParams:Seq[Param] =
-        components(6) match {
-          case "-" | "_" => Seq()
-          case x => x.split(";")
-            .map { _.split(":").toSeq }
-            .map { 
-              case Seq(identifier, dataType) => Param(identifier, dataType) 
-              case x => throw new Exception(s"Invalid parameter: ${x.mkString(",")}")
-            }
-        }
-
-      val body =
-        jsonParams match {
-          case Seq(Param(label, "FILE"))   => FileBody(label)
-          case Seq(Param(label, "JSON"))   => RawJsonBody(label)
-          case Seq(Param(label, "STRING")) => RawStringBody(label)
-          case Seq()                       => EmptyBody
-          case params                      => JsonParamBody(params) 
-        }
-
-      Route(
-        path = path.drop(1).map {  
-          case PATH_VARIABLE(identifier, dataType) => PathVariable(identifier, dataType)
-          case x => PathLiteral(x)
-        },
-        pathQueryParams = pathQuery,
-        verb = components(1),
-        domain = components(2),
-        action = components(3),
-        handler = components(4),
-        returns = components(5),
-        body = body,
-      )
-    }
+val ROUTES: Seq[Route] = readRoutes(INPUT)
 
 ///////////////////////////////////////////////////////
 //////////////////  Akka Routes   /////////////////////
 ///////////////////////////////////////////////////////
 
-sealed trait AkkaDirective
-{
-  def render(prefix: String, outputs: Seq[String]): String
-  def push(lead: String, outputs:Seq[String] = Seq.empty): AkkaStack =
-    AkkaStack(lead, this, outputs)
-}
-case class AkkaBody(render: Seq[String] => Seq[String]) extends AkkaDirective
-{
-  def render(prefix: String, outputs: Seq[String]): String =
-    this.render(outputs).map { prefix + _ }.mkString("\n")
-}
-case class AkkaStack(lead: String, body: AkkaDirective, outputs: Seq[String] = Seq.empty) extends AkkaDirective
-{
-  def render(prefix: String, outputs: Seq[String]): String =
-    prefix + lead + "\n" + 
-    body.render(prefix+"  ", outputs ++ this.outputs) + "\n" + 
-    prefix + "}"
-}
-case class AkkaConcat(body: Seq[AkkaDirective]) extends AkkaDirective
-{
-  def render(prefix: String, outputs: Seq[String]): String =
-    prefix + "concat(\n" + 
-    body.map { _.render(prefix+"  ", outputs) }.mkString(",\n") + "\n" + 
-    prefix + ")"
-}
+import $file.lib.akkagen, akkagen.{ AkkaDirective, AkkaConcat }
 
 def akkaRouteHandler(routes: Seq[Route]): String =
 {
 
   val handlers =
     routes.map { route => 
-      var handler: AkkaDirective = 
-        AkkaBody( outputs => {
-          val ret = 
-            s"${route.handler}(${outputs.mkString(", ")})"
-          route.returns match {
-            case "STRING" => Seq(
-              "info.vizierdb.api.response.StringResponse(",
-              "  " + ret + ",",
-              "  contentType = \"text/plain\"",
-              ")"
-            )
-            case _ => Seq(ret)
-          }
-        })
+      var handler: AkkaDirective = akkagen.baseHandler(route)
 
-      route.body match {
-        case EmptyBody => ()
-        case JsonParamBody(params) =>
-          handler = handler.push(
-            s"entity(as[${route.jsonParamClassName.get}]) { jsonEntity => ",
-            outputs = 
-              params.map { param =>
-                s"${param.identifier} = jsonEntity.${param.identifier}"
-              }
-          )
-        case FileBody(identifier) =>
-          handler = handler.push(
-            s"VizierServer.withFile(\"${identifier}\") { fileEntity => ",
-            outputs = Seq(s"$identifier = fileEntity")
-          )
-        case RawJsonBody(identifier) =>
-          handler = handler.push(
-            s"entity(as[JsValue]) { jsonEntity =>",
-            outputs = Seq(s"$identifier = jsonEntity")
-          )
-        case RawStringBody(identifier) =>
-          handler = handler.push(
-            s"entity(VizierServer.stringRequestUnmarshaller) { stringEntity =>",
-            outputs = Seq(s"$identifier = stringEntity")
-          )
-      }
+      handler = akkagen.decodeBody(route, handler)
 
       handler = handler.push(s"${route.verb.toLowerCase()} {")
 
@@ -363,44 +122,8 @@ def akkaRouteHandler(routes: Seq[Route]): String =
       case x => AkkaConcat(x)
     }
 
-  if(!routes.head.pathQueryParams.isEmpty){
-    handler = handler.push(
-      "extractRequest { httpRequest => val query = httpRequest.getUri.query.toMap.asScala",
-      outputs = 
-        routes.head.pathQueryParams.map { param =>
-          s"${param.identifier} = query.get(\"${param.identifier}\").map { x => ${param.cast("x")} }"
-        }
-    )
-  }
-
-  var path: Seq[String] = 
-    routes.head.path.map {
-      case PathLiteral(component) => s"\"$component\""
-      case PathVariable(_, "int") => "IntNumber"
-      case PathVariable(_, "long") => "LongNumber"
-      case PathVariable(_, "subpath") => "Remaining"
-      case PathVariable(_, "string") => "Segment"
-    }
-
-  val (pathParamInputs, pathParamOutputs) = 
-    routes.head.path.collect { 
-      case p:PathVariable => 
-        (p.toParam.typedIdentifier, 
-          s"${p.identifier} = ${p.identifier}")
-    }.unzip
-
-  if(!path.isEmpty){
-    if(pathParamInputs.isEmpty){
-      handler = handler.push(
-        s"path(${path.mkString(" / ")}) {"
-      )
-    } else { 
-      handler = handler.push(
-        s"path(${path.mkString(" / ")}) { (${pathParamInputs.mkString(", ")}) =>",
-        outputs = pathParamOutputs
-      )
-    }
-  }
+  handler = akkagen.decodePathQuery(routes.head, handler)
+  handler = akkagen.decodePath(routes.head, handler)
 
   s"  val ${routes.head.action}_route =\n${handler.render("    ", Seq.empty)}"
 }
