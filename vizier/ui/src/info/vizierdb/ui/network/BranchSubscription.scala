@@ -19,6 +19,7 @@ import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
 import info.vizierdb.ui.components.Project
 import info.vizierdb.ui.Vizier
+import info.vizierdb.ui.widgets.SystemNotification
 
 class BranchSubscription(
   project: Project, 
@@ -172,8 +173,9 @@ class BranchSubscription(
                   val timeToExecute = executionEndTime - executionStartTime
                   logger.debug(s"Cell @ ${position} executed in ${timeToExecute / 1000.0} seconds")
                   if(timeToExecute > maxTimeWithoutNotification && dom.experimental.Notification.permission == "granted") {
-                    val notificationBody: js.UndefOr[String] = s"${(modules(position).toc).get.title} DONE"
-                    val notification = new dom.experimental.Notification("VizierDB", dom.experimental.NotificationOptions(notificationBody))
+                    SystemNotification(SystemNotification.Mode.SLOW_CELL_FINISHED)(
+                      s"${(modules(position).toc).get.title} DONE"
+                    )
                   }
                   executionStartTime = -1
                 } else {

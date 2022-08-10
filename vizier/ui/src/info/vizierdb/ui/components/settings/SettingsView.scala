@@ -16,6 +16,7 @@ class SettingsView(implicit owner: Ctx.Owner)
   
   val tabs = Seq[SettingsTab](
     new GeneralSettings(this),
+    new APIKeySettings(this),
     new PythonSettings(this)
   )
 
