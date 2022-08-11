@@ -77,6 +77,16 @@ object Python extends Command
 
     val ret = python.monitor { event => 
       logger.debug(s"STDIN: $event")
+
+      // Many of the events handled by this handler are for interacting with artifacts
+      // Every such event follows the same basic pattern: 
+      //   1. Look up artifact by name
+      //   2. Trigger error if it doesn't exist
+      // The following two internal methods abstract this pattern out, with an additional
+      // simplification based on the fact that nearly all artifact names appear in the 
+      // event field 'name'.
+      // If the artifact exists, the provided handler method will be invoked.  If it
+      // doesn't the python process will be killed and an error will be logged.
       def withArtifact(handler: Artifact => Unit) =
         withNamedArtifact((event\"name").as[String]) { handler(_) }
       def withNamedArtifact(name: String)(handler: Artifact => Unit) =

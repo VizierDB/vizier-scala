@@ -52,6 +52,7 @@ import info.vizierdb.spark.caveats.ExplainCaveats
 import info.vizierdb.api.BrowseFilesystem
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.api.akka.VizierServer
+import info.vizierdb.catalog.Metadata
 
 object Vizier
   extends LazyLogging
@@ -101,16 +102,22 @@ object Vizier
     // MimirAPI.pythonUDF = info.vizierdb.commands.python.PythonProcess.udfBuilder
 
     val geocoders = 
-      Seq(
-        config.googleAPIKey.map { k =>
-          logger.debug("Google Services Will Be Available")
-          new info.vizierdb.commands.mimir.geocoder.GoogleGeocoder(k) 
-        }.toOption,
-        config.osmServer.map { k =>
-          logger.debug("OSM Services Will Be Available")
-          new info.vizierdb.commands.mimir.geocoder.OSMGeocoder(k) 
-        }.toOption
-      ).flatten
+      CatalogDB.withDBReadOnly { implicit s => 
+        Seq(
+          config.googleAPIKey.toOption
+                .orElse { Metadata.getOption("google-api-key") }
+                .map { k =>
+                  logger.debug("Google Services Will Be Available")
+                  new info.vizierdb.commands.mimir.geocoder.GoogleGeocoder(k) 
+                },
+          config.osmServer.toOption
+                .orElse { Metadata.getOption("osm-url") }
+                .map { k =>
+                  logger.debug("OSM Services Will Be Available")
+                  new info.vizierdb.commands.mimir.geocoder.OSMGeocoder(k) 
+                }
+        ).flatten
+      }
     if(!geocoders.isEmpty){ 
       info.vizierdb.commands.mimir.geocoder.Geocode.init(geocoders) 
     }
@@ -155,13 +162,6 @@ object Vizier
     if(config.help()){
       config.printHelp()
       return
-    }
-
-    // Override the default python version (or automatically pick one)
-    if(config.pythonPath.isSupplied){
-      PythonProcess.PYTHON_COMMAND = config.pythonPath()
-    } else {
-      PythonProcess.discoverPython()
     }
 
     // Check for non-mandatory dependencies

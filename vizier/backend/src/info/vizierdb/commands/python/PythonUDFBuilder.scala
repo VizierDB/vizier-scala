@@ -26,7 +26,7 @@ import scala.collection.concurrent.TrieMap
  * val result: Expression = udf(Seq(expr1, expr2, ...)): 
  * ```
  */
-class PythonUDFBuilder(val pythonPath: String)
+class PythonUDFBuilder(val environment: PythonEnvironment)
   extends LazyLogging
 {
 
@@ -58,8 +58,8 @@ class PythonUDFBuilder(val pythonPath: String)
       command = pickled,
       envVars = new java.util.HashMap(),
       pythonIncludes = new java.util.ArrayList(),
-      pythonExec = pythonPath,
-      pythonVer = version
+      pythonExec = environment.python.toString,
+      pythonVer = SystemPython.version
     )(
       name = actualName,
       dataType = actualDataType,
@@ -93,14 +93,8 @@ class PythonUDFBuilder(val pythonPath: String)
   def python(script: String): String = 
   {
     logger.debug(s"Running:\n$script")
-    Process(pythonPath) .#< {  new ByteArrayInputStream(script.getBytes()) }  .!!
+    Process(environment.python) .#< {  new ByteArrayInputStream(script.getBytes()) }  .!!
   }
-
-  lazy val version = 
-    Process(Seq(pythonPath, "--version")).!!
-      .replaceAll("\n", "")
-      .split(" ").reverse.head
-      .split("\\.").take(2).mkString(".")
 
 
   def GENERATE_PICKLE(vizier_fn: String, t: DataType = StringType) = s"""
@@ -172,14 +166,8 @@ print(fn(${args}))
 
 object PythonUDFBuilder
 {
-  def apply(pythonPath: Option[String] = None): PythonUDFBuilder = 
+  def apply(environment: Option[PythonEnvironment] = None): PythonUDFBuilder = 
     return new PythonUDFBuilder(
-      pythonPath.getOrElse { defaultPython() }
+      environment.getOrElse { SystemPython }
     )
-
-  def defaultPython(): String =
-    Process(Seq("which", "python3"))
-      .lineStream
-      .headOption
-      .getOrElse { throw new RuntimeException("Can't find python3") }
 }

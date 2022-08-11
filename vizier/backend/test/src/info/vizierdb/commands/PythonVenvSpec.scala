@@ -6,6 +6,9 @@ import info.vizierdb.test.SharedTestResources
 import info.vizierdb.commands.python.PythonProcess
 import java.io.File
 import info.vizierdb.Vizier
+import info.vizierdb.commands.python.SystemPython
+import info.vizierdb.commands.python.VirtualPython
+import info.vizierdb.commands.python.Pyenv
 
 class PythonVenvSpec 
   extends Specification
@@ -24,20 +27,40 @@ class PythonVenvSpec
 
   sequential
 
+  "System Python - List Packages" >> 
+  {
+    SystemPython.packages.map { _._1 } must contain("bokeh")
+  }
+
+  "Work with pyenv" >> 
+  {
+    // we should have at least one 3.x version installed.
+    Pyenv.installed.map { _.split("\\.")(0) } must contain("3")
+    Pyenv.versions must contain(eachOf("2.4.1", "3.9.0"))
+    // PyEnv.uninstall("3.10.5")
+    // PyEnv.installed must not contain("3.10.5")
+    // PyEnv.install("3.10.5")
+    // PyEnv.installed must contain("3.10.5")
+
+  }
+
+  val venv = VirtualPython("test_venv", Pyenv.installed.last)
+
   "Create Venv" >>
   {
-    PythonProcess.venv.create(envName, overwrite = true)
+    println(s"Creating Venv at ${venv.targetVersion}")
+    venv.init(true)
 
     (
-      new File(PythonProcess.venv.bin(envName), "activate")
+      new File(venv.bin, "activate")
     ).isFile() must beTrue
   }
 
   "Install a package into the venv" >>
   {
-    PythonProcess.venv.install(envName, testPackage)
+    venv.install(testPackage)
 
-    PythonProcess.run(envName = envName,
+    PythonProcess.run(environment = venv,
       script = """import urllib3
                  |print("hi!")""".stripMargin
     ).trim() must beEqualTo("hi!")

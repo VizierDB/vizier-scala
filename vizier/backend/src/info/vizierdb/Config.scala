@@ -58,10 +58,9 @@ class Config(arguments: Seq[String])
                   .orElse { Some(5000) }
   )
   val pythonPath = opt[String]("python", 
-    descr = "Path to python binary",
+    descr = "Path to python binary (default: search for one)",
     default = 
       Option(defaults.getProperty("python"))
-          .orElse { Some(info.vizierdb.commands.python.PythonProcess.PYTHON_COMMAND) }
   )
   val publicURL = opt[String]("public-url",
     descr = "The Public-Facing URL of Vizier (e.g., for use with proxies)",

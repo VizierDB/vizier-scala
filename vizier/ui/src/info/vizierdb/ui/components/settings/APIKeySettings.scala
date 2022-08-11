@@ -30,12 +30,12 @@ class APIKeySettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     def load(): Unit =
     {
-      url.value = parent.registry.getOrElse("osm_url", "")
+      url.value = parent.registry.getOrElse("osm-server", "")
     }
 
     def save(evt: dom.Event): Unit =
     {
-      parent.updateRegistry("osm_url", url.value)( () => changed() = false )
+      parent.updateRegistry("osm-server", url.value)( () => changed() = false )
     }
   }
 
@@ -53,12 +53,12 @@ class APIKeySettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     def load(): Unit =
     {
-      apikey.value = parent.registry.getOrElse("google_key", "")
+      apikey.value = parent.registry.getOrElse("google-api-key", "")
     }
 
     def save(evt: dom.Event): Unit =
     {
-      parent.updateRegistry("google_key", apikey.value)( () => changed() = false )
+      parent.updateRegistry("google-api-key", apikey.value)( () => changed() = false )
     }
   }
 
