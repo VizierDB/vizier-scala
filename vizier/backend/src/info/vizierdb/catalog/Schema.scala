@@ -242,7 +242,18 @@ object Schema
         Column("project_id",      SQL.INTEGER,  "integer",      isRequired = true),
         Column("properties",      SQL.BLOB,     "json",         isRequired = false)
       )
-    ))
+    )),
+
+    ///////////////////// Python ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Python_Environment_Spec",
+      columns = List(
+        Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true, 
+                                                                isPrimaryKey = true),
+        Column("version",         SQL.VARCHAR,  "varchar(100)", isRequired = true),
+        Column("packages",        SQL.BLOB,     "json",         isRequired = true),
+      )
+    )),
 
   )
 

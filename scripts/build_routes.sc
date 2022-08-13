@@ -494,11 +494,12 @@ def websocketAPICall(route: Route): String =
 
   def mkPrim(t: String) = Json.obj("type" -> t)
 
-  def mkObject(opt: Set[String] = Set.empty)(props: (String, JsValue)*) =
+  def mkObject(opt: Set[String] = Set.empty, extra: JsValue = JsNull)(props: (String, JsValue)*) =
     Json.obj(
       "type" -> "object",
       "required" -> JsArray(props.map { _._1 }.filterNot { opt contains _ }.map { JsString(_) }),
-      "properties" -> JsObject(props.toMap)
+      "properties" -> JsObject(props.toMap),
+      "additionalProperties" -> extra,
     )
 
   def mkArray(elem: JsValue) = Json.obj("type" -> "array", "items" -> elem)
@@ -548,6 +549,14 @@ def websocketAPICall(route: Route): String =
   define { "JsValue" -> Json.obj(
     "type" -> "any",
     "description" -> "the value, encoded as Json"
+  )}
+  define { "PythonPackage" -> mkObject()(
+    "name" -> Json.obj("type" -> "string"),
+    "version" -> Json.obj("type" -> "string"),
+  )}
+  define { "PythonEnvironment" -> mkObject()(
+    "version" -> Json.obj("type" -> "string"),
+    "packages" -> mkArray(typeRef("PythonPackage")),
   )}
 
   val aliases = Map(

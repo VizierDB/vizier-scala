@@ -13,8 +13,14 @@ import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder}
 import com.typesafe.scalalogging.LazyLogging
 import java.io.File
 import info.vizierdb.VizierException
+import info.vizierdb.catalog.Metadata
+import scalikejdbc.DBSession
+import play.api.libs.json.Json
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
+import info.vizierdb.catalog.CatalogDB
 
-sealed trait PythonEnvironment
+trait PythonEnvironment
   extends LazyLogging
 {
   def python: File
@@ -111,49 +117,3 @@ object SystemPython
   }
 }
 
-case class VirtualPython(env: String, targetVersion: String)
-  extends PythonEnvironment
-  with LazyLogging
-{
-  def dir: File = 
-    new File(Vizier.config.pythonVenvDirFile, env)
-
-  def bin: File =
-    new File(dir, "bin")
-
-  def python: File =
-    new File(bin, "python3")
-
-  def exists = dir.exists()
-
-  def init(overwrite: Boolean = false, fallBackToSystemPython: Boolean = false): Unit =
-  {
-    // we need a python binary of the right version to bootstrap the venv
-    val bootstrapBinary = 
-      if(SystemPython.fullVersion == targetVersion){
-        SystemPython.python.toString()
-      } else if(Pyenv.exists && (Pyenv.installed contains targetVersion)) {
-        // if the system python is not right, try pyenv
-        Pyenv.python(targetVersion)
-      } else if(fallBackToSystemPython) {
-        logger.warn(s"Python version '$targetVersion' is not installed; Falling back to system python")
-        SystemPython.python.toString()
-      } else {
-        throw new VizierException(s"Trying to create virtual environment for non-installed python version '$targetVersion'")
-      }
-
-    logger.info(s"Bootstrapping venv $env with $bootstrapBinary")
-
-    var args = 
-      Seq(
-        "-m", "venv",
-        "--upgrade-deps",
-        "--copies",
-      )
-    if(overwrite){ args = args :+ "--clear" }
-
-    args = args :+ dir.toString
-
-    Process(bootstrapBinary, args).!!
-  }
-}

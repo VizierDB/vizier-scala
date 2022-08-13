@@ -18,6 +18,8 @@ import scalikejdbc._
 import play.api.libs.json._
 import java.sql.ResultSet
 import info.vizierdb.types._
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
 
 object binders
 {
@@ -73,6 +75,15 @@ object binders
   }
   implicit val streamTypeParameterBinder = ParameterBinderFactory[StreamType.T] {
     value => (stmt, idx) => stmt.setInt(idx, value.id)
+  }
+
+  //// PythonPackageSet ////
+  implicit val pythonPackageSetTypeBinder: TypeBinder[Seq[serialized.PythonPackage]] = new TypeBinder[Seq[serialized.PythonPackage]] {
+    def apply(rs: ResultSet, label: String): Seq[serialized.PythonPackage] = Json.parse(rs.getString(label)).as[Seq[serialized.PythonPackage]]
+    def apply(rs: ResultSet, index: Int): Seq[serialized.PythonPackage] = Json.parse(rs.getString(index)).as[Seq[serialized.PythonPackage]]
+  }
+  implicit val pythonPackageSetParameterBinder = ParameterBinderFactory[Seq[serialized.PythonPackage]] {
+    value => (stmt, idx) => stmt.setString(idx, Json.toJson(value).toString)
   }
 }
 

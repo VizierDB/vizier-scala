@@ -211,4 +211,7 @@ object serializers
   )
   implicit val filesystemObjectFormat = Json.format[serialized.FilesystemObject]
   implicit val mlvectorFormat: Format[serialized.MLVector] = Json.format  
+
+  implicit val pythonPackageFormat: Format[serialized.PythonPackage] = Json.format
+  implicit val pythonEnvironmentFormat: Format[serialized.PythonEnvironment] = Json.format
 }
