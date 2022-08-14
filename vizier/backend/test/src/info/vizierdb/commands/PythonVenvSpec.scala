@@ -7,8 +7,8 @@ import info.vizierdb.commands.python.PythonProcess
 import java.io.File
 import info.vizierdb.Vizier
 import info.vizierdb.commands.python.SystemPython
-import info.vizierdb.commands.python.VirtualPython
 import info.vizierdb.commands.python.Pyenv
+import info.vizierdb.catalog.PythonVirtualEnvironment
 
 class PythonVenvSpec 
   extends Specification
@@ -41,14 +41,13 @@ class PythonVenvSpec
     // PyEnv.installed must not contain("3.10.5")
     // PyEnv.install("3.10.5")
     // PyEnv.installed must contain("3.10.5")
-
   }
 
-  val venv = VirtualPython("test_venv", Pyenv.installed.last)
+  val venv = PythonVirtualEnvironment("test_venv", Pyenv.installed.last, Seq.empty)
 
   "Create Venv" >>
   {
-    println(s"Creating Venv at ${venv.targetVersion}")
+    println(s"Creating Venv at ${venv.version}")
     venv.init(true)
 
     (
@@ -58,9 +57,9 @@ class PythonVenvSpec
 
   "Install a package into the venv" >>
   {
-    venv.install(testPackage)
+    venv.Environment.install(testPackage)
 
-    PythonProcess.run(environment = venv,
+    PythonProcess.run(environment = venv.Environment,
       script = """import urllib3
                  |print("hi!")""".stripMargin
     ).trim() must beEqualTo("hi!")

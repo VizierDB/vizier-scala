@@ -118,16 +118,19 @@ class Config(arguments: Seq[String])
     ),
   )
 
-  val cacheDirOverride = opt[String]("cache-dir",
+  val cacheDirOverride = opt[File]("cache-dir",
     descr = "Set vizier's cache directory (default ./.vizier-cache)"
+  )
+
+  val warehouseDirOverride = opt[File]("spark-warehouse-dir",
+    descr = "Set the SparkSQL warehouse directory (default: {cache-dir}/spark-warehouse)"
   )
 
   def workingDirectoryFile = 
     new File(workingDirectory.getOrElse("."))
   
   lazy val cacheDirFile = 
-    cacheDirOverride.map { new File(_) }
-                    .getOrElse { 
+    cacheDirOverride.getOrElse { 
                       new File(workingDirectoryFile, ".vizier-cache")
                     }
 

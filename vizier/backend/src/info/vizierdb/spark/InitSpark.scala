@@ -12,6 +12,8 @@ import info.vizierdb.spark.udt.ImageUDT
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.ml.linalg.{SparseVector, Vector, Vectors}
 import org.apache.spark.mllib.linalg.{Vector => OldVector}
+import info.vizierdb.Vizier
+import java.io.File
 
 object InitSpark
 {
@@ -26,6 +28,11 @@ object InitSpark
       .config("spark.kryo.registrator", classOf[SedonaVizKryoRegistrator].getName)
       .config("spark.kryoserializer.buffer.max", "2000m")
       .master("local[*]")
+      .config("spark.sql.warehouse.dir",
+        Vizier.config.warehouseDirOverride.toOption
+              .getOrElse { new File(Vizier.config.cacheDirFile, "spark-warehouse") }
+              .getAbsolutePath()
+      )
       .getOrCreate()
   }
 
