@@ -246,7 +246,7 @@ object Schema
 
     ///////////////////// Python ///////////////////// 
     CreateTableMigration(Table(
-      name = "Python_Environment_Spec",
+      name = "Python_Virtual_Environment",
       columns = List(
         Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true, 
                                                                 isPrimaryKey = true),

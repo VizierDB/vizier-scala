@@ -34,15 +34,18 @@
   <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="TRACE" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.commands.python.Python$"           level="INFO" />
-  <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
-  <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />
-  <logger name="info.vizierdb.commands.python.PythonInterface"   level="WARN" />
   <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="INFO" />
   <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
   <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
   <logger name="info.vizierdb.commands.data.LoadDataset$"        level="WARN" />
+
+  <!--+++++++++++++++++++++++  Python  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.commands.python.Python$"           level="INFO" />
+  <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
+  <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />
+  <logger name="info.vizierdb.commands.python.PythonInterface"   level="WARN" />
+  <logger name="info.vizierdb.catalog.PythonVirtualEnvironment"  level="INFO" />
 
   <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
   <logger name="org.mimirdb.spark.PythonUDFBuilder"              level="WARN" />

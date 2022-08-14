@@ -127,7 +127,7 @@ object PythonProcess
     "bokeh"      -> "bokeh",
     "matplotlib" -> "matplotlib",
     "astor"      -> "astor",
-    "pyarrow"    -> "pyarrow<4.0.0",
+    "pyarrow"    -> "pyarrow",
     "pandas"     -> "pandas",
     "shapely"    -> "shapely",
     "pyspark"    -> "pyspark",

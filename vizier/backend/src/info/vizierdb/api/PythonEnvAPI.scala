@@ -4,9 +4,20 @@ import info.vizierdb.serialized
 import info.vizierdb.catalog.PythonVirtualEnvironment
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.api.response.ErrorResponse
+import java.sql.SQLException
+import info.vizierdb.VizierException
+import info.vizierdb.Vizier
 
 object PythonEnvAPI
 {
+  def checkServerMode() = 
+    if(Vizier.config.serverMode()){
+      ErrorResponse.invalidRequest(
+        "This route is not available in server mode"
+      )
+    }
+
+
   def Get(
     env: String
   ): serialized.PythonEnvironment = 
@@ -18,15 +29,31 @@ object PythonEnvAPI
     }
   }
 
+  def ListEnvs(): Seq[String] =
+  {
+    CatalogDB.withDBReadOnly { implicit s =>
+      PythonVirtualEnvironment.list
+    }
+  }
+
   def Create(
     env: String,
     spec: serialized.PythonEnvironment
   ): Boolean = 
   {
+    checkServerMode()
     val environment = 
-      CatalogDB.withDBReadOnly { implicit s => 
-        PythonVirtualEnvironment.make(env, spec.version)
+      try {
+        CatalogDB.withDB { implicit s => 
+          PythonVirtualEnvironment.make(env, spec.version)
+        }
+      } catch {
+        case t: SQLException => 
+          ErrorResponse.invalidRequest(
+            "Error creating the venv (another venv with the same name probably exists)"
+          )
       }
+    environment.init()
     for( pkgSpec <- spec.packages ) {
       environment.Environment.install(pkgSpec.name, pkgSpec.version)
     }
@@ -40,6 +67,7 @@ object PythonEnvAPI
     env: String,
   ): Boolean = 
   {
+    checkServerMode()
     val environment = 
       CatalogDB.withDBReadOnly { implicit s =>
         PythonVirtualEnvironment.getOption(env)
@@ -69,6 +97,7 @@ object PythonEnvAPI
     spec: serialized.PythonPackage
   ): Boolean = 
   {
+    checkServerMode()
     val environment = 
       CatalogDB.withDBReadOnly { implicit s =>
         PythonVirtualEnvironment.getOption(env)

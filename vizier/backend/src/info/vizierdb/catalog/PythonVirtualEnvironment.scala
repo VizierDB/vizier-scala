@@ -13,6 +13,7 @@ import scala.sys.process._
 import info.vizierdb.catalog.binders._
 import info.vizierdb.serialized
 import info.vizierdb.util.FileUtils
+import info.vizierdb.commands.python.PythonProcess
 
 case class PythonVirtualEnvironment(
   name: String,
@@ -71,9 +72,47 @@ case class PythonVirtualEnvironment(
 
     args = args :+ dir.toString
 
-    Process(bootstrapBinary, args).!!
+    {
+      val err =
+        Process(bootstrapBinary, args).run(
+          ProcessLogger(
+            logger.info(_),
+            logger.warn(_)
+          )
+        ).exitValue()
+      if(err != 0){
+        throw new VizierException("Error setting up venv")
+      }
+    }
 
-    packages.foreach { pkg => Environment.install(pkg.name, pkg.version) }
+    logger.info(s"Set up venv $name; Installing initial packages")
+
+    {
+      val err = 
+        Process(
+          Environment.python.toString,
+          Seq(
+            "-m", "pip",
+            "install"
+          ) ++ PythonProcess.REQUIRED_PACKAGES.map { _._2 }
+        ).run(
+          ProcessLogger(
+            logger.info(_),
+            logger.warn(_)
+          )
+        ).exitValue()
+      if(err != 0){
+        throw new VizierException("Error installing required packages")
+      }
+    }
+
+    logger.info(s"Set up venv $name; Installing user-requested packages")
+
+    packages.foreach { pkg => 
+      logger.info(s"Installing into venv $name: $pkg")
+      Environment.install(pkg.name, pkg.version) 
+    }
+    logger.info(s"Finished setting up venv $name")
   }
 
   def save()(implicit session: DBSession): PythonVirtualEnvironment =
@@ -138,6 +177,14 @@ object PythonVirtualEnvironment
       select
         .from(PythonVirtualEnvironment as b)
     }.map { apply(_) }.list.apply()
+
+  def list(implicit session: DBSession): Seq[String] =
+    withSQL { 
+      val b = PythonVirtualEnvironment.syntax 
+      select(b.name)
+        .from(PythonVirtualEnvironment as b)
+    }.map { _.get[String](1) }.list.apply()
+    
 
   /**
    * Creates an <b>uninitialized</b> [[PythonVirtualEnvironment]]
