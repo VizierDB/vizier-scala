@@ -12,6 +12,7 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.analysis.UnresolvedFunction
 import org.apache.spark.sql.functions
 import info.vizierdb.spark.SparkExpression.expressionFormat
+
 case class UpdateRule(
   expression: Expression,
   frame: ReferenceFrame,
