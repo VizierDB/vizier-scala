@@ -378,7 +378,7 @@ $menu_height: 32px;
         font-weight: bold;
         background-color: grey;
         transition-property: transform;
-        transition-duration: 0.1;
+        transition-duration: 0.1s;
 
         &.confirm
         {
@@ -1598,7 +1598,7 @@ table.parameter_list
         font-weight: bold;
         background-color: grey;
         transition-property: transform;
-        transition-duration: 0.1;
+        transition-duration: 0.1s;
         cursor: pointer;
 
         &.changed 
