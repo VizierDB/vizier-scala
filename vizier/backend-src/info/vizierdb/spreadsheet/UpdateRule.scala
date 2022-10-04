@@ -147,7 +147,7 @@ object UpdateRule {
             case UnresolvedFunction(Seq("SingleCell"), rowDetails, _, _, _) =>
               {
                 //println("single cell")
-                println(rowDetails(0).toString)
+                //println(rowDetails(0).toString)
                 val refDetails = rowDetails(0).toString().replaceAll("'", "").split(", ")
                 val columnLabel = refDetails(0)
                 val columnId = refDetails(1).toInt

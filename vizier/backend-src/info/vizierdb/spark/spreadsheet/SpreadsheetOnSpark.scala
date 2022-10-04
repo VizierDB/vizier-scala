@@ -233,56 +233,118 @@ object SpreadsheetOnSpark extends LazyLogging{
         }
         val order = bfs(adjacencyList)
         println(order)
-        for (update <- order)
+        for (update <- order) //for range of cells in dag
         {
             
             val start = update
             val destinations = adjacencyList.getOrElse(start, null)
-            val targetColumn: StructField = input.schema.fields(start._1.id.toInt)
+            val targetColumn: StructField = output.schema.fields(start._1.id.toInt)
+            var base = col(targetColumn.name)
             if(destinations != null)
             {
-                for (destination <- destinations)
+                for (destination <- destinations) //for dependent columns and corresponding range of cells
                 {
+                    println(s"destination (dependent column + rows):${destination}")
+                    println(s"destination (this one should be just the column ref):${destination._1}")
                     val cellRange = (destination._1, destination._2, destination._3)
                     val updateRule = (destination._4)
-                    println(s"Update Rule: ${updateRule}")
+
+                    println(s"From row ${destination._2} to row ${destination._3}")
+                    //println(s"Cell range: ${cellRange}")
+                    //println(s"Update Rule: ${updateRule}")
+                    //println(s"Update Rule RValues: ${updateRule.rvalues}")
                     val expression = updateRule.expression
-                    println(s"Expression: ${expression}")
-                    println(expression.getClass.getName)
-                    
-                    val expr = expression.transform {
-                        case RValueExpression(SingleCell(_,_)) =>
+                    //println(s"Expression: ${expression}")
+                    //println(expression.getClass.getName)
+                    //var aName = ""
+
+                    val newExpression = expression.transform {
+                        case RValueExpression(SingleCell(attributeName,_)) =>
                             {
                                 println("single cell")
-                                println(expression.references)
-                                val rvalue: RValue = SingleCell(ColumnRef(1), 1)
-                                RValueExpression(rvalue)
-                                
+                                output(attributeName.label).expr 
                             }
-                        case RValueExpression(OffsetCell(_,0)) =>
+                        case RValueExpression(OffsetCell(attributeName,0)) =>
                             {
-                                println("offset cell (_,0)")
-                                println(expression.references)
-                                //RValueExpression(rvalue)
-                                val rvalue: RValue = SingleCell(ColumnRef(1), 1)
-                                RValueExpression(rvalue)
+                                println(s"offset cell (${attributeName},0)")
+                                output(attributeName.label).expr
                             }
-                        case RValueExpression(OffsetCell(_,_)) =>
+                        case RValueExpression(OffsetCell(attributeName,_)) =>
                             {
                                 println("offset cell (_,_)")
-                                println(expression.references)
-                                val rvalue: RValue = SingleCell(ColumnRef(1), 1)
-                                RValueExpression(rvalue)
-                            }
-                        case _ => 
-                            {
-                                println("Couldn't identify")
-                                println(expression.getClass.getName)
-                               // println(expression.output)
-                                val rvalue: RValue = SingleCell(ColumnRef(1), 1)
-                                RValueExpression(rvalue)
+                                output(attributeName.label).expr
                             }
                     }
+
+                    println(s"EXPRESSION: ${newExpression}")
+                    
+                    output = AnnotateWithSequenceNumber.withSequenceNumber(output) { df =>
+                        //df.withColumn(targetColumn, newExpression)
+                        rewriteTargetColumn(df, newExpression)
+                    }
+                    
+                    
+                    def rewriteTargetColumn(df: DataFrame, expr: Expression): DataFrame = 
+                    {
+                        println(s"   ... Rewriting ${targetColumn.name} <- $expr")
+                        val columns =
+                            df.schema
+                                .zipWithIndex
+                                .map { case (c, idx) => 
+                                if(idx != destination._1.id) { df(c.name) }
+                                else {col(newExpression)}
+                                }
+                        df.select(columns:_*)
+                        df
+                    }
+                    
+                    
+                    //col(AnnotateWithRowIds.ATTRIBUTE).isin(rows.toSeq:_*)
+                    
+                    /**
+                    AnnotateWithSequenceNumber(output) { df =>
+                        rewriteTargetColumn(df, col(AnnotateWithSequenceNumber) {expr} {base})
+                    }
+                    **/
+
+                    
+                                //rewriteTargetColumn(output, output(destination._1.label) {expr} {output(base.toString)})
+
+
+                    //val endColumn: StructField = output.schema.fields(destination._1.id.toInt)
+                    //var endBase = col(endColumn.name)
+                    //output = output.withColumn(aName, newExpression)
+                    //so we want destination._1 to be updated with the expression from the range d._2 to d._3
+
+                    
+                    /**
+                    val targetEnd: StructField = output.schema.fields(start._1.id.toInt)
+                    var base = col(targetColumn.name)
+                    for(row <- destination._2 to destination._3) {
+                        println(expr.getClass.getName)
+                        println(lit(1).getClass.getName)
+                        println(base.getClass.getName)
+                        println(s"For ${row} <- ${destination._2} to ${destination._3}")
+                            //output = deleteRow(position - 1)
+                            //output = AnnotateWithSequenceNumber.withSequenceNumber(output) { df => 
+                                //df.filter(col(AnnotateWithSequenceNumber.ATTRIBUTE) =!= lit(rowid))
+                            output = AnnotateWithSeqenceNumber.withSequenceNumber(output) { df =>
+                                //rewriteTargetColumn(output, output(destination._1.label) {expr} {output(base.toString)})
+                                newExpression = {} {expr} {base}
+                                 val columns =
+                                    df.schema
+                                        .zipWithIndex
+                                        .map { case (c, idx) => 
+                                        if(idx != destination._1.id) { df(c.name) }
+                                        else { Resolve(newExpression.as(c.name), df) }
+                                        }
+                                df.select(columns:_*)
+                                //df.filter(col(AnnotateWithSequenceNumber.ATTRIBUTE) === lit(row))
+                            }
+                        }
+                    **/
+                    
+                    
                 }
             }
         }
