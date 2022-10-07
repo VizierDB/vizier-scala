@@ -189,8 +189,8 @@ class Module(val subscription: ModuleSubscription)
                                else  { FontAwesome("arrow-circle-down") } }
                         .reactive,
             onclick := { (_:dom.MouseEvent) => 
-              if(subscription.state.now == types.ExecutionState.FROZEN){ subscription.thawCell() } 
-              else                                                     { subscription.freezeCell() }
+              if(subscription.state.now == types.ExecutionState.FROZEN){ subscription.thawUpto() } 
+              else                                                     { subscription.freezeFrom() }
             }
           ).render,
         ),

@@ -159,8 +159,10 @@ object QueryWithCaveats
         /***************************************/
         case None => {
 
+          logger.trace("About to build query")
           // If we're not allowed to use the cache
           var df = build(query, includeCaveats)
+          logger.trace("Done building query; about to check offset/limit")
 
           // We can't offload limit/offset to the cache, so
           // we need to modify the query to account for this.
@@ -185,9 +187,15 @@ object QueryWithCaveats
             )            
           }
 
-          logTime("QUERY", df.toString) {
-            val buffer = df.cache()
-                           .take(RESULT_THRESHOLD+1)
+          logger.trace("Done checking offset/limit")
+          logger.trace(s"About to run: \n${df.queryExecution.analyzed}")
+
+          // df.explain(true)
+
+          logTime("QUERY") {
+            logger.trace("Take...")
+
+            val buffer = df.take(RESULT_THRESHOLD+1)
             // We don't want to collect() naively, since if the
             // result ends up being too big, we're going to 
             // bring down the JVM.  Instead, we cap results at
@@ -201,9 +209,11 @@ object QueryWithCaveats
             // be minimally more expensive, while also letting
             // us easily flag cases where RESULT_THRESHOLD is
             // exceeded.
+            logger.trace("...Taken")
             if(buffer.size >= RESULT_THRESHOLD){ 
               throw new ResultTooBig()
             }
+            logger.trace("...Returning")
 
             /* return */ (buffer, SparkSchema(df))
           } // logTime

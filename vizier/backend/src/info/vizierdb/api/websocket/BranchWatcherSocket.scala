@@ -55,7 +55,7 @@ class BranchWatcherSocket(client: String)(implicit system: ActorSystem, mat: Mat
   // https://amdelamar.com/blog/websockets-with-akka-http/
   // https://github.com/amdelamar/akka-websockets-demo/blob/master/src/main/scala/com/amdelamar/chat/ChatRoom.scala
   val (remote, publisher): (ActorRef, Publisher[TextMessage.Strict]) =
-        Source.actorRef[String](16, OverflowStrategy.fail)
+        Source.actorRef[String](128, OverflowStrategy.fail)
           .map(msg => TextMessage.Strict(msg))
           .toMat(Sink.asPublisher(false))(Keep.both)
           .run()

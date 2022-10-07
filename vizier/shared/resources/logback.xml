@@ -38,7 +38,7 @@
   <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
   <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
-  <logger name="info.vizierdb.commands.data.LoadDataset$"        level="WARN" />
+  <logger name="info.vizierdb.commands.data.LoadDataset$"        level="INFO" />
 
   <!--+++++++++++++++++++++++  Python  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.python.Python$"           level="INFO" />
@@ -48,6 +48,7 @@
   <logger name="info.vizierdb.catalog.PythonVirtualEnvironment"  level="INFO" />
 
   <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.spark.caveats.QueryWithCaveats$"   level="INFO" />
   <logger name="org.mimirdb.spark.PythonUDFBuilder"              level="WARN" />
   <logger name="org.mimirdb.api.request.Explain"                 level="WARN" />
   <logger name="org.mimirdb.caveats.enumerate.EnumeratePlanCaveats$"
