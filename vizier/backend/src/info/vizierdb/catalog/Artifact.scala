@@ -242,7 +242,6 @@ case class Artifact(
                  Map(id -> this), 
                  Artifact.get(_:Identifier)
                )
-
     return { () => 
       try {
         QueryWithCaveats(

@@ -23,7 +23,7 @@ object Staging
 
   val stagingDefaultsToRelative = true
 
-  val bulkStorageFormat = "parquet"
+  val bulkStorageFormat = "arrow"
 
   /**
    * Transfer an InputStream to an OutputStream
@@ -44,15 +44,18 @@ object Staging
 
   def stage(input: InputStream, projectId: Identifier, artifactId: Identifier): Unit =
   {
-    val file = Filestore.getRelative(projectId, artifactId)
+    val file = Filestore.getAbsolute(projectId, artifactId)
+    file.getParentFile().mkdirs()
     transferBytes(input, new FileOutputStream(file))
   }
   def stage(url: URL, projectId: Identifier, artifactId: Identifier): Unit =
+  {
     stage(url.openStream(), projectId, artifactId)
+  }
 
   def stage(input: DataFrame, format: String, projectId: Identifier, artifactId: Identifier): Unit =
   {
-    val file = Filestore.getRelative(projectId, artifactId)
+    val file = Filestore.getAbsolute(projectId, artifactId)
     input.write
          .format(format)
          .save(file.toString)

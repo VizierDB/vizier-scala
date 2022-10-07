@@ -33,6 +33,7 @@ import info.vizierdb.spark.load.LoadSparkCSV
 import spire.syntax.action
 import info.vizierdb.spark.load.LoadSparkDataset
 import info.vizierdb.spark.DataFrameConstructor
+import info.vizierdb.util.ExperimentalOptions
 
 object LoadDataset
   extends Command
@@ -89,6 +90,7 @@ object LoadDataset
 
     // Special-Case publish local
     if(storageFormat.equals("publish_local") || file.url.map { _.startsWith("vizier://") }.getOrElse(false)){
+      logger.trace("Loading locally published dataset")
       val url = file.url.map { _.replace("vizier://", "http://").replace("viziers://", "https://")}
                         .getOrElse{
                           context.error("No URL provided")
@@ -102,6 +104,7 @@ object LoadDataset
                              return
                             }
         } else { url }
+      logger.trace("Retrieving artifact")
       val published: PublishedArtifact = 
         CatalogDB.withDBReadOnly { implicit s => 
           PublishedArtifact.getOption(exportName)
@@ -112,8 +115,11 @@ object LoadDataset
 
       val source = CatalogDB.withDBReadOnly { implicit s => published.artifact }
 
+      logger.trace("Publishing")
       context.output(datasetName, source)
+      logger.trace("Displaying")
       context.displayDataset(datasetName)
+      logger.trace("Done")
       return
     }
 
@@ -144,8 +150,6 @@ object LoadDataset
                     }
     try {
 
-      val mimirOptions = scala.collection.mutable.Map[String, JsValue]()
-
       // Do some pre-processing / default configuration for specific formats
       //  to make the API a little friendlier.
       storageFormat match {
@@ -164,12 +168,10 @@ object LoadDataset
       }
 
       if(file.needsStaging) {
+        logger.debug(s"Staging file: $file")
         val url = actualFile.getPath(context.projectId, 
                                      noRelativePaths = true)._1
         // Preserve the original URL and configurations in the mimirOptions
-        mimirOptions("preStagedUrl") = JsString(url)
-        mimirOptions("preStagedSparkOptions") = Json.toJson(finalSparkOptions)
-        mimirOptions("preStagedFormat") = JsString(storageFormat)
         val stagedConfig  = Staging.stage(url = url, 
                                           sparkOptions = finalSparkOptions, 
                                           format = storageFormat, 
@@ -183,9 +185,13 @@ object LoadDataset
         storageFormat     = stagedConfig._3
       }
 
+      logger.trace("Inferring schema")
+
       var (loadConstructor:DataFrameConstructor, serializer) = 
         storageFormat match {
-          case DatasetFormat.CSV => 
+          // Temporarily disabling LoadSparkCSV since it breaks wide datasets
+          // see: https://github.com/VizierDB/vizier-scala/issues/227
+          case DatasetFormat.CSV if ExperimentalOptions.enabled("CSV-WITH-WARNINGS") => 
             LoadSparkCSV.infer(
               url = actualFile,
               projectId = context.projectId,
@@ -208,12 +214,14 @@ object LoadDataset
             ) -> LoadSparkDataset.format
         }
 
+      logger.trace("Outputting dataset")
       context.outputDataset(
         name = arguments.get[String](PARAM_NAME),
         constructor = loadConstructor,
         properties = Map.empty
       )(serializer.asInstanceOf[Format[DataFrameConstructor]])
 
+      logger.trace("Updating arguments")
       /** 
        * Replace the proposed schema with the inferred/actual schema
        */
@@ -239,6 +247,7 @@ object LoadDataset
         return
     }
 
+    logger.trace("Displaying dataset")
     context.displayDataset(datasetName)
   }
 
