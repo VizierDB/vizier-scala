@@ -1,5 +1,6 @@
 package info.vizierdb.serialized
 
+import info.vizierdb.types._
 
 case class PythonPackage(
   name: String,
@@ -12,6 +13,7 @@ object PythonPackage
 }
 
 case class PythonEnvironment(
-  version: String,
+  pythonVersion: String,
+  revision: Identifier,
   packages: Seq[PythonPackage]
 )

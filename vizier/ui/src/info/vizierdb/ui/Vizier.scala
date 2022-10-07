@@ -27,6 +27,7 @@ import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.components.DisplayArtifact
 import scala.concurrent.Future
 import info.vizierdb.ui.components.StaticWorkflow
+import info.vizierdb.ui.widgets.SystemNotification
 
 
 /**
@@ -72,6 +73,8 @@ object Vizier
   def error(message: String) =
   {
     println(s"ERROR: $message")
+    // TODO: We should probably add a warning toast so that the user actually sees 
+    //       that something has exploded.
     throw new Exception(message)
   }
 

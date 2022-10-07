@@ -45,7 +45,7 @@ object PythonEnvAPI
     val environment = 
       try {
         CatalogDB.withDB { implicit s => 
-          PythonVirtualEnvironment.make(env, spec.version)
+          PythonVirtualEnvironment.make(env, spec.pythonVersion)
         }
       } catch {
         case t: SQLException => 

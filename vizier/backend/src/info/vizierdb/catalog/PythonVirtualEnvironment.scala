@@ -14,21 +14,24 @@ import info.vizierdb.catalog.binders._
 import info.vizierdb.serialized
 import info.vizierdb.util.FileUtils
 import info.vizierdb.commands.python.PythonProcess
+import info.vizierdb.types._
 
 case class PythonVirtualEnvironment(
+  id: Identifier,
   name: String,
-  val version: String,
-  val packages: Seq[PythonPackage]
+  pythonVersion: String,
+  activeRevision: Identifier,
 ) extends LazyLogging
 {
-  def serialize = 
+  def serialize(implicit session:DBSession) = 
     serialized.PythonEnvironment(
-      version,
-      packages
+      pythonVersion,
+      id,
+      PythonVirtualEnvironmentRevision.get(activeRevision).packages
     )
 
   def dir: File = 
-    new File(Vizier.config.pythonVenvDirFile, name)
+    new File(Vizier.config.pythonVenvDirFile, s"venv_$id")
 
   def bin: File =
     new File(dir, "bin")
@@ -48,16 +51,16 @@ case class PythonVirtualEnvironment(
   {
     // we need a python binary of the right version to bootstrap the venv
     val bootstrapBinary = 
-      if(SystemPython.fullVersion == version){
+      if(SystemPython.fullVersion == pythonVersion){
         SystemPython.python.toString()
-      } else if(Pyenv.exists && (Pyenv.installed contains version)) {
+      } else if(Pyenv.exists && (Pyenv.installed contains pythonVersion)) {
         // if the system python is not right, try pyenv
-        Pyenv.python(version)
+        Pyenv.python(pythonVersion)
       } else if(fallBackToSystemPython) {
-        logger.warn(s"Python version '$version' is not installed; Falling back to system python")
+        logger.warn(s"Python version '$pythonVersion' is not installed; Falling back to system python")
         SystemPython.python.toString()
       } else {
-        throw new VizierException(s"Trying to create virtual environment for non-installed python version '$version'")
+        throw new VizierException(s"Trying to create virtual environment for non-installed python version '$pythonVersion'")
       }
 
     logger.info(s"Bootstrapping venv $name with $bootstrapBinary")
@@ -191,19 +194,19 @@ object PythonVirtualEnvironment
    * 
    * You <b>must</b> call [[PythonVirtualEnvironment.init]]
    */
-  def make(name: String, version: String)(implicit session: DBSession): PythonVirtualEnvironment =
+  def make(name: String, pythonVersion: String)(implicit session: DBSession): PythonVirtualEnvironment =
   {
-    withSQL {
+    val id = withSQL {
       val a = PythonVirtualEnvironment.column
       insertInto(PythonVirtualEnvironment)
         .namedValues(
           a.name -> name,
-          a.version -> version,
+          a.pythonVersion -> pythonVersion,
           a.packages -> Seq[PythonPackage](),
         )
-    }.update.apply()
+    }.updateAndReturnGeneratedKey.apply()
     return PythonVirtualEnvironment(
-      name, version, Seq.empty
+      id, name, pythonVersion, Seq.empty, None
     )
   }
 }

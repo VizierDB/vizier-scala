@@ -2,6 +2,7 @@ package info.vizierdb.ui.widgets
 
 import org.scalajs.dom
 import scala.collection.mutable
+import scalatags.JsDom.all._
 import java.{util => ju}
 import dom.experimental.{ Notification => BrowserNotification }
 import info.vizierdb.ui.Vizier
@@ -16,7 +17,14 @@ object SystemNotification
   object Mode extends Enumeration
   {
     type T = Value
-    val SLOW_CELL_FINISHED = Value
+    val SLOW_CELL_FINISHED, 
+        ON_ERROR = Value
+
+    def describe(v: T) =
+      v match {
+        case SLOW_CELL_FINISHED => "when a slow cell finishes"
+        case ON_ERROR => "when an error occurs"
+      }
   }
 
   val activeModes:mutable.Set[Mode.T] = 
@@ -37,7 +45,7 @@ object SystemNotification
     if(!checkPermissions()){ return }
     activeModes += mode
     save()
-    apply(mode)("Notifications Enabled")
+    apply(mode)(s"Notifications ${Mode.describe(mode)} enabled")
   }
 
   def deactivate(mode: Mode.T): Unit =
@@ -60,10 +68,11 @@ object SystemNotification
   }
 
   def isActive(mode: Mode.T): Boolean =
-  {
-    (BrowserNotification.permission == "granted") && (activeModes contains mode)
-  }
+    (activeModes contains mode)
 
+  def browserNotificationsEnabled: Boolean =
+    (BrowserNotification.permission == "granted")
+  
   def save(): Unit =
   {
     dom.window.localStorage
@@ -76,11 +85,11 @@ object SystemNotification
 
   def apply(mode: Mode.T)(text: String) =
   {
-    if(isActive(mode)){
+    if(isActive(mode) && browserNotificationsEnabled){
       new dom.experimental.Notification(
-        "VizierDB", 
-        dom.experimental.NotificationOptions(text)
-      )
+          "VizierDB", 
+          dom.experimental.NotificationOptions(text)
+        )
     }
   }
 }
