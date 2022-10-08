@@ -163,12 +163,16 @@ object Parameter
     def visibleArtifactsByType = editor.delegate
                                        .visibleArtifacts
                                        .map { _.mapValues { _._1.t } }
-    
+    def visibleArtifacts       = editor.delegate
+                                       .visibleArtifacts
+                                       .map { _.mapValues { _._1 } } 
+
+
     tree.parameter match {
       case param: serialized.SimpleParameterDescription =>
         param.datatype match {
-          case "colid"    => new ColIdParameter(param, editor.delegate.visibleArtifacts.map { _.mapValues { _._1 } }, editor.selectedDataset)
-          case "list"     => new ListParameter(param, tree.children, this.apply(_, editor))
+          case "colid"    => new ColIdParameter(param, visibleArtifacts, editor.selectedDataset)
+          case "list"     => new ListParameter(param, tree.children, this.apply(_, editor), visibleArtifacts)
           case "record"   => new RecordParameter(param, tree.children, this.apply(_, editor))
           case "string"   => new StringParameter(param)
           case "int"      => new IntParameter(param)
@@ -663,7 +667,7 @@ class ListParameter(
   val id: String, 
   val name: String, 
   titles: Seq[String],
-  elements: Seq[() => Parameter], 
+  generateRow: () => Seq[Parameter], 
   val required: Boolean,
   val hidden: Boolean
 )(implicit owner: Ctx.Owner)
@@ -672,14 +676,15 @@ class ListParameter(
   def this(
     parameter: serialized.ParameterDescription, 
     children: Seq[serialized.ParameterDescriptionTree], 
-    getParameter: serialized.ParameterDescriptionTree => Parameter
+    getParameter: serialized.ParameterDescriptionTree => Parameter,
+    datasets: Rx[Map[String, serialized.ArtifactSummary]],
   )(implicit owner: Ctx.Owner)
   {
     this(
       parameter.id,
       parameter.name, 
       children.map { _.parameter.name },
-      children.map { x => () => getParameter(x) },
+      ListParameter.generateChildConstructors(children, datasets, getParameter),
       parameter.required,
       parameter.hidden
     )
@@ -706,7 +711,7 @@ class ListParameter(
 
   def tentativeRow(): Seq[Parameter] =
   {
-    val row = elements.map { _() }
+    val row = generateRow()
     row.foreach { _.onChange { e => touchRow(row) } }
     row
   }
@@ -765,6 +770,41 @@ class ListParameter(
       rows.append(row)
     }
     rows.append(tentativeRow())
+  }
+}
+object ListParameter
+{
+  def generateChildConstructors(
+    children: Seq[serialized.ParameterDescriptionTree], 
+    datasets: Rx[Map[String,serialized.ArtifactSummary]],
+    getParameter: serialized.ParameterDescriptionTree => Parameter
+  )(implicit owner: Ctx.Owner): () => Seq[Parameter] =
+  {
+    var datasetParameter = children.indexWhere { _.parameter.datatype == "dataset" }
+
+    if(datasetParameter < 0){
+      return { () => children.map { getParameter(_) } }
+    } else {
+      return { () => 
+        println("Allocating row with dataset parameter")
+        val dataset = getParameter(children(datasetParameter)).asInstanceOf[ArtifactParameter]
+
+        dataset.onChange { ds =>
+          println(s"Dataset changed to $ds")
+        }
+
+        children.zipWithIndex.map { 
+          case (_, idx) if idx == datasetParameter => dataset
+          case (x, _) if x.parameter.datatype == "colid" =>
+            new ColIdParameter(
+              x.parameter,
+              datasets,
+              dataset.selectedDataset
+            )
+          case (x, _) => getParameter(x)
+        }
+      }
+    }
   }
 }
 

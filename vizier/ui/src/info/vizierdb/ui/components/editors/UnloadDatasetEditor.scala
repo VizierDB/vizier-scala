@@ -103,20 +103,21 @@ class UnloadDatasetEditor(
     new ListParameter("unloadOptions",
       "Spark Load Options",
       Seq[String]("Key", "Value"),
-      Seq[() => Parameter](
-        { () => new StringParameter(
-                  "unloadOptionKey",
-                  "Key",
-                  true,
-                  false
-                ) },
-        { () => new StringParameter(
-                  "unloadOptionValue",
-                  "Value",
-                  true,
-                  false
-                ) },
-      ),
+      { () => Seq(
+          new StringParameter(
+            "unloadOptionKey",
+            "Key",
+            true,
+            false
+          ),
+          new StringParameter(
+            "unloadOptionValue",
+            "Value",
+            true,
+            false
+          ),
+        )
+      },
       false,
       false
     )

@@ -281,7 +281,7 @@ class DatasetClient(object):
   def add_delta(self, id: str, **varargs) -> None:
     self.history.append({"id": id, **varargs})
 
-  def save(self, name: Optional[str] = None, use_deltas: bool = True):
+  def save(self, name: Optional[str] = None, use_deltas: bool = False):
     if self.client is None:
       raise ValueError("Client field unset.  Use `vizierdb.create_dataset()` or `vizierdb.update_dataset()` instead.")
     if name is None and self.existing_name is None:
