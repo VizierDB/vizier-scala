@@ -55,12 +55,20 @@ object WorkflowSQL
         val artifacts: Seq[(String, Artifact)] = 
           workflow.outputArtifacts.toSeq
 
+        // toIndexedSeq is required here so that we materialize the output
+        // lists, since the database handle goes away as soon as we're 
+        // outside of the withDBReadOnly block
         val datasets = 
           artifacts.filter { _._2.t.equals(ArtifactType.DATASET) }
+                   .map { case (name, artifact) =>
+                     name -> Artifact.get(artifact.id).dataframe
+                   }
+                   .toIndexedSeq // needed to materialize the output
                    .toMap
 
         val functions = 
           artifacts.filter { _._2.t.equals(ArtifactType.FUNCTION) } 
+                   .toIndexedSeq // needed to materialize the output
                    .toMap
 
         /* return */ (datasets, functions)
@@ -70,10 +78,7 @@ object WorkflowSQL
 
     QueryWithCaveats(
       query = query.get,
-      views = 
-        CatalogDB.withDBReadOnly { implicit s => 
-          datasets.mapValues { a => Artifact.get(a.id).dataframe }
-        },
+      views = datasets,
       includeCaveats = true,
     )
   } 
