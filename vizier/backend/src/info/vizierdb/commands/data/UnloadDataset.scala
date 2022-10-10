@@ -135,6 +135,21 @@ object UnloadDataset extends Command
         }
       }
 
+    val useTempFile = ( 
+      // We only want to use tempfiles for specific formats that dump out 
+      // multiple files
+      TEMPFILE_FORMATS(format)
+        // .. but only if...
+        && (
+              // ... outputting to another artifact
+             url.isEmpty 
+              // ... or outputting to a local file (i.e., follow spark's safety 
+              // conventions for s3a and other distributed filesystems) 
+          || !url.get.contains("://")
+        )
+    )
+
+    if(useTempFile) { logger.trace("I think we should use a temporary file") }
 
     val df: DataFrame = 
       {
@@ -142,7 +157,7 @@ object UnloadDataset extends Command
           CatalogDB.withDB { implicit s => dataset.dataframe }()
         // Tempfile formats need to be coalesced into a single partition
         // before they are dumped out.
-        if(TEMPFILE_FORMATS(format)){
+        if(useTempFile){
           df = df.coalesce(1)
         }
         df
@@ -167,13 +182,18 @@ object UnloadDataset extends Command
       case (writer, (option, value)) => writer.option(option, value)
     }
 
-    // The choice of save path depends on the URL and format
+
+    // Generate the output target file
     val (file, tempDir:Option[File]) = 
-      if(url.isDefined) { (url.get, None) }
-      else if(TEMPFILE_FORMATS(format)) {
+      if(useTempFile) {
         val tempDir = File.createTempFile("temp_", "."+format.split("\\.").last)
         tempDir.delete
         (tempDir.toString, Some(tempDir))
+      } else if(url.isDefined) { 
+        (
+          url.get, 
+          None
+        )
       } else {
         (
           outputArtifactIfNeeded.map { _.absoluteFile.toString }
@@ -193,7 +213,9 @@ object UnloadDataset extends Command
         val sheetIdentifier = sheetURLParts(0) + "/" + sheetURLParts(1)
         writer.save(sheetIdentifier)
       }
-      case _ => writer.save(file)
+      case _ => 
+        logger.debug(s"Writing artifact $datasetName to $file")
+        writer.save(file)
     }
 
     // Copy the target file to the right place and clean up the temp dir
@@ -203,7 +225,9 @@ object UnloadDataset extends Command
       assert(dataFiles.size == 1, s"Spark generated ${dataFiles.size} data files: ${dataFiles.mkString(", ")}")
       val artifact = 
         dataFiles.head.renameTo(
-          outputArtifactIfNeeded.get.absoluteFile
+          url.map { new File(_) }.getOrElse {
+            outputArtifactIfNeeded.get.absoluteFile
+          }
         )
       for(f <- allFiles){
         if(f.exists){ f.delete }

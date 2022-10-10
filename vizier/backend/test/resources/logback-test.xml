@@ -45,6 +45,7 @@
   <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
   <logger name="info.vizierdb.commands.data.LoadDataset$"        level="WARN" />
+  <logger name="info.vizierdb.commands.data.UnloadDataset$"      level="TRACE" />
 
   <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
   <logger name="org.mimirdb.spark.PythonUDFBuilder"              level="WARN" />

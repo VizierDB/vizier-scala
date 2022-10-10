@@ -39,6 +39,7 @@
   <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
   <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
   <logger name="info.vizierdb.commands.data.LoadDataset$"        level="INFO" />
+  <logger name="info.vizierdb.commands.data.UnloadDataset$"      level="INFO" />
 
   <!--+++++++++++++++++++++++  Python  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.python.Python$"           level="INFO" />
@@ -64,14 +65,6 @@
   <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
   <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />
   <logger name="info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyConnection" level="DEBUG" />
-
-  <!--+++++++++++++++++++++++  Jetty  +++++++++++++++++++++++++-->
-  <logger name="org.eclipse.jetty.server.Server"                 level="WARN" />
-  <logger name="org.eclipse.jetty.server.handler.ContextHandler" level="WARN" />
-  <logger name="org.eclipse.jetty.server.ResourceService"        level="WARN" />
-  <logger name="org.eclipse.jetty.servlet.ServletHandler"        level="WARN" />
-  <logger name="org.eclipse.jetty.servlet.DefaultServlet"        level="WARN" />
-  <logger name="org.eclipse.jetty.server.session"                level="WARN" />
 
     
   <root level="WARN">
