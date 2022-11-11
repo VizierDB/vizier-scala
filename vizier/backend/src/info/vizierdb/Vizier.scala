@@ -148,7 +148,15 @@ object Vizier
         case "darwin" => Seq("open", urls.ui.toString)
         case _ => return
       }
-    Process(command).!
+    try {
+      println("Opening your browser... (disable with '-n')")
+      if(Process(command).! != 0){
+        println(s"   ...opening your browser didn't work (${command.head} signaled an error)")
+      }
+    } catch {
+      case e: Throwable => 
+        println(s"   ...opening your browser didn't work (${e.getMessage()}")
+    }
   }
 
   def main(args: Array[String]) 

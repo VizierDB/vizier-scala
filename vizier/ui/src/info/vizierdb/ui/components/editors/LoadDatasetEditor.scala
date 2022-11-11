@@ -49,20 +49,22 @@ class LoadDatasetEditor(
     new ListParameter("loadOptions",
       "Spark Load Options",
       Seq[String]("Key", "Value"),
-      Seq[() => Parameter](
-        { () => new StringParameter(
-                  "loadOptionKey",
-                  "Key",
-                  true,
-                  false
-                ) },
-        { () => new StringParameter(
-                  "loadOptionValue",
-                  "Value",
-                  true,
-                  false
-                ) },
-      ),
+      { () => 
+        Seq(
+          new StringParameter(
+            "loadOptionKey",
+            "Key",
+            true,
+            false
+          ),
+          new StringParameter(
+          "loadOptionValue",
+          "Value",
+          true,
+          false
+          ),
+        )
+      },
       false,
       false
     )
@@ -76,20 +78,21 @@ class LoadDatasetEditor(
   val schema = new ListParameter("schema",
     "Schema (leave empty to guess)",
     Seq[String]("Column", "Data Type"),
-    Seq[() => Parameter](
-      { () => new StringParameter(
-                "schema_column",
-                "Column",
-                true,
-                false
-              ) },
-      { () => new DataTypeParameter(
-                "schema_datatype",
-                "Data Type",
-                true,
-                false
-              ) },
-    ),
+    { () => Seq(
+        new StringParameter(
+          "schema_column",
+          "Column",
+          true,
+          false
+        ),
+        new DataTypeParameter(
+          "schema_datatype",
+          "Data Type",
+          true,
+          false
+        ),
+      )
+    },
     false,
     false
   )

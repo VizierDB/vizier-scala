@@ -281,7 +281,7 @@ class DatasetClient(object):
   def add_delta(self, id: str, **varargs) -> None:
     self.history.append({"id": id, **varargs})
 
-  def save(self, name: Optional[str] = None, use_deltas: bool = True):
+  def save(self, name: Optional[str] = None, use_deltas: bool = False):
     if self.client is None:
       raise ValueError("Client field unset.  Use `vizierdb.create_dataset()` or `vizierdb.update_dataset()` instead.")
     if name is None and self.existing_name is None:
@@ -691,7 +691,10 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
     import base64
     with io.BytesIO(base64.b64decode(value.encode('utf-8'))) as f:
       return Image.open(f)
+  elif data_type in ["string", "int", "float", "double", "long"]:
+    return value
   else:
+    print("Unknown type: "+data_type)
     return value
 
 

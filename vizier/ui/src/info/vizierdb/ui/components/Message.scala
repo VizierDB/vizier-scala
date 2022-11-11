@@ -13,6 +13,8 @@ import info.vizierdb.serializers._
 import info.vizierdb.ui.components.dataset.Dataset
 import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.nativeTypes.JsValue
+import info.vizierdb.ui.widgets.ExternalDependencies
+import info.vizierdb.ui.widgets.Spinner
 
 sealed trait Message
   { def root: dom.Node }
@@ -101,22 +103,30 @@ object VegaMessage
 
 //////////////////////////////////////////////////////////////
 
-case class JavascriptMessage(code: String, html: String, js_deps: Option[Seq[String]]) extends Message
+case class JavascriptMessage(code: String, html: String, js_deps: Option[Seq[String]], css_deps: Option[Seq[String]]) extends Message
 {
+  for(dep <- css_deps.toSeq.flatten){
+    ExternalDependencies.loadCss(dep)
+  }
+
   val root:dom.html.Div = 
-    // if(js_deps.isEmpty) {
+    if(js_deps.isDefined){
+      div(Spinner(), "Loading dependencies...").render
+    } else {
       div(
         OnMount { _ => js.eval(code) }
       ).render
-  //   } else {
-  //     div(
-  //       s"This module depends on ${js_deps.mkString(", ")}"
-  //     ).render
-  //   }
+    }
 
-  // if(js_deps.isEmpty){
+  if(js_deps.isDefined){
+    ExternalDependencies.loadJs(js_deps.get){ () => 
+      println("Loaded!")
+      root.innerHTML = html
+      js.eval(code)
+    }
+  } else {
     root.innerHTML = html
-  // }
+  }
 }
 object JavascriptMessage
 {

@@ -113,17 +113,23 @@ case class Artifact(
 
     t match {
       case ArtifactType.DATASET => 
-        base.toDatasetSummary(
-          columns = datasetSchema
-                     .zipWithIndex
-                     .map { case (field, idx) => 
-                              serialized.DatasetColumn(
-                                id = idx, 
-                                name = field.name, 
-                                `type` = field.dataType
-                              ) 
-                          }
-        )
+        try {
+          base.toDatasetSummary(
+            columns = datasetSchema
+                       .zipWithIndex
+                       .map { case (field, idx) => 
+                                serialized.DatasetColumn(
+                                  id = idx, 
+                                  name = field.name, 
+                                  `type` = field.dataType
+                                ) 
+                            }
+          )
+        } catch { 
+          case e:JsResultException =>
+            logger.warn(s"Error summarizing dataset: ${e.getMessage()}")
+            base
+        }
       case _ => base
 
     }

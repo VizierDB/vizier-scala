@@ -17,6 +17,7 @@ import org.apache.spark.sql.types._
 import info.vizierdb.catalog.Artifact
 import org.apache.spark.sql.AnalysisException
 import info.vizierdb.catalog.CatalogDB
+import org.mimirdb.caveats.annotate.CaveatExistsInPlan
 
 object QueryWithCaveats
   extends LazyLogging
@@ -67,6 +68,8 @@ object QueryWithCaveats
     )
   }
 
+  object CaveatExistsInPlanNonPedantic extends CaveatExistsInPlan(pedantic = false)
+
   def build(
     query: DataFrame, 
     includeCaveats: Boolean
@@ -98,7 +101,10 @@ object QueryWithCaveats
     /////// If requested, add a __CAVEATS attribute
     /////// Either way, after we track the caveats, we no longer need the
     /////// ApplyCaveat decorators
-    if(includeCaveats){ df = df.trackCaveats.stripCaveats }
+
+    // temporarily working around a bug in pedantic caveatting: 
+    // https://github.com/VizierDB/vizier-scala/issues/230
+    if(includeCaveats){ df = org.mimirdb.caveats.Caveats.annotate(df, CaveatExistsInPlanNonPedantic).stripCaveats }
     else              { df = df.stripCaveats }
     
     logger.trace(s"############ \n${df.queryExecution.analyzed.treeString}")

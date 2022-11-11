@@ -34,6 +34,8 @@ import spire.syntax.action
 import info.vizierdb.spark.load.LoadSparkDataset
 import info.vizierdb.spark.DataFrameConstructor
 import info.vizierdb.util.ExperimentalOptions
+import info.vizierdb.spark.SparkSchema.dataTypeFormat
+import org.apache.spark.sql.types.DataType
 
 object LoadDataset
   extends Command
@@ -128,9 +130,7 @@ object LoadDataset
       arguments.getList(TemplateParameters.PARAM_SCHEMA).map { arg => 
           StructField(
             arg.get[String](TemplateParameters.PARAM_SCHEMA_COLUMN),
-            SparkSchema.decodeType(
-              arg.get[String](TemplateParameters.PARAM_SCHEMA_TYPE)
-            )
+            arg.get[DataType](TemplateParameters.PARAM_SCHEMA_TYPE)
           )
         }
     

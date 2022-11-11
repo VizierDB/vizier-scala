@@ -8,7 +8,11 @@
     <!-- Include Scala.js compiled code -->
     <script type="text/javascript" src="vizier.js"></script>
     <script type="text/javascript">
-      Vizier.init(/**----API_URL----**/)
+      var url = window.location.href.split("/")
+      url.pop()
+      url = url.join("/")+"/"
+      console.log(url)
+      Vizier.init(url)
       Vizier.project_list()
     </script>
   </head>
