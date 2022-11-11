@@ -691,7 +691,10 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
     import base64
     with io.BytesIO(base64.b64decode(value.encode('utf-8'))) as f:
       return Image.open(f)
+  elif data_type in ["string", "int", "float", "double", "long"]:
+    return value
   else:
+    print("Unknown type: "+data_type)
     return value
 
 
