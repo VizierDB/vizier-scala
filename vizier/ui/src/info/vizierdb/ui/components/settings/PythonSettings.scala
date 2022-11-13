@@ -12,8 +12,9 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import info.vizierdb.ui.widgets.Spinner
+import info.vizierdb.ui.widgets.Expander
 
-class PythonSettings(parent: SettingsView) extends SettingsTab
+class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends SettingsTab
 {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
@@ -44,9 +45,9 @@ class PythonSettings(parent: SettingsView) extends SettingsTab
 
   def Environment(): dom.html.Element =
   {
+    val name = "System"
     val details = Seq(
       "Python 3.7.2",
-      "Used by __ cells in __ projects",
     ).mkString("; ")
 
     val packages = Seq[(String,String)](
@@ -90,9 +91,12 @@ class PythonSettings(parent: SettingsView) extends SettingsTab
       ("wheel","0.37.1"),
     )
 
+    val list_id = s"packages_for_$name"
+
     div(`class` := "environment",
       div(`class` := "summary",
-        span(`class` := "label", "System"),
+        Expander(list_id),
+        span(`class` := "label", name),
         span(`class` := "details", 
           " (",
           details,
@@ -104,12 +108,13 @@ class PythonSettings(parent: SettingsView) extends SettingsTab
         a(FontAwesome("share-square-o"), href := "#", 
           onclick := { _:dom.Event => println("export") }),
       ),
-      table(`class` := "packages",
+      table(`class` := "packages closed",
+        id := list_id,
         thead(
           tr(
             th("Package"),
             th("Version"),
-            th()
+            th("Actions")
           )
         ),
         tbody(
@@ -117,11 +122,11 @@ class PythonSettings(parent: SettingsView) extends SettingsTab
             tr(
               td(name),
               td(version),
-              td(
+              td(`class` := "actions",
                 a(FontAwesome("trash"), href := "#", 
-                  onclick := { _:dom.Event => println("remove") }),
+                  onclick := { _:dom.Event => println(s"remove $name") }),
                 a(FontAwesome("plus-square-o"), href := "#", 
-                  onclick := { _:dom.Event => println("upgrade") }),
+                  onclick := { _:dom.Event => println(s"upgrade $name") }),
               )
             )
           }

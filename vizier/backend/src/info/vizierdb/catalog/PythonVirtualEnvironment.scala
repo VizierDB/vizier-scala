@@ -21,6 +21,7 @@ case class PythonVirtualEnvironment(
   name: String,
   pythonVersion: String,
   activeRevision: Identifier,
+  packages: Seq[PythonPackage]
 ) extends LazyLogging
 {
   def serialize(implicit session:DBSession) = 
@@ -44,7 +45,6 @@ case class PythonVirtualEnvironment(
   {
     def python: File =
       new File(bin, "python3")
-
   }
 
   def init(overwrite: Boolean = false, fallBackToSystemPython: Boolean = false): Unit =
@@ -123,10 +123,16 @@ case class PythonVirtualEnvironment(
     val updatedEnv = copy(packages = 
       Environment.packages.map { serialized.PythonPackage(_) }
     )
+    val idx = withSQL { 
+      val a = PythonVirtualEnvironmentRevision.column
+      insertInto(PythonVirtualEnvironment)
+        .values(a.packages -> updatedEnv.packages)
+    }.updateAndReturnGeneratedKey.apply()
     withSQL { 
       val a = PythonVirtualEnvironment.column
       update(PythonVirtualEnvironment)
-        .set(a.packages -> updatedEnv.packages)
+        .set(a.packages -> updatedEnv.packages, 
+             a.activeRevision -> idx)
         .where.eq(a.name, name)
     }.update.apply()
     return updatedEnv
@@ -206,7 +212,7 @@ object PythonVirtualEnvironment
         )
     }.updateAndReturnGeneratedKey.apply()
     return PythonVirtualEnvironment(
-      id, name, pythonVersion, Seq.empty, None
+      id, name, pythonVersion, -1, Seq.empty
     )
   }
 }
