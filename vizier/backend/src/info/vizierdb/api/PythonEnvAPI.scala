@@ -7,6 +7,7 @@ import info.vizierdb.api.response.ErrorResponse
 import java.sql.SQLException
 import info.vizierdb.VizierException
 import info.vizierdb.Vizier
+import info.vizierdb.commands.python.PythonEnvironment
 
 object PythonEnvAPI
 {
@@ -17,31 +18,43 @@ object PythonEnvAPI
       )
     }
 
-
   def Get(
     env: String
-  ): serialized.PythonEnvironment = 
+  ): serialized.PythonEnvironmentDescriptor = 
   {
-    CatalogDB.withDBReadOnly { implicit s =>
-      PythonVirtualEnvironment.getOption(env)
-                              .getOrElse { ErrorResponse.noSuchEntity }
-                              .serialize
-    }
+    PythonEnvironment.INTERNAL.get(env)
+      .map { _.serialize }
+      .orElse {
+        CatalogDB.withDBReadOnly { implicit s =>
+          PythonVirtualEnvironment.getOption(env)
+                                  .map { _.serialize }
+        }
+      }
+      .getOrElse { ErrorResponse.noSuchEntity }
+
   }
 
-  def ListEnvs(): Seq[String] =
+  def ListEnvs(): Map[String, serialized.PythonEnvironmentSummary] =
   {
     CatalogDB.withDBReadOnly { implicit s =>
-      PythonVirtualEnvironment.list
+      (
+        PythonEnvironment.INTERNAL.mapValues { _.summary } ++ 
+        PythonVirtualEnvironment.list
+      ).toMap
     }
   }
 
   def Create(
     env: String,
-    spec: serialized.PythonEnvironment
+    spec: serialized.PythonEnvironmentDescriptor
   ): Boolean = 
   {
     checkServerMode()
+    if(PythonEnvironment.INTERNAL contains env){
+      ErrorResponse.invalidRequest(
+        s"$env is a reserved environment name used by the system"
+      )
+    }
     val environment = 
       try {
         CatalogDB.withDB { implicit s => 
@@ -68,6 +81,11 @@ object PythonEnvAPI
   ): Boolean = 
   {
     checkServerMode()
+    if(PythonEnvironment.INTERNAL contains env){
+      ErrorResponse.invalidRequest(
+        s"$env is a reserved environment name used by the system"
+      )
+    }
     val environment = 
       CatalogDB.withDBReadOnly { implicit s =>
         PythonVirtualEnvironment.getOption(env)

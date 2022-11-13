@@ -554,7 +554,7 @@ def websocketAPICall(route: Route): String =
     "name" -> Json.obj("type" -> "string"),
     "version" -> Json.obj("type" -> "string"),
   )}
-  define { "PythonEnvironment" -> mkObject()(
+  define { "PythonEnvironmentDescriptor" -> mkObject()(
     "version" -> Json.obj("type" -> "string"),
     "packages" -> mkArray(typeRef("PythonPackage")),
   )}

@@ -3,11 +3,17 @@ package info.vizierdb.ui.widgets
 import scalatags.JsDom.all._
 import org.scalajs.dom
 import info.vizierdb.ui.rxExtras._
+import scala.concurrent.Future
+import scala.util.Success
+import scala.util.Failure
+import info.vizierdb.ui.Vizier
 
 // Modeled after bootstrap
 // https://getbootstrap.com/docs/4.3/components/spinners/
 object Spinner
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   def apply(size: Int = 15): dom.Node =
     span(
       `class` := "spinner",
@@ -29,4 +35,22 @@ object Spinner
       borderRadius := "50%",
       ""
     ).render
+
+  def lazyLoad(op: Future[dom.Node]): dom.Node =
+  {
+    val spinner = apply().render
+    val body = span(`class` := "lazyload", spinner).render
+
+    op.onComplete { 
+      case Success(r) => body.replaceChild(r, spinner) 
+      case Failure(err) => body.replaceChild(
+          div(`class` := "error_result", err.toString()).render,
+          spinner
+        )
+        Vizier.error(err.getMessage())
+    }
+
+    body
+  }
+
 }

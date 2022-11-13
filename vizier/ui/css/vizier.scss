@@ -1626,37 +1626,49 @@ table.parameter_list
 
       .packages
       {
-        transition-property: height;
-        transition-duration: 1s;
-
+        max-height: 800px;
+        overflow-y: scroll;
+        transition: max-height 0.1s linear;
         width: 100%;
+        border: solid 1px $background_grey;
+        margin-top: 5px;
+        margin-bottom: 10px;
 
-
-        tbody
+        table
         {
-          tr:nth-child(odd)
+          width: 100%;
+  
+          tbody
           {
-            background-color: $color_row_highlight;
-          }
-          td.actions 
-          {
-            text-align: center;
+            tr:nth-child(odd)
+            {
+              background-color: $color_row_highlight;
+            }
+            td.actions 
+            {
+              text-align: center;
+            }
+            td.addpackage
+            {
+              text-align: center;
+              background-color: white;
+
+              button
+              {
+                margin-left: auto;
+                margin-right: auto;
+              }
+            }
           }
         }
       }
 
-      .packages.open
-      {
-        height: unset;
-        visibility: visible;
-        overflow-y: hidden;
-      }
-
       .packages.closed
       {
-        height: 0px;
-        visibility: hidden;
+        max-height: 0px;
+        // visibility: hidden;
         overflow-y: hidden;
+        border: none;
       }
 
       .expander i.fa
@@ -1674,16 +1686,21 @@ table.parameter_list
         }
       }
 
-      i.fa
-      {
-        border-radius: 4px;
-        border: solid 1px $color_artifact_button_border;
-        padding: 2px;
-        font-size: 12px;
-        margin-right: 4px;
-        color: $color_artifact_button;
-        background-color: $color_artifact_button_bg;
+      a.fabutton {
+        i.fa
+        {
+          width: 1em;
+          height: 1em;
+          border-radius: 4px;
+          border: solid 1px $color_artifact_button_border;
+          padding: 2px;
+          font-size: 12px;
+          margin-right: 4px;
+          color: $color_artifact_button;
+          background-color: $color_artifact_button_bg;
+        }
       }
+
     }
   }
 }

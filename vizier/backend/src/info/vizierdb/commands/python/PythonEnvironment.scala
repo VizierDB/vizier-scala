@@ -73,8 +73,33 @@ trait PythonEnvironment
       .split(" ").reverse.head
 }
 
+object PythonEnvironment
+{
+  val INTERNAL = Map[String, InternalPythonEnvironment](
+    "System" -> SystemPython
+  )
+}
+
+trait InternalPythonEnvironment extends PythonEnvironment
+{
+  def summary = 
+    serialized.PythonEnvironmentSummary(
+      fullVersion
+    )
+
+  def serialize: serialized.PythonEnvironmentDescriptor =
+    serialized.PythonEnvironmentDescriptor(
+      fullVersion,
+      -1,
+      packages.map { p => 
+        serialized.PythonPackage(p._1, Some(p._2))
+      }
+    )
+
+}
+
 object SystemPython 
-  extends PythonEnvironment
+  extends InternalPythonEnvironment
   with LazyLogging
 {
   val python = 
@@ -85,7 +110,6 @@ object SystemPython
         discoverPython()
       }
     )
-
   def discoverPython(): String =
   {
     val searchAt = Seq(
@@ -96,9 +120,11 @@ object SystemPython
     )
     searchAt.find { test => 
       try {
+        def serializeOuter = serialize
         val ret = PythonProcess.run("print(\"Hi!\")", 
           environment = new PythonEnvironment{
             def python = new File(test)
+            def serialize = serializeOuter
           }
         )
         logger.trace(s"Discovering Python ($test -> '$ret')")

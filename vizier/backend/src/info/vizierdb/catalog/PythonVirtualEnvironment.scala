@@ -25,7 +25,7 @@ case class PythonVirtualEnvironment(
 ) extends LazyLogging
 {
   def serialize(implicit session:DBSession) = 
-    serialized.PythonEnvironment(
+    serialized.PythonEnvironmentDescriptor(
       pythonVersion,
       id,
       PythonVirtualEnvironmentRevision.get(activeRevision).packages
@@ -45,6 +45,8 @@ case class PythonVirtualEnvironment(
   {
     def python: File =
       new File(bin, "python3")
+
+    override lazy val fullVersion = pythonVersion
   }
 
   def init(overwrite: Boolean = false, fallBackToSystemPython: Boolean = false): Unit =
@@ -167,6 +169,7 @@ case class PythonVirtualEnvironment(
 object PythonVirtualEnvironment
   extends SQLSyntaxSupport[PythonVirtualEnvironment]
 {
+
   def apply(rs: WrappedResultSet): PythonVirtualEnvironment = autoConstruct(rs, (PythonVirtualEnvironment.syntax).resultName)
   override def columns = Schema.columns(table)
 
@@ -187,12 +190,15 @@ object PythonVirtualEnvironment
         .from(PythonVirtualEnvironment as b)
     }.map { apply(_) }.list.apply()
 
-  def list(implicit session: DBSession): Seq[String] =
+  def list(implicit session: DBSession): Seq[(String, serialized.PythonEnvironmentSummary)] =
     withSQL { 
       val b = PythonVirtualEnvironment.syntax 
-      select(b.name)
+      select(b.name, b.pythonVersion)
         .from(PythonVirtualEnvironment as b)
-    }.map { _.get[String](1) }.list.apply()
+    }.map { r => 
+      r.get[String](1) -> 
+        serialized.PythonEnvironmentSummary(r.get[String](2)) 
+    }.list.apply()
     
 
   /**
