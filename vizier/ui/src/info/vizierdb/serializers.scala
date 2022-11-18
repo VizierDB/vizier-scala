@@ -190,4 +190,5 @@ object serializers
   implicit val pythonPackageFormat: Format[serialized.PythonPackage] = Json.format
   implicit val pythonEnvironmentDescriptorFormat: Format[serialized.PythonEnvironmentDescriptor] = Json.format
   implicit val pythonEnvironmentSummaryFormat: Format[serialized.PythonEnvironmentSummary] = Json.format
+  implicit val pythonSettingsSummaryFormat: Format[serialized.PythonSettingsSummary] = Json.format
 }

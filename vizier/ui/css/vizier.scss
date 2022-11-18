@@ -44,6 +44,7 @@ $color_warning_on_dark:        #ff8f8f;
 
 $color_artifact_button:        $color_primary;
 $color_artifact_button_bg:     #f3f3f3;
+$color_artifact_button_bg_down:#d3d3d3;
 $color_artifact_button_border: #aaa;
 
 $color_layout_border:          lightgrey;
@@ -1644,6 +1645,21 @@ table.parameter_list
             {
               background-color: $color_row_highlight;
             }
+
+            tr.deleted
+            {
+              td
+              {
+                text-decoration: line-through;
+                color: grey;
+
+                a
+                {
+                  color: grey;
+                }
+              }
+            }
+
             td.actions 
             {
               text-align: center;
@@ -1698,6 +1714,14 @@ table.parameter_list
           margin-right: 4px;
           color: $color_artifact_button;
           background-color: $color_artifact_button_bg;
+        }
+
+        &.depressed
+        {
+          i.fa
+          {
+            background-color: $color_artifact_button_bg_down;
+          }
         }
       }
 

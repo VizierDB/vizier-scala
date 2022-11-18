@@ -8,6 +8,7 @@ import java.sql.SQLException
 import info.vizierdb.VizierException
 import info.vizierdb.Vizier
 import info.vizierdb.commands.python.PythonEnvironment
+import info.vizierdb.commands.python.Pyenv
 
 object PythonEnvAPI
 {
@@ -32,6 +33,14 @@ object PythonEnvAPI
       }
       .getOrElse { ErrorResponse.noSuchEntity }
 
+  }
+
+  def Summary(): serialized.PythonSettingsSummary =
+  {
+    serialized.PythonSettingsSummary(
+      ListEnvs(),
+      Pyenv.versions
+    )
   }
 
   def ListEnvs(): Map[String, serialized.PythonEnvironmentSummary] =

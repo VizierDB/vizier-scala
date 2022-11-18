@@ -21,3 +21,8 @@ case class PythonEnvironmentDescriptor(
 case class PythonEnvironmentSummary(
   pythonVersion: String,
 )
+
+case class PythonSettingsSummary(
+  environments: Map[String,PythonEnvironmentSummary],
+  versions: Seq[String]
+)
