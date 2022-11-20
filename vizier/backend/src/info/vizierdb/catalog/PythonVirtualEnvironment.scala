@@ -21,14 +21,13 @@ case class PythonVirtualEnvironment(
   name: String,
   pythonVersion: String,
   activeRevision: Identifier,
-  packages: Seq[PythonPackage]
 ) extends LazyLogging
 {
   def serialize(implicit session:DBSession) = 
     serialized.PythonEnvironmentDescriptor(
       pythonVersion,
       id,
-      PythonVirtualEnvironmentRevision.get(activeRevision).packages
+      PythonVirtualEnvironmentRevision.get(id, activeRevision).packages
     )
 
   def dir: File = 
@@ -113,31 +112,27 @@ case class PythonVirtualEnvironment(
 
     logger.info(s"Set up venv $name; Installing user-requested packages")
 
-    packages.foreach { pkg => 
-      logger.info(s"Installing into venv $name: $pkg")
-      Environment.install(pkg.name, pkg.version) 
-    }
     logger.info(s"Finished setting up venv $name")
   }
 
   def save()(implicit session: DBSession): PythonVirtualEnvironment =
   {
-    val updatedEnv = copy(packages = 
+    val packages = 
       Environment.packages.map { serialized.PythonPackage(_) }
-    )
-    val idx = withSQL { 
+    val revisionId = withSQL { 
       val a = PythonVirtualEnvironmentRevision.column
-      insertInto(PythonVirtualEnvironment)
-        .values(a.packages -> updatedEnv.packages)
+      insertInto(PythonVirtualEnvironmentRevision)
+        .namedValues(
+          a.envId -> id,
+          a.packages -> packages)
     }.updateAndReturnGeneratedKey.apply()
     withSQL { 
       val a = PythonVirtualEnvironment.column
       update(PythonVirtualEnvironment)
-        .set(a.packages -> updatedEnv.packages, 
-             a.activeRevision -> idx)
+        .set(a.activeRevision -> revisionId)
         .where.eq(a.name, name)
     }.update.apply()
-    return updatedEnv
+    return copy(activeRevision = revisionId)
   }
 
   /**
@@ -214,11 +209,11 @@ object PythonVirtualEnvironment
         .namedValues(
           a.name -> name,
           a.pythonVersion -> pythonVersion,
-          a.packages -> Seq[PythonPackage](),
+          a.activeRevision -> -1
         )
     }.updateAndReturnGeneratedKey.apply()
     return PythonVirtualEnvironment(
-      id, name, pythonVersion, -1, Seq.empty
+      id, name, pythonVersion, -1
     )
   }
 }

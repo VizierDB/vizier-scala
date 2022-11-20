@@ -253,15 +253,16 @@ object Schema
                                                                 isAutoIncrement = true),
         Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true),
         Column("python_version",  SQL.VARCHAR,  "varchar(100)", isRequired = true),
-        Column("revision",        SQL.INTEGER,  "integer",      isRequired = true),
+        Column("active_revision", SQL.INTEGER,  "integer",      isRequired = true),
       )
     )),
     CreateTableMigration(Table(
       name = "Python_Virtual_Environment_Revision",
       columns = List(
-        Column("id",              SQL.INTEGER,  "integer",      isRequired = true, 
+        Column("revision_id",     SQL.INTEGER,  "integer",      isRequired = true, 
                                                                 isPrimaryKey = true,
                                                                 isAutoIncrement = true),
+        Column("env_id",          SQL.INTEGER,  "integer",      isRequired = true),
         Column("packages",        SQL.BLOB,     "json",         isRequired = true),
       )
     )),

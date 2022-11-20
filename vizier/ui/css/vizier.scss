@@ -1619,10 +1619,29 @@ table.parameter_list
     // Python environments tab
     .python
     {
-      .summary > .spacer
+      .summary 
       {
-        width: 10px;
-        display: inline-block;
+        & > .spacer
+        {
+          width: 10px;
+          display: inline-block;
+        }
+
+        .save_button
+        {
+          float: right; 
+
+          i.fa
+          {
+            background-color: $color_button_confirm;
+            color: white;
+          }
+
+          .reactive
+          {
+            display: inline;
+          }
+        }
       }
 
       .packages

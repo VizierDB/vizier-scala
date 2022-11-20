@@ -24,7 +24,11 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  sealed trait PythonPackageEntry { def root: dom.html.Element }
+  sealed trait PythonPackageEntry { 
+    def root: dom.html.Element 
+    def descriptor: serialized.PythonPackage
+    def deleted: Boolean
+  }
 
   case class PythonPackage(pkg: serialized.PythonPackage, env: PythonEnvironmentEntry) extends PythonPackageEntry
   {
@@ -38,6 +42,7 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     def toggleTrash(): Unit =
     {
+      env.touch()
       trashed = !trashed
       if(trashed){ 
         trashButton.classList.add("depressed")
@@ -47,6 +52,19 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
         root.classList.remove("deleted")        
       }
     }
+
+    def descriptor: serialized.PythonPackage = 
+      serialized.PythonPackage(
+        name = pkg.name,
+        version = version.now
+                         .map { _.value match { 
+                            case "" => None 
+                            case x => Some(x)
+                          } }
+                         .getOrElse { pkg.version }
+      )
+
+    def deleted = trashed
 
     val root =
       tr(
@@ -82,6 +100,17 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
       env.packages.remove(me)
     }
 
+    def descriptor: serialized.PythonPackage = 
+      serialized.PythonPackage(
+        name = name.value,
+        version = version.value match {
+          case "" => None
+          case x => Some(x)
+        }
+      )
+
+    def deleted = false
+
     val root = 
       tr(`class` := "tentative_package",
         td(name),
@@ -96,7 +125,8 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
   case class PythonEnvironmentEntry(name: String, version: String)
   {
-    var dirty = false
+    val dirty = Var(false)
+    var initial = false
 
     val packages = 
       RxBuffer[PythonPackageEntry]()
@@ -121,7 +151,7 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     def touch(): Unit = 
     {
-      dirty = true
+      dirty() = true
     }
 
     def addPackage(): Unit =
@@ -129,6 +159,33 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
       touch()
       expander.open()
       packages.insert(0, NewPackage(this))
+    }
+
+    def encoded: serialized.PythonEnvironmentDescriptor =
+      serialized.PythonEnvironmentDescriptor(
+        pythonVersion = version,
+        revision = -1,
+        packages = packages.filter { !_.deleted } 
+                           .map { _.descriptor }
+      )
+    def save(): Unit =
+    {
+      if(!dirty.now){ return }
+
+      if(initial){
+        Vizier.api.configCreatePythonEnv(name, encoded)
+              .onComplete {
+                case Success(true)  => 
+                  dirty() = false
+                  initial = false
+                  load()
+                case Success(false)  => 
+                  Vizier.error("Unknown error while saving")
+                case Failure(err) =>
+                  err.printStackTrace()
+                  Vizier.error(err.getMessage()) 
+              }
+      }
     }
 
     val expander = Expander(list_id)
@@ -160,6 +217,17 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
           a(`class` := "fabutton",
             FontAwesome("plus-circle"),
             onclick := { _:dom.Event => addPackage() }),
+
+          // Save Button
+          span(`class` := "save_button",
+            dirty.map { 
+              case false => span()
+              case true => 
+                a(`class` := "fabutton",
+                  FontAwesome("check-circle"), href := "#", 
+                  onclick := { _:dom.Event => save() }),
+            }.reactive,
+          )
         ),
 
         // Follow-up package list
@@ -201,7 +269,7 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
                   for(d <- deletedEnvs){
                     val idx = environments.indexWhere { _.name == d }
-                    if(!environments(idx).dirty){
+                    if(!environments(idx).dirty.now){
                       environments.remove(idx)
                     }
                   }
@@ -250,6 +318,8 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
         case _ => defaultVersion
       }
       val env = PythonEnvironmentEntry(newEnvName.value, v)
+      env.touch()
+      env.initial = true
       environments.append(env)
     }
   }

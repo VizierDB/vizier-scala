@@ -7,10 +7,18 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.catalog.binders._
 
 case class PythonVirtualEnvironmentRevision(
-  id: Identifier,
+  revisionId: Identifier,
+  envId: Identifier,
   packages: Seq[PythonPackage]
 ) extends LazyLogging
-
+{
+  def init(env: PythonVirtualEnvironment){
+    packages.foreach { pkg => 
+      logger.info(s"Installing into venv ${env.name}: $pkg")
+      env.Environment.install(pkg.name, pkg.version) 
+    }
+  }
+}
 object PythonVirtualEnvironmentRevision 
   extends SQLSyntaxSupport[PythonVirtualEnvironmentRevision]
 {
@@ -18,15 +26,16 @@ object PythonVirtualEnvironmentRevision
     autoConstruct(rs, (PythonVirtualEnvironmentRevision.syntax).resultName)
   override def columns = Schema.columns(table)
 
-  def get(id: Identifier)(implicit session: DBSession): PythonVirtualEnvironmentRevision =
-    getOption(id).get
+  def get(envId: Identifier, revisionId: Identifier)(implicit session: DBSession): PythonVirtualEnvironmentRevision =
+    getOption(envId, revisionId).get
 
-  def getOption(id: Identifier)(implicit session: DBSession): Option[PythonVirtualEnvironmentRevision] =
+  def getOption(envId: Identifier, revisionId: Identifier)(implicit session: DBSession): Option[PythonVirtualEnvironmentRevision] =
     withSQL { 
       val b = PythonVirtualEnvironmentRevision.syntax 
       select
         .from(PythonVirtualEnvironmentRevision as b)
-        .where.eq(b.id, id)
+        .where.eq(b.envId, envId)
+          .and.eq(b.revisionId, revisionId)
     }.map { apply(_) }.single.apply()
 
     

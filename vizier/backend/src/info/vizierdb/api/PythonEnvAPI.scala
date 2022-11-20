@@ -9,6 +9,7 @@ import info.vizierdb.VizierException
 import info.vizierdb.Vizier
 import info.vizierdb.commands.python.PythonEnvironment
 import info.vizierdb.commands.python.Pyenv
+import info.vizierdb.catalog.PythonVirtualEnvironmentRevision
 
 object PythonEnvAPI
 {
@@ -116,7 +117,12 @@ object PythonEnvAPI
         PythonVirtualEnvironment.getOption(env)
                                 .getOrElse { ErrorResponse.noSuchEntity }
       }
-    environment.packages
+    val revision =
+      CatalogDB.withDBReadOnly { implicit s =>
+        PythonVirtualEnvironmentRevision.getOption(environment.id, environment.activeRevision)
+                                        .getOrElse { ErrorResponse.noSuchEntity }
+      }
+    revision.packages
   }
 
   def InstallPackage(
