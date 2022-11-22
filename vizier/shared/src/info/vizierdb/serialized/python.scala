@@ -13,16 +13,20 @@ object PythonPackage
 }
 
 case class PythonEnvironmentDescriptor(
+  name: String,
+  id: Identifier,
   pythonVersion: String,
   revision: Identifier,
   packages: Seq[PythonPackage]
 )
 
 case class PythonEnvironmentSummary(
+  name: String,
+  id: Identifier,
   pythonVersion: String,
 )
 
 case class PythonSettingsSummary(
-  environments: Map[String,PythonEnvironmentSummary],
+  environments: Seq[PythonEnvironmentSummary],
   versions: Seq[String]
 )

@@ -18,6 +18,7 @@ import info.vizierdb.ui.widgets.ShowModal
 import info.vizierdb.ui.rxExtras.RxBuffer
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.RxBufferView
+import info.vizierdb.types._
 
 
 class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends SettingsTab
@@ -123,10 +124,10 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
       ).render
   }
 
-  case class PythonEnvironmentEntry(name: String, version: String)
+  case class PythonEnvironmentEntry(name: String, var id: Option[Identifier], version: String)
   {
     val dirty = Var(false)
-    var initial = false
+    def initial = id.isEmpty
 
     val packages = 
       RxBuffer[PythonPackageEntry]()
@@ -138,15 +139,17 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     def loadPackages(): Unit =
     {
-      Vizier.api.configGetPythonEnv(name)
-            .onComplete { 
-              case Success(desc) => 
-                packages.clear()
-                packages.insertAll(0, desc.packages.map { PythonPackage(_, this) })
-              case Failure(err) => 
-                err.printStackTrace()
-                Vizier.error(err.getMessage())
-            }
+      if(id.isDefined){
+        Vizier.api.configGetPythonEnv(id.get)
+              .onComplete { 
+                case Success(desc) => 
+                  packages.clear()
+                  packages.insertAll(0, desc.packages.map { PythonPackage(_, this) })
+                case Failure(err) => 
+                  err.printStackTrace()
+                  Vizier.error(err.getMessage())
+              }
+      }
     }
 
     def touch(): Unit = 
@@ -163,6 +166,8 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     def encoded: serialized.PythonEnvironmentDescriptor =
       serialized.PythonEnvironmentDescriptor(
+        id = id.getOrElse(-1),
+        name = name,
         pythonVersion = version,
         revision = -1,
         packages = packages.filter { !_.deleted } 
@@ -175,12 +180,10 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
       if(initial){
         Vizier.api.configCreatePythonEnv(name, encoded)
               .onComplete {
-                case Success(true)  => 
+                case Success(id)  => 
                   dirty() = false
-                  initial = false
+                  this.id = Some(id)
                   load()
-                case Success(false)  => 
-                  Vizier.error("Unknown error while saving")
                 case Failure(err) =>
                   err.printStackTrace()
                   Vizier.error(err.getMessage()) 
@@ -232,7 +235,7 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
         // Follow-up package list
         div(`class` := "packages closed",
-          id := list_id,
+          attr("id") := list_id,
           table(
             thead(
               tr(
@@ -261,21 +264,34 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
               .onComplete { 
                 case Success(settings) => 
                   availableVersions() = settings.versions
-                  val newEnvSet = settings.environments.keySet
-                  val envSet = environments.map { _.name }.toSet
+                  val newEnvironments = settings.environments.map { e => e.id -> e }.toMap
+                  val newEnvSet = newEnvironments.keySet
+                  val envSet = environments.flatMap { _.id }.toSet
 
-                  val deletedEnvs = envSet -- newEnvSet
-                  val addedEnvs = newEnvSet -- envSet
+                  val deletedEnvs: Set[Identifier] = envSet -- newEnvSet
+                  val addedEnvs: Set[Identifier] = newEnvSet -- envSet
 
                   for(d <- deletedEnvs){
-                    val idx = environments.indexWhere { _.name == d }
+                    val idx = environments.indexWhere { _.id == Some(d) }
+
+                    // Only delete the environment outright if it's not being
+                    // used.  
                     if(!environments(idx).dirty.now){
                       environments.remove(idx)
+                    // If the environment is "dirty" (i.e., the user was editing)
+                    // the environment and someone deletes it out from under them
+                    // then save it as a "new" environment instead.
+                    } else {
+                      environments(idx).id == None
                     }
                   }
                   environments.appendAll(
-                    addedEnvs.map { env =>
-                      val node = PythonEnvironmentEntry(env, settings.environments(env).pythonVersion)
+                    addedEnvs.map { env: Identifier =>
+                      val node = PythonEnvironmentEntry(
+                        name = newEnvironments(env).name,
+                        id = Some(env), 
+                        version = newEnvironments(env).pythonVersion
+                      )
                       node.loadPackages()
                       node
                     }
@@ -317,9 +333,12 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
         case x if availableVersions.now.contains(x) => x
         case _ => defaultVersion
       }
-      val env = PythonEnvironmentEntry(newEnvName.value, v)
+      val env = PythonEnvironmentEntry(
+                    name = newEnvName.value, 
+                    id = None, 
+                    version = v
+                  )
       env.touch()
-      env.initial = true
       environments.append(env)
     }
   }

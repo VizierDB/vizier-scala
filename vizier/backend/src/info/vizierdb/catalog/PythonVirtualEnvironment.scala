@@ -25,9 +25,11 @@ case class PythonVirtualEnvironment(
 {
   def serialize(implicit session:DBSession) = 
     serialized.PythonEnvironmentDescriptor(
-      pythonVersion,
-      id,
-      PythonVirtualEnvironmentRevision.get(id, activeRevision).packages
+      name = name,
+      id = id,
+      pythonVersion = pythonVersion,
+      revision = activeRevision,
+      packages = PythonVirtualEnvironmentRevision.get(id, activeRevision).packages
     )
 
   def dir: File = 
@@ -37,6 +39,9 @@ case class PythonVirtualEnvironment(
     new File(dir, "bin")
 
   def exists = dir.exists()
+
+  def revision(implicit session:DBSession) =
+    PythonVirtualEnvironmentRevision.get(id, activeRevision)
 
   object Environment
     extends PythonEnvironment
@@ -168,15 +173,32 @@ object PythonVirtualEnvironment
   def apply(rs: WrappedResultSet): PythonVirtualEnvironment = autoConstruct(rs, (PythonVirtualEnvironment.syntax).resultName)
   override def columns = Schema.columns(table)
 
-  def get(name: String)(implicit session: DBSession): PythonVirtualEnvironment =
-    getOption(name).get
-  def getOption(name: String)(implicit session: DBSession): Option[PythonVirtualEnvironment] =
+  def getByName(name: String)(implicit session: DBSession): PythonVirtualEnvironment =
+    getByNameOption(name).get
+  def getByNameOption(name: String)(implicit session: DBSession): Option[PythonVirtualEnvironment] =
     withSQL { 
       val b = PythonVirtualEnvironment.syntax 
       select
         .from(PythonVirtualEnvironment as b)
         .where.eq(b.name, name)
     }.map { apply(_) }.single.apply()
+  def getById(id: Identifier)(implicit session: DBSession): PythonVirtualEnvironment =
+    getByIdOption(id).get
+  def getByIdOption(id: Identifier)(implicit session: DBSession): Option[PythonVirtualEnvironment] =
+    withSQL { 
+      val b = PythonVirtualEnvironment.syntax 
+      select
+        .from(PythonVirtualEnvironment as b)
+        .where.eq(b.id, id)
+    }.map { apply(_) }.single.apply()
+
+  def exists(name: String)(implicit session: DBSession): Boolean =
+    withSQL { 
+      val b = PythonVirtualEnvironment.syntax 
+      select
+        .from(PythonVirtualEnvironment as b)
+        .where.eq(b.name, name)
+    }.map { _ => true }.single.apply().getOrElse { false }    
 
   def all(implicit session: DBSession): Seq[PythonVirtualEnvironment] =
     withSQL { 
@@ -185,14 +207,17 @@ object PythonVirtualEnvironment
         .from(PythonVirtualEnvironment as b)
     }.map { apply(_) }.list.apply()
 
-  def list(implicit session: DBSession): Seq[(String, serialized.PythonEnvironmentSummary)] =
+  def list(implicit session: DBSession): Seq[serialized.PythonEnvironmentSummary] =
     withSQL { 
       val b = PythonVirtualEnvironment.syntax 
-      select(b.name, b.pythonVersion)
+      select(b.id, b.name, b.pythonVersion)
         .from(PythonVirtualEnvironment as b)
     }.map { r => 
-      r.get[String](1) -> 
-        serialized.PythonEnvironmentSummary(r.get[String](2)) 
+        serialized.PythonEnvironmentSummary(
+          id = r.get[Identifier](1),
+          name = r.get[String](2),
+          pythonVersion = r.get[String](3)
+        ) 
     }.list.apply()
     
 

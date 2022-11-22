@@ -19,6 +19,7 @@ import play.api.libs.json.Json
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.types._
 
 trait PythonEnvironment
   extends LazyLogging
@@ -52,16 +53,35 @@ trait PythonEnvironment
     }
   }
 
-  def install(packageName: String, version: Option[String] = None): Unit =
+  def install(
+    packageName: String, 
+    version: Option[String] = None, 
+    upgrade: Boolean = false
+  ): Unit =
   { 
     val spec = s"$packageName${version.map { "=" + _ }.getOrElse("")}"
     logger.debug(s"Installing python package spec: $spec")
 
-    Process(python.toString, Seq(
-      "-m", "pip", "install", spec
-    )).!!
+    val args = Seq(
+      "-m", "pip", "install",
+    ) ++ (
+      if(upgrade) { Seq(
+        "--upgrade", "--upgrade-strategy", "only-if-needed"
+      ) } else { Seq.empty }
+    ) ++ Seq(spec)
+
+    Process(python.toString, args).!!
     // Pip prints warnings if it's even slightly out of date... disable those
     // .lineStream(ProcessLogger(logger.info(_), logger.error(_)))
+  }
+
+  def delete(packageName: String): Unit =
+  {
+    logger.debug(s"Installing python package: $packageName")
+
+    Process(python.toString, Seq(
+      "-m", "pip", "uninstall", packageName
+    )).!!    
   }
 
   lazy val version = 
@@ -75,8 +95,14 @@ trait PythonEnvironment
 
 object PythonEnvironment
 {
-  val INTERNAL = Map[String, InternalPythonEnvironment](
-    "System" -> SystemPython
+  val SYSTEM_PYTHON_ID = -1l
+  val SYSTEM_PYTHON_NAME = "System"
+
+  val INTERNAL_BY_ID = Map[Identifier, InternalPythonEnvironment](
+    SYSTEM_PYTHON_ID -> SystemPython
+  )
+  val INTERNAL_BY_NAME = Map[String, InternalPythonEnvironment](
+    SYSTEM_PYTHON_NAME -> SystemPython
   )
 }
 
@@ -84,14 +110,18 @@ trait InternalPythonEnvironment extends PythonEnvironment
 {
   def summary = 
     serialized.PythonEnvironmentSummary(
+      name = PythonEnvironment.SYSTEM_PYTHON_NAME,
+      id = PythonEnvironment.SYSTEM_PYTHON_ID,
       fullVersion
     )
 
   def serialize: serialized.PythonEnvironmentDescriptor =
     serialized.PythonEnvironmentDescriptor(
-      fullVersion,
-      -1,
-      packages.map { p => 
+      name = PythonEnvironment.SYSTEM_PYTHON_NAME,
+      id = PythonEnvironment.SYSTEM_PYTHON_ID,
+      pythonVersion = fullVersion,
+      revision = 0,
+      packages = packages.map { p => 
         serialized.PythonPackage(p._1, Some(p._2))
       }
     )

@@ -18,6 +18,7 @@ case class PythonVirtualEnvironmentRevision(
       env.Environment.install(pkg.name, pkg.version) 
     }
   }
+
 }
 object PythonVirtualEnvironmentRevision 
   extends SQLSyntaxSupport[PythonVirtualEnvironmentRevision]
@@ -38,5 +39,20 @@ object PythonVirtualEnvironmentRevision
           .and.eq(b.revisionId, revisionId)
     }.map { apply(_) }.single.apply()
 
-    
+  def getActive(envId: Identifier)(implicit session: DBSession): PythonVirtualEnvironmentRevision =
+    getActiveOption(envId).get
+
+  def getActiveOption(envId: Identifier)(implicit session: DBSession): Option[PythonVirtualEnvironmentRevision] =
+    withSQL { 
+      val a = PythonVirtualEnvironment.syntax 
+      val b = PythonVirtualEnvironmentRevision.syntax 
+      select
+        .from(PythonVirtualEnvironmentRevision as b)
+        .innerJoin(PythonVirtualEnvironment as a)
+        .where.eq(b.envId, envId)
+          .and.eq(a.id, envId)
+          .and.eq(b.revisionId, a.activeRevision)
+    }.map { apply(_) }.single.apply()
+
+
 }
