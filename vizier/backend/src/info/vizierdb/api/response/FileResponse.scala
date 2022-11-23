@@ -18,11 +18,12 @@ import java.io._
 import info.vizierdb.api.Response
 import javax.servlet.http.HttpServletResponse
 import info.vizierdb.util.Streams
+import akka.http.scaladsl.model.ContentType
 
 case class FileResponse(
   file: File, 
   name: String, 
-  contentType: String, 
+  contentType: ContentType, 
   afterCompletedTrigger: () => Unit = {() => ()}
 ) extends Response
 {

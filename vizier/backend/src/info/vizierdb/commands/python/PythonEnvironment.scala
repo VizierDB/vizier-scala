@@ -20,6 +20,7 @@ import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.types._
+import info.vizierdb.api.FormattedError
 
 trait PythonEnvironment
   extends LazyLogging
@@ -53,6 +54,31 @@ trait PythonEnvironment
     }
   }
 
+  def invoke(args: Seq[String], context: String = null): String =
+  {
+    val out = new StringBuilder()
+    val err = new StringBuilder()
+
+    val ret = Process(python.toString, args).!(
+      ProcessLogger(
+        { msg => out.append(msg+"\n") },
+        { msg => err.append(msg+"\n") }
+      )
+    )
+
+    if(ret == 0){ return out.toString }
+    else { 
+      val msg =
+        "Error while "+ 
+        Option(context).getOrElse {
+          s"running `python ${args.mkString}`"
+        }+(if(err.isEmpty){ "" } else { "\n"+err.toString })
+      
+      logger.warn(msg)
+      throw new FormattedError(msg)
+    }
+  }
+
   def install(
     packageName: String, 
     version: Option[String] = None, 
@@ -70,18 +96,16 @@ trait PythonEnvironment
       ) } else { Seq.empty }
     ) ++ Seq(spec)
 
-    Process(python.toString, args).!!
-    // Pip prints warnings if it's even slightly out of date... disable those
-    // .lineStream(ProcessLogger(logger.info(_), logger.error(_)))
+    invoke(args, if(upgrade){ s"upgrading $packageName" } else { s"installing $packageName "})
   }
 
   def delete(packageName: String): Unit =
   {
     logger.debug(s"Installing python package: $packageName")
 
-    Process(python.toString, Seq(
+    invoke(Seq(
       "-m", "pip", "uninstall", packageName
-    )).!!    
+    ), s"deleting $packageName")    
   }
 
   lazy val version = 
@@ -95,7 +119,7 @@ trait PythonEnvironment
 
 object PythonEnvironment
 {
-  val SYSTEM_PYTHON_ID = -1l
+  val SYSTEM_PYTHON_ID = 0l
   val SYSTEM_PYTHON_NAME = "System"
 
   val INTERNAL_BY_ID = Map[Identifier, InternalPythonEnvironment](

@@ -407,7 +407,10 @@ def websocketAPICall(route: Route): String =
          |    Ajax.${route.verb.toLowerCase}(
          |${ajaxArgs.map { "      "+_ }.mkString(",\n")}
          |    )${if(route.returnsAsScalaType == "Unit") { "" } 
-                 else { s".map { xhr => \n      Json.parse(xhr.responseText)\n          .as[${route.returnsAsScalaType}]\n    }" }}
+                 else { 
+                  s".recover { case AjaxException(req) => checkError(req) }\n     "++
+                  s".map { xhr => \n      Json.parse(xhr.responseText)\n          .as[${route.returnsAsScalaType}]\n    }" 
+                }}
          |  }
          """.stripMargin
     } else { "" }
@@ -424,6 +427,7 @@ def websocketAPICall(route: Route): String =
        |import scala.scalajs.js
        |import play.api.libs.json._
        |import org.scalajs.dom.ext.Ajax
+       |import org.scalajs.dom.ext.AjaxException
        |
        |import info.vizierdb.types._
        |import scala.concurrent.Future

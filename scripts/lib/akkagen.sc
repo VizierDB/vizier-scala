@@ -36,7 +36,7 @@ def baseHandler(route: Route): AkkaDirective =
       case "STRING" => Seq(
         "info.vizierdb.api.response.StringResponse(",
         "  " + ret + ",",
-        "  contentType = \"text/plain\"",
+        "  ContentTypes.`text/plain(UTF-8)`",
         ")"
       )
       case _ => Seq(ret)

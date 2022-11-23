@@ -1,4 +1,4 @@
-package info.vizierdb.ui.components.settings
+  package info.vizierdb.ui.components.settings
 
 import scala.scalajs.js.annotation._
 import scalatags.JsDom.all._
@@ -19,6 +19,7 @@ import info.vizierdb.ui.rxExtras.RxBuffer
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.types._
+import scala.scalajs.js
 
 
 class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends SettingsTab
@@ -29,6 +30,7 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
     def root: dom.html.Element 
     def descriptor: serialized.PythonPackage
     def deleted: Boolean
+    def requirementSpec: String
   }
 
   case class PythonPackage(pkg: serialized.PythonPackage, env: PythonEnvironmentEntry) extends PythonPackageEntry
@@ -40,6 +42,11 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
       a(`class` := "fabutton",
             FontAwesome("trash"), href := "#", 
             onclick := { _:dom.Event => toggleTrash() }).render
+
+    val upgradeButton =
+      a(`class` := "fabutton",
+            FontAwesome("level-up"), href := "#", 
+            onclick := { _:dom.Event => toggleVersion() }).render
 
     def toggleTrash(): Unit =
     {
@@ -54,18 +61,34 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
       }
     }
 
+    def toggleVersion(): Unit =
+      if(version.now.isEmpty){
+        val field = input(`type` := "text", placeholder := "latest").render
+        version() = Some(field)
+        field.focus()
+        upgradeButton.classList.add("depressed")
+      } else {
+        upgradeButton.classList.remove("depressed")
+        version() = None
+      }
+
+    def selectedVersion =
+      version.now.map { _.value match { 
+                    case "" => None 
+                    case x => Some(x)
+                  } }
+                 .getOrElse { pkg.version }
+
     def descriptor: serialized.PythonPackage = 
       serialized.PythonPackage(
         name = pkg.name,
-        version = version.now
-                         .map { _.value match { 
-                            case "" => None 
-                            case x => Some(x)
-                          } }
-                         .getOrElse { pkg.version }
+        version = selectedVersion
       )
 
     def deleted = trashed
+
+    def requirementSpec: String = 
+      pkg.name ++ selectedVersion.map { "="+_ }.getOrElse { "" }
 
     val root =
       tr(
@@ -78,21 +101,21 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
         ),
         td(
           version.map {
-            _.getOrElse { span(pkg.version).render }
+            _.getOrElse { 
+              span(pkg.version, onclick := { _:dom.Event => toggleVersion() }).render 
+            }
           }.reactive
         ),
         td(`class` := "actions",
           trashButton,
-          a(`class` := "fabutton",
-            FontAwesome("level-up"), href := "#", 
-            onclick := { _:dom.Event => println(s"upgrade $name") }),
+          upgradeButton,
         )
       ).render
   }
 
   case class NewPackage(env: PythonEnvironmentEntry) extends PythonPackageEntry
   {
-    val name = input(`type` := "text").render
+    val name = input(`type` := "text", value := "beautifulsoup").render
     val version = input(`type` := "text", placeholder := "latest").render
 
     def trash(): Unit =
@@ -100,6 +123,15 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
       val me = env.packages.indexWhere { _ eq this }
       env.packages.remove(me)
     }
+
+    def selectedVersion =
+      version.value match { 
+                case "" => None 
+                case x => Some(x)
+              }
+
+    def requirementSpec: String = 
+      name.value ++ selectedVersion.map { "="+_ }.getOrElse { "" }
 
     def descriptor: serialized.PythonPackage = 
       serialized.PythonPackage(
@@ -110,7 +142,7 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
         }
       )
 
-    def deleted = false
+    def deleted = { name.value == "" }
 
     val root = 
       tr(`class` := "tentative_package",
@@ -136,6 +168,11 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
     val packagesView = 
       RxBufferView(tbody().render, packages.rxMap { _.root })
+
+    def requirements(): String =
+    {
+      packages.map { _.requirementSpec }.mkString("\n")
+    }
 
     def loadPackages(): Unit =
     {
@@ -179,15 +216,14 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
 
       if(initial){
         Vizier.api.configCreatePythonEnv(name, encoded)
-              .onComplete {
-                case Success(id)  => 
-                  dirty() = false
-                  this.id = Some(id)
-                  load()
-                case Failure(err) =>
-                  err.printStackTrace()
-                  Vizier.error(err.getMessage()) 
-              }
+      } else {
+        Vizier.api.configUpdatePythonEnv(id.get, encoded)
+      }.onSuccess { case descriptor =>
+        dirty() = false
+        this.id = Some(descriptor.id)
+        packages.clear()
+        packages.insertAll(0, descriptor.packages.map { PythonPackage(_, this) })
+        load()
       }
     }
 
@@ -211,12 +247,21 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
           span(`class` := "spacer"),
 
           // Action items in the first row
-          a(`class` := "fabutton",
-            FontAwesome("files-o"), href := "#", 
-            onclick := { _:dom.Event => println("duplicate") }),
+          // a(`class` := "fabutton",
+          //   FontAwesome("files-o"), href := "#", 
+          //   onclick := { _:dom.Event => println("duplicate") }),
           a(`class` := "fabutton",
             FontAwesome("share-square-o"), href := "#", 
-            onclick := { _:dom.Event => println("export") }),
+            onclick := { _:dom.Event => 
+              ShowModal(div(
+                span("requirements.txt"),
+                textarea(
+                  rows := 20,
+                  cols := 80,
+                  requirements()
+                )
+              ).render)(button("Ok").render)
+             }),
           a(`class` := "fabutton",
             FontAwesome("plus-circle"),
             onclick := { _:dom.Event => addPackage() }),
@@ -226,7 +271,8 @@ class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends Se
             dirty.map { 
               case false => span()
               case true => 
-                a(`class` := "fabutton",
+                button(`class` := "fabutton",
+                  "Save ",
                   FontAwesome("check-circle"), href := "#", 
                   onclick := { _:dom.Event => save() }),
             }.reactive,

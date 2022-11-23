@@ -17,6 +17,7 @@ package info.vizierdb.api.response
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import info.vizierdb.api.Response
 import java.io.OutputStream
+import akka.http.scaladsl.model.ContentTypes
 
 case class CORSPreflightResponse(methodStrings: String*)
   extends Response
@@ -32,7 +33,7 @@ case class CORSPreflightResponse(methodStrings: String*)
 
   def write(os: OutputStream) = {}
   val contentLength: Int = 0
-  val contentType: String = "text/plain"
+  val contentType = ContentTypes.`text/plain(UTF-8)`
   val status = HttpServletResponse.SC_OK
 }
 

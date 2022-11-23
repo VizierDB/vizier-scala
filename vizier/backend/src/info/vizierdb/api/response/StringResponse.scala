@@ -17,10 +17,12 @@ package info.vizierdb.api.response
 import play.api.libs.json._
 import info.vizierdb.api.BytesResponse
 import javax.servlet.http.HttpServletResponse
+import akka.http.scaladsl.model.ContentType
+import akka.http.scaladsl.model.ContentTypes
 
 case class StringResponse(
   data: String, 
-  override val contentType: String = "text/plain",
+  override val contentType: ContentType = ContentTypes.`text/plain(UTF-8)` ,
   override val status: Int = HttpServletResponse.SC_OK
 ) extends BytesResponse
 {

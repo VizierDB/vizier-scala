@@ -42,6 +42,7 @@
   <logger name="info.vizierdb.commands.data.UnloadDataset$"      level="INFO" />
 
   <!--+++++++++++++++++++++++  Python  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.api.PythonEnvAPI$"                 level="INFO" />
   <logger name="info.vizierdb.commands.python.Python$"           level="INFO" />
   <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />

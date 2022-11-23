@@ -11,8 +11,11 @@ import info.vizierdb.commands.python.PythonEnvironment
 import info.vizierdb.commands.python.Pyenv
 import info.vizierdb.catalog.PythonVirtualEnvironmentRevision
 import info.vizierdb.types._
+import com.typesafe.scalalogging.LazyLogging
 
 object PythonEnvAPI
+  extends Object
+  with LazyLogging
 {
   def checkServerMode() = 
     if(Vizier.config.serverMode()){
@@ -72,7 +75,7 @@ object PythonEnvAPI
   def Create(
     env: String,
     spec: serialized.PythonEnvironmentDescriptor
-  ): Boolean = 
+  ): serialized.PythonEnvironmentDescriptor = 
   {
     checkServerMode()
     if(PythonEnvironment.INTERNAL_BY_NAME contains env)
@@ -105,15 +108,14 @@ object PythonEnvAPI
       environment.Environment.install(pkgSpec.name, pkgSpec.version)
     }
     CatalogDB.withDB { implicit s => 
-      environment.save
-    }
-    true
+      environment.save.serialize
+    }    
   }
 
   def Update(
     envId: Identifier,
     spec: serialized.PythonEnvironmentDescriptor
-  ): Boolean = 
+  ): serialized.PythonEnvironmentDescriptor = 
   {
     checkServerMode()
     if(PythonEnvironment.INTERNAL_BY_ID contains envId){
@@ -159,20 +161,33 @@ object PythonEnvAPI
           }.getOrElse { true }
       }
 
-    for( pkg <- toBeDeleted ) {
-      environment.Environment.delete(pkg)
+    logger.info(s"Updating python environment: ${environment.name}")
+    if(!toBeDeleted.isEmpty){
+      logger.info(s"Deleting packages: \n${toBeDeleted.mkString("\n")}")
     }
-    for( (pkg, spec) <- toBeInstalledOrUpgraded ) {
-      environment.Environment.install(
-        packageName = pkg, 
-        version = spec.version,
-        upgrade = currentPackages.contains(pkg)
-      )
+    if(!toBeInstalledOrUpgraded.isEmpty)
+    {
+      logger.info(s"Installing packages: \n${toBeInstalledOrUpgraded.mkString("\n")}")
+    }
+
+    try {
+      for( pkg <- toBeDeleted ) {
+        environment.Environment.delete(pkg)
+      }
+      for( (pkg, spec) <- toBeInstalledOrUpgraded ) {
+        environment.Environment.install(
+          packageName = pkg, 
+          version = spec.version,
+          upgrade = currentPackages.contains(pkg)
+        )
+      }
+    } catch {
+      case FormattedError(err) => 
+        ErrorResponse.invalidRequest(err)
     }
     CatalogDB.withDB { implicit s => 
-      environment.save
+      environment.save.serialize
     }
-    true
   }
 
   def Delete(

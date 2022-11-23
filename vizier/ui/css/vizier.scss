@@ -330,6 +330,36 @@ $menu_height: 32px;
   }
 }
 
+/************ Toast Dialogs ************/
+
+.toast
+{
+  display: block;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: calc(100% - 16px);
+  height: 1em;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  margin-left: 8px;
+  margin-right: 8px;
+  vertical-align: middle;
+  text-align: center;
+  background-color: $color_error;
+  border: solid 1px black;
+  border-top: none;
+
+  font-weight: bold;
+  color: white;
+
+  .detail
+  {
+    display: none;
+    visibility: hidden;
+  }
+}
+
 /************ Modal Dialogs ************/
 
 .modal
@@ -1621,6 +1651,8 @@ table.parameter_list
     {
       .summary 
       {
+        padding-right: 0px;
+
         & > .spacer
         {
           width: 10px;
@@ -1629,13 +1661,20 @@ table.parameter_list
 
         .save_button
         {
-          float: right; 
+          float: right;
+          margin-right: 0px;
 
-          i.fa
+          button
           {
+            height: 24px;
             background-color: $color_button_confirm;
-            color: white;
-          }
+          } 
+
+          // i.fa
+          // {
+          //   background-color: $color_button_confirm;
+          //   color: white;
+          // }
 
           .reactive
           {

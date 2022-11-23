@@ -1,8 +1,8 @@
 package info.vizierdb.api.response
 
-import info.vizierdb.api.Response
+import info.vizierdb.api.BytesResponse
 
-case class ErrorResponse(response: Response) extends Exception(response.toString)
+case class ErrorResponse(response: BytesResponse) extends Exception(response.toString)
 
 object ErrorResponse
 {

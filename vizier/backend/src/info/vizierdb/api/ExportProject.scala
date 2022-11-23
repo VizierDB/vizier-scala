@@ -25,6 +25,7 @@ import java.io.FileOutputStream
 import info.vizierdb.api.response.FileResponse
 import info.vizierdb.api.handler._
 import info.vizierdb.catalog.CatalogDB
+import _root_.akka.http.scaladsl.model.ContentTypes
 
 object ExportProject
 {
@@ -45,7 +46,7 @@ object ExportProject
     FileResponse(
       file = tempFile, 
       name = projectName+".vizier", 
-      contentType = "application/octet-stream",
+      contentType = ContentTypes.`application/octet-stream`,
       afterCompletedTrigger = { () => tempFile.delete() }
     )
   }
