@@ -7,6 +7,7 @@ import play.api.libs.json.JsValue
 import org.scalajs.dom.raw.XMLHttpRequest
 import play.api.libs.json.Json
 import info.vizierdb.ui.Vizier
+import info.vizierdb.util.Cached
 
 trait APIExtras
 {
@@ -43,6 +44,13 @@ trait APIExtras
       Vizier.error(s"Unknown error while handling message to server: Status code ${resp.status} / Response type ${resp.responseType}")
     }
   }
+
+  def configListPythonEnvs(): Future[serialized.PythonSettingsSummary]
+
+  val pythonEnvironments = 
+    new Cached[Future[Seq[serialized.PythonEnvironmentSummary]]](
+      () => configListPythonEnvs().map { _.environments }
+    )
 
 }
 

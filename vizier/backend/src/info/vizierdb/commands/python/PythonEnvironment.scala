@@ -136,6 +136,7 @@ trait InternalPythonEnvironment extends PythonEnvironment
     serialized.PythonEnvironmentSummary(
       name = PythonEnvironment.SYSTEM_PYTHON_NAME,
       id = PythonEnvironment.SYSTEM_PYTHON_ID,
+      revision = 0,
       fullVersion
     )
 

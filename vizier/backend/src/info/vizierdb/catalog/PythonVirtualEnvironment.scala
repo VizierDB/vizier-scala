@@ -32,6 +32,14 @@ case class PythonVirtualEnvironment(
       packages = PythonVirtualEnvironmentRevision.get(id, activeRevision).packages
     )
 
+  def summarize =
+    serialized.PythonEnvironmentSummary(
+      name = name,
+      id = id,
+      pythonVersion = pythonVersion,
+      revision = activeRevision
+    )
+
   def dir: File = 
     new File(Vizier.config.pythonVenvDirFile, s"venv_$id")
 
@@ -210,13 +218,14 @@ object PythonVirtualEnvironment
   def list(implicit session: DBSession): Seq[serialized.PythonEnvironmentSummary] =
     withSQL { 
       val b = PythonVirtualEnvironment.syntax 
-      select(b.id, b.name, b.pythonVersion)
+      select(b.id, b.name, b.activeRevision, b.pythonVersion)
         .from(PythonVirtualEnvironment as b)
     }.map { r => 
         serialized.PythonEnvironmentSummary(
           id = r.get[Identifier](1),
           name = r.get[String](2),
-          pythonVersion = r.get[String](3)
+          revision = r.get[Identifier](3),
+          pythonVersion = r.get[String](4)
         ) 
     }.list.apply()
     

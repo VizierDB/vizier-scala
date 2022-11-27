@@ -23,6 +23,7 @@ case class PythonEnvironmentDescriptor(
 case class PythonEnvironmentSummary(
   name: String,
   id: Identifier,
+  revision: Identifier,
   pythonVersion: String,
 )
 

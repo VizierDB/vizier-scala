@@ -18,10 +18,13 @@ import play.api.libs.json._
 import info.vizierdb.VizierException
 import info.vizierdb.util.StupidReactJsonMap
 import info.vizierdb.types.ArtifactType
+import info.vizierdb.types.LanguageType
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.spark.SparkSchema
 import org.apache.spark.sql.types.DataType
+import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.catalog.PythonVirtualEnvironment
 
 sealed trait Parameter
 {
@@ -725,3 +728,76 @@ case class StringParameter(
     Json.toJson(default)
 }
 
+case class EnvironmentParameter(
+  id: String,
+  name: String,
+  language: LanguageType.T,
+  default: Option[String] = None,
+  required: Boolean = true,
+  hidden: Boolean = false,
+) extends Parameter
+{
+
+  override def datatype: String = "environment"
+
+  override def doStringify(j: JsValue): String = 
+    language match {
+      case LanguageType.PYTHON =>
+        val summary = j.as[serialized.PythonEnvironmentSummary]
+        summary.name
+      case _ =>
+        (j \ "name").asOpt[String] match {
+          case Some(n) => n
+          case None => "<<Invalid Environment>>"
+        }
+    }
+
+  override def doValidate(j: JsValue): Iterable[String] = 
+  {
+    (Seq(
+      if((j \ "name").isEmpty){ Some("Name field missing") } else { None },
+      if((j \ "revision").isEmpty){ Some("Revision field missing") } else { None },
+    ) ++ (language match { 
+      case LanguageType.PYTHON => 
+        Seq(
+          if((j \ "pythonVersion").isEmpty){ Some("Python Version field missing") } else { None },
+        )
+      case _ => Seq.empty
+    })).flatten
+  }
+
+  override def encode(v: Any): JsValue = 
+    language match {
+      case LanguageType.PYTHON =>
+        val env:serialized.PythonEnvironmentSummary = v match {
+          case summary:serialized.PythonEnvironmentSummary =>
+            summary
+          case name:String => 
+            CatalogDB.withDB { implicit s =>
+              PythonVirtualEnvironment.getByName(name)
+            }.summarize
+          case id:Int =>
+            CatalogDB.withDB { implicit s =>
+              PythonVirtualEnvironment.getById(id.toLong)
+            }.summarize
+          case id:Long =>
+            CatalogDB.withDB { implicit s =>
+              PythonVirtualEnvironment.getById(id)
+            }.summarize
+        }
+        Json.toJson(env)
+    }
+
+  override def describe(parent: Option[String], index: Int) = 
+    Seq(serialized.CodeParameterDescription(
+      id = id,
+      name = name,
+      datatype = datatype,
+      hidden = hidden,
+      required = required,
+      parent = parent,
+      index = index,
+      default = Some(getDefault),
+      language = language.toString()
+    ))
+}

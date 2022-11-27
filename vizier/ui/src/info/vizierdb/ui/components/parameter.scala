@@ -16,6 +16,8 @@ import info.vizierdb.serializers._
 import info.vizierdb.ui.components.snippets.PythonSnippets
 import info.vizierdb.ui.components.snippets.SnippetsBase
 import info.vizierdb.ui.components.snippets.ScalaSnippets
+import org.scalajs.dom.Node
+import info.vizierdb.ui.Vizier
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
@@ -171,22 +173,25 @@ object Parameter
     tree.parameter match {
       case param: serialized.SimpleParameterDescription =>
         param.datatype match {
-          case "colid"    => new ColIdParameter(param, visibleArtifacts, editor.selectedDataset)
-          case "list"     => new ListParameter(param, tree.children, this.apply(_, editor), visibleArtifacts)
-          case "record"   => new RecordParameter(param, tree.children, this.apply(_, editor))
-          case "string"   => new StringParameter(param)
-          case "int"      => new IntParameter(param)
-          case "decimal"  => new DecimalParameter(param)
-          case "bool"     => new BooleanParameter(param)
-          case "rowid"    => new RowIdParameter(param)
-          case "fileid"   => new FileParameter(param)
-          case "dataset"  => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
-          case "datatype" => new DataTypeParameter(param)
-          case _          => new UnsupportedParameter(param)
+          case "colid"       => new ColIdParameter(param, visibleArtifacts, editor.selectedDataset)
+          case "list"        => new ListParameter(param, tree.children, this.apply(_, editor), visibleArtifacts)
+          case "record"      => new RecordParameter(param, tree.children, this.apply(_, editor))
+          case "string"      => new StringParameter(param)
+          case "int"         => new IntParameter(param)
+          case "decimal"     => new DecimalParameter(param)
+          case "bool"        => new BooleanParameter(param)
+          case "rowid"       => new RowIdParameter(param)
+          case "fileid"      => new FileParameter(param)
+          case "dataset"     => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
+          case "datatype"    => new DataTypeParameter(param)
+          case _             => new UnsupportedParameter(param)
         }
 
       case param: serialized.CodeParameterDescription =>
-        new CodeParameter(param)
+        param.datatype match {
+          case "environment" => new EnvironmentParameter(param)
+          case _ => new CodeParameter(param)
+        }
 
       case param: serialized.ArtifactParameterDescription =>
         new ArtifactParameter(param, visibleArtifactsByType)
@@ -1004,6 +1009,110 @@ class DataTypeParameter(
       case JsString(s) => inputNode[dom.html.Select].value = s
       case _ => unexpected = Some(v)
     }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A parameter with a limited set of options
+ */
+class EnvironmentParameter(
+  val id: String, 
+  val name: String, 
+  val language: String,
+  val required: Boolean,
+  val hidden: Boolean
+)(implicit owner: Ctx.Owner) extends Parameter
+{
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  
+  def this(parameter: serialized.CodeParameterDescription)(implicit owner: Ctx.Owner)
+  {
+    this(
+      id = parameter.id,
+      name = parameter.name,
+      language = parameter.language,
+      required = parameter.required,
+      hidden = parameter.hidden
+    )
+  }
+
+  val options = Var[Seq[serialized.PythonEnvironmentSummary]](Seq.empty)
+  val selected = Var[Option[serialized.PythonEnvironmentSummary]](None)
+
+  Vizier.api.pythonEnvironments.get.onSuccess { 
+    case envs => options() = envs 
+  }
+
+  override def value: JsValue = 
+  {
+    selected.now.map { Json.toJson(_) }.getOrElse { JsNull }
+  }
+
+  override def set(v: JsValue): Unit = 
+  {
+    v match {
+      case JsNull => selected() = None
+      case _ => selected() = Some(v.as[serialized.PythonEnvironmentSummary])
+    }
+  }
+
+  def updateRevision(): Unit =
+  {
+    val myId = selected.now.get.id
+    val rev = options.now.find { _.id == myId  }
+    selected() = rev
+  }
+
+  override val root: Node = 
+    Rx {
+      val selectedId = selected().map { _.id }.getOrElse(-1)
+      div(`class` := "environment_selector",
+        select(
+          options().map { env =>
+            if(selectedId == env.id){ 
+              option(attr("value") := env.id, s"${env.name} (Python ${env.pythonVersion})", attr("selected") := "yes")
+            } else {
+              option(attr("value") := env.id, s"${env.name} (Python ${env.pythonVersion})")
+            }
+          },
+          onchange := { e:dom.Event => 
+            val v = e.target.asInstanceOf[dom.html.Select].value.toLong
+            selected() = options.now.find { _.id == v }
+          }
+        ),
+        selected() match {
+          case None => span(
+            `class` := "environment_warning",
+            "No python environment selected, the non-reproducible system python will be used."
+          )
+          case Some(env) => 
+            val base = options().find { _.id == env.id }
+            if(base.isEmpty){
+              span(
+                `class` := "environment_warning",
+                "The selected Python environment has been deleted; You must select an environment to use."
+              )
+            } else if(base.get.revision != env.revision) {
+              span(
+                `class` := "environment_warning",
+                "The selected Python environment has been modified since this cell was last run",
+                button(
+                  "Acknowledge",
+                  onclick := { _:dom.Event => updateRevision() }
+                ),
+                button(
+                  "Fork",
+                  onclick := { _:dom.Event => Vizier.error("Forking not supported yet") }
+                )
+              )
+            } else {
+              span()
+            }
+
+        }
+      )
+    }.reactive
 }
 
 /////////////////////////////////////////////////////////////////////////////

@@ -31,24 +31,28 @@ import info.vizierdb.spark.caveats.QueryWithCaveats
 import info.vizierdb.util.ExperimentalOptions
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
 
 object Python extends Command
   with LazyLogging
 {
   val PROP_INPUT_PROVENANCE = "input_provenance"
   val PROP_OUTPUT_PROVENANCE = "output_provenance"
+  val ARG_SOURCE = "source"
+  val ARG_ENV = "environment"
 
 
   def name: String = "Python Script"
   def parameters: Seq[Parameter] = Seq(
-    CodeParameter(id = "source", language = "python", name = "Python Code"),
-    // StringParameter(id = "output_dataset", name = "Output Dataset", required = false)
+    CodeParameter(id = ARG_SOURCE, language = "python", name = "Python Code"),
+    EnvironmentParameter(id = ARG_ENV, language = LanguageType.PYTHON, name = "Environment", required = false)
   )
   def format(arguments: Arguments): String = 
-    arguments.pretty("source")
+    arguments.pretty(ARG_SOURCE)
   def title(arguments: Arguments): String =
   {
-    val line1 = arguments.get[String]("source").split("\n")(0)
+    val line1 = arguments.get[String](ARG_SOURCE).split("\n")(0)
     if(line1.startsWith("#")){
       line1.replaceFirst("^# *", "")
     } else {
@@ -58,7 +62,8 @@ object Python extends Command
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     logger.debug("Initializing...")
-    val script = arguments.get[String]("source")
+    val script = arguments.get[String](ARG_SOURCE)
+    val env = arguments.get[serialized.PythonEnvironmentSummary](ARG_ENV)
     val python = PythonProcess()
 
     python.send("script", 

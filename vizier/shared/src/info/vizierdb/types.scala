@@ -289,5 +289,14 @@ object types
       "PNG Image"       -> "image/png"
     )
   }
+
+  object LanguageType extends Enumeration
+  {
+    type T = Value 
+
+    val PYTHON = Value(1, "python")
+    val SCALA  = Value(2, "scala")
+    val SQL    = Value(3, "sql")
+  }
 }
 
