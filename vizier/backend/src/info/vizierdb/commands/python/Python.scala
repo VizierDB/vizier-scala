@@ -63,7 +63,7 @@ object Python extends Command
   {
     logger.debug("Initializing...")
     val script = arguments.get[String](ARG_SOURCE)
-    val env = arguments.get[serialized.PythonEnvironmentSummary](ARG_ENV)
+    val env = arguments.getOpt[serialized.PythonEnvironmentSummary](ARG_ENV)
     val python = PythonProcess()
 
     python.send("script", 
