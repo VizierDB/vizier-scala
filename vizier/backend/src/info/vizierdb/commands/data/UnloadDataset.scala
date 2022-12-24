@@ -26,6 +26,8 @@ import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.Vizier
+import java.net.URL
+import info.vizierdb.VizierException
 
 object UnloadDataset extends Command
   with LazyLogging
@@ -119,7 +121,8 @@ object UnloadDataset extends Command
       case _                      => Some("application/octet-stream")
     }
 
-    val url = arguments.getOpt[String](PARAM_URL)
+    val path = arguments.getOpt[String](PARAM_URL)
+    val url: Option[URL] = path.map { Filestore.canonicalizePath(_) }
 
     val outputArtifactIfNeeded = 
       if(url.isDefined) { None }
@@ -145,7 +148,7 @@ object UnloadDataset extends Command
              url.isEmpty 
               // ... or outputting to a local file (i.e., follow spark's safety 
               // conventions for s3a and other distributed filesystems) 
-          || !url.get.contains("://")
+          || (url.get.getProtocol() == "file")
         )
     )
 
@@ -184,22 +187,25 @@ object UnloadDataset extends Command
 
 
     // Generate the output target file
-    val (file, tempDir:Option[File]) = 
+    val (file: URL, tempDir:Option[File]) = 
       if(useTempFile) {
         val tempDir = File.createTempFile("temp_", "."+format.split("\\.").last)
         tempDir.delete
-        (tempDir.toString, Some(tempDir))
+        (new URL("file://"+tempDir.toString), Some(tempDir))
       } else if(url.isDefined) { 
         (
           url.get, 
           None
         )
-      } else {
+      } else if(outputArtifactIfNeeded.isDefined) {
         (
-          outputArtifactIfNeeded.map { _.absoluteFile.toString }
-                                .getOrElse { "unknown_file" },
+          new URL("file://"+
+            outputArtifactIfNeeded.get.absoluteFile.toString
+          ),
           None
         )
+      } else {
+        throw new VizierException("Unsure where to unload the file")
       }
 
     // Some formats need special handling to reformat their URLs
@@ -208,14 +214,14 @@ object UnloadDataset extends Command
         // The Sheets uploader doesn't take a full sheet URL, just the 
         // spreadsheetID/sheetID pair at the end of the URL.  Strip those
         // out and recreate the URL. 
-        val sheetURLParts = file.split("\\/").reverse
+        val sheetURLParts = file.getPath.split("\\/").reverse
         // NOTE THE `.reverse` above
         val sheetIdentifier = sheetURLParts(0) + "/" + sheetURLParts(1)
         writer.save(sheetIdentifier)
       }
       case _ => 
         logger.debug(s"Writing artifact $datasetName to $file")
-        writer.save(file)
+        writer.save(file.toString)
     }
 
     // Copy the target file to the right place and clean up the temp dir
@@ -225,7 +231,7 @@ object UnloadDataset extends Command
       assert(dataFiles.size == 1, s"Spark generated ${dataFiles.size} data files: ${dataFiles.mkString(", ")}")
       val artifact = 
         dataFiles.head.renameTo(
-          url.map { new File(_) }.getOrElse {
+          url.map { u => new File(u.getPath) }.getOrElse {
             outputArtifactIfNeeded.get.absoluteFile
           }
         )
