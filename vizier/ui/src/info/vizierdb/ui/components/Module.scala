@@ -49,7 +49,12 @@ class Module(val subscription: ModuleSubscription)
   def setTentativeModuleId(newId: Identifier) = tentativeModuleId = Some(newId)
 
   /**
-   * A reactive list of all of the outputs produced by this cell
+   * A reactive list of all of the artifacts consumed by this cell
+   */
+  val inputs = subscription.inputs
+
+  /**
+   * A reactive list of all of the artifacts produced by this cell
    */
   val outputs = subscription.outputs
 

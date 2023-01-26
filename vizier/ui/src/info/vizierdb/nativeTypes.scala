@@ -1,11 +1,12 @@
 package info.vizierdb
 
-import play.api.libs.json.{ JsValue => PlayJsValue, JsObject => PlayJsObject }
+import play.api.libs.json.{ JsValue => PlayJsValue, JsObject => PlayJsObject, JsNumber => PlayJsNumber }
 
 object nativeTypes
 {
   type JsValue = PlayJsValue
   type JsObject = PlayJsObject
+  type JsNumber = PlayJsNumber
   type CellDataType = JsValue
   type DateTime = scala.scalajs.js.Date
   type URL = String

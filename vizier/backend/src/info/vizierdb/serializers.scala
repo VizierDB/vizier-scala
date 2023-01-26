@@ -172,7 +172,7 @@ object serializers
         }
     }
   )
-  implicit val updateCellOutputsFormat: Format[delta.UpdateCellOutputs] = Json.format
+  implicit val updateCellDependenciesFormat: Format[delta.UpdateCellDependencies] = Json.format
   implicit val advanceResultIdFormat: Format[delta.AdvanceResultId] = Json.format
   implicit val updateBranchPropertiesFormat: Format[delta.UpdateBranchProperties] = Json.format
   implicit val updateProjectPropertiesFormat: Format[delta.UpdateProjectProperties] = Json.format
@@ -185,7 +185,7 @@ object serializers
           case delta.WorkflowDelta.DELETE_CELL               => JsSuccess(j.as[delta.DeleteCell])
           case delta.WorkflowDelta.UPDATE_CELL_STATE         => JsSuccess(j.as[delta.UpdateCellState])
           case delta.WorkflowDelta.APPEND_CELL_MESSAGE       => JsSuccess(j.as[delta.AppendCellMessage])
-          case delta.WorkflowDelta.UPDATE_CELL_OUTPUTS       => JsSuccess(j.as[delta.UpdateCellOutputs])
+          case delta.WorkflowDelta.UPDATE_CELL_DEPENDENCIES  => JsSuccess(j.as[delta.UpdateCellDependencies])
           case delta.WorkflowDelta.ADVANCE_RESULT_ID         => JsSuccess(j.as[delta.AdvanceResultId])
           case delta.WorkflowDelta.UPDATE_CELL_ARGUMENTS     => JsSuccess(j.as[delta.UpdateCellArguments])
           case delta.WorkflowDelta.UPDATE_BRANCH_PROPERTIES  => JsSuccess(j.as[delta.UpdateBranchProperties])
@@ -201,7 +201,7 @@ object serializers
           case x:delta.DeleteCell              => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.DELETE_CELL))
           case x:delta.UpdateCellState         => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_STATE))
           case x:delta.AppendCellMessage       => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.APPEND_CELL_MESSAGE))
-          case x:delta.UpdateCellOutputs       => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_OUTPUTS))
+          case x:delta.UpdateCellDependencies  => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_DEPENDENCIES))
           case x:delta.AdvanceResultId         => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.ADVANCE_RESULT_ID))
           case x:delta.UpdateCellArguments     => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_CELL_ARGUMENTS))
           case x:delta.UpdateBranchProperties  => Json.toJson(x).as[JsObject] + (delta.WorkflowDelta.OP_TYPE -> JsString(delta.WorkflowDelta.UPDATE_BRANCH_PROPERTIES))
