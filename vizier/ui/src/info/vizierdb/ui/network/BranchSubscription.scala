@@ -212,7 +212,7 @@ class BranchSubscription(
              
               /////////////////////////////////////////////////
 
-              case delta.UpdateCellOutputs(position, outputs) =>
+              case delta.UpdateCellDependencies(position, inputs, outputs) =>
                 val module = modules(position)
                 logger.debug(s"Adding outputs: ${outputs} -> ${module.outputs}")
                 module.outputs() = 
@@ -223,6 +223,7 @@ class BranchSubscription(
                       artifact.name -> Some(artifact)
                   }
                   .toMap
+                module.inputs() = inputs.mapValues { _.as[Long] }
 
               /////////////////////////////////////////////////
 

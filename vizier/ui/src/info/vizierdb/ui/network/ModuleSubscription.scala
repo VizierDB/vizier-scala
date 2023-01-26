@@ -31,6 +31,9 @@ class ModuleSubscription(
   lazy val text = Var(initial.text)
   val timestamps = Var(initial.timestamps)
   def toc = initial.toc
+  val inputs = Var[Map[String,Identifier]](
+    initial.inputs
+  )
   val outputs = Var[Map[String,Option[serialized.ArtifactSummary]]](
     initial.artifacts.map { x => x.name -> Some(x) }.toMap
   )
@@ -53,7 +56,7 @@ class ModuleSubscription(
       timestamps = timestamps.now,
       artifacts = outputs.now.values.collect { case Some(s) => s }.toSeq,
       deleted = outputs.now.collect { case (k, None) => k }.toSeq,
-      dependencies = initial.dependencies,
+      inputs = inputs.now,
       outputs = serialized.ModuleOutputDescription(
         stdout = messages.filter { _.stream == StreamType.STDOUT }
                          .map { _.removeType },

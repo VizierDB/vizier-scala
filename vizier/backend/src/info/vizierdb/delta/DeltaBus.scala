@@ -23,6 +23,7 @@ import scalikejdbc.interpolation.SQLSyntax
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.serialized.Timestamps
 import info.vizierdb.catalog.Result
+import play.api.libs.json.JsNumber
 
 /**
  * A central hub for notifications about state changes on branches.  
@@ -357,14 +358,16 @@ object DeltaBus
   /**
    * Convenience method to announce a new output artifact
    */
-  def notifyUpdateOutputs(
+  def notifyUpdateDependencies(
     workflow: Workflow,
     position: Int,
+    inputs: Map[String, Identifier],
     outputs: Seq[DeltaOutputArtifact]
   )(implicit session: DBSession)
   {
-    DeltaBus.notify(workflow.branchId, UpdateCellOutputs(
+    DeltaBus.notify(workflow.branchId, UpdateCellDependencies(
       position,
+      inputs.mapValues { JsNumber(_) },
       outputs
     ))
   }

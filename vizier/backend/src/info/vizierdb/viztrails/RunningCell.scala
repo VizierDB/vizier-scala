@@ -260,9 +260,10 @@ class RunningCell(
     for((userFacingName, artifact) <- context.outputs) {
       result.addOutput( userFacingName, artifact.map { _.id } )
     }
-    DeltaBus.notifyUpdateOutputs(
+    DeltaBus.notifyUpdateDependencies(
       workflow = workflow,
       position = cell.position,
+      inputs = context.inputs.toMap,
       outputs = context.outputs.map { 
         case (name, None) => DeltaOutputArtifact.fromDeletion(name)
         case (name, Some(a)) => DeltaOutputArtifact.fromArtifact(a.summarize(name))

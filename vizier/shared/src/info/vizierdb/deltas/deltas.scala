@@ -16,7 +16,7 @@ package info.vizierdb.delta
 
 import info.vizierdb.types.{ ExecutionState, StreamType, Identifier }
 import info.vizierdb.serialized
-import info.vizierdb.nativeTypes.JsValue
+import info.vizierdb.nativeTypes.{JsValue, JsNumber}
 
 sealed trait WorkflowDelta
 
@@ -40,7 +40,7 @@ object DeltaOutputArtifact {
   def fromArtifact(a:serialized.ArtifactSummary) =
     DeltaOutputArtifact(Right(a))
 }
-case class UpdateCellOutputs(position: Int, outputs: Seq[DeltaOutputArtifact]) extends WorkflowDelta
+case class UpdateCellDependencies(position: Int, inputs: Map[String, JsNumber], outputs: Seq[DeltaOutputArtifact]) extends WorkflowDelta
 case class AdvanceResultId(position: Int, resultId: Identifier) extends WorkflowDelta
 case class UpdateBranchProperties(properties: Map[String, JsValue]) extends WorkflowDelta
 case class UpdateProjectProperties(properties: Map[String, JsValue]) extends WorkflowDelta
@@ -56,7 +56,7 @@ object WorkflowDelta
   val UPDATE_CELL_STATE         = "update_cell_state"
   val APPEND_CELL_MESSAGE       = "append_cell_message"
   val UPDATE_CELL_ARGUMENTS     = "update_cell_arguments"
-  val UPDATE_CELL_OUTPUTS       = "update_cell_outputs"
+  val UPDATE_CELL_DEPENDENCIES  = "update_cell_dependencies"
   val ADVANCE_RESULT_ID         = "advance_result_id"
   val UPDATE_BRANCH_PROPERTIES  = "update_branch_properties"
   val UPDATE_PROJECT_PROPERTIES = "update_project_properties"

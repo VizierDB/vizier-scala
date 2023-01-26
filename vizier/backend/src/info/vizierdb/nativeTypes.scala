@@ -1,6 +1,6 @@
 package info.vizierdb
 
-import play.api.libs.json.{ JsValue => PlayJsValue, JsObject => PlayJsObject }
+import play.api.libs.json.{ JsValue => PlayJsValue, JsObject => PlayJsObject, JsNumber => PlayJsNumber }
 import org.apache.spark.sql.types.{ StructField, DataType }
 import info.vizierdb.spark.{ SparkPrimitive }
 import java.time.temporal.ChronoUnit
@@ -10,6 +10,7 @@ object nativeTypes
   type CellDataType = DataType
   type JsValue = PlayJsValue
   type JsObject = PlayJsObject
+  type JsNumber = PlayJsNumber
   type DateTime = java.time.ZonedDateTime
   type URL = java.net.URL
 

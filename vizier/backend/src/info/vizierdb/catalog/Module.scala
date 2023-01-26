@@ -181,7 +181,7 @@ case class Module(
         artifacts = artifacts,
         deleted = deleted,
           // artifactSummaries.map { case (name, d) => d.summarize(name) },
-        dependencies = inputs.toMap,
+        inputs = inputs.toMap,
 
         outputs = serialized.ModuleOutputDescription(
           stdout = stdout.map { _() },

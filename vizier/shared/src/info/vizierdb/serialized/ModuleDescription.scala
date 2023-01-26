@@ -15,7 +15,7 @@ case class ModuleDescription(
   timestamps: Timestamps,
   artifacts: Seq[ArtifactSummary],
   deleted: Seq[String],
-  dependencies: Map[String,Identifier],
+  inputs: Map[String,Identifier],
   outputs: ModuleOutputDescription,
   resultId: Option[Identifier],
 )
