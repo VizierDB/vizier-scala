@@ -299,6 +299,7 @@ class DatasetClient(object):
         dataset=self,
         use_deltas=use_deltas
       )
+    self.existing_name = name
 
   @property
   def properties(self):

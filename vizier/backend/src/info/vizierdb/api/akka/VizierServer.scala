@@ -34,8 +34,10 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.server.ExceptionHandler
 import info.vizierdb.api.response.ErrorResponse
 import org.apache.http
+import com.typesafe.scalalogging.LazyLogging
 
 object VizierServer
+  extends LazyLogging
 {
   implicit val system = ActorSystem("vizier")
   implicit val executionContext: ExecutionContextExecutor = 
@@ -191,8 +193,13 @@ object VizierServer
               new Runnable {
                 def run() =
                 {
-                  vizierResp.write(buffer)
-                  buffer.close()
+                  try {
+                    vizierResp.write(buffer)
+                    buffer.close()
+                  } catch {
+                    case t: Throwable => 
+                      logger.error(s"Error writing Vizier response to Akka: $t")
+                  }
                 }
               }
             )

@@ -5,6 +5,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.sedona_sql.expressions.ST_AsText
 import org.apache.spark.sql.Column
+import org.mimirdb.caveats.implicits._
 
 /**
  * Certain column types (most notably UDTs) are not safe for export through 
@@ -29,6 +30,6 @@ object SafeExport
 
       }
     
-    df.select(mapping:_*)
+    df.select(mapping:_*).stripCaveats
   }
 }

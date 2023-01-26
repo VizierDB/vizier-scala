@@ -38,6 +38,12 @@ case class FileResponse(
     Streams.closeAfter(new FileInputStream(file)) { f => 
       Streams.cat(f, os)
     }
+    // Jan 2023 by OK: `os` refers to a temporary write buffer that Akka reads out of (See 
+    // VizierServer.RouteImplicits.vizierResponseToAkkaResponse).  The buffer is automatically
+    // closed on completion, but I think the close fails if the file is deleted in the interim
+    // (which happens in afterCompletedTrigger, if appropriate).  There's no harm in double-closing
+    // the buffer, so we're going to close it here to be safe.
+    os.close()
     afterCompletedTrigger()
   }
 }
