@@ -1041,12 +1041,22 @@ class EnvironmentParameter(
   val selected = Var[Option[serialized.PythonEnvironmentSummary]](None)
 
   Vizier.api.pythonEnvironments.get.onSuccess { 
-    case envs => options() = envs 
+    case envs => 
+      options() = envs 
+      // println(
+      //   options.now.map { _.name }.mkString("\n")
+      // )
   }
+
+  def systemEnvironment: serialized.PythonEnvironmentSummary =
+    options.now.find { _.name == "System" }
+               .getOrElse { Vizier.error("No System Environment") }
 
   override def value: JsValue = 
   {
-    selected.now.map { Json.toJson(_) }.getOrElse { JsNull }
+    Json.toJson(
+      selected.now.getOrElse { systemEnvironment }
+    )
   }
 
   override def set(v: JsValue): Unit = 
@@ -1064,11 +1074,18 @@ class EnvironmentParameter(
     selected() = rev
   }
 
+  val identity = s"parameter_${Parameter.nextInputId}"
+
   override val root: Node = 
     Rx {
       val selectedId = selected().map { _.id }.getOrElse(-1)
       div(`class` := "environment_selector",
+        label(
+          `for` := identity,
+          b("Python Version: ")
+        ),
         select(
+          attr("id") := identity,
           options().map { env =>
             if(selectedId == env.id){ 
               option(attr("value") := env.id, s"${env.name} (Python ${env.pythonVersion})", attr("selected") := "yes")

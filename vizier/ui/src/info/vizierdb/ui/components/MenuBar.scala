@@ -133,7 +133,8 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 
       ////////////////// Settings Menu ////////////////// 
       Menu("left item", FontAwesome("wrench"))(
-        MenuItem("Python Settings", { () => println("Python Settings") }, enabled = false),
+        a(href := "settings.html", target := "vizier_settings", li("Settings")),
+        a(href := "settings.html?tab=python", target := "vizier_settings", li("Python Settings")),
         MenuItem("Scala Settings", { () => println("Scala Settings") }, enabled = false),
         Separator,
         a(href := "http://localhost:4040", target := "_blank", li("Spark Dashboard")),

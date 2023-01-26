@@ -109,7 +109,7 @@ class Module(val subscription: ModuleSubscription)
     subscription.packageId == "docs"
 
   /**
-   * Retrieve a moduledescription for this module
+   * Retrieve a [[ModuleDescription]] for this module
    */
   def description = subscription.description
 

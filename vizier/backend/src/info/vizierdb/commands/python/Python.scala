@@ -33,6 +33,7 @@ import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import info.vizierdb.catalog.PythonVirtualEnvironment
 
 object Python extends Command
   with LazyLogging
@@ -63,8 +64,28 @@ object Python extends Command
   {
     logger.debug("Initializing...")
     val script = arguments.get[String](ARG_SOURCE)
-    val env = arguments.getOpt[serialized.PythonEnvironmentSummary](ARG_ENV)
-    val python = PythonProcess()
+    val env: PythonEnvironment = 
+      arguments.getOpt[serialized.PythonEnvironmentSummary](ARG_ENV)
+              .map { env => 
+                // If the client has requested a specific environment...
+                // ... start by checking whether it's an internal environment
+                PythonEnvironment.INTERNAL_BY_ID.get(env.id)
+                  .orElse { 
+                    // .. if it isn't, see if it's a virtual environment
+                    CatalogDB.withDBReadOnly { implicit session =>
+                      PythonVirtualEnvironment.getByIdOption(env.id)
+                    }.map { _.Environment }
+                  }.getOrElse {
+                    // ... and if it's not internal or virtual, then explode
+                    context.error(s"Unknown Python Environment ${env.id} (${env.name})")
+                    return
+                  }
+              }.getOrElse { 
+                // If the client hasn't requested a specific environment,
+                // then default to the system python
+                SystemPython
+              }
+    val python = PythonProcess(env)
 
     python.send("script", 
       "script" -> JsString(script), 

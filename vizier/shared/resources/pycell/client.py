@@ -662,8 +662,6 @@ class VizierDBClient(object):
 
     value = export_from_native_type(value, vizier_data_type)	
     
-    print(value)
-
     response = self.vizier_request("save_artifact",
       name=key,
       data={"value": value, "dataType": vizier_data_type},

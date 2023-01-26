@@ -42,6 +42,7 @@ case class PythonVirtualEnvironment(
 
   def dir: File = 
     new File(Vizier.config.pythonVenvDirFile, s"venv_$id")
+          .getAbsoluteFile()
 
   def bin: File =
     new File(dir, "bin")
@@ -51,12 +52,16 @@ case class PythonVirtualEnvironment(
   def revision(implicit session:DBSession) =
     PythonVirtualEnvironmentRevision.get(id, activeRevision)
 
+  def isVersion2 =
+    pythonVersion.startsWith("2")
+
   object Environment
     extends PythonEnvironment
     with LazyLogging
   {
-    def python: File =
-      new File(bin, "python3")
+    val python: File =
+      if(isVersion2){ new File(bin, "python2") }
+      else          { new File(bin, "python3") }
 
     override lazy val fullVersion = pythonVersion
   }
@@ -74,22 +79,30 @@ case class PythonVirtualEnvironment(
         logger.warn(s"Python version '$pythonVersion' is not installed; Falling back to system python")
         SystemPython.python.toString()
       } else {
-        throw new VizierException(s"Trying to create virtual environment for non-installed python version '$pythonVersion'")
+        throw new VizierException(s"Trying to create virtual environment for non-installed python version '$pythonVersion'; If you have pyenv installed, try running `pyenv install $pythonVersion` from the command line.")
       }
 
-    logger.info(s"Bootstrapping venv $name with $bootstrapBinary")
+    logger.info(s"Bootstrapping venv $name with $bootstrapBinary into $dir")
 
     var args = 
-      Seq(
-        "-m", "venv",
-        "--upgrade-deps",
-        "--copies",
-      )
+      if(isVersion2){ 
+        Seq(
+          "-m", "virtualenv" 
+        )
+      } else {
+        Seq(
+          "-m", "venv",
+          "--upgrade",
+          "--copies",
+        )
+      }
+
     if(overwrite){ args = args :+ "--clear" }
 
     args = args :+ dir.toString
 
     {
+      logger.info(s"ARGS: ${args.mkString(" ")}")
       val err =
         Process(bootstrapBinary, args).run(
           ProcessLogger(
