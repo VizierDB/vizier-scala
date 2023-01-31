@@ -22,4 +22,26 @@ trait CodeMirrorEditor extends js.Object
 
   def replaceSelection(replacement: String): Unit = js.native
   def replaceSelection(replacement: String, select: String): Unit = js.native
+
+  def focus(): Unit = js.native
+
+  def on(evtType: String, func: js.Function1[Any,Any]): Unit = js.native
+  def on(evtType: String, func: js.Function2[Any,Any,Any]): Unit = js.native
 }
+
+@js.native
+trait CodeMirrorPosition extends js.Object
+{
+  val ch: Int = js.native
+  val line: Int = js.native
+}
+
+@js.native
+trait CodeMirrorChangeObject extends js.Object
+{
+  val from: CodeMirrorPosition = js.native
+  val to: CodeMirrorPosition = js.native
+  val text: Array[String] = js.native
+  val removed: String = js.native
+}
+

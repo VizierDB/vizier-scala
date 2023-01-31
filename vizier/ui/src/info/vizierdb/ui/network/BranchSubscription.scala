@@ -190,7 +190,7 @@ class BranchSubscription(
               case delta.UpdateCellArguments(position, arguments, moduleId) =>
                 logger.debug(s"Arguments Update: $arguments @ $position")
                 val module = modules(position)
-                module.arguments = arguments
+                module.arguments() = arguments
                 module.id = moduleId
 
 

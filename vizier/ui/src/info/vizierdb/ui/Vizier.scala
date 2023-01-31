@@ -257,6 +257,8 @@ object Vizier
   {
     val projectId = arguments.get("project").get.toLong
     val datasetId = arguments.get("dataset").get.toLong
+    val branchId = arguments.get("branch").map { _.toLong }
+
     val cli = new SpreadsheetClient(projectId, datasetId, api)
     cli.connected.trigger { connected => 
       if(connected){ cli.subscribe(0) }
@@ -268,8 +270,22 @@ object Vizier
     )
     cli.table = Some(table)
 
+    val body = div(
+      `class` := "standalone_spreadsheet",
+      div(
+        `class` := "header",
+        button(
+          onclick := { _:(dom.Event) =>
+            cli.save()
+          },
+          "Save"
+        )
+      ),
+      table.root
+    ).render
+
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      document.body.appendChild(table.root)
+      document.body.appendChild(body)
       OnMount.trigger(document.body)
     })
   }

@@ -260,12 +260,13 @@ case class CodeParameter(
   val name: String,
   language: String,
   val required: Boolean,
-  val hidden: Boolean
-) extends Parameter
+  val hidden: Boolean,
+  val startWithSnippetsHidden: Boolean = false
+)(implicit owner: Ctx.Owner) extends Parameter
 {
 
 
-  def this(parameter: serialized.CodeParameterDescription)
+  def this(parameter: serialized.CodeParameterDescription)(implicit owner: Ctx.Owner) 
   {
     this(
       parameter.id, 
@@ -278,6 +279,17 @@ case class CodeParameter(
 
   var editor: CodeMirrorEditor = null
   var initialValue: String = null
+
+  var onInit: (CodeMirrorEditor => Unit) = { _ => }
+
+  val hideSnippets = Var[Boolean](startWithSnippetsHidden)
+ 
+  val snippets = 
+    div(
+      CodeParameter.SNIPPETS.get(language).map { _.apply { snippet => 
+        editor.replaceSelection("\n"+snippet)
+      }}
+    )
 
   val root = 
     div(
@@ -293,22 +305,32 @@ case class CodeParameter(
             )
           ) 
           if(initialValue != null) { editor.setValue(initialValue) }
+          onInit(editor)
         }
       ),
-      CodeParameter.SNIPPETS.get(language).map { _.apply { snippet => 
-        editor.replaceSelection("\n"+snippet)
-      }}
-    )
+      hideSnippets.map { 
+        case true => 
+          // println("Hiding snippets!")
+          div(display := "hidden")
+        case false => 
+          // println("Showing snippets!")
+          snippets
+      }.reactive
+    ).render
   def value = 
     JsString(
       Option(editor).map { _.getValue }
                     .getOrElse { "" }
     )
-  override def set(v: JsValue): Unit = 
+
+  def set(v: String): Unit =
   {
-    initialValue = v.as[String]
-    Option(editor).map { _.setValue(initialValue) }
+    initialValue = v
+    if(editor != null) { editor.setValue(v) }
   }
+
+  override def set(v: JsValue): Unit = 
+    set(v.as[String])
 }
 object CodeParameter
 {
