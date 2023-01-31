@@ -17,6 +17,7 @@ import info.vizierdb.ui.components.Parameter
 import info.vizierdb.serialized.ParameterDescriptionTree
 import info.vizierdb.serialized.CodeParameterDescription
 import info.vizierdb.ui.rxExtras.implicits._
+import info.vizierdb.ui.components.EnvironmentParameter
 
 class CodeModuleSummary(
   module: Module,
@@ -93,26 +94,39 @@ class CodeModuleSummary(
         p.isInstanceOf[CodeParameterDescription] && (p.datatype != "environment")
       }.map { _.id }.getOrElse { "code" }
 
+    val environmentParam = 
+      command.parameters.collectFirst { 
+        case p:CodeParameterDescription if p.datatype == "environment" =>
+          new EnvironmentParameter(p)
+      }
+
     var otherArgs = Seq[CommandArgument]()
 
     def commandId = command.id
     def currentState = 
-      otherArgs :+ CommandArgument(
-        id = codeField,
-        code.value
-      )
+      otherArgs ++ Seq(
+        CommandArgument(codeField, code.value)
+      ) ++ environmentParam.map { e =>
+        CommandArgument(e.id, e.value)
+      }
 
     def loadState(arguments: Seq[CommandArgument]): Unit =
     {
-      otherArgs = arguments.filterNot { _.id == codeField }
       // we should have already "loaded" the code itself.
+      // Same goes for the environment parameter
+      otherArgs = arguments.filter { a => 
+        if(a.id == codeField){ false }
+        if(environmentParam.isDefined && environmentParam.get.id == a.id){ false }
+        else { true }
+      }
     }
 
     val editorFields: Frag = div(
       OnMount { node =>
         code.editor.focus()
       },
-      code.root
+      code.root,
+      environmentParam.map { _.root }
     ).render
   }
 
