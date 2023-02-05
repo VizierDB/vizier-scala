@@ -204,48 +204,21 @@ class TableOfContents(
                         // Jump to Module
                         LinkToModule(element, FontAwesome("eye")),
 
-                        // EXTRA BUTTON
+                        // Dataset Provenance View
                           a(
                             href := Vizier.api.artifactDsGetAnnotationsURL(projectId, artifact.id),
                             onclick := { _:dom.Event => {
 
-                                var test: js.Dictionary[Any] = js.Dictionary(
-                                  "$schema" -> "https://vega.github.io/schema/vega-lite/v5.json",
-                                  "data" -> js.Dictionary (
-                                    "values" -> js.Array(
-                                      js.Dictionary("a" -> "C", "b" -> 2),
-                                      js.Dictionary("a" -> "C", "b" -> 7),
-                                      js.Dictionary("a" -> "C", "b" -> 4),
-                                      js.Dictionary("a" -> "D", "b" -> 3),
-                                    )
-                                  ),
-                                  "mark" -> "bar",
-                                  "encoding" -> js.Dictionary(
-                                    "y" -> js.Dictionary(
-                                      "field" -> "a",
-                                      "type" -> "nominal"
-                                    ),
-                                    "x" -> js.Dictionary(
-                                      "aggregate" -> "average",
-                                      "field" -> "b",
-                                      "type" -> "quantitative",
-                                      "axis" -> js.Dictionary(
-                                        "title" -> "Average of b"
-                                      )
-                                    )
-                                  )
-                                )
-
-                                var test2: js.Dictionary[Any] = DatasetProvenance.createChart(name, artifacts)
+                                var dependencyChart: js.Dictionary[Any] = DatasetProvenance.createChart(name, artifacts)
 
                                 ShowModal.acknowledge(
                                   div(
                                     
                                     VegaEmbed(
-                                      s"#test", 
-                                      test2
+                                      s"#dependencyChart", 
+                                      dependencyChart
                                     ),
-                                    id := "test"
+                                    id := "dependencyChart"
                                   ).render
                                 )
 
@@ -262,7 +235,7 @@ class TableOfContents(
                                 /* return */ false // avoid link from triggering
                               }
                             },
-                            FontAwesome("smile-o")
+                            FontAwesome("chain")
                           ),
 
                       )

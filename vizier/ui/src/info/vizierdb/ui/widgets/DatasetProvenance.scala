@@ -29,21 +29,22 @@ object DatasetProvenance {
         artifacts: Map[String, (serialized.ArtifactSummary, WorkflowElement)]
         ) : Map[String, (Int, Int, Seq[String])]= {
 
-       val originLinks: Seq[String] = artifacts(origin)._2.inputs.now.keys.toSeq
+        val originLinks: Seq[String] = artifacts(origin)._2.inputs.now.keys.toSeq
 
-        var returnMap: Map[String, (Int, Int, Seq[String])] = Map()
-        //val emptyList: Seq[String] = Seq()
-        returnMap += (origin -> (0,0,originLinks))
+        var returnMap: Map[String, (Int, Int, Seq[String])] = Map(origin -> (0,0,originLinks))
         var toVisit: Queue[String] = Queue(origin)
-
-        var testMap: Map[String,String] = Map()
 
         var height: Int = 0
         var depth: Int = 0
 
+        /* For debugging
+         */
+
+        println("current artifact: " + origin)
+        println("inputs: " + artifacts(origin)._2.inputs.now)
+
         while (toVisit.nonEmpty) {
             val curr: String = toVisit.dequeue()
-            println ("curr: " + curr)
             val currDepth = returnMap(curr)._1
             if (currDepth > depth) {
                 depth = currDepth
@@ -51,12 +52,10 @@ object DatasetProvenance {
             }
 
             for (art <- returnMap(curr)._3) {
-                println("art: " + art)
                 val links: Seq[String] = artifacts(art)._2.inputs.now.keys.toSeq
                 val temp = returnMap.getOrElse(art, (0,0,Seq()))
                 if (temp == (0,0,Seq())) {
                     returnMap += (art ->(currDepth+1, height, links))
-                    testMap += (art -> art)
                     height += 1
                 }
                 else {
@@ -95,7 +94,7 @@ object DatasetProvenance {
                         "dy" -> -10,
                         "font" -> "sans-serif",
                         "fontSize" -> 14,
-                        "limit" -> 20
+                        "limit" -> 100
                     ),
                     "encoding" -> js.Dictionary(
                         "text" -> js.Dictionary(
