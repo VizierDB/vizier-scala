@@ -3,6 +3,8 @@ package info.vizierdb.ui.widgets
 import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
+import info.vizierdb.ui.rxExtras.OnMount
+
 
 object ShowModal
 {
@@ -27,6 +29,7 @@ object ShowModal
     }) }
 
     dom.document.body.appendChild(modal)
+    OnMount.traverse(modal)
 
   }
 

@@ -14,6 +14,8 @@ trait NoWorkflowOutputs
 {
   val outputs: Rx[Map[String, Option[serialized.ArtifactSummary]]]
 	   = Var[Map[String, Option[serialized.ArtifactSummary]]](Map.empty)
+  val inputs: Rx[Map[String, Identifier]]
+     = Var[Map[String, Identifier]](Map.empty)
 	val executionState = Var[ExecutionState.T](ExecutionState.DONE)
 }
 
@@ -26,6 +28,7 @@ abstract class WorkflowElement(implicit owner: Ctx.Owner)
   val root: dom.html.Element
   def id_attr: String
   val outputs: Rx[Map[String, Option[serialized.ArtifactSummary]]]
+  val inputs: Rx[Map[String, Identifier]]
  	val executionState: Rx[ExecutionState.T]
  	val accumulatedExecutionState = Var[ExecutionState.T](ExecutionState.DONE)
 

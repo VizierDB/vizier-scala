@@ -13,6 +13,14 @@ import info.vizierdb.ui.components.dataset.CaveatModal
 import info.vizierdb.ui.rxExtras.RxBuffer
 import info.vizierdb.serialized
 
+import info.vizierdb.ui.widgets.ShowModal
+import info.vizierdb.ui.facades.VegaEmbed
+import scala.scalajs.js
+import info.vizierdb.serializers.playToNativeJson
+import scala.scalajs.js.JSON
+
+import info.vizierdb.ui.widgets.DatasetProvenance
+
 class TableOfContents(
   projectId: Identifier,
   modules: RxBuffer[WorkflowElement],
@@ -133,6 +141,8 @@ class TableOfContents(
                         // Category-specific actions
                         artifact.category match {
                           case ArtifactType.DATASET => Seq[Frag](
+                              
+                              
                               // Caveat list
                               a(
                                 href := Vizier.api.artifactDsGetAnnotationsURL(projectId, artifact.id),
@@ -193,6 +203,67 @@ class TableOfContents(
 
                         // Jump to Module
                         LinkToModule(element, FontAwesome("eye")),
+
+                        // EXTRA BUTTON
+                          a(
+                            href := Vizier.api.artifactDsGetAnnotationsURL(projectId, artifact.id),
+                            onclick := { _:dom.Event => {
+
+                                var test: js.Dictionary[Any] = js.Dictionary(
+                                  "$schema" -> "https://vega.github.io/schema/vega-lite/v5.json",
+                                  "data" -> js.Dictionary (
+                                    "values" -> js.Array(
+                                      js.Dictionary("a" -> "C", "b" -> 2),
+                                      js.Dictionary("a" -> "C", "b" -> 7),
+                                      js.Dictionary("a" -> "C", "b" -> 4),
+                                      js.Dictionary("a" -> "D", "b" -> 3),
+                                    )
+                                  ),
+                                  "mark" -> "bar",
+                                  "encoding" -> js.Dictionary(
+                                    "y" -> js.Dictionary(
+                                      "field" -> "a",
+                                      "type" -> "nominal"
+                                    ),
+                                    "x" -> js.Dictionary(
+                                      "aggregate" -> "average",
+                                      "field" -> "b",
+                                      "type" -> "quantitative",
+                                      "axis" -> js.Dictionary(
+                                        "title" -> "Average of b"
+                                      )
+                                    )
+                                  )
+                                )
+
+                                var test2: js.Dictionary[Any] = DatasetProvenance.createChart(name, artifacts)
+
+                                ShowModal.acknowledge(
+                                  div(
+                                    
+                                    VegaEmbed(
+                                      s"#test", 
+                                      test2
+                                    ),
+                                    id := "test"
+                                  ).render
+                                )
+
+                                //println("-----")
+                                //println("Current name: " + name)
+                                //println("Modules: " + modules.map(m => m))
+                                //println("Module id's: " + modules.map(m => m.id_attr))
+                                //println("Module inputs: " + modules.map(m => m.inputs))
+                                //println("Artifacts: " + artifacts)
+                                //println("Current module id:" + artifacts(name)._2.id_attr)
+                                //println("Inputs to current module: " + artifacts(name)._2.inputs.now.keys)
+                                
+                                
+                                /* return */ false // avoid link from triggering
+                              }
+                            },
+                            FontAwesome("smile-o")
+                          ),
 
                       )
                     )
