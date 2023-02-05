@@ -40,8 +40,8 @@ object DatasetProvenance {
         /* For debugging
          */
 
-        println("current artifact: " + origin)
-        println("inputs: " + artifacts(origin)._2.inputs.now)
+        //println("current artifact: " + origin)
+        //println("inputs: " + artifacts(origin)._2.inputs.now)
 
         while (toVisit.nonEmpty) {
             val curr: String = toVisit.dequeue()
