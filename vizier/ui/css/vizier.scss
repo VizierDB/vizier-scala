@@ -1099,6 +1099,11 @@ div.dataset
     top: 0px;
     border: solid 1px #999;
     // margin: -1px;
+
+    div.table_header
+    {
+      position: sticky;
+    }
   }
 
   h3
@@ -1140,6 +1145,11 @@ div.standalone_spreadsheet
   {
     position: absolute;
     height: 100%;
+
+    div.table_header
+    {
+      position: absolute
+    }
   }
 }
 
@@ -1155,7 +1165,6 @@ div.data_table
   div.table_header
   {
     // This is the header row.
-    position: absolute;
     top: 0px;
     left: 0px;
     background-color: #ddd;
