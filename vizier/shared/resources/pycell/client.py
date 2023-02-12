@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -- copyright-header:end --
-from typing import Dict, Any, IO, List, Tuple, Optional, Callable, ModuleType
+from typing import Dict, Any, IO, List, Tuple, Optional, Callable
+from types import FunctionType, ModuleType
 import json
 import sys
 import ast
@@ -166,7 +167,7 @@ class VizierDBClient(object):
 
     if type(updated_data) in primitive_type or type(updated_data) in sequence_type or type(updated_data) in mapping_type:
       self.export_parameter(key, updated_data)
-    elif type(updated_data) == ModuleType:
+    elif type(updated_data) is ModuleType or type(updated_data) is FunctionType:
       self.export_module(key)
     elif type(updated_data) == pandas.core.frame.DataFrame:
       self.save_data_frame(key, updated_data)
