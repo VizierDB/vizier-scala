@@ -98,7 +98,7 @@ object ViewConstructor
       functionMappings = 
         functions.map { 
           case (name, (identifier, MIME.PYTHON, code)) => 
-            name -> PythonProcess.udfBuilder(identifier, code, name)
+            name -> PythonProcess.udfBuilder(identifier, code)
           case (name, (_, mimeType, _)) => 
             throw new IllegalArgumentException(s"Unsupported user-defined-function $name with type ${mimeType}")
         }

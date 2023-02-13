@@ -597,7 +597,7 @@ class VizierDBClient(object):
         "js_deps": dependencies
       }), mime_type=OUTPUT_JAVASCRIPT)
 
-  def export_module(self, exp: Any, name_override: Optional[str] = None):
+  def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
     if name_override is not None:
       exp_name = name_override
     elif inspect.isclass(exp):
@@ -614,10 +614,23 @@ class VizierDBClient(object):
     analyzer = Analyzer(exp_name)
     analyzer.visit(src_ast)
     src = analyzer.get_Source()
+    if return_type is not None:
+      if type(return_type) is type:
+        if return_type is int:
+          return_type = "pyspark_types.IntegerType()"
+        if return_type is str:
+          return_type = "pyspark_types.StringType()"
+        if return_type is float:
+          return_type = "pyspark_types.FloatType()"
+        if return_type is bool:
+          return_type = "pyspark_types.BoolType()"
+        else:
+          return_type = str(return_type)
+    src = "@return_type({})\n{}".format(return_type, src)
 
     if exp_name in self.artifacts:
       if name_override is None:
-        raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_module({}, name_override=\"{}\")".format(exp_name, exp_name, exp_name))
+        raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_module(exp, name_override=\"{}\")".format(exp_name, exp_name))
 
     response = self.vizier_request("save_artifact",
         name=exp_name,
@@ -626,7 +639,7 @@ class VizierDBClient(object):
         artifactType=ARTIFACT_TYPE_FUNCTION,
         has_response=True
       )
-    assert response is not None
+    assert(response is not None)
 
     self.artifacts[exp_name] = Artifact(
       name=exp_name,
