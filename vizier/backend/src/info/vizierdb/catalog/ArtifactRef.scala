@@ -112,7 +112,7 @@ object OutputArtifactRef
         .where.eq(c.workflowId, workflowId)
           .and.eq(o.resultId, c.resultId)
     }.map { rs => 
-        println(s"Parsing $rs")
+        // println(s"Parsing $rs")
       (
         rs.int(c.resultName.position), (
           rs.string(o.resultName.userFacingName).toLowerCase,

@@ -33,7 +33,8 @@ class PythonUDFSpec
   {
     val pyToUDF = PythonUDFBuilder()
     val pickle = pyToUDF.pickle(
-      """def foo(bar: int) -> int:
+      """@return_type(pyspark_types.IntegerType())
+        |def foo(bar: int) -> int:
         |  return bar * bar
         """.stripMargin)
     pickle must haveSize(greaterThan(0))
