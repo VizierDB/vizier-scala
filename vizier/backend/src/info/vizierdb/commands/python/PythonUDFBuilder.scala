@@ -95,7 +95,7 @@ class PythonUDFBuilder(val environment: PythonEnvironment)
   }
 
   def runPickle(pickled: Array[Byte], args: String = ""): String = 
-    python(RUN_PICKLE(pickled, args))
+    python(RUN_PICKLE(pickled, args)).trim()
 
   def python(script: String): String = 
   {

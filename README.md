@@ -92,6 +92,8 @@ Compiled class files will be in `out/vizier/compile/dest`
 
 We suggest using at least mill version 0.9.8 (released May 27, 2021), as it has somewhat better support for specs2 testing.
 
+**Note**: Due to an incompatibility between `mill` and Spark, you can not run test cases on Java 9+.  If Spark helpfully informs you that `csv` is not a defined data type, please downgrade to Java 8.
+
 ```
 mill vizier.test
 mill vizier.ui.test

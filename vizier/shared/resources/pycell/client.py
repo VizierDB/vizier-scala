@@ -611,18 +611,20 @@ class VizierDBClient(object):
         if lcls[name] == exp:
           exp_name = name
     src_ast = ast.parse(self.source)
-    analyzer = Analyzer(exp_name)
-    analyzer.visit(src_ast)
-    src = analyzer.get_Source()
+    extractor = ModuleExtractor(exp_name)
+    extractor.visit(src_ast)
+    src = extractor.get_Source()
+    if return_type is None:
+      return_type = extractor.return_type
     if return_type is not None:
       if type(return_type) is type:
-        if return_type is int:
+        if return_type is int or return_type == "int":
           return_type = "pyspark_types.IntegerType()"
-        if return_type is str:
+        if return_type is str or return_type == "str":
           return_type = "pyspark_types.StringType()"
-        if return_type is float:
+        if return_type is float or return_type == "float":
           return_type = "pyspark_types.FloatType()"
-        if return_type is bool:
+        if return_type is bool or return_type == "bool":
           return_type = "pyspark_types.BoolType()"
         else:
           return_type = str(return_type)
@@ -639,7 +641,7 @@ class VizierDBClient(object):
         artifactType=ARTIFACT_TYPE_FUNCTION,
         has_response=True
       )
-    assert(response is not None)
+    assert response is not None
 
     self.artifacts[exp_name] = Artifact(
       name=exp_name,
@@ -807,10 +809,11 @@ class VizierDBClient(object):
     return None
 
 
-class Analyzer(ast.NodeVisitor):
+class ModuleExtractor(ast.NodeVisitor):
   def __init__(self, name):
     self.name = name
     self.source = ''
+    self.return_type = None
     # track context name and set of names marked as `global`
     self.context = [('global', ())]
 
@@ -818,6 +821,14 @@ class Analyzer(ast.NodeVisitor):
     self.context.append(('function', set()))
     if node.name == self.name:
       self.source = astor.to_source(node)
+      if node.returns is None:
+        self.return_type = None
+      elif node.returns is ast.Constant:
+        self.return_type = node.value
+      elif node.returns is ast.Name:
+        self.return_type = node.id
+      else:
+        self.return_type = None
     self.context.pop()
 
   # treat coroutines the same way
