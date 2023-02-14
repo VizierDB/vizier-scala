@@ -215,8 +215,8 @@ class AnnotateWithRowIds(
                 Join(lhs, rhs, NaturalJoin(Inner), condition, hint),
                 newAnnotation.exprId,
                 // If we have outer joins, we may get null rowids
-                new IfNull(lhsAttr, Literal(1l)),
-                new IfNull(rhsAttr, Literal(1l))
+                new Coalesce(Seq(lhsAttr, Literal(1l))),
+                new Coalesce(Seq(rhsAttr, Literal(1l)))
               )
               val projanno = Project(
                  annoed.asInstanceOf[Project].projectList.filterNot(projexpr => rhsAttrs.contains(projexpr.toAttribute)),
@@ -276,8 +276,8 @@ class AnnotateWithRowIds(
                 Join(lhs, rhs, joinType, condition, hint),
                 newAnnotation.exprId,
                 // If we have outer joins, we may get null rowids
-                new IfNull(lhsAttr, Literal(1l)),
-                new IfNull(rhsAttr, Literal(1l))
+                new Coalesce(Seq(lhsAttr, Literal(1l))),
+                new Coalesce(Seq(rhsAttr, Literal(1l)))
               )
           ), 
           newAnnotation

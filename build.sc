@@ -19,7 +19,7 @@ object vizier extends ScalaModule with PublishModule {
   val VERSION       = "2.0.0-SNAPSHOT"
   val PLAY_JS       = ivy"com.typesafe.play::play-json:2.9.2"
                            
-  val MIMIR_CAVEATS = ivy"org.mimirdb::mimir-caveats::0.3.6"
+  val MIMIR_CAVEATS = ivy"info.vizierdb::mimir-caveats::0.3.6"
                           .exclude(
                             "org.slf4j" -> "*",
                             "com.typesafe.play" -> "*",
@@ -31,6 +31,7 @@ object vizier extends ScalaModule with PublishModule {
   def repositoriesTask = T.task { super.repositoriesTask() ++ Seq(
     MavenRepository("https://maven.mimirdb.org/"),
     MavenRepository("https://oss.sonatype.org/content/repositories/releases"),
+    MavenRepository("https://s01.oss.sonatype.org/content/repositories/releases"),
     MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
     MavenRepository("https://repo.osgeo.org/repository/release/"),
   )}
@@ -49,6 +50,17 @@ object vizier extends ScalaModule with PublishModule {
   def resources = T.sources(
     millSourcePath / "shared" / "resources",
     ui.resourceDir()
+  )
+
+  def forkArgs = Seq(
+
+    // Required on Java 11+ for Arrow compatibility
+    // per: https://spark.apache.org/docs/latest/index.html
+    "-Dio.netty.tryReflectionSetAccessible=true",
+    
+    // Required for Spark on java 11+
+    // per: https://stackoverflow.com/questions/72230174/java-17-solution-for-spark-java-lang-noclassdeffounderror-could-not-initializ
+    "--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED"
   )
 
 /*************************************************
@@ -108,6 +120,9 @@ object vizier extends ScalaModule with PublishModule {
 
     // Scala Cell
     ivy"org.scala-lang:scala-compiler:${scalaVersion}",
+
+    // Python
+    ivy"me.shadaj::scalapy-core:0.5.2",
 
     ////////////////////// Logging /////////////////////////
     ivy"com.typesafe.scala-logging::scala-logging::3.9.4",

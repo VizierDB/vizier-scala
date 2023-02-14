@@ -7,8 +7,15 @@ import info.vizierdb.api.response.ErrorResponse
 import java.sql.SQLException
 import info.vizierdb.VizierException
 import info.vizierdb.Vizier
+import info.vizierdb.commands.python.PythonEnvironment
+import info.vizierdb.commands.python.Pyenv
+import info.vizierdb.catalog.PythonVirtualEnvironmentRevision
+import info.vizierdb.types._
+import com.typesafe.scalalogging.LazyLogging
 
 object PythonEnvAPI
+  extends Object
+  with LazyLogging
 {
   def checkServerMode() = 
     if(Vizier.config.serverMode()){
@@ -17,35 +24,78 @@ object PythonEnvAPI
       )
     }
 
-
-  def Get(
+  def GetByName(
     env: String
-  ): serialized.PythonEnvironment = 
+  ): serialized.PythonEnvironmentDescriptor = 
   {
-    CatalogDB.withDBReadOnly { implicit s =>
-      PythonVirtualEnvironment.getOption(env)
-                              .getOrElse { ErrorResponse.noSuchEntity }
-                              .serialize
-    }
+    PythonEnvironment.INTERNAL_BY_NAME.get(env)
+      .map { _.serialize }
+      .orElse {
+        CatalogDB.withDBReadOnly { implicit s =>
+          PythonVirtualEnvironment.getByNameOption(env)
+                                  .map { _.serialize }
+        }
+      }
+      .getOrElse { ErrorResponse.noSuchEntity }
+
   }
 
-  def ListEnvs(): Seq[String] =
+  def Get(
+    envId: Identifier
+  ): serialized.PythonEnvironmentDescriptor = 
   {
-    CatalogDB.withDBReadOnly { implicit s =>
-      PythonVirtualEnvironment.list
-    }
+    PythonEnvironment.INTERNAL_BY_ID.get(envId)
+      .map { _.serialize }
+      .orElse {
+        CatalogDB.withDBReadOnly { implicit s =>
+          PythonVirtualEnvironment.getByIdOption(envId)
+                                  .map { _.serialize }
+        }
+      }
+      .getOrElse { ErrorResponse.noSuchEntity }
+
+  }
+
+  def Summary(): serialized.PythonSettingsSummary =
+  {
+    serialized.PythonSettingsSummary(
+      CatalogDB.withDBReadOnly { implicit s =>
+        (
+          PythonEnvironment.INTERNAL_BY_NAME.values.map { _.summary } ++ 
+          PythonVirtualEnvironment.list
+        ).toIndexedSeq 
+        // This is your regular reminder that toIndexedSeq forces a 
+        // materialization of the sequence so that it is usable past
+        // the end of the withDB block.
+      },
+      Pyenv.versions
+    )
   }
 
   def Create(
     env: String,
-    spec: serialized.PythonEnvironment
-  ): Boolean = 
+    spec: serialized.PythonEnvironmentDescriptor
+  ): serialized.PythonEnvironmentDescriptor = 
   {
     checkServerMode()
+    if(PythonEnvironment.INTERNAL_BY_NAME contains env)
+    {
+      ErrorResponse.invalidRequest(
+        s"$env is a reserved environment name used by the system"
+      )
+    }
+    if(CatalogDB.withDBReadOnly { implicit s => 
+        PythonVirtualEnvironment.exists(env)
+      })
+    {
+      ErrorResponse.invalidRequest(
+        s"$env already exists"
+      )      
+    }
     val environment = 
       try {
         CatalogDB.withDB { implicit s => 
-          PythonVirtualEnvironment.make(env, spec.version)
+          PythonVirtualEnvironment.make(env, spec.pythonVersion)
         }
       } catch {
         case t: SQLException => 
@@ -58,19 +108,101 @@ object PythonEnvAPI
       environment.Environment.install(pkgSpec.name, pkgSpec.version)
     }
     CatalogDB.withDB { implicit s => 
-      environment.save
+      environment.save.serialize
+    }    
+  }
+
+  def Update(
+    envId: Identifier,
+    spec: serialized.PythonEnvironmentDescriptor
+  ): serialized.PythonEnvironmentDescriptor = 
+  {
+    checkServerMode()
+    if(PythonEnvironment.INTERNAL_BY_ID contains envId){
+      ErrorResponse.invalidRequest(
+        s"$envId is a reserved environment identifier used by the system"
+      )
     }
-    true
+    val environment =
+      CatalogDB.withDB { implicit s => 
+        PythonVirtualEnvironment.getByIdOption(envId)
+                                .getOrElse { ErrorResponse.noSuchEntity }
+      }
+
+    if(spec.pythonVersion != environment.pythonVersion)
+    {
+      ErrorResponse.invalidRequest(
+        s"Can't update an environment to a different python version (from ${environment.pythonVersion} to ${spec.pythonVersion}.  Create a new environment instead."
+      )
+    }
+
+    // Name -> Version
+    val currentPackages:Map[String, String] = 
+      environment.Environment.packages.toMap
+    // Name -> Spec
+    val targetPackages:Map[String, serialized.PythonPackage] = 
+      spec.packages.map { p => (p.name -> p) }.toMap
+
+    val toBeDeleted =
+      currentPackages.keySet.filter { !targetPackages.contains(_) }
+    val toBeInstalledOrUpgraded = 
+      targetPackages.filter { 
+        case (pkg, targetSpec) =>
+          currentPackages.get(pkg).map {
+            // if the package is already installed...
+            case currentVersion =>
+              // If we're asked to upgrade, always upgrade
+              if(targetSpec.version.isEmpty) { true }
+              // Otherwise up(down)grade if there's a version mismatch
+              else if(targetSpec.version.get != currentVersion) { true }
+              // Same package, same version, leave intact
+              else { false }
+            // Or if the package isn't installed, install it
+          }.getOrElse { true }
+      }
+
+    logger.info(s"Updating python environment: ${environment.name}")
+    if(!toBeDeleted.isEmpty){
+      logger.info(s"Deleting packages: \n${toBeDeleted.mkString("\n")}")
+    }
+    if(!toBeInstalledOrUpgraded.isEmpty)
+    {
+      logger.info(s"Installing packages: \n${toBeInstalledOrUpgraded.mkString("\n")}")
+    }
+
+    try {
+      for( pkg <- toBeDeleted ) {
+        environment.Environment.delete(pkg)
+      }
+      for( (pkg, spec) <- toBeInstalledOrUpgraded ) {
+        environment.Environment.install(
+          packageName = pkg, 
+          version = spec.version,
+          upgrade = currentPackages.contains(pkg)
+        )
+      }
+    } catch {
+      case FormattedError(err) => 
+        ErrorResponse.invalidRequest(err)
+    }
+    CatalogDB.withDB { implicit s => 
+      environment.save.serialize
+    }
   }
 
   def Delete(
-    env: String,
+    envId: Identifier,
   ): Boolean = 
   {
     checkServerMode()
+    if(PythonEnvironment.INTERNAL_BY_ID contains envId){
+      ErrorResponse.invalidRequest(
+        s"$envId is a reserved environment identifier used by the system"
+      )
+    }
     val environment = 
       CatalogDB.withDBReadOnly { implicit s =>
-        PythonVirtualEnvironment.getOption(env)
+        PythonVirtualEnvironment.getByIdOption(envId)
                                 .getOrElse { ErrorResponse.noSuchEntity }
       }
     environment.delete()
@@ -81,32 +213,14 @@ object PythonEnvAPI
   }
 
   def ListPackages(
-    env: String
+    envId: Identifier
   ): Seq[serialized.PythonPackage] = 
   {
-    val environment = 
+    val revision =
       CatalogDB.withDBReadOnly { implicit s =>
-        PythonVirtualEnvironment.getOption(env)
-                                .getOrElse { ErrorResponse.noSuchEntity }
+        PythonVirtualEnvironmentRevision.getActiveOption(envId)
+                                        .getOrElse { ErrorResponse.noSuchEntity }
       }
-    environment.packages
-  }
-
-  def InstallPackage(
-    env: String, 
-    spec: serialized.PythonPackage
-  ): Boolean = 
-  {
-    checkServerMode()
-    val environment = 
-      CatalogDB.withDBReadOnly { implicit s =>
-        PythonVirtualEnvironment.getOption(env)
-                                .getOrElse { ErrorResponse.noSuchEntity }
-      }
-    environment.Environment.install(spec.name, spec.version)
-    CatalogDB.withDB { implicit s =>
-      environment.save()
-    }
-    true
+    revision.packages
   }
 }

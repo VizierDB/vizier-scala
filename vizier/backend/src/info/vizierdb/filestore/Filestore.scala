@@ -19,6 +19,7 @@ import info.vizierdb.catalog.Artifact
 import java.io.File
 import info.vizierdb.Vizier
 import info.vizierdb.types._
+import java.net.URL
 
 object Filestore
 {
@@ -56,5 +57,27 @@ object Filestore
 
   def remove(projectId: Identifier, artifactId: Identifier) =
     getAbsolute(projectId, artifactId).delete()
+
+  /**
+   * Standardize a path, relative to the defined working directory.
+   * @param path     The path to standardize
+   * @return         A canonical URL for the file
+   * 
+   * There are a bunch of "special case" handlers for specific types of
+   * file paths; currently related to the "working directory" being an
+   * option on the command line.
+   */
+  def canonicalizePath(path: String): URL =
+  {
+    if(path.size <= 0) { new URL(path) } 
+    else if(path(0) == '/'){ 
+      new URL("file://"+path) 
+    } else if(!path.contains(":/") 
+                && Vizier.config.workingDirectory.isDefined) {
+      new URL("file://"+Vizier.config.workingDirectory()+"/"+path)
+    } else {
+      new URL(path)
+    }
+  }
 }
 

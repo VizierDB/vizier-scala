@@ -17,13 +17,14 @@ package info.vizierdb.api.response
 import info.vizierdb.api.Response
 import javax.servlet.http.HttpServletResponse
 import java.io.OutputStream
+import akka.http.scaladsl.model.ContentTypes
 
 case class NoContentResponse() extends Response
 {
   val headers = Seq.empty
   val status = HttpServletResponse.SC_NO_CONTENT
   def write(output: OutputStream): Unit = {}
-  val contentType: String = "text/plain"
+  val contentType = ContentTypes.`text/plain(UTF-8)`
   val contentLength: Int = 0
 }
 

@@ -22,6 +22,7 @@ import java.net.URL
 import java.nio.file.{ Files, Paths }
 import info.vizierdb.viztrails.ProvenancePrediction
 import play.api.libs.json.JsObject
+import info.vizierdb.filestore.Filestore
 
 
 object UnloadFile extends Command
@@ -50,17 +51,7 @@ object UnloadFile extends Command
                               }
 
     val path = arguments.get[String](PATH)
-    val url = if(path.size <= 0) { new URL(path) } 
-              else {
-                if(path(0) == '/'){ 
-                  new URL("file://"+path) 
-                } else if(!path.contains(":/") 
-                            && Vizier.config.workingDirectory.isDefined) {
-                  new URL("file://"+Vizier.config.workingDirectory()+"/"+path)
-                } else {
-                  new URL(path)
-                }
-              }
+    val url = Filestore.canonicalizePath(path)
 
     url.getProtocol() match {
       case "file" if Vizier.config.serverMode() => {

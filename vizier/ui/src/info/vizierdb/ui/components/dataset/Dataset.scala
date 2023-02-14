@@ -89,17 +89,22 @@ class Dataset(
 
   val root:dom.html.Div = div(
     `class` := "dataset",
-    Rx { 
-      div(
-        `class` := "header",
-        h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() }),
-        a(
-          href := Vizier.links.spreadsheet(projectId, datasetId),
-          target := "_blank",
-          FontAwesome("table")
-        )
+    div(
+      `class` := "header",
+      Rx { 
+        h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
+      }.reactive,
+      a(
+        href := Vizier.links.spreadsheet(projectId, datasetId),
+        target := "_blank",
+        FontAwesome("table")
+      ),
+      a(
+        href := Vizier.api.artifactGetCsvURL(projectId, datasetId),
+        target := "_blank",
+        FontAwesome("download")
       )
-    }.reactive,
+    )
     // Table root is appended by setSource()
   ).render
 

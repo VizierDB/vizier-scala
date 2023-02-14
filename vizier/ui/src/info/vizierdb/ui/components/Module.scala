@@ -103,13 +103,19 @@ class Module(val subscription: ModuleSubscription)
   val editor = Var[Option[ModuleEditor]](None)
 
   /**
+   * A reactive option containing the editor for this module if it should
+   * be in editing mode, and None otherwise.
+   */
+  val summary: Option[ModuleSummary] = ModuleSummary(this)
+
+  /**
    * True for "special" modules that should have their summary text hidden
    */
   val hideSummary: Boolean = 
     subscription.packageId == "docs"
 
   /**
-   * Retrieve a moduledescription for this module
+   * Retrieve a [[ModuleDescription]] for this module
    */
   def description = subscription.description
 
@@ -127,13 +133,26 @@ class Module(val subscription: ModuleSubscription)
           packages.find { _.id == packageId } 
                   .flatMap { _.commands.find { _.id == commandId } }
                   .getOrElse { Vizier.error(s"This server doesn't support editing $packageId.$commandId") }
+
+        // Some summary overrides (e.g., the CodeCellSummary) need to be able
+        // to handle editor allocation on their own (e.g., so that cursor state
+        // is preserved).  If we have a summary, great.  If we don't, then let
+        // it allocate the editor.  If not, give the summary a chance to interpose.
         val tempEditor = 
-          ModuleEditor(
-            packageId = packageId,
-            command = command,
-            delegate = this
-          )
-        tempEditor.loadState(subscription.arguments)
+          summary match { 
+            case Some(s) => s.editor(
+              packageId = packageId,
+              command = command,
+              delegate = this
+            )
+            case None => 
+              ModuleEditor(
+                packageId = packageId,
+                command = command,
+                delegate = this
+              )
+          }
+        tempEditor.loadState(subscription.arguments.now)
         editor() = Some(tempEditor)
       }
   }
@@ -144,6 +163,7 @@ class Module(val subscription: ModuleSubscription)
   def cancelEditor(): Unit = 
   {
     editor() = None
+    summary.foreach { _.endEditor() }
   }
 
   /**
@@ -218,6 +238,7 @@ class Module(val subscription: ModuleSubscription)
       `class` := "module_body",
       Rx { 
         editor().map { ed => div(`class` := "editor", ed.root) }
+                .orElse { summary.map { _.root } }
                 .getOrElse { 
                   div(
                     `class` := (if(hideSummary) { "summary hidden" } else { "summary" }),

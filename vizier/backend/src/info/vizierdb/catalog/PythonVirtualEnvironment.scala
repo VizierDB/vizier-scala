@@ -14,65 +14,95 @@ import info.vizierdb.catalog.binders._
 import info.vizierdb.serialized
 import info.vizierdb.util.FileUtils
 import info.vizierdb.commands.python.PythonProcess
+import info.vizierdb.types._
 
 case class PythonVirtualEnvironment(
+  id: Identifier,
   name: String,
-  val version: String,
-  val packages: Seq[PythonPackage]
+  pythonVersion: String,
+  activeRevision: Identifier,
 ) extends LazyLogging
 {
-  def serialize = 
-    serialized.PythonEnvironment(
-      version,
-      packages
+  def serialize(implicit session:DBSession) = 
+    serialized.PythonEnvironmentDescriptor(
+      name = name,
+      id = id,
+      pythonVersion = pythonVersion,
+      revision = activeRevision,
+      packages = PythonVirtualEnvironmentRevision.get(id, activeRevision).packages
+    )
+
+  def summarize =
+    serialized.PythonEnvironmentSummary(
+      name = name,
+      id = id,
+      pythonVersion = pythonVersion,
+      revision = activeRevision
     )
 
   def dir: File = 
-    new File(Vizier.config.pythonVenvDirFile, name)
+    new File(Vizier.config.pythonVenvDirFile, s"venv_$id")
+          .getAbsoluteFile()
 
   def bin: File =
     new File(dir, "bin")
 
   def exists = dir.exists()
 
+  def revision(implicit session:DBSession) =
+    PythonVirtualEnvironmentRevision.get(id, activeRevision)
+
+  def isVersion2 =
+    pythonVersion.startsWith("2")
+
   object Environment
     extends PythonEnvironment
     with LazyLogging
   {
-    def python: File =
-      new File(bin, "python3")
+    val python: File =
+      if(isVersion2){ new File(bin, "python2") }
+      else          { new File(bin, "python3") }
 
+    override lazy val fullVersion = pythonVersion
   }
 
   def init(overwrite: Boolean = false, fallBackToSystemPython: Boolean = false): Unit =
   {
     // we need a python binary of the right version to bootstrap the venv
     val bootstrapBinary = 
-      if(SystemPython.fullVersion == version){
+      if(SystemPython.fullVersion == pythonVersion){
         SystemPython.python.toString()
-      } else if(Pyenv.exists && (Pyenv.installed contains version)) {
+      } else if(Pyenv.exists && (Pyenv.installed contains pythonVersion)) {
         // if the system python is not right, try pyenv
-        Pyenv.python(version)
+        Pyenv.python(pythonVersion)
       } else if(fallBackToSystemPython) {
-        logger.warn(s"Python version '$version' is not installed; Falling back to system python")
+        logger.warn(s"Python version '$pythonVersion' is not installed; Falling back to system python")
         SystemPython.python.toString()
       } else {
-        throw new VizierException(s"Trying to create virtual environment for non-installed python version '$version'")
+        throw new VizierException(s"Trying to create virtual environment for non-installed python version '$pythonVersion'; If you have pyenv installed, try running `pyenv install $pythonVersion` from the command line.")
       }
 
-    logger.info(s"Bootstrapping venv $name with $bootstrapBinary")
+    logger.info(s"Bootstrapping venv $name with $bootstrapBinary into $dir")
 
     var args = 
-      Seq(
-        "-m", "venv",
-        "--upgrade-deps",
-        "--copies",
-      )
+      if(isVersion2){ 
+        Seq(
+          "-m", "virtualenv" 
+        )
+      } else {
+        Seq(
+          "-m", "venv",
+          "--upgrade",
+          "--copies",
+        )
+      }
+
     if(overwrite){ args = args :+ "--clear" }
 
     args = args :+ dir.toString
 
     {
+      logger.info(s"ARGS: ${args.mkString(" ")}")
       val err =
         Process(bootstrapBinary, args).run(
           ProcessLogger(
@@ -108,25 +138,27 @@ case class PythonVirtualEnvironment(
 
     logger.info(s"Set up venv $name; Installing user-requested packages")
 
-    packages.foreach { pkg => 
-      logger.info(s"Installing into venv $name: $pkg")
-      Environment.install(pkg.name, pkg.version) 
-    }
     logger.info(s"Finished setting up venv $name")
   }
 
   def save()(implicit session: DBSession): PythonVirtualEnvironment =
   {
-    val updatedEnv = copy(packages = 
+    val packages = 
       Environment.packages.map { serialized.PythonPackage(_) }
-    )
+    val revisionId = withSQL { 
+      val a = PythonVirtualEnvironmentRevision.column
+      insertInto(PythonVirtualEnvironmentRevision)
+        .namedValues(
+          a.envId -> id,
+          a.packages -> packages)
+    }.updateAndReturnGeneratedKey.apply()
     withSQL { 
       val a = PythonVirtualEnvironment.column
       update(PythonVirtualEnvironment)
-        .set(a.packages -> updatedEnv.packages)
+        .set(a.activeRevision -> revisionId)
         .where.eq(a.name, name)
     }.update.apply()
-    return updatedEnv
+    return copy(activeRevision = revisionId)
   }
 
   /**
@@ -158,18 +190,36 @@ case class PythonVirtualEnvironment(
 object PythonVirtualEnvironment
   extends SQLSyntaxSupport[PythonVirtualEnvironment]
 {
+
   def apply(rs: WrappedResultSet): PythonVirtualEnvironment = autoConstruct(rs, (PythonVirtualEnvironment.syntax).resultName)
   override def columns = Schema.columns(table)
 
-  def get(name: String)(implicit session: DBSession): PythonVirtualEnvironment =
-    getOption(name).get
-  def getOption(name: String)(implicit session: DBSession): Option[PythonVirtualEnvironment] =
+  def getByName(name: String)(implicit session: DBSession): PythonVirtualEnvironment =
+    getByNameOption(name).get
+  def getByNameOption(name: String)(implicit session: DBSession): Option[PythonVirtualEnvironment] =
     withSQL { 
       val b = PythonVirtualEnvironment.syntax 
       select
         .from(PythonVirtualEnvironment as b)
         .where.eq(b.name, name)
     }.map { apply(_) }.single.apply()
+  def getById(id: Identifier)(implicit session: DBSession): PythonVirtualEnvironment =
+    getByIdOption(id).get
+  def getByIdOption(id: Identifier)(implicit session: DBSession): Option[PythonVirtualEnvironment] =
+    withSQL { 
+      val b = PythonVirtualEnvironment.syntax 
+      select
+        .from(PythonVirtualEnvironment as b)
+        .where.eq(b.id, id)
+    }.map { apply(_) }.single.apply()
+
+  def exists(name: String)(implicit session: DBSession): Boolean =
+    withSQL { 
+      val b = PythonVirtualEnvironment.syntax 
+      select
+        .from(PythonVirtualEnvironment as b)
+        .where.eq(b.name, name)
+    }.map { _ => true }.single.apply().getOrElse { false }    
 
   def all(implicit session: DBSession): Seq[PythonVirtualEnvironment] =
     withSQL { 
@@ -178,12 +228,19 @@ object PythonVirtualEnvironment
         .from(PythonVirtualEnvironment as b)
     }.map { apply(_) }.list.apply()
 
-  def list(implicit session: DBSession): Seq[String] =
+  def list(implicit session: DBSession): Seq[serialized.PythonEnvironmentSummary] =
     withSQL { 
       val b = PythonVirtualEnvironment.syntax 
-      select(b.name)
+      select(b.id, b.name, b.activeRevision, b.pythonVersion)
         .from(PythonVirtualEnvironment as b)
-    }.map { _.get[String](1) }.list.apply()
+    }.map { r => 
+        serialized.PythonEnvironmentSummary(
+          id = r.get[Identifier](1),
+          name = r.get[String](2),
+          revision = r.get[Identifier](3),
+          pythonVersion = r.get[String](4)
+        ) 
+    }.list.apply()
     
 
   /**
@@ -191,19 +248,19 @@ object PythonVirtualEnvironment
    * 
    * You <b>must</b> call [[PythonVirtualEnvironment.init]]
    */
-  def make(name: String, version: String)(implicit session: DBSession): PythonVirtualEnvironment =
+  def make(name: String, pythonVersion: String)(implicit session: DBSession): PythonVirtualEnvironment =
   {
-    withSQL {
+    val id = withSQL {
       val a = PythonVirtualEnvironment.column
       insertInto(PythonVirtualEnvironment)
         .namedValues(
           a.name -> name,
-          a.version -> version,
-          a.packages -> Seq[PythonPackage](),
+          a.pythonVersion -> pythonVersion,
+          a.activeRevision -> -1
         )
-    }.update.apply()
+    }.updateAndReturnGeneratedKey.apply()
     return PythonVirtualEnvironment(
-      name, version, Seq.empty
+      id, name, pythonVersion, -1
     )
   }
 }

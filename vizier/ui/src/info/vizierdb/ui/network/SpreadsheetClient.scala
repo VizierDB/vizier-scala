@@ -90,6 +90,11 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
     logger.error(s"Error: $event")
   }
 
+  def save() =
+  {
+    logger.warn("Save not implemented yet")
+  }
+
   private def keepalive(s: dom.WebSocket)
   {
     send(Ping(0))
@@ -130,6 +135,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   def setSchema(newSchema: Seq[DatasetColumn]): Unit =
   {
     schema = newSchema
+    logger.debug(s"New Schema: $schema")
     table.foreach { _.rebuildHeaderRow() }
   }
 
@@ -285,14 +291,20 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
     }
   }
 
-  def cellAt(row: Long, column: Int, width: Int): Frag =
+  def cellAt(row: Long, column: Int, width: Int, xpos: Int): Frag =
   {
     if(currentlyEditingCell == Some((row, column))){
       currentlyEditingField match { 
         case None => 
           RenderCell.spinner(schema(column).dataType)
         case Some(i) => 
-          div(i)
+          div(
+            `class` := "cell", 
+            css("width") := s"${width}px",
+            left := xpos,
+            height := "100%",
+            i
+          )
       }
         
     } else {
@@ -302,6 +314,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
             value, 
             schema(column).dataType, 
             width = width,
+            position = xpos,
             caveatted = if(caveat){ Some((trigger: dom.html.Button) => displayCaveat(row, Some(column))) } else { None },
             onclick = { _:dom.Event => startEditing(row, column) }
           )
@@ -321,6 +334,9 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
 
   def columnDataType(column: Int): CellDataType =
     schema(column).dataType
+
+  def columnWidthInPixels(column: Int): Int =
+    TableView.DEFAULT_CELL_WIDTH
 
   def columnTitle(column: Int): String = 
     schema(column).name

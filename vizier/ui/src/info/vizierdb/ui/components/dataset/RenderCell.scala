@@ -21,6 +21,7 @@ object RenderCell
     value: JsValue, 
     dataType: CellDataType, 
     width: Int,
+    position: Int,
     caveatted: Option[dom.html.Button => Unit] = None,
     onclick: (dom.Event => Unit) = (_ => ())
   ): Frag =
@@ -32,6 +33,7 @@ object RenderCell
           (if(value == JsNull) { Some("null") } else { None })
       ).mkString(" "),
       css("width") := s"${width}px",
+      css("left") := s"${position}px",
       css("height") := "100%",
       ((value, dataType) match {
         case (JsNull, _) => 
@@ -66,11 +68,13 @@ object RenderCell
     name: String,
     dataType: CellDataType,
     width: Int,
+    position: Int,
   ): Frag =
   {
     div(
       `class` := "cell",
       css("width") := s"${width}px",
+      css("left") := s"${position}px",
       span(
         `class` := "title",
         name

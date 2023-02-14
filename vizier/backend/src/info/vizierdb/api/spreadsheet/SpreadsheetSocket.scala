@@ -84,7 +84,9 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
             logger.trace("Spreadsheet initialized!")
           }.onComplete {
             case Success(_) => send(Connected("Test Dataset")); refreshEverything()
-            case Failure(err) => send(ReportError(err))
+            case Failure(err) => 
+              err.printStackTrace()
+              send(ReportError(err))
           }
         }
         case SubscribeRows(row, count) => 

@@ -31,8 +31,13 @@ import java.util.concurrent.Executors
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import akka.stream.Materializer
 import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.http.scaladsl.server.ExceptionHandler
+import info.vizierdb.api.response.ErrorResponse
+import org.apache.http
+import com.typesafe.scalalogging.LazyLogging
 
 object VizierServer
+  extends LazyLogging
 {
   implicit val system = ActorSystem("vizier")
   implicit val executionContext: ExecutionContextExecutor = 
@@ -57,6 +62,19 @@ object VizierServer
     Vizier.config.publicURL.get
           .getOrElse { s"http://$host:$port/" }
 
+  val exceptionHandler = ExceptionHandler {
+    case ErrorResponse(response) =>
+      complete(
+        HttpResponse(
+          StatusCodes.UnprocessableEntity,
+          entity = HttpEntity.Strict(
+            response.contentType,
+            ByteString(response.getBytes)
+          ),
+        )
+      )
+  }
+
   def run()
   {
     val mainServer = 
@@ -68,68 +86,70 @@ object VizierServer
         // fail the base request.  akka-http-cors will generate these responses
         // automatically.
         cors() {
-          redirectToNoTrailingSlashIfPresent(StatusCodes.MovedPermanently) {
-            concat(
+          handleExceptions(exceptionHandler) {
+            redirectToNoTrailingSlashIfPresent(StatusCodes.MovedPermanently) {
+              concat(
 
-              // API requests
-              pathPrefix("vizier-db" / "api" / "v1") {
+                // API requests
+                pathPrefix("vizier-db" / "api" / "v1") {
 
-                // Websockets
-                concat(
-                  path("websocket") {
-                    extractClientIP { ip => 
-                      println("Websocket!")
-                      handleWebSocketMessages(BranchWatcherSocket.monitor(ip.toString))
-                    }
-                  },
-                  path("spreadsheet") {
-                    extractClientIP { ip => 
-                      println("Spreadsheet!")
-                      handleWebSocketMessages(SpreadsheetSocket.monitor(ip.toString))
-                    }
-                  },
+                  // Websockets
+                  concat(
+                    path("websocket") {
+                      extractClientIP { ip => 
+                        println("Websocket!")
+                        handleWebSocketMessages(BranchWatcherSocket.monitor(ip.toString))
+                      }
+                    },
+                    path("spreadsheet") {
+                      extractClientIP { ip => 
+                        println("Spreadsheet!")
+                        handleWebSocketMessages(SpreadsheetSocket.monitor(ip.toString))
+                      }
+                    },
 
-                  // All the other API routes
-                  AllRoutes.routes
-                )
-              },
+                    // All the other API routes
+                    AllRoutes.routes
+                  )
+                },
 
-              // Swagger requests
-              path("swagger") { 
-                redirect(
-                  s"swagger/index.html",
-                  MovedPermanently
-                )
-              },
-              path("swagger/") { 
-                redirect(
-                  s"swagger/index.html",
-                  MovedPermanently
-                )
-              },
-              pathPrefix("swagger") {
-                getFromResourceDirectory("swagger")
-              },
+                // Swagger requests
+                path("swagger") { 
+                  redirect(
+                    s"swagger/index.html",
+                    MovedPermanently
+                  )
+                },
+                path("swagger/") { 
+                  redirect(
+                    s"swagger/index.html",
+                    MovedPermanently
+                  )
+                },
+                pathPrefix("swagger") {
+                  getFromResourceDirectory("swagger")
+                },
 
-              // Requests for the root should go to index.html
-              path(PathEnd) {
-                redirect(
-                  s"${publicURL}index.html",
-                  MovedPermanently
-                )
-              },
+                // Requests for the root should go to index.html
+                path(PathEnd) {
+                  redirect(
+                    s"${publicURL}index.html",
+                    MovedPermanently
+                  )
+                },
 
-              // Requests for the root should go to index.html
-              path("projects" / LongNumber) { (projectId) =>
-                redirect(
-                  s"${publicURL}project.html?projectId=${projectId}",
-                  MovedPermanently
-                )
-              },
+                // Requests for the root should go to index.html
+                path("projects" / LongNumber) { (projectId) =>
+                  redirect(
+                    s"${publicURL}project.html?projectId=${projectId}",
+                    MovedPermanently
+                  )
+                },
 
-              // Raw file requests get directed to the ui directory
-              getFromResourceDirectory("ui"),
-            )
+                // Raw file requests get directed to the ui directory
+                getFromResourceDirectory("ui"),
+              )
+            }
           }
         }
       )
@@ -165,11 +185,7 @@ object VizierServer
     {
       val responseEntity = 
         HttpEntity.Default(
-          contentType = 
-            ContentType.parse(vizierResp.contentType)
-                       .getOrElse {
-                        throw new VizierException(s"Internal error: Can't parse content type ${vizierResp.contentType}")
-                       },
+          contentType = vizierResp.contentType,
           contentLength = vizierResp.contentLength,
           data = Source.fromIterator { () =>
             val buffer = new OutputStreamIterator()
@@ -177,8 +193,13 @@ object VizierServer
               new Runnable {
                 def run() =
                 {
-                  vizierResp.write(buffer)
-                  buffer.close()
+                  try {
+                    vizierResp.write(buffer)
+                    buffer.close()
+                  } catch {
+                    case t: Throwable => 
+                      logger.error(s"Error writing Vizier response to Akka: $t")
+                  }
                 }
               }
             )

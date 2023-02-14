@@ -19,7 +19,7 @@ object InitSpark
 {
   def local: SparkSession =
   {
-    SparkSession.builder
+    val session = SparkSession.builder
       .appName("Vizier")
       //.config("spark.ui.port", "4041")
       //.config("spark.eventLog.enabled", "true")
@@ -34,6 +34,42 @@ object InitSpark
               .getAbsolutePath()
       )
       .getOrCreate()
+
+    // For some silly reason, Hadoop needs some poking to make the local 
+    // filesystem visible to it.
+    // c.f. https://stackoverflow.com/questions/17265002/hadoop-no-filesystem-for-scheme-file
+    session.sparkContext.hadoopConfiguration.set(
+      "fs.file.impl", 
+      classOf[org.apache.hadoop.fs.LocalFileSystem].getName
+    )
+
+    // WORKAROUND: Java11+ seems to introduce a security measure that partitions 
+    // classloaders, possibly for each individual jar.  Specifically, the App's
+    // classloader in Java11 is only aware of files in the app jar and any 
+    // direct dependencies.  This wouldn't be a problem if Spark is run natively
+    // (i.e., using the spark runner), but is in our case, since the App 
+    // classloader only holds Vizier classes.  Work around by temporarily 
+    // disabling the thread local classloader and materializing the relevant
+    // state.  With the thread local classloader disabled, Spark's 
+    // Utils.classByName will fall back to the classloader that loaded Utils
+    // itself, which should be the correct one.  This shouldn't pose any 
+    // concurrency issues, since initialization is unlikely to be multithreaded.
+    //
+    // See https://github.com/VizierDB/vizier-scala/issues/179
+
+    // Disable thread-local classloader.  
+    val originalClassloader = Thread.currentThread().getContextClassLoader
+    Thread.currentThread().setContextClassLoader(null)
+
+    // Force materialization
+    session.sharedState.externalCatalog
+
+    // Reset old classloader
+    Thread.currentThread().setContextClassLoader(originalClassloader)
+
+    // end workaround
+
+    return session
   }
 
   def initPlugins(sparkSession: SparkSession)

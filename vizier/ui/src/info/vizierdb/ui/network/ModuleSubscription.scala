@@ -27,7 +27,7 @@ class ModuleSubscription(
   val state = Var(initial.statev2)
   val commandId = initial.command.commandId
   val packageId = initial.command.packageId
-  var arguments = initial.command.arguments
+  val arguments = Var(initial.command.arguments)
   lazy val text = Var(initial.text)
   val timestamps = Var(initial.timestamps)
   def toc = initial.toc

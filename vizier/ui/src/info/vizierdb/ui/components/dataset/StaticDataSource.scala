@@ -53,7 +53,10 @@ class StaticDataSource(
   override def columnDataType(column: Int): CellDataType = 
     schema(column).`type`
 
-  override def cellAt(row: Long, column: Int, width: Int): Frag = 
+  def columnWidthInPixels(column: Int): Int =
+    TableView.DEFAULT_CELL_WIDTH
+
+  override def cellAt(row: Long, column: Int, width: Int, xpos: Int): Frag = 
   {
     cache(row) match {
       case None => 
@@ -63,6 +66,7 @@ class StaticDataSource(
           values(column), 
           columnDataType(column),
           width = width,
+          position = xpos,
           caveatted = 
             if(cellCaveats.map { _(column) }.getOrElse { false }){
               Some( (trigger: dom.html.Button) => displayCaveat(rowId, Some(column)) )

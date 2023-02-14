@@ -19,6 +19,7 @@ import info.vizierdb.types._
 import info.vizierdb.api.response.StringResponse
 import info.vizierdb.viztrails.graph.WorkflowTrace
 import info.vizierdb.api.handler._
+import _root_.akka.http.scaladsl.model.ContentType
 
 object VizualizeWorkflow
 {
@@ -34,7 +35,7 @@ object VizualizeWorkflow
         branchId, 
         workflowId
       ),
-      "image/svg+xml"
+      ContentType.parse("image/svg+xml").right.get
     )
   }
 }

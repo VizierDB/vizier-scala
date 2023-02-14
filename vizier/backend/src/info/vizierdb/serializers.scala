@@ -213,5 +213,7 @@ object serializers
   implicit val mlvectorFormat: Format[serialized.MLVector] = Json.format  
 
   implicit val pythonPackageFormat: Format[serialized.PythonPackage] = Json.format
-  implicit val pythonEnvironmentFormat: Format[serialized.PythonEnvironment] = Json.format
+  implicit val pythonEnvironmentDescriptorFormat: Format[serialized.PythonEnvironmentDescriptor] = Json.format
+  implicit val pythonEnvironmentSummaryFormat: Format[serialized.PythonEnvironmentSummary] = Json.format
+  implicit val pythonSettingsSummaryFormat: Format[serialized.PythonSettingsSummary] = Json.format
 }

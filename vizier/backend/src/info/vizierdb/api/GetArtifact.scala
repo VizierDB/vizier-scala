@@ -30,6 +30,7 @@ import info.vizierdb.serialized
 import info.vizierdb.catalog.CatalogDB
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.spark.SafeExport
+import _root_.akka.http.scaladsl.model.ContentType
 
 object GetArtifact
   extends LazyLogging
@@ -197,7 +198,7 @@ object GetArtifact
           FileResponse(
             csvFile, 
             "dataset_"+artifactId+".csv", 
-            "text/csv",
+            ContentType.parse("text/csv").right.get,
             () => { 
               tempFile.listFiles
                       .map { _.delete() }
@@ -242,7 +243,7 @@ object GetArtifact
           }
           return FileResponse(
             file = path, 
-            contentType = artifact.mimeType, 
+            contentType = ContentType.parse(artifact.mimeType).right.get, 
             name = artifact.json
                            .as[Map[String, JsValue]]
                            .get("filename")

@@ -16,10 +16,10 @@ class GeneralSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends S
 
   val title = "General"
 
-  object Notifications
+  object SlowCell
   {
     val enabled = input(
-          id := "notifications_enabled", 
+          id := "slow_notifications_enabled", 
           `type` := "checkbox",
           onchange := { _:dom.Event => save() }
         ).render
@@ -38,18 +38,44 @@ class GeneralSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends S
       }
     }
   }
+  object Error
+  {
+    val enabled = input(
+          id := "err_notifications_enabled", 
+          `type` := "checkbox",
+          onchange := { _:dom.Event => save() }
+        ).render
+
+    def load(): Unit =
+    {
+      enabled.checked = SystemNotification.isActive(SystemNotification.Mode.ON_ERROR)
+    }
+
+    def save(): Unit =
+    {
+      if(enabled.checked){
+        SystemNotification.activate(SystemNotification.Mode.ON_ERROR)
+      } else {
+        SystemNotification.deactivate(SystemNotification.Mode.ON_ERROR)
+      }
+    }
+  }
 
   def load(): Unit =
   {
-    Notifications.load()
+    SlowCell.load()
   }
 
   val root = div(`class` := "general",
     div(`class` := "group",
       div(`class` := "title", "Notifications"),
       div(`class` := "setting",
-        label(`for` := "notifications_enabled", "... when a slow cell finishes"),
-        Notifications.enabled,
+        label(`for` := "slow_notifications_enabled", "... when a slow cell finishes"),
+        SlowCell.enabled,
+      ),      
+      div(`class` := "setting",
+        label(`for` := "err_notifications_enabled", "... when an error occurs"),
+        Error.enabled,
       ),      
     ),
   ).render

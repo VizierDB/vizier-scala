@@ -79,7 +79,7 @@ object AnnotateWithSequenceNumber
     val planWithPartitionedIdentifierAttributes =
       Project(
         plan.output ++ Seq(
-          ResolvedAlias(SparkPartitionID(), PARTITION_ID),
+          ResolvedAlias(Cast(SparkPartitionID(), LongType), PARTITION_ID),
           ResolvedAlias(MonotonicallyIncreasingID(), INTERNAL_ID)
         ),
         plan

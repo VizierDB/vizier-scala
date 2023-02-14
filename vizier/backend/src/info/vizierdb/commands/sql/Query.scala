@@ -39,7 +39,7 @@ object Query extends Command
     StringParameter(id = "output_dataset", name = "Output Dataset", required = false)
   )
   def format(arguments: Arguments): String = 
-    s"${arguments.pretty("source")} TO ${arguments.pretty("output_dataset")}"
+    arguments.pretty("source")
   def title(arguments: Arguments): String =
     arguments.getOpt[String]("source")
              .flatMap { source =>

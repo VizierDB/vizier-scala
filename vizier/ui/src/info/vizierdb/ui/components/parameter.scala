@@ -16,6 +16,8 @@ import info.vizierdb.serializers._
 import info.vizierdb.ui.components.snippets.PythonSnippets
 import info.vizierdb.ui.components.snippets.SnippetsBase
 import info.vizierdb.ui.components.snippets.ScalaSnippets
+import org.scalajs.dom.Node
+import info.vizierdb.ui.Vizier
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
@@ -171,22 +173,25 @@ object Parameter
     tree.parameter match {
       case param: serialized.SimpleParameterDescription =>
         param.datatype match {
-          case "colid"    => new ColIdParameter(param, visibleArtifacts, editor.selectedDataset)
-          case "list"     => new ListParameter(param, tree.children, this.apply(_, editor), visibleArtifacts)
-          case "record"   => new RecordParameter(param, tree.children, this.apply(_, editor))
-          case "string"   => new StringParameter(param)
-          case "int"      => new IntParameter(param)
-          case "decimal"  => new DecimalParameter(param)
-          case "bool"     => new BooleanParameter(param)
-          case "rowid"    => new RowIdParameter(param)
-          case "fileid"   => new FileParameter(param)
-          case "dataset"  => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
-          case "datatype" => new DataTypeParameter(param)
-          case _          => new UnsupportedParameter(param)
+          case "colid"       => new ColIdParameter(param, visibleArtifacts, editor.selectedDataset)
+          case "list"        => new ListParameter(param, tree.children, this.apply(_, editor), visibleArtifacts)
+          case "record"      => new RecordParameter(param, tree.children, this.apply(_, editor))
+          case "string"      => new StringParameter(param)
+          case "int"         => new IntParameter(param)
+          case "decimal"     => new DecimalParameter(param)
+          case "bool"        => new BooleanParameter(param)
+          case "rowid"       => new RowIdParameter(param)
+          case "fileid"      => new FileParameter(param)
+          case "dataset"     => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
+          case "datatype"    => new DataTypeParameter(param)
+          case _             => new UnsupportedParameter(param)
         }
 
       case param: serialized.CodeParameterDescription =>
-        new CodeParameter(param)
+        param.datatype match {
+          case "environment" => new EnvironmentParameter(param)
+          case _ => new CodeParameter(param)
+        }
 
       case param: serialized.ArtifactParameterDescription =>
         new ArtifactParameter(param, visibleArtifactsByType)
@@ -255,12 +260,13 @@ case class CodeParameter(
   val name: String,
   language: String,
   val required: Boolean,
-  val hidden: Boolean
-) extends Parameter
+  val hidden: Boolean,
+  val startWithSnippetsHidden: Boolean = false
+)(implicit owner: Ctx.Owner) extends Parameter
 {
 
 
-  def this(parameter: serialized.CodeParameterDescription)
+  def this(parameter: serialized.CodeParameterDescription)(implicit owner: Ctx.Owner) 
   {
     this(
       parameter.id, 
@@ -273,6 +279,17 @@ case class CodeParameter(
 
   var editor: CodeMirrorEditor = null
   var initialValue: String = null
+
+  var onInit: (CodeMirrorEditor => Unit) = { _ => }
+
+  val hideSnippets = Var[Boolean](startWithSnippetsHidden)
+ 
+  val snippets = 
+    div(
+      CodeParameter.SNIPPETS.get(language).map { _.apply { snippet => 
+        editor.replaceSelection("\n"+snippet)
+      }}
+    )
 
   val root = 
     div(
@@ -288,22 +305,32 @@ case class CodeParameter(
             )
           ) 
           if(initialValue != null) { editor.setValue(initialValue) }
+          onInit(editor)
         }
       ),
-      CodeParameter.SNIPPETS.get(language).map { _.apply { snippet => 
-        editor.replaceSelection("\n"+snippet)
-      }}
-    )
+      hideSnippets.map { 
+        case true => 
+          // println("Hiding snippets!")
+          div(display := "hidden")
+        case false => 
+          // println("Showing snippets!")
+          snippets
+      }.reactive
+    ).render
   def value = 
     JsString(
       Option(editor).map { _.getValue }
                     .getOrElse { "" }
     )
-  override def set(v: JsValue): Unit = 
+
+  def set(v: String): Unit =
   {
-    initialValue = v.as[String]
-    Option(editor).map { _.setValue(initialValue) }
+    initialValue = v
+    if(editor != null) { editor.setValue(v) }
   }
+
+  override def set(v: JsValue): Unit = 
+    set(v.as[String])
 }
 object CodeParameter
 {
@@ -1004,6 +1031,127 @@ class DataTypeParameter(
       case JsString(s) => inputNode[dom.html.Select].value = s
       case _ => unexpected = Some(v)
     }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A parameter with a limited set of options
+ */
+class EnvironmentParameter(
+  val id: String, 
+  val name: String, 
+  val language: String,
+  val required: Boolean,
+  val hidden: Boolean
+)(implicit owner: Ctx.Owner) extends Parameter
+{
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  
+  def this(parameter: serialized.CodeParameterDescription)(implicit owner: Ctx.Owner)
+  {
+    this(
+      id = parameter.id,
+      name = parameter.name,
+      language = parameter.language,
+      required = parameter.required,
+      hidden = parameter.hidden
+    )
+  }
+
+  val options = Var[Seq[serialized.PythonEnvironmentSummary]](Seq.empty)
+  val selected = Var[Option[serialized.PythonEnvironmentSummary]](None)
+
+  Vizier.api.pythonEnvironments.get.onSuccess { 
+    case envs => 
+      options() = envs 
+      // println(
+      //   options.now.map { _.name }.mkString("\n")
+      // )
+  }
+
+  def systemEnvironment: serialized.PythonEnvironmentSummary =
+    options.now.find { _.name == "System" }
+               .getOrElse { Vizier.error("No System Environment") }
+
+  override def value: JsValue = 
+  {
+    Json.toJson(
+      selected.now.getOrElse { systemEnvironment }
+    )
+  }
+
+  override def set(v: JsValue): Unit = 
+  {
+    v match {
+      case JsNull => selected() = None
+      case _ => selected() = Some(v.as[serialized.PythonEnvironmentSummary])
+    }
+  }
+
+  def updateRevision(): Unit =
+  {
+    val myId = selected.now.get.id
+    val rev = options.now.find { _.id == myId  }
+    selected() = rev
+  }
+
+  val identity = s"parameter_${Parameter.nextInputId}"
+
+  override val root: Node = 
+    Rx {
+      val selectedId = selected().map { _.id }.getOrElse(-1)
+      div(`class` := "environment_selector",
+        label(
+          `for` := identity,
+          b("Python Version: ")
+        ),
+        select(
+          attr("id") := identity,
+          options().map { env =>
+            if(selectedId == env.id){ 
+              option(attr("value") := env.id, s"${env.name} (Python ${env.pythonVersion})", attr("selected") := "yes")
+            } else {
+              option(attr("value") := env.id, s"${env.name} (Python ${env.pythonVersion})")
+            }
+          },
+          onchange := { e:dom.Event => 
+            val v = e.target.asInstanceOf[dom.html.Select].value.toLong
+            selected() = options.now.find { _.id == v }
+          }
+        ),
+        selected() match {
+          case None => span(
+            `class` := "environment_warning",
+            "No python environment selected, the non-reproducible system python will be used."
+          )
+          case Some(env) => 
+            val base = options().find { _.id == env.id }
+            if(base.isEmpty){
+              span(
+                `class` := "environment_warning",
+                "The selected Python environment has been deleted; You must select an environment to use."
+              )
+            } else if(base.get.revision != env.revision) {
+              span(
+                `class` := "environment_warning",
+                "The selected Python environment has been modified since this cell was last run",
+                button(
+                  "Acknowledge",
+                  onclick := { _:dom.Event => updateRevision() }
+                ),
+                button(
+                  "Fork",
+                  onclick := { _:dom.Event => Vizier.error("Forking not supported yet") }
+                )
+              )
+            } else {
+              span()
+            }
+
+        }
+      )
+    }.reactive
 }
 
 /////////////////////////////////////////////////////////////////////////////

@@ -19,6 +19,8 @@ import play.api.libs.json.Json
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.types._
+import info.vizierdb.api.FormattedError
 
 trait PythonEnvironment
   extends LazyLogging
@@ -52,16 +54,58 @@ trait PythonEnvironment
     }
   }
 
-  def install(packageName: String, version: Option[String] = None): Unit =
+  def invoke(args: Seq[String], context: String = null): String =
+  {
+    val out = new StringBuilder()
+    val err = new StringBuilder()
+
+    val ret = Process(python.toString, args).!(
+      ProcessLogger(
+        { msg => out.append(msg+"\n") },
+        { msg => err.append(msg+"\n") }
+      )
+    )
+
+    if(ret == 0){ return out.toString }
+    else { 
+      val msg =
+        "Error while "+ 
+        Option(context).getOrElse {
+          s"running `python ${args.mkString}`"
+        }+(if(err.isEmpty){ "" } else { "\n"+err.toString })
+      
+      logger.warn(msg)
+      throw new FormattedError(msg)
+    }
+  }
+
+  def install(
+    packageName: String, 
+    version: Option[String] = None, 
+    upgrade: Boolean = false
+  ): Unit =
   { 
     val spec = s"$packageName${version.map { "=" + _ }.getOrElse("")}"
     logger.debug(s"Installing python package spec: $spec")
 
-    Process(python.toString, Seq(
-      "-m", "pip", "install", spec
-    )).!!
-    // Pip prints warnings if it's even slightly out of date... disable those
-    // .lineStream(ProcessLogger(logger.info(_), logger.error(_)))
+    val args = Seq(
+      "-m", "pip", "install",
+    ) ++ (
+      if(upgrade) { Seq(
+        "--upgrade", "--upgrade-strategy", "only-if-needed"
+      ) } else { Seq.empty }
+    ) ++ Seq(spec)
+
+    invoke(args, if(upgrade){ s"upgrading $packageName" } else { s"installing $packageName "})
+  }
+
+  def delete(packageName: String): Unit =
+  {
+    logger.debug(s"Installing python package: $packageName")
+
+    invoke(Seq(
+      "-m", "pip", "uninstall", packageName
+    ), s"deleting $packageName")    
   }
 
   lazy val version = 
@@ -73,8 +117,44 @@ trait PythonEnvironment
       .split(" ").reverse.head
 }
 
+object PythonEnvironment
+{
+  val SYSTEM_PYTHON_ID = 0l
+  val SYSTEM_PYTHON_NAME = "System"
+
+  val INTERNAL_BY_ID = Map[Identifier, InternalPythonEnvironment](
+    SYSTEM_PYTHON_ID -> SystemPython
+  )
+  val INTERNAL_BY_NAME = Map[String, InternalPythonEnvironment](
+    SYSTEM_PYTHON_NAME -> SystemPython
+  )
+}
+
+trait InternalPythonEnvironment extends PythonEnvironment
+{
+  def summary = 
+    serialized.PythonEnvironmentSummary(
+      name = PythonEnvironment.SYSTEM_PYTHON_NAME,
+      id = PythonEnvironment.SYSTEM_PYTHON_ID,
+      revision = 0,
+      fullVersion
+    )
+
+  def serialize: serialized.PythonEnvironmentDescriptor =
+    serialized.PythonEnvironmentDescriptor(
+      name = PythonEnvironment.SYSTEM_PYTHON_NAME,
+      id = PythonEnvironment.SYSTEM_PYTHON_ID,
+      pythonVersion = fullVersion,
+      revision = 0,
+      packages = packages.map { p => 
+        serialized.PythonPackage(p._1, Some(p._2))
+      }
+    )
+
+}
+
 object SystemPython 
-  extends PythonEnvironment
+  extends InternalPythonEnvironment
   with LazyLogging
 {
   val python = 
@@ -85,7 +165,6 @@ object SystemPython
         discoverPython()
       }
     )
-
   def discoverPython(): String =
   {
     val searchAt = Seq(
@@ -96,9 +175,11 @@ object SystemPython
     )
     searchAt.find { test => 
       try {
+        def serializeOuter = serialize
         val ret = PythonProcess.run("print(\"Hi!\")", 
           environment = new PythonEnvironment{
             def python = new File(test)
+            def serialize = serializeOuter
           }
         )
         logger.trace(s"Discovering Python ($test -> '$ret')")

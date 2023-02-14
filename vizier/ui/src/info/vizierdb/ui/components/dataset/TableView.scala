@@ -49,7 +49,14 @@ class TableView(
   /**
    * The width of the inner (full table) view
    */
-  def innerWidth = data.columnCount * TableView.DEFAULT_CELL_WIDTH + TableView.GUTTER_WIDTH
+  def innerWidth: Int = 
+  {
+    // println(s"innerWidth: columnCount = ${data.columnCount}")
+    return (
+      (0 until data.columnCount).map { data.columnWidthInPixels(_) }.sum 
+        + TableView.GUTTER_WIDTH
+    )
+  }
 
   /**
    * The width of the outer (wrapper) view
@@ -126,6 +133,7 @@ class TableView(
   def refreshSize() =
   {
     body.style.height = s"${innerHeight}px"
+    root.style.height = s"${innerHeight+headerHeight}px"
   }
 
 
@@ -149,11 +157,8 @@ class TableView(
           (if(row % 2 == 0) { "even_row" } else { "odd_row" }),
           "table_row",
         ) ++ data.rowClasses(row)).mkString(" "),
-        position := "absolute",
         top := s"${row * rowHeight}px",
-        left := "0px",
         height := s"${rowHeight}px",
-        width := "100%",
         RenderCell.gutter(
           row = row, 
           caveatted = data.rowCaveat(row),
@@ -165,8 +170,11 @@ class TableView(
     def refresh()
     {
       while(root.firstChild != root.lastChild) { root.removeChild(root.lastChild) }
+      var position = TableView.GUTTER_WIDTH
       for(i <- 0 until data.columnCount){ 
-        root.appendChild(data.cellAt(row, i, TableView.DEFAULT_CELL_WIDTH))
+        val w = data.columnWidthInPixels(i)
+        root.appendChild(data.cellAt(row, i, w, position))
+        position += w
       }
     }
 
@@ -194,7 +202,7 @@ class TableView(
 
   val tableContents =
     div(`class` := "table_contents",
-      header,
+      marginTop := s"${headerHeight.min(700)}px",
       body
     ).render
   rebuildHeaderRow()
@@ -206,16 +214,21 @@ class TableView(
     div(
       OnMount { _ => updateScroller() },
       `class` := "data_table",
-      width := s"${innerWidth}px",
+      width := s"100%",
+      height := s"${innerHeight + headerHeight}px",
       onscroll := { _:dom.Node => requestScrollUpdate() },
-      tableContents
+      tableContents,
+      header,
     ).render
   /**
    * Rebuild the header row, e.g., in response to added columns
    */
   def rebuildHeaderRow()
   {
+    println(s"Rebuilding header row with columnCount = ${data.columnCount}; innerWidth = $innerWidth")
     tableContents.style.width = s"${innerWidth}px"
+    header.style.width = s"${innerWidth}px"
+    var cumulativeWidth = TableView.GUTTER_WIDTH;
     header.replaceChild(
       div(
         ( Seq[Frag](
@@ -225,11 +238,15 @@ class TableView(
               ""
             ),
           )++(0 until data.columnCount).map { i =>
-            RenderCell.header(
+            val width = data.columnWidthInPixels(i)
+            val cell = RenderCell.header(
               data.columnTitle(i), 
               data.columnDataType(i),
-              width = TableView.DEFAULT_CELL_WIDTH
+              width = width,
+              position = cumulativeWidth
             )
+            cumulativeWidth += width
+            /* return */ cell
           }
         ):_*
       ).render,

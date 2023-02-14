@@ -31,24 +31,29 @@ import info.vizierdb.spark.caveats.QueryWithCaveats
 import info.vizierdb.util.ExperimentalOptions
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.serialized
+import info.vizierdb.serializers._
+import info.vizierdb.catalog.PythonVirtualEnvironment
 
 object Python extends Command
   with LazyLogging
 {
   val PROP_INPUT_PROVENANCE = "input_provenance"
   val PROP_OUTPUT_PROVENANCE = "output_provenance"
+  val ARG_SOURCE = "source"
+  val ARG_ENV = "environment"
 
 
   def name: String = "Python Script"
   def parameters: Seq[Parameter] = Seq(
-    CodeParameter(id = "source", language = "python", name = "Python Code"),
-    // StringParameter(id = "output_dataset", name = "Output Dataset", required = false)
+    CodeParameter(id = ARG_SOURCE, language = "python", name = "Python Code"),
+    EnvironmentParameter(id = ARG_ENV, language = LanguageType.PYTHON, name = "Environment", required = false)
   )
   def format(arguments: Arguments): String = 
-    arguments.pretty("source")
+    arguments.pretty(ARG_SOURCE)
   def title(arguments: Arguments): String =
   {
-    val line1 = arguments.get[String]("source").split("\n")(0)
+    val line1 = arguments.get[String](ARG_SOURCE).split("\n")(0)
     if(line1.startsWith("#")){
       line1.replaceFirst("^# *", "")
     } else {
@@ -58,8 +63,29 @@ object Python extends Command
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     logger.debug("Initializing...")
-    val script = arguments.get[String]("source")
-    val python = PythonProcess()
+    val script = arguments.get[String](ARG_SOURCE)
+    val env: PythonEnvironment = 
+      arguments.getOpt[serialized.PythonEnvironmentSummary](ARG_ENV)
+              .map { env => 
+                // If the client has requested a specific environment...
+                // ... start by checking whether it's an internal environment
+                PythonEnvironment.INTERNAL_BY_ID.get(env.id)
+                  .orElse { 
+                    // .. if it isn't, see if it's a virtual environment
+                    CatalogDB.withDBReadOnly { implicit session =>
+                      PythonVirtualEnvironment.getByIdOption(env.id)
+                    }.map { _.Environment }
+                  }.getOrElse {
+                    // ... and if it's not internal or virtual, then explode
+                    context.error(s"Unknown Python Environment ${env.id} (${env.name})")
+                    return
+                  }
+              }.getOrElse { 
+                // If the client hasn't requested a specific environment,
+                // then default to the system python
+                SystemPython
+              }
+    val python = PythonProcess(env)
 
     python.send("script", 
       "script" -> JsString(script), 

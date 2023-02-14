@@ -6,11 +6,13 @@ import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import javax.servlet.http.HttpServletResponse
 import com.typesafe.scalalogging.LazyLogging
+import _root_.akka.http.scaladsl.model.ContentType
+import _root_.akka.http.scaladsl.model.ContentTypes
 
 abstract class Response 
 {
   def status: Int
-  def contentType: String
+  def contentType: ContentType
   def headers: Seq[(String, String)]
   def contentLength: Int
 
@@ -22,7 +24,7 @@ abstract class Response
     for((header, value) <- headers){
       output.addHeader(header, value)
     }
-    output.addHeader("Content-Type", contentType)
+    output.addHeader("Content-Type", contentType.toString)
     write(output.getOutputStream())
   }
 }
@@ -31,7 +33,7 @@ abstract class BytesResponse
   extends Response
 {
   def status = HttpServletResponse.SC_OK
-  def contentType = "text/plain"
+  def contentType:ContentType = ContentTypes.`text/plain(UTF-8)`
   def getBytes: Array[Byte]
 
   lazy val byteBuffer = getBytes
@@ -50,7 +52,7 @@ abstract class JsonResponse[R](implicit format: Format[R])
   extends BytesResponse
   with LazyLogging
 {
-  override def contentType = "application/json"
+  override def contentType = ContentTypes.`application/json`
   def getBytes = {
     val r = Json.stringify(json)
     logger.trace(s"RESPONSE: $r")

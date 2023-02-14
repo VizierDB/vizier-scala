@@ -27,6 +27,8 @@ import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.components.DisplayArtifact
 import scala.concurrent.Future
 import info.vizierdb.ui.components.StaticWorkflow
+import info.vizierdb.ui.widgets.SystemNotification
+import info.vizierdb.ui.widgets.Toast
 
 
 /**
@@ -71,7 +73,9 @@ object Vizier
 
   def error(message: String) =
   {
-    println(s"ERROR: $message")
+    Toast(s"ERROR: $message")
+    // TODO: We should probably add a warning toast so that the user actually sees 
+    //       that something has exploded.
     throw new Exception(message)
   }
 
@@ -253,6 +257,8 @@ object Vizier
   {
     val projectId = arguments.get("project").get.toLong
     val datasetId = arguments.get("dataset").get.toLong
+    val branchId = arguments.get("branch").map { _.toLong }
+
     val cli = new SpreadsheetClient(projectId, datasetId, api)
     cli.connected.trigger { connected => 
       if(connected){ cli.subscribe(0) }
@@ -264,8 +270,22 @@ object Vizier
     )
     cli.table = Some(table)
 
+    val body = div(
+      `class` := "standalone_spreadsheet",
+      div(
+        `class` := "header",
+        button(
+          onclick := { _:(dom.Event) =>
+            cli.save()
+          },
+          "Save"
+        )
+      ),
+      table.root
+    ).render
+
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      document.body.appendChild(table.root)
+      document.body.appendChild(body)
       OnMount.trigger(document.body)
     })
   }

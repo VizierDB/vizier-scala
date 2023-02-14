@@ -44,6 +44,7 @@ $color_warning_on_dark:        #ff8f8f;
 
 $color_artifact_button:        $color_primary;
 $color_artifact_button_bg:     #f3f3f3;
+$color_artifact_button_bg_down:#d3d3d3;
 $color_artifact_button_border: #aaa;
 
 $color_layout_border:          lightgrey;
@@ -326,6 +327,36 @@ $menu_height: 32px;
         max-width: $max_workflow_width;
       }
     }
+  }
+}
+
+/************ Toast Dialogs ************/
+
+.toast
+{
+  display: block;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: calc(100% - 16px);
+  height: 1em;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  margin-left: 8px;
+  margin-right: 8px;
+  vertical-align: middle;
+  text-align: center;
+  background-color: $color_error;
+  border: solid 1px black;
+  border-top: none;
+
+  font-weight: bold;
+  color: white;
+
+  .detail
+  {
+    display: none;
+    visibility: hidden;
   }
 }
 
@@ -1053,39 +1084,97 @@ $menu_height: 32px;
 
 /************ Data Tables ************/
 
-
-div.data_table 
+// For Data Tables that are specifically embedded in the notebook
+div.dataset 
 {
-  border-collapse: collapse;
-  overflow-x: scroll;
-  overflow-y: scroll;
-  max-width: 700px;
-  max-height: 400px;
-  background-color: #eee;
-
-  div.table_header 
+  div.data_table
   {
     display: block;
-    position: sticky;
-    background-color: #ddd;
+    max-width: 700px;
+    min-width: 700px;
+    max-height: 400px;
+    // height: 400px;
+    position: relative;
+    left: 0px;
     top: 0px;
-    margin: 0px;
-    position: sticky;
-    z-index: $table_header_layer;
+    border: solid 1px #999;
+    // margin: -1px;
 
-    // .gutter
-    // {
-    //   background-color: #ddd;
-    //   height: 40px;
-    //   margin-top: -10px;
-    //   padding: 0px;
-    //   vertical-align: middle;
-    // }
+    div.table_header
+    {
+      position: sticky;
+    }
+  }
+
+  h3
+  {
+    display: inline-block;
+    margin-right: 8px;
+  }
+
+  a:active
+  {
+    i.fa
+    {
+      transform: scale(0.95);
+    }
+  }
+
+  i.fa
+  {
+    border-radius: 4px;
+    border: solid 1px $color_artifact_button_border;
+    padding: 2px;
+    font-size: 12px;
+    margin-right: 4px;
+    color: $color_artifact_button;
+    background-color: $color_artifact_button_bg;
+  }
+}
+
+div.standalone_spreadsheet
+{
+  width: 100vw;
+  height: 100vh;
+  div.header
+  {
+    height: 32px;
+    background-color: $color_primary;
+  }
+  div.data_table
+  {
+    position: absolute;
+    height: 100%;
+
+    div.table_header
+    {
+      position: absolute
+    }
+  }
+}
+
+// For all Data Tables
+div.data_table 
+{
+  // This is the outer wrapper that provides scrolling.  It is sized
+  // to fit the display
+  overflow-x: scroll;
+  overflow-y: scroll;
+  // background-color: #eee;
+
+  div.table_header
+  {
+    // This is the header row.
+    top: 0px;
+    left: 0px;
+    background-color: #ddd;
+    z-index: $table_header_layer;
 
     div.cell
     {
+      // This is one column of the header row
       border-left: 2px solid #aaa;  
-      display: inline-block;
+      position: absolute;
       height: 40px;
       margin-left: -2px;
       overflow-wrap: anywhere;
@@ -1094,6 +1183,7 @@ div.data_table
 
       .title
       {
+        // The bolded column name
         margin-top: 5px;
         display: block;
         font-weight: bold;
@@ -1102,98 +1192,114 @@ div.data_table
 
       .datatype
       {
+        // The subscript column type listed below
         display: block;
         font-weight: lighter;
         font-size: 70%;
         text-align: center;
       }
     }
-
-  }
-  
-  div.gutter 
-  {
-    font-size: 70%;
-    display: inline-block;
-    border-left: 2px solid #aaa;  
-    display: inline-block;
-    margin-left: -2px;
-    overflow-wrap: anywhere;
-    overflow-y: hidden;
-    overflow-x: hidden;
   }
 
-  div.table_body
+  div.table_contents
   {
-    display: block;
-    position: relative;
+    // This is the inner container.  It is sized to fit the entire table.
+    // Note that the full table contents will not be displayed here at any
+    // given time.  A subset of the dom elements will be paged in and out
+    // based on the active viewport.  Everything else is hidden.
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
 
-    div.table_row 
+    div.gutter 
     {
-      height: 30px;
+      font-size: 10px;
+      text-align: right;
+      position: absolute;
+      padding-right: 2px;
+      left: 0px;
+      margin-left: -4px;
+      margin-top: 10px;
+      overflow-wrap: anywhere;
+      overflow-y: hidden;
+      overflow-x: hidden;
+    }
 
-      &.even_row
+    div.table_body
+    {
+      // This is the actual set of rows of the table
+      position: relative;
+
+      div.table_row 
       {
-        background-color: #fff;
-        &.caveatted
+        position: absolute;
+        left: 0px;
+        width: 100%;
+
+        &.even_row
         {
-          background-color: #fee;
-        }
-        .gutter {
           background-color: #fff;
-        }
-      }
-      &.odd_row
-      {
-        background-color: #eee;
-        &.caveatted
-        {
-          background-color: #edd;
-        }
-        .gutter {
-          background-color: #eee
-        }
-      }
-
-      div.cell
-      {
-        display: inline-block;
-        max-height: 30px;
-        text-align: center;
-        overflow: hidden;
-        border-left: 2px solid #aaa;  
-        margin-left: -2px;
-        
-        &.caveatted
-        {
-          color: red;
-        }
-        &.null
-        {
-          background-color: #e9dfdf;
-          
-          span {
-            display: flex;
-            justify-content: center;
+          &.caveatted
+          {
+            background-color: #fee;
+          }
+          .gutter {
+            background-color: #fff;
           }
         }
-        &.error
+        &.odd_row
         {
-          background-color : #611;
-          color : #ccc;
+          background-color: #eee;
+          &.caveatted
+          {
+            background-color: #edd;
+          }
+          .gutter {
+            background-color: #eee
+          }
         }
 
-        img.table_image
-        {
-          max-height: 100%;
-          max-width: 100%;
-        }
-
-        img.table_image:hover
+        div.cell
         {
           position: absolute;
-          height: auto;
-          z-index: $tooltip_layer;
+          max-height: 30px;
+          text-align: center;
+          overflow: hidden;
+          border-left: 2px solid #aaa;  
+          margin-left: -2px;
+          
+          &.caveatted
+          {
+            color: red;
+          }
+          &.null
+          {
+            background-color: #e9dfdf;
+            
+            span {
+              display: flex;
+              justify-content: center;
+            }
+          }
+          &.error
+          {
+            background-color : #611;
+            color : #ccc;
+          }
+
+    //       img.table_image
+    //       {
+    //         max-height: 100%;
+    //         max-width: 100%;
+    //       }
+
+    //       img.table_image:hover
+    //       {
+    //         position: absolute;
+    //         height: auto;
+    //         z-index: $tooltip_layer;
+    //       }
         }
       }
     }
@@ -1614,5 +1720,161 @@ table.parameter_list
 
       }
     }
+
+    // Python environments tab
+    .python
+    {
+      .summary 
+      {
+        padding-right: 0px;
+
+        & > .spacer
+        {
+          width: 10px;
+          display: inline-block;
+        }
+
+        .save_button
+        {
+          float: right;
+          margin-right: 0px;
+
+          button
+          {
+            height: 24px;
+            background-color: $color_button_confirm;
+          } 
+
+          // i.fa
+          // {
+          //   background-color: $color_button_confirm;
+          //   color: white;
+          // }
+
+          .reactive
+          {
+            display: inline;
+          }
+        }
+      }
+
+      .packages
+      {
+        max-height: 800px;
+        overflow-y: scroll;
+        transition: max-height 0.1s linear;
+        width: 100%;
+        border: solid 1px $background_grey;
+        margin-top: 5px;
+        margin-bottom: 10px;
+
+        table
+        {
+          width: 100%;
+  
+          tbody
+          {
+            tr:nth-child(odd)
+            {
+              background-color: $color_row_highlight;
+            }
+
+            tr.deleted
+            {
+              td
+              {
+                text-decoration: line-through;
+                color: grey;
+
+                a
+                {
+                  color: grey;
+                }
+              }
+            }
+
+            td.actions 
+            {
+              text-align: center;
+            }
+            td.addpackage
+            {
+              text-align: center;
+              background-color: white;
+
+              button
+              {
+                margin-left: auto;
+                margin-right: auto;
+              }
+            }
+          }
+        }
+      }
+
+      .packages.closed
+      {
+        max-height: 0px;
+        // visibility: hidden;
+        overflow-y: hidden;
+        border: none;
+      }
+
+      .expander i.fa
+      {
+        border: none;
+        background-color: white;
+        font-size: 20px;
+      }
+
+      a:active
+      {
+        i.fa
+        {
+          transform: scale(0.95);
+        }
+      }
+
+      a.fabutton {
+        i.fa
+        {
+          width: 1em;
+          height: 1em;
+          border-radius: 4px;
+          border: solid 1px $color_artifact_button_border;
+          padding: 2px;
+          font-size: 12px;
+          margin-right: 4px;
+          color: $color_artifact_button;
+          background-color: $color_artifact_button_bg;
+        }
+
+        &.depressed
+        {
+          i.fa
+          {
+            background-color: $color_artifact_button_bg_down;
+          }
+        }
+      }
+
+    }
+  }
+}
+
+/************ Widgets ************/
+
+.expander
+{
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+
+  i.fa
+  {
+    font-size: 20px;
+    width: 20px;
+    width: 20px;
+    display: inline-block;
   }
 }

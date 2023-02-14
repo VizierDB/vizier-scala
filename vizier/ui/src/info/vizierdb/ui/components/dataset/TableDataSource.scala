@@ -11,8 +11,9 @@ trait TableDataSource
   
   def columnTitle(column: Int): String
   def columnDataType(column: Int): CellDataType
+  def columnWidthInPixels(column: Int): Int
 
-  def cellAt(row: Long, column: Int, width: Int): Frag
+  def cellAt(row: Long, column: Int, width: Int, position: Int): Frag
   
   def rowClasses(row: Long): Seq[String]
 
