@@ -43,11 +43,16 @@ class PythonVenvSpec
     // PyEnv.installed must contain("3.10.5")
   }
 
-  val venv = PythonVirtualEnvironment(0l, "test_venv", Pyenv.installed.last, 0l, Seq.empty)
+  val venv = PythonVirtualEnvironment(
+                0l, 
+                "test_venv", 
+                Pyenv.installed.last, 
+                0l
+              )
 
   "Create Venv" >>
   {
-    println(s"Creating Venv at ${venv.version}")
+    println(s"Creating Venv at ${venv.pythonVersion}")
     venv.init(true)
 
     (

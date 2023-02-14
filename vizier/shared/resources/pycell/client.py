@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -- copyright-header:end --
-from typing import Dict, Any, IO, List, Tuple, Optional, Callable, cast
+from typing import Dict, Any, IO, List, Tuple, Optional, Callable
+from types import FunctionType, ModuleType
 import json
 import sys
 import ast
@@ -75,16 +76,16 @@ class ArtifactProxy(object):
 
   def __getitem__(self, key: Any) -> Any:
     self.load_if_needed()
-    assert(self.__artifact is not None)
+    assert self.__artifact is not None
     return self.__artifact.__getitem__(key)
 
   def __getattr__(self, name):
     self.load_if_needed()
     return self.__artifact.__getattribute__(name)
 
-  def __setitem__(self,key,value):
+  def __setitem__(self, key, value):
     self.load_if_needed()
-    return self.__artifact.__setitem__(key,value)
+    return self.__artifact.__setitem__(key, value)
 
   def __setattr__(self, name, value):
     if name == "_ArtifactProxy__client" or name == "_ArtifactProxy__artifact" or name == "_ArtifactProxy__artifact_name":
@@ -92,8 +93,6 @@ class ArtifactProxy(object):
     else:
       self.load_if_needed()
       return self.__artifact.__setattribute__(name, value)
-
-  
 
   def __call__(self, *args, **kwargs):
     self.load_if_needed()
@@ -159,22 +158,21 @@ class VizierDBClient(object):
                 artifact.artifact_type,
                 artifact.mime_type
               ))
-  def __setitem__(self,key: Any, updated_data: Any = None) -> Any:
+
+  def __setitem__(self, key: Any, updated_data: Any = None) -> Any:
   
     primitive_type = (int, str, bool, float)
-    sequence_type  = (list,tuple,range)
+    sequence_type  = (list, tuple, range)
     mapping_type   = (dict)
 
     if type(updated_data) in primitive_type or type(updated_data) in sequence_type or type(updated_data) in mapping_type:
-      self.export_parameter(key,updated_data)
-    elif type(updated_data) == ModuleType:
+      self.export_parameter(key, updated_data)
+    elif type(updated_data) is ModuleType or type(updated_data) is FunctionType:
       self.export_module(key)
     elif type(updated_data) == pandas.core.frame.DataFrame:
-      self.save_data_frame(key,updated_data)
+      self.save_data_frame(key, updated_data)
     else:
       raise ValueError('Type Not in any specified types supported by Python')
-  
-
 
   def vizier_request(self,
                      event: str,
@@ -217,7 +215,7 @@ class VizierDBClient(object):
         name=name,
         has_response=True
       )
-    assert(response is not None)
+    assert response is not None
     return import_to_native_type(
       response["data"],
       response["dataType"]
@@ -236,7 +234,7 @@ class VizierDBClient(object):
         name=name,
         has_response=True
       )
-    assert(response is not None)
+    assert response is not None
 
     def output_exported(x):
       self.py_objects[name] = x
@@ -273,8 +271,8 @@ class VizierDBClient(object):
       has_response=True,
       name=name
     )
-    assert(response is not None)
-    assert(response["event"] == "dataset")
+    assert response is not None
+    assert response["event"] == "dataset"
     ds = DatasetClient(
       client=self,
       dataset=response["data"],
@@ -311,7 +309,7 @@ class VizierDBClient(object):
         has_response=True,
         dataset=dataset.to_json()
       )
-    assert(response is not None)
+    assert response is not None
     dataset.identifier = response["artifactId"]
     self.datasets[name] = dataset
     self.artifacts[name] = Artifact(name=name,
@@ -346,7 +344,7 @@ class VizierDBClient(object):
         has_response=True,
         dataset=dataset.to_json()
       )
-    assert(response is not None)
+    assert response is not None
     dataset.identifier = response["artifactId"]
     self.datasets[name] = dataset
     self.artifacts[name] = Artifact(name=name,
@@ -450,7 +448,7 @@ class VizierDBClient(object):
         name=name,
         has_response=True
       )
-    assert(response is not None)
+    assert response is not None
 
     return FileClient(
       client=self,
@@ -475,7 +473,7 @@ class VizierDBClient(object):
         name=key,
         has_response=True
       )
-    assert(response is not None)
+    assert response is not None
 
     data = response["data"].encode()
     data = base64.decodebytes(data)
@@ -495,7 +493,7 @@ class VizierDBClient(object):
         artifactType=ARTIFACT_TYPE_BLOB,
         has_response=True
       )
-    assert(response is not None)
+    assert response is not None
 
     self.artifacts[key] = Artifact(
       name=key,
@@ -561,7 +559,7 @@ class VizierDBClient(object):
       elif is_image(value):
         mime_type = OUTPUT_PNG
         with io.BytesIO() as f:
-          value.save(fp = f, format = "PNG")
+          value.save(fp=f, format="PNG")
           value = base64.encodebytes(f.getbuffer()).decode()
       else:
         repr_html = getattr(value, "_repr_html_", None)
@@ -669,7 +667,7 @@ class VizierDBClient(object):
       artifactType=ARTIFACT_TYPE_PARAMETER,
       has_response=True
     )
-    assert(response is not None)
+    assert response is not None
     
     # print("ArtifactId",response["artifactId"])
     self.artifacts[key] = Artifact(
@@ -698,7 +696,7 @@ class VizierDBClient(object):
       includeUncertainty=True,
       has_response=True
     )
-    assert(response is not None)
+    assert response is not None
     results = list(_load_from_socket((response['port'], response['secret']), ArrowCollectSerializer()))
     batches = results[:-1]
     batch_order = results[-1]
@@ -720,14 +718,14 @@ class VizierDBClient(object):
         "filename": name
       }
     )
-    assert(response is not None)
+    assert response is not None
     df.to_parquet(path=response["path"])
     response = self.vizier_request("create_dataset",
       has_response=True,
       file=response["artifactId"],
       name=name
     )
-    assert(response is not None)
+    assert response is not None
     if name in self.datasets:
       del self.datasets[name]
     self.artifacts[name] = Artifact(name=name,
@@ -820,7 +818,6 @@ class Analyzer(ast.NodeVisitor):
     self.context.append(('function', set()))
     if node.name == self.name:
       self.source = astor.to_source(node)
-      self.generic_visit(node)
     self.context.pop()
 
   # treat coroutines the same way
@@ -872,6 +869,7 @@ def is_valid_name(name: str) -> bool:
     elif c not in ['_', '-', ' ']:
       return False
   return (allnums > 0)
+
 
 def is_image(obj: Any) -> bool:
   try:

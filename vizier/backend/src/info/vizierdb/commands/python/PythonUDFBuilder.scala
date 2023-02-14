@@ -41,6 +41,9 @@ class PythonUDFBuilder(val environment: PythonEnvironment)
   def apply(a: Artifact, name: String): (Seq[Expression] => PythonUDF) = 
     apply(pickled = pickle(a), name = Some(name))
 
+  def apply(aId: Identifier, script: String): (Seq[Expression] => PythonUDF) = 
+    apply(pickled = pickle(aId, script), name = None)
+
   def apply(aId: Identifier, script: String, name: String): (Seq[Expression] => PythonUDF) = 
     apply(pickled = pickle(aId, script), name = Some(name))
 
@@ -50,10 +53,8 @@ class PythonUDFBuilder(val environment: PythonEnvironment)
     dataType: Option[DataType] = None
   ): (Seq[Expression] => PythonUDF) = 
   {
-    val actualName = name.getOrElse { python(GET_NAME(pickled)).replaceAll("\n", "") }
-    lazy val actualDataType = dataType.getOrElse { 
-      DataType.fromJson(python(GET_DT(pickled)).replaceAll("\n", "")) 
-    }
+    val actualName = name.getOrElse { getName(pickled) }
+    lazy val actualDataType = dataType.getOrElse { getType(pickled) }
     return (args: Seq[Expression]) => PythonUDFWorkaround(
       command = pickled,
       envVars = new java.util.HashMap(),
@@ -68,6 +69,12 @@ class PythonUDFBuilder(val environment: PythonEnvironment)
       true
     )
   }
+
+  def getName(pickled: Array[Byte]): String =
+    python(GET_NAME(pickled)).replaceAll("\n", "")
+
+  def getType(pickled: Array[Byte]): DataType =
+    DataType.fromJson(python(GET_DT(pickled)).replaceAll("\n", ""))
 
   def pickle(a: Artifact): Array[Byte] = 
     udfCache.getOrElseUpdate(a.id, { 
@@ -93,12 +100,17 @@ class PythonUDFBuilder(val environment: PythonEnvironment)
   def python(script: String): String = 
   {
     logger.debug(s"Running:\n$script")
-    Process(environment.python) .#< {  new ByteArrayInputStream(script.getBytes()) }  .!!
+    Process(environment.python.toString) .#< {  
+      new ByteArrayInputStream(script.getBytes()) 
+    }  .!!
   }
 
 
   def GENERATE_PICKLE(vizier_fn: String, t: DataType = StringType) = s"""
-from pyspark import cloudpickle
+try:
+ from pyspark import cloudpickle
+except Exception:
+ import cloudpickle
 import sys
 import base64
 from pyspark.sql.types import DataType, NullType, StringType, BinaryType, BooleanType, DateType, TimestampType, DecimalType, DoubleType, FloatType, ByteType, IntegerType, LongType, ShortType, ArrayType, MapType, StructField, StructType
