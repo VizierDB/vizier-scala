@@ -48,7 +48,10 @@ object Scheduler
         return
       }
       logger.trace(s"Allocating execution manager for ${workflow.id}")
-      val executor = new RunningWorkflow(workflow)
+      val executor = new RunningWorkflow(
+                      workflow, 
+                      Thread.currentThread().getContextClassLoader()
+                     )
       runningWorkflows.put(workflow.id, executor)
       logger.trace(s"Starting execution manager for ${workflow.id}")
       workflowWorkers.execute(executor)

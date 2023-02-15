@@ -17,7 +17,7 @@ import io.bit3.jsass.{ Compiler => SassCompiler, Options => SassOptions, OutputS
  *************************************************/
 object vizier extends ScalaModule with PublishModule {
   val VERSION       = "2.0.0-SNAPSHOT"
-  val PLAY_JS       = ivy"com.typesafe.play::play-json:2.9.2"
+  val PLAY_JS       = ivy"com.typesafe.play::play-json::2.9.2"
                            
   val MIMIR_CAVEATS = ivy"info.vizierdb::mimir-caveats::0.3.6"
                           .exclude(
@@ -152,9 +152,9 @@ object vizier extends ScalaModule with PublishModule {
     def scalacOptions = Seq("-Yrangepos")
     def ivyDeps = Agg(
       ivy"org.scalikejdbc::scalikejdbc-test::3.4.2",
-      ivy"org.specs2::specs2-core::4.8.2",
-      ivy"org.specs2::specs2-matcher-extra::4.8.2",
-      ivy"org.specs2::specs2-junit::4.8.2",
+      ivy"org.specs2::specs2-core::4.19.2",
+      ivy"org.specs2::specs2-matcher-extra::4.19.2",
+      ivy"org.specs2::specs2-junit::4.19.2",
     )
 
   }

@@ -18,6 +18,7 @@ import info.vizierdb.api.FormattedError
 import info.vizierdb.VizierException
 import info.vizierdb.vega.DateTime
 import java.time.ZonedDateTime
+import info.vizierdb.util.ClassLoaderUtils
 
 class RunningCell(
   val cell: Cell, 
@@ -65,31 +66,33 @@ class RunningCell(
 
   def exec(): Boolean =
   {
-    try {
-      processSynchronously match {
-        case _ if aborted.get => 
-          CatalogDB.withDB { implicit session => 
-            errorResult(startedCell, ExecutionState.CANCELLED)
-          }
-        case Success(context) =>
-          CatalogDB.withDB { implicit session => 
-            logger.trace(s"Emitting normal result for cell $this")
-            normalResult(startedCell, context)
-          }
-        case Failure(exc) => 
-          CatalogDB.withDB { implicit session => 
-            errorResult(startedCell)
-          }
+    ClassLoaderUtils.withContextClassloader(workflowTask.classloader) {
+      try {
+        processSynchronously match {
+          case _ if aborted.get => 
+            CatalogDB.withDB { implicit session => 
+              errorResult(startedCell, ExecutionState.CANCELLED)
+            }
+          case Success(context) =>
+            CatalogDB.withDB { implicit session => 
+              logger.trace(s"Emitting normal result for cell $this")
+              normalResult(startedCell, context)
+            }
+          case Failure(exc) => 
+            CatalogDB.withDB { implicit session => 
+              errorResult(startedCell)
+            }
+        }
+        /* return */ true
+      } catch {
+        case e: Throwable =>
+          logger.error(s"A really serious internal error occurred: ${e.getMessage}")
+          e.printStackTrace()
+          /* return */ false
+      } finally {
+        logger.debug(s"Cell: $cell complete.  Signalling workflow")
+        workflowTask.completionMessages.add(cell.position)
       }
-      return true
-    } catch {
-      case e: Throwable =>
-        logger.error(s"A really serious internal error occurred: ${e.getMessage}")
-        e.printStackTrace()
-        return false
-    } finally {
-      logger.debug(s"Cell: $cell complete.  Signalling workflow")
-      workflowTask.completionMessages.add(cell.position)
     }
   }
 

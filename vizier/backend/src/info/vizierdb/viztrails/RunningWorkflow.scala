@@ -16,8 +16,9 @@ import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.catalog.InputArtifactRef
 import info.vizierdb.catalog.OutputArtifactRef
 import java.util.concurrent.atomic.AtomicBoolean
+import info.vizierdb.util.ClassLoaderUtils
 
-class RunningWorkflow(workflow: Workflow)
+class RunningWorkflow(workflow: Workflow, val classloader: ClassLoader)
   extends ForkJoinTask[Unit]
   with LazyLogging
 {
@@ -47,48 +48,52 @@ class RunningWorkflow(workflow: Workflow)
 
   def exec: Boolean =
   {
-    try { 
-      logger.info(s"Starting execution of Workflow ${workflow.id}")
-      if(workflow.aborted) {
-        logger.debug(s"Aborted processing of Workflow ${workflow.id} before start")
-      }
+    ClassLoaderUtils.withContextClassloader[Boolean](classloader){
+      val ret = 
+        try { 
+          logger.info(s"Starting execution of Workflow ${workflow.id}")
+          if(workflow.aborted) {
+            logger.debug(s"Aborted processing of Workflow ${workflow.id} before start")
+          }
 
-      do {
-        completionMessages.take match {
-          case x if x < 0 => // initial message.  Ignore
-          case x => {
-            val otherCompletions = new java.util.ArrayList[Cell.Position]()
-            completionMessages.drainTo(otherCompletions)
-            logger.trace(s"Workflow ${workflow.id}: Got completion events for ${(x +: otherCompletions.asScala).mkString(", ")}")
-            for(position <- (x +: otherCompletions.asScala)){
-              logger.trace(s"Workflow ${workflow.id}: Completing cell at position $position")
-              pendingTasks.remove(position) match {
-                case Some(cellTask) => 
-                  logger.info(s"Workflow ${workflow.id}: Finished executing cell ${cellTask.cell} [${cellTask.module.packageId}.${cellTask.module.commandId}]")
-                  cellTask.cleanup()
-                case None => 
-                  logger.info(s"Workflow ${workflow.id}: Spurious completion notification (an abort probably failed)")
+          do {
+            completionMessages.take match {
+              case x if x < 0 => // initial message.  Ignore
+              case x => {
+                val otherCompletions = new java.util.ArrayList[Cell.Position]()
+                completionMessages.drainTo(otherCompletions)
+                logger.trace(s"Workflow ${workflow.id}: Got completion events for ${(x +: otherCompletions.asScala).mkString(", ")}")
+                for(position <- (x +: otherCompletions.asScala)){
+                  logger.trace(s"Workflow ${workflow.id}: Completing cell at position $position")
+                  pendingTasks.remove(position) match {
+                    case Some(cellTask) => 
+                      logger.info(s"Workflow ${workflow.id}: Finished executing cell ${cellTask.cell} [${cellTask.module.packageId}.${cellTask.module.commandId}]")
+                      cellTask.cleanup()
+                    case None => 
+                      logger.info(s"Workflow ${workflow.id}: Spurious completion notification (an abort probably failed)")
+                  }
+                }
+
               }
             }
 
-          }
+            logger.trace("Recomputing Cell States")
+
+            updatePendingTasks()
+
+            logger.trace(s"Waiting on pending cells: ${pendingTasks.values.map { _.cell.toString }.mkString(", ")}")        
+
+          } while( !aborted.get && !pendingTasks.isEmpty )
+          /* return */ true
+        } catch {
+          case e: Exception => 
+            logger.error(s"Error processing workflow ${workflow.id}: $e")
+            e.printStackTrace()
+            /* return */ false
         }
-
-        logger.trace("Recomputing Cell States")
-
-        updatePendingTasks()
-
-        logger.trace(s"Waiting on pending cells: ${pendingTasks.values.map { _.cell.toString }.mkString(", ")}")        
-
-      } while( !aborted.get && !pendingTasks.isEmpty )
-    } catch {
-      case e: Exception => 
-        logger.error(s"Error processing workflow ${workflow.id}: $e")
-        e.printStackTrace()
-        return false
+      logger.info(s"Done processing Workflow ${workflow.id}")
+      return ret
     }
-    logger.info(s"Done processing Workflow ${workflow.id}")
-    return true
   }
 
   def getRawResult(): Unit = ()

@@ -1,5 +1,5 @@
 import scala.collection.mutable
-import $ivy.`com.typesafe.play::play-json:2.9.2`, play.api.libs.json._
+import $ivy.`com.typesafe.play::play-json:2.10.0-RC7`, play.api.libs.json._
 import $ivy.`io.swagger:swagger-codegen:2.4.27`, io.swagger
 import $file.lib.regexp, regexp.{ UNDEFOR, IS_FILE, SEQ, SERIALIZED }
 import $file.lib.routes, routes._
