@@ -28,6 +28,7 @@ import ExecutionState.{ WAITING, STALE, RUNNING, ERROR, CANCELLED, DONE, FROZEN 
 import info.vizierdb.serializers._
 import info.vizierdb.serialized
 import com.typesafe.scalalogging.LazyLogging
+import info.vizierdb.VizierException
 
 /**
  * One branch of the project
@@ -77,6 +78,36 @@ case class Branch(
             (args: (String, Any)*)
             (implicit session: DBSession): (Branch, Workflow) =
     insert(position, Module.make(packageId, commandId, properties = properties)(args:_*))
+
+  /**
+   * Update the branch head by creating a module and inserting it into the workflow
+   * 
+   * @param moduleId        The module to insert the new module after
+   * @param packageId       The package id of the module's command
+   * @param commandId       The command id of the module's command
+   * @param properties      Initial properties for the newly created module
+   * @param args            The module's arguments
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def insertAfter(moduleId: Identifier, packageId: String, commandId: String, properties: JsObject = Json.obj())
+                 (args: (String, Any)*)
+                 (implicit session: DBSession): (Branch, Workflow) =
+    insertAfter(moduleId, Module.make(packageId, commandId, properties = properties)(args:_*))
+
+  /**
+   * Update the branch head by creating a module and replacing an existing module with it
+   * 
+   * @param moduleId        The module to replace the new module with
+   * @param packageId       The package id of the module's command
+   * @param commandId       The command id of the module's command
+   * @param properties      Initial properties for the newly created module
+   * @param args            The module's arguments
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def updateById(moduleId: Identifier, packageId: String, commandId: String, properties: JsObject = Json.obj())
+                (args: (String, Any)*)
+                (implicit session: DBSession): (Branch, Workflow) =
+    updateById(moduleId, Module.make(packageId, commandId, properties = properties)(args:_*))
 
   /**
    * Update the branch head by creating a module and replacing an existing cell with it
@@ -163,7 +194,35 @@ case class Branch(
   }
 
   /**
-   * Update the branch head by replacing a cell in the workflow with a new module
+   * Update the branch head by inserting a module into the workflow after an existing module
+   * 
+   * @param moduleId        The module to insert the new module after
+   * @param module          The module to insert
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def insertAfter(moduleId: Identifier, module: Module)(implicit session: DBSession): (Branch, Workflow) =
+  {
+    val idx = head.modulesInOrder.indexWhere { _.id == moduleId }
+    if(idx < 0){ throw new VizierException(s"$moduleId is not presently in the workflow") }
+    insert(idx, module)
+  }
+
+  /**
+   * Update the branch head by inserting a module into the workflow after an existing module
+   * 
+   * @param moduleId        The position of the module to replace the existing module with
+   * @param module          The module to insert
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def updateById(moduleId: Identifier, module: Module)(implicit session: DBSession): (Branch, Workflow) =
+  {
+    val idx = head.modulesInOrder.indexWhere { _.id == moduleId }
+    if(idx < 0){ throw new VizierException(s"$moduleId is not presently in the workflow") }
+    update(idx, module)
+  }
+
+  /**
+   * Update the branch head by replacing a module in the workflow with a new module
    * 
    * @param position        The position of the cell to replace
    * @param module          The module to replace the cell with

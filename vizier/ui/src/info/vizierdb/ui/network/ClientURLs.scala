@@ -16,6 +16,10 @@ case class ClientURLs(baseUrl: String)
     makeUrl("project.html", "project" -> projectId)
   def spreadsheet(projectId: Identifier, datasetId: Identifier) = 
     makeUrl("spreadsheet.html", "project" -> projectId, "dataset" -> datasetId)
+  def spreadsheetAppend(projectId: Identifier, datasetId: Identifier, branchId: Identifier, moduleId: Identifier) = 
+    makeUrl("spreadsheet.html", "project" -> projectId, "dataset" -> datasetId, "branch" -> branchId, "module" -> moduleId, "append" -> "yes")
+  def spreadsheetReplace(projectId: Identifier, datasetId: Identifier, branchId: Identifier, moduleId: Identifier) = 
+    makeUrl("spreadsheet.html", "project" -> projectId, "dataset" -> datasetId, "branch" -> branchId, "module" -> moduleId, "append" -> "no")
   def settings =
     makeUrl("settings.html")
   def settings(tab: String) =

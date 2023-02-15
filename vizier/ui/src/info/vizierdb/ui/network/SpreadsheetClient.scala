@@ -14,6 +14,9 @@ import info.vizierdb.serialized.DatasetRow
 import info.vizierdb.nativeTypes._
 import scala.collection.mutable
 import info.vizierdb.ui.components.dataset._
+import scala.concurrent.Promise
+import scala.util.Success
+import scala.concurrent.Future
 
 class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   extends TableDataSource
@@ -28,6 +31,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   var size = 0l
   val rows = mutable.Map[Long, RowBatch]()
   var table: Option[TableView] = None
+  var savePromise: Option[Promise[Identifier]] = None
 
   val BUFFER_SIZE = 20
   var BUFFER_PAGE = 1000
@@ -62,6 +66,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
             case DeliverRows(start, data)        => updateData(start, data)
             case DeliverCell(column, row, value) => updateCell(column, row, value)
             case ReportError(err, detail)        => logger.error(err+"\n\n"+detail)
+            case SaveSuccessful(newModuleId)     => onSaveSuccess(newModuleId)
           }
     } catch {
       case e: Throwable => 
@@ -69,6 +74,15 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
         logger.error(s"Message content: ${message.data}")
         e.printStackTrace()
     }
+  }
+
+  def onSaveSuccess(newModuleId: Identifier)
+  {
+    if(savePromise.isDefined){ 
+      savePromise.get.complete(Success(newModuleId)) 
+      savePromise = None
+    }
+    else { logger.error("Save success without a pending request!") }
   }
 
   def onConnected(event: dom.Event)
@@ -90,10 +104,18 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
     logger.error(s"Error: $event")
   }
 
-  def save() =
+  def save(branchId: Identifier, moduleId: Identifier, replace: Boolean): Future[Identifier] =
   {
-    logger.warn("Save not implemented yet")
+    savePromise = Some(Promise[Identifier]())
+    send(SaveSpreadsheet(branchId, moduleId, replace))
+    savePromise.get.future
   }
+
+  def saveAfter(branchId: Identifier, moduleId: Identifier): Future[Identifier] =
+    save(branchId, moduleId, replace = false)
+
+  def saveAs(branchId: Identifier, moduleId: Identifier): Future[Identifier] =
+    save(branchId, moduleId, replace = true)
 
   private def keepalive(s: dom.WebSocket)
   {

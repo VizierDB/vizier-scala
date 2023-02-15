@@ -88,7 +88,7 @@ class Module(val subscription: ModuleSubscription)
    */
   val messages = 
     subscription.messages
-                .rxMap { message => Message(message) }
+                .rxMap { message => Message(this, message) }
   
   /**
    * A reactive DOM node of all of the messages displayed with this module

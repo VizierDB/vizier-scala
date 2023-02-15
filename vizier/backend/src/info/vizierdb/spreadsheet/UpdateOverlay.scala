@@ -597,6 +597,24 @@ class UpdateOverlay(
     return buffer.toString()
   }
 
+  def serialize: SerializedSpreadsheet =
+  {
+    SerializedSpreadsheet(
+      frame = frame,
+      data = dag.flatMap { case (col, updates) =>
+        updates.iterator.map { case (from, to, rule) =>
+          SerializedSpreadsheetUpdate(
+            column = col,
+            from = from,
+            to = to,
+            frame = rule.frame,
+            expression = rule.expression.toString
+          )
+        }
+      }.toSeq
+    )
+  }
+
 }
 
 class TriggerSet(var frame: ReferenceFrame)

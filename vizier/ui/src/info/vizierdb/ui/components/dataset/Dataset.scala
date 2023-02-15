@@ -15,6 +15,7 @@ import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.Vizier
 import info.vizierdb.util.RowCache
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.ui.components.Module
 
 /**
  * A representation of a dataset artifact
@@ -34,7 +35,8 @@ import info.vizierdb.ui.widgets.FontAwesome
  */
 class Dataset(
   datasetId: Identifier,
-  projectId: Identifier = Vizier.project.now.get.projectId
+  projectId: Identifier = Vizier.project.now.get.projectId,
+  editingDetails: DatasetEditingDetails = DatasetNotEditable
 )(implicit val owner: Ctx.Owner)
 {
   val ROW_HEIGHT = 30
@@ -64,17 +66,29 @@ class Dataset(
 
   val name = Var[String]("unnamed")
 
-  def this(description: DatasetDescription, projectId: Identifier)
+  def this(description: DatasetDescription, projectId: Identifier, module: Option[Module])
           (implicit owner: Ctx.Owner) =
   {
-    this(description.id, projectId)
+    this(description.id, projectId, 
+      module match {
+        case Some(module) => 
+          module.subscription.branch match {
+            case Left(branch) => // an active branch
+              DatasetEditsAfterModule(branch.branchId, module.realModuleId.get)
+            case Right(_) => // a static workflow
+              DatasetNotEditable
+          }
+        case None =>
+          DatasetNotEditable
+      }
+    )
     setSource(new StaticDataSource(cache, description))
     name() = description.name
   }
 
-  def this(description: DatasetDescription)
+  def this(description: DatasetDescription, module: Option[Module])
           (implicit owner: Ctx.Owner) =
-    this(description, description.projectId)
+    this(description, description.projectId, module)
 
   def fetchRowsWithAPI(offset: Long, limit: Int): Future[Seq[DatasetRow]] = 
   {
@@ -95,7 +109,7 @@ class Dataset(
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
       }.reactive,
       a(
-        href := Vizier.links.spreadsheet(projectId, datasetId),
+        href := editingDetails.url(projectId, datasetId),
         target := "_blank",
         FontAwesome("table")
       ),

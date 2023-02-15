@@ -39,6 +39,7 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
   with LazyLogging
 {
   var spreadsheet: Spreadsheet = null
+  var projectId: Identifier = 0l
 
   logger.debug(s"[$client] Websocket opened")
   
@@ -71,6 +72,7 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
         case OpenSpreadsheet(projectId, datasetId) => 
         {
           if(spreadsheet != null){ send(ReportError("Spreadsheet already opened", "")); return }
+          this.projectId = projectId
           logger.trace("Opening spreadsheet")
           Future {
             logger.trace("Initializing spreadsheet!")
@@ -101,6 +103,14 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
         case EditCell(column, row, v) => 
         {
           spreadsheet.editCell(column, row, v)
+        }
+        case SaveSpreadsheet(branchId, moduleId, true) =>
+        {
+          send(SaveSuccessful(spreadsheet.saveAs(projectId, branchId, moduleId)))
+        }
+        case SaveSpreadsheet(branchId, moduleId, false) =>
+        {
+          send(SaveSuccessful(spreadsheet.saveAfter(projectId, branchId, moduleId)))
         }
         case Ping(id) => send(Pong(id))
       }

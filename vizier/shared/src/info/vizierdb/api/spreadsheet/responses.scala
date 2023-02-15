@@ -59,3 +59,8 @@ object DeliverCell
   implicit val format: Format[DeliverCell] = Json.format
 }
 
+case class SaveSuccessful(newModuleId: Identifier) extends SpreadsheetResponse
+object SaveSuccessful
+{
+  implicit val format: Format[SaveSuccessful] = Json.format
+}

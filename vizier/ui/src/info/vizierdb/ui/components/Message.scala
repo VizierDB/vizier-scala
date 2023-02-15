@@ -139,7 +139,7 @@ object JavascriptMessage
 
 object Message
 {
-  def apply(message: serialized.MessageDescriptionWithStream)
+  def apply(module: Module, message: serialized.MessageDescriptionWithStream)
            (implicit owner: Ctx.Owner): Message =
   {
     message.t match {
@@ -148,7 +148,7 @@ object Message
       case MessageType.PNG_IMAGE => DomMessage.png(message.value.as[String])
       case MessageType.MARKDOWN => MarkdownMessage(message.value.as[String])
       case MessageType.JAVASCRIPT => message.value.as[JavascriptMessage]
-      case MessageType.DATASET => DatasetMessage(new Dataset(message.value.as[serialized.DatasetDescription]))
+      case MessageType.DATASET => DatasetMessage(new Dataset(message.value.as[serialized.DatasetDescription], Some(module)))
       case MessageType.CHART => TextMessage.error(s"Chart messages not supported yet")
       case MessageType.VEGALITE => VegaMessage(message.value)
       case _ => TextMessage.error(s"Unknown message type ${message.t}")

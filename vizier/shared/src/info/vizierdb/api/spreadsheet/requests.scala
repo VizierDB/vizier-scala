@@ -41,3 +41,9 @@ object EditCell
 {
   implicit val format: Format[EditCell] = Json.format
 }
+
+case class SaveSpreadsheet(branchId: Identifier, moduleId: Identifier, replace: Boolean) extends SpreadsheetRequest
+object SaveSpreadsheet
+{
+  implicit val format: Format[SaveSpreadsheet] = Json.format
+}

@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.{
 }
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
+import info.vizierdb.types.Identifier
 
 class Spreadsheet(data: SpreadsheetDataSource)
                  (implicit ec: ExecutionContext)
@@ -276,7 +277,15 @@ class Spreadsheet(data: SpreadsheetDataSource)
     callback(_.refreshEverything())
   }
 
+  def saveAs(projectId: Identifier, branchId: Identifier, moduleId: Identifier): Identifier =
+  {
+    ???
+  }
 
+  def saveAfter(projectId: Identifier, branchId: Identifier, moduleId: Identifier): Identifier =
+  {
+    ???
+  }
 }
 
 object Spreadsheet

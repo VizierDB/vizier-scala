@@ -44,7 +44,7 @@ class DisplayArtifact(description: serialized.ArtifactDescription)(implicit owne
           j.payload.as[serialized.ParameterArtifact].nativeValue.toString()
         )
       case (d:serialized.DatasetDescription, _) =>
-        new Dataset(d).root
+        new Dataset(d, None).root
       case _ =>
         span(s"Unsupported artifact type: ${description.t}")
     }

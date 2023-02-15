@@ -29,6 +29,10 @@ import scala.concurrent.Future
 import info.vizierdb.ui.components.StaticWorkflow
 import info.vizierdb.ui.widgets.SystemNotification
 import info.vizierdb.ui.widgets.Toast
+import info.vizierdb.ui.components.dataset.DatasetNotEditable
+import info.vizierdb.ui.components.dataset.DatasetEditsAfterModule
+import info.vizierdb.ui.components.dataset.DatasetEditsReplaceModule
+import info.vizierdb.ui.components.dataset.StandaloneSpreadsheetView
 
 
 /**
@@ -258,34 +262,26 @@ object Vizier
     val projectId = arguments.get("project").get.toLong
     val datasetId = arguments.get("dataset").get.toLong
     val branchId = arguments.get("branch").map { _.toLong }
+    val moduleId = arguments.get("module").map { _.toLong }
+    val append = arguments.get("append").map { _ == "yes" }.getOrElse(false)
 
-    val cli = new SpreadsheetClient(projectId, datasetId, api)
-    cli.connected.trigger { connected => 
-      if(connected){ cli.subscribe(0) }
-    }
-    val table = new TableView(cli, 
-        rowHeight = 30,
-        maxHeight = 400,
-        headerHeight = 40
-    )
-    cli.table = Some(table)
-
-    val body = div(
-      `class` := "standalone_spreadsheet",
-      div(
-        `class` := "header",
-        button(
-          onclick := { _:(dom.Event) =>
-            cli.save()
-          },
-          "Save"
-        )
-      ),
-      table.root
-    ).render
+    val spreadsheet = 
+      new StandaloneSpreadsheetView(
+        projectId,
+        datasetId,
+        if(branchId.isDefined && moduleId.isDefined){
+          if(append){
+            DatasetEditsAfterModule(branchId.get, moduleId.get)
+          } else {
+            DatasetEditsReplaceModule(branchId.get, moduleId.get)
+          }
+        } else {
+          DatasetNotEditable
+        }
+      )
 
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      document.body.appendChild(body)
+      document.body.appendChild(spreadsheet.root)
       OnMount.trigger(document.body)
     })
   }
