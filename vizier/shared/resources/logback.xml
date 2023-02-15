@@ -55,6 +55,8 @@
   <logger name="org.mimirdb.api.request.Explain"                 level="WARN" />
   <logger name="org.mimirdb.caveats.enumerate.EnumeratePlanCaveats$"
                                                                  level="WARN" />
+  <!--+++++++++++++++++++++++  Spark  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.spark.InjectedSparkSQL$"           level="TRACE" />
 
   <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />

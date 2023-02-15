@@ -222,7 +222,7 @@ print(df['A'].sum())
   "Export functions to SQL" >>
   {
     project.script("""
-      |def addOne(x):
+      |def addOne(x) -> int:
       |  return x + 1
       |vizierdb.export_module(addOne)
     """.stripMargin)

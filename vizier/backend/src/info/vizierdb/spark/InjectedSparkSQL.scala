@@ -168,9 +168,13 @@ object InjectedSparkSQL
           }
         case UnresolvedFunction(name, args, isDistinct, filter, ignoreNulls) 
           if functionMappings contains name.mkString(".").toLowerCase =>
-            functionMappings(name.mkString(".").toLowerCase)(args)
+            logger.debug(s"Rewriting UDF ${name.mkString(".")}")
+            val ret = functionMappings(name.mkString(".").toLowerCase)(args)
+            logger.debug(s"... to: $ret (${ret.getClass()}")
+            ret
       }
 
+    logger.trace(s"Done rewriting!\n$ret")
     return ret
   }
 }

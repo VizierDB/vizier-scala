@@ -54,7 +54,8 @@ class PythonUDFBuilder(val environment: PythonEnvironment)
   ): (Seq[Expression] => PythonUDF) = 
   {
     val actualName = name.getOrElse { getName(pickled) }
-    lazy val actualDataType = dataType.getOrElse { getType(pickled) }
+    val actualDataType = dataType.getOrElse { getType(pickled) }
+    logger.debug(s"Building UDF for $actualName -> $actualDataType")
     return (args: Seq[Expression]) => PythonUDFWorkaround(
       command = pickled,
       envVars = new java.util.HashMap(),
