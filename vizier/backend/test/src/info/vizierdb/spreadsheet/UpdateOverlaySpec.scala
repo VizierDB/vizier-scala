@@ -31,6 +31,8 @@ class UpdateOverlaySpec
 {
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
+  val TIMEOUT = 2.seconds
+
   val A = ColumnRef(1, "A")
   val B = ColumnRef(2, "B")
   val C = ColumnRef(3, "C")
@@ -70,66 +72,66 @@ class UpdateOverlaySpec
     overlay.update(B(2), lit(1))
 
     // And the new record should be retrievable
-    overlay.await(B(2), duration = 1.second) must beEqualTo(1)
+    overlay.await(B(2), duration = TIMEOUT) must beEqualTo(1)
 
     // But shouldn't come back for any other cells
-    overlay.await(B(3), duration = 1.second) must beEqualTo(0)
-    overlay.await(B(1), duration = 1.second) must beEqualTo(0)
-    overlay.await(A(2), duration = 1.second) must beEqualTo(0)
-    overlay.await(A(1), duration = 1.second) must beEqualTo(0)
+    overlay.await(B(3), duration = TIMEOUT) must beEqualTo(0)
+    overlay.await(B(1), duration = TIMEOUT) must beEqualTo(0)
+    overlay.await(A(2), duration = TIMEOUT) must beEqualTo(0)
+    overlay.await(A(1), duration = TIMEOUT) must beEqualTo(0)
 
     //If we overwrite the insertions
     overlay.update(B(0,19), lit(2))
 
     //We should see this update
-    overlay.await(B(1), duration = 1.second) must beEqualTo(2)
-    overlay.await(B(2), duration = 1.second) must beEqualTo(2)
+    overlay.await(B(1), duration = TIMEOUT) must beEqualTo(2)
+    overlay.await(B(2), duration = TIMEOUT) must beEqualTo(2)
 
     //... but not in other columns
-    overlay.await(A(2), duration = 1.second) must beEqualTo(0)
+    overlay.await(A(2), duration = TIMEOUT) must beEqualTo(0)
 
     // And if we overwrite the default update
     overlay.update(B(2), lit(3))
 
     // We should see the default for other cells
-    overlay.await(B(1), duration = 1.second) must beEqualTo(2)
+    overlay.await(B(1), duration = TIMEOUT) must beEqualTo(2)
 
     // And the new value for this cell
-    overlay.await(B(2), duration = 1.second) must beEqualTo(3)
+    overlay.await(B(2), duration = TIMEOUT) must beEqualTo(3)
 
     // And now ranges
     overlay.update(A(2, 4), lit(4))
 
     for(i <- 2 to 4)
-      { overlay.await(A(i), duration = 1.second) must beEqualTo(4) }
-    overlay.await(A(1), duration = 1.second) must beEqualTo(0)
-    overlay.await(A(5), duration = 1.second) must beEqualTo(0)
+      { overlay.await(A(i), duration = TIMEOUT) must beEqualTo(4) }
+    overlay.await(A(1), duration = TIMEOUT) must beEqualTo(0)
+    overlay.await(A(5), duration = TIMEOUT) must beEqualTo(0)
 
     // println(dag.lvalueIndex(A))
     overlay.update(A(0, 2), lit(5))
     // println(dag.lvalueIndex(A))
 
     for(i <- 0 to 2)
-      { overlay.await(A(i), duration = 1.second) must beEqualTo(5) }
+      { overlay.await(A(i), duration = TIMEOUT) must beEqualTo(5) }
     for(i <- 3 to 4)
-      { overlay.await(A(i), duration = 1.second) must beEqualTo(4) }
+      { overlay.await(A(i), duration = TIMEOUT) must beEqualTo(4) }
 
-    overlay.await(A(5), duration = 1.second) must beEqualTo(0)
+    overlay.await(A(5), duration = TIMEOUT) must beEqualTo(0)
 
     overlay.update(A(1, 5), lit(6))
     // println(dag.lvalueIndex(A))
-    overlay.await(A(0), duration = 1.second) must beEqualTo(5)
+    overlay.await(A(0), duration = TIMEOUT) must beEqualTo(5)
 
     for(i <- 1 to 5)
-      { overlay.await(A(i), duration = 1.second) must beEqualTo(6) }
-    overlay.await(A(6), duration = 1.second) must beEqualTo(0)
+      { overlay.await(A(i), duration = TIMEOUT) must beEqualTo(6) }
+    overlay.await(A(6), duration = TIMEOUT) must beEqualTo(0)
 
   }
 
   "Row Deletion" >> 
   {
     val overlay = init()
-    def get(cell: SingleCell) = overlay.await(cell, duration = 1.second)
+    def get(cell: SingleCell) = overlay.await(cell, duration = TIMEOUT)
 
     overlay.addColumn(A)
     overlay.addColumn(B)
@@ -186,7 +188,7 @@ class UpdateOverlaySpec
   "Row Insertions" >>
   {
     val overlay = init()
-    def get(cell: SingleCell) = overlay.await(cell, duration = 1.second)
+    def get(cell: SingleCell) = overlay.await(cell, duration = TIMEOUT)
 
     overlay.addColumn(A)
 
@@ -194,9 +196,19 @@ class UpdateOverlaySpec
     overlay.update(A(4, 7), lit(2))
     overlay.update(A(8, 10), lit(3))
 
+    // The following rows serve an important purpose: ensuring that the cell
+    // updates have a chance to finish evaluating.  Without them, the
+    // insertRows operation might race the updates, resulting in undefined 
+    // behaviors.
+    get(A(2)) must beEqualTo(1)
+    get(A(5)) must beEqualTo(2)
+    get(A(9)) must beEqualTo(3)
+
     // println(overlay.lvalueIndex(A))
-    overlay.insertRows(5, 3)
+    overlay.insertRows(position = 5, count = 3)
     // println(overlay.lvalueIndex(A))
+
+    overlay.show(0, 19)
 
     get(A(0)) must beEqualTo(0)
     get(A(1)) must beEqualTo(1)
@@ -215,13 +227,21 @@ class UpdateOverlaySpec
   "Row Moves" >> 
   {
     val overlay = init()
-    def get(cell: SingleCell) = overlay.await(cell, duration = 1.second)
+    def get(cell: SingleCell) = overlay.await(cell, duration = TIMEOUT)
 
     overlay.addColumn(A)
 
     overlay.update(A(1, 3), lit(1))
     overlay.update(A(4, 7), lit(2))
     overlay.update(A(8, 10), lit(3))
+
+    // The following rows serve an important purpose: ensuring that the cell
+    // updates have a chance to finish evaluating.  Without them, the
+    // insertRows operation might race the updates, resulting in undefined 
+    // behaviors.
+    get(A(2)) must beEqualTo(1)
+    get(A(5)) must beEqualTo(2)
+    get(A(9)) must beEqualTo(3)
 
     // 1   2   3   4   5   6    7    8   9  10
     // Before:
@@ -253,7 +273,7 @@ class UpdateOverlaySpec
   "Static Dependencies" >> 
   {
     val overlay = init()
-    def get(cell: SingleCell) = overlay.await(cell, duration = 2.seconds)
+    def get(cell: SingleCell) = overlay.await(cell, duration = TIMEOUT)
 
     overlay.addColumn(A)
 

@@ -90,7 +90,15 @@ foo("w")
 
   "interact with datasets" >> 
   {
-    project.load("test_data/r.csv", "test_r")
+    project.load(
+      "test_data/r.csv", 
+      "test_r",
+      schema = Seq(
+        "A" -> IntegerType,
+        "B" -> IntegerType,
+        "C" -> IntegerType,
+      )
+    )
 
     project.script("""
 ds = vizierdb["test_r"]

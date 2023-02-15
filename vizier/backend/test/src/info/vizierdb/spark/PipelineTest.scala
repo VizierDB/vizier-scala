@@ -7,6 +7,7 @@ import scala.collection.mutable
 import info.vizierdb.commands.jvmScript._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.MutableProject
+import org.apache.spark.sql.types.IntegerType
 
 class PipelineTest
   extends Specification
@@ -19,7 +20,15 @@ class PipelineTest
   {
     val project = MutableProject("pipeline test")
 
-    project.load("test_data/r.csv","r")
+    project.load(
+      "test_data/r.csv",
+      "r",
+      schema = Seq(
+        "A" -> IntegerType,
+        "B" -> IntegerType,
+        "C" -> IntegerType,
+      )
+    )
 
     project.script(
       """val a = vizierdb.createPipeline("r")(

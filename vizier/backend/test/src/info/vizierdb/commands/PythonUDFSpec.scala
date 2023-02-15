@@ -53,7 +53,8 @@ class PythonUDFSpec
                     )))
                   ).collect()
 
-    ok
+    applied must haveSize(10)
+    applied.map { _.getInt(0) } must beEqualTo((0 until 10).map { x => x * x }.toArray)
 
 
   }
