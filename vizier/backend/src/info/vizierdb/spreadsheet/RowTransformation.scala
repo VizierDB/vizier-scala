@@ -3,6 +3,7 @@ package info.vizierdb.spreadsheet
 import info.vizierdb.types._
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.functions._
+import play.api.libs.json._
 
 /**
  * A trait for "lightweight" transformations over the order of rows -- simple 
@@ -166,4 +167,24 @@ case class MoveRows(from: Long, to: Long, count: Int) extends RowTransformation
 
     lowStay ++ lowMove.offset(mid - lowerBound) ++ highMove.offset(lowerBound - mid) ++ highStay
   }
+}
+
+object RowTransformation
+{
+  implicit val format: Format[RowTransformation] = Json.format
+}
+
+object InsertRows
+{
+  implicit val format: Format[InsertRows] = Json.format
+}
+
+object DeleteRows
+{
+  implicit val format: Format[DeleteRows] = Json.format
+}
+
+object MoveRows
+{
+  implicit val format: Format[MoveRows] = Json.format
 }

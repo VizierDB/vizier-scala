@@ -2,6 +2,7 @@ package info.vizierdb.spreadsheet
 
 import org.apache.spark.sql.catalyst.expressions.SortOrder
 import info.vizierdb.types._
+import play.api.libs.json._
 
 case class ReferenceFrame(transformations: Seq[RowTransformation] = Seq.empty)
 {
@@ -44,4 +45,9 @@ case class ReferenceFrame(transformations: Seq[RowTransformation] = Seq.empty)
 
   def +(xform: RowTransformation): ReferenceFrame =
     ReferenceFrame(transformations :+ xform)
+}
+
+object ReferenceFrame
+{
+  implicit val format: Format[ReferenceFrame] = Json.format
 }

@@ -1,6 +1,7 @@
 package info.vizierdb.spreadsheet
 
 import org.apache.spark.sql.Column
+import play.api.libs.json._
 
 case class ColumnRef(id: Long)
 {
@@ -13,6 +14,7 @@ case class ColumnRef(id: Long)
 }
 object ColumnRef
 {
+  implicit val format: Format[ColumnRef] = Json.format
   def apply(id: Long, label: String): ColumnRef = 
   {
     val ret = ColumnRef(id)
