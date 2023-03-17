@@ -71,11 +71,22 @@ class RangeMap[T]()
   def apply(at: Long): Option[T] =
     apply(at, at).headOption.map { _._3 }
 
+  def isDefinedAt(at: Long): Boolean =
+    !apply(at, at).isEmpty
+
   /**
    * Insert an element into the structure.
+   * @param   rows         The positions to insert the element at
    * @param   element      The element to insert
+   */
+  def insert(rows: RangeSet, element: T): Unit =
+    rows.foreach { case (from, to) => insert(from, to, element) }
+
+  /**
+   * Insert an element into the structure.
    * @param   insertFrom   The start of the range to insert at
    * @param   insertTo     The end of the range to insert at
+   * @param   element      The element to insert
    */
   def insert(insertFrom: Long, insertTo: Long, element: T): Unit =
   {
@@ -95,6 +106,23 @@ class RangeMap[T]()
     }
     data.clear
   }
+
+  /**
+   * Slice a range of elements out of the map
+   * @param  rangeSet     The rangeSet to slice
+   * @return              A list of all (subsets of) ranges that (partially) overlap with [from, to]
+   * 
+   * Postcondition: 
+   *  - There are no ranges in `data` from sliceFrom to sliceTo (inclusive)
+   *  - Any range that overlapped sliceFrom is included with its upper bound cut to sliceFrom-1
+   *  - Any range that overlapped sliceTo is included with its lower bound cut to sliceTo+1
+   *  - Any range that overlapps both is 'bisected' into two separate ranges.
+   * 
+   * Any range that overlaps [sliceFrom, sliceTo] is returned.  If the overlap is only partial, 
+   * then only the overlapping region is returned
+   */
+  def slice(ranges: RangeSet): Seq[(Long, Long, T)] =
+    ranges.flatMap { case (from, to) => slice(from, to) }.toSeq
 
   /**
    * Slice a range of elements out of the map
@@ -293,6 +321,60 @@ class RangeMap[T]()
   }
 
   /**
+   * Insert an element in the specified range, updating an existing value if
+   * one is present.
+   * @param   from     The range of rows to update
+   * @param   rule     A rule for updating existing values
+   * 
+   * The update rule should be specified as a function that takes:
+   *  - From
+   *  - To
+   *  - Option of the existing value in the range from-to
+   * 
+   * This function guarantees that the union of the from-to ranges on which 
+   * the provided update rule is called on will be exactly RangeSet.  The 
+   * return value of this function will replace the existing values in these
+   * ranges.
+   */
+  def update(ranges: RangeSet)(rule: (Long, Long, Option[T]) => Option[T]): Unit =
+    ranges.foreach { case (from, to) => update(from, to)(rule) }
+
+  /**
+   * Insert an element in the specified range, updating an existing value if
+   * one is present.
+   * @param   from     The range of rows to update
+   * @param   rule     A rule for updating existing values
+   * 
+   * The update rule should be specified as a function that takes:
+   *  - From
+   *  - To
+   *  - Option of the existing value in the range from-to
+   * 
+   * This function guarantees that the union of the from-to ranges on which 
+   * the provided update rule is called on will be exactly RangeSet.  The 
+   * return value of this function will replace the existing values in these
+   * ranges.
+   */
+  def update(from: Long, to: Long)(rule: (Long, Long, Option[T]) => Option[T]): Unit =
+  {
+    var last = from
+
+    def insertByRule(insertFrom: Long, insertTo: Long, oldValue: Option[T]) =
+      rule(insertFrom, insertTo, oldValue) match {
+        case None => // asked to erase this segment... do nothing
+        case Some(newValue) => data(insertFrom) = (insertTo, newValue) 
+      }
+
+    for( (sliceFrom, sliceTo, value) <- slice(from, to) )
+    {
+      if(last < sliceFrom) { insertByRule(sliceFrom-1, last, None) }
+      insertByRule(sliceFrom, sliceTo, Some(value))
+      last = sliceFrom + 1
+    }
+    if(last < to){ insertByRule(last, to, None) }
+  }
+
+  /**
    * Bisect the map at the specified index (if necessary)
    * @param  idx    The index to bisect at
    * 
@@ -313,13 +395,13 @@ class RangeMap[T]()
 
   /**
    * This function is called whenever an object is inserted into the map for a 
-   * specified ragne.
+   * specified range.
    */
   def onInsert(from: Long, to: Long, element: T): Unit = ()
 
   /**
    * This function is called whenever an object is inserted into the map for a 
-   * specified ragne.
+   * specified range.
    */
   def onRemove(from: Long, to: Long, element: T): Unit = ()
 
@@ -337,6 +419,8 @@ class RangeMap[T]()
     data.iterator
         .map { case (from, (to, element)) => (from, to, element) }
 
+  def keys: RangeSet =
+    RangeSet(data.map { case (from, (to, _)) => (from -> to) })
 
   /**
    * Pretty print
@@ -351,6 +435,8 @@ class RangeMap[T]()
 
 object RangeMap
 {
+  def empty[T]() = new RangeMap[T]()
+
   def fillGaps[T](from: Long, to: Long, elements: Seq[(Long, Long, T)]): List[(Long, Long, Option[T])] =
   {
     val nearlyEverything =

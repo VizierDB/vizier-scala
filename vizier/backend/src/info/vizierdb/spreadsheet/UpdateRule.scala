@@ -26,6 +26,35 @@ case class UpdateRule(
     }
 
   /**
+   * Compute the set of triggers that affect an update for the provided
+   * target expression when computing its value for rows in the provided ranges
+   * @param    rows         The set of rows that this update is used to compute
+   * @param    targetFrame  The [[ReferenceFrame]] in which the range is specified
+   * @return                A list of [[ColumnRef]], [[RangeSet]], [[TriggerTarget]]
+   *                        triggers indicating the cells that are triggered
+   */
+  def triggers(col: ColumnRef, rows: RangeSet, targetFrame: ReferenceFrame = frame): Map[ColumnRef, Seq[(RangeSet, TriggerTarget)]] =
+  {
+    val offsetFrame = targetFrame.relativeTo(frame)
+    val baseRange = offsetFrame.backward(rows)
+    rvalues.map { 
+              case SingleCell(col, row) => 
+                // A single cell triggers all of the target rows (which are
+                // provided relative to the targetFrame)
+                (col, (RangeSet(row, row), 
+                       AbsoluteTrigger(col, rows, targetFrame)))
+              case OffsetCell(col, rowOffset) => 
+                // Each offset cell triggers exactly one cell offset from
+                // the current cell (in the rule frame)
+                (col, (baseRange.offset(rowOffset), 
+                       RelativeTrigger(col, rowOffset, frame)))
+            }
+           .groupBy { _._1 }
+           .mapValues { _.map { case (_, (range, target)) => 
+                                  (offsetFrame.forward(range), target) } }
+  }
+
+  /**
    * Compute the set of source ranges that would affect an update
    * to the provided target expression when computing its value for
    * rows in the provided range.
@@ -37,9 +66,22 @@ case class UpdateRule(
    *                        depends on.
    */
   def triggeringRanges(from: Long, to: Long, targetFrame: ReferenceFrame = frame): Map[ColumnRef, RangeSet] =
+    triggeringRanges(RangeSet(from, to))
+
+  /**
+   * Compute the set of source ranges that would affect an update
+   * to the provided target expression when computing its value for
+   * rows in the provided range.
+   * @param    rows         The rows that this update is used to compute
+   * @param    targetFrame  The [[ReferenceFrame]] in which from/to are specified
+   * @return                A list of [[ColumnRef]], [[RangeSet]] tuples 
+   *                        identifying the cells that the affected update cells 
+   *                        depends on.
+   */
+  def triggeringRanges(rows: RangeSet, targetFrame: ReferenceFrame = frame): Map[ColumnRef, RangeSet] =
   {
     val offsetFrame = targetFrame.relativeTo(frame)
-    val baseRange = offsetFrame.backward(RangeSet(from, to))
+    val baseRange = offsetFrame.backward(rows)
     rvalues.map { 
               case SingleCell(col, row) => col -> RangeSet(row, row)
               case OffsetCell(col, rowOffset) => col -> baseRange.offset(rowOffset)
@@ -106,6 +148,10 @@ case class UpdateRule(
              .foldLeft(RangeSet()) { _ ++ _ }
     )
   }
+
+  
+
+
 
   override def toString = s"{${expression.toString}}[$id]"
 }

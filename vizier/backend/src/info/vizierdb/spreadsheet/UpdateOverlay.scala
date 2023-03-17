@@ -28,37 +28,106 @@ class UpdateOverlay(
   type UpdateID = Long
   type RowIndex = Long
 
+  /**
+   * The set of rows that the client application is interested in
+   */
   var subscriptions = RangeSet()
+
+  /**
+   * A record of all updates performed.  Only used for debugging
+   */
   val updates = mutable.Map[UpdateID, UpdateRule]()
+
+  /**
+   * Counter used to assign update (data operation) identifiers.
+   */
   var nextUpdate = 0l
+
+  /**
+   * Counter used to assign insert (shape operation) identifiers
+   */
   var nextInsert = 0l
 
+  /**
+   * All update rules, organized by column/row range.  
+   * 
+   * Note: unlike data, this collection contains <b>all</b> rules,
+   * even those that are out-of-frame.
+   * 
+   * This variable is named dag, since the collection of update rules,
+   * with their dependencies (see [[UpdateRule.rvalues]]) form a Directed 
+   * (presumably) Acyclic Graph over the set of cells.  That is, for each
+   * cell C that has an update rule applied, each rvalues defined for C
+   * represents an out-edge going to a dependency. 
+   * 
+   * Acyclicity is not actually enforced (i.e., the graph may become
+   * cyclic).  However, any cycles in the graph will never successully 
+   * evaluate.
+   */
   val dag = mutable.Map[ColumnRef,RangeMap[UpdateRule]]()
+
+  /**
+   * Literal Data; The result of evaluating rules in the dag, or the source data
+   * value if no rule is present.  
+   * 
+   * Note: This map only contains literals for which there exists either a trigger
+   * or a subscription.  See [[cellNeeded]] for the specific conditions under
+   * which this takes place.
+   */
   val data = mutable.Map[ColumnRef, mutable.Map[RowIndex, Future[Any]]]()
-  val triggers = mutable.Map[ColumnRef, mutable.Map[RowIndex, TriggerSet]]()
+
+  /**
+   * A list of registered triggers
+   * 
+   * This is an inverted index over [[dag]]; For each out-edge in [[dag]], there
+   * is a corresponding trigger linking the target cell back to the set of cells
+   * that depend on it.
+   */
+  val triggers = mutable.Map[ColumnRef, RangeMap[TriggerSet]]()
+
+  /**
+   * All cells that have presently been activated
+   */
+  val activeCells = mutable.Map[ColumnRef, RangeSet]()
+
+  /**
+   * The currently active reference frame.
+   * 
+   * The reference frame is used to track insertions and deletions, and allows
+   * low-overhead translations between positional references over the course
+   * of a series of inserted and deleted rows.
+   */
   var frame = ReferenceFrame()
 
-  def activeTriggers(column: ColumnRef) = 
-    RangeSet.ofIndices(triggers(column).keys.toSeq)
+  /**
+   * Return a [[RangeSet]] of all rows for which the cell in the specified 
+   * column has an active trigger
+   */
+  def activeTriggers(column: ColumnRef): RangeSet = 
+    triggers(column).keys
 
+  /**
+   * Register a new column with the overlay
+   */
   def addColumn(name: ColumnRef) =
   {
     data.put(name, mutable.Map.empty)
     dag.put(name, new RangeMap[UpdateRule]())
-    triggers.put(name, mutable.Map.empty)
+    triggers.put(name, RangeMap.empty[TriggerSet])
+    activeCells.put(name, subscriptions)
   }
 
+  /**
+   * Delete an existing column, registered with the overlay
+   */
   def deleteColumn(name: ColumnRef) =
   {
     data.remove(name)
     dag.remove(name)
     triggers.remove(name)
+    activeCells.remove(name)
+    // TODO: Re-Trigger any dependent triggers
   }
-
-  def cellNeeded(cell: SingleCell): Boolean =
-    cellNeeded(cell.column, cell.row)
-  def cellNeeded(column: ColumnRef, row: RowIndex): Boolean =
-    (subscriptions(row)) || (!triggers(column)(row).isEmpty)
 
   def requiredSourceRows: RangeSet =
   {
@@ -135,31 +204,90 @@ class UpdateOverlay(
     }
   }
 
-  def addTriggerFor(column: ColumnRef, row: RowIndex, rule: UpdateRule): Unit =
+  /**
+   * Identify dependencies for cells in the provided range and register 
+   * triggers for those dependencies; If necessary, also update the 
+   * list of active cells.
+   * @param column    The column of cells to look up dependencies for
+   * @param rows      The rows of cells to look up dependencies for
+   * @param rule      The update rule 
+   */
+  def addTriggerFor(column: ColumnRef, rows: RangeSet, rule: UpdateRule): Unit =
   {
-    // triggers get added under two circumstances:
-    // 1. We have a subscription for the specified row
-    // 2. One of the subscriptions depends on the specified row 
-    //    (i.e., there is an existing trigger)
+    val offsetFrame = frame.relativeTo(rule.frame)
 
-    if(cellNeeded(column, row)){
-      for(cell <- rule.triggeringCells(row, frame)){
-        if(triggers(cell.column) contains cell.row){
-          triggers(cell.column)(cell.row).add(SingleCell(column, row), frame)
-        } else {
-          triggers(cell.column)(cell.row) = new TriggerSet(SingleCell(column, row), frame)
+    // Find all the upstream dependencies for the specified rule/targets
+    val newTriggers: Seq[(
+      ColumnRef,     // The upstream column
+      RangeSet,      // The upstream rows
+      TriggerTarget, // The target of the trigger
+    )] = rule.rvalues.map {
+      case SingleCell(upstreamCol, upstreamRow) =>
+        (
+          upstreamCol,
+          RangeSet(upstreamRow, upstreamRow),
+          AbsoluteTrigger(column, rows),
+        )
+      case OffsetCell(upstreamCol, offset) =>
+        (
+          upstreamCol,
+          RangeSet(rows.offset(offset)),
+          RelativeTrigger(column, -offset),
+        )
+    }
 
-          // If this is the first reference to this cell, we may need to
-          // recursively add it to the list of active dependencies
-          dag(cell.column)(cell.row) match {
-            case None => ()
-            case Some(rule) => 
-              addTriggerFor(cell.column, cell.row, rule)
+    // Register the triggers with the inverted index
+    for( (upstreamCol, upstreamRows, target) <- newTriggers )
+    {
+      for( (start, end) <- offsetFrame.forward(upstreamRows) )
+      {
+        triggers(upstreamCol).update(
+          start, end,
+          { 
+            case (rangeStart, rangeEnd, None) => 
+              TriggerSet(target, rule)
+            case (rangeStart, rangeEnd, Some(existingTriggers)) => 
+              existingTriggers.withTrigger(target, rule)
           }
-        }
+        ) 
       }
     }
 
+    activateIfNeeded(column, rows)
+  }
+
+  /**
+   * Identify the subset of the specified cell range that is active and
+   * transitively activate its dependencies as needed
+   */
+  def activateIfNeeded(column: ColumnRef, rows: RangeSet): Unit =
+  {
+
+    // rows here are kept in the currently active reference frame
+    val queue = Queue( (column, rows) )
+
+    while(!queue.isEmpty)
+    {
+      val (sourceColumn, sourceRows) = queue.dequeue
+
+      val activeSourceRows = sourceRows.intersect(activeCells(sourceColumn))
+
+      // for each chunk of the source rows
+      for( (sourceFrom, sourceTo) <- activeSourceRows )
+      {
+        // for each rule that applies to one of those source ranges
+        for( (sourceFromChunk, sourceToChunk, rule) <- 
+                dag(column)(sourceFrom, sourceTo, clamp = true) )
+        {
+          sourceRows
+
+          val sourceChunkRange = RangeSet(sourceFromChunk, sourceToChunk)
+
+
+        }
+      }
+
+    }
   }
 
   def triggerReexecution(targets: Seq[SingleCell]): Unit = 
@@ -615,50 +743,4 @@ class UpdateOverlay(
     )
   }
 
-}
-
-class TriggerSet(var frame: ReferenceFrame)
-{
-  val triggers = mutable.Set[SingleCell]()
-
-  def this(cell: SingleCell, frame: ReferenceFrame)
-  {
-    this(frame)
-    add(cell, frame)
-  }
-
-  def add(cell: SingleCell, cellFrame: ReferenceFrame): Unit =
-  {
-    if(!(frame eq cellFrame)){ updateFrame(cellFrame) }
-    triggers.add(cell)
-  }
-
-  def remove(cell: SingleCell, cellFrame: ReferenceFrame): Unit =
-  {
-    if(!(frame eq cellFrame)){ updateFrame(cellFrame) }
-    triggers.remove(cell)
-  }
-
-  def iterator(cellFrame: ReferenceFrame): Iterator[SingleCell] =
-  {
-    if(!(frame eq cellFrame)){ updateFrame(cellFrame) }
-    triggers.iterator
-  }
-
-  def isEmpty = triggers.isEmpty
-
-  def updateFrame(newFrame: ReferenceFrame): Unit = 
-  {
-    val offset = newFrame.relativeTo(frame)
-    val oldTriggers = triggers.toIndexedSeq
-    triggers.clear
-    for(trigger <- oldTriggers){
-      offset.forward(RowByIndex(trigger.row)) match {
-        case None => // row deleted.  Ignore!
-        case Some(RowByIndex(idx)) => 
-          triggers.add(SingleCell(trigger.column, idx))
-        case Some(InsertedRow(_, _)) => //should never happen
-      }
-    }
-  }
 }

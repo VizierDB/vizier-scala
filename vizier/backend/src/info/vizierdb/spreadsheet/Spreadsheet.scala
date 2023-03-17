@@ -245,23 +245,27 @@ class Spreadsheet(data: SpreadsheetDataSource)
    *                   the name of the column to insert to the left of.
    * @param  dataType  (optional) the data type of the new column
    */
-  def insertColumn(name: String, before: Option[String], dataType: DataType = StringType): Unit =
+  def insertColumn(name: String, before: Option[String], dataType: DataType = StringType): ColumnRef =
   {
     def newCol(position: Int) = 
       OutputColumn.withDefaultValue(StructField(name, dataType), null, getColumnId(), position)
-    val idx = before match {
+    val (idx, colref) = before match {
       case None => {
-        schema.append(newCol(schema.size))
-        schema.size - 1
+        val col = newCol(schema.size)
+        schema.append(col)
+        (schema.size - 1, col.ref)
       }
       case Some(name) => {
         val idx = indexOfColumn(name)
-        schema.insert(idx, newCol(idx))
+        val col = newCol(idx)
+        schema.insert(idx, col)
         for(i <- idx+1 until schema.size){ schema(i).position = i }
-        idx
+        (idx, col.ref)
       }
     }
+    overlay.addColumn(colref)
     callback(_.refreshEverything())
+    return colref
   }
 
   /**
@@ -271,8 +275,9 @@ class Spreadsheet(data: SpreadsheetDataSource)
   def deleteColumn(name: String): Unit = 
   {
     val idx = indexOfColumn(name)
-    columns.remove(schema.remove(idx).id)
+    val col = columns.remove(schema.remove(idx).id)
     for(i <- idx until schema.size) { schema(i).position = i }
+    if(col.isDefined){ overlay.deleteColumn(col.get.ref) }
 
     callback(_.refreshEverything())
   }

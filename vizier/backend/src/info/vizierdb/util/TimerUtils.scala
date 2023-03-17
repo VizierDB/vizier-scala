@@ -14,6 +14,7 @@ trait TimerUtils
   )(anonFunc: => F): F = 
     TimerUtils.logTime(descriptor, context, log)(anonFunc)
 
+
 }
 
 object TimerUtils

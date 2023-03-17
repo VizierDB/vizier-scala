@@ -199,12 +199,14 @@ class RangeSet(ranges: Seq[(Long, Long)])
 
 object RangeSet
 {
+  def empty: RangeSet = RangeSet(Seq.empty)
   def apply(): RangeSet = new RangeSet(Seq.empty)
   def apply(x: Long) = new RangeSet(Seq( (x, x) ))
   def apply(low: Long, high: Long) = new RangeSet(Seq( (low, high) ))
-  def apply(ranges: Seq[(Long, Long)]): RangeSet =
+  def apply(ranges: Iterable[(Long, Long)]): RangeSet =
     new RangeSet(
-      ranges.sortBy { _._2 }
+      ranges.toSeq
+            .sortBy { _._2 }
             .foldRight(Nil:List[(Long, Long)]) { 
               case (elem, Nil) => elem :: Nil
               case (elem@(from, to), ret) => 

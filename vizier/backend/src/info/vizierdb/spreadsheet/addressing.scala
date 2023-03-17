@@ -52,6 +52,13 @@ sealed trait RValue
   def expr = RValueExpression(this)
   def ref = new Column(expr)
 }
+
+
+/**
+ * An absolute reference to a single cell
+ * 
+ * This may be either an l or an r value
+ */
 case class SingleCell(column: ColumnRef, row: Long) extends LValue with RValue
 {
   def offsetLBy(offset: Long): LValue = 
@@ -60,10 +67,22 @@ case class SingleCell(column: ColumnRef, row: Long) extends LValue with RValue
   override def toString =
     s"[${column}:$row]"
 }
+
+/**
+ * A range of cells
+ * 
+ * This may only be an l value
+ */
 case class ColumnRange(column: ColumnRef, from: Long, to: Long) extends LValue
 {
   def offsetLBy(offset: Long): LValue = 
     copy(from = from + offset, to = to + offset)
   def toRangeSet: RangeSet = RangeSet(from, to)
 }
+
+/**
+ * A relative reference to a single cell
+ * 
+ * This may only be an r value
+ */
 case class OffsetCell(column: ColumnRef, rowOffset: Int) extends RValue
