@@ -19,7 +19,7 @@ import org.specs2.specification.BeforeAll
 import info.vizierdb.test.SharedTestResources
 import org.specs2.specification.core.Fragments
 import info.vizierdb.MutableProject
-import org.apache.spark.sql.types.FloatType
+import org.apache.spark.sql.types._
 
 class PythonSaveDatasetSpec
   extends Specification
@@ -35,7 +35,14 @@ class PythonSaveDatasetSpec
     test >> {
 
       val project = MutableProject(s"Python $test")
-      project.load("test_data/r.csv", "R")
+      project.load("test_data/r.csv", "R", 
+        schema = Seq(
+          "A" -> IntegerType,
+          "B" -> IntegerType,
+          "C" -> IntegerType,
+        ),
+        header = true
+      )
       project.script(s"""
         |ds = vizierdb["R"]
         |
@@ -49,6 +56,7 @@ class PythonSaveDatasetSpec
         """.stripMargin)
       project.waitUntilReadyAndThrowOnError
       val df = project.dataframe("R")
+      df.schema(1).dataType must beEqualTo(IntegerType)
       val data = df.collect.toSeq
       println(s"Read artifact #${project.artifact("R").id}")
       data.map { _.getInt(1) } must contain(42)

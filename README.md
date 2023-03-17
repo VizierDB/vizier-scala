@@ -76,9 +76,12 @@ Vizier tracks how cells use artifacts and inter-cell dependencies.  When a cell 
 
 ### Compiling
 
-To use this repository you'll need [Scala 2](https://www.scala-lang.org/download/scala2.html), [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation) version 0.10 or greater, and [Ammonite](http://ammonite.io/) version 3.0.0 or greater.  
+To use this repository you'll need 
+* [Scala 2](https://www.scala-lang.org/download/scala2.html)
+* [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation) version 0.10 or greater
+* [Ammonite](http://ammonite.io/) version 3.0.0 or greater.  
 
-An easy way to install all three is with [Coursier](https://get-coursier.io/docs/cli-installation) (`cs setup`).
+An easy way to install all three is with [Coursier](https://get-coursier.io/docs/cli-installation) (`cs setup` and `cs install mill`).
 
 Some useful commands for using this repository
 
@@ -89,8 +92,6 @@ mill vizier.compile
 Compiled class files will be in `out/vizier/compile/dest`
 
 ##### Run Test Cases
-
-We suggest using at least mill version 0.9.8 (released May 27, 2021), as it has somewhat better support for specs2 testing.
 
 ```
 mill vizier.test

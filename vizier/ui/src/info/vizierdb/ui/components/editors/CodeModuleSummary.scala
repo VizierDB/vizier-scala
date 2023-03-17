@@ -1,4 +1,4 @@
-package info.vizierdb.ui.components.summary
+package info.vizierdb.ui.components.editors
 
 import org.scalajs.dom
 import scalatags.JsDom.all._
@@ -18,6 +18,8 @@ import info.vizierdb.serialized.ParameterDescriptionTree
 import info.vizierdb.serialized.CodeParameterDescription
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.components.EnvironmentParameter
+import info.vizierdb.serialized.SimpleParameterDescription
+import info.vizierdb.ui.components.StringParameter
 
 class CodeModuleSummary(
   module: Module,
@@ -94,10 +96,16 @@ class CodeModuleSummary(
         p.isInstanceOf[CodeParameterDescription] && (p.datatype != "environment")
       }.map { _.id }.getOrElse { "code" }
 
-    val environmentParam = 
+    val environmentParam: Option[EnvironmentParameter] = 
       command.parameters.collectFirst { 
         case p:CodeParameterDescription if p.datatype == "environment" =>
           new EnvironmentParameter(p)
+      }
+
+    val outputDatasetField: Option[StringParameter] =
+      command.parameters.collectFirst {
+        case p:SimpleParameterDescription if p.id == "output_dataset" =>
+          new StringParameter(p)
       }
 
     var otherArgs = Seq[CommandArgument]()
@@ -108,6 +116,8 @@ class CodeModuleSummary(
         CommandArgument(codeField, code.value)
       ) ++ environmentParam.map { e =>
         CommandArgument(e.id, e.value)
+      } ++ outputDatasetField.map { o =>
+        CommandArgument(o.id, o.value)
       }
 
     def loadState(arguments: Seq[CommandArgument]): Unit =
@@ -116,8 +126,23 @@ class CodeModuleSummary(
       // Same goes for the environment parameter
       otherArgs = arguments.filter { a => 
         if(a.id == codeField){ false }
-        if(environmentParam.isDefined && environmentParam.get.id == a.id){ false }
+        else if(environmentParam.isDefined && environmentParam.get.id == a.id){ false }
+        else if(outputDatasetField.isDefined && outputDatasetField.get.id == a.id){ false }
         else { true }
+      }
+
+      if(environmentParam.isDefined){
+        val arg = arguments.find { _.id == environmentParam.get.id }
+        if(arg.isDefined){
+          environmentParam.get.set(arg.get.value)
+        }
+      }
+
+      if(outputDatasetField.isDefined){
+        val arg = arguments.find { _.id == outputDatasetField.get.id }
+        if(arg.isDefined){
+          outputDatasetField.get.set(arg.get.value)
+        }
       }
     }
 
@@ -126,7 +151,8 @@ class CodeModuleSummary(
         code.editor.focus()
       },
       code.root,
-      environmentParam.map { _.root }
+      environmentParam.map { _.root },
+      outputDatasetField.map { _.root },
     ).render
   }
 

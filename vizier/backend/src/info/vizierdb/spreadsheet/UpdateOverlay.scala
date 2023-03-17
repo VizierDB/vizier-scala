@@ -14,6 +14,7 @@ import scala.util.Success
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import com.typesafe.scalalogging.LazyLogging
+import scala.concurrent.duration._
 
 /**
  * This class acts as a sort of 
@@ -544,6 +545,58 @@ class UpdateOverlay(
       forceCells = deletedTriggers.flatMap { _.iterator(frame) }.toSet
     )
   }
+
+  def show(from: Int, to: Int): Unit =
+  {
+    println(tableString(data.keys.toSeq, (from until to)))
+  }
+
+  def tableString(columns: Seq[ColumnRef], rows: Seq[Int]): String = 
+  {
+    val (columnLabels: Seq[String], 
+         columnData: Seq[Array[String]], 
+         columnWidths: Seq[Int]
+       ) = (
+        (
+          "#",
+          rows.map { _.toString }.toArray,
+          (rows.map { _.toString.length() } :+ 1).max
+        ) +: (
+          columns.map { col =>
+            val data: Array[String] = 
+              rows.map { row => 
+                await(col(row), duration = 1.second).toString
+              }.toArray
+
+            (
+              col.label,
+              data, 
+              (col.label +: data).map { _.length }.max
+            )
+          }
+        )
+      ).unzip3
+
+    val buffer = new StringBuilder()
+    buffer.append(
+      (columnLabels.zip(columnWidths)).map { case (col, w) =>
+        s" ${col.padTo(w, " ").mkString} "
+      }.mkString("|")+"\n"
+    )
+    buffer.append(
+      columnWidths.map { w => "-" * (w+2) }.mkString("+")+"\n"
+    )
+    for(row <- (0 until rows.length))
+    {
+      buffer.append(
+        (columnData.zip(columnWidths)).map { case (data, w) =>
+          s" ${data(row).padTo(w, " ").mkString} "
+        }.mkString("|")+"\n"
+      )
+    }
+    return buffer.toString()
+  }
+
 }
 
 class TriggerSet(var frame: ReferenceFrame)

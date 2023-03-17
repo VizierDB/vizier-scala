@@ -4,7 +4,7 @@ import scalatags.JsDom.all._
 import org.scalajs.dom.html.Element
 import info.vizierdb.serialized.PackageCommand
 import rx._
-import info.vizierdb.ui.components.summary.CodeModuleSummary
+import info.vizierdb.ui.components.editors.CodeModuleSummary
 
 trait ModuleSummary
 {

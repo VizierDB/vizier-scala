@@ -29,9 +29,9 @@
   <logger name="info.vizierdb.viztrails.RunningCell"             level="WARN" />
   <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
   <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
-  <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="TRACE" />
-  <logger name="info.vizierdb.spreadsheet.UpdateOverlay"         level="DEBUG" />
-  <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="TRACE" />
+  <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="INFO" />
+  <logger name="info.vizierdb.spreadsheet.UpdateOverlay"         level="INFO" />
+  <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="INFO" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="INFO" />
@@ -47,7 +47,7 @@
   <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />
   <logger name="info.vizierdb.commands.python.PythonInterface"   level="WARN" />
-  <logger name="info.vizierdb.commands.python.PythonUDFBuilder"  level="DEBUG" />
+  <logger name="info.vizierdb.commands.python.PythonUDFBuilder"  level="INFO" />
   <logger name="info.vizierdb.catalog.PythonVirtualEnvironment"  level="INFO" />
 
   <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
