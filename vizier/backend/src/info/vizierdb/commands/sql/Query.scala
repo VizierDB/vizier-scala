@@ -130,7 +130,8 @@ object Query extends Command
         context.error(e.getMessage)
       case e:AnalysisException => {
         e.printStackTrace()
-        context.error(prettyAnalysisError(e, query))
+        context.error("DDL operations are currently not supported");
+        //context.error(prettyAnalysisError(e, query))
       }
     }
   }
