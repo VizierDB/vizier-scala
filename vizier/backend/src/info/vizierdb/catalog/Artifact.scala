@@ -252,7 +252,7 @@ case class Artifact(
       try {
         QueryWithCaveats(
           query = descriptor.construct(deps(_)),
-          includeCaveats = includeCaveats,
+          includeCaveats = false,//includeCaveats,
           limit = limit,
           offset = offset,
           computedProperties = descriptor.properties,
