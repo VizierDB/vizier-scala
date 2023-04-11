@@ -71,7 +71,22 @@ case class Dataset(
 
 object Dataset
 {
-  implicit val format: Format[Dataset] = Json.format
+  implicit val format: Format[Dataset] = Format(
+    new Reads[Dataset] {
+      def reads(j: JsValue): JsResult[Dataset] = 
+      {
+        JsSuccess(new Dataset(
+          deserializer = (j \ "deserializer").asOpt[String]
+            .getOrElse { return JsError(Seq(JsPath \ "deserializer" -> Seq())) },
+          parameters = (j \ "parameters").asOpt[JsObject]
+            .getOrElse { return JsError(Seq(JsPath \ "parameters" -> Seq())) },
+          properties = (j \ "properties").asOpt[Map[String, JsValue]]
+            .getOrElse { Map.empty },
+        ))
+      }
+    },
+    Json.writes[Dataset]
+  )
 
   def apply[T <: DataFrameConstructor](
     constructor: T,

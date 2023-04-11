@@ -177,7 +177,7 @@ case class Artifact(
                 offset = offset, 
                 limit = Some(actualLimit), 
                 forceProfiler = forceProfiler, 
-                includeCaveats = true
+                includeCaveats = false//true
               )(session)
 
           val df = dataframe
@@ -537,16 +537,24 @@ object Artifact
     rowCount: Long,
   ): serialized.DatasetDescription = 
   {
+    // println(s"XXXXXXXXXX: ${data.data.length}; ${data.prov.length}; ${data.rowTaint.length}; ${data.colTaint.length}")
     base.toDatasetDescription(
       columns = 
         data.schema.zipWithIndex.map { case (field, idx) =>
           serialized.DatasetColumn(id = idx, name = field.name, `type` = field.dataType)
         },
       rows =
-        data.data
-            .zip(data.prov)
-            .zip(data.rowTaint.zip(data.colTaint))
-            .map { case ((row, rowid), (rowCaveatted, attrCaveats)) => 
+        (
+          if(!data.rowTaint.isEmpty && !data.colTaint.isEmpty){
+            data.data
+                .zip(data.prov)
+                .zip(data.rowTaint.zip(data.colTaint))
+          } else {
+            data.data
+                .zip(data.prov)
+                .map { row => (row, (false, row._1.map { _ => false })) }
+          }
+        )   .map { case ((row, rowid), (rowCaveatted, attrCaveats)) => 
               serialized.DatasetRow(
                 id = rowid,
                 values = 
