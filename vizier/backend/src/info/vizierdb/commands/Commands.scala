@@ -86,8 +86,9 @@ object Commands
   )
 
   register(packageId = "plot", name = "Data Plotting", category = "plot")(
-    "chart"  -> info.vizierdb.commands.plot.SimpleChart,
-    "geo"    -> info.vizierdb.commands.plot.GeoPlot,
+    "chart"      -> info.vizierdb.commands.plot.SimpleChart,
+    "line-chart" -> info.vizierdb.commands.plot.LineChart,
+    "geo"        -> info.vizierdb.commands.plot.GeoPlot,
   )
 
   register(packageId = "sql", name = "SQL", category = "code")(

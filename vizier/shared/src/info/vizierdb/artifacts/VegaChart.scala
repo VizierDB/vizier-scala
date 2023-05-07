@@ -71,7 +71,8 @@ case class VegaPadding(left: Int, top: Int, right: Int, bottom: Int)
 object VegaPadding
 {
   val defaultReads: Reads[VegaPadding] = Json.reads
-
+  def all(x: Int) = new VegaPadding(x)
+  
   implicit val format = Format[VegaPadding](
     new Reads[VegaPadding]{
       def reads(j: JsValue) =
@@ -225,16 +226,19 @@ object VegaFileFormat
  */
 case class VegaData(
   name: String,
-  format: Option[VegaFileFormat],
-  source: Option[Seq[String]],
-  url: Option[String],
-  values: Seq[JsObject],
+  format: Option[VegaFileFormat] = None,
+  source: Option[Seq[String]] = None,
+  url: Option[String] = None,
+  values: Option[Seq[JsObject]] = None,
   async: Boolean = false,
   // on: Seq[VegaTrigger]
   // transform: Seq[VegaTransform]
 )
 object VegaData
 {
+  def byValues(name: String, values: Seq[JsObject]) =
+    VegaData(name = name, values = Some(values))
+
   implicit val format: Format[VegaData] = Json.format
 }
 
@@ -242,69 +246,69 @@ object VegaData
  * A vega scale type
  */
 sealed trait VegaScaleType
-sealed trait VegaQuantitiativeScale extends VegaScaleType
-case object VegaLinearScale extends VegaQuantitiativeScale
-case object VegaLogScale extends VegaQuantitiativeScale
-case object VegaPowScale extends VegaQuantitiativeScale
-case object VegaSqrtScale extends VegaQuantitiativeScale
-case object VegaSymlogScale extends VegaQuantitiativeScale
-case object VegaTimeScale extends VegaQuantitiativeScale
-case object VegaUTCScale extends VegaQuantitiativeScale
-case object VegaSequentialScale extends VegaQuantitiativeScale
-
-sealed trait VegaDiscreteScale extends VegaScaleType
-case object VegaOrdinalScale extends VegaDiscreteScale
-case object VegaBandScale extends VegaDiscreteScale
-case object VegaPointScale extends VegaDiscreteScale
-
-sealed trait VegaDiscretizingScale extends VegaScaleType
-case object VegaQuantileScale extends VegaDiscretizingScale
-case object VegaQuantizeScale extends VegaDiscretizingScale
-case object VegaThresholdScale extends VegaDiscretizingScale
-case object VegaBinOrdinalScale extends VegaDiscretizingScale
-
 object VegaScaleType
 {
+  sealed trait Quantitiative extends VegaScaleType
+  case object Linear extends Quantitiative
+  case object Log extends Quantitiative
+  case object Pow extends Quantitiative
+  case object Sqrt extends Quantitiative
+  case object Symlog extends Quantitiative
+  case object Time extends Quantitiative
+  case object UTC extends Quantitiative
+  case object Sequential extends Quantitiative
+
+  sealed trait Discrete extends VegaScaleType
+  case object Ordinal extends Discrete
+  case object Band extends Discrete
+  case object Point extends Discrete
+
+  sealed trait Discretizing extends VegaScaleType
+  case object Quantile extends Discretizing
+  case object Quantize extends Discretizing
+  case object Threshold extends Discretizing
+  case object BinOrdinal extends Discretizing
+
   implicit val format = Format[VegaScaleType](
     new Reads[VegaScaleType]{
       def reads(j: JsValue) = 
         j.as[String].toLowerCase match {
-          case "linear" => JsSuccess(VegaLinearScale)
-          case "log" => JsSuccess(VegaLogScale)
-          case "pow" => JsSuccess(VegaPowScale)
-          case "sqrt" => JsSuccess(VegaSqrtScale)
-          case "symlog" => JsSuccess(VegaSymlogScale)
-          case "time" => JsSuccess(VegaTimeScale)
-          case "utc" => JsSuccess(VegaUTCScale)
-          case "sequential" => JsSuccess(VegaSequentialScale)
-          case "ordinal" => JsSuccess(VegaOrdinalScale)
-          case "band" => JsSuccess(VegaBandScale)
-          case "point" => JsSuccess(VegaPointScale)
-          case "quantile" => JsSuccess(VegaQuantileScale)
-          case "quantize" => JsSuccess(VegaQuantizeScale)
-          case "threshold" => JsSuccess(VegaThresholdScale)
-          case "bin-ordinal" => JsSuccess(VegaBinOrdinalScale)
+          case "linear" => JsSuccess(Linear)
+          case "log" => JsSuccess(Log)
+          case "pow" => JsSuccess(Pow)
+          case "sqrt" => JsSuccess(Sqrt)
+          case "symlog" => JsSuccess(Symlog)
+          case "time" => JsSuccess(Time)
+          case "utc" => JsSuccess(UTC)
+          case "sequential" => JsSuccess(Sequential)
+          case "ordinal" => JsSuccess(Ordinal)
+          case "band" => JsSuccess(Band)
+          case "point" => JsSuccess(Point)
+          case "quantile" => JsSuccess(Quantile)
+          case "quantize" => JsSuccess(Quantize)
+          case "threshold" => JsSuccess(Threshold)
+          case "bin-ordinal" => JsSuccess(BinOrdinal)
           case _ => JsError()
         }
     },
     new Writes[VegaScaleType]{
       def writes(j: VegaScaleType) =
         JsString(j match {
-          case VegaLinearScale => "linear"
-          case VegaLogScale => "log"
-          case VegaPowScale => "pow"
-          case VegaSqrtScale => "sqrt"
-          case VegaSymlogScale => "symlog"
-          case VegaTimeScale => "time"
-          case VegaUTCScale => "utc"
-          case VegaSequentialScale => "sequential"
-          case VegaOrdinalScale => "ordinal"
-          case VegaBandScale => "band"
-          case VegaPointScale => "point"
-          case VegaQuantileScale => "quantile"
-          case VegaQuantizeScale => "quantize"
-          case VegaThresholdScale => "threshold"
-          case VegaBinOrdinalScale => "bin-ordinal"
+          case Linear => "linear"
+          case Log => "log"
+          case Pow => "pow"
+          case Sqrt => "sqrt"
+          case Symlog => "symlog"
+          case Time => "time"
+          case UTC => "utc"
+          case Sequential => "sequential"
+          case Ordinal => "ordinal"
+          case Band => "band"
+          case Point => "point"
+          case Quantile => "quantile"
+          case Quantize => "quantize"
+          case Threshold => "threshold"
+          case BinOrdinal => "bin-ordinal"
         })
     }
   )
@@ -353,6 +357,85 @@ object VegaInterpolationMethod
   )
 }
 
+sealed trait VegaDomain
+object VegaDomain
+{
+  case class Literal(values: Seq[JsValue]) extends VegaDomain
+  case class Data(field: String, data: String) extends VegaDomain
+
+  implicit val dataFormat: Format[Data] = Json.format
+
+  implicit val format = Format[VegaDomain](
+    new Reads[VegaDomain] {
+      def reads(j: JsValue) =
+        j match {
+          case a:JsArray => JsSuccess(Literal(a.value))
+          case o:JsObject => dataFormat.reads(o)
+          case _ => JsError()
+        }
+    },
+    new Writes[VegaDomain] {
+      def writes(j: VegaDomain) =
+        j match {
+          case Literal(values) => Json.toJson(values)
+          case d:Data => dataFormat.writes(d)
+        }
+    }
+  )
+}
+
+sealed trait VegaRange
+object VegaRange
+{
+  case class Literal(values: Seq[JsValue]) extends VegaRange
+  case class Data(field: String, data: String) extends VegaRange
+  case object Width extends VegaRange
+  case object Height extends VegaRange
+  case object Symbol extends VegaRange
+  case object Category extends VegaRange
+  case object Diverging extends VegaRange
+  case object Ordinal extends VegaRange
+  case object Ramp extends VegaRange
+  case object Heatmap extends VegaRange
+
+  implicit val dataFormat: Format[Data] = Json.format
+
+  implicit val format = Format[VegaRange](
+    new Reads[VegaRange] {
+      def reads(j: JsValue) =
+        j match {
+          case JsString(x) if x.equalsIgnoreCase("width") => JsSuccess(Width)
+          case JsString(x) if x.equalsIgnoreCase("height") => JsSuccess(Height)
+          case JsString(x) if x.equalsIgnoreCase("symbol") => JsSuccess(Symbol)
+          case JsString(x) if x.equalsIgnoreCase("category") => JsSuccess(Category)
+          case JsString(x) if x.equalsIgnoreCase("diverging") => JsSuccess(Diverging)
+          case JsString(x) if x.equalsIgnoreCase("ordinal") => JsSuccess(Ordinal)
+          case JsString(x) if x.equalsIgnoreCase("ramp") => JsSuccess(Ramp)
+          case JsString(x) if x.equalsIgnoreCase("heatmap") => JsSuccess(Heatmap)
+          case a:JsArray => JsSuccess(Literal(a.value))
+          case o:JsObject => dataFormat.reads(o)
+          case _ => JsError()
+        }
+    },
+    new Writes[VegaRange] {
+      def writes(j: VegaRange) =
+        j match {
+          case Literal(values) => Json.toJson(values)
+          case d:Data => dataFormat.writes(d)
+          case Width => JsString("width")
+          case Height => JsString("height")
+          case Symbol => JsString("symbol")
+          case Category => JsString("category")
+          case Diverging => JsString("diverging")
+          case Ordinal => JsString("ordinal")
+          case Ramp => JsString("ramp")
+          case Heatmap => JsString("heatmap")
+        }
+    }
+  )
+
+}
+
 /**
  * A mapping from data values (numbers, dates, categories) to 
  * visual values (pixels, colors, sizes).  
@@ -369,8 +452,8 @@ object VegaInterpolationMethod
 case class VegaScale(
   name: String,
   `type`: VegaScaleType,
-  range: Seq[JsValue] = Seq(),
-  domain: Seq[JsValue] = Seq(),
+  range: Option[VegaRange] = None,
+  domain: Option[VegaDomain] = None,
   interpolate: Option[VegaInterpolationMethod] = None,
   reverse: Option[Boolean] = None,
   round:   Option[Boolean] = None,
@@ -777,83 +860,84 @@ object VegaAxis
     },
     new Writes[VegaAxis]{
       def writes(j: VegaAxis) = 
-        Json.obj(
-          "scale" -> j.scale,
-          "orient" -> j.orient,
-          "bandPosition" -> j.bandPosition,
-          "domain" -> j.domain,
-          "domainCap" -> j.domainCap,
-          "domainColor" -> j.domainColor,
-          "domainDash" -> j.domainDash,
-          "domainDashOffset" -> j.domainDashOffset,
-          "domainOpacity" -> j.domainOpacity,
-          "domainWidth" -> j.domainWidth,
-          "format" -> j.format,
-          "formatType" -> j.formatType,
-          "grid" -> j.grid,
-          "gridCap" -> j.gridCap,
-          "gridColor" -> j.gridColor,
-          "gridDash" -> j.gridDash,
-          "gridDashOffset" -> j.gridDashOffset,
-          "gridScale" -> j.gridScale,
-          "gridWidth" -> j.gridWidth,
-          "labels" -> j.labels,
-          "labelAlign" -> j.labelAlign,
-          "labelAngle" -> j.labelAngle,
-          "labelBaseline" -> j.labelBaseline,
-          "labelBound" -> j.labelBound,
-          "labelColor" -> j.labelColor,
-          "labelFlush" -> j.labelFlush,
-          "labelFlushOffset" -> j.labelFlushOffset,
-          "labelFont" -> j.labelFont,
-          "labelFontSize" -> j.labelFontSize,
-          "labelFontStyle" -> j.labelFontStyle,
-          "labelFontWeight" -> j.labelFontWeight,
-          "labelLimit" -> j.labelLimit,
-          "labelLineHeight" -> j.labelLineHeight,
-          "labelOffset" -> j.labelOffset,
-          "labelOpacity" -> j.labelOpacity,
-          "labelOverlap" -> j.labelOverlap,
-          "labelPadding" -> j.labelPadding,
-          "labelSeparation" -> j.labelSeparation,
-          "minExtent" -> j.minExtent,
-          "maxExtent" -> j.maxExtent,
-          "offset" -> j.offset,
-          "position" -> j.position,
-          "ticks" -> j.ticks,
-          "tickBand" -> j.tickBand,
-          "tickCap" -> j.tickCap,
-          "tickColor" -> j.tickColor,
-          "tickCount" -> j.tickCount,
-          "tickDash" -> j.tickDash,
-          "tickDashOffset" -> j.tickDashOffset,
-          "tickMinStep" -> j.tickMinStep,
-          "tickExtra" -> j.tickExtra,
-          "tickOffset" -> j.tickOffset,
-          "tickOpacity" -> j.tickOpacity,
-          "tickRound" -> j.tickRound,
-          "tickSize" -> j.tickSize,
-          "tickWidth" -> j.tickWidth,
-          "title" -> j.title,
-          "titleAnchor" -> j.titleAnchor,
-          "titleAlign" -> j.titleAlign,
-          "titleAngle" -> j.titleAngle,
-          "titleBaseline" -> j.titleBaseline,
-          "titleColor" -> j.titleColor,
-          "titleFont" -> j.titleFont,
-          "titleFontSize" -> j.titleFontSize,
-          "titleFontStyle" -> j.titleFontStyle,
-          "titleFontWeight" -> j.titleFontWeight,
-          "titleLimit" -> j.titleLimit,
-          "titleLineHeight" -> j.titleLineHeight,
-          "titleOpacity" -> j.titleOpacity,
-          "titlePadding" -> j.titlePadding,
-          "titleX" -> j.titleX,
-          "titleY" -> j.titleY,
-          "translate" -> j.translate,
-          "values" -> j.values,
-          "zindex" -> j.zindex,
-        )
+        JsObject(Seq(
+          "scale" -> Json.toJson(j.scale),
+          "orient" -> Json.toJson(j.orient),
+          "bandPosition" -> Json.toJson(j.bandPosition),
+          "domain" -> Json.toJson(j.domain),
+          "domainCap" -> Json.toJson(j.domainCap),
+          "domainColor" -> Json.toJson(j.domainColor),
+          "domainDash" -> Json.toJson(j.domainDash),
+          "domainDashOffset" -> Json.toJson(j.domainDashOffset),
+          "domainOpacity" -> Json.toJson(j.domainOpacity),
+          "domainWidth" -> Json.toJson(j.domainWidth),
+          "format" -> Json.toJson(j.format),
+          "formatType" -> Json.toJson(j.formatType),
+          "grid" -> Json.toJson(j.grid),
+          "gridCap" -> Json.toJson(j.gridCap),
+          "gridColor" -> Json.toJson(j.gridColor),
+          "gridDash" -> Json.toJson(j.gridDash),
+          "gridDashOffset" -> Json.toJson(j.gridDashOffset),
+          "gridScale" -> Json.toJson(j.gridScale),
+          "gridWidth" -> Json.toJson(j.gridWidth),
+          "labels" -> Json.toJson(j.labels),
+          "labelAlign" -> Json.toJson(j.labelAlign),
+          "labelAngle" -> Json.toJson(j.labelAngle),
+          "labelBaseline" -> Json.toJson(j.labelBaseline),
+          "labelBound" -> Json.toJson(j.labelBound),
+          "labelColor" -> Json.toJson(j.labelColor),
+          "labelFlush" -> Json.toJson(j.labelFlush),
+          "labelFlushOffset" -> Json.toJson(j.labelFlushOffset),
+          "labelFont" -> Json.toJson(j.labelFont),
+          "labelFontSize" -> Json.toJson(j.labelFontSize),
+          "labelFontStyle" -> Json.toJson(j.labelFontStyle),
+          "labelFontWeight" -> Json.toJson(j.labelFontWeight),
+          "labelLimit" -> Json.toJson(j.labelLimit),
+          "labelLineHeight" -> Json.toJson(j.labelLineHeight),
+          "labelOffset" -> Json.toJson(j.labelOffset),
+          "labelOpacity" -> Json.toJson(j.labelOpacity),
+          "labelOverlap" -> Json.toJson(j.labelOverlap),
+          "labelPadding" -> Json.toJson(j.labelPadding),
+          "labelSeparation" -> Json.toJson(j.labelSeparation),
+          "minExtent" -> Json.toJson(j.minExtent),
+          "maxExtent" -> Json.toJson(j.maxExtent),
+          "offset" -> Json.toJson(j.offset),
+          "position" -> Json.toJson(j.position),
+          "ticks" -> Json.toJson(j.ticks),
+          "tickBand" -> Json.toJson(j.tickBand),
+          "tickCap" -> Json.toJson(j.tickCap),
+          "tickColor" -> Json.toJson(j.tickColor),
+          "tickCount" -> Json.toJson(j.tickCount),
+          "tickDash" -> Json.toJson(j.tickDash),
+          "tickDashOffset" -> Json.toJson(j.tickDashOffset),
+          "tickMinStep" -> Json.toJson(j.tickMinStep),
+          "tickExtra" -> Json.toJson(j.tickExtra),
+          "tickOffset" -> Json.toJson(j.tickOffset),
+          "tickOpacity" -> Json.toJson(j.tickOpacity),
+          "tickRound" -> Json.toJson(j.tickRound),
+          "tickSize" -> Json.toJson(j.tickSize),
+          "tickWidth" -> Json.toJson(j.tickWidth),
+          "title" -> Json.toJson(j.title),
+          "titleAnchor" -> Json.toJson(j.titleAnchor),
+          "titleAlign" -> Json.toJson(j.titleAlign),
+          "titleAngle" -> Json.toJson(j.titleAngle),
+          "titleBaseline" -> Json.toJson(j.titleBaseline),
+          "titleColor" -> Json.toJson(j.titleColor),
+          "titleFont" -> Json.toJson(j.titleFont),
+          "titleFontSize" -> Json.toJson(j.titleFontSize),
+          "titleFontStyle" -> Json.toJson(j.titleFontStyle),
+          "titleFontWeight" -> Json.toJson(j.titleFontWeight),
+          "titleLimit" -> Json.toJson(j.titleLimit),
+          "titleLineHeight" -> Json.toJson(j.titleLineHeight),
+          "titleOpacity" -> Json.toJson(j.titleOpacity),
+          "titlePadding" -> Json.toJson(j.titlePadding),
+          "titleX" -> Json.toJson(j.titleX),
+          "titleY" -> Json.toJson(j.titleY),
+          "translate" -> Json.toJson(j.translate),
+          "values" -> Json.toJson(j.values),
+          "zindex" -> Json.toJson(j.zindex),
+        ).filterNot { _._2 == JsNull }
+         .toMap)
     }
   )
 }
@@ -1203,78 +1287,79 @@ object VegaLegend
     },
     new Writes[VegaLegend]{
       def writes(j: VegaLegend) =
-        Json.obj(
-          "type" -> j.`type`,
-          "direction" -> j.direction,
-          "orient" -> j.orient,
-          "fill" -> j.fill,
-          "opacity" -> j.opacity,
-          "shape" -> j.shape,
-          "size" -> j.size,
-          "stroke" -> j.stroke,
-          "strokeDash" -> j.strokeDash,
-          "strokeWidth" -> j.strokeWidth,
-          "encode" -> j.encode,
-          "format" -> j.format,
-          "formatType" -> j.formatType,
-          "gridAlign" -> j.gridAlign,
-          "clipHeight" -> j.clipHeight,
-          "columns" -> j.columns,
-          "columnPadding" -> j.columnPadding,
-          "rowPadding" -> j.rowPadding,
-          "cornerRadius" -> j.cornerRadius,
-          "fillColor" -> j.fillColor,
-          "offset" -> j.offset,
-          "padding" -> j.padding,
-          "strokeColor" -> j.strokeColor,
-          "gradientLength" -> j.gradientLength,
-          "gradientOpacity" -> j.gradientOpacity,
-          "gradientThickness" -> j.gradientThickness,
-          "gradientStrokeColor" -> j.gradientStrokeColor,
-          "gradientStrokeWidth" -> j.gradientStrokeWidth,
-          "labelAlign" -> j.labelAlign,
-          "labelBaseline" -> j.labelBaseline,
-          "labelColor" -> j.labelColor,
-          "labelFont" -> j.labelFont,
-          "labelFontSize" -> j.labelFontSize,
-          "labelFontStyle" -> j.labelFontStyle,
-          "labelFontWeight" -> j.labelFontWeight,
-          "labelLimit" -> j.labelLimit,
-          "labelOffset" -> j.labelOffset,
-          "labelOpacity" -> j.labelOpacity,
-          "labelOverlap" -> j.labelOverlap,
-          "labelSeparation" -> j.labelSeparation,
-          "legendX" -> j.legendX,
-          "legendY" -> j.legendY,
-          "symbolDash" -> j.symbolDash,
-          "symbolDashOffset" -> j.symbolDashOffset,
-          "symbolFillColor" -> j.symbolFillColor,
-          "symbolLimit" -> j.symbolLimit,
-          "symbolOffset" -> j.symbolOffset,
-          "symbolOpacity" -> j.symbolOpacity,
-          "symbolSize" -> j.symbolSize,
-          "symbolStrokeColor" -> j.symbolStrokeColor,
-          "symbolStrokeWidth" -> j.symbolStrokeWidth,
-          "symbolType" -> j.symbolType,
-          "tickCount" -> j.tickCount,
-          "tickMinStep" -> j.tickMinStep,
-          "title" -> j.title,
-          "titleAnchor" -> j.titleAnchor,
-          "titleAlign" -> j.titleAlign,
-          "titleBaseline" -> j.titleBaseline,
-          "titleColor" -> j.titleColor,
-          "titleFont" -> j.titleFont,
-          "titleFontSize" -> j.titleFontSize,
-          "titleFontStyle" -> j.titleFontStyle,
-          "titleFontWeight" -> j.titleFontWeight,
-          "titleLimit" -> j.titleLimit,
-          "titleLineHeight" -> j.titleLineHeight,
-          "titleOpacity" -> j.titleOpacity,
-          "titleOrient" -> j.titleOrient,
-          "titlePadding" -> j.titlePadding,
-          "values" -> j.values,
-          "zindex" -> j.zindex,
-        )
+        JsObject(Seq(
+          "type" -> Json.toJson(j.`type`),
+          "direction" -> Json.toJson(j.direction),
+          "orient" -> Json.toJson(j.orient),
+          "fill" -> Json.toJson(j.fill),
+          "opacity" -> Json.toJson(j.opacity),
+          "shape" -> Json.toJson(j.shape),
+          "size" -> Json.toJson(j.size),
+          "stroke" -> Json.toJson(j.stroke),
+          "strokeDash" -> Json.toJson(j.strokeDash),
+          "strokeWidth" -> Json.toJson(j.strokeWidth),
+          "encode" -> Json.toJson(j.encode),
+          "format" -> Json.toJson(j.format),
+          "formatType" -> Json.toJson(j.formatType),
+          "gridAlign" -> Json.toJson(j.gridAlign),
+          "clipHeight" -> Json.toJson(j.clipHeight),
+          "columns" -> Json.toJson(j.columns),
+          "columnPadding" -> Json.toJson(j.columnPadding),
+          "rowPadding" -> Json.toJson(j.rowPadding),
+          "cornerRadius" -> Json.toJson(j.cornerRadius),
+          "fillColor" -> Json.toJson(j.fillColor),
+          "offset" -> Json.toJson(j.offset),
+          "padding" -> Json.toJson(j.padding),
+          "strokeColor" -> Json.toJson(j.strokeColor),
+          "gradientLength" -> Json.toJson(j.gradientLength),
+          "gradientOpacity" -> Json.toJson(j.gradientOpacity),
+          "gradientThickness" -> Json.toJson(j.gradientThickness),
+          "gradientStrokeColor" -> Json.toJson(j.gradientStrokeColor),
+          "gradientStrokeWidth" -> Json.toJson(j.gradientStrokeWidth),
+          "labelAlign" -> Json.toJson(j.labelAlign),
+          "labelBaseline" -> Json.toJson(j.labelBaseline),
+          "labelColor" -> Json.toJson(j.labelColor),
+          "labelFont" -> Json.toJson(j.labelFont),
+          "labelFontSize" -> Json.toJson(j.labelFontSize),
+          "labelFontStyle" -> Json.toJson(j.labelFontStyle),
+          "labelFontWeight" -> Json.toJson(j.labelFontWeight),
+          "labelLimit" -> Json.toJson(j.labelLimit),
+          "labelOffset" -> Json.toJson(j.labelOffset),
+          "labelOpacity" -> Json.toJson(j.labelOpacity),
+          "labelOverlap" -> Json.toJson(j.labelOverlap),
+          "labelSeparation" -> Json.toJson(j.labelSeparation),
+          "legendX" -> Json.toJson(j.legendX),
+          "legendY" -> Json.toJson(j.legendY),
+          "symbolDash" -> Json.toJson(j.symbolDash),
+          "symbolDashOffset" -> Json.toJson(j.symbolDashOffset),
+          "symbolFillColor" -> Json.toJson(j.symbolFillColor),
+          "symbolLimit" -> Json.toJson(j.symbolLimit),
+          "symbolOffset" -> Json.toJson(j.symbolOffset),
+          "symbolOpacity" -> Json.toJson(j.symbolOpacity),
+          "symbolSize" -> Json.toJson(j.symbolSize),
+          "symbolStrokeColor" -> Json.toJson(j.symbolStrokeColor),
+          "symbolStrokeWidth" -> Json.toJson(j.symbolStrokeWidth),
+          "symbolType" -> Json.toJson(j.symbolType),
+          "tickCount" -> Json.toJson(j.tickCount),
+          "tickMinStep" -> Json.toJson(j.tickMinStep),
+          "title" -> Json.toJson(j.title),
+          "titleAnchor" -> Json.toJson(j.titleAnchor),
+          "titleAlign" -> Json.toJson(j.titleAlign),
+          "titleBaseline" -> Json.toJson(j.titleBaseline),
+          "titleColor" -> Json.toJson(j.titleColor),
+          "titleFont" -> Json.toJson(j.titleFont),
+          "titleFontSize" -> Json.toJson(j.titleFontSize),
+          "titleFontStyle" -> Json.toJson(j.titleFontStyle),
+          "titleFontWeight" -> Json.toJson(j.titleFontWeight),
+          "titleLimit" -> Json.toJson(j.titleLimit),
+          "titleLineHeight" -> Json.toJson(j.titleLineHeight),
+          "titleOpacity" -> Json.toJson(j.titleOpacity),
+          "titleOrient" -> Json.toJson(j.titleOrient),
+          "titlePadding" -> Json.toJson(j.titlePadding),
+          "values" -> Json.toJson(j.values),
+          "zindex" -> Json.toJson(j.zindex),
+        ).filterNot { _._2 == JsNull }
+         .toMap)
     }
   )
 }
@@ -1449,11 +1534,54 @@ object VegaFacet
 
 case class VegaFrom(
   data: String,
-  facet: Option[VegaFacet]
+  facet: Option[VegaFacet] = None
 )
 object VegaFrom
 {
   implicit val format: Format[VegaFrom] = Json.format
+}
+
+case class VegaAxisEncoding(
+  scale: String,
+  field: String
+)
+object VegaAxisEncoding
+{
+  implicit val format: Format[VegaAxisEncoding] = Json.format
+}
+
+/**
+ * A visual encoding of a mark
+ * 
+ * See: https://vega.github.io/vega/docs/marks/#visual-encoding
+ * 
+ * 2023-05-06 by OK: Honestly, encodings are something that I don't
+ * fully understand at this point.  There seems to be a hideous lack
+ * of documentation on what exactly is allowed here.  The below 
+ * definition is almost certainly wrong as a result... but it is 
+ * sufficient to get a line.  I **think** the encoding is specific
+ * to the VegaMarkType used for the mark, but there doesn't seem to
+ * be a clear documentation of what's allowed anywhere.
+ * 
+ * TODO: Track down the full schema and plug it in here.
+ */ 
+case class VegaMarkEncoding(
+  x: Option[VegaAxisEncoding] = None,
+  y: Option[VegaAxisEncoding] = None,
+  stroke: Option[VegaAxisEncoding] = None,
+)
+object VegaMarkEncoding
+{
+  implicit val format: Format[VegaMarkEncoding] = Json.format
+} 
+
+case class VegaMarkEncodingGroup(
+  enter: Option[VegaMarkEncoding] = None,
+  update: Option[VegaMarkEncoding] = None,
+)
+object VegaMarkEncodingGroup
+{
+  implicit val format: Format[VegaMarkEncodingGroup] = Json.format
 }
 
 /**
@@ -1463,18 +1591,18 @@ object VegaFrom
  */
 case class VegaMark(
   `type`: VegaMarkType,
-  clip: Option[Boolean],
-  encode: Option[JsObject],
-  from: Option[VegaFrom],
-  interactive: Option[Boolean],
-  key: Option[String],
-  name: Option[String],
-  on: Option[JsValue],
-  sort: Option[JsValue],
-  transform: Option[JsValue],
-  role: Option[String],
-  style: Option[String],
-  zindex: Option[Int],
+  clip: Option[Boolean] = None,
+  encode: Option[VegaMarkEncodingGroup] = None,
+  from: Option[VegaFrom] = None,
+  interactive: Option[Boolean] = None,
+  key: Option[String] = None,
+  name: Option[String] = None,
+  on: Option[JsValue] = None,
+  sort: Option[JsValue] = None,
+  transform: Option[JsValue] = None,
+  role: Option[String] = None,
+  style: Option[String] = None,
+  zindex: Option[Int] = None,
 )
 object VegaMark
 {
@@ -1504,11 +1632,11 @@ object VegaMark
  */
 case class VegaChart(
   description: String,
-  background: VegaColor,
   width: Int,
   height: Int,
-  padding: VegaPadding,
-  autosize: VegaAutosize,
+  padding: VegaPadding = new VegaPadding(5),
+  autosize: VegaAutosize = VegaAutosize.NoPadding,
+  background: Option[VegaColor] = None,
   title: Option[VegaTitle] = None,
   config: Option[JsValue] = None,
   signals: Seq[JsValue] = Seq(),

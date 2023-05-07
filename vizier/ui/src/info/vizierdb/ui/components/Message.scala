@@ -151,6 +151,7 @@ object Message
       case MessageType.DATASET => DatasetMessage(new Dataset(message.value.as[serialized.DatasetDescription]))
       case MessageType.CHART => TextMessage.error(s"Chart messages not supported yet")
       case MessageType.VEGALITE => VegaMessage(message.value)
+      case MessageType.VEGA => VegaMessage(message.value)
       case _ => TextMessage.error(s"Unknown message type ${message.t}")
     }
   }

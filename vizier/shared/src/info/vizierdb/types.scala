@@ -144,6 +144,7 @@ object types
     val FILE      = Value(4, "File")
     val PARAMETER = Value(6, "Parameter")
     val VEGALITE  = Value(7, "VegaLite Chart")
+    val VEGA      = Value(9, "Vega Chart")
     
     @deprecated("Use ArtifactType.VEGALITE instead of ArtifactType.CHART")
     val CHART     = Value(5, "Chart")
@@ -167,6 +168,7 @@ object types
         case FILE =>      "file"
         case PARAMETER => "sliders"
         case VEGALITE =>  "bar-chart"
+        case VEGA =>      "bar-chart"
         case _ =>         "question"
 
       }
@@ -201,6 +203,7 @@ object types
     val JAVASCRIPT  = Value(4, "text/javascript")
     val DATASET     = Value(5, "dataset/view")
     val VEGALITE    = Value(7, "chart/vegalite")
+    val VEGA        = Value(9, "chart/vega")
     val PNG_IMAGE   = Value(8, "image/png")
     // if you add a message here, update catalog/Message.scala as well
 

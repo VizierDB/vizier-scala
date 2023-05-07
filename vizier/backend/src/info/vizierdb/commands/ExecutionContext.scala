@@ -21,7 +21,7 @@ import info.vizierdb.Vizier
 import info.vizierdb.catalog.{ Artifact, Workflow, Module, Cell, Result }
 import info.vizierdb.VizierException
 import info.vizierdb.catalog.binders._
-import info.vizierdb.vega.Chart
+import info.vizierdb.vega.{ Chart => VegaLiteChart }
 import info.vizierdb.catalog.DatasetMessage
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
@@ -45,6 +45,7 @@ import org.apache.spark.ml.PipelineModel
 import scala.io.Source
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.api.akka.VizierServer
+import info.vizierdb.artifacts.VegaChart
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -291,13 +292,13 @@ class ExecutionContext(
   }
 
   /**
-   * Allocate, output and optionally message a chart
+   * Allocate, output and optionally message a Vega-Lite chart
    *
    * @param   chart           The chart description
-   * @param   withMessage     Include a message containing the chart
-   * @param   withArtifact    Include an message containing the chart
+   * @param   identifier      An artifact identifier for the chart (or omit for no artifact)
+   * @param   withMessage     set to true to emit a message containing the chart
    */
-  def chart(chart: Chart[_], identifier: String, withMessage: Boolean = true, withArtifact: Boolean = true): Boolean =
+  def vegalite(chart: VegaLiteChart[_], identifier: String = null, withMessage: Boolean = true): Boolean =
   {
     val encoded = chart.export
     if(withMessage){
@@ -306,18 +307,49 @@ class ExecutionContext(
         content = encoded.toString,
       )
     }
-    if(withArtifact){
-      output(
-        name = identifier,
-        t = ArtifactType.VEGALITE,
-        data = encoded.toString.getBytes,
-        mimeType = MIME.JSON
-      )
+    Option(identifier) match {
+      case None => ()
+      case Some(identifier) => 
+        output(
+          name = identifier,
+          t = ArtifactType.VEGALITE,
+          data = encoded.toString.getBytes,
+          mimeType = MIME.JSON
+        )
     }
 
     return true
   }
 
+  /**
+   * Allocate, output, and optionally message a Vega chart
+   * 
+   * @param   chart          The chart description
+   * @param   identifier      An artifact identifier for the chart (or omit for no artifact)
+   * @param   withMessage     set to true to emit a message containing the chart
+   */
+  def vega(chart: VegaChart, identifier: String = null, withMessage: Boolean = true): Boolean =
+  {
+    val encoded = Json.toJson(chart).toString.getBytes
+    if(withMessage){
+      message(
+        mimeType = MessageType.VEGA.toString, 
+        content = encoded,
+      )
+    }
+    Option(identifier) match {
+      case None => ()
+      case Some(identifier) => 
+        output(
+          name = identifier,
+          t = ArtifactType.VEGA,
+          data = encoded,
+          mimeType = MIME.JSON
+        )
+    }
+
+    return true
+  }
   /**
    * Allocate and output an artifact
    *

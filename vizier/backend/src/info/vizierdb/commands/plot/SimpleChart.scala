@@ -64,7 +64,7 @@ object SimpleChart extends Command
   val MAX_RECORDS = 10000
 
 
-  def name: String = "Column-Based Chart"
+  def name: String = "Simple Chart"
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
     StringParameter(id = PARAM_NAME, name = "Chart Name", required = false),
@@ -175,7 +175,7 @@ object SimpleChart extends Command
         case _ => name
       }).replaceAll("[^a-zA-Z0-9]+", "_").toLowerCase
 
-    context.chart(chart, identifier = identifier)
+    context.vegalite(chart, identifier = identifier)
 
     // val schema = context.datasetSchema(datasetName).getOrElse {
     //   throw new VizierException(s"Unknown Dataset $datasetName")
