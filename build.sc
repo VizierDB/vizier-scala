@@ -52,16 +52,25 @@ object vizier extends ScalaModule with PublishModule {
     ui.resourceDir()
   )
 
-  def forkArgs = Seq(
+  def internalJavaVersion = 
+    try {
+      System.getProperties().getProperty("java.vm.version").split("\\.")(0).toInt
+    } catch {
+      case _:NumberFormatException | _:ArrayIndexOutOfBoundsException => 8
+    }
 
-    // Required on Java 11+ for Arrow compatibility
-    // per: https://spark.apache.org/docs/latest/index.html
-    "-Dio.netty.tryReflectionSetAccessible=true",
-    
-    // Required for Spark on java 11+
-    // per: https://stackoverflow.com/questions/72230174/java-17-solution-for-spark-java-lang-noclassdeffounderror-could-not-initializ
-    "--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED"
-  )
+  def forkArgs = 
+    if(internalJavaVersion >= 11){
+      Seq(
+        // Required on Java 11+ for Arrow compatibility
+        // per: https://spark.apache.org/docs/latest/index.html
+        "-Dio.netty.tryReflectionSetAccessible=true",
+
+        // Required for Spark on java 11+
+        // per: https://stackoverflow.com/questions/72230174/java-17-solution-for-spark-java-lang-noclassdeffounderror-could-not-initializ
+        "--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
+      )
+    } else { Seq[String]() }
 
 /*************************************************
  *** Backend Dependencies
