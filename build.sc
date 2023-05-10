@@ -54,7 +54,7 @@ object vizier extends ScalaModule with PublishModule {
 
   def internalJavaVersion = T {
     try {
-      val jvm = System.getProperties().getProperty("java.vm.version")
+      val jvm = System.getProperties().getProperty("java.version")
       println(f"Running Vizier with `${jvm}`")
       jvm.split("\\.")(0).toInt
     } catch {
