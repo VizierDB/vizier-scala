@@ -52,15 +52,18 @@ object vizier extends ScalaModule with PublishModule {
     ui.resourceDir()
   )
 
-  def internalJavaVersion = 
+  def internalJavaVersion = T {
     try {
-      System.getProperties().getProperty("java.vm.version").split("\\.")(0).toInt
+      val jvm = System.getProperties().getProperty("java.vm.version")
+      println(f"Running Vizier with `${jvm}`")
+      jvm.split("\\.")(0).toInt
     } catch {
       case _:NumberFormatException | _:ArrayIndexOutOfBoundsException => 8
     }
+  }
 
-  def forkArgs = 
-    if(internalJavaVersion >= 11){
+  def forkArgs = T {
+    if(internalJavaVersion() >= 11){
       Seq(
         // Required on Java 11+ for Arrow compatibility
         // per: https://spark.apache.org/docs/latest/index.html
@@ -71,6 +74,7 @@ object vizier extends ScalaModule with PublishModule {
         "--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
       )
     } else { Seq[String]() }
+  }
 
 /*************************************************
  *** Backend Dependencies
