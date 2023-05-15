@@ -1,6 +1,7 @@
 package info.vizierdb.spreadsheet
 
 import org.apache.spark.sql.Column
+import info.vizierdb.types._
 
 case class ColumnRef(id: Long)
 {
@@ -32,7 +33,6 @@ object ColumnRef
 sealed trait LValue
 {
   def column: ColumnRef
-  def toRangeSet: RangeSet
   def offsetLBy(offset: Long): LValue
 }
 
@@ -50,18 +50,56 @@ sealed trait RValue
   def expr = RValueExpression(this)
   def ref = new Column(expr)
 }
+/**
+ * A reference to a single cell identified by its absolute position.  May 
+ * be used in an expression (i.e., an rvalue) or as an assignment target 
+ * (i.e., an lvalue).
+ */
 case class SingleCell(column: ColumnRef, row: Long) extends LValue with RValue
 {
   def offsetLBy(offset: Long): LValue = 
     copy(row = row + offset)
-  def toRangeSet: RangeSet = RangeSet(row, row)
   override def toString =
     s"[${column}:$row]"
 }
+/**
+ * A reference to a range of cells in a column.  May only be used as an
+ * assignment target (i.e., an lvalue).
+ */
 case class ColumnRange(column: ColumnRef, from: Long, to: Long) extends LValue
 {
   def offsetLBy(offset: Long): LValue = 
     copy(from = from + offset, to = to + offset)
-  def toRangeSet: RangeSet = RangeSet(from, to)
 }
+/**
+ * A reference to a range of cells in a column.  May only be used as an
+ * assignment target (i.e., an lvalue).
+ */
+case class FullColumn(column: ColumnRef) extends LValue
+{
+  def offsetLBy(offset: Long): LValue = this
+}
+/**
+ * A reference to a single cell, identified by a specific column and a
+ * relative row offset.  May only be used in an expression (i.e., an 
+ * rvalue).  The offset is specified relative to the cell for which
+ * the expression is evaluated.
+ */
 case class OffsetCell(column: ColumnRef, rowOffset: Int) extends RValue
+
+
+/**
+ * A reference to a specific row
+ */
+sealed trait RowReference
+
+/**
+ * A row from the source data (identified by its row position in the
+ * source data).
+ */
+case class RowByIndex(idx: Long) extends RowReference
+
+/**
+ * A row that was inserted by the overlay.
+ */
+case class InsertedRow(insertId: Identifier, index: Int) extends RowReference
