@@ -30,7 +30,9 @@
   <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
   <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
   <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="INFO" />
-  <logger name="info.vizierdb.spreadsheet.UpdateOverlay"         level="INFO" />
+
+  <!--+++++++++++++++++++++++  Spreadsheet  +++++++++++++++++++++++++-->
+  <logger name="info.vizierdb.spreadsheet.SingleRowExecutor"     level="INFO" />
   <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="INFO" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->

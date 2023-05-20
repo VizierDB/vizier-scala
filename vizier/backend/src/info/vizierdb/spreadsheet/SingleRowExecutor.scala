@@ -9,6 +9,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import org.apache.spark.sql.catalyst.expressions.Expression
 import java.util.concurrent.atomic.AtomicLong
+import com.typesafe.scalalogging.LazyLogging
 
 /**
  * A limited form of the Executor that only supports formulas on the 
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong
 class SingleRowExecutor(
   sourceData: (ColumnRef, Long) => Future[Any], 
   onCellUpdate: (ColumnRef, Long) => Unit
-)
+) extends LazyLogging
 {
   implicit val ec = scala.concurrent.ExecutionContext.global
 
@@ -65,13 +66,7 @@ class SingleRowExecutor(
             val (byRange, default) = updates(col)
 
             byRange(row).orElse { default }.map { pattern => 
-              new Cell(
-                pattern, 
-                pattern.rvalues.collect {
-                  case OffsetCell(col, 0) => col
-                }.toSet,
-                Future.successful { null }
-              )
+              new Cell(pattern)
             }
           }.toSeq:_*
         )
@@ -160,6 +155,8 @@ class SingleRowExecutor(
 
   def recompute(cells: Iterable[(ColumnRef, RowIndex)]): Unit =
   {
+    logger.trace(s"Preparing to recompute ${cells.mkString(", ")}")
+
     val activeCellsByRow = 
       cells.filter { case (col, row) => activeCells contains row }
            .groupBy { _._2 }
@@ -171,20 +168,25 @@ class SingleRowExecutor(
       // visit the datums in topological order
       val todo = mutable.Queue(cols.toSeq:_*)
       val deferred = mutable.Stack[ColumnRef]()
+      logger.trace(s"Recomputing ${cols.mkString(", ")} on row $row: $data")
 
       /**
        * Invariant: deferred and todo are mutually exclusive
        */
-      while(!todo.isEmpty && !deferred.isEmpty)
+      while(!todo.isEmpty || !deferred.isEmpty)
       {
         val current = 
           if(deferred.isEmpty) { todo.dequeue() }
           else { deferred.pop() }
 
+        logger.trace(s"Currently reviewing $current[$row]")
+
         // Skip columns not defined in the overlay
         if(data(columns(current)).isDefined){
           val cell = data(columns(current)).get
           val deps = cell.upstream
+
+          logger.trace(s"Checking for cycles or uncomputed dependencies in $current[$row]")
 
           // if the current column's upstream includes something
           // on the deferred queue, that means this column is upstream
@@ -203,16 +205,19 @@ class SingleRowExecutor(
               val next = depsToDo.head
               deferred.push(current)
               deferred.push(next)
+              logger.trace(s"Need to cmpute $next[$row] before $current[$row]")
               todo.dequeueFirst { _ == next }
             } else 
             {
               // no other todos for this node
               cell.recompute(row)
+              logger.trace(s"Recomputing $cell")
               onCellUpdate(current, row)
             }
           }
         } else 
         {
+          logger.trace(s"Using source data for $current[$row]")
           // we were asked to recompute... **we** don't need to do anything
           // but the following should trigger a new query to the source.
 
@@ -229,6 +234,8 @@ class SingleRowExecutor(
     assert(activeCells contains row, "Can only get active rows")
     val rowData = activeCells(row)
     val colIdx = columns(col)
+
+    logger.trace(s"RowData @ $col[$row]: $rowData")
 
     rowData(colIdx) match 
     {
@@ -255,13 +262,22 @@ class SingleRowExecutor(
   def update(target: LValue, expression: Expression): Unit =
   {
     val pattern = new UpdatePattern(expression, nextUpdateIdx.getAndIncrement())
+
+    def initCell(col: ColumnRef, row: Long) =
+      activeCells.get(row).foreach { rowData => 
+        rowData(columns(col)) = 
+          Some(new Cell(pattern))
+      }
+
     target match {
       case SingleCell(col, row) =>
         updates(col)._1.insert(row, pattern)
+        initCell(col, row)
         invalidate(Seq( (col, row) ))
 
       case ColumnRange(col, start, end) => 
         updates(col)._1.insert(start, end, pattern)
+        for(row <- start until end){ initCell(col, row) }
         invalidate( (start to end).map { (col, _) } )
 
       case FullColumn(col) => 
@@ -269,9 +285,15 @@ class SingleRowExecutor(
           updates(col)._1,
           Some(pattern)
         )
+        for(row <- activeCells.keys){ initCell(col, row) }
         invalidate(activeCells.keys.map { (col, _) })
     }
   }
+
+  def colsOfPattern(pattern: UpdatePattern): Set[ColumnRef] =
+    pattern.rvalues.collect {
+      case OffsetCell(col, 0) => col
+    }.toSet
 
   class Cell(
     val pattern: UpdatePattern,
@@ -279,6 +301,15 @@ class SingleRowExecutor(
     var data: Future[Datum]
   )
   {
+    def this(pattern: UpdatePattern) =
+    {
+      this(
+        pattern,
+        colsOfPattern(pattern),
+        Future.successful { null }
+      )
+    }
+
     def error(msg: String) =
     {
       data = Future.failed(new VizierException(msg))
@@ -296,9 +327,12 @@ class SingleRowExecutor(
           case x:Unevaluable =>
             throw new VizierException(s"The formula '$x' is not supported yet.")
 
-        }
+        }.eval()
       }
     }
+
+    override def toString: String =
+      s"${data.value} <- '=${pattern.expression}'"
   }
 
 }

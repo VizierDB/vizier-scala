@@ -81,7 +81,10 @@ object vizier extends ScalaModule with PublishModule {
  *************************************************/
   def ivyDeps = Agg(
     ////////////////////// Mimir ///////////////////////////
-    MIMIR_CAVEATS,
+    MIMIR_CAVEATS
+      .exclude(
+        "org.apache.logging.log4j" -> "log4j-slf4j-impl"
+      ),
 
     ////////////////////// Catalog Management //////////////
     ivy"org.scalikejdbc::scalikejdbc::4.0.0",
