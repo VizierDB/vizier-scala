@@ -17,6 +17,9 @@ case class RValueExpression(rvalue: RValue)
 
   def dataType: DataType = 
     throw new UnresolvedException("RValueExpression")
+
+  override def toString: String = 
+    rvalue.toString()
 }
 
 case class InvalidRValue(msg: String)
@@ -30,4 +33,7 @@ case class InvalidRValue(msg: String)
 
   def dataType: DataType = 
     throw new UnresolvedException("InvalidRValue")  
+
+  override def toString: String = 
+    s"[ERROR: $msg]"
 }

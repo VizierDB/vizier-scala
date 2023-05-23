@@ -118,16 +118,22 @@ class SingleRowExecutor(
 
 
   def invalidate(cells: Iterable[(ColumnRef, RowIndex)]): Unit =
-    recompute(downstream(cells))
+  {
+    val fullDependencies = downstream(cells)
+    logger.trace(s"All Dependencies: ${fullDependencies.mkString(", ")}")
+    recompute(fullDependencies)
+  }
 
   def downstream(cells: Iterable[(ColumnRef, RowIndex)]): Seq[(ColumnRef, RowIndex)] =
   {
+    logger.trace(s"Finding downstream of ${cells.mkString(", ")}")
+    logger.trace(s"Currently active rows: ${activeCells.keys.mkString(", ")}")
     val activeCellsByRow = 
       cells.filter { case (col, row) => activeCells contains row }
            .groupBy { _._2 }
            .mapValues { _.map { _._1 } }
 
-    activeCellsByRow.flatMap { case (row, cols) => 
+    activeCellsByRow.toSeq.flatMap { case (row, cols) => 
       var neededCols = cols.toSet
       var unneededCols = columns.keySet -- cols
       var checkCols: Set[ColumnRef] = cols.toSet
@@ -148,9 +154,10 @@ class SingleRowExecutor(
         checkCols = columnsNowNeeded
       }
 
-      cols.map { (_, row) }
+      logger.trace(s"On row $row: Need columns ${neededCols.mkString}")
+
+      neededCols.map { (_, row) }
     }
-    .toSeq
   } 
 
   def recompute(cells: Iterable[(ColumnRef, RowIndex)]): Unit =
@@ -263,11 +270,16 @@ class SingleRowExecutor(
   {
     val pattern = new UpdatePattern(expression, nextUpdateIdx.getAndIncrement())
 
+    logger.trace(s"Column map before update: ${columns}")
+
     def initCell(col: ColumnRef, row: Long) =
+    {
+      logger.trace(s"Initializing $col[$row]")
       activeCells.get(row).foreach { rowData => 
         rowData(columns(col)) = 
           Some(new Cell(pattern))
       }
+    }
 
     target match {
       case SingleCell(col, row) =>
@@ -277,7 +289,7 @@ class SingleRowExecutor(
 
       case ColumnRange(col, start, end) => 
         updates(col)._1.insert(start, end, pattern)
-        for(row <- start until end){ initCell(col, row) }
+        for(row <- start to end){ initCell(col, row) }
         invalidate( (start to end).map { (col, _) } )
 
       case FullColumn(col) => 
@@ -318,14 +330,18 @@ class SingleRowExecutor(
     def recompute(row: RowIndex)
     {
       data = Future {
+        logger.trace(s"Computing ${pattern.expression}")
         pattern.expression.transform
         {
-          case RValueExpression(OffsetCell(col, 0)) => 
-            Literal(Await.result(getFuture(col, row), Duration.Inf))
+          case RValueExpression(cell@OffsetCell(col, 0)) => 
+            logger.trace(s"Retrieving $cell")
+            val result = Await.result(getFuture(col, row), Duration.Inf)
+            logger.trace(s"Retrieved $cell")
+            Literal(result)
           case RValueExpression(_) => 
             throw new VizierException("Formulas that reference cells outside of the same row are not currently supported.")
           case x:Unevaluable =>
-            throw new VizierException(s"The formula '$x' is not supported yet.")
+            throw new VizierException(s"The formula '$x' [${x.getClass().getSimpleName()}] is not supported yet.")
 
         }.eval()
       }

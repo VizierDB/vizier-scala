@@ -60,7 +60,7 @@ case class SingleCell(column: ColumnRef, row: Long) extends LValue with RValue
   def offsetLBy(offset: Long): LValue = 
     copy(row = row + offset)
   override def toString =
-    s"[${column}:$row]"
+    s"${column}[@$row]"
 }
 /**
  * A reference to a range of cells in a column.  May only be used as an
@@ -86,7 +86,10 @@ case class FullColumn(column: ColumnRef) extends LValue
  * the expression is evaluated.
  */
 case class OffsetCell(column: ColumnRef, rowOffset: Int) extends RValue
-
+{
+  override def toString =
+    s"${column}[${if(rowOffset >= 0){"+"}else{""}}$rowOffset]"
+}
 
 /**
  * A reference to a specific row
