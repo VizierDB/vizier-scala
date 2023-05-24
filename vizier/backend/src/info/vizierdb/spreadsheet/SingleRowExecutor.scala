@@ -89,30 +89,36 @@ class SingleRowExecutor(
     if(columns contains col){
       throw new VizierException(f"$col already exists.")
     }
-    columns.put(col, columns.size)
-    activeCells.mapValues { 
-      _.append(None)
-    }
+    val colIdx = columns.size
+    columns.put(col, colIdx)
+    activeCells.values.foreach { _.append(None) }
     updates.put(col, (new RangeMap(), None))
     assert(columns.map { _._2 }.toSet == (0 until columns.size).toSet)
+    logger.trace(activeCells.map { case (row, data) => s"$row -> ${data.mkString("; ")}"}.mkString("\n"))
+    assert(activeCells.values.forall { _.size > colIdx })
   }
 
   def deleteColumn(col: ColumnRef): Unit =
   {
     val idx = columns(col)
     val invalidatedCells = 
-      activeCells.toSeq.flatMap { case (row, data) => 
-        if(data(idx).isDefined) { Some( (col, row) ) }
-        else { None }
-      }
-    invalidate(invalidatedCells)
+      downstream(
+        activeCells.toSeq.map { case (row, _) => (col, row) }
+      ).filterNot { _._1 == col }
+
     updates.remove(col)
     columns.remove(col)
-    columns.mapValues { 
-      case i if i > idx => i - 1
-      case i => i
+    for(k <- columns.keys)
+    {
+      if(columns(k) > idx){ 
+        columns(k) = columns(k) - 1
+      }
     }
-    activeCells.mapValues { _.remove(idx, 1) }
+    activeCells.values.foreach { _.remove(idx, 1) }
+    logger.trace(s"Recomputing invalidated cells: ${invalidatedCells.mkString(", ")}")
+    recompute(invalidatedCells)
+    assert(columns.values.toSet == (0 until columns.size).toSet,
+          s"After deletion (idx = $idx), column indices (${columns.values.toSet.toSeq.sorted.mkString(", ")}) differ from buffer [0, ${columns.size}]")
     assert(columns.map { _._2 }.toSet == (0 until columns.size).toSet)
   }
 
@@ -242,7 +248,7 @@ class SingleRowExecutor(
     val rowData = activeCells(row)
     val colIdx = columns(col)
 
-    logger.trace(s"RowData @ $col[$row]: $rowData")
+    logger.trace(s"RowData @ $col[$row] (idx $colIdx): $rowData")
 
     rowData(colIdx) match 
     {

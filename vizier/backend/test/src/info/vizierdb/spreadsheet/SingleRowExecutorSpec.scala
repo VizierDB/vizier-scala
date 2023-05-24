@@ -16,6 +16,8 @@ class SingleRowExecutorSpec
   val A = ColumnRef(1, label = "A")
   val B = ColumnRef(2, label = "B")
   val C = ColumnRef(3, label = "C")
+  val D = ColumnRef(4, label = "D")
+  val E = ColumnRef(5, label = "E")
 
   class ExecutorExtensions(exec: SingleRowExecutor)
   {
@@ -114,4 +116,95 @@ class SingleRowExecutorSpec
     exec.get[Int](B(3)) must beEqualTo(4)
   }
 
+  "Multi-hop References" >> 
+  {
+    val exec = init(
+      Map( 
+        A -> Seq(1, 2, 3),
+        B -> Seq(3, 4, 5),
+        C -> Seq(6, 7, 8),
+      )
+    )
+
+    exec.get[Int](B(0)) must beEqualTo(3)
+
+    exec.update(B(0), "A")
+    exec.update(C(0), "B")
+
+    exec.update(A(1), "B")
+    exec.update(C(1), "A")
+
+    exec.update(A(2), "B")
+    exec.update(B(2), "C")
+
+    for(
+      c <- Seq(A, B, C);
+      (r, v) <- Seq( 0 -> 1, 1 -> 4, 2 -> 8 )
+    ) yield
+    {
+      exec.get[Int](c(r)) must beEqualTo(v)
+    }
+  }
+
+  "Triggered Recomputation" >> 
+  {
+    val exec = init(
+      Map( 
+        A -> Seq(1, 2, 3),
+        B -> Seq(3, 4, 5),
+        C -> Seq(6, 7, 8),
+      )
+    )
+
+    exec.update(C(0), "B")
+    exec.get[Int](C(0)) must beEqualTo(3)
+    exec.update(B(0), "10")
+    exec.get[Int](C(0)) must beEqualTo(10)
+  }
+
+  "Error on deletion" >>
+  {
+    val exec = init(
+      Map( 
+        A -> Seq(1, 2, 3),
+        B -> Seq(3, 4, 5),
+        C -> Seq(6, 7, 8),
+      )
+    )
+
+    exec.update(C(0), "B")
+    exec.get[Int](C(0)) must beEqualTo(3)
+    exec.deleteColumn(B)
+    exec.columns.keys must not contain(B)
+    
+    val err = exec.getFuture(C, 0)
+    Await.ready(err, Duration(10, TimeUnit.SECONDS))
+    err.value.get.isFailure must beTrue
+    
+  }
+
+  "Formulas" >>
+  {
+    val exec = init(
+      Map( 
+        A -> Seq(1, 2, 3),
+        B -> Seq(3, 4, 5),
+        C -> Seq(6, 7, 8),
+      )
+    )
+
+    exec.addColumn(D)
+    exec.addColumn(E)
+    exec.update(D(0), "A + B")     // 1 + 3 = 4
+    exec.update(E(0), "B * C + D") // 3 * 6 + 4 = 22
+
+    exec.get[Int](D(0)) must beEqualTo(4)
+    exec.get[Int](E(0)) must beEqualTo(22)
+
+    exec.deleteColumn(D)
+
+    val err = exec.getFuture(E, 0)
+    Await.ready(err, Duration(10, TimeUnit.SECONDS))
+    err.value.get.isFailure must beTrue
+  }
 }
