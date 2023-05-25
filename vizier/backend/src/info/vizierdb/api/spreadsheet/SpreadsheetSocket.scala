@@ -169,14 +169,16 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
       }.toArray
     ))
   }
+
   def refreshCell(column: Int, row: Long): Unit = 
   {
+    assert(row >= 0 && row < spreadsheet.size, s"The row $row doesn't exist")
     logger.trace(s"Cell invalidated: $column:$row")
     // These can come in bursts, so make notification delivery asynchronous
     Future {
       try {
         logger.trace(s"Constructing invalidation message for $column:$row")
-        val message = DeliverCell(column, row, SpreadsheetCell(spreadsheet.getCell(column, row), spreadsheet.schema(column).output.dataType))
+        val message = DeliverCell(column, row, SpreadsheetCell(spreadsheet.getCell(column, row, notify = true), spreadsheet.schema(column).output.dataType))
         logger.trace(s"Sending invalidation message $message")
         send(message)
         logger.trace(s"sent invalidation message")

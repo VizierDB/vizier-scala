@@ -367,7 +367,7 @@ class SingleRowExecutor(
       columns.get(col)
              .getOrElse { 
               return Future.failed(
-                new VizierException(s"No such column: $col")
+                new VizierException(s"No such column: $col [${col.id} <- ${columns.keys.map { _.id }.toSeq.sorted.mkString(", ")}]")
               )
              }
 
@@ -469,6 +469,8 @@ class SingleRowExecutor(
             Literal(result)
           case RValueExpression(_) => 
             throw new VizierException("Formulas that reference cells outside of the same row are not currently supported.")
+          case InvalidRValue(err) => 
+            throw new VizierException(err)
           case x:Unevaluable =>
             throw new VizierException(s"The formula '$x' [${x.getClass().getSimpleName()}] is not supported yet.")
 

@@ -33,7 +33,7 @@
 
   <!--+++++++++++++++++++++++  Spreadsheet  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.spreadsheet.SingleRowExecutor"     level="INFO" />
-  <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="INFO" />
+  <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="TRACE" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
   <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="INFO" />

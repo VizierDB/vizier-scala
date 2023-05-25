@@ -48,20 +48,25 @@ class Spreadsheet(data: SpreadsheetDataSource)
      schema.map { col => col.id -> col }:_*)
 
   val executor = 
-    new SingleRowExecutor(
-      // retrieve source data
-      (col, row) => 
-        columns(col.id).source match {
-          case SourceDataset(idx, _) => data(idx, row)
-          case DefaultValue(v) => Future.successful(v)
-        },
+    {
+      val ex = 
+        new SingleRowExecutor(
+          // retrieve source data
+          (col, row) => 
+            columns(col.id).source match {
+              case SourceDataset(idx, _) => data(idx, row)
+              case DefaultValue(v) => Future.successful(v)
+            },
 
-      // notify callback
-      (col, row) =>
-        callback {
-          _.refreshCell(columns(col.id).position, row)
-        }
-    )
+          // notify callback
+          (col, row) =>
+            callback {
+              _.refreshCell(columns(col.id).position, row)
+            }
+        )
+      for(col <- schema){ ex.addColumn(col.ref) }
+      ex
+    }
 
   def pickCachePageToDiscard(candidates: Seq[Long], pageSize: Int): Long =
   {
@@ -89,24 +94,32 @@ class Spreadsheet(data: SpreadsheetDataSource)
 
   def getRow(row: Long): Array[Option[Try[Any]]] = 
   {
+    assert(0 <= row && row < size, "That row doesn't exist")
     schema.map { col => 
             executor.getFuture(col.ref, row).value
           }
           .toArray
   }
-  def getCell(column: Int, row: Long): Option[Try[Any]] = 
+  def getCell(column: Int, row: Long, notify: Boolean = false): Option[Try[Any]] = 
   {
-    executor.getFuture(schema(column).ref, row).value
+    assert(0 <= row && row < size, "That row doesn't exist")
+    val fut = executor.getFuture(schema(column).ref, row)
+    if(!fut.isCompleted && notify){ 
+      fut.onComplete { result => callback( _.refreshCell(column, row) ) }
+    }
+    return fut.value
   }
 
   def getExpression(column: Int, row: Long): Option[Expression] =
   {
+    if(row >= size){ throw new VizierException(s"Request for undefined row at position $row (only $size rows)") }
     executor.getExpression(columns(column).ref, row)
   }
 
   def subscribe(start: Long, count: Int): Unit = 
   {
-    executor.subscribe(RangeSet(start, start+count-1))
+    if(start >= size) { return }
+    executor.subscribe(RangeSet(start, Math.min(start+count-1, size-1)))
   }
 
   def unsubscribe(start: Long, count: Int): Unit = 
@@ -137,7 +150,7 @@ class Spreadsheet(data: SpreadsheetDataSource)
   {
     expr(expression).expr.transform {
       case UnresolvedAttribute(Seq(attr)) => 
-        schema.find { _.output.name.toLowerCase == attr }
+        schema.find { _.output.name.toLowerCase == attr.toLowerCase }
               .map { column => 
                 RValueExpression(OffsetCell(column.ref, 0))
               }
