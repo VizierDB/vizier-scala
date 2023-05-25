@@ -111,6 +111,22 @@ class RangeSet(ranges: Seq[(Long, Long)])
   }
 
   /**
+   * Return the number of points defined at or below the specified point
+   * @param point   The point to use as an *inclusive* upper bound
+   * @return        The number of points in the range set up to this point
+   * 
+   * This operation's runtime is O(size) (can probably make it better)
+   */
+  def countTo(point: Long): Long =
+  {
+    ranges.map {
+      case (low, high) if high <= point => high-low+1
+      case (low, high) if low <= point  => point-low+1
+      case _ => 0
+    }.sum
+  }
+
+  /**
    * Generate two new range sets by splitting at the specified point
    * @param point     The point to split at
    * @return          Two range sets.  The first contains all ranges

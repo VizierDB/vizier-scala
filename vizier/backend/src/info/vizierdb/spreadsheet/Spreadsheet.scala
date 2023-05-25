@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.{
 }
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
+import info.vizierdb.VizierException
 
 class Spreadsheet(data: SpreadsheetDataSource)
                  (implicit ec: ExecutionContext)
@@ -176,109 +177,111 @@ class Spreadsheet(data: SpreadsheetDataSource)
 
   def deleteRows(start: Long, count: Int): Unit =
   {
-    // assert(size >= start + count, "Those rows don't exist")
-    // executor.deleteRows(start,count)
-    // size = size - count
-    // callback { _.refreshRows(start, start - size) }
-    ???
+    assert(size >= start + count, "Those rows don't exist")
+    executor.deleteRows(start,count)
+    size = size - count
+    callback { _.refreshRows(start, start - size) }
   }
 
-  // def insertRows(start: Long, count: Int): Unit =
-  // {
-  //   assert(size >= start, "Can't insert there")
-  //   overlay.insertRows(start,count)
-  //   size = size + count
-  //   callback { _.refreshRows(start, start - size) }
-  // }
+  def insertRows(start: Long, count: Int): Unit =
+  {
+    assert(size >= start, "Can't insert there")
+    executor.insertRows(start,count)
+    size = size + count
+    callback { _.refreshRows(start, start - size) }
+  }
 
-  // def moveRows(from: Long, to: Long, count: Int): Unit =
-  // {
-  //   assert(to < from || from + count <= to, "Trying to move a group of rows to within itself")
-  //   assert(size >= from+count, "Source rows don't exist")
-  //   assert(size >= to, "Destination rows don't exist")
-  //   overlay.moveRows(from, to, count)
-  //   val start = math.min(from, to)
-  //   val end = math.max(from+count, to)
-  //   callback { _.refreshRows(start, end - start+1) }
-  // }
+  def moveRows(from: Long, to: Long, count: Int): Unit =
+  {
+    assert(to < from || from + count <= to, "Trying to move a group of rows to within itself")
+    assert(size >= from+count, "Source rows don't exist")
+    assert(size >= to, "Destination rows don't exist")
+    executor.moveRows(from, to, count)
+    val start = math.min(from, to)
+    val end = math.max(from+count, to)
+    callback { _.refreshRows(start, end - start+1) }
+  }
 
-  // /**
-  //  * Rename a column
-  //  * @param   from  The current name of the column
-  //  * @param   to    The name to rename the column to (must be unique)
-  //  */
-  // def renameColumn(from: String, to: String): Unit =
-  // {
-  //   if(from == to){ return }
-  //   assert(!schema.exists { _.output.name == to }, s"There is already a column named $to")
-  //   val idx = indexOfColumn(from)
-  //   schema(idx).rename(to)
-  //   callback(_.refreshHeaders())
-  // }
+  def indexOfColumn(name: String): Int =
+    schema.indexWhere { _.output.name.equalsIgnoreCase(name) }
 
-  // /**
-  //  * Move a column
-  //  * @param  from     The name of the column to move
-  //  * @param  toBefore None to move the column to the rightmost position, or the 
-  //  *                  name of the column to move the column to the left of.
-  //  */
-  // def moveColumn(from: String, toBefore: Option[String]): Unit =
-  // {
-  //   val fromIdx = indexOfColumn(from)
-  //   val toIdx = toBefore.map { indexOfColumn(_) }.getOrElse { schema.size-1 }
+  /**
+   * Rename a column
+   * @param   from  The current name of the column
+   * @param   to    The name to rename the column to (must be unique)
+   */
+  def renameColumn(from: String, to: String): Unit =
+  {
+    if(from == to){ return }
+    assert(!schema.exists { _.output.name == to }, s"There is already a column named $to")
+    val idx = indexOfColumn(from)
+    schema(idx).rename(to)
+    callback(_.refreshHeaders())
+  }
 
-  //   val offset = if(fromIdx > toIdx){ -1 } else { 1 }
-  //   {
-  //     val fromValue = schema(fromIdx)
-  //     for(idx <- fromIdx.until(toIdx, offset)){
-  //       schema(idx) = schema(idx+offset)
-  //       schema(idx).position = idx
-  //     }
-  //     schema(toIdx) = fromValue
-  //     schema(toIdx).position = toIdx
-  //   }
+  /**
+   * Move a column
+   * @param  from     The name of the column to move
+   * @param  toBefore None to move the column to the rightmost position, or the 
+   *                  name of the column to move the column to the left of.
+   */
+  def moveColumn(from: String, toBefore: Option[String]): Unit =
+  {
+    val fromIdx = indexOfColumn(from)
+    val toIdx = toBefore.map { indexOfColumn(_) }.getOrElse { schema.size-1 }
 
-  //   callback(_.refreshEverything())
-  // }
+    val offset = if(fromIdx > toIdx){ -1 } else { 1 }
+    {
+      val fromValue = schema(fromIdx)
+      for(idx <- fromIdx.until(toIdx, offset)){
+        schema(idx) = schema(idx+offset)
+        schema(idx).position = idx
+      }
+      schema(toIdx) = fromValue
+      schema(toIdx).position = toIdx
+    }
 
-  // /**
-  //  * Insert a column
-  //  * @param  from      The name of the column to insert
-  //  * @param  before    None to insert the column at the rightmost position, or 
-  //  *                   the name of the column to insert to the left of.
-  //  * @param  dataType  (optional) the data type of the new column
-  //  */
-  // def insertColumn(name: String, before: Option[String], dataType: DataType = StringType): Unit =
-  // {
-  //   def newCol(position: Int) = 
-  //     OutputColumn.withDefaultValue(StructField(name, dataType), null, getColumnId(), position)
-  //   val idx = before match {
-  //     case None => {
-  //       schema.append(newCol(schema.size))
-  //       schema.size - 1
-  //     }
-  //     case Some(name) => {
-  //       val idx = indexOfColumn(name)
-  //       schema.insert(idx, newCol(idx))
-  //       for(i <- idx+1 until schema.size){ schema(i).position = i }
-  //       idx
-  //     }
-  //   }
-  //   callback(_.refreshEverything())
-  // }
+    callback(_.refreshEverything())
+  }
 
-  // /**
-  //  * Delete a column
-  //  * @param  name      The name of the column to delete.
-  //  */
-  // def deleteColumn(name: String): Unit = 
-  // {
-  //   val idx = indexOfColumn(name)
-  //   columns.remove(schema.remove(idx).id)
-  //   for(i <- idx until schema.size) { schema(i).position = i }
+  /**
+   * Insert a column
+   * @param  from      The name of the column to insert
+   * @param  before    None to insert the column at the rightmost position, or 
+   *                   the name of the column to insert to the left of.
+   * @param  dataType  (optional) the data type of the new column
+   */
+  def insertColumn(name: String, before: Option[String], dataType: DataType = StringType): Unit =
+  {
+    def newCol(position: Int) = 
+      OutputColumn.withDefaultValue(StructField(name, dataType), null, getColumnId(), position)
+    val idx = before match {
+      case None => {
+        schema.append(newCol(schema.size))
+        schema.size - 1
+      }
+      case Some(name) => {
+        val idx = indexOfColumn(name)
+        schema.insert(idx, newCol(idx))
+        for(i <- idx+1 until schema.size){ schema(i).position = i }
+        idx
+      }
+    }
+    callback(_.refreshEverything())
+  }
 
-  //   callback(_.refreshEverything())
-  // }
+  /**
+   * Delete a column
+   * @param  name      The name of the column to delete.
+   */
+  def deleteColumn(name: String): Unit = 
+  {
+    val idx = indexOfColumn(name)
+    columns.remove(schema.remove(idx).id)
+    for(i <- idx until schema.size) { schema(i).position = i }
+
+    callback(_.refreshEverything())
+  }
 
 
 }
@@ -289,44 +292,42 @@ object Spreadsheet
 
   def apply(base: DataFrame)(implicit ec: ExecutionContext) = 
   {
-    ???
-    // val annotated = 
-    //   AnnotateWithSequenceNumber(base)
-    // val df = 
-    //   annotated.select(
-    //     (
-    //       annotated(AnnotateWithSequenceNumber.ATTRIBUTE) +:
-    //       base.columns.map { annotated(_) }
-    //     ):_*
-    //   )
-    // val seqNo = df(AnnotateWithSequenceNumber.ATTRIBUTE)
-    // val baseCols = base.columns.map { df(_) }
+    val annotated = 
+      AnnotateWithSequenceNumber(base)
+    val df = 
+      annotated.select(
+        (
+          annotated(AnnotateWithSequenceNumber.ATTRIBUTE) +:
+          base.columns.map { annotated(_) }
+        ):_*
+      )
+    val seqNo = df(AnnotateWithSequenceNumber.ATTRIBUTE)
+    val baseCols = base.columns.map { df(_) }
 
-    // val cache = 
-    //   new RowCache[Array[Any]](
-    //     fetchRows = { (offset, limit) =>
-    //       Future {
-    //         df.filter { (seqNo >= offset) and (seqNo < (offset+limit)) }
-    //           .orderBy(seqNo.asc)
-    //           .select(baseCols:_*)
-    //           .collect()
-    //           .map { _.toSeq.toArray }
-    //       }
-    //     },
-    //     selectForInvalidation = { (candidates, pageSize) => candidates.head }
-    //   )
+    val cache = 
+      new RowCache[Array[Any]](
+        fetchRows = { (offset, limit) =>
+          Future {
+            df.filter { (seqNo >= offset) and (seqNo < (offset+limit)) }
+              .orderBy(seqNo.asc)
+              .select(baseCols:_*)
+              .collect()
+              .map { _.toSeq.toArray }
+          }
+        },
+        selectForInvalidation = { (candidates, pageSize) => candidates.head }
+      )
 
-    // val spreadsheet =
-    //   new Spreadsheet(
-    //     new CachedSource(
-    //       base.schema.fields,
-    //       cache,
-    //       Future { df.count() }
-    //     )
-    //   )
-    // cache.selectForInvalidation = spreadsheet.pickCachePageToDiscard _
+    val spreadsheet =
+      new Spreadsheet(
+        new CachedSource(
+          base.schema.fields,
+          cache,
+          Future { df.count() }
+        )
+      )
+    cache.selectForInvalidation = spreadsheet.pickCachePageToDiscard _
 
-    // /* return */ spreadsheet
+    /* return */ spreadsheet
   }
-  // def apply() = new Spreadsheet(base)
 }

@@ -67,6 +67,9 @@ class RangeMap[T]()
         }
   }
 
+  def get(at: Long): Option[(Long, Long, T)] =
+    apply(at, at, clamp = false).headOption
+
   def apply(at: Long): Option[T] =
     apply(at, at).headOption.map { _._3 }
 
@@ -321,7 +324,7 @@ class RangeMap[T]()
   }
 
   /**
-   * Analogous to slice, but shift records following the silce to fill the gap.
+   * Analogous to slice, but shift records following the slice to fill the gap.
    */
   def collapse(idx: Long, count: Long): Seq[(Long, Long, T)] =
   {
@@ -339,10 +342,12 @@ class RangeMap[T]()
     return ret
   }
 
-  def inject(idx: Long, count: Long) =
+  def inject(idx: Long, count: Long, 
+    update: (Long, Long, Long, T) => (T, T) = (_, _, _, t) => (t, t),
+  ) =
   {    
     if(count > 0){ 
-      bisect(idx) 
+      bisect(idx, update = update) 
       // need to go in descending order to avoid accidentally overwriting
       // an earlier element with a later one
       for( (shiftFrom, (shiftTo, element)) <- data.from(idx).toIndexedSeq.reverseIterator){
@@ -436,8 +441,25 @@ class RangeMap[T]()
    *   - `data` does not contain a range containing idx, or
    *   - The one range in `data` contained in idx is  
    */
-  def bisect(idx: Long): Unit = slice(idx+1, idx) 
-
+  def bisect(idx: Long,
+    update: (Long, Long, Long, T) => (T, T) = (_, _, _, t) => (t, t),
+  ): Unit = 
+  {
+    apply(idx-1, idx-1, clamp = false).headOption match {
+      case None => () // Nothing to split
+      case Some( (low, high, element) ) =>
+        {
+          if(high >= idx){ 
+            val (lowElement, highElement) = update(low, idx, high, element)
+            data.put(low, (idx-1, lowElement))
+            data.put(idx, (high, highElement))
+            onRemove(low, high, element)
+            onInsert(low, idx-1, lowElement)
+            onInsert(idx, high, highElement)
+          }
+        }
+    }
+  }
   /**
    * Create a "copy" of T to split.  This is mainly here for subclasses to 
    * override in case there is mutable state in the map.
@@ -470,6 +492,11 @@ class RangeMap[T]()
     data.iterator
         .map { case (from, (to, element)) => (from, to, element) }
 
+  def last: (Long, Long, T) = 
+  {
+    val (low, (high, element)) = data.last
+    (low, high, element)
+  }
 
   /**
    * Pretty print

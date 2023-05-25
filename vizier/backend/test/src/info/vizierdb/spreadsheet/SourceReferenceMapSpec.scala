@@ -2,13 +2,13 @@ package info.vizierdb.spreadsheet
 
 import org.specs2.mutable.Specification
 
-class OffsetMapSpec
+class SourceReferenceMapSpec
   extends Specification
 {
 
   "No Edits" >>
   {
-    val map = new OffsetMap()
+    val map = new SourceReferenceMap()
 
     map(0) must beEqualTo(Some(0))
     map(10) must beEqualTo(Some(10))
@@ -19,7 +19,7 @@ class OffsetMapSpec
 
   "Simple Insertion" >>
   {
-    val map = new OffsetMap()
+    val map = new SourceReferenceMap()
 
     map.insert(10, 5)
 
@@ -34,7 +34,7 @@ class OffsetMapSpec
 
   "Simple Deletion" >>
   {
-    val map = new OffsetMap()
+    val map = new SourceReferenceMap()
 
     map.delete(10, 5)
 
@@ -47,7 +47,7 @@ class OffsetMapSpec
 
   "A Few Insertions" >> 
   {
-    val map = new OffsetMap()
+    val map = new SourceReferenceMap()
     
     map.insert(10, 5)
     map.insert(20, 5) // aka 15 before the insertion
@@ -69,7 +69,7 @@ class OffsetMapSpec
 
   "Overlapping Insertions" >> 
   {
-    val map = new OffsetMap()
+    val map = new SourceReferenceMap()
 
     map.insert(10, 5)
     map.insert(15, 5)
@@ -85,7 +85,7 @@ class OffsetMapSpec
 
   "Insert After Delete (Insert First)" >>
   {
-    val map = new OffsetMap()
+    val map = new SourceReferenceMap()
 
     map.insert(10, 5)
       // 0-9 -> 0-9
@@ -105,7 +105,7 @@ class OffsetMapSpec
 
   "Insert Before Delete (Insert First)" >>
   {
-    val map = new OffsetMap()
+    val map = new SourceReferenceMap()
 
     map.insert(10, 5)
       // 0-9 -> 0-9
@@ -125,7 +125,7 @@ class OffsetMapSpec
 
   "Insert Gets Deleted (Insert First)" >>
   {
-    val map = new OffsetMap()
+    val map = new SourceReferenceMap()
 
     map.insert(10, 5)
       // 0-9 -> 0-9
@@ -140,5 +140,24 @@ class OffsetMapSpec
     map(9) must beEqualTo(Some(9))
     map(10) must beEqualTo(Some(10))
     map(15) must beEqualTo(Some(15))
+  }
+
+  "Move" >>
+  {
+    val map = new SourceReferenceMap()
+
+    map.move(5l, 20l, 5)
+      // 0-4 -> 0-4
+      // 5-19 -> 10-24
+      // 20-24 -> 5-9
+      // 25+ -> id
+
+    map(0) must beEqualTo(Some(0))
+    map(4) must beEqualTo(Some(4))
+    map(5) must beEqualTo(Some(10))
+    map(19) must beEqualTo(Some(24))
+    map(20) must beEqualTo(Some(5))
+    map(24) must beEqualTo(Some(9))
+    map(25) must beEqualTo(Some(25))
   }
 }

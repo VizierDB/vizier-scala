@@ -207,4 +207,87 @@ class SingleRowExecutorSpec
     Await.ready(err, Duration(10, TimeUnit.SECONDS))
     err.value.get.isFailure must beTrue
   }
+
+  "Deleted rows" >>
+  {
+    val exec = init(
+      Map( 
+        A -> Seq(1,  2,  3,  4,  5),
+        B -> Seq(11, 12, 13, 14, 15),
+        C -> Seq(21, 22, 23, 24, 25),
+      )
+    )
+
+    exec.get[Int](A(4)) must beEqualTo(5)
+    exec.get[Int](B(4)) must beEqualTo(15)
+    exec.update(B(4), "A")
+
+    exec.deleteRows(RangeSet(Seq(1l->3l)))
+
+    exec.get[Int](A(0)) must beEqualTo( 1)
+    exec.get[Int](B(0)) must beEqualTo(11)
+    exec.get[Int](C(0)) must beEqualTo(21)
+
+    exec.get[Int](A(1)) must beEqualTo( 5)
+    exec.get[Int](B(1)) must beEqualTo( 5)
+    exec.get[Int](C(1)) must beEqualTo(25)
+  }
+
+  "Inserted rows" >>
+  {
+    val exec = init(
+      Map( 
+        A -> Seq(1,  2,  3),
+        B -> Seq(11, 12, 13),
+        C -> Seq(21, 22, 23),
+      )
+    )
+
+    exec.get[Int](A(2)) must beEqualTo(3)
+    exec.get[Int](B(2)) must beEqualTo(13)
+    exec.update(B(2), "A")
+
+    exec.insertRows(1, 2)
+
+    exec.get[Int](A(0)) must beEqualTo( 1)
+    exec.get[Int](B(0)) must beEqualTo(11)
+    exec.get[Int](C(0)) must beEqualTo(21)
+
+    exec.get[Any](A(1)) must beNull
+    exec.get[Any](A(2)) must beNull
+
+    exec.get[Int](A(3)) must beEqualTo( 2)
+    exec.get[Int](B(3)) must beEqualTo(12)
+    exec.get[Int](C(3)) must beEqualTo(22)
+  }
+
+  "Moved rows" >>
+  {
+    val exec = init(
+      Map( 
+        A -> Seq(1,  2,  3),
+        B -> Seq(11, 12, 13),
+        C -> Seq(21, 22, 23),
+      )
+    )
+
+    exec.get[Int](A(1)) must beEqualTo(2)
+    exec.get[Int](B(1)) must beEqualTo(12)
+    exec.update(B(1), "A")
+
+    exec.moveRows(1, 2, 1)
+
+    exec.get[Int](A(0)) must beEqualTo( 1)
+    exec.get[Int](B(0)) must beEqualTo(11)
+    exec.get[Int](C(0)) must beEqualTo(21)
+
+    exec.get[Int](A(1)) must beEqualTo( 3)
+    exec.get[Int](B(1)) must beEqualTo(13)
+    exec.get[Int](C(1)) must beEqualTo(23)
+
+    exec.get[Int](A(2)) must beEqualTo( 2)
+    exec.get[Int](B(2)) must beEqualTo( 2)
+    exec.get[Int](C(2)) must beEqualTo(22)
+
+  }
 }

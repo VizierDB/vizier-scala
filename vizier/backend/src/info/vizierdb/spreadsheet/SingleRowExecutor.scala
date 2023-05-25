@@ -35,7 +35,7 @@ class SingleRowExecutor(
   /**
    * Row insertions/deletions
    */
-  val sourceRowOffsets = new OffsetMap()
+  val sourceRowMapping = new SourceReferenceMap()
 
   /**
    * A mapping from column to position in the activeCells array
@@ -54,33 +54,39 @@ class SingleRowExecutor(
   {
     val colRefs = 
       columns.toSeq.sortBy { _._2 }.map { _._1 }
-
     assert(columns.values.toSet == (0 until columns.size).toSet)
 
-    for(row <- rows.indices)
-    {
-      if( !(activeCells contains row) )
-      {
-        val data = mutable.ArrayBuffer[Option[Cell]](
-          colRefs.map { col =>
-            val (byRange, default) = updates(col)
+    // Guard against parallel access to the set of active rows
+    synchronized {
 
-            byRange(row).orElse { default }.map { pattern => 
-              new Cell(pattern)
-            }
-          }.toSeq:_*
-        )
-        activeCells(row) = data
-        recompute( colRefs.map { (_, row) } )
+      for(row <- rows.indices)
+      {
+        if( !(activeCells contains row) )
+        {
+          val data = mutable.ArrayBuffer[Option[Cell]](
+            colRefs.map { col =>
+              val (byRange, default) = updates(col)
+
+              byRange(row).orElse { default }.map { pattern => 
+                new Cell(pattern)
+              }
+            }.toSeq:_*
+          )
+          activeCells(row) = data
+          recompute( colRefs.map { (_, row) } )
+        }
       }
     }
   }
 
   def unsubscribe(rows: RangeSet): Unit =
   {
-    for(row <- rows.indices)
-    {
-      activeCells.remove(row)
+    // Guard against parallel access to the set of active rows
+    synchronized {
+      for(row <- rows.indices)
+      {
+        activeCells.remove(row)
+      }
     }
   }
 
@@ -120,6 +126,109 @@ class SingleRowExecutor(
     assert(columns.values.toSet == (0 until columns.size).toSet,
           s"After deletion (idx = $idx), column indices (${columns.values.toSet.toSeq.sorted.mkString(", ")}) differ from buffer [0, ${columns.size}]")
     assert(columns.map { _._2 }.toSet == (0 until columns.size).toSet)
+  }
+
+  def deleteRows(position: Long, count: Long): Unit =
+    deleteRows(new RangeSet(Seq(position -> (position+count-1))))
+
+  def deleteRows(rows: RangeSet): Unit =
+  {
+    logger.trace(s"Deleting rows $rows")
+
+    // We don't need to worry about changing offsets and other row references in expressions
+    // because all expressions refer solely to their local rows. (in the SingleRowExecutor)
+    
+    // Guard against parallel access to the set of active rows
+    synchronized {
+      for( (low, high) <- rows )
+      {
+        updates.values.foreach { 
+          _._1.collapse(low, high-low)
+        }
+        sourceRowMapping.delete(low, (high-low+1).toInt)
+      }
+      for(row <- activeCells.keys.toIndexedSeq.sorted)
+      {
+        if(rows(row)){ /* keep it deleted */
+          activeCells.remove(row) 
+        } else {
+          val rowOffset = rows.countTo(row)
+          if(rowOffset > 0){
+            val rowData = activeCells.remove(row).get
+            // Re-insertion should be safe, since we're traversing the cells in ascending
+            // order (see the use of 'sorted' above)
+            activeCells.put(row - rowOffset, rowData)
+          }
+        }
+      }
+    }
+  }
+
+  def insertRows(position: Long, count: Int): Unit =
+  {
+    logger.trace(s"Inserting $count rows @ $position")
+
+    // We don't need to worry about changing offsets and other row references in expressions
+    // because all expressions refer solely to their local rows. (in the SingleRowExecutor)
+    
+    // Guard against parallel access to the set of active rows
+    synchronized {
+      updates.values.foreach { 
+        _._1.inject(position, count)
+      }
+      sourceRowMapping.insert(position, count)
+
+      val subscribeToNewRows = activeCells contains position
+
+      for(row <- activeCells.keys.toIndexedSeq.sorted)
+      {
+        if(row >= position)
+        {
+          val rowData = activeCells.remove(row).get
+          // Re-insertion should be safe, since we're traversing the cells in ascending
+          // order (see the use of 'sorted' above)
+          activeCells.put(row + count, rowData)
+        }
+      }
+
+      if(subscribeToNewRows)
+      {
+        subscribe(RangeSet(position, position+count-1))
+      }
+    }
+  }
+
+  def moveRows(from: Long, to: Long, count: Int): Unit =
+  {
+    val renumber = 
+      if(from < to)
+      {
+        (x: Long) => if(x < from || x > to){ x }
+                    else if(x < from + count){ x - from + to }
+                    else { x - count }
+      } else {
+        (x: Long) => if(x < to || x > from+count){ x }
+                    else if(x >= from){ x - from + to }
+                    else { x + count }        
+      }
+
+    synchronized {
+      updates.values.foreach { _._1.move(from, to, count) }
+      sourceRowMapping.move(from, to, count)
+      val remappedRows = 
+        activeCells.keys.toIndexedSeq
+                   .flatMap { row => 
+                      if(renumber(row) == row) { None }
+                      else {
+                        Some( renumber(row) -> activeCells.remove(row).get )
+                      }
+                   }
+
+      for( (row, data) <- remappedRows)
+      {
+        activeCells.put(row, data)
+      }
+    }
   }
 
 
@@ -170,73 +279,81 @@ class SingleRowExecutor(
   {
     logger.trace(s"Preparing to recompute ${cells.mkString(", ")}")
 
-    val activeCellsByRow = 
-      cells.filter { case (col, row) => activeCells contains row }
-           .groupBy { _._2 }
-           .mapValues { _.map { _._1 }.toSet }
+    // Synchronization is required to guard against potential updates to the set of rows
+    // (or active rows)
+    synchronized {
+      val activeCellsByRow = 
+        cells.filter { case (col, row) => activeCells contains row }
+             .groupBy { _._2 }
+             .mapValues { _.map { _._1 }.toSet }
 
-    for( (row, cols) <- activeCellsByRow )
-    {
-      val data = activeCells(row)
-      // visit the datums in topological order
-      val todo = mutable.Queue(cols.toSeq:_*)
-      val deferred = mutable.Stack[ColumnRef]()
-      logger.trace(s"Recomputing ${cols.mkString(", ")} on row $row: $data")
-
-      /**
-       * Invariant: deferred and todo are mutually exclusive
-       */
-      while(!todo.isEmpty || !deferred.isEmpty)
+      for( (row, cols) <- activeCellsByRow )
       {
-        val current = 
-          if(deferred.isEmpty) { todo.dequeue() }
-          else { deferred.pop() }
+        val data = activeCells(row)
+        // visit the datums in topological order
+        val todo = mutable.Queue(cols.toSeq:_*)
+        val deferred = mutable.Stack[ColumnRef]()
+        logger.trace(s"Recomputing ${cols.mkString(", ")} on row $row: $data")
 
-        logger.trace(s"Currently reviewing $current[$row]")
+        /**
+         * Invariant: deferred and todo are mutually exclusive
+         */
+        while(!todo.isEmpty || !deferred.isEmpty)
+        {
+          val current = 
+            if(deferred.isEmpty) { todo.dequeue() }
+            else { deferred.pop() }
 
-        // Skip columns not defined in the overlay
-        if(data(columns(current)).isDefined){
-          val cell = data(columns(current)).get
-          val deps = cell.upstream
+          logger.trace(s"Currently reviewing $current[$row]")
 
-          logger.trace(s"Checking for cycles or uncomputed dependencies in $current[$row]")
+          // Skip columns not defined in the overlay
+          if(data(columns(current)).isDefined){
+            val cell = data(columns(current)).get
+            val deps = cell.upstream
 
-          // if the current column's upstream includes something
-          // on the deferred queue, that means this column is upstream
-          // of that... we have a cycle
-          if(! (deps intersect deferred.toSet isEmpty) )
-          {
-            cell.error("Cyclic dependency")
-          } else 
-          {
+            logger.trace(s"Checking for cycles or uncomputed dependencies in $current[$row]")
 
-            // if we have any other dependencies, pick one, and handle
-            // it first.
-            val depsToDo = deps intersect todo.toSet
-            if( ! depsToDo.isEmpty )
+            // if the current column's upstream includes something
+            // on the deferred queue, that means this column is upstream
+            // of that... we have a cycle
+            if(! (deps intersect deferred.toSet isEmpty) )
             {
-              val next = depsToDo.head
-              deferred.push(current)
-              deferred.push(next)
-              logger.trace(s"Need to cmpute $next[$row] before $current[$row]")
-              todo.dequeueFirst { _ == next }
+              cell.error("Cyclic dependency")
             } else 
             {
-              // no other todos for this node
-              cell.recompute(row)
-              logger.trace(s"Recomputing $cell")
-              onCellUpdate(current, row)
-            }
-          }
-        } else 
-        {
-          logger.trace(s"Using source data for $current[$row]")
-          // we were asked to recompute... **we** don't need to do anything
-          // but the following should trigger a new query to the source.
 
-          // Generally, this should only happen when a cell first enters
-          // scope.
-          onCellUpdate(current, row)
+              // if we have any other dependencies, pick one, and handle
+              // it first.
+              val depsToDo = deps intersect todo.toSet
+              if( ! depsToDo.isEmpty )
+              {
+                val next = depsToDo.head
+                deferred.push(current)
+                deferred.push(next)
+                logger.trace(s"Need to cmpute $next[$row] before $current[$row]")
+                todo.dequeueFirst { _ == next }
+              } else 
+              {
+                // no other todos for this node
+                cell.recompute(
+                  deps.map { case dep =>
+                    dep -> getFuture(dep, row)
+                  }.toMap
+                )
+                logger.trace(s"Recomputing $cell")
+                onCellUpdate(current, row)
+              }
+            }
+          } else 
+          {
+            logger.trace(s"Using source data for $current[$row]")
+            // we were asked to recompute... **we** don't need to do anything
+            // but the following should trigger a new query to the source.
+
+            // Generally, this should only happen when a cell first enters
+            // scope.
+            onCellUpdate(current, row)
+          }
         }
       }
     }
@@ -246,7 +363,13 @@ class SingleRowExecutor(
   {
     assert(activeCells contains row, "Can only get active rows")
     val rowData = activeCells(row)
-    val colIdx = columns(col)
+    val colIdx = 
+      columns.get(col)
+             .getOrElse { 
+              return Future.failed(
+                new VizierException(s"No such column: $col")
+              )
+             }
 
     logger.trace(s"RowData @ $col[$row] (idx $colIdx): $rowData")
 
@@ -254,7 +377,7 @@ class SingleRowExecutor(
     {
       case Some(cell) => cell.data
       case None => 
-        sourceRowOffsets(row) match {
+        sourceRowMapping(row) match {
           case Some(sourceRow) => sourceData(col, sourceRow)
           case None => Future.successful(null)
         }
@@ -333,7 +456,7 @@ class SingleRowExecutor(
       data = Future.failed(new VizierException(msg))
     }
 
-    def recompute(row: RowIndex)
+    def recompute(row: Map[ColumnRef, Future[Any]])
     {
       data = Future {
         logger.trace(s"Computing ${pattern.expression}")
@@ -341,8 +464,8 @@ class SingleRowExecutor(
         {
           case RValueExpression(cell@OffsetCell(col, 0)) => 
             logger.trace(s"Retrieving $cell")
-            val result = Await.result(getFuture(col, row), Duration.Inf)
-            logger.trace(s"Retrieved $cell")
+            val result = Await.result(row(col), Duration.Inf)
+            logger.trace(s"Retrieved $cell: $result")
             Literal(result)
           case RValueExpression(_) => 
             throw new VizierException("Formulas that reference cells outside of the same row are not currently supported.")
