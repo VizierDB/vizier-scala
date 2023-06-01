@@ -1,5 +1,7 @@
 package info.vizierdb.spreadsheet
 
+import play.api.libs.json._
+
 /**
  * A lookup table mapping [position in spreadsheet] to [position in source data]
  * 
@@ -14,7 +16,6 @@ package info.vizierdb.spreadsheet
  */
 class SourceReferenceMap
 {
-
 
   // Every position >= max is mapped to { lastStart + (position - max) }
   var max: Long = 0l
@@ -145,4 +146,52 @@ class SourceReferenceMap
     }
     println(s"  [$max, ∞] -> [$lastStart, ...]")
   }
+
+  def replace(other: SourceReferenceMap)
+  {
+    max = other.max
+    lastStart = other.lastStart
+    data.clear()
+    for( (from, to, offset) <- other.data.iterator )
+    {
+      data.insert(from, to, offset)
+    }
+  }
+}
+
+object SourceReferenceMap
+{
+  implicit val format = Format[SourceReferenceMap](
+    new Reads[SourceReferenceMap] {
+      def reads(json: JsValue): JsResult[SourceReferenceMap] = 
+      {
+        val ret = new SourceReferenceMap()
+        ret.max = (json \ "max").as[Long]
+        ret.lastStart = (json \ "lastStart").as[Long]
+        for(offset <- (json \ "offsets").as[Seq[JsValue]])
+        {
+          ret.data.insert(
+            (offset \ "from").as[Long],
+            (offset \ "to").as[Long],
+            (offset \ "offset").as[Long],
+          )
+        }
+        return JsSuccess(ret)
+      }
+    },
+    new Writes[SourceReferenceMap] {
+      def writes(o: SourceReferenceMap): JsValue = 
+        Json.obj(
+          "max" -> o.max,
+          "lastStart" -> o.lastStart,
+          "offsets" -> o.data.iterator.map { case (from, to, offset) =>
+            Json.obj(
+              "from" -> from,
+              "to" -> to,
+              "offset" -> offset
+            )
+          }.toSeq
+        )
+    }
+  )
 }

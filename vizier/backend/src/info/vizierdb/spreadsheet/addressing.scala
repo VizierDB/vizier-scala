@@ -2,6 +2,7 @@ package info.vizierdb.spreadsheet
 
 import org.apache.spark.sql.Column
 import info.vizierdb.types._
+import play.api.libs.json._
 
 case class ColumnRef(id: Long)
 {
@@ -34,6 +35,58 @@ sealed trait LValue
 {
   def column: ColumnRef
   def offsetLBy(offset: Long): LValue
+}
+
+object LValue
+{
+  implicit val format = Format[LValue](
+    new Reads[LValue] {
+      def reads(json: JsValue): JsResult[LValue] = 
+        JsSuccess(
+          (json \ "type").as[String] match {
+            case "cell" => 
+              SingleCell(
+                ColumnRef( (json \ "col").as[Long] ),
+                (json \ "row").as[Long]
+              )
+            case "range" =>
+              ColumnRange(
+                ColumnRef( (json \ "col").as[Long] ),
+                (json \ "from").as[Long],
+                (json \ "to").as[Long]
+              )
+            case "col" =>
+              FullColumn(
+                ColumnRef( (json \ "col").as[Long] ),
+              )
+          }
+        )
+
+    },
+    new Writes[LValue] {
+      def writes(o: LValue): JsValue = 
+        o match {
+          case SingleCell(col, row) => 
+            Json.obj(
+              "type" -> "cell",
+              "col" -> col.id,
+              "row" -> row
+            )
+          case ColumnRange(col, from, to) =>
+            Json.obj(
+              "type" -> "range",
+              "col" -> col.id,
+              "from" -> from,
+              "to" -> to
+            )
+          case FullColumn(col) => 
+            Json.obj(
+              "type" -> "col",
+              "col" -> col.id
+            )
+        }
+    }
+  )
 }
 
 /**
@@ -70,6 +123,8 @@ case class ColumnRange(column: ColumnRef, from: Long, to: Long) extends LValue
 {
   def offsetLBy(offset: Long): LValue = 
     copy(from = from + offset, to = to + offset)
+  override def toString =
+    s"${column}[$from-$to]"
 }
 /**
  * A reference to a range of cells in a column.  May only be used as an
@@ -78,6 +133,8 @@ case class ColumnRange(column: ColumnRef, from: Long, to: Long) extends LValue
 case class FullColumn(column: ColumnRef) extends LValue
 {
   def offsetLBy(offset: Long): LValue = this
+  override def toString =
+    s"${column}[*]"
 }
 /**
  * A reference to a single cell, identified by a specific column and a
@@ -88,7 +145,10 @@ case class FullColumn(column: ColumnRef) extends LValue
 case class OffsetCell(column: ColumnRef, rowOffset: Int) extends RValue
 {
   override def toString =
-    s"${column}[${if(rowOffset >= 0){"+"}else{""}}$rowOffset]"
+    if(rowOffset == 0) { column.toString }
+    else {
+      s"${column}[${if(rowOffset >= 0){"+"}else{""}}$rowOffset]"
+    }
 }
 
 /**

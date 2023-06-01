@@ -26,23 +26,17 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import info.vizierdb.VizierException
 
-class Spreadsheet(data: SpreadsheetDataSource)
-                 (implicit ec: ExecutionContext)
+class Spreadsheet(
+  data: SpreadsheetDataSource,
+  val schema: mutable.ArrayBuffer[OutputColumn]
+)(implicit ec: ExecutionContext)
   extends LazyLogging
 {
   var size: Long = Await.result(data.size, Duration.Inf)
 
-  var nextColumnId = 0l
+  var nextColumnId = schema.map { _.id }.max + 1
   def getColumnId(): Long = 
     { val id = nextColumnId; nextColumnId += 1; id }
-
-  val schema: mutable.ArrayBuffer[OutputColumn] =
-    mutable.ArrayBuffer(
-      data.schema
-          .zipWithIndex
-          .map { case (field, idx) => 
-                  OutputColumn.mapFrom(idx, field, getColumnId(), idx) 
-          }:_*)
 
   val columns = mutable.Map[Long, OutputColumn](
      schema.map { col => col.id -> col }:_*)
@@ -67,6 +61,19 @@ class Spreadsheet(data: SpreadsheetDataSource)
       for(col <- schema){ ex.addColumn(col.ref) }
       ex
     }
+
+  def this(data: SpreadsheetDataSource)(implicit ec: ExecutionContext) =
+  {
+    this(data = data, 
+         schema = mutable.ArrayBuffer(
+            data.schema
+                .zipWithIndex
+                .map { case (field, idx) => 
+                        OutputColumn.mapFrom(idx, field, idx, idx) 
+                }:_*
+          )
+    )
+  }
 
   def pickCachePageToDiscard(candidates: Seq[Long], pageSize: Int): Long =
   {
@@ -146,19 +153,8 @@ class Spreadsheet(data: SpreadsheetDataSource)
   //   SingleCell(column.ref, row)
   // }
 
-  def parse(expression: String, row: Long): Expression =
-  {
-    expr(expression).expr.transform {
-      case UnresolvedAttribute(Seq(attr)) => 
-        schema.find { _.output.name.toLowerCase == attr.toLowerCase }
-              .map { column => 
-                RValueExpression(OffsetCell(column.ref, 0))
-              }
-              .getOrElse {
-                InvalidRValue(s"Unknown column: '$attr'")
-              }
-    }
-  }
+  def parse(expression: String): Expression =
+    Spreadsheet.bindVariables(expr(expression).expr, schema)
 
   def editCell(column: Int, row: Long, value: JsValue): Unit = 
   {
@@ -167,7 +163,7 @@ class Spreadsheet(data: SpreadsheetDataSource)
     val decoded: Expression =
       value match {
         case JsString(s) if s(0) == '=' => 
-          Cast(parse(s.drop(1), row), schema(column).output.dataType)
+          Cast(parse(s.drop(1)), schema(column).output.dataType)
         case _ => try {
           Literal(
             SparkPrimitive.decode(value, schema(column).output.dataType, castStrings = true), 
@@ -271,15 +267,19 @@ class Spreadsheet(data: SpreadsheetDataSource)
     val idx = before match {
       case None => {
         schema.append(newCol(schema.size))
-        schema.size - 1
+        /* return */ schema.size - 1
       }
       case Some(name) => {
         val idx = indexOfColumn(name)
-        schema.insert(idx, newCol(idx))
+        val col = newCol(idx)
+        schema.insert(idx, col)
         for(i <- idx+1 until schema.size){ schema(i).position = i }
-        idx
+        /* return */ idx
       }
     }
+    val col = schema(idx)
+    columns(col.id) = col
+    executor.addColumn(col.ref)
     callback(_.refreshEverything())
   }
 
@@ -296,14 +296,13 @@ class Spreadsheet(data: SpreadsheetDataSource)
     callback(_.refreshEverything())
   }
 
-
 }
 
 object Spreadsheet
 {
   type UpdateId = Long
 
-  def apply(base: DataFrame)(implicit ec: ExecutionContext) = 
+  def buildCache(base: DataFrame)(implicit ec: ExecutionContext): RowCache[Array[Any]] = 
   {
     val annotated = 
       AnnotateWithSequenceNumber(base)
@@ -331,16 +330,38 @@ object Spreadsheet
         selectForInvalidation = { (candidates, pageSize) => candidates.head }
       )
 
+    return cache
+  }
+
+  def apply(base: DataFrame)(implicit ec: ExecutionContext) = 
+  {
+    val cache = buildCache(base)
+
     val spreadsheet =
       new Spreadsheet(
         new CachedSource(
           base.schema.fields,
           cache,
-          Future { df.count() }
+          Future { base.count() }
         )
       )
     cache.selectForInvalidation = spreadsheet.pickCachePageToDiscard _
 
     /* return */ spreadsheet
   }
+
+  def bindVariables(expression: Expression, schema: Iterable[OutputColumn]): Expression =
+  {
+    expression.transform {
+      case UnresolvedAttribute(Seq(attr)) => 
+        schema.find { _.output.name.toLowerCase == attr.toLowerCase }
+              .map { column => 
+                RValueExpression(OffsetCell(column.ref, 0))
+              }
+              .getOrElse {
+                InvalidRValue(s"Unknown column: '$attr'")
+              }
+    }
+  }
+
 }

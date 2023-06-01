@@ -276,7 +276,7 @@ class RangeMap[T]()
           onRemove(headFrom, headTo, headElement)
           onInsert(headFrom, sliceFrom-1, headElement)
 
-          headOption = Some( (sliceFrom, headTo, cloneElement(headElement) ))
+          headOption = Some( (sliceFrom, headTo, cloneElement(headElement)) )
           entriesToDelete = entriesToDelete.tail
         }
 
@@ -300,6 +300,7 @@ class RangeMap[T]()
           data.remove(delFrom)
           onRemove(delFrom, delTo, delElement)
         }
+
         return headOption.toSeq ++ entriesToDelete ++ tailOption
       }
     }
@@ -391,7 +392,9 @@ class RangeMap[T]()
   {
     assert(to < from || to >= from+count)
 
+    // println(s"Move $from-${from+count} to $to")
     // these are the elements we're explicitly asked to move
+    // println(s"======= Before cutting out from: \n$this")
     val explicitlyMovedElements = slice(from, from+count)
 
     // Create a gap at the target
@@ -409,7 +412,7 @@ class RangeMap[T]()
       } else {
         data.range(to, from+1).toIndexedSeq.iterator
       }
-    val implicitOffset = from - to - (if(from < to) { 0 } else { count })
+    val implicitOffset = if(from < to) { -count } else { count }
 
     // The explicitly moved elements are already removed, so start by applying the implicit moves
     for( (shiftFrom, (shiftTo, update)) <- implicitlyMovedElements){
@@ -420,13 +423,13 @@ class RangeMap[T]()
 
     // println(this)
     // And finally move the explicitly moved elements to the new range
-    val explicitOffset = to - from -  (if(from < to) { count } else { 0 })
+    val explicitOffset = to - from
     for( (shiftFrom, shiftTo, update) <- explicitlyMovedElements){
       // no need to remove
       // println(s"Reinsert $shiftFrom to ${shiftFrom+explicitOffset}")
       data.put(shiftFrom + explicitOffset, (shiftTo + explicitOffset, update))
     }
-    // println(this)
+    // println(s"======= Final state: \n$this\n==============")
 
   }
 

@@ -1,6 +1,8 @@
 package info.vizierdb.spreadsheet
 
 import org.apache.spark.sql.catalyst.expressions.Expression
+import play.api.libs.json._
+import org.apache.spark.sql.functions.expr
 
 case class UpdatePattern(
   expression: Expression,
@@ -88,4 +90,19 @@ case class UpdatePattern(
   }
 
   override def toString = s"{${expression.toString}}[$id]"
+}
+
+object UpdatePattern
+{
+  implicit val expressionFormat = Format[Expression](
+    new Reads[Expression] {
+      def reads(json: JsValue): JsResult[Expression] = 
+        JsSuccess(expr(json.as[String]).expr)
+    },
+    new Writes[Expression] {
+      def writes(o: Expression): JsValue = 
+        JsString(o.toString())
+    }
+  )
+  implicit val format: Format[UpdatePattern] = Json.format
 }

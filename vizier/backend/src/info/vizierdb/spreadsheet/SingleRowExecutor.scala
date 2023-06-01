@@ -396,9 +396,10 @@ class SingleRowExecutor(
   val nextUpdateIdx = new AtomicLong(0)
 
   def update(target: LValue, expression: Expression): Unit =
-  {
-    val pattern = new UpdatePattern(expression, nextUpdateIdx.getAndIncrement())
+    update(target, new UpdatePattern(expression, nextUpdateIdx.getAndIncrement()))
 
+  def update(target: LValue, pattern: UpdatePattern): Unit =
+  {
     logger.trace(s"Column map before update: ${columns}")
 
     def initCell(col: ColumnRef, row: Long) =
@@ -435,6 +436,14 @@ class SingleRowExecutor(
     pattern.rvalues.collect {
       case OffsetCell(col, 0) => col
     }.toSet
+
+  def loadUpdates(updates: Seq[(UpdatePattern, Seq[LValue])]) =
+  {
+    for( 
+      (pattern, targets) <- updates;
+      target <- targets
+    ) { update(target, pattern) }
+  }
 
   class Cell(
     val pattern: UpdatePattern,
