@@ -75,6 +75,7 @@ object Query extends Command
 
     try { 
       logger.trace(s"Creating view for \n$query\nAvailable functions: ${functions.map { _._1 }.mkString(", ")}")
+      
       val fnDeps: Map[String, (Identifier, String, String)] = 
         InjectedSparkSQL.getDependencies(query)
                         ._2.toSeq
@@ -130,8 +131,11 @@ object Query extends Command
         context.error(e.getMessage)
       case e:AnalysisException => {
         e.printStackTrace()
-        context.error("DDL operations are currently not supported");
-        //context.error(prettyAnalysisError(e, query))
+        if(InjectedSparkSQL.parse(query).isInstanceOf[org.apache.spark.sql.catalyst.plans.logical.Command]){
+          context.error("DDL operations are currently not supported")
+        } else {
+          context.error(prettyAnalysisError(e, query))
+        }
       }
     }
   }
