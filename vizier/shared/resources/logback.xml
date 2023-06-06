@@ -12,63 +12,65 @@
   </appender>
 
   <!--+++++++++++++++++++++++  Vizier  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.Vizier"                            level="WARN" />
-  <logger name="info.vizierdb.VizierAPI$"                        level="DEBUG" />
-  <logger name="info.vizierdb.VizierServlet$"                    level="DEBUG" />
-  <logger name="info.vizierdb.VizierUIServlet$"                  level="TRACE" />
-  <logger name="info.vizierdb.api.handler.Route"                 level="TRACE" />
-  <logger name="info.vizierdb.Config$"                           level="WARN" />
-  <logger name="info.vizierdb.api.WorkflowSQLRequest"            level="WARN" />
-  <logger name="info.vizierdb.api.AppendModule"                  level="WARN" />
-  <logger name="info.vizierdb.catalog.Project"                   level="INFO" />
-  <logger name="info.vizierdb.catalog.Branch"                    level="INFO" />
-  <logger name="info.vizierdb.catalog.Module"                    level="DEBUG" />
-  <logger name="info.vizierdb.catalog.Workflow"                  level="DEBUG" />
-  <logger name="info.vizierdb.viztrails.Scheduler$"              level="WARN" />
-  <logger name="info.vizierdb.viztrails.RunningWorkflow"         level="WARN" />
-  <logger name="info.vizierdb.viztrails.RunningCell"             level="WARN" />
-  <logger name="info.vizierdb.viztrails.Provenance$"             level="WARN" />
-  <logger name="info.vizierdb.viztrails.StateTransition$"        level="WARN" />
-  <logger name="info.vizierdb.api.websocket.BranchWatcherSocket" level="INFO" />
+  <logger name="info.vizierdb.Vizier"                                    level="WARN" />
+  <logger name="info.vizierdb.VizierAPI$"                                level="DEBUG" />
+  <logger name="info.vizierdb.VizierServlet$"                            level="DEBUG" />
+  <logger name="info.vizierdb.VizierUIServlet$"                          level="TRACE" />
+  <logger name="info.vizierdb.api.handler.Route"                         level="TRACE" />
+  <logger name="info.vizierdb.Config$"                                   level="WARN" />
+  <logger name="info.vizierdb.api.WorkflowSQLRequest"                    level="WARN" />
+  <logger name="info.vizierdb.api.AppendModule"                          level="WARN" />
+  <logger name="info.vizierdb.catalog.Project"                           level="INFO" />
+  <logger name="info.vizierdb.catalog.Branch"                            level="INFO" />
+  <logger name="info.vizierdb.catalog.Module"                            level="DEBUG" />
+  <logger name="info.vizierdb.catalog.Workflow"                          level="DEBUG" />
+  <logger name="info.vizierdb.viztrails.Scheduler$"                      level="WARN" />
+  <logger name="info.vizierdb.viztrails.RunningWorkflow"                 level="WARN" />
+  <logger name="info.vizierdb.viztrails.RunningCell"                     level="WARN" />
+  <logger name="info.vizierdb.viztrails.Provenance$"                     level="WARN" />
+  <logger name="info.vizierdb.viztrails.StateTransition$"                level="WARN" />
+  <logger name="info.vizierdb.api.websocket.BranchWatcherSocket"         level="INFO" />
 
   <!--+++++++++++++++++++++++  Spreadsheet  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.spreadsheet.SingleRowExecutor"     level="INFO" />
-  <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket" level="TRACE" />
+  <logger name="info.vizierdb.spreadsheet.SingleRowExecutor"             level="INFO" />
+  <logger name="info.vizierdb.spreadsheet.SpreadsheetDatasetConstructor" level="TRACE" />
+  <logger name="info.vizierdb.api.spreadsheet.SpreadsheetSocket"         level="TRACE" />
+  <logger name="info.vizierdb.spreadsheet.RangeMap$"                     level="INFO" />
 
   <!--+++++++++++++++++++++++  Commands  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.commands.vizual.VizualCommand"     level="INFO" />
-  <logger name="info.vizierdb.commands.ExecutionContext"         level="WARN" />
-  <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"   level="DEBUG" />
-  <logger name="info.vizierdb.commands.sql.Query$"               level="DEBUG" />
-  <logger name="info.vizierdb.commands.data.LoadDataset$"        level="INFO" />
-  <logger name="info.vizierdb.commands.data.UnloadDataset$"      level="INFO" />
+  <logger name="info.vizierdb.commands.vizual.VizualCommand"             level="INFO" />
+  <logger name="info.vizierdb.commands.ExecutionContext"                 level="WARN" />
+  <logger name="info.vizierdb.commands.jvmScript.ScalaScript$"           level="DEBUG" />
+  <logger name="info.vizierdb.commands.sql.Query$"                       level="DEBUG" />
+  <logger name="info.vizierdb.commands.data.LoadDataset$"                level="INFO" />
+  <logger name="info.vizierdb.commands.data.UnloadDataset$"              level="INFO" />
 
   <!--+++++++++++++++++++++++  Python  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.api.PythonEnvAPI$"                 level="INFO" />
-  <logger name="info.vizierdb.commands.python.Python$"           level="INFO" />
-  <logger name="info.vizierdb.commands.python.PythonProcess$"    level="WARN" />
-  <logger name="info.vizierdb.commands.python.PythonProcess"     level="WARN" />
-  <logger name="info.vizierdb.commands.python.PythonInterface"   level="WARN" />
-  <logger name="info.vizierdb.commands.python.PythonUDFBuilder"  level="INFO" />
-  <logger name="info.vizierdb.catalog.PythonVirtualEnvironment"  level="INFO" />
+  <logger name="info.vizierdb.api.PythonEnvAPI$"                         level="INFO" />
+  <logger name="info.vizierdb.commands.python.Python$"                   level="INFO" />
+  <logger name="info.vizierdb.commands.python.PythonProcess$"            level="WARN" />
+  <logger name="info.vizierdb.commands.python.PythonProcess"             level="WARN" />
+  <logger name="info.vizierdb.commands.python.PythonInterface"           level="WARN" />
+  <logger name="info.vizierdb.commands.python.PythonUDFBuilder"          level="INFO" />
+  <logger name="info.vizierdb.catalog.PythonVirtualEnvironment"          level="INFO" />
 
   <!--+++++++++++++++++++++++  Mimir  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.spark.caveats.QueryWithCaveats$"   level="INFO" />
-  <logger name="org.mimirdb.api.request.Explain"                 level="WARN" />
+  <logger name="info.vizierdb.spark.caveats.QueryWithCaveats$"           level="INFO" />
+  <logger name="org.mimirdb.api.request.Explain"                         level="WARN" />
   <logger name="org.mimirdb.caveats.enumerate.EnumeratePlanCaveats$"
-                                                                 level="WARN" />
+                                                                         level="WARN" />
   <!--+++++++++++++++++++++++  Spark  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.spark.InjectedSparkSQL$"           level="INFO" />
+  <logger name="info.vizierdb.spark.InjectedSparkSQL$"                   level="INFO" />
 
   <!--+++++++++++++++++++++++  Workflow Vis  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"    level="DEBUG" />
+  <logger name="info.vizierdb.viztrails.graph.WorkflowTrace$"            level="DEBUG" />
 
   <!--+++++++++++++++++++++++  Import/Export  +++++++++++++++++++++++++-->
-  <logger name="info.vizierdb.export.ImportProject$"             level="DEBUG" />
-  <logger name="info.vizierdb.catalog.gc.DedupFiles$"            level="WARN" />
+  <logger name="info.vizierdb.export.ImportProject$"                     level="DEBUG" />
+  <logger name="info.vizierdb.catalog.gc.DedupFiles$"                    level="WARN" />
 
   <!--+++++++++++++++++++++++  Scalikejdbc  +++++++++++++++++++++++++-->
-  <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"  level="TRACE" />
+  <logger name="scalikejdbc.StatementExecutor$PrintableQueryBuilder"     level="TRACE" />
   <logger name="info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyConnection" level="DEBUG" />
 
     

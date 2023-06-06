@@ -1,6 +1,7 @@
 package info.vizierdb.spreadsheet
 
 import scala.collection.mutable
+import com.typesafe.scalalogging.LazyLogging
 
 /**
  * A class for mapping update ranges to the specified UpdateCell expressions.
@@ -513,6 +514,7 @@ class RangeMap[T]()
 }
 
 object RangeMap
+  extends LazyLogging
 {
   def fillGaps[T](from: Long, to: Long, elements: Seq[(Long, Long, T)]): List[(Long, Long, Option[T])] =
   {
@@ -534,4 +536,52 @@ object RangeMap
 
   }
 
+  def joinIterator[T](maps: RangeMap[T]*): Iterator[(Long, Long, Seq[Option[T]])] =
+  {
+    val iterators = maps.map { _.iterator.buffered }
+
+    new Iterator[(Long, Long, Seq[Option[T]])] {
+      var idx = 0l
+
+      def hasNext: Boolean = !iterators.forall { _.isEmpty }
+
+      def next(): (Long, Long, Seq[Option[T]]) =
+      {
+        logger.trace(s"Stepping iterator @ $idx: ${iterators.map { i => if(i.isEmpty) { "[empty]" } else { i.head }}}")
+        val nextIdx = 
+          iterators.flatMap { 
+                      case i if i.isEmpty        => Seq.empty
+                      case i if i.head._1 > idx  => Seq(i.head._1-1)
+                      case i if i.head._1 <= idx => Seq(i.head._2)
+                    }
+                   .min
+        val ret = (
+          idx, 
+          nextIdx,
+          iterators.map { i =>
+            if(i.isEmpty || i.head._1 > idx) { None }
+            else { Some(i.head._3) }
+          }
+        )
+
+        idx = nextIdx + 1
+        for(i <- iterators) 
+        {
+          if(!i.isEmpty && i.head._2 < idx){ i.next }
+        }
+        logger.trace(s"After stepping to $idx: ${iterators.map { i => if(i.isEmpty) { "[empty]" } else { i.head }}}")
+
+        return ret
+      }
+    }
+  }
+
+  def join[T](maps: RangeMap[T]*): RangeMap[Seq[Option[T]]] =
+  {
+    val ret = new RangeMap[Seq[Option[T]]]()
+
+    ret.data ++= joinIterator(maps:_*).map { case (low, high, v) => (low, (high, v)) }
+
+    return ret
+  }
 }
