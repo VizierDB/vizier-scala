@@ -140,11 +140,7 @@ class SourceReferenceMap
 
   def debug()
   {
-    for( (from, to, start) <- data.iterator )
-    {
-      println(s"  [$from, $to] -> [$start, ${start + (to - from)}]")
-    }
-    println(s"  [$max, ∞] -> [$lastStart, ...]")
+    println(toString())
   }
 
   def replace(other: SourceReferenceMap)
@@ -157,6 +153,26 @@ class SourceReferenceMap
       data.insert(from, to, offset)
     }
   }
+
+  def iterator: Iterator[(Long, Long, Long)] =
+    data.iterator ++ Seq( (max, Long.MaxValue, lastStart) ).iterator
+
+  def invertedIterator: Iterator[(Long, Long)] = 
+  {
+    var last = 0l
+    data.iterator.flatMap { case (from, to, _) =>
+      val ret = if(last < from){ Some( (last, from-1) ) }
+                else { None }
+      last = to+1
+      /* return */ ret
+    }
+  }
+
+  override def toString: String = 
+    (data.iterator.map { case (from, to, start) =>
+           s"  [$from, $to] -> [$start, ${start + (to - from)}]"
+      }.toSeq :+ s"  [$max, ∞] -> [$lastStart, ...]"
+    ).mkString("\n")
 }
 
 object SourceReferenceMap

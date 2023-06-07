@@ -14,6 +14,8 @@ import org.apache.spark.sql.types.IntegerType
 import play.api.libs.json.JsString
 import scala.collection.mutable.Queue
 import play.api.libs.json.Json
+import info.vizierdb.catalog.Artifact
+import info.vizierdb.types._
 
 class EncodedSpreadsheetSpec
   extends Specification
@@ -101,6 +103,42 @@ class EncodedSpreadsheetSpec
       decoded.forceGetCell(2, 0).get.get must beEqualTo(1)
 
       decoded.forceGetCell(1, 1).get.get must beEqualTo(3) // the edit to column 'B' above      
+    }
+
+    val dfConstructor = new SpreadsheetDatasetConstructor(1, encoded)
+
+    {
+      dfConstructor.dependencies must beEqualTo(Set(1))
+
+      val decoded = dfConstructor.construct( _ => 
+        new Artifact(1, 1, ArtifactType.DATASET, null, "vizier/dataset", Array.empty) {
+          override def dataframeFromContext(ctx: Identifier => Artifact) = df 
+        }
+      )
+
+      // decoded.explain(true)
+      // decoded.show()
+
+      val data = decoded.collect()
+                        .map { row => 
+                          Array(
+                            row.getAs[Int]("A"),
+                            row.getAs[Int]("B"),
+                            row.getAs[Int]("C"),
+                            row.getAs[Int]("D"),
+                          )
+                        }
+
+      data must haveSize(spread.size.toInt)
+
+      data(3)(0) must beEqualTo(1)
+      data(3)(1) must beEqualTo(2)
+      data(3)(2) must beEqualTo(3)
+      data(3)(3) must beEqualTo(5) // the cell inserted in column 'D' above
+      data(0)(0) must beEqualTo(1)
+      data(0)(1) must beEqualTo(3)
+      data(0)(2) must beEqualTo(1)
+      data(1)(1) must beEqualTo(3) // the edit to column 'B' above      
     }
   }
 }

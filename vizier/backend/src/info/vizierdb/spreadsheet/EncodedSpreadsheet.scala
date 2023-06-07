@@ -73,6 +73,25 @@ case class EncodedSpreadsheet(
         })
       }
     )
+
+  def updateMaps: Map[ColumnRef, (RangeMap[UpdatePattern], Option[UpdatePattern])] =
+  {
+    updates.flatMap { case (pattern, lvalues) => lvalues.map { (_, pattern) } }
+           .groupBy { _._1.column }
+           .mapValues { _.foldLeft( (new RangeMap[UpdatePattern], None:Option[UpdatePattern]) ) {
+              case ( (patternMap, default), (lvalue, pattern) ) =>
+                lvalue match {
+                  case SingleCell(_, row) => 
+                    patternMap.insert(row, pattern)
+                    (patternMap, default)
+                  case ColumnRange(_, from, to) =>
+                    patternMap.insert(from, to, pattern)
+                    (patternMap, default)
+                  case FullColumn(_) =>
+                    (patternMap, Some(pattern))
+                }
+           } }
+  }
 }
 
 object EncodedSpreadsheet
