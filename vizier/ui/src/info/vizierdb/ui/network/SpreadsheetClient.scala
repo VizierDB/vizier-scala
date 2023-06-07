@@ -74,7 +74,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   def onConnected(event: dom.Event)
   {
     logger.debug("Connected!")
-    send(OpenSpreadsheet(projectId, datasetId))
+    send(OpenDataset(projectId, datasetId))
   }
 
   def onClosed(event: dom.Event)

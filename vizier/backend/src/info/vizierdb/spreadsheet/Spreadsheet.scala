@@ -350,6 +350,45 @@ object Spreadsheet
     /* return */ spreadsheet
   }
 
+  /**
+   * Generate and initialize a simple default spreadsheet over an empty
+   * source.
+   * 
+   * The default spreadsheet will have 3 columns and 5 rows
+   */
+  def apply()(implicit ec: ExecutionContext): Spreadsheet =
+  {
+    val spreadsheet = 
+      new Spreadsheet(
+        new InlineSource(
+          schema = Array(),
+          data = Array()
+        ),
+        mutable.ArrayBuffer(
+          OutputColumn(
+            DefaultValue(null),
+            StructField("A", StringType),
+            0,
+            0
+          ),
+          OutputColumn(
+            DefaultValue(null),
+            StructField("B", StringType),
+            1,
+            1
+          ),
+          OutputColumn(
+            DefaultValue(null),
+            StructField("C", StringType),
+            2,
+            2
+          )
+        )
+      )
+    spreadsheet.insertRows(0, 5)
+    return spreadsheet
+  }
+
   def bindVariables(expression: Expression, schema: Iterable[OutputColumn]): Expression =
   {
     expression.transform {

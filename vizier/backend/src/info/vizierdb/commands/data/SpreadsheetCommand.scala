@@ -12,7 +12,7 @@ import info.vizierdb.commands.CodeParameter
 import play.api.libs.json.Json
 import info.vizierdb.commands.StringParameter
 
-object SpreadsheetTransform extends Command
+object SpreadsheetCommand extends Command
 {
   val PARAM_INPUT = "input"
   val PARAM_SPREADSHEET = "spreadsheet"
@@ -21,7 +21,6 @@ object SpreadsheetTransform extends Command
   val DEFAULT_OUTPUT = "spreadsheet"
 
   override def name: String = "Spreadsheet"
-  override def hidden: Boolean = true
 
   override def parameters = Seq[Parameter](
     DatasetParameter(id = PARAM_INPUT, name = "Source", required = false),
@@ -45,6 +44,7 @@ object SpreadsheetTransform extends Command
   {
     val code = arguments.get[String](PARAM_SPREADSHEET)
     val spreadsheet = Json.parse(code)
+    context.message(spreadsheet.toString())
   }
 
   override def predictProvenance(arguments: Arguments, properties: JsObject): ProvenancePrediction = 
