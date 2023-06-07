@@ -72,6 +72,7 @@ object vizier extends ScalaModule with PublishModule {
         // Required for Spark on java 11+
         // per: https://stackoverflow.com/questions/72230174/java-17-solution-for-spark-java-lang-noclassdeffounderror-could-not-initializ
         "--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
+        "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
       )
     } else { Seq[String]() }
   }
