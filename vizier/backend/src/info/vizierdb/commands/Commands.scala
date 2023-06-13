@@ -88,6 +88,7 @@ object Commands
   register(packageId = "plot", name = "Data Plotting", category = "plot")(
     "chart"      -> info.vizierdb.commands.plot.SimpleChart,
     "line-chart" -> info.vizierdb.commands.plot.LineChart,
+    "scatter-plot" -> info.vizierdb.commands.plot.ScatterPlot,
     "geo"        -> info.vizierdb.commands.plot.GeoPlot,
   )
 

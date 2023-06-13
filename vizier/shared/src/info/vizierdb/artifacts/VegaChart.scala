@@ -1569,6 +1569,7 @@ case class VegaMarkEncoding(
   x: Option[VegaAxisEncoding] = None,
   y: Option[VegaAxisEncoding] = None,
   stroke: Option[VegaAxisEncoding] = None,
+  fill: Option[VegaAxisEncoding] = None,
 )
 object VegaMarkEncoding
 {
