@@ -39,12 +39,15 @@ import info.vizierdb.catalog.Branch
 import info.vizierdb.commands.Arguments
 import info.vizierdb.commands.data.SpreadsheetCommand
 import info.vizierdb.spreadsheet.EncodedSpreadsheet
+import info.vizierdb.catalog.Workflow
+import info.vizierdb.viztrails.Scheduler
 
 class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, system: ActorSystem, mat: Materializer)
   extends SpreadsheetCallbacks
   with LazyLogging
 {
   var spreadsheet: Spreadsheet = null
+  var inputDataset: Identifier = -1
 
   logger.debug(s"[$client] Websocket opened")
   
@@ -107,7 +110,7 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
         // Open the spreadsheet, resuming an editing session persisted
         // in a notebook cell
         //////
-        case OpenCell(projectId, branchId, moduleId) =>
+        case OpenWorkflowCell(projectId, branchId, moduleId) =>
         {
           if(spreadsheet != null){ send(ReportError("Spreadsheet already opened", "")); return }
           logger.trace(s"Opening cell: $projectId/$branchId/head/$moduleId")
@@ -137,19 +140,22 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
                     input.map { artifact => 
                       val artifacts = cell.inputs
                         artifacts
-                          .find { _.userFacingName == input }
-                          .flatMap { a => a.artifactId.map {
-                            a.userFacingName -> _
-                          } }
+                          .find { _.userFacingName == artifact }
+                          .flatMap { a => 
+                            a.artifactId.map {
+                              a.userFacingName -> _
+                            } 
+                          }
                           .getOrElse {
                             send(ReportError(s"Invalid source dataset: $artifact (out of ${artifacts.map { _.userFacingName }.mkString(", ")}) ", ""))
+
                             return
                           }
                     }
                   )
               }
-            args.getOpt[String](SpreadsheetCommand.PARAM_SPREADSHEET) match {
-              case None | Some("") => 
+            args.getOpt[JsValue](SpreadsheetCommand.PARAM_SPREADSHEET) match {
+              case None | Some(JsNull) => 
                 source match {
                   case Some( (_, datasetId) ) =>
                     Spreadsheet(
@@ -162,9 +168,7 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
                     Spreadsheet()
                 }
               case Some(encoded) =>
-                val parsed = 
-                  Json.parse(encoded)
-                      .as[EncodedSpreadsheet]
+                val parsed = encoded.as[EncodedSpreadsheet]
                 source match {
                   case Some( (_, datasetId) ) =>
                     parsed.rebuildFromDataframe(
@@ -178,6 +182,32 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
                 }
             }
           }
+        }
+
+        case SaveWorkflowCell(projectId, branchId, moduleId, input, output) =>
+        {
+          val serialized = EncodedSpreadsheet.fromSpreadsheet(spreadsheet)
+          val (workflow, workflowIdToAbort): (Workflow, Option[Identifier]) = 
+            CatalogDB.withDB { implicit s =>
+              val branch = Branch.get(projectId, branchId)
+              val currentWorkflow = branch.head
+              val updatedWorkflow =
+                branch.updateById(moduleId, "data", "spreadsheet")(
+                  SpreadsheetCommand.PARAM_INPUT -> input.map { JsString(_) }.getOrElse { JsNull },
+                  SpreadsheetCommand.PARAM_OUTPUT -> output.map { JsString(_) }.getOrElse { JsNull },
+                  SpreadsheetCommand.PARAM_SPREADSHEET -> Json.toJson(serialized),
+                )._2
+              (
+                updatedWorkflow,
+                if(currentWorkflow.isRunning){ Some(currentWorkflow.id) } else { None }
+              )
+            }
+          logger.trace(s"Scheduling ${workflow.id}")
+          // The workflow must be scheduled AFTER the enclosing transaction finishes
+          if(workflowIdToAbort.isDefined) {
+            Scheduler.abort(workflowIdToAbort.get)
+          }
+          Scheduler.schedule(workflow)
         }
 
         //////

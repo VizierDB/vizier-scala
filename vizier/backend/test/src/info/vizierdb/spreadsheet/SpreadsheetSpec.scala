@@ -13,6 +13,7 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.IntegerType
 import play.api.libs.json.JsString
 import scala.collection.mutable.Queue
+import org.apache.spark.sql.types.StringType
 
 class SpreadsheetSpec
   extends Specification

@@ -14,8 +14,9 @@ import info.vizierdb.serialized.DatasetRow
 import info.vizierdb.nativeTypes._
 import scala.collection.mutable
 import info.vizierdb.ui.components.dataset._
+import info.vizierdb.ui.rxExtras.OnMount
 
-class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
+class SpreadsheetClient(openCommand: DatasetInitializer, api: API)
   extends TableDataSource
   with Logging
 {
@@ -74,7 +75,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   def onConnected(event: dom.Event)
   {
     logger.debug("Connected!")
-    send(OpenDataset(projectId, datasetId))
+    send(openCommand)
   }
 
   def onClosed(event: dom.Event)
@@ -88,6 +89,11 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   def onError(event: dom.Event) = 
   {
     logger.error(s"Error: $event")
+  }
+  def close()
+  {
+    onClosed(null)
+    socket.close()
   }
 
   def save() =
@@ -118,6 +124,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
 
   def prefill(schema: Seq[DatasetColumn], source: RowCache[DatasetRow]): Unit = 
   {
+    logger.info("Prefilling spreadsheet")
     // There's a bunch of messy state involving subscriptions, page sizes, etc...
     // I'm not going to deal with it right now.  If you hit the following assertion
     // then it's not impossible, but will require a bit of thought.
@@ -150,7 +157,8 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   {
     var dataOffset: Int = 0
     var row = start
-    logger.debug(s"Data updated: ${data.size} rows @ $start")
+    logger.info(s"Data updated: ${data.size} rows @ $start")
+    logger.trace(data.map { _.mkString(" | ")}.mkString("\n"))
     while(row < start + data.size){
       val batch = row - row % BUFFER_PAGE
       if(rows contains batch){
@@ -160,12 +168,32 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
       row = batch + BUFFER_PAGE
     }
     table.foreach { _.refresh(start, data.size) }
+    // if we scheduled an edit to start once the cell loaded...
+    if(currentlyEditingField.isEmpty){
+      currentlyEditingCell match {
+        case Some( (editRow, editCol) ) if editRow >= start && editRow < start + data.size => 
+          currentlyEditingCell = None
+          logger.info(s"Recovering from delayed edit: $editRow[$editRow] = ${data((editRow-start).toInt)(editCol)}")
+          startEditing(editRow, editCol)
+        case _ => ()
+      }
+    }
   }
   def updateCell(column: Int, row: Long, cell: SpreadsheetCell): Unit =
   {
+    logger.trace(s"Cell update: $column[$row] = $cell")
     val batch = row - row % BUFFER_PAGE
     if(rows contains batch){
       rows(batch).updateCell(column, row, cell) 
+    }
+    if(currentlyEditingField.isEmpty){
+      currentlyEditingCell match {
+        case Some( (editRow, editCol) ) if editRow == row && editCol == column => 
+          currentlyEditingCell = None
+          logger.info(s"Recovering from delayed edit: $editCol[$editRow] = ${cell}")
+          startEditing(editRow, editCol)
+        case _ => ()
+      }
     }
     table.foreach { _.refresh(row, 1) }
   }
@@ -195,6 +223,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
       Option(data( (row - start).toInt ))
         .map { rowData => if(col >= rowData.size) { ValueInProgress } 
                           else { rowData(col) } }
+        .flatMap { Option(_) }
         .getOrElse { ValueInProgress }
     }
 
@@ -239,6 +268,7 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
 
   var currentlyEditingCell: Option[(Long, Int)] = None
   var currentlyEditingField: Option[dom.html.Input] = None
+  var currentlyEditingCellValue: Option[String] = None
 
   def startEditing(row: Long, column: Int): Unit =
   {
@@ -250,6 +280,11 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
         case NormalValue(JsString(s), _) => Some(s)
         case NormalValue(JsNumber(n), _) => Some(n.toString)
         case ErrorValue(_, _) => Some("")
+        case ValueInProgress => 
+          // schedule the cell to be opened when it is ready
+          logger.warn("Editing a cell still being loaded.  Scheduling for later.")
+          currentlyEditingCell = Some((row, column))
+          return
         case x => logger.debug(s"Don't know how to interpret $x"); None
       }
     if(currentValue.isEmpty){ 
@@ -267,10 +302,12 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
       },
       autofocus
     ).render)
+    currentlyEditingCellValue = currentValue
     currentlyEditingCell = Some((row, column))
     table.foreach { _.refreshCell(row, column) }
     for(i <- currentlyEditingField){
       // Set the input as the input target
+      logger.info("Focus")
       i.focus()
       // Select the entire text
       i.setSelectionRange(0, currentValue.get.length())
@@ -281,29 +318,33 @@ class SpreadsheetClient(projectId: Identifier, datasetId: Identifier, api: API)
   {
     if(currentlyEditingCell.isDefined){
       val (row, column) = currentlyEditingCell.get
-      if(commit){
-        send(EditCell(column, row, JsString(currentlyEditingField.get.value)))
+      val editorValue = currentlyEditingField.get.value
+      if(commit && currentlyEditingCellValue != Some(editorValue)){
+        send(EditCell(column, row, JsString(editorValue)))
       }
 
       currentlyEditingCell = None
       currentlyEditingField = None
+      currentlyEditingCellValue = None
       table.foreach { _.refreshCell(row, column) }
     }
   }
 
   def cellAt(row: Long, column: Int, width: Int, xpos: Int): Frag =
   {
-    if(currentlyEditingCell == Some((row, column))){
+    if(currentlyEditingField.isDefined && currentlyEditingCell == Some((row, column))){
       currentlyEditingField match { 
         case None => 
           RenderCell.spinner(schema(column).dataType)
         case Some(i) => 
+          logger.trace("Editor cell allocated")
           div(
             `class` := "cell", 
             css("width") := s"${width}px",
             left := xpos,
             height := "100%",
-            i
+            i,
+            OnMount { _ => i.focus() }
           )
       }
         

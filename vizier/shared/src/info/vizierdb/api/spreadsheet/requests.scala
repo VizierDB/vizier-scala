@@ -29,16 +29,28 @@ object OpenEmpty
   )
 }
 
-case class OpenDataset(projectId: Identifier, datasetId: Identifier) extends SpreadsheetRequest
+sealed trait DatasetInitializer extends SpreadsheetRequest
+object DatasetInitializer
+{
+  implicit val format: Format[DatasetInitializer] = Json.format
+}
+
+case class OpenDataset(projectId: Identifier, datasetId: Identifier) extends DatasetInitializer
 object OpenDataset
 {
   implicit val format: Format[OpenDataset] = Json.format
 }
 
-case class OpenCell(projectId: Identifier, branchId: Identifier, moduleId: Identifier) extends SpreadsheetRequest
-object OpenCell
+case class OpenWorkflowCell(projectId: Identifier, branchId: Identifier, moduleId: Identifier) extends DatasetInitializer
+object OpenWorkflowCell
 {
-  implicit val format: Format[OpenCell] = Json.format
+  implicit val format: Format[OpenWorkflowCell] = Json.format
+}
+
+case class SaveWorkflowCell(projectId: Identifier, branchId: Identifier, moduleId: Identifier, input: Option[String], output: Option[String]) extends SpreadsheetRequest
+object SaveWorkflowCell
+{
+  implicit val format: Format[SaveWorkflowCell] = Json.format
 }
 
 case class SubscribeRows(row: Long, count: Int) extends SpreadsheetRequest

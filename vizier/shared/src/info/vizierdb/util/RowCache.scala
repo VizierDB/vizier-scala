@@ -138,6 +138,9 @@ class RowCache[T](
   def apply(idx: Long): Option[T] = 
     page(pageOf(idx))(idx)
 
+  def clear(): Unit =
+    cache.clear()
+
   /**
    * A wrapper around one page of cached data
    * @param  start      The first index of the data page.

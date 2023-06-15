@@ -15,6 +15,7 @@ import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.Vizier
 import info.vizierdb.util.RowCache
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.ui.network.SpreadsheetClient
 
 /**
  * A representation of a dataset artifact
@@ -34,7 +35,9 @@ import info.vizierdb.ui.widgets.FontAwesome
  */
 class Dataset(
   datasetId: Identifier,
-  projectId: Identifier = Vizier.project.now.get.projectId
+  projectId: Identifier = Vizier.project.now.get.projectId,
+  menu: Seq[Dataset.Command] = Dataset.DEFAULT_COMMANDS,
+  onclick: (Long, Int) => Unit = { (_, _) => () }
 )(implicit val owner: Ctx.Owner)
 {
   val ROW_HEIGHT = 30
@@ -47,7 +50,7 @@ class Dataset(
                   )
   var table: TableView = null
 
-  def setSource(source: TableDataSource){
+  def setSource(source: TableDataSource, invalidate: Boolean = true){
     if(table == null){
       table = new TableView(
         data = source,
@@ -58,23 +61,41 @@ class Dataset(
       root.appendChild(table.root)
       cache.onRefresh.append(table.refresh(_,_))
     } else { 
-      table.setData(source)
+      source match {
+        case c: SpreadsheetClient => c.table = Some(table)
+        case _ => ()
+      }
+      table.setData(source, invalidate = invalidate)
     }
   }
 
   val name = Var[String]("unnamed")
 
-  def this(description: DatasetDescription, projectId: Identifier)
+  def this(description: DatasetDescription, projectId: Identifier, menu: Seq[Dataset.Command], onclick: (Long, Int) => Unit)
           (implicit owner: Ctx.Owner) =
   {
-    this(description.id, projectId)
-    setSource(new StaticDataSource(cache, description))
-    name() = description.name
+    this(description.id, projectId, menu, onclick)
+    rebind(description)
   }
+
+  def this(description: DatasetDescription, projectId: Identifier) 
+          (implicit owner: Ctx.Owner) =
+    this(description, projectId, menu = Dataset.DEFAULT_COMMANDS, onclick = { (_:Long, _: Int) => () })
+
+  def this(description: DatasetDescription, menu: Seq[Dataset.Command], onclick: (Long, Int) => Unit)
+          (implicit owner: Ctx.Owner) =
+    this(description, description.projectId, menu, onclick)
 
   def this(description: DatasetDescription)
           (implicit owner: Ctx.Owner) =
     this(description, description.projectId)
+
+  def rebind(description: DatasetDescription)
+  {
+    cache.clear()
+    setSource(new StaticDataSource(cache, description, onclick = onclick))
+    name() = description.name
+  }
 
   def fetchRowsWithAPI(offset: Long, limit: Int): Future[Seq[DatasetRow]] = 
   {
@@ -94,18 +115,30 @@ class Dataset(
       Rx { 
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
       }.reactive,
+      menu.map { _(projectId, datasetId) }
+    )
+    // Table root is appended by setSource()
+  ).render
+}
+
+object Dataset
+{
+  type Command = (Identifier, Identifier) => Frag
+  val COMMAND_OPEN_SPREADSHEET = 
+    (projectId: Identifier, datasetId: Identifier) =>
       a(
         href := Vizier.links.spreadsheet(projectId, datasetId),
         target := "_blank",
         FontAwesome("table")
-      ),
+      )
+
+  val COMMAND_DOWNLOAD =
+    (projectId: Identifier, datasetId: Identifier) =>
       a(
         href := Vizier.api.artifactGetCsvURL(projectId, datasetId),
         target := "_blank",
         FontAwesome("download")
       )
-    )
-    // Table root is appended by setSource()
-  ).render
 
+  val DEFAULT_COMMANDS = Seq(COMMAND_OPEN_SPREADSHEET, COMMAND_DOWNLOAD)
 }

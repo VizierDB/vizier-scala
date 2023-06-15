@@ -27,7 +27,7 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import info.vizierdb.VizierException
 
 class Spreadsheet(
-  data: SpreadsheetDataSource,
+  val data: SpreadsheetDataSource,
   val schema: mutable.ArrayBuffer[OutputColumn]
 )(implicit ec: ExecutionContext)
   extends LazyLogging
@@ -165,18 +165,19 @@ class Spreadsheet(
         case JsString(s) if s(0) == '=' => 
           Cast(parse(s.drop(1)), schema(column).output.dataType)
         case _ => try {
-          Literal(
-            SparkPrimitive.decode(value, schema(column).output.dataType, castStrings = true), 
+          Cast(
+            lit(
+              SparkPrimitive.decode(value, schema(column).output.dataType, castStrings = true)
+            ).expr,
             schema(column).output.dataType
           )
         } catch {
           case t: Throwable => 
             logger.warn(s"Difficulty parsing $value (${t.getMessage()}); falling back to spark")
             Cast(
-              Literal(
+              lit(
                 value match { case JsString(s) => s; case _ => value.toString },
-                StringType
-              ),
+              ).expr,
               schema(column).output.dataType
             )
         }

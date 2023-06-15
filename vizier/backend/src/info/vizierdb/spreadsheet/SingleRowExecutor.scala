@@ -443,6 +443,7 @@ class SingleRowExecutor(
       (pattern, targets) <- updates;
       target <- targets
     ) { update(target, pattern) }
+    nextUpdateIdx.set(updates.map { _._1.id }.max + 1)
   }
 
   class Cell(

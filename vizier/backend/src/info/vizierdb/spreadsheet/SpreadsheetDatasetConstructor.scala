@@ -16,9 +16,11 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.Literal
 import info.vizierdb.Vizier
 import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
+import info.vizierdb.spark.DataFrameConstructorCodec
+import play.api.libs.json._
 
-class SpreadsheetDatasetConstructor(
-  source: Identifier,
+case class SpreadsheetDatasetConstructor(
+  source: Option[Identifier],
   spreadsheet: EncodedSpreadsheet,
 )
   extends DataFrameConstructor
@@ -26,7 +28,7 @@ class SpreadsheetDatasetConstructor(
   with DefaultProvenance
 {
 
-    override def dependencies: Set[Identifier] = Set(source)
+    override def dependencies: Set[Identifier] = source.toSet
 
     override def schema: Seq[StructField] = 
       spreadsheet.schema.map { _.output }
@@ -42,7 +44,11 @@ class SpreadsheetDatasetConstructor(
 
       // RowIds 
       var df = 
-        AnnotateWithSequenceNumber(context(source).dataframeFromContext(context))
+        source match {
+          case None => Vizier.sparkSession.emptyDataFrame
+          case Some(source) => context(source).dataframeFromContext(context)
+        }
+      df = AnnotateWithSequenceNumber(df)
       var rowid = df(AnnotateWithSequenceNumber.ATTRIBUTE)
 
       // df.show()
@@ -55,19 +61,24 @@ class SpreadsheetDatasetConstructor(
       // First step in this process: Generate a Case When expression that 
       // applies the appropriate mapping.
       logger.trace(s"Row mapping added: \n${spreadsheet.rows}")
+
       val rowIdMap = 
-        spreadsheet.rows.data.iterator
-          .map { case (low, high, position) => 
-            (
-              (rowid >= position) and (rowid <= (position + (high-low))), 
-              (rowid - position + low)
-            ) 
-          }
-          .foldLeft( null:Column ) { case (accum, (condition, map)) =>
-            if(accum == null){ when(condition, map) }
-            else { accum.when(condition, map) }
-          }
-          .otherwise(rowid)
+        if(spreadsheet.rows.data.data.isEmpty){
+          rowid
+        } else {
+          spreadsheet.rows.data.iterator
+            .map { case (low, high, position) => 
+              (
+                (rowid >= position) and (rowid <= (position + (high-low))), 
+                (rowid - position + low)
+              ) 
+            }
+            .foldLeft( null:Column ) { case (accum, (condition, map)) =>
+              if(accum == null){ when(condition, map) }
+              else { accum.when(condition, map) }
+            }
+            .otherwise(rowid)
+        }
 
       // Second step: actually apply the mapping.  While we're at it, transform
       // the schema into the target schema given in spreadsheet.schema
@@ -253,4 +264,12 @@ class SpreadsheetDatasetConstructor(
         )
 
     }
+}
+
+object SpreadsheetDatasetConstructor
+  extends DataFrameConstructorCodec
+{
+  implicit val format: Format[SpreadsheetDatasetConstructor] = Json.format
+  def apply(v: JsValue): DataFrameConstructor = v.as[SpreadsheetDatasetConstructor]
+
 }

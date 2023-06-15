@@ -29,6 +29,7 @@ import scala.concurrent.Future
 import info.vizierdb.ui.components.StaticWorkflow
 import info.vizierdb.ui.widgets.SystemNotification
 import info.vizierdb.ui.widgets.Toast
+import info.vizierdb.api.spreadsheet.OpenDataset
 
 
 /**
@@ -259,7 +260,7 @@ object Vizier
     val datasetId = arguments.get("dataset").get.toLong
     val branchId = arguments.get("branch").map { _.toLong }
 
-    val cli = new SpreadsheetClient(projectId, datasetId, api)
+    val cli = new SpreadsheetClient(OpenDataset(projectId, datasetId), api)
     cli.connected.trigger { connected => 
       if(connected){ cli.subscribe(0) }
     }

@@ -166,7 +166,7 @@ case class Workflow(
       withSQL {
         val c = Cell.syntax
         val m = Module.syntax
-        select(c.resultAll)
+        select(c.resultAll,m.resultAll)
           .from(Cell as c)
           .join(Module as m)
           .where.eq(c.workflowId, id)

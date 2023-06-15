@@ -147,6 +147,30 @@ trait FloatEncoder
     }
 }
 
+case class JsonParameter(
+  id: String,
+  name: String,
+  default: Option[JsValue] = None,
+  required: Boolean = true,
+  hidden: Boolean = false
+) extends Parameter
+{
+  def datatype = "json"
+  def doStringify(j: JsValue): String = j.toString
+  def doValidate(j: JsValue): Iterable[String] = Seq.empty
+  override def getDefault: JsValue = 
+    default.getOrElse { JsNull }
+  def encode(v: Any): JsValue =
+    v match {
+      case j:JsValue => j
+      case s: String => JsString(s)
+      case b: Boolean => JsBoolean(b)
+      case l: Long => JsNumber(l)
+      case i: Integer => JsNumber(i.toInt)
+      case f: Float => JsNumber(f)
+      case d: Double => JsNumber(d)
+    }
+}
 
 case class BooleanParameter(
   id: String,
@@ -319,13 +343,13 @@ case class FileParameter(
 case class CachedStateParameter(
   id: String,
   name: String,
-  default: Option[Int] = None,
+  default: Option[Long] = None,
   required: Boolean = true,
   hidden: Boolean = false
 ) extends Parameter with IntegerEncoder
 {
   def datatype = "cache"
-  def doStringify(j: JsValue): String = j.as[Int].toString
+  def doStringify(j: JsValue): String = j.as[Long].toString
   def doValidate(j: JsValue) = if(j.isInstanceOf[JsNumber]){ None }
                                else if ((j == JsNull) && (default.isDefined || !required)) { None }
                                else { Some(s"Expected a number for $name") }

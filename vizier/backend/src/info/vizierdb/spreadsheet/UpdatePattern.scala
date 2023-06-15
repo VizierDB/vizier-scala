@@ -101,7 +101,7 @@ object UpdatePattern
     },
     new Writes[Expression] {
       def writes(o: Expression): JsValue = 
-        JsString(o.toString())
+        JsString(o.sql)
     }
   )
   implicit val format: Format[UpdatePattern] = Json.format

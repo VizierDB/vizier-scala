@@ -16,6 +16,7 @@ import scala.collection.mutable.Queue
 import play.api.libs.json.Json
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.types._
+import org.apache.spark.sql.types.StringType
 
 class EncodedSpreadsheetSpec
   extends Specification
@@ -105,7 +106,7 @@ class EncodedSpreadsheetSpec
       decoded.forceGetCell(1, 1).get.get must beEqualTo(3) // the edit to column 'B' above      
     }
 
-    val dfConstructor = new SpreadsheetDatasetConstructor(1, encoded)
+    val dfConstructor = new SpreadsheetDatasetConstructor(Some(1), encoded)
 
     {
       dfConstructor.dependencies must beEqualTo(Set(1))
@@ -141,4 +142,49 @@ class EncodedSpreadsheetSpec
       data(1)(1) must beEqualTo(3) // the edit to column 'B' above      
     }
   }
+
+  "Serializing Multiple Inserts" >> 
+  {
+    val df = Vizier.sparkSession
+                   .read
+                   .option("header", "true")
+                   .schema(StructType(Array(
+                    StructField("A", StringType),
+                    StructField("B", StringType),
+                    StructField("C", StringType),
+                   )))
+                   .csv("test_data/r.csv")
+    val spread: Spreadsheet = Spreadsheet(df)
+    spread.subscribe(0, 100)
+
+    spread.editCell(2, 0, JsString("shazbot"))
+    spread.editCell(1, 2, JsString("fribble"))
+
+    spread.forceGetCell(2, 0).get.get.toString must beEqualTo("shazbot")
+    spread.forceGetCell(1, 2).get.get.toString must beEqualTo("fribble")
+
+    val encoded = Json.toJson(EncodedSpreadsheet.fromSpreadsheet(spread))
+
+    val rehydrated:Spreadsheet = encoded.as[EncodedSpreadsheet].rebindVariables.rebuildFromDataframe(df)
+    rehydrated.subscribe(0, 100)
+
+    rehydrated.forceGetCell(2, 0).get.get.toString must beEqualTo("shazbot")
+    rehydrated.forceGetCell(1, 2).get.get.toString must beEqualTo("fribble")
+
+    rehydrated.editCell(1, 0, JsString("murgurgle"))
+    rehydrated.editCell(0, 2, JsString("splat"))
+    rehydrated.forceGetCell(1, 0).get.get.toString must beEqualTo("murgurgle")
+    rehydrated.forceGetCell(0, 2).get.get.toString must beEqualTo("splat")
+
+    val reencoded = EncodedSpreadsheet.fromSpreadsheet(rehydrated)
+    val rerehydrated:Spreadsheet = reencoded.rebindVariables.rebuildFromDataframe(df)
+
+    rerehydrated.subscribe(0, 100)
+    rerehydrated.forceGetCell(2, 0).get.get.toString must beEqualTo("shazbot")
+    rerehydrated.forceGetCell(1, 2).get.get.toString must beEqualTo("fribble")
+    rerehydrated.forceGetCell(1, 0).get.get.toString must beEqualTo("murgurgle")
+    rerehydrated.forceGetCell(0, 2).get.get.toString must beEqualTo("splat")
+
+  }
+
 }

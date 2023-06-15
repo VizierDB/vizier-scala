@@ -23,7 +23,7 @@ import info.vizierdb.ui.widgets.SystemNotification
 
 class BranchSubscription(
   project: Project, 
-  branchId: Identifier, 
+  val branchId: Identifier, 
 )
   extends Object
   with Logging

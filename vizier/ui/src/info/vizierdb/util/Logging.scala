@@ -53,7 +53,7 @@ object Logging extends Enumeration
     "info.vizierdb.ui.network.BranchSubscription" -> INFO,
     "info.vizierdb.test.TestFixtures$MockBranchSubscription$" -> INFO,
     "info.vizierdb.ui.components.dataset.TableView" -> INFO,
-    "info.vizierdb.ui.network.SpreadsheetClient" -> TRACE,
+    "info.vizierdb.ui.network.SpreadsheetClient" -> DEBUG,
     "info.vizierdb.ui.components.TentativeEdits" -> INFO,
     "info.vizierdb.ui.components.DefaultModuleEditor" -> INFO,
     "info.vizierdb.ui.components.Module" -> INFO,
