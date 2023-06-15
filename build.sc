@@ -58,7 +58,9 @@ object vizier extends ScalaModule with PublishModule {
       println(f"Running Vizier with `${jvm}`")
       jvm.split("\\.")(0).toInt
     } catch {
-      case _:NumberFormatException | _:ArrayIndexOutOfBoundsException => 8
+      case _:NumberFormatException | _:ArrayIndexOutOfBoundsException => 
+        println("Unable to retrieve java version.  Guessing 11+")
+        11
     }
   }
 
@@ -72,6 +74,7 @@ object vizier extends ScalaModule with PublishModule {
         // Required for Spark on java 11+
         // per: https://stackoverflow.com/questions/72230174/java-17-solution-for-spark-java-lang-noclassdeffounderror-could-not-initializ
         "--add-exports", "java.base/sun.nio.ch=ALL-UNNAMED",
+        "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
       )
     } else { Seq[String]() }
   }
@@ -157,6 +160,7 @@ object vizier extends ScalaModule with PublishModule {
     with TestModule.Specs2 
   {
     def scalaVersion = vizier.scalaVersion
+    def forkArgs = vizier.forkArgs
   
     def sources = T.sources(
       millSourcePath / os.up / "backend" / "test",
@@ -172,6 +176,7 @@ object vizier extends ScalaModule with PublishModule {
       ivy"org.specs2::specs2-matcher-extra::4.19.2",
       ivy"org.specs2::specs2-junit::4.19.2",
     )
+
 
   }
 
