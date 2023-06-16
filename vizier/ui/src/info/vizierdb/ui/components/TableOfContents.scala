@@ -12,6 +12,8 @@ import info.vizierdb.util.StringUtils
 import info.vizierdb.ui.components.dataset.CaveatModal
 import info.vizierdb.ui.rxExtras.RxBuffer
 import info.vizierdb.serialized
+import info.vizierdb.ui.network.BranchWatcherAPIProxy
+import info.vizierdb.ui.network.SpreadsheetTools
 
 class TableOfContents(
   projectId: Identifier,
@@ -92,6 +94,10 @@ class TableOfContents(
               }
     )
 
+  def api:BranchWatcherAPIProxy =
+    Vizier.project.now.get
+          .branchSubscription.get
+          .Client
 
 
   val artifactNodes = 
@@ -148,9 +154,12 @@ class TableOfContents(
 
                               // Spreadsheet view
                               a(
-                                href := Vizier.links.spreadsheet(projectId, artifact.id), 
+                                // href := Vizier.links.spreadsheet(projectId, artifact.id), 
                                 target := "_blank",
-                                FontAwesome("table")
+                                FontAwesome("table"),
+                                onclick := { _:dom.Event =>
+                                  SpreadsheetTools.appendNewSpreadsheet(name)
+                                }
                               )
                             )
 

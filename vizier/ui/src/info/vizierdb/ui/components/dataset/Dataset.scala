@@ -86,6 +86,10 @@ class Dataset(
           (implicit owner: Ctx.Owner) =
     this(description, description.projectId, menu, onclick)
 
+  def this(description: DatasetDescription, menu: Seq[Dataset.Command])
+          (implicit owner: Ctx.Owner) =
+    this(description, description.projectId, menu, onclick = { (_:Long, _:Int) => () })
+
   def this(description: DatasetDescription)
           (implicit owner: Ctx.Owner) =
     this(description, description.projectId)
@@ -140,5 +144,5 @@ object Dataset
         FontAwesome("download")
       )
 
-  val DEFAULT_COMMANDS = Seq(COMMAND_OPEN_SPREADSHEET, COMMAND_DOWNLOAD)
+  val DEFAULT_COMMANDS = Seq(COMMAND_DOWNLOAD)
 }

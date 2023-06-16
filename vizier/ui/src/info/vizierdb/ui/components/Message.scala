@@ -15,6 +15,9 @@ import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.nativeTypes.JsValue
 import info.vizierdb.ui.widgets.ExternalDependencies
 import info.vizierdb.ui.widgets.Spinner
+import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.types._
+import info.vizierdb.ui.network.SpreadsheetTools
 
 sealed trait Message
   { def root: dom.Node }
@@ -38,9 +41,24 @@ object TextMessage
 
 //////////////////////////////////////////////////////////////
 
-case class DatasetMessage(content: Dataset) extends Message
+case class DatasetMessage(content: serialized.DatasetDescription, module: Module)(implicit owner: Ctx.Owner) extends Message
 {
-  val root = div(`class` := "message dataset", content.root)
+  val dataset = new Dataset(content, menu = Dataset.DEFAULT_COMMANDS ++ Seq[Dataset.Command](
+    (_:Identifier, _:Identifier) => {
+      a(
+        target := "_blank",
+        FontAwesome("table"),
+        onclick := { _:dom.Event =>
+          if(module.nextRealModuleExcludingSelf.isEmpty){
+            SpreadsheetTools.appendNewSpreadsheet(content.name)
+          } else {
+            SpreadsheetTools.insertNewSpreadsheet(content.name, module.position.now+1)
+          }
+        }
+      )
+    }
+  ))
+  val root = div(`class` := "message dataset", dataset.root)
 }
 
 //////////////////////////////////////////////////////////////
@@ -139,7 +157,7 @@ object JavascriptMessage
 
 object Message
 {
-  def apply(message: serialized.MessageDescriptionWithStream)
+  def apply(message: serialized.MessageDescriptionWithStream, module: Module)
            (implicit owner: Ctx.Owner): Message =
   {
     message.t match {
@@ -148,7 +166,7 @@ object Message
       case MessageType.PNG_IMAGE => DomMessage.png(message.value.as[String])
       case MessageType.MARKDOWN => MarkdownMessage(message.value.as[String])
       case MessageType.JAVASCRIPT => message.value.as[JavascriptMessage]
-      case MessageType.DATASET => DatasetMessage(new Dataset(message.value.as[serialized.DatasetDescription]))
+      case MessageType.DATASET => DatasetMessage(message.value.as[serialized.DatasetDescription], module)
       case MessageType.CHART => TextMessage.error(s"Chart messages not supported yet")
       case MessageType.VEGALITE => VegaMessage(message.value)
       case MessageType.VEGA => VegaMessage(message.value)

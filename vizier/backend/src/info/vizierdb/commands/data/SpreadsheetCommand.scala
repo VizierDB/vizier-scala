@@ -8,7 +8,7 @@ import info.vizierdb.spreadsheet.SpreadsheetDatasetConstructor
 
 object SpreadsheetCommand extends Command
 {
-  // Keep these constants up to date with ui's info.vizierdb.ui.components.editors.SpreadsheetModuleSummary
+  // Keep these constants up to date with ui's info.vizierdb.ui.network.SpreadsheetTools
   val PARAM_INPUT = "input"
   val PARAM_SPREADSHEET = "spreadsheet"
   val PARAM_OUTPUT = "output"
@@ -18,9 +18,11 @@ object SpreadsheetCommand extends Command
 
   override def name: String = "Spreadsheet"
 
+  override def hidden: Boolean = true
+
   override def parameters = Seq[Parameter](
     DatasetParameter(id = PARAM_INPUT, name = "Source", required = false),
-    JsonParameter(id = PARAM_SPREADSHEET, name = "Spreadsheet", required = true, hidden = true),
+    JsonParameter(id = PARAM_SPREADSHEET, name = "Spreadsheet", default = Some(JsNull), required = false, hidden = true),
     StringParameter(id = PARAM_OUTPUT, name = "Output", required = false),
     CachedStateParameter(id = PARAM_RESULT_DS, name = "Result Dataset", required = false, hidden = true),
   )
@@ -35,9 +37,9 @@ object SpreadsheetCommand extends Command
              .getOrElse { s"Create Spreadsheet $DEFAULT_OUTPUT" }
 
   override def title(arguments: Arguments): String = 
-    format(arguments)
+    s"Spreadsheet[${nameHeuristic(arguments.getOpt[String](PARAM_INPUT), arguments.getOpt[String](PARAM_OUTPUT))}]"
 
-  def nameHeuristic(output: Option[String], input: Option[String]): String =
+  def nameHeuristic(input: Option[String], output: Option[String]): String =
     output.filterNot { _ == "" }
           .orElse { input }
           .getOrElse { DEFAULT_OUTPUT }
@@ -45,11 +47,11 @@ object SpreadsheetCommand extends Command
   override def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     val spreadsheet = arguments.getOpt[EncodedSpreadsheet](PARAM_SPREADSHEET)
-    if(spreadsheet.isDefined) {
-      context.message(spreadsheet.get.toString())
-    } else {
-      context.message("No Spreadsheet")
-    }
+    // if(spreadsheet.isDefined) {
+    //   context.message(spreadsheet.get.toString())
+    // } else {
+    //   context.message("No Spreadsheet")
+    // }
 
     val input = arguments.getOpt[String](PARAM_INPUT)
     val output = arguments.getOpt[String](PARAM_OUTPUT)

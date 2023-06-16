@@ -23,6 +23,7 @@ import play.api.libs.json._
 import info.vizierdb.api.spreadsheet.SaveWorkflowCell
 import info.vizierdb.serialized.CommandArgumentList
 import info.vizierdb.api.spreadsheet.OpenWorkflowCell
+import info.vizierdb.ui.network.SpreadsheetTools
 
 
 class SpreadsheetModuleSummary(
@@ -31,18 +32,13 @@ class SpreadsheetModuleSummary(
   extends ModuleSummary
   with Logging
 {
-  // Keep these constants up to date with backend's info.vizierdb.commands.data.SpreadsheetCommand
-  val PARAM_INPUT = "input"
-  val PARAM_SPREADSHEET = "spreadsheet"
-  val PARAM_OUTPUT = "output"
-  val PARAM_RESULT_DS = "result_ds_id"
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 
   val inputName: Rx[Option[String]] = 
     module.subscription
           .arguments
-          .map { _.find { _.id == PARAM_INPUT }
+          .map { _.find { _.id == SpreadsheetTools.PARAM_INPUT }
                   .map { _.value.as[String] } }
 
   val inputDataset: Rx[Option[ArtifactSummary]] =
@@ -55,13 +51,13 @@ class SpreadsheetModuleSummary(
   val outputName: Rx[Option[String]] = 
     module.subscription
           .arguments
-          .map { _.find { _.id == PARAM_OUTPUT }
+          .map { _.find { _.id == SpreadsheetTools.PARAM_OUTPUT }
                   .flatMap { _.value.asOpt[String].filterNot { _ == "" } } }
 
   val resultDatasetId: Rx[Option[Identifier]] =
     module.subscription
           .arguments
-          .map { _.find { _.id == PARAM_RESULT_DS } 
+          .map { _.find { _.id == SpreadsheetTools.PARAM_RESULT_DS } 
                   .flatMap { _.value.asOpt[Identifier] } }
 
   val serializedSpreadsheet = 
