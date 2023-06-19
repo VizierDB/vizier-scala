@@ -72,15 +72,15 @@ object ScatterPlot extends Command
     var yValues = scala.collection.mutable.ListBuffer[Double]()
 
     //Variables to hold all of the dataset names, y columns, x columns, and combinations of them along with boolean values that can be used to identify if those naming conventions create all unique names
-    var datasetNames = scala.collection.mutable.Map[String, Int]()
+    var datasetNames = scala.collection.mutable.Set[String]()
     var datasetUnique = true
-    var yColumns = scala.collection.mutable.Map[String, Int]()
+    var yColumns = scala.collection.mutable.Set[String]()
     var yUnique = true
-    var xColumns = scala.collection.mutable.Map[String, Int]()
+    var xColumns = scala.collection.mutable.Set[String]()
     var xUnique = true
-    var datasetAndY = scala.collection.mutable.Map[String, Int]()
+    var datasetAndY = scala.collection.mutable.Set[String]()
     var datasetAndYUnique = true
-    var datasetAndX = scala.collection.mutable.Map[String, Int]()
+    var datasetAndX = scala.collection.mutable.Set[String]()
     var datasetAndXUnique = true
 
     // Figure out if we are being asked to emit a named artifact
@@ -89,65 +89,44 @@ object ScatterPlot extends Command
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
 
-    
+    val nameComponents:Seq[(String, String, String)] = arguments.getList(PARAM_SERIES).map {
+	series => 
+		val datasetName = series.get[String](PARAM_DATASET)
+		val xColIdx = series.get[Int](PARAM_X)
+        	val yColIdx = series.get[Int](PARAM_Y)
+		var dataset = context.dataframe(datasetName)
+		val xCol = dataset.columns(xColIdx)
+		val yCol = dataset.columns(yColIdx)
+		(datasetName, yCol, xCol)
+    }
 
-    //meaningless series object that's just here to iterate through all of the dataset names, x axes, and y axes so we can check for uniqueness
-    var tempSeries = 
-      // For each series we're asked to generate...
-      arguments.getList(PARAM_SERIES)
-               .map { series => 
+    //Variables to hold the number of unique names for each naming convention
+    val numberOfUniqueDatasetNames = nameComponents.map { c => c._1 }.toSet.size
+    val numberOfUniqueYNames = nameComponents.map { c => c._2 }.toSet.size
+    val numberOfUniqueXNames = nameComponents.map { c => c._3 }.toSet.size
+    val numberOfUniqueDatasetandYNames = nameComponents.map { c => (c._1 + c._2) }.toSet.size
+    val numberOfUniqueDatasetandXNames = nameComponents.map { c => (c._1 + c._3) }.toSet.size
 
-        // Extract the dataset artifact and figure out the 
-        // x and y columns.
-        // 
-        // Remember: ColIdParameter parameters give us an 
-        // integer column index.
-        val datasetName = series.get[String](PARAM_DATASET)
-        if (datasetNames.contains(datasetName)) {
-	  datasetNames(datasetName) += 1
-	  datasetUnique = false
-	}
-	else {
-	  datasetNames(datasetName) = 1
-	}
-        val xColIdx = series.get[Int](PARAM_X)
-        val yColIdx = series.get[Int](PARAM_Y)
-        // Store dataset as a var to allow transformations
-        // below.
-        var dataset = context.dataframe(datasetName)
-        val xCol = dataset.columns(xColIdx)
-        if (xColumns.contains(xCol)) {
-	  xColumns(xCol) += 1
-	  xUnique = false
-	}
-	else {
-	  xColumns(xCol) = 1
-	}
-	if (datasetAndX.contains((datasetName + xCol))) {
-	  datasetAndX((datasetName + xCol)) += 1
-	  datasetAndXUnique = false
-	}
-	else {
-	  datasetAndX((datasetName + xCol)) = 1
-	}
-        val yCol = dataset.columns(yColIdx)
-        if (yColumns.contains(yCol)) {
-	  yColumns(yCol) += 1
-	  yUnique = false
-	}
-	else {
-	  yColumns(yCol) = 1
-	}
-	if (datasetAndY.contains((datasetName + yCol))) {
-	  datasetAndY((datasetName + yCol)) += 1
-	  datasetAndYUnique = false
-	}
-	else {
-	  datasetAndY((datasetName + yCol)) = 1
-	}
-      }
-      
-
+    //lambda function to generate a series label based on uniqueness
+    val makeLabel = (datasetName: String, yCol: String, xCol: String) =>
+		if(numberOfUniqueDatasetNames == nameComponents.size) {
+			datasetName
+	 	}
+	  	else if(numberOfUniqueYNames == nameComponents.size) {
+			yCol
+	   	}
+	    	else if(numberOfUniqueXNames == nameComponents.size) {
+			xCol
+	    	}
+	    	else if(numberOfUniqueDatasetandYNames == nameComponents.size) {
+			datasetName + " " + yCol
+	    	}
+	    	else if(numberOfUniqueDatasetandXNames == nameComponents.size) {
+			datasetName + " " + xCol
+	    	}
+	    	else {
+			datasetName + " " + xCol + " " + yCol
+	    	}
 
 
 /**
@@ -208,24 +187,6 @@ object ScatterPlot extends Command
           return
         }
 
-        //Assign series label based on priority order
-	var makeLabel = () =>
-	if(datasetUnique) { 
-	  datasetName
-	} else if (yUnique) {
-          yCol
-	} else if (xUnique) {
-          xCol
-	} else if (datasetAndYUnique) {
-          datasetName + " " + yCol
-	} else if (datasetAndXUnique) {
-          datasetName + " " + xCol
-	} else {
-          datasetName + " " + xCol + " " + yCol
-	}
-	val seriesLabel = makeLabel()
-
-
 		     
 
         // And emit the series.
@@ -235,7 +196,7 @@ object ScatterPlot extends Command
           Json.obj(
             "x" -> row.getAs[Double](0),
             "y" -> row.getAs[Double](1),
-            "c" -> seriesLabel
+            "c" -> makeLabel(datasetName, yCol, xCol)
           )
         },
       }
