@@ -97,13 +97,19 @@ object Query extends Command
         scope.values.map { d => d.id -> d }.toMap
 
       val view = 
-        ViewConstructor(
-          datasets = scope.mapValues { _.id },
-          functions = fnDeps,
-          query = query,
-          projectId = context.projectId,
-          context = { id => datasetIds(id).datasetSchema }
-        )
+        try {
+          ViewConstructor(
+            datasets = scope.mapValues { _.id },
+            functions = fnDeps,
+            query = query,
+            projectId = context.projectId,
+            context = { id => datasetIds(id).datasetSchema }
+          )
+        } catch {
+          case _:InjectedSparkSQL.NotAQueryException =>
+            context.error("Only queries are supported in SQL cells")
+            return
+        }
 
       val output = context.outputDataset(datasetName, view)
       val df = CatalogDB.withDB { implicit s => output.dataframe }

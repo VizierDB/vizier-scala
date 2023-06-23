@@ -17,6 +17,10 @@ import org.apache.spark.sql.catalyst.analysis.UnresolvedFunction
 
 import info.vizierdb.api.FormattedError
 import info.vizierdb.Vizier
+import org.apache.spark.sql.catalyst.plans.logical.InsertAction
+import org.apache.spark.sql.catalyst.plans.logical.Command
+import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement
+import org.apache.spark.sql.catalyst.plans.logical.ParsedStatement
 
 /**
  * Utilities for running Spark SQL queries with a post-processing step injected between
@@ -25,6 +29,8 @@ import info.vizierdb.Vizier
 object InjectedSparkSQL
   extends LazyLogging
 {
+  class NotAQueryException(plan: LogicalPlan) extends Exception
+
   lazy val spark = Vizier.sparkSession
 
   object getViewReferences extends GetDependencies[String]
@@ -45,12 +51,17 @@ object InjectedSparkSQL
           Set(name.mkString(".").toLowerCase) }
   }
 
-  def parse(sqlText: String): LogicalPlan =
+  def parse(sqlText: String, requireQuery: Boolean = false): LogicalPlan =
   {
     // ~= Spark's SparkSession.sql()
     val tracker = new QueryPlanningTracker
     val logicalPlan = spark.sessionState.sqlParser.parsePlan(sqlText)
     logger.trace(logicalPlan.toString())
+    if(requireQuery){
+      if(logicalPlan.isInstanceOf[Command] || logicalPlan.isInstanceOf[ParsedStatement]){
+        throw new NotAQueryException(logicalPlan)
+      }
+    }
     return logicalPlan    
   }
 
@@ -83,7 +94,7 @@ object InjectedSparkSQL
     functionMappings: Map[String, Seq[Expression] => Expression] = Map.empty
   ): DataFrame =
   {
-    val logicalPlan = parse(sqlText)
+    val logicalPlan = parse(sqlText, requireQuery = true)
     
     // The magic happens here.  We rewrite the query to inject our own 
     // table rewrites
