@@ -203,11 +203,13 @@ object PythonProcess
 
     if(err != ""){
       System.err.println(err)
+      throw new ValidationException(err)
+    } else {
+      Source.fromInputStream(cmd.getInputStream())
+            .getLines()
+            .mkString("\n")
     }
 
-    Source.fromInputStream(cmd.getInputStream())
-          .getLines()
-          .mkString("\n")
   }
 
 }
