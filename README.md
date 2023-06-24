@@ -78,7 +78,7 @@ Vizier tracks how cells use artifacts and inter-cell dependencies.  When a cell 
 
 To use this repository you'll need 
 * [Scala 2](https://www.scala-lang.org/download/scala2.html)
-* [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation) version 0.10 or greater
+* [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation) version 0.11 or greater
 * [Ammonite](http://ammonite.io/) version 3.0.0 or greater.  
 
 An easy way to install all three is with [Coursier](https://get-coursier.io/docs/cli-installation) (`cs setup` and `cs install mill`).
@@ -119,6 +119,9 @@ mill vizier.run [vizier arguments]
 ```
 
 Vizier defaults to running on port 5000 on localhost.
+
+If you see an error about `xdg-open`, it's probably because you're running Vizier in a VM.  Starting vizier with the `-n` flag should remove the error.
+
 
 ##### Hack on the UI
 
