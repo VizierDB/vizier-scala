@@ -203,12 +203,12 @@ object PythonProcess
 
     if(err != ""){
       System.err.println(err)
-      throw new ValidationException(err)
-    } else {
+      // throw new IllegalArgumentException(err)
+    } //else {
       Source.fromInputStream(cmd.getInputStream())
             .getLines()
             .mkString("\n")
-    }
+    //}
 
   }
 
