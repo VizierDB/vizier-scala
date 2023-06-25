@@ -71,18 +71,6 @@ object ScatterPlot extends Command
     var xValues = scala.collection.mutable.ListBuffer[Double]()
     var yValues = scala.collection.mutable.ListBuffer[Double]()
 
-    //Variables to hold all of the dataset names, y columns, x columns, and combinations of them along with boolean values that can be used to identify if those naming conventions create all unique names
-    var datasetNames = scala.collection.mutable.Set[String]()
-    var datasetUnique = true
-    var yColumns = scala.collection.mutable.Set[String]()
-    var yUnique = true
-    var xColumns = scala.collection.mutable.Set[String]()
-    var xUnique = true
-    var datasetAndY = scala.collection.mutable.Set[String]()
-    var datasetAndYUnique = true
-    var datasetAndX = scala.collection.mutable.Set[String]()
-    var datasetAndXUnique = true
-
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
@@ -108,24 +96,24 @@ object ScatterPlot extends Command
     val numberOfUniqueDatasetandXNames = nameComponents.map { c => (c._1 + c._3) }.toSet.size
 
     //lambda function to generate a series label based on uniqueness
-    val makeLabel = (datasetName: String, yCol: String, xCol: String) =>
+    val makeLabel =
 		if(numberOfUniqueDatasetNames == nameComponents.size) {
-			datasetName
+			(datasetName: String, yCol: String, xCol: String) => datasetName
 	 	}
 	  	else if(numberOfUniqueYNames == nameComponents.size) {
-			yCol
+			(datasetName: String, yCol: String, xCol: String) => yCol
 	   	}
 	    	else if(numberOfUniqueXNames == nameComponents.size) {
-			xCol
+			(datasetName: String, yCol: String, xCol: String) => xCol
 	    	}
 	    	else if(numberOfUniqueDatasetandYNames == nameComponents.size) {
-			datasetName + " " + yCol
+			(datasetName: String, yCol: String, xCol: String) => datasetName + " " + yCol
 	    	}
 	    	else if(numberOfUniqueDatasetandXNames == nameComponents.size) {
-			datasetName + " " + xCol
+			(datasetName: String, yCol: String, xCol: String) => datasetName + " " + xCol
 	    	}
 	    	else {
-			datasetName + " " + xCol + " " + yCol
+			(datasetName: String, yCol: String, xCol: String) => datasetName + " " + xCol + " " + yCol
 	    	}
 
 
@@ -187,7 +175,6 @@ object ScatterPlot extends Command
           return
         }
 
-		     
 
         // And emit the series.
         rows.map { row =>
@@ -200,9 +187,6 @@ object ScatterPlot extends Command
           )
         },
       }
-
-
-
 
 
     context.vega(
