@@ -17,22 +17,27 @@ class DependencyAnalysisSpec
     def beforeAll = SharedTestResources.init
 
     sequential
-    "open and visit a python file" >>
+    "Simple Assign" >>
     {
         var test = ""
-        // try {
+        try {
             test = PythonProcess.run(
                 """import os
                 |print(os.getcwd())
                 |os.chdir("vizier/shared/resources")
-                |import dependencyAnalysis
-                |""".stripMargin)
-            // ok
-        // }catch {
-            // case exc: Throwable => println("Running python process failed with error: \n" + exc)
-            // failure
-        // }
-        print(test)
+                |from dependencyAnalysis import Visit_AST
+                |import ast
+                |tree = ast.parse("x=5")
+                |vis = Visit_AST()
+                |vis.visit(tree)
+                |print(list(vis.scope_stack[0]))
+                |""".stripMargin).trim() 
+            println(test)
+            test must contain("['x']")
+        }catch {
+            case exc: Throwable => println("Running python process failed with error: \n" + exc)
+            failure
+        }
         ok
     }
 }
