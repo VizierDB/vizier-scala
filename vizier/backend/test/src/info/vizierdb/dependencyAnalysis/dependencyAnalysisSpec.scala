@@ -29,9 +29,9 @@ class DependencyAnalysisSpec
                 |tree = ast.parse("x=5")
                 |vis = Visit_AST()
                 |vis.visit(tree)
-                |print(list(vis.scope_stack[0]))
+                |print(vis.scope_stack[0])
                 |""".stripMargin).trim() 
-            test must contain("['x']")
+            test must beEqualTo("{'x':'inside'}").ignoreCase.ignoreSpace.trimmed
         }catch {
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
             failure
@@ -52,9 +52,9 @@ class DependencyAnalysisSpec
                 |from dependencyAnalysis import Visit_AST
                 |vis = Visit_AST()
                 |vis.visit(tree)
-                |print(list(vis.scope_stack[0]))
+                |print(vis.scope_stack[0])
                 """.stripMargin)
-                test must contain("['y']")
+                test must beEqualTo("{'y':'inside'}").ignoreCase.ignoreSpace.trimmed
         } catch {
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
             failure
