@@ -23,7 +23,6 @@ class DependencyAnalysisSpec
         try {
             test = PythonProcess.run(
                 """import os
-                |print(os.getcwd())
                 |os.chdir("vizier/shared/resources")
                 |from dependencyAnalysis import Visit_AST
                 |import ast
@@ -32,9 +31,31 @@ class DependencyAnalysisSpec
                 |vis.visit(tree)
                 |print(list(vis.scope_stack[0]))
                 |""".stripMargin).trim() 
-            println(test)
             test must contain("['x']")
         }catch {
+            case exc: Throwable => println("Running python process failed with error: \n" + exc)
+            failure
+        }
+        ok
+    }
+
+    "Simple If" >>
+    {
+        var test = ""
+        try {
+            test = PythonProcess.run(
+                """import os
+                |import ast
+                |with open("test_data/if.py", "r") as source:
+                |   tree = ast.parse(source.read())
+                |os.chdir("vizier/shared/resources")
+                |from dependencyAnalysis import Visit_AST
+                |vis = Visit_AST()
+                |vis.visit(tree)
+                |print(list(vis.scope_stack[0]))
+                """.stripMargin)
+                test must contain("['y']")
+        } catch {
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
             failure
         }
