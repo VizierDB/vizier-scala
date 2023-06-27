@@ -1497,7 +1497,6 @@ object VegaMarkType
           case "symbol" => JsSuccess(Symbol)
           case "text" => JsSuccess(Text)
           case "trail" => JsSuccess(Trail)
-          case _ => JsError()
         }
     },
     new Writes[VegaMarkType]{
@@ -1541,10 +1540,8 @@ object VegaFrom
   implicit val format: Format[VegaFrom] = Json.format
 }
 
-case class VegaAxisEncoding(
-  scale: String,
-  field: String
-)
+sealed trait VegaAxisEncoding
+
 object VegaAxisEncoding
 {
   implicit val format: Format[VegaAxisEncoding] = Json.format
@@ -1564,11 +1561,33 @@ object VegaAxisEncoding
  * be a clear documentation of what's allowed anywhere.
  * 
  * TODO: Track down the full schema and plug it in here.
- */ 
+ */
+ 
+case class VegaAxisEncodingField(
+    scale: String,
+    field: String,
+) extends VegaAxisEncoding
+
+object VegaAxisEncodingField
+{
+  implicit val format: Format[VegaAxisEncodingField] = Json.format
+}
+ 
+case class VegaAxisEncodingValue(
+    value: JsValue
+) extends VegaAxisEncoding
+
+object VegaAxisEncodingValue
+{
+  implicit val format: Format[VegaAxisEncodingValue] = Json.format
+}
+
 case class VegaMarkEncoding(
   x: Option[VegaAxisEncoding] = None,
   y: Option[VegaAxisEncoding] = None,
   stroke: Option[VegaAxisEncoding] = None,
+  fill: Option[VegaAxisEncoding] = None,
+  opacity: Option[VegaAxisEncoding] = None
 )
 object VegaMarkEncoding
 {
