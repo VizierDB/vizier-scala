@@ -17,16 +17,19 @@ import info.vizierdb.artifacts.VegaOrientation
 import info.vizierdb.artifacts.VegaMarkEncoding
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
 import info.vizierdb.artifacts.VegaAxisEncoding
+import info.vizierdb.artifacts.VegaAxisEncodingField
+import info.vizierdb.artifacts.VegaAxisEncodingValue
 import info.vizierdb.artifacts.VegaDomain
 import info.vizierdb.artifacts.VegaRange
 import info.vizierdb.artifacts.VegaAutosize
 import info.vizierdb.artifacts.VegaPadding
 import info.vizierdb.artifacts.VegaLegend
 import info.vizierdb.artifacts.VegaLegendType
+import play.api.libs.json._
 
 object LineChart extends Command
 {
-  val PARAM_SERIES = "series" 
+  val PARAM_SERIES = "series"
   val PARAM_DATASET = "dataset"
   val PARAM_X = "xcol"
   val PARAM_Y = "ycol"
@@ -50,22 +53,22 @@ object LineChart extends Command
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
-  override def title(arguments: Arguments): String = 
+  override def title(arguments: Arguments): String =
     "PLOT "+arguments.getList(PARAM_SERIES).map { series =>
       series.pretty(PARAM_DATASET)
     }.toSet.mkString(", ")
 
-  override def format(arguments: Arguments): String = 
+  override def format(arguments: Arguments): String =
     "PLOT "+arguments.getList(PARAM_SERIES).map { series =>
       f"${series.pretty(PARAM_DATASET)}.{${series.pretty(PARAM_X)}, ${series.pretty(PARAM_Y)}}${series.getOpt[String](PARAM_LABEL).map { " AS " + _ }.getOrElse("")}"
     }.mkString("\n     ")
 
-  override def process(arguments: Arguments, context: ExecutionContext): Unit = 
+  override def process(arguments: Arguments, context: ExecutionContext): Unit =
   {
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
-                                .flatMap { case "" => None 
+                                .flatMap { case "" => None
                                            case x => Some(x) }
 
     /**
@@ -73,15 +76,15 @@ object LineChart extends Command
      * with the JsObjects being tuples: x, y, c (c is the series
      * label for the legend).
      */
-    val series = 
+    val series =
       // For each series we're asked to generate...
       arguments.getList(PARAM_SERIES)
-               .map { series => 
+               .map { series =>
 
-        // Extract the dataset artifact and figure out the 
+        // Extract the dataset artifact and figure out the
         // x and y columns.
-        // 
-        // Remember: ColIdParameter parameters give us an 
+        //
+        // Remember: ColIdParameter parameters give us an
         // integer column index.
         val datasetName = series.get[String](PARAM_DATASET)
         val xColIdx = series.get[Int](PARAM_X)
@@ -131,7 +134,7 @@ object LineChart extends Command
         // perhaps e.g., see which of xCol, yCol and datasetName are
         // unique across all series.
         // For now, let's do a simple hack...
-        val seriesLabel = 
+        val seriesLabel =
           series.getOpt[String](PARAM_LABEL)
                 .flatMap { case "" => None; case x => Some(x) }
                 .getOrElse { yCol }
@@ -158,7 +161,7 @@ object LineChart extends Command
         // 10 extra pixels around the border
         padding = VegaPadding.all(10),
 
-        // Each data value is already annotated with the series 
+        // Each data value is already annotated with the series
         // label, so just combine (flatten) all the series' data
         // together into a single big dataset (named "data")
         data = Seq(VegaData("data",
@@ -168,12 +171,12 @@ object LineChart extends Command
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
-          VegaScale("x", VegaScaleType.Linear, 
+          VegaScale("x", VegaScaleType.Linear,
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Data(field = "x", data = "data"))),
           
           // 'y': The y axis scale, mapping from data.y -> chart height
-          VegaScale("y", VegaScaleType.Linear, 
+          VegaScale("y", VegaScaleType.Linear,
             range = Some(VegaRange.Height),
             domain = Some(VegaDomain.Data(field = "y", data = "data"))),
 
@@ -190,26 +193,29 @@ object LineChart extends Command
         ),
 
         // Actually define the line(s).  There's a single mark here
-        // that generates one line per color (based on the stroke 
+        // that generates one line per color (based on the stroke
         // encoding)
         marks = Seq(VegaMark(
-          VegaMarkType.Line,
+          VegaMarkType.Symbol,
           from = Some(VegaFrom(data = "data")),
           encode = Some(VegaMarkEncodingGroup(
             // 'enter' defines data in the initial state.
             enter = Some(VegaMarkEncoding(
-              x = Some(VegaAxisEncoding(scale = "x", field = "x")),
-              y = Some(VegaAxisEncoding(scale = "y", field = "y")),
-              stroke = Some(VegaAxisEncoding(scale = "color", field = "c"))
+              x = Some(VegaAxisEncodingField(scale = "x", field = "x")),
+              y = Some(VegaAxisEncodingField(scale = "y", field = "y")),
+              stroke = Some(VegaAxisEncodingField(scale = "color", field = "c")),
+              fill = Some(VegaAxisEncodingField(scale = "color", field = "c")),
+              opacity = Some(VegaAxisEncodingValue(value = JsNumber(0.7))
             ))
           ))
-        )),
+        ))),
 
         // Finally ensure that there is a legend displayed
         legends = Seq(
           VegaLegend(
             VegaLegendType.Symbol,
-            stroke = Some("color")
+            stroke = Some("color"),
+            fill = Some("color")
           )
         )
       ),
