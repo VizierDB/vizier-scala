@@ -322,13 +322,13 @@ object vizier extends ScalaModule with PublishModule {
 
       // Vizier UI binary
       os.copy.over(
-        fastLinkJS().dest.path,
+        fastLinkJS().dest.path / "main.js",
         target / "ui" / "vizier.js",
         createFolders = true
       )
       os.copy.over(
-        fastLinkJS().dest.path / os.up / (fastLinkJS().dest.path.last+".map"),
-        target / "ui" / (fastLinkJS().dest.path.last+".map"),
+        fastLinkJS().dest.path / "main.js.map",
+        target / "ui" / "main.js.map",
         createFolders = true
       )
 
