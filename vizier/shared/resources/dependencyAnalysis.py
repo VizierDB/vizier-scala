@@ -75,10 +75,10 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
 
     def visit_Assign(self, node: Assign) -> Any: ## NOT DONE
         ## If we get something in a function that is declared outside the scope of the function add it to deps
-        if isinstance(node.value, ast.Name) and (node.value.id not in self.scope_stack[0]) and (node.value.id in self.scope_stack[1]):
-            for name in self.scope_stack[1]:
-                if isinstance(self.scope_stack[1][name], tuple):
-                    self.scope_stack[1][name][1].append(node.value.id)
+        # if isinstance(node.value, ast.Name) and (node.value.id not in self.scope_stack[0]) and (node.value.id in self.scope_stack[1]):
+        #     for name in self.scope_stack[1]:
+        #         if isinstance(self.scope_stack[1][name], tuple):
+        #             self.scope_stack[1][name][1].append(node.value.id)
         super().generic_visit(node)
 
     def visit_AugAssign(self, node: AugAssign) -> Any:
@@ -96,14 +96,17 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         if isinstance(node.ctx, ast.Load) and node.id not in self.main_dict_store:
             self.scope_stack[0][node.id] = self.OUTSIDE
             self.outside_reads.append(node.id)
+        ## If we get something in a function that is declared outside the scope of the function add it to deps
+        if  (node.id not in self.scope_stack[0]) and (node.id in self.scope_stack[1]):
+            for name in self.scope_stack[1]:
+                if isinstance(self.scope_stack[1][name], tuple):
+                    self.scope_stack[1][name][1].append(node.id)
     
-    # def visit_Tuple(self, node: Tuple) -> Any:
-    #     print(node[0])
 
 
 def main():
-#    with open("example2.py", "r") as source:
-   tree = ast.parse("x: int ")
+   with open("../../../test_data/transitiveFunc.py", "r") as source:
+    tree = ast.parse(source.read())
 
    print(ast.dump(tree, indent=4))
    vis = Visit_AST()

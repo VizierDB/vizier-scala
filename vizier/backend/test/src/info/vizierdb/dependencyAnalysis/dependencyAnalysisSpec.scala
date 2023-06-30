@@ -62,6 +62,51 @@ class DependencyAnalysisSpec
         ok
     }
 
+    "Simple Function" >>
+    {
+        var test = ""
+        try {
+            test = PythonProcess.run(
+                """import os
+                |import ast
+                |with open("test_data/func.py", "r") as source:
+                |   tree = ast.parse(source.read())
+                |os.chdir("vizier/shared/resources")
+                |from dependencyAnalysis import Visit_AST
+                |vis = Visit_AST()
+                |vis.visit(tree)
+                |print(vis.scope_stack[0])
+                |""".stripMargin)
+            test must beEqualTo("{'function': ('inside', [])}")
+        } catch {
+            case exc: Throwable => println("Running python process failed with error: \n" + exc)
+            failure
+        }
+        ok
+    }
+
+    "Transitive Dependent Function" >> 
+    {
+        var test = ""
+        try {
+            test = PythonProcess.run(
+                """import os
+                |import ast
+                |with open("test_data/transitiveFunc.py", "r") as source:
+                |   tree = ast.parse(source.read())
+                |os.chdir("vizier/shared/resources")
+                |from dependencyAnalysis import Visit_AST
+                |vis = Visit_AST()
+                |vis.visit(tree)
+                |print(vis.scope_stack[0])
+                |""".stripMargin)
+                test must beEqualTo("{'x': 'inside', 'func': ('inside', ['x'])}").ignoreCase.ignoreSpace.trimmed
+        } catch {
+            case exc: Throwable => println("Running python process failed with error: \n" + exc)
+            failure
+        }
+        ok
+    }
     "AugAssign" >>
     {
         var test = ""
@@ -71,16 +116,15 @@ class DependencyAnalysisSpec
                 |import ast
                 |tree = ast.parse("x += 5")
                 |os.chdir("vizier/shared/resources")
-                |from dependencyAnalysis import Visti_AST
+                |from dependencyAnalysis import Visit_AST
                 |vis = Visit_AST()
                 |vis.visit(tree)
                 |print(vis.scope_stack[0])""".stripMargin)
-                test must beEqualTo("{'x': 'inside'}")
         } catch {
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
             failure
         }
-        ok
+        test must beEqualTo("{'x': 'inside'}")
     }
     "AnnAssign" >>
     {
@@ -91,7 +135,7 @@ class DependencyAnalysisSpec
                 |import ast
                 |tree = ast.parse("x: int")
                 |os.chdir("vizier/shared/resources")
-                |from dependencyAnalysis import Visti_AST
+                |from dependencyAnalysis import Visit_AST
                 |vis = Visit_AST()
                 |vis.visit(tree)
                 |print(vis.scope_stack[0])""".stripMargin)
@@ -102,4 +146,5 @@ class DependencyAnalysisSpec
         }
         ok
     }
+
 }
