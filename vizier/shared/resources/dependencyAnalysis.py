@@ -27,6 +27,16 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         ## Visit the body
         super().generic_visit(node)
 
+        self.scope_stack.popleft() 
+
+    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Any:
+        ## Add function to current stack
+        self.scope_stack[0][node.name] = (self.INSIDE, []) 
+        ## Add a new scope for the function vars
+        self.scope_stack.appendleft({}) 
+        ## Visit the body
+        super().generic_visit(node)
+
         self.scope_stack.popleft()  
 
     # ?? 
@@ -52,7 +62,8 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         self.scope_stack.appendleft(scope)
         self.generic_visit(node.test)
         self.scope_stack.popleft()
-
+        
+        # ?
         for i in range(len(node.body)):
             scope = {node.body[i].lineno: self.INSIDE}
             self.scope_stack.appendleft(scope)
@@ -70,8 +81,23 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         #self.scope_stack.popleft()
     
     def visit_While(self, node: While) -> Any:
-        
+        scope = {node.test.lineno: self.INSIDE}
+        self.scope_stack.appendleft(scope)
         self.generic_visit(node.test)
+        self.scope_stack.popleft()
+
+        for i in range(len(node.body)):
+            scope = {node.body[i].lineno: self.INSIDE}
+            self.scope_stack.appendleft(scope)
+            self.generic_visit(node.body[i])
+            self.scope_stack.popleft()
+        
+        if node.orelse:
+            for i in range(len(node.orelse)):
+                scope = {node.orelse[i].lineno: self.INSIDE}
+                self.scope_stack.appendleft(scope)
+                self.generic_visit(node.orelse[i])
+                self.scope_stack.popleft()
 
     def visit_Assign(self, node: Assign) -> Any: ## NOT DONE
         ## If we get something in a function that is declared outside the scope of the function add it to deps
