@@ -1,11 +1,11 @@
-from _ast import AST, AnnAssign, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, AugAssign, ClassDef, Delete, For, FunctionDef, If, Import, Match, Name, Raise, Return, Try, While, With
+from _ast import AST, AnnAssign, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, AugAssign, ClassDef, Delete, For, FunctionDef, If, Import, Match, Name, Raise, Return, Try, Tuple, While, With
 import ast
 from collections import defaultdict, deque
 from typing import Any, Iterator
 
 
 class Cell_Scope:
-    INSIDE  = "inside"
+    INSIDE  = "inside" 
     OUTSIDE = "outside"
     EITHER  = "either"
 
@@ -74,9 +74,6 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         self.generic_visit(node.test)
 
     def visit_Assign(self, node: Assign) -> Any: ## NOT DONE
-        ## Since append left puts it in the front, accessing the 0th element gets top o' stack
-        self.scope_stack[0][node.targets[0].id] = self.OUTSIDE # Targets could be a list so we'd have to iterate over this
-
         ## If we get something in a function that is declared outside the scope of the function add it to deps
         if isinstance(node.value, ast.Name) and (node.value.id not in self.scope_stack[0]) and (node.value.id in self.scope_stack[1]):
             for name in self.scope_stack[1]:
@@ -85,11 +82,9 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         super().generic_visit(node)
 
     def visit_AugAssign(self, node: AugAssign) -> Any:
-        self.scope_stack[0][node.target.id] = self.OUTSIDE
         super().generic_visit(node)
 
     def visit_AnnAssign(self, node: AnnAssign) -> Any:
-        self.scope_stack[0][node.target.id] = self.OUTSIDE
         super().generic_visit(node)
 
     # Make this into a function of some sort ?? #
@@ -97,22 +92,27 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         if isinstance(node.ctx, ast.Store) :
             ## Using this because what if we're curreingly in a scope and use a var defined in another scope
             self.main_dict_store.append(node.id) 
+            self.scope_stack[0][node.id] = self.INSIDE
         if isinstance(node.ctx, ast.Load) and node.id not in self.main_dict_store:
+            self.scope_stack[0][node.id] = self.OUTSIDE
             self.outside_reads.append(node.id)
+    
+    # def visit_Tuple(self, node: Tuple) -> Any:
+    #     print(node[0])
 
 
-#def main():
-   # with open("example2.py", "r") as source:
-#    tree = ast.parse("x=5")
+def main():
+#    with open("example2.py", "r") as source:
+   tree = ast.parse("x: int ")
 
-#    print(ast.dump(tree, indent=4))
-#    vis = Visit_AST()
-#    vis.visit(tree)
-#    print("Scope: ", vis.scope_stack)
-#    print("store: ", vis.main_dict_store)
-#    print("Outside Reads:  ", vis.outside_reads)
+   print(ast.dump(tree, indent=4))
+   vis = Visit_AST()
+   vis.visit(tree)
+   print("Scope: ", vis.scope_stack[0])
+   print("store: ", vis.main_dict_store)
+   print("Outside Reads:  ", vis.outside_reads)
 
             
         
-#if __name__ == '__main__':
-#    main()
+if __name__ == '__main__':
+   main()

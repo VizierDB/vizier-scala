@@ -61,4 +61,45 @@ class DependencyAnalysisSpec
         }
         ok
     }
+
+    "AugAssign" >>
+    {
+        var test = ""
+        try {
+            test = PythonProcess.run(
+                """import os
+                |import ast
+                |tree = ast.parse("x += 5")
+                |os.chdir("vizier/shared/resources")
+                |from dependencyAnalysis import Visti_AST
+                |vis = Visit_AST()
+                |vis.visit(tree)
+                |print(vis.scope_stack[0])""".stripMargin)
+                test must beEqualTo("{'x': 'inside'}")
+        } catch {
+            case exc: Throwable => println("Running python process failed with error: \n" + exc)
+            failure
+        }
+        ok
+    }
+    "AnnAssign" >>
+    {
+        var test = ""
+        try {
+            test = PythonProcess.run(
+                """import os
+                |import ast
+                |tree = ast.parse("x: int")
+                |os.chdir("vizier/shared/resources")
+                |from dependencyAnalysis import Visti_AST
+                |vis = Visit_AST()
+                |vis.visit(tree)
+                |print(vis.scope_stack[0])""".stripMargin)
+                test must beEqualTo("{'x': 'inside', 'int': 'outside'}")
+        } catch {
+            case exc: Throwable => println("Running python process failed with error: \n" + exc)
+            failure
+        }
+        ok
+    }
 }
