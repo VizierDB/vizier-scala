@@ -24,7 +24,7 @@ class DependencySpec
             test = PythonProcess.run(
                 """import sys
                    |sys.path.append("vizier/shared/resources")
-                   |from dependencyAnalysis import Visit_AST
+                   |from dependency import Visit_AST
                    |import ast
                    |tree = ast.parse("x=5")
                    |vis = Visit_AST()
@@ -50,7 +50,7 @@ class DependencySpec
                    |with open("test_data/dependency_test/if.py", "r") as source:
                    |   tree = ast.parse(source.read())
                    |sys.path.append("vizier/shared/resources")
-                   |from dependencyAnalysis import Visit_AST
+                   |from dependency import Visit_AST
                    |vis = Visit_AST()
                    |vis.visit(tree)
                    |print(vis.scope_stack[0])
@@ -73,7 +73,7 @@ class DependencySpec
 				  |with open("test_data/dependency_test/func.py", "r") as source:
 				  |   tree = ast.parse(source.read())
 				  |sys.path.append("vizier/shared/resources")
-				  |from dependencyAnalysis import Visit_AST
+				  |from dependency import Visit_AST
 				  |vis = Visit_AST()
 				  |vis.visit(tree)
 				  |print(vis.scope_stack[0])
@@ -96,7 +96,7 @@ class DependencySpec
                    |with open("test_data/dependency_test/transitive_func.py", "r") as source:
                    |   tree = ast.parse(source.read())
                    |sys.path.append("vizier/shared/resources")
-                   |from dependencyAnalysis import Visit_AST
+                   |from dependency import Visit_AST
                    |vis = Visit_AST()
                    |vis.visit(tree)
                    |print(vis.scope_stack[0])
@@ -117,7 +117,7 @@ class DependencySpec
                    |import ast
                    |tree = ast.parse("x += 5")
                    |sys.path.append("vizier/shared/resources")
-                   |from dependencyAnalysis import Visit_AST
+                   |from dependency import Visit_AST
                    |vis = Visit_AST()
                    |vis.visit(tree)
                    |print(vis.scope_stack[0])
@@ -137,7 +137,7 @@ class DependencySpec
                    |import ast
                    |tree = ast.parse("x: int")
                    |sys.path.append("vizier/shared/resources")
-                   |from dependencyAnalysis import Visit_AST
+                   |from dependency import Visit_AST
                    |vis = Visit_AST()
                    |vis.visit(tree)
                    |print(vis.scope_stack[0])
