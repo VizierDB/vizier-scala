@@ -24,19 +24,14 @@ class DependencySpec
             test = PythonProcess.run(
                 """import sys
                    |sys.path.append("vizier/shared/resources")
-                   |from dependency import Visit_AST
-                   |import ast
-                   |tree = ast.parse("x=5")
-                   |vis = Visit_AST()
-                   |vis.visit(tree)
-                   |print(vis.scope_stack[0])
+                   |from dependency import analyze 
+                   |print(analyze("x=5"))
                    |""".stripMargin).trim() 
             test must beEqualTo("{'x':'inside'}").ignoreCase.ignoreSpace.trimmed
         }catch {
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
             failure
         }
-        print("Test: ", test)
         ok
     }
 
@@ -46,16 +41,12 @@ class DependencySpec
         try {
             test = PythonProcess.run(
                 """import sys
-                   |import ast
-                   |with open("test_data/dependency_test/if.py", "r") as source:
-                   |   tree = ast.parse(source.read())
                    |sys.path.append("vizier/shared/resources")
-                   |from dependency import Visit_AST
-                   |vis = Visit_AST()
-                   |vis.visit(tree)
-                   |print(vis.scope_stack[0])
-                   """.stripMargin)
-                test must beEqualTo("{'y':'inside'}").ignoreCase.ignoreSpace.trimmed
+                   |from dependency import analyze
+                   |source = open("test_data/dependency_test/if.py", "r")
+                   |print(analyze(source.read()))
+                   """.stripMargin).trim()
+            test must beEqualTo("{'y':'inside'}").ignoreCase.ignoreSpace.trimmed
         } catch {
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
             failure
@@ -69,14 +60,10 @@ class DependencySpec
         try {
             test = PythonProcess.run(
                 """import sys
-				  |import ast
-				  |with open("test_data/dependency_test/func.py", "r") as source:
-				  |   tree = ast.parse(source.read())
 				  |sys.path.append("vizier/shared/resources")
-				  |from dependency import Visit_AST
-				  |vis = Visit_AST()
-				  |vis.visit(tree)
-				  |print(vis.scope_stack[0])
+				  |from dependency import analyze
+				  |source = open("test_data/dependency_test/func.py", "r")
+				  |print(analyze(source.read()))
 				  |""".stripMargin)
             test must beEqualTo("{'function': ('inside', [])}")
         } catch {
@@ -92,14 +79,10 @@ class DependencySpec
         try {
             test = PythonProcess.run(
                 """import sys
-                   |import ast
-                   |with open("test_data/dependency_test/transitive_func.py", "r") as source:
-                   |   tree = ast.parse(source.read())
                    |sys.path.append("vizier/shared/resources")
-                   |from dependency import Visit_AST
-                   |vis = Visit_AST()
-                   |vis.visit(tree)
-                   |print(vis.scope_stack[0])
+                   |source = open("test_data/dependency_test/transitive_func.py", "r")
+                   |from dependency import analyze
+                   |print(analyze(source.read()))
                    |""".stripMargin)
                 test must beEqualTo("{'x': 'inside', 'func': ('inside', ['x'])}").ignoreCase.ignoreSpace.trimmed
         } catch {
@@ -114,13 +97,9 @@ class DependencySpec
         try {
             test = PythonProcess.run(
                 """import sys
-                   |import ast
-                   |tree = ast.parse("x += 5")
                    |sys.path.append("vizier/shared/resources")
-                   |from dependency import Visit_AST
-                   |vis = Visit_AST()
-                   |vis.visit(tree)
-                   |print(vis.scope_stack[0])
+                   |from dependency import analyze
+                   |print(analyze("x += 5"))
                    |""".stripMargin)
         } catch {
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
@@ -134,13 +113,9 @@ class DependencySpec
         try {
             test = PythonProcess.run(
                 """import sys
-                   |import ast
-                   |tree = ast.parse("x: int")
                    |sys.path.append("vizier/shared/resources")
-                   |from dependency import Visit_AST
-                   |vis = Visit_AST()
-                   |vis.visit(tree)
-                   |print(vis.scope_stack[0])
+                   |from dependency import analyze
+                   |print(analyze("x: int"))
                    |""".stripMargin)
                 test must beEqualTo("{'x': 'inside', 'int': 'outside'}")
         } catch {

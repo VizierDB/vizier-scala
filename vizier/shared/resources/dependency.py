@@ -1,4 +1,4 @@
-from _ast import AST, AnnAssign, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, AugAssign, ClassDef, Delete, For, FunctionDef, If, Import, Match, Name, Raise, Return, Try, Tuple, While, With
+from _ast import AST, AnnAssign, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, AugAssign, Call, ClassDef, Delete, For, FunctionDef, If, Import, Match, Name, Raise, Return, Try, Tuple, While, With
 import ast
 from collections import defaultdict, deque
 from typing import Any, Iterator
@@ -127,19 +127,29 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
             for name in self.scope_stack[1]:
                 if isinstance(self.scope_stack[1][name], tuple):
                     self.scope_stack[1][name][1].append(node.id)
-    
 
+    def visit_Call(self, node: Call) -> Any:
+        print("In the call:", node._fields)
+        return super().visit_Call(node)
+    
+def analyze(script: str) -> str:
+    tree = ast.parse(script)
+    vis = Visit_AST()
+    vis.visit(tree)    
+    return vis.scope_stack[0] # this should be outside reads eventually
 
 def main():
-   with open("../../../test_data/transitiveFunc.py", "r") as source:
-    tree = ast.parse(source.read())
+    source = open("../../../test_data/dependency_test/if.py", "r")
+    # tree = ast.parse(source.read())
 
-   print(ast.dump(tree, indent=4))
-   vis = Visit_AST()
-   vis.visit(tree)
-   print("Scope: ", vis.scope_stack[0])
-   print("store: ", vis.main_dict_store)
-   print("Outside Reads:  ", vis.outside_reads)
+#    print(ast.dump(tree, indent=4))
+#    vis = Visit_AST()
+#    vis.visit(tree)
+
+#    print("Scope: ", vis.scope_stack[0])
+#    print("store: ", vis.main_dict_store)
+#    print("Outside Reads:  ", vis.outside_reads)
+    print(analyze(source.read()))
 
             
         
