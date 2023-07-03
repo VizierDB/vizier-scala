@@ -36,6 +36,7 @@ class DependencyAnalysisSpec
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
             failure
         }
+        print(test)
         ok
     }
 
@@ -68,15 +69,15 @@ class DependencyAnalysisSpec
         try {
             test = PythonProcess.run(
                 """import os
-									 |import ast
-									 |with open("test_data/func.py", "r") as source:
-									 |   tree = ast.parse(source.read())
-									 |os.chdir("vizier/shared/resources")
-									 |from dependencyAnalysis import Visit_AST
-								   |vis = Visit_AST()
-									 |vis.visit(tree)
-									 |print(vis.scope_stack[0])
-									 |""".stripMargin)
+				  |import ast
+				  |with open("test_data/func.py", "r") as source:
+				  |   tree = ast.parse(source.read())
+				  |os.chdir("vizier/shared/resources")
+				  |from dependencyAnalysis import Visit_AST
+				  |vis = Visit_AST()
+				  |vis.visit(tree)
+				  |print(vis.scope_stack[0])
+				  |""".stripMargin)
             test must beEqualTo("{'function': ('inside', [])}")
         } catch {
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
