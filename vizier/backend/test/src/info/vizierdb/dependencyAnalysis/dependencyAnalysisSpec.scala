@@ -22,8 +22,8 @@ class DependencyAnalysisSpec
         var test = ""
         try {
             test = PythonProcess.run(
-                """import os
-                   |os.chdir("vizier/shared/resources")
+                """import sys
+                   |sys.path.append("vizier/shared/resources")
                    |from dependencyAnalysis import Visit_AST
                    |import ast
                    |tree = ast.parse("x=5")
@@ -36,7 +36,7 @@ class DependencyAnalysisSpec
             case exc: Throwable => println("Running python process failed with error: \n" + exc)
             failure
         }
-        print(test)
+        print("Test: ", test)
         ok
     }
 
@@ -45,11 +45,11 @@ class DependencyAnalysisSpec
         var test = ""
         try {
             test = PythonProcess.run(
-                """import os
+                """import sys
                    |import ast
-                   |with open("test_data/if.py", "r") as source:
+                   |with open("test_data/dependency_test/if.py", "r") as source:
                    |   tree = ast.parse(source.read())
-                   |os.chdir("vizier/shared/resources")
+                   |sys.path.append("vizier/shared/resources")
                    |from dependencyAnalysis import Visit_AST
                    |vis = Visit_AST()
                    |vis.visit(tree)
@@ -68,11 +68,11 @@ class DependencyAnalysisSpec
         var test = ""
         try {
             test = PythonProcess.run(
-                """import os
+                """import sys
 				  |import ast
-				  |with open("test_data/func.py", "r") as source:
+				  |with open("test_data/dependency_test/func.py", "r") as source:
 				  |   tree = ast.parse(source.read())
-				  |os.chdir("vizier/shared/resources")
+				  |sys.path.append("vizier/shared/resources")
 				  |from dependencyAnalysis import Visit_AST
 				  |vis = Visit_AST()
 				  |vis.visit(tree)
@@ -91,11 +91,11 @@ class DependencyAnalysisSpec
         var test = ""
         try {
             test = PythonProcess.run(
-                """import os
+                """import sys
                    |import ast
-                   |with open("test_data/transitiveFunc.py", "r") as source:
+                   |with open("test_data/dependency_test/transitive_func.py", "r") as source:
                    |   tree = ast.parse(source.read())
-                   |os.chdir("vizier/shared/resources")
+                   |sys.path.append("vizier/shared/resources")
                    |from dependencyAnalysis import Visit_AST
                    |vis = Visit_AST()
                    |vis.visit(tree)
@@ -113,10 +113,10 @@ class DependencyAnalysisSpec
         var test = ""
         try {
             test = PythonProcess.run(
-                """import os
+                """import sys
                    |import ast
                    |tree = ast.parse("x += 5")
-                   |os.chdir("vizier/shared/resources")
+                   |sys.path.append("vizier/shared/resources")
                    |from dependencyAnalysis import Visit_AST
                    |vis = Visit_AST()
                    |vis.visit(tree)
@@ -133,10 +133,10 @@ class DependencyAnalysisSpec
         var test = ""
         try {
             test = PythonProcess.run(
-                """import os
+                """import sys
                    |import ast
                    |tree = ast.parse("x: int")
-                   |os.chdir("vizier/shared/resources")
+                   |sys.path.append("vizier/shared/resources")
                    |from dependencyAnalysis import Visit_AST
                    |vis = Visit_AST()
                    |vis.visit(tree)
