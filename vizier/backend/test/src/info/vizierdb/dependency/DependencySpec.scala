@@ -27,7 +27,7 @@ class DependencySpec
     "Simple If" >>
     {
         val fileSource = Source.fromFile("test_data/dependency_test/if.py")
-        val script = fileSource.getLines.mkString("\n")
+        val script = fileSource.getLines.toIndexedSeq.mkString("\n")
         fileSource.close
         println(script)
 
