@@ -37,6 +37,7 @@ import info.vizierdb.commands.FileArgument
 import info.vizierdb.viztrails.Scheduler
 import info.vizierdb.commands.data.LoadDataset
 import info.vizierdb.commands.TemplateParameters
+import info.vizierdb.commands.markdown.Markdown
 
 /**
  * Convenient wrapper class around the Project class that allows mutable access to the project and
@@ -350,6 +351,17 @@ class MutableProject(
     if(waitForResult) { waitUntilReadyAndThrowOnError }
   }
   
+  /**
+   * Append a markdown cell
+   * @param text           Markdown documentation to append
+   */
+  def markdown(text: String): Unit =
+  {
+    append("docs", "markdown")(
+      Markdown.PAR_SOURCE -> text
+    )
+  }
+
   /**
    * Import a file into this mutable project
    * @param file           The file to import (ok to use relative file paths)
