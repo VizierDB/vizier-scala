@@ -1,5 +1,6 @@
 package info.vizierdb.dependencyAnalysis
 
+import scala.io.Source
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import info.vizierdb.test.SharedTestResources
@@ -9,6 +10,7 @@ import info.vizierdb.Vizier
 import info.vizierdb.commands.python.SystemPython
 import info.vizierdb.commands.python.Pyenv
 import info.vizierdb.catalog.PythonVirtualEnvironment
+import info.vizierdb.commands.python.PythonDependency
 
 class DependencySpec 
     extends Specification 
@@ -19,39 +21,32 @@ class DependencySpec
     sequential
     "Simple Assign" >>
     {
-        var test = ""
-        try {
-            test = PythonProcess.run(
-                """import sys
-                   |sys.path.append("vizier/shared/resources")
-                   |from dependency import analyze 
-                   |print(analyze("x=5"))
-                   |""".stripMargin).trim() 
-            test must beEqualTo("{'x':'inside'}").ignoreCase.ignoreSpace.trimmed
-        }catch {
-            case exc: Throwable => println("Running python process failed with error: \n" + exc)
-            failure
-        }
-        ok
+        PythonDependency("x=6") must beEqualTo("{'x':'inside'}").ignoreCase.ignoreSpace.trimmed
     }
 
     "Simple If" >>
     {
-        var test = ""
-        try {
-            test = PythonProcess.run(
-                """import sys
-                   |sys.path.append("vizier/shared/resources")
-                   |from dependency import analyze
-                   |source = open("test_data/dependency_test/if.py", "r")
-                   |print(analyze(source.read()))
-                   """.stripMargin).trim()
-            test must beEqualTo("{'y':'inside'}").ignoreCase.ignoreSpace.trimmed
-        } catch {
-            case exc: Throwable => println("Running python process failed with error: \n" + exc)
-            failure
-        }
-        ok
+        val fileSource = Source.fromFile("test_data/dependency_test/if.py")
+        val script = fileSource.getLines.mkString("\n")
+        fileSource.close
+        println(script)
+
+        // var test = ""
+        // try {
+        //     test = PythonProcess.run(
+        //         """import sys
+        //            |sys.path.append("vizier/shared/resources")
+        //            |from dependency import analyze
+        //            |source = open("test_data/dependency_test/if.py", "r")
+        //            |print(analyze(source.read()))
+        //            """.stripMargin).trim()
+        //     test must beEqualTo("{'y':'inside'}").ignoreCase.ignoreSpace.trimmed
+        // } catch {
+        //     case exc: Throwable => println("Running python process failed with error: \n" + exc)
+        //     failure
+        // }
+        // ok
+        PythonDependency(script) must beEqualTo("{'y':'inside'}").ignoreCase.ignoreSpace.trimmed
     }
 
     "Simple Function" >>
