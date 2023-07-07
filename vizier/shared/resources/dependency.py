@@ -100,11 +100,6 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
                 self.scope_stack.popleft()
 
     def visit_Assign(self, node: Assign) -> Any: ## NOT DONE
-        ## If we get something in a function that is declared outside the scope of the function add it to deps
-        # if isinstance(node.value, ast.Name) and (node.value.id not in self.scope_stack[0]) and (node.value.id in self.scope_stack[1]):
-        #     for name in self.scope_stack[1]:
-        #         if isinstance(self.scope_stack[1][name], tuple):
-        #             self.scope_stack[1][name][1].append(node.value.id)
         super().generic_visit(node)
 
     def visit_AugAssign(self, node: AugAssign) -> Any:
@@ -130,25 +125,18 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
 
     def visit_Call(self, node: Call) -> Any:
         print("In the call:", node._fields)
-        return super().visit_Call(node)
+        return super().generic_visit(node)
     
 def analyze(script: str) -> str:
     tree = ast.parse(script)
     vis = Visit_AST()
     vis.visit(tree)    
-    return vis.scope_stack[0] # this should be outside reads eventually
+    # print(ast.dump(tree, indent=4)) ## should be taken out
+    # return vis.scope_stack[0] # this should be outside reads eventually
+    return vis.outside_reads
 
 def main():
-    source = open("../../../test_data/dependency_test/if.py", "r")
-    # tree = ast.parse(source.read())
-
-#    print(ast.dump(tree, indent=4))
-#    vis = Visit_AST()
-#    vis.visit(tree)
-
-#    print("Scope: ", vis.scope_stack[0])
-#    print("store: ", vis.main_dict_store)
-#    print("Outside Reads:  ", vis.outside_reads)
+    source = open("../../../test_data/dependency_test/transitive_func.py", "r")
     print(analyze(source.read()))
 
             
