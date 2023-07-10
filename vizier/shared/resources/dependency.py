@@ -127,7 +127,7 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         print("In the call:", node._fields)
         return super().generic_visit(node)
     
-def analyze(script: str) -> str:
+def analyze(script: str) -> list:
     tree = ast.parse(script)
     vis = Visit_AST()
     vis.visit(tree)    

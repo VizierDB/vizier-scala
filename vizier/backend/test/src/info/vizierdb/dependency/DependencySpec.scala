@@ -19,106 +19,54 @@ class DependencySpec
     def beforeAll = SharedTestResources.init
 
     sequential
+    "Vizier Integration" >>
+    {
+        PythonDependency("x=5") must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
+    }
+
     "Simple Assign" >>
     {
-        // PythonDependency("x=6") must beEqualTo("{'x':'inside'}").ignoreCase.ignoreSpace.trimmed
         PythonDependency("x=6") must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
     }
 
     "Simple If" >>
     {
-        // val fileSource = Source.fromFile("test_data/dependency_test/if.py")
-        // val script = fileSource.getLines.toIndexedSeq.mkString("\n")
-        // fileSource.close
-        // println(script)
+        val fileSource = Source.fromFile("test_data/dependency_test/if.py")
+        val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
+        fileSource.close
 
-        var test = ""
-        try {
-            test = PythonProcess.run(
-                """import sys
-                   |sys.path.append("vizier/shared/resources")
-                   |from dependency import analyze
-                   |source = open("test_data/dependency_test/if.py", "r")
-                   |print(analyze(source.read()))
-                   """.stripMargin).trim()
-            test must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
-        } catch {
-            case exc: Throwable => println("Running python process failed with error: \n" + exc)
-            failure
-        }
-        ok
-        // PythonDependency(script) must beEqualTo("{'y':'inside'}").ignoreCase.ignoreSpace.trimmed
+        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
     }
 
     "Simple Function" >>
     {
-        var test = ""
-        try {
-            test = PythonProcess.run(
-                """import sys
-				  |sys.path.append("vizier/shared/resources")
-				  |from dependency import analyze
-				  |source = open("test_data/dependency_test/func.py", "r")
-				  |print(analyze(source.read()))
-				  |""".stripMargin)
-            test must beEqualTo("[]")
-        } catch {
-            case exc: Throwable => println("Running python process failed with error: \n" + exc)
-            failure
-        }
-        ok
+        val fileSource = Source.fromFile("test_data/dependency_test/func.py")
+        val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
+        fileSource.close
+
+        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
     }
 
     "Transitive Dependent Function" >> 
     {
-        var test = ""
-        try {
-            test = PythonProcess.run(
-                """import sys
-                   |sys.path.append("vizier/shared/resources")
-                   |source = open("test_data/dependency_test/transitive_func.py", "r")
-                   |from dependency import analyze
-                   |print(analyze(source.read()))
-                   |""".stripMargin)
-                test must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
-        } catch {
-            case exc: Throwable => println("Running python process failed with error: \n" + exc)
-            failure
-        }
-        ok
+        val fileSource = Source.fromFile("test_data/dependency_test/transitive_func.py")
+        val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
+        fileSource.close
+
+        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
     }
+
     "AugAssign" >>
     {
-        var test = ""
-        try {
-            test = PythonProcess.run(
-                """import sys
-                   |sys.path.append("vizier/shared/resources")
-                   |from dependency import analyze
-                   |print(analyze("x += 5"))
-                   |""".stripMargin)
-        } catch {
-            case exc: Throwable => println("Running python process failed with error: \n" + exc)
-            failure
-        }
-        test must beEqualTo("[]")
+        val fileSource = Source.fromFile("test_data/dependency_test/aug_assign.py")
+        val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
+        fileSource.close
+
+        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
     }
     "AnnAssign" >>
     {
-        var test = ""
-        try {
-            test = PythonProcess.run(
-                """import sys
-                   |sys.path.append("vizier/shared/resources")
-                   |from dependency import analyze
-                   |print(analyze("x: int"))
-                   |""".stripMargin)
-                test must beEqualTo("['int']")
-        } catch {
-            case exc: Throwable => println("Running python process failed with error: \n" + exc)
-            failure
-        }
-        ok
+        PythonDependency("x: int") must beEqualTo("['int']")
     }
 
 }
