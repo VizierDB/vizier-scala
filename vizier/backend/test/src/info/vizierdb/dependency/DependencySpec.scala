@@ -61,19 +61,19 @@ class DependencySpec
         PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
     }
 
-    // "AugAssign" >>
-    // {
-    //     val fileSource = Source.fromFile("test_data/dependency_test/aug_assign.py")
-    //     val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
-    //     fileSource.close
+    "AugAssign" >>
+    {
+        val fileSource = Source.fromFile("test_data/dependency_test/aug_assign.py")
+        val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
+        fileSource.close
 
-    //     PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
-    // }
+        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
+    }
+
     "AnnAssign" >>
     {
         PythonDependency("x: int") must beEqualTo("['int']")
     }
-
 
     "Mutable Project Test" >>
     {
