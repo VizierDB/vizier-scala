@@ -11,6 +11,11 @@ import info.vizierdb.commands.python.SystemPython
 import info.vizierdb.commands.python.Pyenv
 import info.vizierdb.catalog.PythonVirtualEnvironment
 import info.vizierdb.commands.python.PythonDependency
+import play.api.libs.json._
+import info.vizierdb.python.JupyterNotebook
+import info.vizierdb.python.JupyterCell
+import info.vizierdb.MutableProject
+
 
 import play.api.libs.json._
 class DependencySpec 
@@ -71,9 +76,34 @@ class DependencySpec
 
         PythonDependency(script).dependencies must beEqualTo("vector()").ignoreCase.ignoreSpace.trimmed
     }
+
     "AnnAssign" >>
     {
         PythonDependency("x: int").dependencies must beEqualTo("vector(int)")
     }
 
+    "Mutable Project Test" >>
+    {
+        val fileSource = Source.fromFile("test_data/dependency_test/MutableProjectTest.ipynb")
+        val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
+        fileSource.close
+
+        val json = Json.parse(script)
+        val nb = json.as[JupyterNotebook]
+
+        val project = MutableProject("Jupyter Notebook Test")
+
+        for(cell <- nb.cells)
+        {
+            cell.cell_type match {
+                case "markdown" => 
+                    project.markdown(cell.toString())
+                case "code" => 
+                    project.script(cell.source.toIndexedSeq.mkString("\n"))
+
+            }
+        }
+
+        project.lastOutputString must beEqualTo("Hello, World!")
+    }
 }

@@ -48,7 +48,6 @@ object SharedTestResources
 
         // Normal initialization
         Vizier.initSQLite()
-
         // Reset the database
         Schema.drop
         Schema.initialize
@@ -67,7 +66,6 @@ object SharedTestResources
             new URL(s"http://localhost:5000/vizier-db/api/v1/"), 
             None
           )
-        
 
         // And initialize testing
         DummyCommands.init
