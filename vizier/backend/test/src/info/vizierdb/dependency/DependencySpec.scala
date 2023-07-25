@@ -12,6 +12,7 @@ import info.vizierdb.commands.python.Pyenv
 import info.vizierdb.catalog.PythonVirtualEnvironment
 import info.vizierdb.commands.python.PythonDependency
 
+import play.api.libs.json._
 class DependencySpec 
     extends Specification 
     with BeforeAll
@@ -21,12 +22,12 @@ class DependencySpec
     sequential
     "Vizier Integration" >>
     {
-        PythonDependency("x=5") must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
+        PythonDependency("x=6").dependencies must beEqualTo("vector()").ignoreCase.ignoreSpace.trimmed
     }
 
     "Simple Assign" >>
     {
-        PythonDependency("x=6") must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
+        PythonDependency("x=6").dependencies must beEqualTo("vector()").ignoreCase.ignoreSpace.trimmed
     }
 
     "Simple If" >>
@@ -35,7 +36,13 @@ class DependencySpec
         val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
         fileSource.close
 
-        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
+        PythonDependency(script).dependencies must beEqualTo("vector()").ignoreCase.ignoreSpace.trimmed
+    }
+
+    // Should work when we have teh connections set up
+    "Simple Dependency" >>
+    {
+        PythonDependency("x=y").dependencies must beEqualTo("vector(y)").ignoreCase.ignoreSpace.trimmed
     }
 
     "Simple Function" >>
@@ -44,7 +51,7 @@ class DependencySpec
         val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
         fileSource.close
 
-        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
+        PythonDependency(script).dependencies must beEqualTo("vector()").ignoreCase.ignoreSpace.trimmed
     }
 
     "Transitive Dependent Function" >> 
@@ -53,7 +60,7 @@ class DependencySpec
         val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
         fileSource.close
 
-        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
+        PythonDependency(script).dependencies must beEqualTo("vector()").ignoreCase.ignoreSpace.trimmed
     }
 
     "AugAssign" >>
@@ -62,11 +69,11 @@ class DependencySpec
         val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
         fileSource.close
 
-        PythonDependency(script) must beEqualTo("[]").ignoreCase.ignoreSpace.trimmed
+        PythonDependency(script).dependencies must beEqualTo("vector()").ignoreCase.ignoreSpace.trimmed
     }
     "AnnAssign" >>
     {
-        PythonDependency("x: int") must beEqualTo("['int']")
+        PythonDependency("x: int").dependencies must beEqualTo("vector(int)")
     }
 
 }

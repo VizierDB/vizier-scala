@@ -47,8 +47,15 @@ try:
             cell_id = cmd["cellId"]
         elif cmd["event"] == "dependency":
             script = cmd["script"]
-            # print("hello??")
-            print(analyze(cmd["script"]), end="")
+            (deps, writes) = analyze(script)
+            # deps = analyze(script)
+
+            raw_output.write(json.dumps({
+                "dependencies": deps,
+                "writes": writes,
+            }))
+            raw_output.flush()
+            exit(0)
         else:
             print("Unknown event type '{}'".format(cmd["event"]))
 
@@ -77,6 +84,7 @@ try:
     }
     # variables.update(client.get_artifact_proxies())
     exec(script, variables, variables)
+    variables.update(writes) # Update variables with writes from the cell
     sys.stdout.soft_flush()
     sys.stderr.soft_flush()
 except Exception as ex:

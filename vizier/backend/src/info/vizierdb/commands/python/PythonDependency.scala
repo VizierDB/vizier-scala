@@ -1,9 +1,14 @@
 package info.vizierdb.commands.python
 
+import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json._
+import info.vizierdb.python.DependencyResponse
 
-object PythonDependency {
-    def apply(script: String): String= 
+object PythonDependency 
+    extends LazyLogging
+{
+
+    def apply(script: String): DependencyResponse = 
     {
         val python = PythonProcess()
 
@@ -11,12 +16,19 @@ object PythonDependency {
             "script" -> JsString(script)
         )
 
-        python.watchForErrors(println(_))
+        python.watchForErrors(logger.error(_))
 
         val response = python.read()
         response match {
-            case Some(s) => (s \ "content").as[String]
-            case None => "Error None"
+            case Some(s) => {
+                try {
+                    s.as[DependencyResponse]
+                } catch {
+                    case err: Throwable => logger.error("Error: some exception"); 
+                    DependencyResponse(Seq("err") , Map("err" -> 0))
+                }
+            }
+            case None => null
         }
     }
 }
