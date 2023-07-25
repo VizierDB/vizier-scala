@@ -48,6 +48,11 @@ object SharedTestResources
 
         // Normal initialization
         Vizier.initSQLite()
+
+        // Reset the database
+        Schema.drop
+        Schema.initialize
+
         Vizier.initSpark()
         Geocode.init(
           geocoders = Seq(
@@ -63,9 +68,6 @@ object SharedTestResources
             None
           )
         
-        // Reset the database
-        Schema.drop
-        Schema.initialize
 
         // And initialize testing
         DummyCommands.init
