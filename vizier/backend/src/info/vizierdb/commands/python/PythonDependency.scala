@@ -15,6 +15,7 @@ object PythonDependency
         python.send("dependency", 
             "script" -> JsString(script)
         )
+        println("here\n\n")
 
         python.watchForErrors(logger.error(_))
 

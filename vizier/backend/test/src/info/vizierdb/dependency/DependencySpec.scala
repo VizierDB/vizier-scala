@@ -106,4 +106,26 @@ class DependencySpec
 
         project.lastOutputString must beEqualTo("Hello, World!")
     }
+
+    "Simple Cell Test" >>
+    {
+        val fileSource = Source.fromFile("test_data/dependency_test/cell_dependencies.ipynb")
+        val script = fileSource.getLines.toIndexedSeq.mkString("\n")
+        fileSource.close
+
+        val json = Json.parse(script)
+        val nb = json.as[JupyterNotebook]
+
+        val project = MutableProject("Jupyter Notebook Test 2")
+
+        for (cell <- nb.cells)
+        {
+            cell.cell_type match {
+                case "code" =>
+                    project.script(cell.source.toIndexedSeq.mkString("\n"))
+            }
+        }
+
+        ok
+    }
 }

@@ -84,7 +84,7 @@ try:
     }
     # variables.update(client.get_artifact_proxies())
     exec(script, variables, variables)
-    variables.update(writes) # Update variables with writes from the cell
+    # variables.update(writes) # Update variables with writes from the cell
     sys.stdout.soft_flush()
     sys.stderr.soft_flush()
 except Exception as ex:
