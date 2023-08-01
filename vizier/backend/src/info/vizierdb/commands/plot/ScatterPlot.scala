@@ -1,13 +1,14 @@
 package info.vizierdb.commands.plot
 
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.Column
 import info.vizierdb.commands._
 import info.vizierdb.viztrails.ProvenancePrediction
 import play.api.libs.json.JsObject
 import info.vizierdb.artifacts.VegaMark
 import info.vizierdb.artifacts.VegaData
 import info.vizierdb.artifacts.VegaMarkType
-import play.api.libs.json.Json
+import play.api.libs.json._
 import info.vizierdb.artifacts.VegaFrom
 import info.vizierdb.artifacts.VegaChart
 import info.vizierdb.artifacts.VegaScale
@@ -17,6 +18,7 @@ import info.vizierdb.artifacts.VegaOrientation
 import info.vizierdb.artifacts.VegaMarkEncoding
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
 import info.vizierdb.artifacts.VegaAxisEncoding
+import info.vizierdb.artifacts.VegaSignalEncoding
 import info.vizierdb.artifacts.VegaDomain
 import info.vizierdb.artifacts.VegaRange
 import info.vizierdb.artifacts.VegaAutosize
@@ -143,6 +145,11 @@ object ScatterPlot extends Command
 	xTitle = xCol
 	yTitle = yCol
 
+	var headers = scala.collection.mutable.ListBuffer[String]()
+	for (i <- 0 until dataset.columns.length) {
+		headers += dataset.columns(i).toString
+	}
+
         // If a filter is provided, apply it now
         series.getOpt[String](PARAM_FILTER) match {
           case None | Some("") => ()
@@ -151,14 +158,28 @@ object ScatterPlot extends Command
           }
         }
 
-        // Pull out the x and y fields.  Cast them to doubles
-        // for easier extraction.
-        // Note: if they can't be cast, it's actually fine to
-        // crash, since the types can't be plotted in a scatter plot
-        dataset = dataset.select(
-          dataset(xCol).cast(DoubleType) as "x",
-          dataset(yCol).cast(DoubleType) as "y"
-        )
+	var xIndex = 0
+	var yIndex = 0
+	var index = 0
+	val listOfColumns:Seq[Column] = 
+	  dataset.columns.map { columnName => 
+	    if (columnName.toString == xCol) {
+		xIndex = index
+		index += 1
+		dataset(columnName.toString).cast(DoubleType) as "x"
+	    }
+	    else if (columnName.toString == yCol) {
+		yIndex = index
+		index += 1
+		dataset(columnName.toString).cast(DoubleType) as "y"
+	    }
+	    else {
+		index += 1
+		dataset(columnName.toString)
+	    }
+	  }
+	dataset = dataset.select( listOfColumns:_* )	
+	
 
         // Sort the data as appropriate
         dataset = dataset.orderBy("x")
@@ -177,17 +198,34 @@ object ScatterPlot extends Command
 
 
         // And emit the series.
+	var i = -1
         rows.map { row =>
-	  xValues += row.getAs[Double](0)
-	  yValues += row.getAs[Double](1)
+	  i += 1
+	  xValues += row.getAs[Double](xIndex)
+	  yValues += row.getAs[Double](yIndex)
+	  var signal = scala.collection.mutable.Map[String, JsValue]()
+	  var j = 0
+	  var tempRow = scala.collection.mutable.ListBuffer[String]()
+	  for (i <- 0 until row.length) {
+		tempRow += row(i).toString
+	  }
+	  tempRow.map { col =>
+	  	signal += (headers(j) -> JsString(col))
+	        j += 1
+	  }
           Json.obj(
-            "x" -> row.getAs[Double](0),
-            "y" -> row.getAs[Double](1),
-            "c" -> makeLabel(datasetName, yCol, xCol)
+            "x" -> row.getAs[Double](xIndex),
+            "y" -> row.getAs[Double](yIndex),
+            "c" -> makeLabel(datasetName, yCol, xCol),
+	    "s" -> JsObject(signal)
           )
         },
       }
 
+    var minX = xValues.min
+    var maxX = xValues.max
+    var minY = yValues.min
+    var maxY = yValues.max	
 
     context.vega(
       VegaChart(
@@ -214,15 +252,15 @@ object ScatterPlot extends Command
           VegaScale("x", VegaScaleType.Linear, 
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Data(field = "x", data = "data")),
-	    domainMin = Some(xValues.min),
-	    domainMax = Some(xValues.max)),
+	    domainMin = Some(minX),
+	    domainMax = Some(maxX)),
           
           // 'y': The y axis scale, mapping from data.y -> chart height
           VegaScale("y", VegaScaleType.Linear, 
             range = Some(VegaRange.Height),
             domain = Some(VegaDomain.Data(field = "y", data = "data")),
-	    domainMin = Some(yValues.min),
-	    domainMax = Some(yValues.max)),
+	    domainMin = Some(minY),
+	    domainMax = Some(maxY)),
 
           // 'color': The color scale, mapping from data.c -> color category
           VegaScale("color", VegaScaleType.Ordinal,
@@ -247,7 +285,8 @@ object ScatterPlot extends Command
             enter = Some(VegaMarkEncoding(
               x = Some(VegaAxisEncoding(scale = "x", field = "x")),
               y = Some(VegaAxisEncoding(scale = "y", field = "y")),
-              fill = Some(VegaAxisEncoding(scale = "color", field = "c"))
+              fill = Some(VegaAxisEncoding(scale = "color", field = "c")),
+	      tooltip = Some(VegaSignalEncoding(signal = "datum.s"))
             ))
           ))
         )),

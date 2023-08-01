@@ -1550,6 +1550,15 @@ object VegaAxisEncoding
   implicit val format: Format[VegaAxisEncoding] = Json.format
 }
 
+//Signal Attribute
+case class VegaSignalEncoding(
+  signal: String
+)
+object VegaSignalEncoding
+{
+  implicit val format: Format[VegaSignalEncoding] = Json.format
+}
+
 /**
  * A visual encoding of a mark
  * 
@@ -1570,6 +1579,7 @@ case class VegaMarkEncoding(
   y: Option[VegaAxisEncoding] = None,
   stroke: Option[VegaAxisEncoding] = None,
   fill: Option[VegaAxisEncoding] = None,
+  tooltip: Option[VegaSignalEncoding] = None
 )
 object VegaMarkEncoding
 {
