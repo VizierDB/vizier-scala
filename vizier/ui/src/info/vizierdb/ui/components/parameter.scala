@@ -184,6 +184,7 @@ object Parameter
           case "fileid"      => new FileParameter(param)
           case "dataset"     => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
           case "datatype"    => new DataTypeParameter(param)
+          case "json"        => new JsonParameter(param)
           case _             => new UnsupportedParameter(param)
         }
 
@@ -989,6 +990,36 @@ class StringParameter(
         println(s"WARNING: String parameter $name ($id) is being set to non-string value $v")
         v.toString
     }
+  def setHint(s: String): Unit =
+    inputNode[dom.html.Input].placeholder = s
+}
+
+/**
+ * A string-valued parameter
+ */
+class JsonParameter(
+  val id: String, 
+  val name: String, 
+  val required: Boolean,
+  val hidden: Boolean,
+  val initialPlaceholder: String = ""
+) extends Parameter
+{
+  def this(parameter: serialized.ParameterDescription)
+  {
+    this(
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
+    )
+  }
+  val root = 
+    input(`type` := "text", placeholder := initialPlaceholder).render.asInstanceOf[dom.html.Input]
+  def value =
+    Json.parse(inputNode[dom.html.Input].value)
+  def set(v: JsValue): Unit = 
+    inputNode[dom.html.Input].value = v.toString
   def setHint(s: String): Unit =
     inputNode[dom.html.Input].placeholder = s
 }

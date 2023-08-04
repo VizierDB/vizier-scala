@@ -77,6 +77,7 @@ object Commands
     "checkpoint" -> info.vizierdb.commands.data.CheckpointDataset,
     "unloadFile" -> info.vizierdb.commands.data.UnloadFile,
     "parameters" -> info.vizierdb.commands.data.DeclareParameters,
+    "spreadsheet"-> info.vizierdb.commands.data.SpreadsheetCommand,
   )
 
   register(packageId = "transform", name = "Transformation", category = "data")(

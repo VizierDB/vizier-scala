@@ -1,7 +1,7 @@
 package info.vizierdb.spreadsheet
 
 import scala.collection.mutable
-import breeze.numerics.exp
+import com.typesafe.scalalogging.LazyLogging
 
 /**
  * A class for mapping update ranges to the specified UpdateCell expressions.
@@ -68,14 +68,23 @@ class RangeMap[T]()
         }
   }
 
+  def get(at: Long): Option[(Long, Long, T)] =
+    apply(at, at, clamp = false).headOption
+
   def apply(at: Long): Option[T] =
     apply(at, at).headOption.map { _._3 }
 
+  def apply(ranges: RangeSet): Seq[(Long, Long, T)] =
+  {
+    ranges.flatMap { case (from, to) => apply(from, to, clamp = true) }
+          .toSeq
+  }
+
   /**
    * Insert an element into the structure.
-   * @param   element      The element to insert
    * @param   insertFrom   The start of the range to insert at
    * @param   insertTo     The end of the range to insert at
+   * @param   element      The element to insert
    */
   def insert(insertFrom: Long, insertTo: Long, element: T): Unit =
   {
@@ -87,6 +96,116 @@ class RangeMap[T]()
     onInsert(insertFrom, insertTo, element)
   }
 
+  /**
+   * Insert an element into the structure.
+   * @param   targets      The range to insert at
+   * @param   element      The element to insert
+   */
+  def insert(targets: RangeSet, element: T): Unit =
+  {
+    for( (from, to) <- targets )
+    {
+      insert( from, to, element )
+    }
+  }
+
+  /**
+   * Insert an element into the structure.
+   * @param   targets      The range to insert at
+   * @param   element      The element to insert
+   */
+  def insert(target: Long, element: T): Unit =
+  {
+    insert( target, target, element )
+  }
+
+  
+
+
+
+  /**
+   * Delete elements from the structure
+   * @param   deleteFrom   The start of the range to insert at
+   * @param   deleteTo     The end of the range to insert at
+   */
+  def remove(deleteFrom: Long, deleteTo: Long): Unit =
+  {
+    // Slice basically does the same thing as delete if we ignore
+    // its return values
+    slice(deleteFrom, deleteFrom)
+  }
+
+  /**
+   * Delete elements from the structure
+   * @param   deleteFrom   The start of the range to insert at
+   * @param   deleteTo     The end of the range to insert at
+   */
+  def remove(targets: RangeSet): Unit =
+  {
+    for( (from, to) <- targets )
+    {
+      remove(from, to)
+    }
+  }
+
+  /**
+   * Retrieve all ranges
+   */
+  def keys: RangeSet =
+    data.foldLeft(RangeSet()){ case (accum, (low, (high, _))) => 
+      accum ++ RangeSet(low, high)
+    }
+
+  /**
+   * Modify a range of elements in the map using as few edits
+   * as possible by providing an update rule
+   * @param   from    The start of the range to insert at (inclusive)
+   * @param   to      The end of the range to insert at (inclusive)
+   * @param   rule    A method for updating values in the map
+   * 
+   * rule will be invoked once for every range in the range map, whether
+   * or not the range includes a valie.  If it does not include a value
+   * then None will be passed, otherwise the old value will be passed. 
+   */
+  def update(updateFrom: Long, updateTo: Long)(rule: Option[T] => Option[T]): Unit =
+  {
+    var lastTo = updateFrom
+
+    def invokeRule(from: Long, to: Long, oldElement: Option[T]) =
+      rule(oldElement).foreach { insert(from, to, _) }
+
+    for( (from, to, element) <- slice(updateFrom, updateTo) )
+    {
+      if(lastTo+1 <= from-1){
+        invokeRule(lastTo+1, from-1, None)
+      }
+      invokeRule(from, to, Some(element))
+      lastTo = to
+    }
+    if(lastTo+1 <= updateTo){
+      invokeRule(lastTo+1, updateTo, None)
+    }
+  }
+
+  /**
+   * Modify a range of elements in the map using as few edits
+   * as possible by providing an update rule
+   * @param   from    The start of the range to insert at (inclusive)
+   * @param   to      The end of the range to insert at (inclusive)
+   * @param   rule    A method for updating values in the map
+   * 
+   * rule will be invoked once for every range in the range map, whether
+   * or not the range includes a valie.  If it does not include a value
+   * then None will be passed, otherwise the old value will be passed. 
+   */
+  def update(targets: RangeSet)(rule: Option[T] => Option[T]): Unit =
+  {
+    for( (from, to) <- targets ) { update(from, to)(rule) }
+  }
+
+  /**
+   * Empty the entire map
+   */
   def clear(): Unit =
   {
     for( (from, (to, element)) <- data )
@@ -106,7 +225,7 @@ class RangeMap[T]()
    *  - There are no ranges in `data` from sliceFrom to sliceTo (inclusive)
    *  - Any range that overlapped sliceFrom is included with its upper bound cut to sliceFrom-1
    *  - Any range that overlapped sliceTo is included with its lower bound cut to sliceTo+1
-   *  - Any range that overlapps both is 'bisected' into two separate ranges.
+   *  - Any range that overlaps both is 'bisected' into two separate ranges.
    * 
    * Any range that overlaps [sliceFrom, sliceTo] is returned.  If the overlap is only partial, 
    * then only the overlapping region is returned
@@ -158,7 +277,7 @@ class RangeMap[T]()
           onRemove(headFrom, headTo, headElement)
           onInsert(headFrom, sliceFrom-1, headElement)
 
-          headOption = Some( (sliceFrom, headTo, cloneElement(headElement) ))
+          headOption = Some( (sliceFrom, headTo, cloneElement(headElement)) )
           entriesToDelete = entriesToDelete.tail
         }
 
@@ -182,13 +301,32 @@ class RangeMap[T]()
           data.remove(delFrom)
           onRemove(delFrom, delTo, delElement)
         }
+
         return headOption.toSeq ++ entriesToDelete ++ tailOption
       }
     }
   }
 
   /**
-   * Analogous to slice, but shift records following the silce to fill the gap.
+   * Slice a range of elements out of the map
+   * @param  targets    The RangeSet of ranges to slice out of the map
+   * @return            A list of all (subsets of) ranges that (partially) overlap with [from, to]
+   * 
+   * Postcondition: 
+   *  - There are no ranges in `data` from targets (inclusive)
+   *  - Any range that overlapped targets is included with its upper bound cut to its overlap with the range set
+   *  - Any range that overlaps both is 'bisected' into two separate ranges.
+   * 
+   * Any range that overlaps targets is returned.  If the overlap is only partial, 
+   * then only the overlapping region is returned
+   */
+  def slice(targets: RangeSet): Seq[(Long, Long, T)] =
+  {
+    targets.flatMap { case (from, to) => slice(from, to) }.toSeq
+  }
+
+  /**
+   * Analogous to slice, but shift records following the slice to fill the gap.
    */
   def collapse(idx: Long, count: Long): Seq[(Long, Long, T)] =
   {
@@ -206,10 +344,12 @@ class RangeMap[T]()
     return ret
   }
 
-  def inject(idx: Long, count: Long) =
+  def inject(idx: Long, count: Long, 
+    update: (Long, Long, Long, T) => (T, T) = (_, _, _, t) => (t, t),
+  ) =
   {    
     if(count > 0){ 
-      bisect(idx) 
+      bisect(idx, update = update) 
       // need to go in descending order to avoid accidentally overwriting
       // an earlier element with a later one
       for( (shiftFrom, (shiftTo, element)) <- data.from(idx).toIndexedSeq.reverseIterator){
@@ -253,7 +393,9 @@ class RangeMap[T]()
   {
     assert(to < from || to >= from+count)
 
+    // println(s"Move $from-${from+count} to $to")
     // these are the elements we're explicitly asked to move
+    // println(s"======= Before cutting out from: \n$this")
     val explicitlyMovedElements = slice(from, from+count)
 
     // Create a gap at the target
@@ -271,7 +413,7 @@ class RangeMap[T]()
       } else {
         data.range(to, from+1).toIndexedSeq.iterator
       }
-    val implicitOffset = from - to - (if(from < to) { 0 } else { count })
+    val implicitOffset = if(from < to) { -count } else { count }
 
     // The explicitly moved elements are already removed, so start by applying the implicit moves
     for( (shiftFrom, (shiftTo, update)) <- implicitlyMovedElements){
@@ -282,13 +424,13 @@ class RangeMap[T]()
 
     // println(this)
     // And finally move the explicitly moved elements to the new range
-    val explicitOffset = to - from -  (if(from < to) { count } else { 0 })
+    val explicitOffset = to - from
     for( (shiftFrom, shiftTo, update) <- explicitlyMovedElements){
       // no need to remove
       // println(s"Reinsert $shiftFrom to ${shiftFrom+explicitOffset}")
       data.put(shiftFrom + explicitOffset, (shiftTo + explicitOffset, update))
     }
-    // println(this)
+    // println(s"======= Final state: \n$this\n==============")
 
   }
 
@@ -303,8 +445,25 @@ class RangeMap[T]()
    *   - `data` does not contain a range containing idx, or
    *   - The one range in `data` contained in idx is  
    */
-  def bisect(idx: Long): Unit = slice(idx+1, idx) 
-
+  def bisect(idx: Long,
+    update: (Long, Long, Long, T) => (T, T) = (_, _, _, t) => (t, t),
+  ): Unit = 
+  {
+    apply(idx-1, idx-1, clamp = false).headOption match {
+      case None => () // Nothing to split
+      case Some( (low, high, element) ) =>
+        {
+          if(high >= idx){ 
+            val (lowElement, highElement) = update(low, idx, high, element)
+            data.put(low, (idx-1, lowElement))
+            data.put(idx, (high, highElement))
+            onRemove(low, high, element)
+            onInsert(low, idx-1, lowElement)
+            onInsert(idx, high, highElement)
+          }
+        }
+    }
+  }
   /**
    * Create a "copy" of T to split.  This is mainly here for subclasses to 
    * override in case there is mutable state in the map.
@@ -313,13 +472,13 @@ class RangeMap[T]()
 
   /**
    * This function is called whenever an object is inserted into the map for a 
-   * specified ragne.
+   * specified range.
    */
   def onInsert(from: Long, to: Long, element: T): Unit = ()
 
   /**
    * This function is called whenever an object is inserted into the map for a 
-   * specified ragne.
+   * specified range.
    */
   def onRemove(from: Long, to: Long, element: T): Unit = ()
 
@@ -337,6 +496,11 @@ class RangeMap[T]()
     data.iterator
         .map { case (from, (to, element)) => (from, to, element) }
 
+  def last: (Long, Long, T) = 
+  {
+    val (low, (high, element)) = data.last
+    (low, high, element)
+  }
 
   /**
    * Pretty print
@@ -350,6 +514,7 @@ class RangeMap[T]()
 }
 
 object RangeMap
+  extends LazyLogging
 {
   def fillGaps[T](from: Long, to: Long, elements: Seq[(Long, Long, T)]): List[(Long, Long, Option[T])] =
   {
@@ -371,4 +536,52 @@ object RangeMap
 
   }
 
+  def joinIterator[T](maps: RangeMap[T]*): Iterator[(Long, Long, Seq[Option[T]])] =
+  {
+    val iterators = maps.map { _.iterator.buffered }
+
+    new Iterator[(Long, Long, Seq[Option[T]])] {
+      var idx = 0l
+
+      def hasNext: Boolean = !iterators.forall { _.isEmpty }
+
+      def next(): (Long, Long, Seq[Option[T]]) =
+      {
+        logger.trace(s"Stepping iterator @ $idx: ${iterators.map { i => if(i.isEmpty) { "[empty]" } else { i.head }}}")
+        val nextIdx = 
+          iterators.flatMap { 
+                      case i if i.isEmpty        => Seq.empty
+                      case i if i.head._1 > idx  => Seq(i.head._1-1)
+                      case i if i.head._1 <= idx => Seq(i.head._2)
+                    }
+                   .min
+        val ret = (
+          idx, 
+          nextIdx,
+          iterators.map { i =>
+            if(i.isEmpty || i.head._1 > idx) { None }
+            else { Some(i.head._3) }
+          }
+        )
+
+        idx = nextIdx + 1
+        for(i <- iterators) 
+        {
+          if(!i.isEmpty && i.head._2 < idx){ i.next }
+        }
+        logger.trace(s"After stepping to $idx: ${iterators.map { i => if(i.isEmpty) { "[empty]" } else { i.head }}}")
+
+        return ret
+      }
+    }
+  }
+
+  def join[T](maps: RangeMap[T]*): RangeMap[Seq[Option[T]]] =
+  {
+    val ret = new RangeMap[Seq[Option[T]]]()
+
+    ret.data ++= joinIterator(maps:_*).map { case (low, high, v) => (low, (high, v)) }
+
+    return ret
+  }
 }

@@ -89,14 +89,15 @@ case class FileArgument(
 
   override def toString: String =
   {
-    val name = 
-      filename
-        .getOrElse { "<unknown file>" }
     val rel = 
-      url.map { " @ url '"+_+"'" }
-         .orElse { fileid.map { " @ artifact file " + _ } }
-         .getOrElse { "" }
-    return name + rel
+      url.map { "url '"+_+"'" }
+         .orElse { fileid.map { "artifact " + _ } }
+    return  (filename, rel) match {
+      case (None, None) => "<unknown file>"
+      case (Some(name), None) => name
+      case (None, Some(source)) => source
+      case (Some(name), Some(source)) => s"$source ($name)"  
+    }
   }
 
 }

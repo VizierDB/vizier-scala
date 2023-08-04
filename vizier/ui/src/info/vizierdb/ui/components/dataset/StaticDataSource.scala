@@ -18,11 +18,12 @@ class StaticDataSource(
   schema: Seq[DatasetColumn],
   projectId: Identifier,
   datasetId: Identifier,
+  onclick: (Long, Int) => Unit = { (_, _) => () }
 )
   extends TableDataSource
 {
 
-  def this(cache: RowCache[DatasetRow], description: DatasetDescription)
+  def this(cache: RowCache[DatasetRow], description: DatasetDescription, onclick: (Long, Int) => Unit)
   {
     this(
       description.rowCount,
@@ -30,8 +31,13 @@ class StaticDataSource(
       description.columns,
       projectId = description.projectId,
       datasetId = description.id,
+      onclick = onclick
     )
-    cache.preload(description.rows)
+    cache.preload(description.rows),
+  }
+  def this(cache: RowCache[DatasetRow], description: DatasetDescription)
+  {
+    this(cache, description, onclick = { (_, _) => () })
   }
 
   def displayCaveat(row: String, column: Option[Int])
@@ -70,7 +76,8 @@ class StaticDataSource(
           caveatted = 
             if(cellCaveats.map { _(column) }.getOrElse { false }){
               Some( (trigger: dom.html.Button) => displayCaveat(rowId, Some(column)) )
-            } else { None }
+            } else { None },
+          onclick = { _ => onclick(row, column) }
         )
     }
   }

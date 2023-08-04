@@ -33,23 +33,28 @@ case class CachedSource(
   val pendingRows = mutable.Map[Long, Promise[Array[Any]]]()
 
   rows.onRefresh.append { (offset, limit) =>
-    val readyRows = pendingRows.keys.toIndexedSeq.filter { k => k >= offset && k < offset+limit }
-    for(row <- readyRows)
-    {
-      val data = rows(row) match {
-        case None => // odd... still not ready
-        case Some(data) =>
-          pendingRows.remove(row).foreach { _.success(data) }
-      }
-    }      
+    synchronized {
+
+      val readyRows = pendingRows.keys.toIndexedSeq.filter { k => k >= offset && k < offset+limit }
+      for(row <- readyRows)
+      {
+        val data = rows(row) match {
+          case None => // odd... still not ready
+          case Some(data) =>
+            pendingRows.remove(row).foreach { _.success(data) }
+        }
+      }      
+    }
   }
 
   def apply(col: Int, row: Long): Future[Any] =
-    rows(row) match {
-      case None => 
-        pendingRows.getOrElseUpdate(row, Promise[Array[Any]]())
-                   .future.map { _(col) }
-      case Some(data) => Future.successful(data(col))
+    synchronized {
+      rows(row) match {
+        case None => 
+          pendingRows.getOrElseUpdate(row, Promise[Array[Any]]())
+                     .future.map { _(col) }
+        case Some(data) => Future.successful(data(col))
+      }
     }
 
 }
