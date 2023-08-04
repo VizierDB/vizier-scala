@@ -183,6 +183,7 @@ class TableOfContents(
                                 Vizier.api.artifactGetCsvURL(
                                   projectId,
                                   artifact.id,
+                                  Some(name)
                                 )
                               case ArtifactType.FILE =>
                                 Vizier.api.artifactGetFileURL(
