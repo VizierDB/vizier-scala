@@ -43,8 +43,12 @@ object TextMessage
 
 case class DatasetMessage(content: serialized.DatasetDescription, module: Module)(implicit owner: Ctx.Owner) extends Message
 {
-  val dataset = new Dataset(content, menu = Dataset.DEFAULT_COMMANDS ++ Seq[Dataset.Command](
-    (_:Identifier, _:Identifier) => {
+  val dataset = new Dataset(
+                  description = content, 
+                  projectId = content.projectId,
+                  onclick = { (_:Long, _:Int) => () },
+                  menu = Dataset.DEFAULT_COMMANDS ++ Seq[Dataset.Command](
+    (_:Identifier, _:Identifier, _:String) => {
       a(
         target := "_blank",
         FontAwesome("table"),

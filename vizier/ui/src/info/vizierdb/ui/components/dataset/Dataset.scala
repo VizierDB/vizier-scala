@@ -78,21 +78,26 @@ class Dataset(
     rebind(description)
   }
 
-  def this(description: DatasetDescription, projectId: Identifier) 
-          (implicit owner: Ctx.Owner) =
-    this(description, projectId, menu = Dataset.DEFAULT_COMMANDS, onclick = { (_:Long, _: Int) => () })
+  // def this(description: DatasetDescription, projectId: Identifier) 
+  //         (implicit owner: Ctx.Owner) =
+  //   this(description, projectId, menu = Dataset.DEFAULT_COMMANDS, onclick = { (_:Long, _: Int) => () })
 
-  def this(description: DatasetDescription, menu: Seq[Dataset.Command], onclick: (Long, Int) => Unit)
-          (implicit owner: Ctx.Owner) =
-    this(description, description.projectId, menu, onclick)
+  // def this(description: DatasetDescription, menu: Seq[Dataset.Command], onclick: (Long, Int) => Unit)
+  //         (implicit owner: Ctx.Owner) =
+  //   this(description, description.projectId, menu, onclick)
 
-  def this(description: DatasetDescription, menu: Seq[Dataset.Command])
-          (implicit owner: Ctx.Owner) =
-    this(description, description.projectId, menu, onclick = { (_:Long, _:Int) => () })
+  // def this(description: DatasetDescription, menu: Seq[Dataset.Command])
+  //         (implicit owner: Ctx.Owner) =
+  //   this(description, description.projectId, menu, onclick = { (_:Long, _:Int) => () })
 
   def this(description: DatasetDescription)
           (implicit owner: Ctx.Owner) =
-    this(description, description.projectId)
+    this(
+      description, 
+      description.projectId, 
+      menu = Dataset.DEFAULT_COMMANDS,
+      onclick = { (_:Long, _: Int) => () }
+    )
 
   def rebind(description: DatasetDescription)
   {
@@ -119,7 +124,9 @@ class Dataset(
       Rx { 
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
       }.reactive,
-      menu.map { _(projectId, datasetId) }
+      Rx { 
+        span(menu.map { _(projectId, datasetId, name()) })
+      }.reactive
     )
     // Table root is appended by setSource()
   ).render
@@ -127,9 +134,9 @@ class Dataset(
 
 object Dataset
 {
-  type Command = (Identifier, Identifier) => Frag
+  type Command = (Identifier, Identifier, String) => Frag
   val COMMAND_OPEN_SPREADSHEET = 
-    (projectId: Identifier, datasetId: Identifier) =>
+    (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
       a(
         href := Vizier.links.spreadsheet(projectId, datasetId),
         target := "_blank",
@@ -137,9 +144,9 @@ object Dataset
       )
 
   val COMMAND_DOWNLOAD =
-    (projectId: Identifier, datasetId: Identifier) =>
+    (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
       a(
-        href := Vizier.api.artifactGetCsvURL(projectId, datasetId),
+        href := Vizier.api.artifactGetCsvURL(projectId, datasetId, name = Some(datasetName)),
         target := "_blank",
         FontAwesome("download")
       )

@@ -80,7 +80,12 @@ class SpreadsheetModuleSummary(
       case Failure(err) => logger.error(s"Error fetching updated dataset: $err")
       case Success(description) =>
         if(dataset.now.isEmpty) {
-          dataset() = Some(new Dataset(description, menu = Seq.empty, onclick = onClickInDataset(_, _)))
+          dataset() = Some(new Dataset(
+                                description, 
+                                projectId = description.projectId,
+                                menu = Seq.empty, 
+                                onclick = onClickInDataset(_, _)
+                      ))
         } else {
           dataset.now.get.rebind(description)
         }
