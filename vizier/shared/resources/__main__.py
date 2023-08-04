@@ -45,10 +45,12 @@ try:
             artifacts = cmd["artifacts"]
             project_id = cmd["projectId"]
             cell_id = cmd["cellId"]
+            # (deps, writes) = analyze(script)
+            # print(type(writes))
+
         elif cmd["event"] == "dependency":
             script = cmd["script"]
             (deps, writes) = analyze(script)
-            # deps = analyze(script)
 
             raw_output.write(json.dumps({
                 "dependencies": deps,
@@ -82,9 +84,11 @@ try:
         "show": client.show,
         "open": client.pycell_open,
     }
-    # variables.update(client.get_artifact_proxies())
+
+    # variables["vizierdb"]['y'] = 5
     exec(script, variables, variables)
-    # variables.update(writes) # Update variables with writes from the cell
+    client['y'] = 5
+
     sys.stdout.soft_flush()
     sys.stderr.soft_flush()
 except Exception as ex:
