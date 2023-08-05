@@ -3,11 +3,10 @@ package info.vizierdb.commands.plot
 import org.apache.spark.sql.types._
 import info.vizierdb.commands._
 import info.vizierdb.viztrails.ProvenancePrediction
-import play.api.libs.json.JsObject
+import play.api.libs.json._
 import info.vizierdb.artifacts.VegaMark
 import info.vizierdb.artifacts.VegaData
 import info.vizierdb.artifacts.VegaMarkType
-import play.api.libs.json.Json
 import info.vizierdb.artifacts.VegaFrom
 import info.vizierdb.artifacts.VegaChart
 import info.vizierdb.artifacts.VegaScale
@@ -16,7 +15,7 @@ import info.vizierdb.artifacts.VegaAxis
 import info.vizierdb.artifacts.VegaOrientation
 import info.vizierdb.artifacts.VegaMarkEncoding
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
-import info.vizierdb.artifacts.VegaAxisEncoding
+import info.vizierdb.artifacts.VegaValue
 import info.vizierdb.artifacts.VegaDomain
 import info.vizierdb.artifacts.VegaRange
 import info.vizierdb.artifacts.VegaAutosize
@@ -73,7 +72,7 @@ object LineChart extends Command
      * with the JsObjects being tuples: x, y, c (c is the series
      * label for the legend).
      */
-    val series = 
+    var series: Seq[VegaData] = 
       // For each series we're asked to generate...
       arguments.getList(PARAM_SERIES)
                .map { series => 
@@ -137,13 +136,16 @@ object LineChart extends Command
                 .getOrElse { yCol }
 
         // And emit the series.
-        rows.map { row =>
-          Json.obj(
-            "x" -> row.getAs[Double](0),
-            "y" -> row.getAs[Double](1),
-            "c" -> seriesLabel
-          )
-        },
+        VegaData(
+          name = seriesLabel,
+          values = 
+            Some(rows.map { row =>
+              Json.obj(
+                "x" -> row.getAs[Double](0),
+                "y" -> row.getAs[Double](1),
+              )
+            }.toSeq)
+        )
       }
 
     context.vega(
@@ -161,26 +163,31 @@ object LineChart extends Command
         // Each data value is already annotated with the series 
         // label, so just combine (flatten) all the series' data
         // together into a single big dataset (named "data")
-        data = Seq(VegaData("data",
-          values = Some(series.flatten)
-        )),
+        data = series ++ Seq(
+                VegaData(
+                  name = "_vizier_overview",
+                  source = Some(series.map { _.name })
+                )
+              ),
 
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
           VegaScale("x", VegaScaleType.Linear, 
             range = Some(VegaRange.Width),
-            domain = Some(VegaDomain.Data(field = "x", data = "data"))),
+            domain = Some(VegaDomain.Data(field = "x", data = "_vizier_overview"))),
           
           // 'y': The y axis scale, mapping from data.y -> chart height
           VegaScale("y", VegaScaleType.Linear, 
             range = Some(VegaRange.Height),
-            domain = Some(VegaDomain.Data(field = "y", data = "data"))),
+            domain = Some(VegaDomain.Data(field = "y", data = "_vizier_overview"))),
 
           // 'color': The color scale, mapping from data.c -> color category
           VegaScale("color", VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
-            domain = Some(VegaDomain.Data(field = "c", data = "data"))),
+            domain = Some(VegaDomain.Literal(
+                        series.map { data => JsString(data.name) }
+                    )))
         ),
 
         // Define the chart axes (based on the 'x' and 'y' scales)
@@ -192,18 +199,21 @@ object LineChart extends Command
         // Actually define the line(s).  There's a single mark here
         // that generates one line per color (based on the stroke 
         // encoding)
-        marks = Seq(VegaMark(
-          VegaMarkType.Line,
-          from = Some(VegaFrom(data = "data")),
-          encode = Some(VegaMarkEncodingGroup(
-            // 'enter' defines data in the initial state.
-            enter = Some(VegaMarkEncoding(
-              x = Some(VegaAxisEncoding(scale = "x", field = "x")),
-              y = Some(VegaAxisEncoding(scale = "y", field = "y")),
-              stroke = Some(VegaAxisEncoding(scale = "color", field = "c"))
-            ))
-          ))
-        )),
+        marks = 
+          series.map { data => 
+            VegaMark(
+              VegaMarkType.Line,
+              from = Some(VegaFrom(data = data.name)),
+              encode = Some(VegaMarkEncodingGroup(
+                // 'enter' defines data in the initial state.
+                enter = Some(VegaMarkEncoding(
+                  x = Some(VegaValue.Field("x").scale("x")),
+                  y = Some(VegaValue.Field("y").scale("y")),
+                  stroke = Some(VegaValue.Literal(JsString(data.name)).scale("color"))
+                ))
+              ))
+            )
+          },
 
         // Finally ensure that there is a legend displayed
         legends = Seq(

@@ -1541,13 +1541,91 @@ object VegaFrom
   implicit val format: Format[VegaFrom] = Json.format
 }
 
-case class VegaAxisEncoding(
-  scale: String,
-  field: String
-)
-object VegaAxisEncoding
+sealed trait VegaValue
 {
-  implicit val format: Format[VegaAxisEncoding] = Json.format
+  def scale(s: String) = 
+    VegaValue.Scale(s, this)
+}
+object VegaValue
+{
+  case class Field(
+    field: String,
+  ) extends VegaValue
+  case class Literal(
+    value: JsValue,
+  ) extends VegaValue
+  case class Scale(
+    scale: String,
+    target: VegaValue
+  ) extends VegaValue
+
+  implicit val fieldFormat: Format[Field] = Json.format
+  implicit val literalFormat:Format[Literal] = Format[Literal](
+    new Reads[Literal] {
+      def reads(j: JsValue): JsResult[Literal] = 
+        j match {
+          case JsObject(elems) if elems.keys == Set("value") =>
+            JsSuccess(Literal(elems("value")))
+          case _ =>
+            JsSuccess(Literal(j))
+        }
+    },
+    new Writes[Literal] {
+      def writes(j: Literal): JsValue = 
+        j.value
+    }
+  )
+  implicit val scaleFormat: Format[Scale] = Format[Scale](
+    new Reads[Scale]{
+      def reads(j: JsValue): JsResult[Scale] =
+        j match {
+          case JsObject(elems) if elems contains "scale" => 
+            JsSuccess(
+              Scale(elems("scale").as[String], 
+                format.reads(
+                  JsObject(elems - "scale")
+                ).get
+              )
+            )
+          case _ => JsError()
+        }
+    },
+    new Writes[Scale]{
+      def writes(j: Scale): JsValue = 
+        Json.toJson(j.target) match {
+          case JsObject(elems) => 
+            JsObject(elems ++ Map("scale" -> JsString(j.scale)))
+          case x => 
+            JsObject(Map("scale" -> JsString(j.scale), "value" -> x))
+        }
+    }
+  )
+  implicit val format: Format[VegaValue] = Format[VegaValue](
+    new Reads[VegaValue]{
+      def reads(j: JsValue): JsResult[VegaValue] =
+        JsSuccess(
+          j match {
+            case JsObject(elems) =>
+              if(elems contains "scale"){
+                j.as[Scale]
+              } else if(elems contains "field"){
+                j.as[Field]
+              } else {
+                j.as[Literal]
+              }
+            case _ => j.as[Literal]
+          }
+        )
+    },
+    new Writes[VegaValue]{
+      def writes(j: VegaValue): JsValue =
+        j match {
+          case j:Field => Json.toJson(j)
+          case j:Literal => Json.toJson(j)
+          case j:Scale => Json.toJson(j)
+        }
+    }
+  )
 }
 
 /**
@@ -1566,9 +1644,9 @@ object VegaAxisEncoding
  * TODO: Track down the full schema and plug it in here.
  */ 
 case class VegaMarkEncoding(
-  x: Option[VegaAxisEncoding] = None,
-  y: Option[VegaAxisEncoding] = None,
-  stroke: Option[VegaAxisEncoding] = None,
+  x: Option[VegaValue] = None,
+  y: Option[VegaValue] = None,
+  stroke: Option[VegaValue] = None,
 )
 object VegaMarkEncoding
 {
