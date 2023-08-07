@@ -45,10 +45,18 @@ try:
             artifacts = cmd["artifacts"]
             project_id = cmd["projectId"]
             cell_id = cmd["cellId"]
+            (inputs, outputs) = analyze(script)
+
         elif cmd["event"] == "dependency":
             script = cmd["script"]
-            # print("hello??")
-            print(analyze(cmd["script"]), end="")
+            (deps, writes) = analyze(script)
+
+            raw_output.write(json.dumps({
+                "dependencies": deps,
+                "writes": writes,
+            }))
+            raw_output.flush()
+            exit(0)
         else:
             print("Unknown event type '{}'".format(cmd["event"]))
 
@@ -75,8 +83,18 @@ try:
         "show": client.show,
         "open": client.pycell_open,
     }
-    # variables.update(client.get_artifact_proxies())
+
+
+    for var in inputs:
+        # try:
+        variables[var] = client[var]
+        # except:
+            # hi = 2
     exec(script, variables, variables)
+    for var in outputs:
+        client[var] = variables[var]
+
+
     sys.stdout.soft_flush()
     sys.stderr.soft_flush()
 except Exception as ex:

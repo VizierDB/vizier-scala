@@ -48,7 +48,6 @@ object SharedTestResources
 
         // Normal initialization
         Vizier.initSQLite()
-        
         // Reset the database
         Schema.drop
         Schema.initialize
