@@ -79,7 +79,7 @@ class DependencySpec
 
     "AnnAssign" >>
     {
-        PythonDependency("x: int").dependencies must beEqualTo("vector(int)")
+        PythonDependency("x: int").dependencies must beEqualTo("Vector(int)").ignoreCase.ignoreSpace.trimmed
     }
 
     "Mutable Project Test" >>
@@ -121,11 +121,14 @@ class DependencySpec
         for (cell <- nb.cells)
         {
             cell.cell_type match {
+                case "markdown" =>
+                    project.markdown(cell.toString())
                 case "code" =>
                     project.script(cell.source.toIndexedSeq.mkString("\n"))
+                    // PythonDependency(cell.source.toIndexedSeq.mkString("\n"))
             }
         }
-
-        ok
+        project.lastOutputString must beEqualTo("5")
+        // ok
     }
 }

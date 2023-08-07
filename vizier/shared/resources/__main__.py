@@ -45,8 +45,7 @@ try:
             artifacts = cmd["artifacts"]
             project_id = cmd["projectId"]
             cell_id = cmd["cellId"]
-            # (deps, writes) = analyze(script)
-            # print(type(writes))
+            (inputs, outputs) = analyze(script)
 
         elif cmd["event"] == "dependency":
             script = cmd["script"]
@@ -85,9 +84,16 @@ try:
         "open": client.pycell_open,
     }
 
-    # variables["vizierdb"]['y'] = 5
+
+    for var in inputs:
+        # try:
+        variables[var] = client[var]
+        # except:
+            # hi = 2
     exec(script, variables, variables)
-    client['y'] = 5
+    for var in outputs:
+        client[var] = variables[var]
+
 
     sys.stdout.soft_flush()
     sys.stderr.soft_flush()

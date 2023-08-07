@@ -2,6 +2,7 @@ from _ast import AST, AnnAssign, Assert, Assign, AsyncFor, AsyncFunctionDef, Asy
 import ast
 from collections import defaultdict, deque
 import json
+from keyword import iskeyword
 from typing import Any, Iterator
 import typing
 
@@ -93,18 +94,21 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
                 self.scope_stack.pop()
 
     def visit_Assign(self, node: Assign) -> Any: ## NOT DONE
-        # print(node.targets[0].id)
-        if isinstance(node.value, ast.Constant):
+        if isinstance(node.value, ast.Constant): ## If its a value assign the value
             for target in node.targets:
                 # print(target.id)
                 super().generic_visit(target)
                 self.main_dict_store.append(target.id) 
                 self.scope_stack[0][target.id] = node.value.value
-        elif isinstance(node.value, ast.Name):
-            for target in node.targets:
-                super().generic_visit(target)
-                self.main_dict_store.append(target.id) 
-                self.scope_stack[0][target.id] = self.scope_stack[0][node.value.id]
+        elif isinstance(node.value, ast.Name): ## if its a Variable get the value from the variable
+            super().generic_visit(node)
+            # for target in node.targets:
+            #     super().generic_visit(target)
+            #     self.main_dict_store.append(target.id) 
+            #     # self.scope_stack[0][target.id] = self.scope_stack[0][node.value.id]
+            #     # self.scope_stack[0][target.id] = node.value.id
+            #     self.scope_stack[0][target.id] = -1 # test dont' use
+
 
         else:
             super().generic_visit(node)
@@ -122,7 +126,7 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
             ## Using this because what if we're curreingly in a scope and use a var defined in another scope
             self.main_dict_store.append(node.id) 
             # self.scope_stack[0][node.id] = self.INSIDE
-        if isinstance(node.ctx, ast.Load) and node.id not in self.main_dict_store:
+        if isinstance(node.ctx, ast.Load) and node.id not in self.main_dict_store and not iskeyword(node.id):
             # self.scope_stack[0][node.id] = self.OUTSIDE
             self.outside_reads.append(node.id)
         ## If we get something in a function that is declared outside the scope of the function add it to deps
@@ -132,8 +136,9 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         #             self.scope_stack[1][name][1].append(node.id)
 
     def visit_Call(self, node: Call) -> Any:
-        print("In the call:", node._fields)
-        return super().generic_visit(node)
+        ## We need to figure out how to deal with function call
+        # return super().generic_visit(node)
+        return
     
 def analyze(script: str) -> typing.Tuple[list, dict[str,int]]:
 # def analyze(script: str) -> list:
@@ -146,10 +151,12 @@ def analyze(script: str) -> typing.Tuple[list, dict[str,int]]:
     # print(vis.scope_stack[0])
     return vis.outside_reads, vis.scope_stack[0]
 
-def main():
-    source = open("../../../test_data/dependency_test/func.py", "r")
-    print(analyze(source.read()))
-    # analyze("x=4")
+def main() -> Any :
+    source = open("../../../test_data/dependency_test/transitive_func.py", "r")
+    # print(analyze(source.read()))
+    # (deps, writes) = analyze("x: int = y")
+    deps, writes = analyze(source.read())
+    print(deps, writes)
 
             
         
