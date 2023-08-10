@@ -161,14 +161,16 @@ class VizierDBClient(object):
 
   def __setitem__(self, key: Any, updated_data: Any = None) -> Any:
   
-    primitive_type = (int, str, bool, float)
-    sequence_type  = (list, tuple, range)
-    mapping_type   = (dict)
+    primitive_type = [int, str, bool, float]
+    sequence_type  = [list, tuple, range]
+    mapping_type   = [dict]
 
     if type(updated_data) in primitive_type or type(updated_data) in sequence_type or type(updated_data) in mapping_type:
       self.export_parameter(key, updated_data)
-    elif type(updated_data) is ModuleType or type(updated_data) is FunctionType:
-      self.export_module(key)
+    elif type(updated_data) is FunctionType:
+      self.export_function(key)
+    elif type(updated_data) is ModuleType:
+      self.export_import(key, updated_data)
     elif type(updated_data) == pandas.core.frame.DataFrame:
       self.save_data_frame(key, updated_data)
     else:
@@ -596,8 +598,27 @@ class VizierDBClient(object):
         "html": html,
         "js_deps": dependencies
       }), mime_type=OUTPUT_JAVASCRIPT)
+    
+  def export_import(self, key: str, updated_value: Any = None):
+    src = "import {} as {}".format(key, updated_value.__name__)
 
-  def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
+    response = self.vizier_request("save_artifact",
+        name=key,
+        data=src,
+        mimeType=MIME_TYPE_PYTHON,
+        artifactType=ARTIFACT_TYPE_FUNCTION,
+        has_response=True
+      )
+    assert response is not None
+
+    self.artifacts[key] = Artifact(
+      name=key,
+      artifact_type=ARTIFACT_TYPE_FUNCTION,
+      mime_type=MIME_TYPE_PYTHON,
+      artifact_id=response["artifactId"]
+    )
+
+  def export_function(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
     if name_override is not None:
       exp_name = name_override
     elif inspect.isclass(exp):
@@ -632,7 +653,7 @@ class VizierDBClient(object):
 
     if exp_name in self.artifacts:
       if name_override is None:
-        raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_module(exp, name_override=\"{}\")".format(exp_name, exp_name))
+        raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_function(exp, name_override=\"{}\")".format(exp_name, exp_name))
 
     response = self.vizier_request("save_artifact",
         name=exp_name,
