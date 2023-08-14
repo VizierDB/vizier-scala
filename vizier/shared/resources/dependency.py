@@ -1,4 +1,4 @@
-from _ast import AST, AnnAssign, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, AugAssign, Call, ClassDef, Delete, For, FunctionDef, If, Import, Match, Name, Raise, Return, Try, Tuple, While, With
+from _ast import AST, AnnAssign, Assert, Assign, AsyncFor, AsyncFunctionDef, AsyncWith, Attribute, AugAssign, Call, ClassDef, Delete, For, FunctionDef, If, Import, Match, Name, Raise, Return, Try, Tuple, While, With, alias
 import ast
 from collections import defaultdict, deque
 import json
@@ -129,7 +129,7 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         if isinstance(node.ctx, ast.Load) and node.id not in self.main_dict_store and not iskeyword(node.id):
             # self.scope_stack[0][node.id] = self.OUTSIDE
             self.outside_reads.append(node.id)
-        ## If we get something in a function that is declared outside the scope of the function add it to deps
+        # If we get something in a function that is declared outside the scope of the function add it to deps
         # if  (node.id not in self.scope_stack[0]) and (node.id in self.scope_stack[1]):
         #     for name in self.scope_stack[1]:
         #         if isinstance(self.scope_stack[1][name], tuple):
@@ -137,8 +137,25 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
 
     def visit_Call(self, node: Call) -> Any:
         ## We need to figure out how to deal with function call
-        # return super().generic_visit(node)
-        return
+        if isinstance(node.func,ast.Attribute):
+            super().generic_visit(node)
+
+    def visit_Attribute(self, node: Attribute) -> Any:
+        if isinstance(node.value, ast.Name):
+            super().generic_visit(node)
+            
+    
+    def visit_Import(self, node: Import) -> Any:
+        super().generic_visit(node)
+    
+    def visit_alias(self, node: alias) -> Any:
+        if node.asname != None:
+            self.scope_stack[0][node.asname] = node.name
+        else:
+            self.scope_stack[0][node.name] = node.name
+            
+
+
     
 def analyze(script: str) -> typing.Tuple[list, dict[str,int]]:
 # def analyze(script: str) -> list:
@@ -152,9 +169,8 @@ def analyze(script: str) -> typing.Tuple[list, dict[str,int]]:
     return vis.outside_reads, vis.scope_stack[0]
 
 def main() -> Any :
-    source = open("../../../test_data/dependency_test/transitive_func.py", "r")
-    # print(analyze(source.read()))
-    # (deps, writes) = analyze("x: int = y")
+    source = open("../../../test_data/dependency_test/test.py", "r")
+    # (deps, writes) = analyze("import matplotlib.image")
     deps, writes = analyze(source.read())
     print(deps, writes)
 

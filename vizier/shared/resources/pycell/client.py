@@ -33,14 +33,15 @@ from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
 import pickle
 import base64
 
-ARTIFACT_TYPE_DATASET   = "Dataset"
-MIME_TYPE_DATASET       = "dataset/view"
-ARTIFACT_TYPE_FUNCTION  = "Function"
-MIME_TYPE_PYTHON        = "application/python"
-ARTIFACT_TYPE_BLOB      = "Blob"
-MIME_TYPE_PICKLE        = "application/pickle"
-ARTIFACT_TYPE_PARAMETER = "Parameter"
-ARTIFACT_TYPE_FILE      = "File"
+ARTIFACT_TYPE_DATASET     = "Dataset"
+MIME_TYPE_DATASET         = "dataset/view"
+ARTIFACT_TYPE_FUNCTION    = "Function"
+MIME_TYPE_PYTHON_FUNCTION = "application/python"
+MIME_TYPE_PYTHON_IMPORT   = "application/python-import"
+ARTIFACT_TYPE_BLOB        = "Blob"
+MIME_TYPE_PICKLE          = "application/pickle"
+ARTIFACT_TYPE_PARAMETER   = "Parameter"
+ARTIFACT_TYPE_FILE        = "File"
 
 OUTPUT_TEXT       = "text/plain"
 OUTPUT_HTML       = "text/html"
@@ -140,7 +141,10 @@ class VizierDBClient(object):
     if artifact.artifact_type == ARTIFACT_TYPE_DATASET:
       return self.get_dataset(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_FUNCTION:
-      return self.get_module(key)
+      if artifact.mime_type == MIME_TYPE_PYTHON_FUNCTION:
+        return self.get_function(key)
+      if artifact.mime_type == MIME_TYPE_PYTHON_IMPORT:
+        return self.get_import(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_PARAMETER:
       return self.get_parameter(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_FILE:
@@ -223,7 +227,7 @@ class VizierDBClient(object):
       response["dataType"]
     )
 
-  def get_module(self, name: str) -> Any:
+  def get_function(self, name: str) -> Any:
     name = name.lower()
     if name not in self.artifacts:
       raise ValueError("unknown module \'{}\'".format(name))
@@ -255,6 +259,25 @@ class VizierDBClient(object):
 
     exec("@export\n" + response["data"], variables, variables)
     return self.py_objects[name]
+
+  def get_import(self, name: str) -> Any:
+    response = self.vizier_request(
+      event="get_blob",
+      name=name,
+      has_response=True
+    )
+    assert response is not None
+
+    variables = {
+      "vizierdb": self,
+    }
+    exec(response["data"],variables, variables )
+    self.py_objects[name] = variables['np']
+    return self.py_objects[name]
+  ## Rename get_module -> get_function
+  ## create a new get_module:
+  ##  where its just pyobject[name] = variables[name]
+  ## add a new if in the getter that checks the module mime type
 
   def get_dataset(self, name: str) -> DatasetClient:
     """Get dataset with given name.
@@ -600,12 +623,12 @@ class VizierDBClient(object):
       }), mime_type=OUTPUT_JAVASCRIPT)
     
   def export_import(self, key: str, updated_value: Any = None):
-    src = "import {} as {}".format(key, updated_value.__name__)
+    src = "import {} as {}".format(updated_value.__name__, key)
 
     response = self.vizier_request("save_artifact",
         name=key,
         data=src,
-        mimeType=MIME_TYPE_PYTHON,
+        mimeType=MIME_TYPE_PYTHON_IMPORT,
         artifactType=ARTIFACT_TYPE_FUNCTION,
         has_response=True
       )
@@ -614,9 +637,10 @@ class VizierDBClient(object):
     self.artifacts[key] = Artifact(
       name=key,
       artifact_type=ARTIFACT_TYPE_FUNCTION,
-      mime_type=MIME_TYPE_PYTHON,
+      mime_type=MIME_TYPE_PYTHON_IMPORT,
       artifact_id=response["artifactId"]
     )
+
 
   def export_function(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
     if name_override is not None:
@@ -658,7 +682,7 @@ class VizierDBClient(object):
     response = self.vizier_request("save_artifact",
         name=exp_name,
         data=src,
-        mimeType=MIME_TYPE_PYTHON,
+        mimeType=MIME_TYPE_PYTHON_FUNCTION,
         artifactType=ARTIFACT_TYPE_FUNCTION,
         has_response=True
       )
@@ -667,7 +691,7 @@ class VizierDBClient(object):
     self.artifacts[exp_name] = Artifact(
       name=exp_name,
       artifact_type=ARTIFACT_TYPE_FUNCTION,
-      mime_type=MIME_TYPE_PYTHON,
+      mime_type=MIME_TYPE_PYTHON_FUNCTION,
       artifact_id=response["artifactId"]
     )
     if exp_name in self.datasets:
