@@ -8,6 +8,7 @@ import info.vizierdb.artifacts.VegaMark
 import info.vizierdb.artifacts.VegaData
 import info.vizierdb.artifacts.VegaMarkType
 import play.api.libs.json.Json
+import info.vizierdb.artifacts.VegaTransform
 import info.vizierdb.artifacts.VegaFrom
 import info.vizierdb.artifacts.VegaChart
 import info.vizierdb.artifacts.VegaScale
@@ -25,12 +26,12 @@ import info.vizierdb.artifacts.VegaAutosize
 import info.vizierdb.artifacts.VegaPadding
 import info.vizierdb.artifacts.VegaLegend
 import info.vizierdb.artifacts.VegaLegendType
+import play.api.libs.json._
 
 
-
-object LineChart extends Command
+object ScatterPlot extends Command
 {
-  val PARAM_SERIES = "series"
+  val PARAM_SERIES = "series" 
   val PARAM_DATASET = "dataset"
   val PARAM_X = "xcol"
   val PARAM_Y = "ycol"
@@ -38,10 +39,11 @@ object LineChart extends Command
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
+  val PARAM_REGRESSION = "regression"
 
   val MAX_RECORDS = 10000
 
-  override def name: String = "Line Chart"
+  override def name: String = "Scatter Plot"
 
   override def parameters: Seq[Parameter] = Seq(
     ListParameter(id = PARAM_SERIES, name = "Lines", components = Seq(
@@ -51,41 +53,101 @@ object LineChart extends Command
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false),
       StringParameter(id = PARAM_COLOR, name = "Color", required = false),
+      EnumerableParameter(id = PARAM_REGRESSION, name = "Regression", values = EnumerableValue.withNames(
+      
+        //what is stored in PARAM_REGRESSION is on the right
+        "" -> "",
+        "Linear" -> "linear",
+        "Logarithmic" -> "log",
+        "Exponential" -> "exp",
+        "Power" -> "pow",
+        "Quadratic" -> "quad"
+      ))
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
-  override def title(arguments: Arguments): String =
+  override def title(arguments: Arguments): String = 
     "PLOT "+arguments.getList(PARAM_SERIES).map { series =>
       series.pretty(PARAM_DATASET)
     }.toSet.mkString(", ")
 
-  override def format(arguments: Arguments): String =
+  override def format(arguments: Arguments): String = 
     "PLOT "+arguments.getList(PARAM_SERIES).map { series =>
       f"${series.pretty(PARAM_DATASET)}.{${series.pretty(PARAM_X)}, ${series.pretty(PARAM_Y)}}${series.getOpt[String](PARAM_LABEL).map { " AS " + _ }.getOrElse("")}"
     }.mkString("\n     ")
 
-  override def process(arguments: Arguments, context: ExecutionContext): Unit =
+  override def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
+    //val regChoice = arguments.get[String](PARAM_REGRESSION)
+    
+    //Variables to store axes titles
+    var xTitle = ""
+    var yTitle = ""
+
+    //Variables to hold the x and y values
+    var xValues = scala.collection.mutable.ListBuffer[Double]()
+    var yValues = scala.collection.mutable.ListBuffer[Double]()
+
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
-                                .flatMap { case "" => None
+                                .flatMap { case "" => None 
                                            case x => Some(x) }
 
-    /**
+    val nameComponents:Seq[(String, String, String)] = arguments.getList(PARAM_SERIES).map {
+	series => 
+		val datasetName = series.get[String](PARAM_DATASET)
+		val xColIdx = series.get[Int](PARAM_X)
+        	val yColIdx = series.get[Int](PARAM_Y)
+		var dataset = context.dataframe(datasetName)
+		val xCol = dataset.columns(xColIdx)
+		val yCol = dataset.columns(yColIdx)
+		(datasetName, yCol, xCol)
+    }
+
+    //Variables to hold the number of unique names for each naming convention
+    val numberOfUniqueDatasetNames = nameComponents.map { c => c._1 }.toSet.size
+    val numberOfUniqueYNames = nameComponents.map { c => c._2 }.toSet.size
+    val numberOfUniqueXNames = nameComponents.map { c => c._3 }.toSet.size
+    val numberOfUniqueDatasetandYNames = nameComponents.map { c => (c._1 + c._2) }.toSet.size
+    val numberOfUniqueDatasetandXNames = nameComponents.map { c => (c._1 + c._3) }.toSet.size
+
+    //lambda function to generate a series label based on uniqueness
+    val makeLabel =
+		if(numberOfUniqueDatasetNames == nameComponents.size) {
+			(datasetName: String, yCol: String, xCol: String) => datasetName
+	 	}
+	  	else if(numberOfUniqueYNames == nameComponents.size) {
+			(datasetName: String, yCol: String, xCol: String) => yCol
+	   	}
+	    	else if(numberOfUniqueXNames == nameComponents.size) {
+			(datasetName: String, yCol: String, xCol: String) => xCol
+	    	}
+	    	else if(numberOfUniqueDatasetandYNames == nameComponents.size) {
+			(datasetName: String, yCol: String, xCol: String) => datasetName + " " + yCol
+	    	}
+	    	else if(numberOfUniqueDatasetandXNames == nameComponents.size) {
+			(datasetName: String, yCol: String, xCol: String) => datasetName + " " + xCol
+	    	}
+	    	else {
+			(datasetName: String, yCol: String, xCol: String) => datasetName + " " + xCol + " " + yCol
+	    	}
+
+
+/**
      * A Seq[Seq[JsObject]]; Each inner Seq is a single series
      * with the JsObjects being tuples: x, y, c (c is the series
      * label for the legend).
      */
-    val series =
+    val series = 
       // For each series we're asked to generate...
       arguments.getList(PARAM_SERIES)
-               .map { series =>
+               .map { series => 
 
-        // Extract the dataset artifact and figure out the
+        // Extract the dataset artifact and figure out the 
         // x and y columns.
-        //
-        // Remember: ColIdParameter parameters give us an
+        // 
+        // Remember: ColIdParameter parameters give us an 
         // integer column index.
         val datasetName = series.get[String](PARAM_DATASET)
         val xColIdx = series.get[Int](PARAM_X)
@@ -95,6 +157,9 @@ object LineChart extends Command
         var dataset = context.dataframe(datasetName)
         val xCol = dataset.columns(xColIdx)
         val yCol = dataset.columns(yColIdx)
+	xTitle = xCol
+	yTitle = yCol
+        
 
         // If a filter is provided, apply it now
         series.getOpt[String](PARAM_FILTER) match {
@@ -107,7 +172,7 @@ object LineChart extends Command
         // Pull out the x and y fields.  Cast them to doubles
         // for easier extraction.
         // Note: if they can't be cast, it's actually fine to
-        // crash, since the types can't be plotted in a line chart
+        // crash, since the types can't be plotted in a scatter plot
         dataset = dataset.select(
           dataset(xCol).cast(DoubleType) as "x",
           dataset(yCol).cast(DoubleType) as "y"
@@ -128,28 +193,19 @@ object LineChart extends Command
           return
         }
 
-        // Pull out the series label, or heuristically come up with
-        // a better one if necessary...
-        //
-        // We could probably do something more clever here...
-        // perhaps e.g., see which of xCol, yCol and datasetName are
-        // unique across all series.
-        // For now, let's do a simple hack...
-        val seriesLabel =
-          series.getOpt[String](PARAM_LABEL)
-                .flatMap { case "" => None; case x => Some(x) }
-                .getOrElse { yCol }
 
         // And emit the series.
         rows.map { row =>
+	  xValues += row.getAs[Double](0)
+	  yValues += row.getAs[Double](1)
           Json.obj(
             "x" -> row.getAs[Double](0),
             "y" -> row.getAs[Double](1),
-            "c" -> seriesLabel
+            "c" -> makeLabel(datasetName, yCol, xCol)
           )
         },
       }
-
+    
     context.vega(
       VegaChart(
         description = "",
@@ -162,58 +218,100 @@ object LineChart extends Command
         // 10 extra pixels around the border
         padding = VegaPadding.all(10),
 
-        // Each data value is already annotated with the series
+        // Each data value is already annotated with the series 
         // label, so just combine (flatten) all the series' data
         // together into a single big dataset (named "data")
-        data = Seq(VegaData("data",
-          values = Some(series.flatten)
-        )),
+        data = Seq(
+            VegaData(
+                name = "data",
+                values = Some(series.flatten)
+            ),
+            
+            //for regression data hard coded into linear
+            VegaData(
+                name = "trend",
+                source = Some(Seq("data")),
+                transform = Some(Seq(VegaTransform(
+                    "regression",
+                    "x",
+                    "y",
+                    method = Some("linear")
+                    
+                )))
+            )
+            
+        ),
 
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
-          VegaScale("x", VegaScaleType.Linear,
+          VegaScale("x", VegaScaleType.Linear, 
             range = Some(VegaRange.Width),
-            domain = Some(VegaDomain.Data(field = "x", data = "data"))),
+            domain = Some(VegaDomain.Data(field = "x", data = "data")),
+	    domainMin = Some(xValues.min),
+	    domainMax = Some(xValues.max)),
           
           // 'y': The y axis scale, mapping from data.y -> chart height
-          VegaScale("y", VegaScaleType.Linear,
+          VegaScale("y", VegaScaleType.Linear, 
             range = Some(VegaRange.Height),
-            domain = Some(VegaDomain.Data(field = "y", data = "data"))),
+            domain = Some(VegaDomain.Data(field = "y", data = "data")),
+	    domainMin = Some(yValues.min),
+	    domainMax = Some(yValues.max)),
 
           // 'color': The color scale, mapping from data.c -> color category
           VegaScale("color", VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
             domain = Some(VegaDomain.Data(field = "c", data = "data"))),
+        
+        
         ),
 
         // Define the chart axes (based on the 'x' and 'y' scales)
         axes = Seq(
-          VegaAxis("x", VegaOrientation.Bottom, ticks = Some(true)),
-          VegaAxis("y", VegaOrientation.Left, ticks = Some(true))
+          VegaAxis("x", VegaOrientation.Bottom, ticks = Some(true), title = Some(xTitle)),
+          VegaAxis("y", VegaOrientation.Left, ticks = Some(true), title = Some(yTitle))
         ),
 
-        // Actually define the line(s).  There's a single mark here
-        // that generates one line per color (based on the stroke
+        // Actually define the circles.  There's a single mark here
+        // that generates one circle per data point (based on the stroke 
         // encoding)
         marks = Seq(VegaMark(
-          VegaMarkType.Line,
+          VegaMarkType.Symbol,
           from = Some(VegaFrom(data = "data")),
           encode = Some(VegaMarkEncodingGroup(
             // 'enter' defines data in the initial state.
             enter = Some(VegaMarkEncoding(
               x = Some(VegaAxisEncodingField(scale = "x", field = "x")),
               y = Some(VegaAxisEncodingField(scale = "y", field = "y")),
-              stroke = Some(VegaAxisEncodingField(scale = "color", field = "c"))
+              stroke = Some(VegaAxisEncodingField(scale = "color", field = "c")),
+              fill = Some(VegaAxisEncodingField(scale = "color", field = "c")),
+              opacity = Some(VegaAxisEncodingValue(value = JsNumber(0.7)))
             ))
           ))
-        )),
-
+        ),
+        
+            //vega mark object for regression
+            VegaMark(
+                VegaMarkType.Line,
+                from = Some(VegaFrom(data = "trend")),
+                encode = Some(VegaMarkEncodingGroup(
+                    enter = Some(VegaMarkEncoding(
+                        x = Some(VegaAxisEncodingField(scale = "x", field = "x")),
+                        y = Some(VegaAxisEncodingField(scale = "y", field = "y")),
+                        stroke = Some(VegaAxisEncodingField(scale = "color", field = "c"))
+                    ))
+                ))
+            
+            )
+        
+        ),
+	
         // Finally ensure that there is a legend displayed
         legends = Seq(
           VegaLegend(
             VegaLegendType.Symbol,
-            stroke = Some("color")
+            stroke = Some("color"),
+            fill = Some("color")
           )
         )
       ),
@@ -230,6 +328,5 @@ object LineChart extends Command
                  .toSet.toSeq:_*
       )
       .andNothingElse
-
 
 }

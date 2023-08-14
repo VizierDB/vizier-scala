@@ -213,6 +213,18 @@ object VegaFileFormat
   implicit val format: Format[VegaFileFormat] = Json.format
 }
 
+case class VegaTransform(
+    `type`: String,
+    x:String,
+    y:String,
+    method: Option[String]
+)
+
+object VegaTransform
+{
+  implicit val format: Format[VegaTransform] = Json.format
+}
+
 /**
  * A raw Vega Dataset
  * 
@@ -232,7 +244,7 @@ case class VegaData(
   values: Option[Seq[JsObject]] = None,
   async: Boolean = false,
   // on: Seq[VegaTrigger]
-  // transform: Seq[VegaTransform]
+  transform: Option[Seq[VegaTransform]] = None
 )
 object VegaData
 {
@@ -241,6 +253,8 @@ object VegaData
 
   implicit val format: Format[VegaData] = Json.format
 }
+
+
 
 /**
  * A vega scale type
