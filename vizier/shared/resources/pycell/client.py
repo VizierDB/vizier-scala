@@ -272,7 +272,7 @@ class VizierDBClient(object):
       "vizierdb": self,
     }
     exec(response["data"],variables, variables )
-    self.py_objects[name] = variables['np']
+    self.py_objects[name] = variables[name]
     return self.py_objects[name]
   ## Rename get_module -> get_function
   ## create a new get_module:
