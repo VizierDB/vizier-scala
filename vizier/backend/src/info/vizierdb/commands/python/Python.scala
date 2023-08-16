@@ -101,7 +101,6 @@ object Python extends Command
       "cellId" -> JsString(context.executionIdentifier)
     )
 
-    println("right before monitor is envoked")
     val ret = python.monitor { event => 
       logger.debug(s"STDIN: $event")
 

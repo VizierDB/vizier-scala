@@ -65,17 +65,6 @@ class PythonProcess(python: JProcess)
 
   def monitor(handler: JsValue => Unit)(handleError: String => Unit): Int =
   {
-
-    // (new Thread(){ 
-    //   override def run(){
-    //     val error = new BufferedReader(new InputStreamReader(python.getErrorStream))
-    //     var line = error.readLine()
-    //     while( line != null ){
-    //       handleError(line)
-    //       line = error.readLine()
-    //     }
-    //   }
-    // }).start()
     watchForErrors(handleError)
 
     var done = false
