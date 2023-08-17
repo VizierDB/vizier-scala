@@ -3,6 +3,7 @@ import ast
 from collections import defaultdict, deque
 import json
 from keyword import iskeyword
+from textwrap import dedent
 from typing import Any, Iterator
 import typing
 
@@ -139,6 +140,8 @@ class Visit_AST(ast.NodeVisitor, Cell_Scope):
         ## We need to figure out how to deal with function call
         if isinstance(node.func,ast.Attribute):
             super().generic_visit(node)
+        for arg in node.args:
+            self.visit(arg)
 
     def visit_Attribute(self, node: Attribute) -> Any:
         if isinstance(node.value, ast.Name):
@@ -170,7 +173,8 @@ def analyze(script: str) -> typing.Tuple[list, dict[str,int]]:
 
 def main() -> Any :
     source = open("../../../test_data/dependency_test/test.py", "r")
-    # (deps, writes) = analyze("import matplotlib.image")
+    # (deps, writes) = analyze(dedent("""x=5
+                            #  print(x)""".strip()))
     deps, writes = analyze(source.read())
     print(deps, writes)
 
