@@ -105,6 +105,11 @@ class BranchSubscription(
     logger.error(s"Error: $event")
   }
 
+  def reconnect() =
+  {
+    socket = getSocket();
+  }
+
   implicit val websocketRequestFormat = Json.format[websocket.WebsocketRequest]
   implicit val normalwebsocketresponseformat = Json.format[websocket.NormalWebsocketResponse]
   implicit val errorwebsocketresponseformat = Json.format[websocket.ErrorWebsocketResponse]

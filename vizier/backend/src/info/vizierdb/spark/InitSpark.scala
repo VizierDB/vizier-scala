@@ -19,6 +19,13 @@ object InitSpark
 {
   def local: SparkSession =
   {
+    val warehouseDir = 
+      Vizier.config.warehouseDirOverride.toOption
+            .getOrElse { new File(Vizier.config.cacheDirFile, "spark-warehouse") }
+
+    if(!warehouseDir.exists()){ warehouseDir.mkdirs() }
+    assert(warehouseDir.exists())
+
     val session = SparkSession.builder
       .appName("Vizier")
       //.config("spark.ui.port", "4041")
@@ -28,11 +35,7 @@ object InitSpark
       .config("spark.kryo.registrator", classOf[SedonaVizKryoRegistrator].getName)
       .config("spark.kryoserializer.buffer.max", "2000m")
       .master("local[*]")
-      .config("spark.sql.warehouse.dir",
-        Vizier.config.warehouseDirOverride.toOption
-              .getOrElse { new File(Vizier.config.cacheDirFile, "spark-warehouse") }
-              .getAbsolutePath()
-      )
+      .config("spark.sql.warehouse.dir", warehouseDir.getAbsolutePath())
       .getOrCreate()
 
     // For some silly reason, Hadoop needs some poking to make the local 
