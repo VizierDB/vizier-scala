@@ -22,7 +22,7 @@ __pycache__
 /vizier/ui/src/info/vizierdb/ui/network/API.scala
 /mill.*
 /.ammonite
-/vizier/resource/vizier.swagger
-/vizier/resource/swagger
+/vizier/resources/vizier.swagger
+/vizier/resources/swagger
 /.vizier-cache
 /package-lock.json
