@@ -241,7 +241,7 @@ object vizier extends ScalaModule with PublishModule {
 /*************************************************
  *** Frontend Tests
  *************************************************/
-    object test extends ScalaTests with TestModule.Utest {
+    object test extends ScalaJSTests with TestModule.Utest {
       def testFramework = "utest.runner.Framework"
       def ivyDeps = Agg(
         ivy"com.lihaoyi::utest::0.7.10",

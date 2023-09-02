@@ -82,7 +82,7 @@ object BuildA
       },
       resultId = Some(1),
       deleted = Seq.empty,
-      dependencies = Map.empty
+      inputs = Map.empty
     )
 
   def WorkflowByInserting(

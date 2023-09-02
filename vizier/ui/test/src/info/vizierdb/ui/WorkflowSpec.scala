@@ -287,7 +287,7 @@ object WorkflowSpec extends TestSuite with TestFixtures
         assert(modules(1).isInstanceOf[Module])
         assert(modules(1).asInstanceOf[Module]
                          .subscription
-                         .arguments
+                         .arguments.now
                          .filter { _.id == "dataset" }
                          .map { _.value.as[String] }
                          .contains("shazbot"))
@@ -304,7 +304,7 @@ object WorkflowSpec extends TestSuite with TestFixtures
         assert(modules(1).isInstanceOf[Module])
         assert(modules(1).asInstanceOf[Module]
                          .subscription
-                         .arguments
+                         .arguments.now
                          .filter { _.id == "dataset" }
                          .map { _.value.as[String] }
                          .contains("cool cool cool"))
