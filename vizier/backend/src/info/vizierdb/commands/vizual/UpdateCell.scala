@@ -21,6 +21,7 @@ import info.vizierdb.spark.vizual
 object UpdateCell extends VizualCommand
 {
   def name: String = "Update Cell"
+  override def hidden = true
   def vizualParameters: Seq[Parameter] = Seq(
     ColIdParameter(id = "column", name = "Column"),
     StringParameter(id = "row", name = "Row (optional)", required = false, relaxed = true),

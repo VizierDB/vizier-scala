@@ -68,6 +68,19 @@ object Commands
     }.toSeq
   }
 
+  ///////////////// Hardcoded Command Definitions ///////////////////
+  // Commands must be registered below to be visible to the system.
+  // 
+  // A command is identified by packageId.commandId.  For example, the LoadDataset command is 
+  // identified as 'data.load'
+  //
+  // Registered commands are automatically available to the UI (via the ServiceDescriptor API)
+  // 
+  // However, the UI special-cases several commonly used commands (e.g., data vis) to have icons
+  // and be displayed more prominently.  By default, commands will be placed in the "specialized" 
+  // area of the new command tab.  To add an icon and more prominent display, see:
+  //   vizier/ui/src/info/vizierdb/ui/components/CommandList.scala
+  //
 
   register(packageId = "data", name = "Data", category = "data")(
     "load"       -> info.vizierdb.commands.data.LoadDataset,

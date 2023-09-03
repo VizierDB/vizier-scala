@@ -14,6 +14,7 @@ import info.vizierdb.ui.rxExtras.RxBuffer
 import info.vizierdb.serialized
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.network.SpreadsheetTools
+import info.vizierdb.ui.widgets.Tooltip
 
 class TableOfContents(
   projectId: Identifier,
@@ -117,14 +118,18 @@ class TableOfContents(
                   }
                   .sortBy { _._1 }
                   .map { case (name, artifact, element) => 
+                    val tooltip = span(name).render
+
                     div(`class` := "artifact",
-                      onmouseover := { _:dom.Event => 
+                      onmouseover := { evt:dom.MouseEvent => 
+                        if(name.length >= 12) { Tooltip.showSoon(evt)(tooltip) }
                         element match { 
                           case module:Module => module.highlight() = true
                           case _ => ()
                         }
                       },
                       onmouseout := { _:dom.Event => 
+                        if(name.length >= 12) { Tooltip.hideSoon() }
                         element match { 
                           case module:Module => module.highlight() = false
                           case _ => ()

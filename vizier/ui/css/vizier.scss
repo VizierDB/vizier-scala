@@ -49,6 +49,8 @@ $color_artifact_button_border: #aaa;
 
 $color_layout_border:          lightgrey;
 
+$color_tooltip:                #f3e7ac;
+
 a         { color: blue; }
 a:visited { color: blue; }
 
@@ -281,6 +283,18 @@ body
 }
 
 $menu_height: 32px;
+
+.tooltip
+{
+  // visibility: hidden;
+  position: absolute;
+  z-index: $tooltip_layer;
+  padding: 4px;
+  background-color: $color_tooltip;
+  border: solid 1px darkgrey;
+  transition-property: visibility, opacity;
+  transition-duration: 0.1s;
+}
 
 #project
 {
@@ -696,10 +710,6 @@ $menu_height: 32px;
           //   transform: scale(0.95);
           // }
 
-          tooltip {
-            visibility: hidden;
-            position: absolute;
-          }
         }
 
         .pop_up_container
@@ -943,6 +953,64 @@ $menu_height: 32px;
     }
   }
 
+}
+
+/********* Command Selector ***********/
+
+table.command_list
+{
+  width: 100%;
+  border: solid 1px lightgrey;
+  margin-top: 4px;
+  // tr:nth-child(2n)
+  // {
+  //   background-color: $color_row_highlight;
+  // }
+  th.group
+  {
+    font-weight: bold;
+    text-align: right;
+    vertical-align: top;
+    font-size: 120%;
+    padding-right: 16px;
+    padding-top: 8px;
+  }
+  td.commands
+  {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    button.with_icon
+    {
+      background-color: #eee;
+      display: inline-block;
+      height: 80px;
+      width: 80px;
+      text-align: center;
+      margin-right: 8px;
+      font-weight: bold;
+      border-radius: 0px;
+      img.icon
+      {
+        height: 40px;
+        width: 40px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 4px;
+        display: block;
+      }
+    }
+
+    ul
+    {
+      margin: 0px;
+      padding-left: 0px;
+      li
+      {
+        margin-top: 4px;
+        list-style: none;
+      }
+    }
+  }
 }
 
 /************ Table of Contents ************/
