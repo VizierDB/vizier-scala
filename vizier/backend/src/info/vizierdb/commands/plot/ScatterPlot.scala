@@ -1,12 +1,14 @@
 package info.vizierdb.commands.plot
 
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.Column
 import info.vizierdb.commands._
 import info.vizierdb.viztrails.ProvenancePrediction
-import play.api.libs.json._
+import play.api.libs.json.JsObject
 import info.vizierdb.artifacts.VegaMark
 import info.vizierdb.artifacts.VegaData
 import info.vizierdb.artifacts.VegaMarkType
+import play.api.libs.json._
 import info.vizierdb.artifacts.VegaFrom
 import info.vizierdb.artifacts.VegaChart
 import info.vizierdb.artifacts.VegaScale
@@ -16,6 +18,7 @@ import info.vizierdb.artifacts.VegaOrientation
 import info.vizierdb.artifacts.VegaMarkEncoding
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
 import info.vizierdb.artifacts.VegaValue
+import info.vizierdb.artifacts.VegaSignalEncoding
 import info.vizierdb.artifacts.VegaDomain
 import info.vizierdb.artifacts.VegaRange
 import info.vizierdb.artifacts.VegaAutosize
@@ -24,7 +27,7 @@ import info.vizierdb.artifacts.VegaLegend
 import info.vizierdb.artifacts.VegaLegendType
 
 
-object LineChart extends Command
+object ScatterPlot extends Command
 {
   val PARAM_SERIES = "series" 
   val PARAM_DATASET = "dataset"
@@ -35,7 +38,9 @@ object LineChart extends Command
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
 
-  override def name: String = "Line Chart"
+  val MAX_RECORDS = 10000
+
+  override def name: String = "Scatter Plot"
 
   override def parameters: Seq[Parameter] = Seq(
     ListParameter(id = PARAM_SERIES, name = "Lines", components = Seq(
@@ -60,6 +65,7 @@ object LineChart extends Command
 
   override def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
+
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
@@ -76,12 +82,10 @@ object LineChart extends Command
             xIndex      = series.get[Int](PARAM_X),
             yIndex      = series.get[Int](PARAM_Y),
             filter      = series.getOpt[String](PARAM_FILTER),
-            sort        = true,
           )
         }
       )
 
-    // Output a chart
     context.vega(
       VegaChart(
         description = "",
@@ -129,22 +133,23 @@ object LineChart extends Command
                    title = Some(series.yAxis)),
         ),
 
-        // Actually define the line(s).  There's a single mark here
-        // that generates one line per color (based on the stroke 
+        // Actually define the circles.  There's a single mark here
+        // that generates one circle per data point (based on the stroke 
         // encoding)
         marks = 
-          series.simpleMarks(VegaMarkType.Line) ++
-          series.simpleMarks(VegaMarkType.Symbol, 
-                             fill = true, 
-                             tooltip = true
-                           ),
+          series.simpleMarks(
+            VegaMarkType.Symbol,
+            tooltip = true,
+            fill = true,
+          ),
+	
 
         // Finally ensure that there is a legend displayed
         legends = Seq(
           VegaLegend(
             VegaLegendType.Symbol,
             stroke = Some("color"),
-            fill = Some("color"),
+      	    fill = Some("color")
           )
         )
       ),

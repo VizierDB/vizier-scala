@@ -1558,6 +1558,9 @@ object VegaValue
     scale: String,
     target: VegaValue
   ) extends VegaValue
+  case class Signal(
+    signal: String
+  ) extends VegaValue
 
   implicit val fieldFormat: Format[Field] = Json.format
   implicit val literalFormat:Format[Literal] = Format[Literal](
@@ -1600,6 +1603,7 @@ object VegaValue
         }
     }
   )
+  implicit val signalFormat: Format[Signal] = Json.format
   implicit val format: Format[VegaValue] = Format[VegaValue](
     new Reads[VegaValue]{
       def reads(j: JsValue): JsResult[VegaValue] =
@@ -1610,6 +1614,8 @@ object VegaValue
                 j.as[Scale]
               } else if(elems contains "field"){
                 j.as[Field]
+              } else if(elems contains "signal"){
+                j.as[Signal]
               } else {
                 j.as[Literal]
               }
@@ -1623,9 +1629,19 @@ object VegaValue
           case j:Field => Json.toJson(j)
           case j:Literal => Json.toJson(j)
           case j:Scale => Json.toJson(j)
+          case j:Signal => Json.toJson(j)
         }
     }
   )
+}
+
+//Signal Attribute
+case class VegaSignalEncoding(
+  signal: String
+)
+object VegaSignalEncoding
+{
+  implicit val format: Format[VegaSignalEncoding] = Json.format
 }
 
 /**
@@ -1647,6 +1663,8 @@ case class VegaMarkEncoding(
   x: Option[VegaValue] = None,
   y: Option[VegaValue] = None,
   stroke: Option[VegaValue] = None,
+  fill: Option[VegaValue] = None,
+  tooltip: Option[VegaValue] = None,
 )
 object VegaMarkEncoding
 {
