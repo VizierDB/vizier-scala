@@ -128,7 +128,7 @@ object Vizier
                 //              .get
                 //     val module = 
                 //       workflow.moduleViewsWithEdits
-                //               .appendTentative()
+                //               .prependTentative()
                 //     // module.activeView.trigger { _ match {
                 //     //   case Some(Left(commandlist)) =>
                 //     //     commandlist.simulateClick("data", "load")

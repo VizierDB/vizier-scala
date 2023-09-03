@@ -16,7 +16,7 @@ class CommandList(
 )(implicit owner:Ctx.Owner){
 
   val keywords = 
-    Trie.ofSeq[String](
+    Trie.ofSeq[(String, String)](
       packages.flatMap { pkg =>
         val packageKeywords = pkg.name.toLowerCase.split("[^a-zA-Z]") :+ pkg.id
         pkg.commands.toSeq
@@ -26,7 +26,7 @@ class CommandList(
                 packageKeywords ++
                   cmd.name.toLowerCase.split(" +") :+ 
                   cmd.id
-              val commandKey = s"${pkg.id}.${cmd.id}"
+              val commandKey = (pkg.id,cmd.id)
               commandKeywords.map { _ -> commandKey }
            }
       }
@@ -47,14 +47,16 @@ class CommandList(
                         dom.window.requestAnimationFrame { _ => refreshSelectedCommands() } }
     ).render
 
-  val selectedCommands = Var[Set[String]](Set.empty)
+  val selectedCommands = Var[Option[Set[(String, String)]]](None)
 
   def refreshSelectedCommands():Unit =
   {
     val term = searchField.value:String
-    if(term.isEmpty()){ selectedCommands() = Set[String]() }
+    // println(s"TERM: $term in ${keywords.all}")
+    if(term.isEmpty()){ selectedCommands() = None }
     else {
-      selectedCommands() = keywords.prefixMatch(term)
+      selectedCommands() = Some(keywords.prefixMatch(term))
+      // println(s"Selected: ${selectedCommands.now}")
     }
   }
 
@@ -82,48 +84,57 @@ class CommandList(
       ),
       Rx {
         val activeSelection = selectedCommands()
+        def isActive(packageId: String, commandId: String) =
+          activeSelection.map { _.contains(packageId, commandId) }
+                         .getOrElse { true }
         table(
           `class` := "command_list",
-          CommandList.DEFAULT.map { case (group, specialCommands) =>
-            tr(
-              th(`class` := "group", group),
-              td(`class` := "commands", specialCommands.map { cmd => cmd.commandButton({
-                () => 
-                  module.selectCommand(cmd.packageId, 
-                    commands(cmd.packageId -> cmd.commandId)
-                  )
-              })})
-            )
+          CommandList.DEFAULT.flatMap { case (group, specialCommands) =>
+            val specialCommandButtons =
+              specialCommands
+                .filter { cmd => isActive(cmd.packageId, cmd.commandId) }
+                .map { cmd => cmd.commandButton({
+                  () => 
+                    module.selectCommand(cmd.packageId, 
+                      commands(cmd.packageId -> cmd.commandId)
+                    )
+                })}
+
+            if(specialCommandButtons.isEmpty){ None }
+            else {
+              Some(tr(
+                th(`class` := "group", group),
+                td(`class` := "commands", specialCommandButtons)
+              ))
+            }
           },
-          tr(
-            th(`class` := "group", "Specialized"),
-            td(`class` := "commands",
-              ul(
-                packages.map { pkg => 
+          {
+            val normalPackages =
+                packages.flatMap { pkg => 
                   val commands = 
                     pkg.commands.toSeq
                         .filterNot { _.hidden.getOrElse { false } }
                         .filterNot { cmd => CommandList.IS_DEFAULT(pkg.id -> cmd.id)}
+                        .filter { cmd => isActive(pkg.id, cmd.id) }
                         .map { cmd => 
-                          val isSuggested = 
-                            if(activeSelection.isEmpty){
-                              cmd.suggest.getOrElse(false)
-                            } else {
-                              activeSelection(s"${pkg.id}.${cmd.id}")
-                            }
                           button(
                             cmd.name, 
-                            `class` := s"command${if(isSuggested){ " suggested" } else { "" }}",
+                            `class` := s"command",
                             onclick := { 
                               (e: dom.MouseEvent) => module.selectCommand(pkg.id, cmd)
                             })
                         }
                   if(commands.isEmpty) { None }
                   else { Some( li(b(pkg.name), div(commands)) )}
-                },
-              )
-            )
-          )
+                }
+            if(normalPackages.isEmpty) { Seq[dom.Element]() }
+            else {
+              Seq(tr(
+                th(`class` := "group", "Specialized"),
+                td(`class` := "commands", ul(normalPackages))
+              ).render)
+            }
+          }
         )
       }.reactive,
       div(`class` := "editor_actions",
@@ -191,8 +202,8 @@ object CommandList
       SpecialCommand(label = "Markdown", icon = "markdown", packageId = "docs", commandId = "markdown", description = "Document your project with markdown-formatted text"),
     ),
     "Export" -> Seq(
-      SpecialCommand(label = "Dataframe", icon = "dump_table", packageId = "data", commandId = "unload", description = "Export a dataset to your local filesystem or a server"),
-      SpecialCommand(label = "File",      icon = "dump_file",  packageId = "data", commandId = "unloadFile", description = "Export a raw file to your local filesystem or a server"),
+      SpecialCommand(label = "Dataset", icon = "dump_table", packageId = "data", commandId = "unload", description = "Export a dataset to your local filesystem or a server"),
+      SpecialCommand(label = "File",    icon = "dump_file",  packageId = "data", commandId = "unloadFile", description = "Export a raw file to your local filesystem or a server"),
     ),
   )
 
