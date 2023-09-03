@@ -9,6 +9,7 @@ import info.vizierdb.artifacts.VegaMark
 import info.vizierdb.artifacts.VegaData
 import info.vizierdb.artifacts.VegaMarkType
 import play.api.libs.json._
+import info.vizierdb.artifacts.VegaTransform
 import info.vizierdb.artifacts.VegaFrom
 import info.vizierdb.artifacts.VegaChart
 import info.vizierdb.artifacts.VegaScale
@@ -25,6 +26,8 @@ import info.vizierdb.artifacts.VegaAutosize
 import info.vizierdb.artifacts.VegaPadding
 import info.vizierdb.artifacts.VegaLegend
 import info.vizierdb.artifacts.VegaLegendType
+import info.vizierdb.artifacts.VegaRegressionMethod
+import play.api.libs.json._
 
 
 object ScatterPlot extends Command
@@ -37,6 +40,7 @@ object ScatterPlot extends Command
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
+  val PARAM_REGRESSION = "regression"
 
   val MAX_RECORDS = 10000
 
@@ -50,6 +54,14 @@ object ScatterPlot extends Command
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false),
       StringParameter(id = PARAM_COLOR, name = "Color", required = false),
+      EnumerableParameter(id = PARAM_REGRESSION, name = "Regression", required = false, values = EnumerableValue.withNames(
+        "---"         -> "",
+        "Linear"      -> VegaRegressionMethod.Linear.key,
+        "Logarithmic" -> VegaRegressionMethod.Logarithmic.key,
+        "Exponential" -> VegaRegressionMethod.Exponential.key,
+        "Power"       -> VegaRegressionMethod.Power.key,
+        "Quadratic"   -> VegaRegressionMethod.Quadratic.key,
+      ))
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
@@ -82,6 +94,7 @@ object ScatterPlot extends Command
             xIndex      = series.get[Int](PARAM_X),
             yIndex      = series.get[Int](PARAM_Y),
             filter      = series.getOpt[String](PARAM_FILTER),
+            regression  = series.getOpt[String](PARAM_REGRESSION).flatMap { VegaRegressionMethod(_) }
           )
         }
       )
@@ -141,9 +154,9 @@ object ScatterPlot extends Command
             VegaMarkType.Symbol,
             tooltip = true,
             fill = true,
+            opacity = 0.7,
           ),
 	
-
         // Finally ensure that there is a legend displayed
         legends = Seq(
           VegaLegend(
@@ -166,6 +179,5 @@ object ScatterPlot extends Command
                  .toSet.toSeq:_*
       )
       .andNothingElse
-
 
 }

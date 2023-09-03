@@ -948,7 +948,9 @@ class EnumerableParameter(
   def value = 
     JsString(inputNode[dom.html.Select].value)
   def set(v: JsValue): Unit = 
-    inputNode[dom.html.Select].value = v.as[String]
+    if(v != JsNull){
+      inputNode[dom.html.Select].value = v.as[String]
+    }
 
 }
 

@@ -13,6 +13,8 @@ import info.vizierdb.artifacts.VegaFrom
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
 import info.vizierdb.artifacts.VegaMarkEncoding
 import info.vizierdb.artifacts.VegaValue
+import info.vizierdb.artifacts.VegaTransform
+import info.vizierdb.artifacts.VegaRegressionMethod
 import org.apache.spark.sql.types.DoubleType
 
 object PlotUtils
@@ -24,6 +26,7 @@ object PlotUtils
     val x: String,
     val y: String,
     val dataframe: DataFrame,
+    val regression: Option[VegaRegressionMethod] = None
   )
   {
     // If we pull too many points, we're going to crash the client
@@ -52,6 +55,21 @@ object PlotUtils
           }.toSeq)
       )
 
+    def vegaRegression(series: SeriesList): Option[VegaData] =
+      regression.map { regression => 
+        VegaData(
+          name = series.seriesRegressionName(this),
+          source = Some(Seq(series.seriesName(this))),
+          transform = Some(Seq(
+            VegaTransform.Regression(
+              x = x,
+              y = y,
+              method = regression
+            )
+          ))
+        )
+      }
+
     def minX = 
       rows.map { _.getAs[Double](x) }.min
     def maxX = 
@@ -68,7 +86,8 @@ object PlotUtils
     xIndex: Int, 
     yIndex: Int, 
     filter: Option[String],
-    sort: Boolean = false
+    sort: Boolean = false,
+    regression: Option[VegaRegressionMethod] = None
   ): Series =
   {
     var dataframe = context.dataframe(datasetName)
@@ -99,10 +118,11 @@ object PlotUtils
 
 
     PlotUtils.Series(
-      datasetName,
-      dataframe.columns(xIndex),
-      dataframe.columns(yIndex),
-      dataframe,
+      dataset = datasetName,
+      x = dataframe.columns(xIndex),
+      y = dataframe.columns(yIndex),
+      dataframe = dataframe,
+      regression = regression
     )
   }
 
@@ -140,6 +160,8 @@ object PlotUtils
 
     def seriesName(series: Series): String = 
       seriesLabel(series)
+    def seriesRegressionName(series: Series): String = 
+      seriesLabel(series)+" [Trend]"
 
     def seriesName(idx: Int): String = 
       seriesName(series(idx))
@@ -159,7 +181,8 @@ object PlotUtils
       series.map { _.maxY }.max
 
     def vegaData = 
-      series.map { _.vegaData(this) }
+      series.map { _.vegaData(this) } ++
+      series.flatMap { _.vegaRegression(this) }
 
     def names = 
       series.map { seriesName(_) }
@@ -168,6 +191,7 @@ object PlotUtils
       markType: VegaMarkType, 
       tooltip: Boolean = false,
       fill: Boolean = false,
+      opacity: Double = 1.0
     ) =
       series.map { data =>
         val name = seriesName(data)
@@ -185,11 +209,31 @@ object PlotUtils
                 else { Some(VegaValue.Literal(JsString(name)).scale("color")) },
               tooltip = 
                 if(!tooltip){ None }
-                else { Some(VegaValue.Signal("datum")) }
+                else { Some(VegaValue.Signal("datum")) },
+              opacity = 
+                if(opacity >= 1.0){ None }
+                else { Some(opacity) }
             ))
           ))
         )
+      } ++
+      series.flatMap { data => 
+        data.regression.map { _ => 
+          VegaMark(
+            VegaMarkType.Line,
+            from = Some(VegaFrom(data = seriesRegressionName(data))),
+            encode = Some(VegaMarkEncodingGroup(
+              // 'enter' defines data in the initial state.
+              enter = Some(VegaMarkEncoding(
+                x = Some(VegaValue.Field(data.x).scale("x")),
+                y = Some(VegaValue.Field(data.y).scale("y")),
+                stroke = Some(VegaValue.Literal(JsString(seriesName(data))).scale("color")),
+              ))
+            ))
+          )
+        }
       }
+
   }
 
 

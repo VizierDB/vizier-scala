@@ -213,6 +213,91 @@ object VegaFileFormat
   implicit val format: Format[VegaFileFormat] = Json.format
 }
 
+
+sealed trait VegaRegressionMethod
+{
+  def key: String
+}
+object VegaRegressionMethod
+{
+  case object Linear extends VegaRegressionMethod
+  {
+    def key = "linear"
+  }
+  case object Logarithmic extends VegaRegressionMethod
+  {
+    def key = "log"
+  }
+  case object Exponential extends VegaRegressionMethod
+  {
+    def key = "exp"
+  }
+  case object Power extends VegaRegressionMethod
+  {
+    def key = "pow"
+  }
+  case object Quadratic extends VegaRegressionMethod
+  {
+    def key = "qua"
+  }
+
+  val all = Seq(
+    Linear,
+    Logarithmic,
+    Exponential,
+    Power,
+    Quadratic
+  )
+  val byKey =
+    all.map { x => x.key -> x }.toMap
+
+  def apply(name: String): Option[VegaRegressionMethod] = 
+    byKey.get(name)
+
+  implicit val format = Format[VegaRegressionMethod](
+    new Reads[VegaRegressionMethod] {
+      def reads(j: JsValue): JsResult[VegaRegressionMethod] = 
+        byKey.get(j.as[String]).map { JsSuccess (_) }.getOrElse { JsError() } 
+    },
+    new Writes[VegaRegressionMethod] {
+      def writes(j: VegaRegressionMethod): JsValue =
+        JsString(j.key)
+    }
+  ) 
+}
+
+
+
+sealed trait VegaTransform
+
+object VegaTransform
+{
+
+  case class Regression(
+    x:String,
+    y:String,
+    method: VegaRegressionMethod,
+    `type`: String = "regression"
+  ) extends VegaTransform
+  
+  implicit val regressionFormat: Format[Regression] = Json.format
+  implicit val format = Format[VegaTransform](
+    new Reads[VegaTransform]{ 
+      def reads(j: JsValue): JsResult[VegaTransform] =
+        (j \ "type").as[String] match {
+          case "regression" => JsSuccess(j.as[Regression])
+          case _ => JsError()
+        }
+    },
+    new Writes[VegaTransform]{
+      def writes(j: VegaTransform): JsValue =
+        j match {
+          case r:Regression => Json.toJson(r)
+        }
+    }
+  )
+}
+
 /**
  * A raw Vega Dataset
  * 
@@ -232,7 +317,7 @@ case class VegaData(
   values: Option[Seq[JsObject]] = None,
   async: Boolean = false,
   // on: Seq[VegaTrigger]
-  // transform: Seq[VegaTransform]
+  transform: Option[Seq[VegaTransform]] = None
 )
 object VegaData
 {
@@ -241,6 +326,8 @@ object VegaData
 
   implicit val format: Format[VegaData] = Json.format
 }
+
+
 
 /**
  * A vega scale type
@@ -1658,13 +1745,15 @@ object VegaSignalEncoding
  * be a clear documentation of what's allowed anywhere.
  * 
  * TODO: Track down the full schema and plug it in here.
- */ 
+ */
+
 case class VegaMarkEncoding(
   x: Option[VegaValue] = None,
   y: Option[VegaValue] = None,
   stroke: Option[VegaValue] = None,
   fill: Option[VegaValue] = None,
   tooltip: Option[VegaValue] = None,
+  opacity: Option[Double] = None
 )
 object VegaMarkEncoding
 {
