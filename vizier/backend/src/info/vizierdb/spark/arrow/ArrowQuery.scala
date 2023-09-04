@@ -10,7 +10,7 @@ object ArrowQuery
 {
   def apply(df: DataFrame): ConnectionDetails = 
   {
-    FeatureSupported.brokenByJavaVersion("Arrow Dataframes", 9)
+    FeatureSupported.brokenByJavaVersion("Arrow Dataframes", 12)
     val tempFile = s"./vizierdf_${Random.alphanumeric.take(10).toString}"
     val (port, secret) = ArrowProxy.writeToMemoryFile(tempFile, df)
     ConnectionDetails(port, secret)

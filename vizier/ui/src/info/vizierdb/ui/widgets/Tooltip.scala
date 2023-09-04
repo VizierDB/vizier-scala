@@ -10,7 +10,7 @@ object Tooltip
     dom.window.document.body.appendChild(tt)
     /* return */ tt
   }
-  private var triggerHandle = -1
+  private var triggerHandle:Option[Int] = None
 
   def show(x: Double, y: Double)(content: dom.Node*): Unit =
   {
@@ -28,9 +28,9 @@ object Tooltip
   def showSoon(x: Double, y: Double)(content: dom.Node*): Unit =
   {
     clearTrigger()
-    triggerHandle = dom.window.setTimeout({ () => 
+    triggerHandle = Some(dom.window.setTimeout({ () => 
       show(x, y)(content:_*)
-    }, 1000)
+    }, 1000))
   }
 
   def showSoon(evt: dom.MouseEvent)(content: dom.Node*): Unit =
@@ -40,6 +40,7 @@ object Tooltip
 
   def hide(): Unit =
   {
+    clearTrigger()
     tooltip.style.visibility = "hidden"
     tooltip.style.opacity = "0"
     // while(tooltip.firstChild != null){
@@ -50,16 +51,16 @@ object Tooltip
   def hideSoon(): Unit =
   {
     clearTrigger()
-    triggerHandle = dom.window.setTimeout({ () => 
+    triggerHandle = Some(dom.window.setTimeout({ () => 
       hide()
-    }, 100)
+    }, 100))
   }
 
   def clearTrigger(): Unit =
   {
-    if(triggerHandle >= 0){
-      dom.window.clearTimeout(triggerHandle)
-      triggerHandle = -1
+    if(triggerHandle.isDefined){
+      dom.window.clearTimeout(triggerHandle.get)
+      triggerHandle = None
     }
   }
 

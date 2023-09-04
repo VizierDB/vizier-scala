@@ -162,10 +162,9 @@ class VizierDBClient(object):
   def __setitem__(self, key: Any, updated_data: Any = None) -> Any:
   
     primitive_type = (int, str, bool, float)
-    sequence_type  = (list, tuple, range)
-    mapping_type   = (dict)
+    sequence_type  = (list, tuple, range, dict)
 
-    if type(updated_data) in primitive_type or type(updated_data) in sequence_type or type(updated_data) in mapping_type:
+    if type(updated_data) in primitive_type or type(updated_data) in sequence_type:
       self.export_parameter(key, updated_data)
     elif type(updated_data) is ModuleType or type(updated_data) is FunctionType:
       self.export_module(key)

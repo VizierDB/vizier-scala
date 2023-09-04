@@ -176,7 +176,7 @@ object CommandList
     def commandButton(handler: () => Unit): dom.html.Button = 
       button(
         `class` := "with_icon",
-        onclick := { (_:dom.Event) => handler() },
+        onclick := { (_:dom.Event) => Tooltip.hide(); handler() },
         img(`class` := "icon", src := iconUrl),
         label,
         Tooltip(description)
