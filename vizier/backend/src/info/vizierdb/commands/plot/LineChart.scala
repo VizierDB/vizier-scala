@@ -49,14 +49,12 @@ object LineChart extends Command
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
   override def title(arguments: Arguments): String = 
-    "PLOT "+arguments.getList(PARAM_SERIES).map { series =>
-      series.pretty(PARAM_DATASET)
+    "Line plot of "+arguments.getList(PARAM_SERIES).map { series =>
+      series.get[String](PARAM_DATASET)
     }.toSet.mkString(", ")
 
   override def format(arguments: Arguments): String = 
-    "PLOT "+arguments.getList(PARAM_SERIES).map { series =>
-      f"${series.pretty(PARAM_DATASET)}.{${series.pretty(PARAM_X)}, ${series.pretty(PARAM_Y)}}${series.getOpt[String](PARAM_LABEL).map { " AS " + _ }.getOrElse("")}"
-    }.mkString("\n     ")
+    title(arguments)
 
   override def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {

@@ -112,7 +112,19 @@ class Module(val subscription: ModuleSubscription)
    * True for "special" modules that should have their summary text hidden
    */
   val hideSummary: Boolean = 
-    subscription.packageId == "docs"
+    (
+       (subscription.packageId == "docs")
+    // || (subscription.packageId == "plot")
+    )
+
+  /**
+   * True for "special" modules that allow you to click them to edit
+   */
+  val clickToEdit: Boolean =
+    (
+       (subscription.packageId == "docs")
+    )
+
 
   /**
    * Retrieve a [[ModuleDescription]] for this module
@@ -275,7 +287,7 @@ class Module(val subscription: ModuleSubscription)
       ),
       div(
         `class` := "messages",
-        (if(hideSummary && subscription.isEditable) { onclick := { _:dom.MouseEvent => openEditor() } }
+        (if(clickToEdit && subscription.isEditable) { onclick := { _:dom.MouseEvent => openEditor() } }
          else { attr("ignore") := "ignored" }),
         messageView.root
       ),
