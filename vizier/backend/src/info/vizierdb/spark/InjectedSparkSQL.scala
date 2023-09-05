@@ -9,6 +9,7 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.execution.QueryExecution
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.catalog.{ CatalogTable, CatalogStorageFormat, CatalogTableType }
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -51,6 +52,17 @@ object InjectedSparkSQL
           Set(name.mkString(".").toLowerCase) }
   }
 
+  object findVariableReferences extends GetDependencies[String]
+  {
+    val byPlan: PartialFunction[LogicalPlan, Set[String]] = 
+      { case p => Set[String]() }
+    val byExpression: PartialFunction[Expression, Set[String]] = 
+      { case UnresolvedAttribute(name) 
+        if (name.size == 1) && (name(0)(0) == '$') => 
+          Set(name(0).drop(1))
+      }
+  }
+
   def parse(sqlText: String, requireQuery: Boolean = false): LogicalPlan =
   {
     // ~= Spark's SparkSession.sql()
@@ -69,12 +81,13 @@ object InjectedSparkSQL
     getFunctionReferences(logicalPlan)
       .filterNot { spark.catalog.functionExists(_) }
 
-  def getDependencies(sqlText: String): (Set[String], Set[String]) =
+  def getDependencies(sqlText: String): (Set[String], Set[String], Set[String]) =
   {
     val logicalPlan = parse(sqlText)
     return (
       getViewReferences(logicalPlan),
-      getUserDefinedFunctionReferences(logicalPlan)
+      getUserDefinedFunctionReferences(logicalPlan),
+      findVariableReferences(logicalPlan)
     )
   }
 
@@ -91,7 +104,8 @@ object InjectedSparkSQL
     sqlText: String, 
     tableMappings: Map[String,() => DataFrame] = Map(), 
     allowMappedTablesOnly: Boolean = false,
-    functionMappings: Map[String, Seq[Expression] => Expression] = Map.empty
+    functionMappings: Map[String, Seq[Expression] => Expression] = Map.empty,
+    variableReferences: Map[String, () => Expression] = Map.empty
   ): DataFrame =
   {
     val logicalPlan = parse(sqlText, requireQuery = true)
@@ -102,7 +116,8 @@ object InjectedSparkSQL
       logicalPlan, 
       tableMappings.map { case (k, v) => k.toLowerCase() -> v }.toMap,// make source names case insensitive
       functionMappings.map { case (k, v) => k.toLowerCase() -> v }.toMap,// make source names case insensitive
-      allowMappedTablesOnly
+      variableReferences.map { case (k, v) => k.toLowerCase() -> v }.toMap,// make source names case insensitive
+      allowMappedTablesOnly,
     )
 
     logger.trace(rewrittenPlan.toString())
@@ -129,6 +144,7 @@ object InjectedSparkSQL
     plan: LogicalPlan, 
     tableMappings: Map[String, () => DataFrame] = Map(), 
     functionMappings: Map[String, Seq[Expression] => Expression] = Map(), 
+    variableReferences: Map[String, () => Expression] = Map(),
     allowMappedTablesOnly: Boolean = false
   ): LogicalPlan =
   {
@@ -183,6 +199,9 @@ object InjectedSparkSQL
             val ret = functionMappings(name.mkString(".").toLowerCase)(args)
             logger.debug(s"... to: $ret (${ret.getClass()}")
             ret
+        case UnresolvedAttribute(name) if (name.size == 1) && (variableReferences contains name(0)) =>
+          logger.debug(s"Rewriting attribute ${name(0)}")
+          variableReferences(name(0))()
       }
 
     logger.trace(s"Done rewriting!\n$ret")

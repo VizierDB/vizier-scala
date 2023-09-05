@@ -62,22 +62,28 @@ object Query extends Command
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     logger.trace(s"Available artifacts: \n${context.scope.map { case (name, summary) => s"$name -> ${summary.t}" }.mkString("\n")}")
-    val scope = context.allDatasets
+    val datasets = context.allDatasets
     val functions = context.scope
                            .toSeq
                            .filter { _._2.t == ArtifactType.FUNCTION }
                            .toMap
                            .mapValues { _.id }
+    val parameters = context.scope
+                           .toSeq
+                           .filter { _._2.t == ArtifactType.PARAMETER }
+                           .toMap
+                           .mapValues { _.id }
     val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
     val query = arguments.get[String]("source")
 
-    logger.debug(s"$scope : $query")
 
     try { 
+      val parsed = InjectedSparkSQL.parse(sqlText = query)
+      
       logger.trace(s"Creating view for \n$query\nAvailable functions: ${functions.map { _._1 }.mkString(", ")}")
       val fnDeps: Map[String, (Identifier, String, String)] = 
-        InjectedSparkSQL.getDependencies(query)
-                        ._2.toSeq
+        InjectedSparkSQL.getFunctionReferences(parsed)
+                        .toSeq
                         .collect { case f if functions contains f => 
                                       f -> functions(f) }
                         .toMap
@@ -91,16 +97,18 @@ object Query extends Command
                             )
                           }
                         }
+
       logger.trace(s"${fnDeps.keys.size} function dependencies: ${fnDeps.keys.mkString(", ")}")
 
       val datasetIds = 
-        scope.values.map { d => d.id -> d }.toMap
+        context.allDatasets.map { d => d._2.id -> d._2 }
 
       val view = 
         try {
           ViewConstructor(
-            datasets = scope.mapValues { _.id },
+            datasets = datasets.mapValues { _.id },
             functions = fnDeps,
+            variables = parameters,
             query = query,
             projectId = context.projectId,
             context = { id => datasetIds(id).datasetSchema }
@@ -143,12 +151,14 @@ object Query extends Command
 
   def computeDependencies(sql: String): Seq[String] =
   {
-    val (views, functions) = InjectedSparkSQL.getDependencies(sql)
+    val (views, functions, variables) = InjectedSparkSQL.getDependencies(sql)
 
             // Include all views
     return views.toSeq++
             // Include only non-built in functions
-            functions.toSeq.filterNot { Vizier.sparkSession.catalog.functionExists(_) }
+            functions.toSeq.filterNot { Vizier.sparkSession.catalog.functionExists(_) } ++
+            // Include all $-referenced variables 
+            variables
   }
 
   def predictProvenance(arguments: Arguments, properties: JsObject) =

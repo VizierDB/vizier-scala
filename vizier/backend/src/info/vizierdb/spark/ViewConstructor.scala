@@ -21,6 +21,7 @@ case class ViewConstructor(
   datasets: Map[String, Identifier],
   // For functions, we need to cache the function mime type and text to avoid reentrancy.
   functions: Map[String, (Identifier, String, String)],
+  variables: Map[String, Identifier],
   query: String,
   projectId: Identifier,
   schema: Seq[StructField]
@@ -30,6 +31,7 @@ case class ViewConstructor(
 
   lazy val lowerCaseDatasets = datasets.map { case (k, v) => k.toLowerCase -> v }.toMap
   lazy val lowerCaseFunctions = functions.map { case (k, v) => k.toLowerCase -> v }.toMap
+  lazy val lowerCaseVariables = variables.map { case (k, v) => k.toLowerCase -> v }.toMap
 
   def construct(context: Identifier => Artifact): DataFrame =
   {
@@ -43,7 +45,7 @@ case class ViewConstructor(
     return df 
   }
 
-  lazy val (viewDeps, fnDeps): (Set[String], Set[String]) =
+  lazy val (viewDeps, fnDeps, varDeps): (Set[String], Set[String], Set[String]) =
       InjectedSparkSQL.getDependencies(query)
   lazy val dependencies:Set[Identifier] = {
     viewDeps.map { _.toLowerCase }.map { x =>
@@ -51,10 +53,14 @@ case class ViewConstructor(
           throw new VizierException(s"Internal Error: Undefined view $x; looking in: ${datasets.keys.mkString(", ")}")
         )
       }.toSet ++
-      fnDeps.map { _.toLowerCase }.map { x => 
+    fnDeps.map { _.toLowerCase }.map { x => 
         lowerCaseFunctions.getOrElse(x,
-          throw new VizierException(s"Internal Error: Undefined function $x; looking in: ${datasets.keys.mkString(", ")}")
-        )._1 }.toSet
+          throw new VizierException(s"Internal Error: Undefined function $x; looking in: ${functions.keys.mkString(", ")}")
+        )._1 }.toSet ++
+    fnDeps.map { _.toLowerCase }.map { x => 
+        lowerCaseVariables.getOrElse(x,
+          throw new VizierException("Internal Error: Undefined variable $"+s"$x; looking in: ${variables.keys.mkString(", ")}")
+        )._1 }.toSet ++
   }
 }
 object ViewConstructor
