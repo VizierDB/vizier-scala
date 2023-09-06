@@ -26,6 +26,8 @@ import org.apache.spark.sql.{ DataFrame, SparkSession, AnalysisException }
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
+import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types.StructField
 
 object Query extends Command
   with LazyLogging
@@ -72,7 +74,6 @@ object Query extends Command
                            .toSeq
                            .filter { _._2.t == ArtifactType.PARAMETER }
                            .toMap
-                           .mapValues { _.id }
     val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
     val query = arguments.get[String]("source")
 
@@ -100,18 +101,21 @@ object Query extends Command
 
       logger.trace(s"${fnDeps.keys.size} function dependencies: ${fnDeps.keys.mkString(", ")}")
 
-      val datasetIds = 
-        context.allDatasets.map { d => d._2.id -> d._2 }
+      val datasetIds: Map[Identifier, Artifact] = 
+        context.allDatasets.map { d => d._2.id -> d._2 }.toMap
+      val parameterIds: Map[Identifier, Artifact] = 
+        parameters.map { d => d._2.id -> d._2 }.toMap
 
       val view = 
         try {
           ViewConstructor(
-            datasets = datasets.mapValues { _.id },
-            functions = fnDeps,
-            variables = parameters,
-            query = query,
-            projectId = context.projectId,
-            context = { id => datasetIds(id).datasetSchema }
+            datasets = datasets.mapValues { _.id }: Map[String, Identifier],
+            functions = fnDeps: Map[String, (Identifier, String, String)],
+            variables = parameters.mapValues { _.id }: Map[String, Identifier],
+            query = query: String,
+            projectId = context.projectId: Identifier,
+            datasetSchemas = { id:Identifier => datasetIds(id).datasetSchema }: Identifier => Seq[StructField],
+            variableTypes = { id:Identifier => parameterIds(id).parameter.dataType:DataType }: Identifier => DataType,
           )
         } catch {
           case _:InjectedSparkSQL.NotAQueryException =>
@@ -124,10 +128,12 @@ object Query extends Command
       // df.explain()
 
       logger.trace("View created; Gathering dependencies")
-      for(dep <- view.viewDeps){
-        context.inputs.put(dep, scope(dep).id)
+      for(dep <- view.viewDeps)
+      {
+        context.inputs.put(dep, datasets(dep).id)
       }
-      for(dep <- view.fnDeps){
+      for(dep <- view.fnDeps)
+      {
         // view.functions includes all functions referenced by the query,
         // including those supplied by spark/plugins, etc...  We only
         // want to register dependencies on functions explicitly in the
@@ -135,6 +141,10 @@ object Query extends Command
         if(functions contains dep){
           context.inputs.put(dep, functions(dep))
         }
+      }
+      for(dep <- view.varDeps)
+      {
+        context.inputs.put(dep, parameters(dep).id)
       }
 
       logger.trace("Rendering dataset summary")

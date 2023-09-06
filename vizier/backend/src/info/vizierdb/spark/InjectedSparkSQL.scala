@@ -22,6 +22,7 @@ import org.apache.spark.sql.catalyst.plans.logical.InsertAction
 import org.apache.spark.sql.catalyst.plans.logical.Command
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement
 import org.apache.spark.sql.catalyst.plans.logical.ParsedStatement
+import info.vizierdb.VizierException
 
 /**
  * Utilities for running Spark SQL queries with a post-processing step injected between
@@ -30,6 +31,8 @@ import org.apache.spark.sql.catalyst.plans.logical.ParsedStatement
 object InjectedSparkSQL
   extends LazyLogging
 {
+  val PARAMETER_DOMAIN = "vizier"
+
   class NotAQueryException(plan: LogicalPlan) extends Exception
 
   lazy val spark = Vizier.sparkSession
@@ -58,8 +61,8 @@ object InjectedSparkSQL
       { case p => Set[String]() }
     val byExpression: PartialFunction[Expression, Set[String]] = 
       { case UnresolvedAttribute(name) 
-        if (name.size == 1) && (name(0)(0) == '$') => 
-          Set(name(0).drop(1))
+        if (name.size == 2) && (name(0) == PARAMETER_DOMAIN) => 
+          Set(name(1))
       }
   }
 
@@ -199,9 +202,10 @@ object InjectedSparkSQL
             val ret = functionMappings(name.mkString(".").toLowerCase)(args)
             logger.debug(s"... to: $ret (${ret.getClass()}")
             ret
-        case UnresolvedAttribute(name) if (name.size == 1) && (variableReferences contains name(0)) =>
-          logger.debug(s"Rewriting attribute ${name(0)}")
-          variableReferences(name(0))()
+        case UnresolvedAttribute(name) if (name.size == 2) && (name(0) == PARAMETER_DOMAIN) =>
+          logger.debug(s"Rewriting attribute ${name(1)}")
+          variableReferences.get(name(1))
+                            .getOrElse { throw new VizierException(s"Undefined parameter ${name(0)}") }()
       }
 
     logger.trace(s"Done rewriting!\n$ret")
