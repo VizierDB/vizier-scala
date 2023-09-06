@@ -973,7 +973,8 @@ class StringParameter(
       id = parameter.id,
       name = parameter.name,
       required = parameter.required,
-      hidden = parameter.hidden
+      hidden = parameter.hidden,
+      initialPlaceholder = parameter.helpText.getOrElse("")
     )
   }
   val root = 

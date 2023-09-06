@@ -34,6 +34,7 @@ sealed trait Parameter
   def required: Boolean
   def datatype: String
   def getDefault: JsValue = JsNull
+  val helpText: Option[String] = None
 
   def stringify(j: JsValue): String =
     j match {
@@ -63,7 +64,8 @@ sealed trait Parameter
       required = required,
       parent = parent,
       index = index,
-      default = Some(getDefault)
+      default = Some(getDefault),
+      helpText = helpText
     ))
   def convertToProperty(j: JsValue): JsValue = j
   def convertFromProperty(
@@ -222,7 +224,7 @@ case class CodeParameter(
   name: String,
   language: String,
   required: Boolean = true,
-  hidden: Boolean = false
+  hidden: Boolean = false,
 ) extends Parameter with StringEncoder
 {
   def datatype = "code"
@@ -241,7 +243,8 @@ case class CodeParameter(
       parent = parent,
       index = index,
       default = Some(getDefault),
-      language = language
+      language = language,
+      helpText = helpText,
     ))
 }
 
@@ -297,7 +300,8 @@ case class ArtifactParameter(
       parent = parent,
       index = index,
       default = Some(getDefault),
-      artifactType = artifactType
+      artifactType = artifactType,
+      helpText = helpText,
     ))
 }
 
@@ -714,7 +718,8 @@ case class EnumerableParameter(
           value = v.value
         )
       },
-      allowOther = allowOther
+      allowOther = allowOther,
+      helpText = helpText,
     ))
   override def convertFromProperty(j: JsValue, preprocess: (Parameter, JsValue) => JsValue): JsValue = 
   {
@@ -731,7 +736,8 @@ case class StringParameter(
   default: Option[String] = None,
   required: Boolean = true,
   hidden: Boolean = false,
-  relaxed: Boolean = false
+  relaxed: Boolean = false,
+  override val helpText: Option[String] = None,
 ) extends Parameter with StringEncoder
 {
   def datatype = "string"
@@ -822,6 +828,7 @@ case class EnvironmentParameter(
       parent = parent,
       index = index,
       default = Some(getDefault),
-      language = language.toString()
+      language = language.toString(),
+      helpText = helpText,
     ))
 }

@@ -43,8 +43,8 @@ object LineChart extends Command
       ColIdParameter(id = PARAM_X, name = "X-axis"),
       ColIdParameter(id = PARAM_Y, name = "Y-axis"),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
-      StringParameter(id = PARAM_FILTER, name = "Filter", required = false),
-      StringParameter(id = PARAM_COLOR, name = "Color", required = false),
+      StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
+      StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
