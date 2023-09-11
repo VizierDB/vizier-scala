@@ -23,17 +23,17 @@ case class ViewConstructor(
   datasets: Map[String, Identifier],
   // For functions, we need to cache the function mime type and text to avoid reentrancy.
   functions: Map[String, (Identifier, String, String)],
-  variables: Map[String, Identifier],
   query: String,
   projectId: Identifier,
-  schema: Seq[StructField]
+  schema: Seq[StructField],
+  variables: Option[Map[String, Identifier]],
 ) extends DataFrameConstructor
   with DefaultProvenance
 {
 
   lazy val lowerCaseDatasets = datasets.map { case (k, v) => k.toLowerCase -> v }.toMap
   lazy val lowerCaseFunctions = functions.map { case (k, v) => k.toLowerCase -> v }.toMap
-  lazy val lowerCaseVariables = variables.map { case (k, v) => k.toLowerCase -> v }.toMap
+  lazy val lowerCaseVariables = variables.getOrElse { Map.empty }. map { case (k, v) => k.toLowerCase -> v }.toMap
 
   def construct(context: Identifier => Artifact): DataFrame =
   {
@@ -41,7 +41,7 @@ case class ViewConstructor(
                 query = query,
                 tableMappings = datasets.mapValues { id => () => context(id).dataframeFromContext(context) },
                 functions = functions,
-                variables = variables.mapValues { id => () => Literal(context(id).parameter.nativeValue) }
+                variables = variables.getOrElse { Map.empty }.mapValues { id => () => Literal(context(id).parameter.nativeValue) }
               )
     df = AnnotateImplicitHeuristics(df)
     df = ResolveLifts(df)
@@ -62,7 +62,7 @@ case class ViewConstructor(
         )._1 }.toSet ++
     varDeps.map { _.toLowerCase }.map { x => 
         lowerCaseVariables.getOrElse(x,
-          throw new VizierException("Internal Error: Undefined variable $"+s"$x; looking in: ${variables.keys.mkString(", ")}")
+          throw new VizierException("Internal Error: Undefined variable $"+s"$x; looking in: ${variables.getOrElse { Map.empty }.keys.mkString(", ")}")
         ) }.toSet
   }
 }
@@ -85,7 +85,7 @@ object ViewConstructor
     ViewConstructor(
       datasets = datasets,
       functions = functions,
-      variables = variables,
+      variables = Some(variables),
       query = query,
       projectId = projectId,
       schema = ViewConstructor.buildBase(
