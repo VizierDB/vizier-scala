@@ -1643,7 +1643,7 @@ object VegaValueReference
   /**
    * Basic values
    */
-  case class Value(
+  case class Literal(
     value: JsValue,
   ) extends VegaValueReference
   /**
@@ -1664,7 +1664,7 @@ object VegaValueReference
   ) extends VegaValueReference
 
   implicit val fieldFormat: Format[Field] = Json.format
-  implicit val valueFormat: Format[Value] = Json.format
+  implicit val valueFormat: Format[Literal] = Json.format
   implicit val signalFormat: Format[Signal] = Json.format
   implicit val scaleFormat: Format[ScaleTransform] = Format[ScaleTransform](
     new Reads[ScaleTransform]{
@@ -1691,10 +1691,9 @@ object VegaValueReference
         }
     }
   )
-  implicit val signalFormat: Format[Signal] = Json.format
-  implicit val format: Format[VegaValue] = Format[VegaValue](
-    new Reads[VegaValue]{
-      def reads(j: JsValue): JsResult[VegaValue] =
+  implicit val format: Format[VegaValueReference] = Format[VegaValueReference](
+    new Reads[VegaValueReference]{
+      def reads(j: JsValue): JsResult[VegaValueReference] =
         JsSuccess(
           j match {
             case JsObject(elems) =>
@@ -1705,9 +1704,9 @@ object VegaValueReference
               } else if(elems contains "signal"){
                 j.as[Signal]
               } else {
-                j.as[Value]
+                j.as[Literal]
               }
-            case _ => j.as[Value]
+            case _ => j.as[Literal]
           }
         )
     },

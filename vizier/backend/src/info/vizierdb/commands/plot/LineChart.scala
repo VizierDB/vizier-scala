@@ -103,7 +103,10 @@ object LineChart extends Command
             domain = Some(VegaDomain.Literal(Seq(
               JsNumber(series.minX),
               JsNumber(series.maxX)
-            )))),
+            ))),
+            domainMin = Some(series.domainMinX),
+            domainMax = Some(series.domainMaxX),
+          ),
           
           // 'y': The y axis scale, mapping from data.y -> chart height
           VegaScale("y", VegaScaleType.Linear, 
@@ -111,7 +114,10 @@ object LineChart extends Command
             domain = Some(VegaDomain.Literal(Seq(
               JsNumber(series.minY),
               JsNumber(series.maxY)
-            )))),
+            ))),
+            domainMin = Some(series.domainMinY),
+            domainMax = Some(series.domainMaxY),
+          ),
 
           // 'color': The color scale, mapping from series name -> color category
           VegaScale("color", VegaScaleType.Ordinal,

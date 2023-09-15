@@ -964,7 +964,8 @@ class StringParameter(
   val name: String, 
   val required: Boolean,
   val hidden: Boolean,
-  val initialPlaceholder: String = ""
+  val initialPlaceholder: String = "",
+  val initialPlaceholderIsDefaultValue: Boolean = true
 ) extends Parameter
 {
   def this(parameter: serialized.ParameterDescription)
@@ -974,7 +975,8 @@ class StringParameter(
       name = parameter.name,
       required = parameter.required,
       hidden = parameter.hidden,
-      initialPlaceholder = parameter.helpText.getOrElse("")
+      initialPlaceholder = parameter.helpText.getOrElse(""),
+      initialPlaceholderIsDefaultValue = parameter.helpText.isDefined
     )
   }
   val root = 
@@ -982,7 +984,8 @@ class StringParameter(
   def value =
     JsString(
       inputNode[dom.html.Input].value match {
-        case "" => inputNode[dom.html.Input].placeholder
+        case "" if initialPlaceholderIsDefaultValue => 
+          inputNode[dom.html.Input].placeholder
         case x => x
       }
     )
