@@ -15,7 +15,7 @@ import info.vizierdb.artifacts.VegaAxis
 import info.vizierdb.artifacts.VegaOrientation
 import info.vizierdb.artifacts.VegaMarkEncoding
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
-import info.vizierdb.artifacts.VegaValue
+import info.vizierdb.artifacts.VegaValueReference
 import info.vizierdb.artifacts.VegaDomain
 import info.vizierdb.artifacts.VegaRange
 import info.vizierdb.artifacts.VegaAutosize
@@ -103,7 +103,10 @@ object LineChart extends Command
             domain = Some(VegaDomain.Literal(Seq(
               JsNumber(series.minX),
               JsNumber(series.maxX)
-            )))),
+            ))),
+            domainMin = Some(series.domainMinX),
+            domainMax = Some(series.domainMaxX),
+          ),
           
           // 'y': The y axis scale, mapping from data.y -> chart height
           VegaScale("y", VegaScaleType.Linear, 
@@ -111,9 +114,12 @@ object LineChart extends Command
             domain = Some(VegaDomain.Literal(Seq(
               JsNumber(series.minY),
               JsNumber(series.maxY)
-            )))),
+            ))),
+            domainMin = Some(series.domainMinY),
+            domainMax = Some(series.domainMaxY),
+          ),
 
-          // 'color': The color scale, mapping from data.c -> color category
+          // 'color': The color scale, mapping from series name -> color category
           VegaScale("color", VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
             domain = Some(VegaDomain.Literal(series.names.map { JsString(_) })))
