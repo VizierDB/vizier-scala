@@ -12,7 +12,7 @@ import info.vizierdb.artifacts.VegaMark
 import info.vizierdb.artifacts.VegaFrom
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
 import info.vizierdb.artifacts.VegaMarkEncoding
-import info.vizierdb.artifacts.VegaValue
+import info.vizierdb.artifacts.VegaValueReference
 import info.vizierdb.artifacts.VegaTransform
 import info.vizierdb.artifacts.VegaRegressionMethod
 import org.apache.spark.sql.types.DoubleType
@@ -171,14 +171,51 @@ object PlotUtils
     def yAxis = 
       StringUtils.oxfordComma(uniqueYAxes.toSeq)
 
-    def minX = 
+    lazy val minX = 
       series.map { _.minX }.min
-    def maxX = 
+    lazy val maxX = 
       series.map { _.maxX }.max
-    def minY = 
+    lazy val minY = 
       series.map { _.minY }.min
-    def maxY = 
+    lazy val maxY = 
       series.map { _.maxY }.max
+
+    lazy val xDomainRequiresOffset =
+      if(minX > 0){ 
+        (maxX - minX) < minX/15
+      }
+      else {
+        if(maxX > 0){ true }
+        else {
+          (maxX - minX) < (-maxX/15)
+        }
+      }
+    lazy val yDomainRequiresOffset =
+      if(minY > 0){ 
+        (maxY - minY) < minY/15
+      }
+      else {
+        if(maxY > 0){ true }
+        else {
+          (maxY - minY) < (-maxY/15)
+        }
+      }
+
+    def domainMinX: Double = 
+      if(xDomainRequiresOffset && minX > 0){ minX }
+      else { 0 }
+
+    def domainMaxX: Double = 
+      if(xDomainRequiresOffset || maxX > 0){ maxX }
+      else { 0 }
+
+    def domainMinY: Double = 
+      if(yDomainRequiresOffset && minY > 0){ minY }
+      else { 0 }
+
+    def domainMaxY: Double = 
+      if(yDomainRequiresOffset || maxY > 0){ maxY }
+      else { 0 }
 
     def vegaData = 
       series.map { _.vegaData(this) } ++
@@ -201,15 +238,15 @@ object PlotUtils
           encode = Some(VegaMarkEncodingGroup(
             // 'enter' defines data in the initial state.
             enter = Some(VegaMarkEncoding(
-              x = Some(VegaValue.Field(data.x).scale("x")),
-              y = Some(VegaValue.Field(data.y).scale("y")),
-              stroke = Some(VegaValue.Literal(JsString(name)).scale("color")),
+              x = Some(VegaValueReference.Field(data.x).scale("x")),
+              y = Some(VegaValueReference.Field(data.y).scale("y")),
+              stroke = Some(VegaValueReference.Literal(JsString(name)).scale("color")),
               fill = 
                 if(!fill){ None }
-                else { Some(VegaValue.Literal(JsString(name)).scale("color")) },
+                else { Some(VegaValueReference.Literal(JsString(name)).scale("color")) },
               tooltip = 
                 if(!tooltip){ None }
-                else { Some(VegaValue.Signal("datum")) },
+                else { Some(VegaValueReference.Signal("datum")) },
               opacity = 
                 if(opacity >= 1.0){ None }
                 else { Some(opacity) }
@@ -225,9 +262,9 @@ object PlotUtils
             encode = Some(VegaMarkEncodingGroup(
               // 'enter' defines data in the initial state.
               enter = Some(VegaMarkEncoding(
-                x = Some(VegaValue.Field(data.x).scale("x")),
-                y = Some(VegaValue.Field(data.y).scale("y")),
-                stroke = Some(VegaValue.Literal(JsString(seriesName(data))).scale("color")),
+                x = Some(VegaValueReference.Field(data.x).scale("x")),
+                y = Some(VegaValueReference.Field(data.y).scale("y")),
+                stroke = Some(VegaValueReference.Literal(JsString(seriesName(data))).scale("color")),
               ))
             ))
           )

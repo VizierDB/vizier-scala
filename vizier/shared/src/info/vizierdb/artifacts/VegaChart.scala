@@ -1628,50 +1628,51 @@ object VegaFrom
   implicit val format: Format[VegaFrom] = Json.format
 }
 
-sealed trait VegaValue
+/**
+ * A Vega Value Reference
+ * 
+ * See: https://vega.github.io/vega/docs/types/#Value
+ */
+sealed trait VegaValueReference
 {
   def scale(s: String) = 
-    VegaValue.Scale(s, this)
+    VegaValueReference.ScaleTransform(s, this)
 }
-object VegaValue
+object VegaValueReference
 {
-  case class Field(
-    field: String,
-  ) extends VegaValue
+  /**
+   * Basic values
+   */
   case class Literal(
     value: JsValue,
-  ) extends VegaValue
-  case class Scale(
-    scale: String,
-    target: VegaValue
-  ) extends VegaValue
+  ) extends VegaValueReference
+  /**
+   * References to fields
+   */
+  case class Field(
+    field: String,
+  ) extends VegaValueReference
   case class Signal(
     signal: String
-  ) extends VegaValue
+  ) extends VegaValueReference
+  /**
+   * Extend the target value with a scale transformation
+   */
+  case class ScaleTransform(
+    scale: String,
+    target: VegaValueReference
+  ) extends VegaValueReference
 
   implicit val fieldFormat: Format[Field] = Json.format
-  implicit val literalFormat:Format[Literal] = Format[Literal](
-    new Reads[Literal] {
-      def reads(j: JsValue): JsResult[Literal] = 
-        j match {
-          case JsObject(elems) if elems.keys == Set("value") =>
-            JsSuccess(Literal(elems("value")))
-          case _ =>
-            JsSuccess(Literal(j))
-        }
-    },
-    new Writes[Literal] {
-      def writes(j: Literal): JsValue = 
-        j.value
-    }
-  )
-  implicit val scaleFormat: Format[Scale] = Format[Scale](
-    new Reads[Scale]{
-      def reads(j: JsValue): JsResult[Scale] =
+  implicit val valueFormat: Format[Literal] = Json.format
+  implicit val signalFormat: Format[Signal] = Json.format
+  implicit val scaleFormat: Format[ScaleTransform] = Format[ScaleTransform](
+    new Reads[ScaleTransform]{
+      def reads(j: JsValue): JsResult[ScaleTransform] =
         j match {
           case JsObject(elems) if elems contains "scale" => 
             JsSuccess(
-              Scale(elems("scale").as[String], 
+              ScaleTransform(elems("scale").as[String], 
                 format.reads(
                   JsObject(elems - "scale")
                 ).get
@@ -1680,8 +1681,8 @@ object VegaValue
           case _ => JsError()
         }
     },
-    new Writes[Scale]{
-      def writes(j: Scale): JsValue = 
+    new Writes[ScaleTransform]{
+      def writes(j: ScaleTransform): JsValue = 
         Json.toJson(j.target) match {
           case JsObject(elems) => 
             JsObject(elems ++ Map("scale" -> JsString(j.scale)))
@@ -1690,15 +1691,14 @@ object VegaValue
         }
     }
   )
-  implicit val signalFormat: Format[Signal] = Json.format
-  implicit val format: Format[VegaValue] = Format[VegaValue](
-    new Reads[VegaValue]{
-      def reads(j: JsValue): JsResult[VegaValue] =
+  implicit val format: Format[VegaValueReference] = Format[VegaValueReference](
+    new Reads[VegaValueReference]{
+      def reads(j: JsValue): JsResult[VegaValueReference] =
         JsSuccess(
           j match {
             case JsObject(elems) =>
               if(elems contains "scale"){
-                j.as[Scale]
+                j.as[ScaleTransform]
               } else if(elems contains "field"){
                 j.as[Field]
               } else if(elems contains "signal"){
@@ -1710,12 +1710,12 @@ object VegaValue
           }
         )
     },
-    new Writes[VegaValue]{
-      def writes(j: VegaValue): JsValue =
+    new Writes[VegaValueReference]{
+      def writes(j: VegaValueReference): JsValue =
         j match {
           case j:Field => Json.toJson(j)
           case j:Literal => Json.toJson(j)
-          case j:Scale => Json.toJson(j)
+          case j:ScaleTransform => Json.toJson(j)
           case j:Signal => Json.toJson(j)
         }
     }
@@ -1748,11 +1748,11 @@ object VegaSignalEncoding
  */
 
 case class VegaMarkEncoding(
-  x: Option[VegaValue] = None,
-  y: Option[VegaValue] = None,
-  stroke: Option[VegaValue] = None,
-  fill: Option[VegaValue] = None,
-  tooltip: Option[VegaValue] = None,
+  x: Option[VegaValueReference] = None,
+  y: Option[VegaValueReference] = None,
+  stroke: Option[VegaValueReference] = None,
+  fill: Option[VegaValueReference] = None,
+  tooltip: Option[VegaValueReference] = None,
   opacity: Option[Double] = None
 )
 object VegaMarkEncoding
