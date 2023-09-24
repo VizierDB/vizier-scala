@@ -15,7 +15,6 @@ import info.vizierdb.artifacts.VegaAxis
 import info.vizierdb.artifacts.VegaOrientation
 import info.vizierdb.artifacts.VegaMarkEncoding
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
-import info.vizierdb.artifacts.VegaValue
 import info.vizierdb.artifacts.VegaDomain
 import info.vizierdb.artifacts.VegaRange
 import info.vizierdb.artifacts.VegaAutosize
@@ -96,15 +95,16 @@ object BarChart extends Command
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
+
+          // Set the domain of the x scale
           VegaScale("x", VegaScaleType.Band, 
             range = Some(VegaRange.Width),
-            domain = Some(VegaDomain.Literal(Seq(
-              JsNumber(series.minX),
-              JsNumber(series.maxX)
-            )))),
+            domain = Some(VegaDomain.Literal(series.uniqueXValues
+            ))),
 
+            
           // 'y': The y axis scale, mapping from data.y -> chart height
-          VegaScale("y", VegaScaleType.Band, 
+          VegaScale("y", VegaScaleType.Linear, 
             range = Some(VegaRange.Height),
             domain = Some(VegaDomain.Literal(Seq(
               JsNumber(series.minY),
@@ -127,12 +127,9 @@ object BarChart extends Command
         // Actually define the line(s).  There's a single mark here
         // that generates one line per color (based on the stroke 
         // encoding)
-        marks = 
-          series.simpleMarks(VegaMarkType.Rect) ++
-          series.simpleMarks(VegaMarkType.Symbol, 
-                             fill = true, 
-                             tooltip = true
-                           ),
+        marks = series.simpleMarks(VegaMarkType.Rect, 
+            fill = true, 
+            tooltip = true),
 
         // Finally ensure that there is a legend displayed
         legends = Seq(

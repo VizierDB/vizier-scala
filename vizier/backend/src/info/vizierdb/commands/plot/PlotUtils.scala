@@ -138,6 +138,17 @@ object PlotUtils
       series.map { _.x }.toSet
     def uniqueYAxes = 
       series.map { _.y }.toSet
+    
+    //Helper Function to return all the values from the key into a Seq of JsNumbers
+    def uniqueXValues: Seq[JsNumber] = 
+      series.flatMap { seriesInstance => 
+        seriesInstance.dataframe
+          .select(seriesInstance.x)
+          .distinct
+          .collect
+          .map(row => JsNumber(row.getDouble(0))) 
+      }.distinct
+
 
     def uniqueDatasetsAndXaxes =
       series.map { series => (series.dataset, series.x) }.toSet
@@ -232,25 +243,37 @@ object PlotUtils
     ) =
       series.map { data =>
         val name = seriesName(data)
+        val encoding = VegaMarkEncoding(
+          x = Some(VegaValueReference.Field(data.x).scale("x")),
+          y = Some(VegaValueReference.Field(data.y).scale("y")),
+          stroke = Some(VegaValueReference.Literal(JsString(name)).scale("color")),
+          fill = 
+            if(!fill){ None }
+            else { Some(VegaValueReference.Literal(JsString(name)).scale("color")) },
+          tooltip = 
+            if(!tooltip){ None }
+            else { Some(VegaValueReference.Signal("datum")) },
+          opacity = 
+            if(opacity >= 1.0){ None }
+            else { Some(opacity) }
+        )
+
+        val updatedEncoding = 
+          if(markType == VegaMarkType.Rect) {
+            encoding.copy(
+              width = Some(VegaValueReference.ScaleBandRef("x", band = Some(1))),
+              y2 = Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
+            )
+          } else {
+            encoding
+          }
+
         VegaMark(
           markType,
           from = Some(VegaFrom(data = name)),
           encode = Some(VegaMarkEncodingGroup(
             // 'enter' defines data in the initial state.
-            enter = Some(VegaMarkEncoding(
-              x = Some(VegaValueReference.Field(data.x).scale("x")),
-              y = Some(VegaValueReference.Field(data.y).scale("y")),
-              stroke = Some(VegaValueReference.Literal(JsString(name)).scale("color")),
-              fill = 
-                if(!fill){ None }
-                else { Some(VegaValueReference.Literal(JsString(name)).scale("color")) },
-              tooltip = 
-                if(!tooltip){ None }
-                else { Some(VegaValueReference.Signal("datum")) },
-              opacity = 
-                if(opacity >= 1.0){ None }
-                else { Some(opacity) }
-            ))
+            enter = Some(updatedEncoding)
           ))
         )
       } ++
@@ -270,6 +293,7 @@ object PlotUtils
           )
         }
       }
+
 
   }
 
