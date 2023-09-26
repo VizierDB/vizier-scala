@@ -19,6 +19,7 @@ import java.io.File
 import org.rogach.scallop._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.catalog.Cell
+import java.net.URL
 
 class Config(arguments: Seq[String]) 
   extends ScallopConf(arguments)
@@ -126,8 +127,18 @@ class Config(arguments: Seq[String])
     descr = "Set the SparkSQL warehouse directory (default: {cache-dir}/spark-warehouse)"
   )
 
-  def workingDirectoryFile = 
-    new File(workingDirectory.getOrElse("."))
+  def workingDirectoryFile: File = 
+    new File(
+      workingDirectory
+        .orElse { Option(System.getenv("user.dir")) }
+        .getOrElse("."))
+
+  def workingDirectoryURL: URL =
+  {
+    var path = workingDirectoryFile.getAbsoluteFile().toString
+    if(!path.endsWith("/")) { path = path + "/"; }
+    new URL(s"file://${path}")
+  }
   
   lazy val cacheDirFile = 
     cacheDirOverride.getOrElse { 
