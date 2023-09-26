@@ -976,7 +976,7 @@ class StringParameter(
       required = parameter.required,
       hidden = parameter.hidden,
       initialPlaceholder = parameter.helpText.getOrElse(""),
-      initialPlaceholderIsDefaultValue = parameter.helpText.isDefined
+      initialPlaceholderIsDefaultValue = !parameter.helpText.isDefined
     )
   }
   val root = 
