@@ -140,14 +140,30 @@ object PlotUtils
       series.map { _.y }.toSet
     
     //Helper Function to return all the values from the key into a Seq of JsNumbers
-    def uniqueXValues: Seq[JsNumber] = 
-      series.flatMap { seriesInstance => 
-        seriesInstance.dataframe
-          .select(seriesInstance.x)
-          .distinct
-          .collect
-          .map(row => JsNumber(row.getDouble(0))) 
-      }.distinct
+def uniqueXValues: Seq[JsValue] = {
+  series.flatMap { seriesInstance =>
+    seriesInstance.dataframe.select(seriesInstance.x).distinct.collect().map { row =>
+      SparkPrimitive.encode(row.get(0), seriesInstance.dataframe.schema(seriesInstance.x).dataType)
+    }
+  }.toSeq
+}
+
+      // series.flatMap { seriesInstance => 
+      //   seriesInstance.dataframe
+      //     .select(seriesInstance.x)
+      //     .distinct
+      //     .collect
+      //     .map(row => JsNumber(row.getDouble(0))) 
+      // }.distinct
+
+
+      // series.map { row =>
+      //   JsObject(
+      //     row.dataframe.schema.fields.zipWithIndex.map { case (field, idx) =>
+      //       field.name -> SparkPrimitive.encode(row.x(idx), field.dataType)
+      //     }.toMap
+      //   )
+      // }.toSeq
 
 
     def uniqueDatasetsAndXaxes =

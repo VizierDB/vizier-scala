@@ -95,13 +95,11 @@ object BarChart extends Command
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
-
           // Set the domain of the x scale
           VegaScale("x", VegaScaleType.Band, 
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Literal(series.uniqueXValues
             ))),
-
             
           // 'y': The y axis scale, mapping from data.y -> chart height
           VegaScale("y", VegaScaleType.Linear, 
