@@ -239,6 +239,9 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     logger.trace(s"ON UPDATE: $n; ")
     val module = baseElements(n)
     baseElements(n) = replacement
+    if(module.isFirst){
+      first = replacement
+    }
     module.replaceSelfWithElement(replacement)
     logger.trace(s"... displayed at ${module.displayPosition}")
     watchers.foreach { _.onUpdate(module.displayPosition, replacement) }
