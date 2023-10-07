@@ -16,6 +16,7 @@ import json
 import sys
 from util import IO_Wrapper, format_stack_trace
 from pycell.client import VizierDBClient, Artifact
+from pycell.client import MIME_TYPE_PYTHON_IMPORT, ARTIFACT_TYPE_FUNCTION, ARTIFACT_TYPE_FILE, MIME_TYPE_NUMPY
 from pycell.plugins import python_cell_preload
 from dependency import analyze
 
@@ -84,16 +85,29 @@ try:
         "open": client.pycell_open,
     }
 
+    functions = []
 
     for var in inputs:
-        # try:
-        variables[var] = client[var]
-        # except:
-            # hi = 2
+        assert var in client.artifacts
+        if client.artifacts[var].artifact_type == ARTIFACT_TYPE_FUNCTION:
+            if client.artifacts[var].mime_type == MIME_TYPE_PYTHON_IMPORT:
+                variables[var] = client[var]
+            else:
+                functions += [client[var]]
+        elif client.artifacts[var].artifact_type == ARTIFACT_TYPE_FILE:
+            if client.artifacts[var].mime_type == MIME_TYPE_NUMPY:
+                # Don't automatically import files unless they're numpy arrays
+                sys.stderr.write("Prepending script")
+            else:
+                pass
+        else:
+            variables[var] = client[var]
+
+    script = "\n\n".join(functions) + "\n\n" + script
     exec(script, variables, variables)
+
     for var in outputs:
         client[var] = variables[var]
-
 
     sys.stdout.soft_flush()
     sys.stderr.soft_flush()
@@ -123,4 +137,3 @@ except Exception as ex:
 
 raw_output.flush()
 # exit(0)
-
