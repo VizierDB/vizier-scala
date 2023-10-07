@@ -20,6 +20,7 @@ import org.rogach.scallop._
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.catalog.Cell
 import scala.io.Source
+import java.net.URL
 
 class Config(arguments: Seq[String]) 
   extends ScallopConf(arguments)
@@ -62,10 +63,10 @@ class Config(arguments: Seq[String])
     default = Some(new File("vizier.db"))
   )
   val port = opt[Int]("port",
-    descr = "The port to run on (default: 5000)",
+    descr = "The port to run on (default: 5050)",
     default = Option(defaults.getProperty("vizier-port"))
                   .map { _.toInt }
-                  .orElse { Some(5000) }
+                  .orElse { Some(5050) }
   )
   val pythonPath = opt[String]("python", 
     descr = "Path to python binary (default: search for one)",
@@ -136,8 +137,18 @@ class Config(arguments: Seq[String])
     descr = "Set the SparkSQL warehouse directory (default: {cache-dir}/spark-warehouse)"
   )
 
-  def workingDirectoryFile = 
-    new File(workingDirectory.getOrElse("."))
+  def workingDirectoryFile: File = 
+    new File(
+      workingDirectory
+        .orElse { Option(System.getenv("user.dir")) }
+        .getOrElse("."))
+
+  def workingDirectoryURL: URL =
+  {
+    var path = workingDirectoryFile.getAbsoluteFile().toString
+    if(!path.endsWith("/")) { path = path + "/"; }
+    new URL(s"file://${path}")
+  }
   
   lazy val cacheDirFile = 
     cacheDirOverride.getOrElse { 
