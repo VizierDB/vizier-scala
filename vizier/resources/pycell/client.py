@@ -33,14 +33,15 @@ from matplotlib.axes import Axes as MatplotlibAxes  # type: ignore[import]
 import pickle
 import base64
 
-ARTIFACT_TYPE_DATASET   = "Dataset"
-MIME_TYPE_DATASET       = "dataset/view"
-ARTIFACT_TYPE_FUNCTION  = "Function"
-MIME_TYPE_PYTHON        = "application/python"
-ARTIFACT_TYPE_BLOB      = "Blob"
-MIME_TYPE_PICKLE        = "application/pickle"
-ARTIFACT_TYPE_PARAMETER = "Parameter"
-ARTIFACT_TYPE_FILE      = "File"
+ARTIFACT_TYPE_DATASET     = "Dataset"
+MIME_TYPE_DATASET         = "dataset/view"
+ARTIFACT_TYPE_FUNCTION    = "Function"
+MIME_TYPE_PYTHON_FUNCTION = "application/python"
+MIME_TYPE_PYTHON_IMPORT   = "application/python-import"
+ARTIFACT_TYPE_BLOB        = "Blob"
+MIME_TYPE_PICKLE          = "application/pickle"
+ARTIFACT_TYPE_PARAMETER   = "Parameter"
+ARTIFACT_TYPE_FILE        = "File"
 
 OUTPUT_TEXT       = "text/plain"
 OUTPUT_HTML       = "text/html"
@@ -140,7 +141,10 @@ class VizierDBClient(object):
     if artifact.artifact_type == ARTIFACT_TYPE_DATASET:
       return self.get_dataset(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_FUNCTION:
-      return self.get_module(key)
+      if artifact.mime_type == MIME_TYPE_PYTHON_FUNCTION:
+        return self.get_function(key)
+      if artifact.mime_type == MIME_TYPE_PYTHON_IMPORT:
+        return self.get_import(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_PARAMETER:
       return self.get_parameter(key)
     elif artifact.artifact_type == ARTIFACT_TYPE_FILE:
@@ -161,13 +165,15 @@ class VizierDBClient(object):
 
   def __setitem__(self, key: Any, updated_data: Any = None) -> Any:
   
-    primitive_type = (int, str, bool, float)
-    sequence_type  = (list, tuple, range, dict)
+    primitive_type = [int, str, bool, float]
+    sequence_type  = [list, tuple, range, dict]
 
     if type(updated_data) in primitive_type or type(updated_data) in sequence_type:
       self.export_parameter(key, updated_data)
-    elif type(updated_data) is ModuleType or type(updated_data) is FunctionType:
-      self.export_module(key)
+    elif type(updated_data) is FunctionType:
+      self.export_function(key)
+    elif type(updated_data) is ModuleType:
+      self.export_import(key, updated_data)
     elif type(updated_data) == pandas.core.frame.DataFrame:
       self.save_data_frame(key, updated_data)
     else:
@@ -220,7 +226,7 @@ class VizierDBClient(object):
       response["dataType"]
     )
 
-  def get_module(self, name: str) -> Any:
+  def get_function(self, name: str) -> Any:
     name = name.lower()
     if name not in self.artifacts:
       raise ValueError("unknown module \'{}\'".format(name))
@@ -252,6 +258,25 @@ class VizierDBClient(object):
 
     exec("@export\n" + response["data"], variables, variables)
     return self.py_objects[name]
+
+  def get_import(self, name: str) -> Any:
+    response = self.vizier_request(
+      event="get_blob",
+      name=name,
+      has_response=True
+    )
+    assert response is not None
+
+    variables = {
+      "vizierdb": self,
+    }
+    exec(response["data"],variables, variables )
+    self.py_objects[name] = variables[name]
+    return self.py_objects[name]
+  ## Rename get_module -> get_function
+  ## create a new get_module:
+  ##  where its just pyobject[name] = variables[name]
+  ## add a new if in the getter that checks the module mime type
 
   def get_dataset(self, name: str) -> DatasetClient:
     """Get dataset with given name.
@@ -595,8 +620,28 @@ class VizierDBClient(object):
         "html": html,
         "js_deps": dependencies
       }), mime_type=OUTPUT_JAVASCRIPT)
+    
+  def export_import(self, key: str, updated_value: Any = None):
+    src = "import {} as {}".format(updated_value.__name__, key)
 
-  def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
+    response = self.vizier_request("save_artifact",
+        name=key,
+        data=src,
+        mimeType=MIME_TYPE_PYTHON_IMPORT,
+        artifactType=ARTIFACT_TYPE_FUNCTION,
+        has_response=True
+      )
+    assert response is not None
+
+    self.artifacts[key] = Artifact(
+      name=key,
+      artifact_type=ARTIFACT_TYPE_FUNCTION,
+      mime_type=MIME_TYPE_PYTHON_IMPORT,
+      artifact_id=response["artifactId"]
+    )
+
+
+  def export_function(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
     if name_override is not None:
       exp_name = name_override
     elif inspect.isclass(exp):
@@ -631,12 +676,12 @@ class VizierDBClient(object):
 
     if exp_name in self.artifacts:
       if name_override is None:
-        raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_module(exp, name_override=\"{}\")".format(exp_name, exp_name))
+        raise ValueError("An artifact named '{}' already exists.  Try vizierdb.export_function(exp, name_override=\"{}\")".format(exp_name, exp_name))
 
     response = self.vizier_request("save_artifact",
         name=exp_name,
         data=src,
-        mimeType=MIME_TYPE_PYTHON,
+        mimeType=MIME_TYPE_PYTHON_FUNCTION,
         artifactType=ARTIFACT_TYPE_FUNCTION,
         has_response=True
       )
@@ -645,7 +690,7 @@ class VizierDBClient(object):
     self.artifacts[exp_name] = Artifact(
       name=exp_name,
       artifact_type=ARTIFACT_TYPE_FUNCTION,
-      mime_type=MIME_TYPE_PYTHON,
+      mime_type=MIME_TYPE_PYTHON_FUNCTION,
       artifact_id=response["artifactId"]
     )
     if exp_name in self.datasets:

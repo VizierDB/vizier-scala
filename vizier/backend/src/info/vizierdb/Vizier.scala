@@ -53,6 +53,12 @@ import info.vizierdb.api.BrowseFilesystem
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.api.akka.VizierServer
 import info.vizierdb.catalog.Metadata
+import play.api.libs.json._
+import info.vizierdb.python.JupyterNotebook
+import info.vizierdb.python.JupyterCell
+// import info.vizierdb.MutableProject 
+import scala.io.Source
+
 
 object Vizier
   extends LazyLogging
@@ -194,20 +200,44 @@ object Vizier
     config.subcommand match {
       //////////////// HANDLE SPECIAL COMMANDS //////////////////
       case Some(subcommand) => 
-        
+
         //////////////////// Ingest ////////////////////
         if(subcommand.equals(config.ingest)){
           try {
-            Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
-              ImportProject(
-                _,
-                execute = config.ingest.execute()
-              )
+              if (config.ingest.file.apply().getName.endsWith(".ipynb")){
+
+                val fileSource = Source.fromFile(config.ingest.file.apply())
+                val script = fileSource.getLines.toIndexedSeq.mkString("\n") 
+                fileSource.close
+
+                val json = Json.parse(script)
+                val nb = json.as[JupyterNotebook]
+
+                val filename = config.ingest.file.apply().getName()
+                val project = MutableProject(filename.substring(0, filename.lastIndexOf('.')))
+
+                for(cell <- nb.cells)
+                {
+                    cell.cell_type match {
+                        case "markdown" => 
+                            project.markdown(cell.toString())
+                        case "code" => 
+                            project.script(cell.source.toIndexedSeq.mkString("\n"))
+                    }
+                }
+                println(project.lastOutputString)
+              } else {
+                Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
+                  ImportProject(
+                    _,
+                    execute = config.ingest.execute()
+                  )
+              }         
             }
           } catch {
-            case e:VizierException => 
-              println(s"\nError: ${e.getMessage()}")
-          }
+              case e:VizierException => 
+                println(s"\nError: ${e.getMessage()}")
+        }
         //////////////////// Export ////////////////////
         } else if (subcommand.equals(config.export)){
           try { 
