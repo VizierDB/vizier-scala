@@ -14,6 +14,7 @@
 # -- copyright-header:end --
 import json
 import sys
+import os
 from util import IO_Wrapper, format_stack_trace
 from pycell.client import VizierDBClient, Artifact
 from pycell.plugins import python_cell_preload
@@ -86,11 +87,9 @@ try:
 
 
     for var in inputs:
-        # try:
         variables[var] = client[var]
-        # except:
-            # hi = 2
     exec(script, variables, variables)
+    # print(variables)
     for var in outputs:
         client[var] = variables[var]
 
