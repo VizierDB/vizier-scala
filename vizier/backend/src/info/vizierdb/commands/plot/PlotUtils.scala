@@ -26,7 +26,9 @@ object PlotUtils
     val x: String,
     val y: String,
     val dataframe: DataFrame,
-    val regression: Option[VegaRegressionMethod] = None
+    val regression: Option[VegaRegressionMethod] = None,
+    val sort: Option[Boolean] = None,
+    val isBarChart: Option[Boolean] = None
   )
   {
     // If we pull too many points, we're going to crash the client
@@ -55,6 +57,26 @@ object PlotUtils
           }.toSeq)
       )
 
+    // Create series which takes series and returns a aggregated series which will be sent into the vegaData function
+    def aggregateSeries(series: Series): Series = {
+      val aggDataframe = series.dataframe
+      .groupBy(series.x)
+      .agg(Map(series.y -> "sum")).as(series.y)
+      // Join the aggregated dataframe with the original dataframe on the series.x column
+      val joinedDataframe = series.dataframe.join(aggDataframe, series.x)
+      Series(
+        dataset = series.dataset,
+        x = series.x,
+        y = series.y,
+        dataframe = joinedDataframe,
+        regression = series.regression,
+        sort = series.sort,
+        isBarChart = series.isBarChart
+      )
+    }
+    
+
+
     def vegaRegression(series: SeriesList): Option[VegaData] =
       regression.map { regression => 
         VegaData(
@@ -78,7 +100,12 @@ object PlotUtils
       rows.map { _.getAs[Double](y) }.min
     def maxY = 
       rows.map { _.getAs[Double](y) }.max
+    def maxSumY = 
+      rows.map { _.getAs[Double]("sum(" + y + ")") }.max
+    def minSumY = 
+      rows.map { _.getAs[Double]("sum(" + y + ")") }.min
   }
+
 
   def makeSeries(
     context: ExecutionContext,
@@ -86,8 +113,9 @@ object PlotUtils
     xIndex: Int, 
     yIndex: Int, 
     filter: Option[String],
-    sort: Boolean = false,
-    regression: Option[VegaRegressionMethod] = None
+    sort: Boolean,
+    regression: Option[VegaRegressionMethod] = None,
+    isBarChart: Boolean
   ): Series =
   {
     var dataframe = context.dataframe(datasetName)
@@ -100,6 +128,15 @@ object PlotUtils
       }
     }
 
+    if (isBarChart) {
+    // Make sure the y columns are numeric
+    dataframe = dataframe.select(
+      dataframe.columns.zipWithIndex.map { case (col, idx) =>
+        if(idx == yIndex){
+          dataframe(col).cast(DoubleType)
+        } else { dataframe(col) }
+      }:_*
+    )} else{
     // Make sure the x and y columns are numeric
     dataframe = dataframe.select(
       dataframe.columns.zipWithIndex.map { case (col, idx) =>
@@ -108,6 +145,7 @@ object PlotUtils
         } else { dataframe(col) }
       }:_*
     )
+  }
 
     // Sort the data as appropriate
     if(sort){
@@ -115,7 +153,6 @@ object PlotUtils
         dataframe.columns(xIndex),
       )
     }
-
 
     PlotUtils.Series(
       dataset = datasetName,
@@ -131,6 +168,7 @@ object PlotUtils
   )
   {
     val size = series.size
+    val aggregate = series.map { series => series.aggregateSeries(series) }
 
     def uniqueDatasets = 
       series.map { _.dataset }.toSet
@@ -140,31 +178,17 @@ object PlotUtils
       series.map { _.y }.toSet
     
     //Helper Function to return all the values from the key into a Seq of JsNumbers
-def uniqueXValues: Seq[JsValue] = {
-  series.flatMap { seriesInstance =>
-    seriesInstance.dataframe.select(seriesInstance.x).distinct.collect().map { row =>
-      SparkPrimitive.encode(row.get(0), seriesInstance.dataframe.schema(seriesInstance.x).dataType)
-    }
-  }.toSeq
-}
-
-      // series.flatMap { seriesInstance => 
-      //   seriesInstance.dataframe
-      //     .select(seriesInstance.x)
-      //     .distinct
-      //     .collect
-      //     .map(row => JsNumber(row.getDouble(0))) 
-      // }.distinct
-
-
-      // series.map { row =>
-      //   JsObject(
-      //     row.dataframe.schema.fields.zipWithIndex.map { case (field, idx) =>
-      //       field.name -> SparkPrimitive.encode(row.x(idx), field.dataType)
-      //     }.toMap
-      //   )
-      // }.toSeq
-
+    def uniqueXValues: Seq[JsValue] = {
+        series.flatMap { seriesInstance =>
+          seriesInstance.dataframe
+          .select(seriesInstance.x)
+          .distinct
+          .collect()
+          .map { row =>
+            SparkPrimitive.encode(row.get(0), seriesInstance.dataframe.schema(seriesInstance.x).dataType)
+          }
+        }.toSeq
+      }
 
     def uniqueDatasetsAndXaxes =
       series.map { series => (series.dataset, series.x) }.toSet
@@ -206,6 +230,10 @@ def uniqueXValues: Seq[JsValue] = {
       series.map { _.minY }.min
     lazy val maxY = 
       series.map { _.maxY }.max
+    lazy val maxSumY = 
+      aggregate.map { _.maxSumY }.max
+    lazy val minSumY =
+      aggregate.map { _.minSumY }.min
 
     lazy val xDomainRequiresOffset =
       if(minX > 0){ 
@@ -248,6 +276,11 @@ def uniqueXValues: Seq[JsValue] = {
       series.map { _.vegaData(this) } ++
       series.flatMap { _.vegaRegression(this) }
 
+    def aggregateSeries: SeriesList = {
+      val aggSeries = series.map { series => series.aggregateSeries(series) }
+      SeriesList(aggSeries)
+    }
+    
     def names = 
       series.map { seriesName(_) }
 
@@ -277,6 +310,7 @@ def uniqueXValues: Seq[JsValue] = {
         val updatedEncoding = 
           if(markType == VegaMarkType.Rect) {
             encoding.copy(
+              y = Some(VegaValueReference.Field("sum(" + data.y + ")").scale("y")),
               width = Some(VegaValueReference.ScaleBandRef("x", band = Some(1))),
               y2 = Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
             )

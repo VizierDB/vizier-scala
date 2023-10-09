@@ -32,6 +32,7 @@ object BarChart extends Command
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
+  val PARAM_SORT = "sort"
 
   override def name: String = "Bar Chart"
 
@@ -43,6 +44,7 @@ object BarChart extends Command
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
       StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
+      BooleanParameter(id = PARAM_SORT, name = "Sort", required = true, default = Some(false))
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
@@ -72,7 +74,8 @@ object BarChart extends Command
             xIndex      = series.get[Int](PARAM_X),
             yIndex      = series.get[Int](PARAM_Y),
             filter      = series.getOpt[String](PARAM_FILTER),
-            sort        = true,
+            sort        = series.get[Boolean](PARAM_SORT),
+            isBarChart  = true
           )
         }
       )
@@ -90,7 +93,7 @@ object BarChart extends Command
         padding = VegaPadding.all(10),
 
         // Rely on PlotUtils to pick these out
-        data = series.vegaData,
+        data = series.aggregateSeries.vegaData,
 
         // Let vega know how to map data values to plot features
         scales = Seq(
@@ -105,8 +108,8 @@ object BarChart extends Command
           VegaScale("y", VegaScaleType.Linear, 
             range = Some(VegaRange.Height),
             domain = Some(VegaDomain.Literal(Seq(
-              JsNumber(series.minY),
-              JsNumber(series.maxY)
+              JsNumber(series.minSumY),
+              JsNumber(series.maxSumY)
             )))),
           // 'color': The color scale, mapping from data.c -> color category
           VegaScale("color", VegaScaleType.Ordinal,

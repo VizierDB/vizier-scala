@@ -1803,6 +1803,7 @@ case class VegaMark(
   role: Option[String] = None,
   style: Option[String] = None,
   zindex: Option[Int] = None,
+  marks: Option[Seq[VegaMark]] = None,
 )
 object VegaMark
 {
