@@ -26,7 +26,8 @@ object PlotUtils
     val x: String,
     val y: String,
     val dataframe: DataFrame,
-    val regression: Option[VegaRegressionMethod] = None
+    val regression: Option[VegaRegressionMethod] = None,
+    val name: Option[String] = None,
   )
   {
     // If we pull too many points, we're going to crash the client
@@ -87,7 +88,8 @@ object PlotUtils
     yIndex: Int, 
     filter: Option[String],
     sort: Boolean = false,
-    regression: Option[VegaRegressionMethod] = None
+    regression: Option[VegaRegressionMethod] = None,
+    name: Option[String] = None,
   ): Series =
   {
     var dataframe = context.dataframe(datasetName)
@@ -122,7 +124,8 @@ object PlotUtils
       x = dataframe.columns(xIndex),
       y = dataframe.columns(yIndex),
       dataframe = dataframe,
-      regression = regression
+      regression = regression,
+      name = name
     )
   }
 
@@ -159,10 +162,9 @@ object PlotUtils
       else                                        { series => series.dataset+"_"+series.x+"_"+series.y }
 
     def seriesName(series: Series): String = 
-      seriesLabel(series)
+      series.name.getOrElse { seriesLabel(series) }
     def seriesRegressionName(series: Series): String = 
-      seriesLabel(series)+" [Trend]"
-
+      seriesName(series) + " [Trend]"
     def seriesName(idx: Int): String = 
       seriesName(series(idx))
 

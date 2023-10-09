@@ -75,6 +75,7 @@ object LineChart extends Command
             yIndex      = series.get[Int](PARAM_Y),
             filter      = series.getOpt[String](PARAM_FILTER),
             sort        = true,
+            name        = series.getOpt[String](PARAM_LABEL),
           )
         }
       )
