@@ -9,6 +9,7 @@ import info.vizierdb.artifacts.VegaData
 import play.api.libs.json._
 import info.vizierdb.artifacts.VegaMarkType
 import info.vizierdb.artifacts.VegaMark
+import info.vizierdb.artifacts.VegaFacet
 import info.vizierdb.artifacts.VegaFrom
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
 import info.vizierdb.artifacts.VegaMarkEncoding
@@ -27,7 +28,7 @@ object PlotUtils
     val y: String,
     val dataframe: DataFrame,
     val regression: Option[VegaRegressionMethod] = None,
-    val sort: Option[Boolean] = None,
+    val sort: Boolean,
     val isBarChart: Option[Boolean] = None
   )
   {
@@ -100,10 +101,10 @@ object PlotUtils
       rows.map { _.getAs[Double](y) }.min
     def maxY = 
       rows.map { _.getAs[Double](y) }.max
-    def maxSumY = 
-      rows.map { _.getAs[Double]("sum(" + y + ")") }.max
-    def minSumY = 
-      rows.map { _.getAs[Double]("sum(" + y + ")") }.min
+    // def maxSumY = 
+    //   rows.map { _.getAs[Double]("sum(" + y + ")") }.max
+    // def minSumY = 
+    //   rows.map { _.getAs[Double]("sum(" + y + ")") }.min
   }
 
 
@@ -159,7 +160,8 @@ object PlotUtils
       x = dataframe.columns(xIndex),
       y = dataframe.columns(yIndex),
       dataframe = dataframe,
-      regression = regression
+      regression = regression,
+      sort = sort
     )
   }
 
@@ -168,7 +170,7 @@ object PlotUtils
   )
   {
     val size = series.size
-    val aggregate = series.map { series => series.aggregateSeries(series) }
+    // val aggregate = series.map { series => series.aggregateSeries(series) }
 
     def uniqueDatasets = 
       series.map { _.dataset }.toSet
@@ -179,6 +181,18 @@ object PlotUtils
     
     //Helper Function to return all the values from the key into a Seq of JsNumbers
     def uniqueXValues: Seq[JsValue] = {
+      if (series(0).sort) {
+        series.flatMap { seriesInstance =>
+          seriesInstance.dataframe
+          .select(seriesInstance.x)
+          .distinct
+          .orderBy(seriesInstance.x)
+          .collect()
+          .map { row =>
+            SparkPrimitive.encode(row.get(0), seriesInstance.dataframe.schema(seriesInstance.x).dataType)
+          }
+        }.toSeq
+      } else {
         series.flatMap { seriesInstance =>
           seriesInstance.dataframe
           .select(seriesInstance.x)
@@ -189,6 +203,7 @@ object PlotUtils
           }
         }.toSeq
       }
+    }
 
     def uniqueDatasetsAndXaxes =
       series.map { series => (series.dataset, series.x) }.toSet
@@ -230,10 +245,10 @@ object PlotUtils
       series.map { _.minY }.min
     lazy val maxY = 
       series.map { _.maxY }.max
-    lazy val maxSumY = 
-      aggregate.map { _.maxSumY }.max
-    lazy val minSumY =
-      aggregate.map { _.minSumY }.min
+    // lazy val maxSumY = 
+    //   aggregate.map { _.maxSumY }.max
+    // lazy val minSumY =
+    //   aggregate.map { _.minSumY }.min
 
     lazy val xDomainRequiresOffset =
       if(minX > 0){ 
@@ -276,13 +291,41 @@ object PlotUtils
       series.map { _.vegaData(this) } ++
       series.flatMap { _.vegaRegression(this) }
 
-    def aggregateSeries: SeriesList = {
-      val aggSeries = series.map { series => series.aggregateSeries(series) }
-      SeriesList(aggSeries)
-    }
+    // def aggregateSeries: SeriesList = {
+    //   val aggSeries = series.map { series => series.aggregateSeries(series) }
+    //   SeriesList(aggSeries)
+    //}
     
     def names = 
       series.map { seriesName(_) }
+
+    def groupMarks(
+      markType: VegaMarkType, 
+      tooltip: Boolean = false,
+      fill: Boolean = false,
+      opacity: Double = 1.0
+    ) =
+      series.map { data =>
+        val name = seriesName(data)
+        VegaMark(
+          VegaMarkType.Group,
+          // from = Some(VegaFrom(
+          //   data = name,
+          //   facet = Some(VegaFacet(
+          //     name = "facet", 
+          //     data = name, 
+          //     groupby = Some(data.x)
+          //   ))),
+
+          // ),
+          marks = Some(simpleMarks(markType, tooltip, fill, opacity)),
+          encode = Some(VegaMarkEncodingGroup(
+            // 'enter' defines data in the initial state.
+            enter = Some(VegaMarkEncoding(
+              x = Some(VegaValueReference.Field(data.x).scale("x"))))
+          ))
+        )
+      }
 
     def simpleMarks(
       markType: VegaMarkType, 
@@ -310,7 +353,7 @@ object PlotUtils
         val updatedEncoding = 
           if(markType == VegaMarkType.Rect) {
             encoding.copy(
-              y = Some(VegaValueReference.Field("sum(" + data.y + ")").scale("y")),
+              // y = Some(VegaValueReference.Field("sum(" + data.y + ")").scale("y")),
               width = Some(VegaValueReference.ScaleBandRef("x", band = Some(1))),
               y2 = Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
             )
@@ -343,9 +386,5 @@ object PlotUtils
           )
         }
       }
-
-
   }
-
-
 }

@@ -548,6 +548,7 @@ case class VegaScale(
   domainMax: Option[Double] = None,
   domainMin: Option[Double] = None,
   domainMid: Option[Double] = None,
+  padding: Option[Double] = None,
 )
 object VegaScale
 {

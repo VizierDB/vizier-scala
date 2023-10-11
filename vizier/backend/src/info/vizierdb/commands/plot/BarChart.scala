@@ -93,13 +93,15 @@ object BarChart extends Command
         padding = VegaPadding.all(10),
 
         // Rely on PlotUtils to pick these out
-        data = series.aggregateSeries.vegaData,
+        // data = series.aggregateSeries.vegaData,
+        data = series.vegaData,
 
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
           // Set the domain of the x scale
           VegaScale("x", VegaScaleType.Band, 
+            padding = Some(0.2),
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Literal(series.uniqueXValues
             ))),
@@ -108,8 +110,10 @@ object BarChart extends Command
           VegaScale("y", VegaScaleType.Linear, 
             range = Some(VegaRange.Height),
             domain = Some(VegaDomain.Literal(Seq(
-              JsNumber(series.minSumY),
-              JsNumber(series.maxSumY)
+              JsNumber(series.minY),
+              JsNumber(series.maxY)
+              // JsNumber(series.minSumY),
+              // JsNumber(series.maxSumY)
             )))),
           // 'color': The color scale, mapping from data.c -> color category
           VegaScale("color", VegaScaleType.Ordinal,
@@ -128,7 +132,7 @@ object BarChart extends Command
         // Actually define the line(s).  There's a single mark here
         // that generates one line per color (based on the stroke 
         // encoding)
-        marks = series.simpleMarks(VegaMarkType.Rect, 
+        marks = series.groupMarks(VegaMarkType.Rect, 
             fill = true, 
             tooltip = true),
 
