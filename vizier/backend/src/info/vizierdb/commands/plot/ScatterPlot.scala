@@ -94,7 +94,8 @@ object ScatterPlot extends Command
             filter      = series.getOpt[String](PARAM_FILTER),
             sort        = false,
             isBarChart  = false,
-            regression  = series.getOpt[String](PARAM_REGRESSION).flatMap { VegaRegressionMethod(_) }
+            regression  = series.getOpt[String](PARAM_REGRESSION).flatMap { VegaRegressionMethod(_) },
+            name        = series.getOpt[String](PARAM_LABEL),
           )
         }
       )

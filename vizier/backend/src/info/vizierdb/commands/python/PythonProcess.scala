@@ -130,7 +130,7 @@ object PythonProcess
     "pyarrow"    -> "pyarrow",
     "pandas"     -> "pandas",
     "shapely"    -> "shapely",
-    "pyspark"    -> "pyspark=3.3.1",
+    "pyspark"    -> "pyspark==3.3.1",
     "PIL"        -> "Pillow"
   )
 

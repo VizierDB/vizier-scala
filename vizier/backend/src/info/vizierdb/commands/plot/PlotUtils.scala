@@ -31,6 +31,7 @@ object PlotUtils
     val regression: Option[VegaRegressionMethod] = None,
     val sort: Boolean,
     val isBarChart: Option[Boolean] = None
+    val name: Option[String] = None,
   )
   {
     // If we pull too many points, we're going to crash the client
@@ -122,9 +123,9 @@ object PlotUtils
     xIndex: Int, 
     yIndex: Int, 
     filter: Option[String],
-    sort: Boolean,
+    sort: Boolean = false,
     regression: Option[VegaRegressionMethod] = None,
-    isBarChart: Boolean
+    name: Option[String] = None,
   ): Series =
   {
     var dataframe = context.dataframe(datasetName)
@@ -170,6 +171,7 @@ object PlotUtils
       dataframe = dataframe,
       regression = regression,
       sort = sort
+      name = name
     )
   }
 
@@ -232,10 +234,9 @@ object PlotUtils
       else                                        { series => series.dataset+"_"+series.x+"_"+series.y+scala.util.Random.nextInt(10000).toString()}
 
     def seriesName(series: Series): String = 
-      seriesLabel(series)
+      series.name.getOrElse { seriesLabel(series) }
     def seriesRegressionName(series: Series): String = 
-      seriesLabel(series)+" [Trend]"
-
+      seriesName(series) + " [Trend]"
     def seriesName(idx: Int): String = 
       seriesName(series(idx))
 

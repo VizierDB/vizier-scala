@@ -184,7 +184,7 @@ object Vizier
             error(ex.toString())
         }
       document.body.appendChild(
-        div(id := "content",
+        div(id := "project_list_content",
             projects.map {
               case Some(ProjectList(projects)) => 
                 div(`class` := "project_list_wrapper",

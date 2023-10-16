@@ -178,6 +178,12 @@ $max_workflow_width: 800px;
 
 /************ Project List ************/
 
+#project_list_content
+{
+  height: 100vh;
+  overflow-y: scroll;
+}
+
 div.project_list_wrapper 
 {
   border: 1px solid gray;
@@ -185,6 +191,8 @@ div.project_list_wrapper
   max-width: $max_workflow_width;
   margin-left: auto;
   margin-right: auto;
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 ul.project_list 
 {

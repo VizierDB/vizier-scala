@@ -239,6 +239,24 @@ class DatasetClient(object):
       assert(identifier is not None)
       self.identifier: Optional[str] = identifier
       self._properties = dataset["properties"]
+
+      rowids = dataset["prov"]
+      data = dataset["data"]
+      col_caveats = dataset["colTaint"]
+      row_caveats = dataset["rowTaint"]
+      if len(col_caveats) < len(data):
+        col_caveats = col_caveats + [None] * (len(data) - len(col_caveats))
+      if len(row_caveats) < len(data):
+        row_caveats = row_caveats + [False] * (len(data) - len(row_caveats))
+
+      row_data = list(zip(
+        rowids,
+        data,
+        col_caveats,
+        row_caveats
+      ))
+
+
       self._rows = [
         MutableDatasetRow(
           dataset=self,
@@ -250,12 +268,7 @@ class DatasetClient(object):
           caveats=caveats,
           row_caveat=row_caveat
         )
-        for identifier, values, caveats, row_caveat in zip(
-          dataset["prov"],
-          dataset["data"],
-          dataset["colTaint"],
-          dataset["rowTaint"]
-        )
+        for identifier, values, caveats, row_caveat in row_data
       ]
     else:
       self.identifier = None
