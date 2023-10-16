@@ -2,6 +2,7 @@ package info.vizierdb.commands.plot
 
 import info.vizierdb.util.StringUtils
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.functions._
 import info.vizierdb.commands.ExecutionContext
 import info.vizierdb.VizierException
 import info.vizierdb.spark.SparkPrimitive
@@ -58,24 +59,37 @@ object PlotUtils
           }.toSeq)
       )
 
-    // Create series which takes series and returns a aggregated series which will be sent into the vegaData function
+
     def aggregateSeries(series: Series): Series = {
+
+      val aggExprs = series.dataframe.columns.flatMap {
+        case colName if colName == series.y =>
+          // For the column to sum, use the 'sum' aggregation.
+          Some(sum(colName).as(colName))
+        case colName if colName == series.x =>
+          // For the groupBy column, we do not need an aggregation expression.
+          None
+        case colName =>
+          // For all other columns, preserve the first entry.
+          Some(first(colName).as(colName))
+      }
+
+      // Apply the aggregation expressions to the DataFrame.
       val aggDataframe = series.dataframe
       .groupBy(series.x)
-      .agg(Map(series.y -> "sum")).as(series.y)
-      // Join the aggregated dataframe with the original dataframe on the series.x column
-      val joinedDataframe = series.dataframe.join(aggDataframe, series.x)
+      .agg(aggExprs.head, aggExprs.tail: _*)
+      
       Series(
         dataset = series.dataset,
         x = series.x,
         y = series.y,
-        dataframe = joinedDataframe,
+        dataframe = aggDataframe,
         regression = series.regression,
         sort = series.sort,
         isBarChart = series.isBarChart
       )
     }
-    
+
 
 
     def vegaRegression(series: SeriesList): Option[VegaData] =
@@ -101,10 +115,6 @@ object PlotUtils
       rows.map { _.getAs[Double](y) }.min
     def maxY = 
       rows.map { _.getAs[Double](y) }.max
-    // def maxSumY = 
-    //   rows.map { _.getAs[Double]("sum(" + y + ")") }.max
-    // def minSumY = 
-    //   rows.map { _.getAs[Double]("sum(" + y + ")") }.min
   }
 
 
@@ -170,7 +180,10 @@ object PlotUtils
   )
   {
     val size = series.size
-    // val aggregate = series.map { series => series.aggregateSeries(series) }
+    val seqAgg = series.map { series => series.aggregateSeries(series)}
+    val minSeqAgg = seqAgg.map {_.minY}.min
+    val maxSeqAgg = seqAgg.map {_.maxY}.max
+    
 
     def uniqueDatasets = 
       series.map { _.dataset }.toSet
@@ -222,7 +235,7 @@ object PlotUtils
       else if(uniqueDatasetsAndYaxes.size == size){ series => series.dataset+"_"+series.y }
       else if(uniqueDatasetsAndXaxes.size == size){ series => series.dataset+"_"+series.x }
       else if(uniqueAxes.size == size)            { series => series.x+"_"+series.y }
-      else                                        { series => series.dataset+"_"+series.x+"_"+series.y }
+      else                                        { series => series.dataset+"_"+series.x+"_"+series.y+scala.util.Random.nextInt(10000).toString()}
 
     def seriesName(series: Series): String = 
       seriesLabel(series)
@@ -245,10 +258,6 @@ object PlotUtils
       series.map { _.minY }.min
     lazy val maxY = 
       series.map { _.maxY }.max
-    // lazy val maxSumY = 
-    //   aggregate.map { _.maxSumY }.max
-    // lazy val minSumY =
-    //   aggregate.map { _.minSumY }.min
 
     lazy val xDomainRequiresOffset =
       if(minX > 0){ 
@@ -291,10 +300,10 @@ object PlotUtils
       series.map { _.vegaData(this) } ++
       series.flatMap { _.vegaRegression(this) }
 
-    // def aggregateSeries: SeriesList = {
-    //   val aggSeries = series.map { series => series.aggregateSeries(series) }
-    //   SeriesList(aggSeries)
-    //}
+    def aggregateSeries: SeriesList = {
+      val aggSeries = series.map { series => series.aggregateSeries(series) }
+      SeriesList(aggSeries)
+    }
     
     def names = 
       series.map { seriesName(_) }

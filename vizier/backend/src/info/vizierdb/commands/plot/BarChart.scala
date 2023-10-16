@@ -94,7 +94,7 @@ object BarChart extends Command
 
         // Rely on PlotUtils to pick these out
         // data = series.aggregateSeries.vegaData,
-        data = series.vegaData,
+        data = series.aggregateSeries.vegaData,
 
         // Let vega know how to map data values to plot features
         scales = Seq(
@@ -110,8 +110,8 @@ object BarChart extends Command
           VegaScale("y", VegaScaleType.Linear, 
             range = Some(VegaRange.Height),
             domain = Some(VegaDomain.Literal(Seq(
-              JsNumber(series.minY),
-              JsNumber(series.maxY)
+              JsNumber(series.minSeqAgg),
+              JsNumber(series.maxSeqAgg)
               // JsNumber(series.minSumY),
               // JsNumber(series.maxSumY)
             )))),
