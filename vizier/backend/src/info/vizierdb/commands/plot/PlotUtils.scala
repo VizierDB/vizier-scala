@@ -30,8 +30,8 @@ object PlotUtils
     val dataframe: DataFrame,
     val regression: Option[VegaRegressionMethod] = None,
     val sort: Boolean,
-    val isBarChart: Option[Boolean] = None
-    val name: Option[String] = None,
+    val isBarChart: Boolean,
+    val name: Option[String] = None
   )
   {
     // If we pull too many points, we're going to crash the client
@@ -123,7 +123,8 @@ object PlotUtils
     xIndex: Int, 
     yIndex: Int, 
     filter: Option[String],
-    sort: Boolean = false,
+    sort: Boolean,
+    isBarChart: Boolean,
     regression: Option[VegaRegressionMethod] = None,
     name: Option[String] = None,
   ): Series =
@@ -170,7 +171,8 @@ object PlotUtils
       y = dataframe.columns(yIndex),
       dataframe = dataframe,
       regression = regression,
-      sort = sort
+      sort = sort,
+      isBarChart = isBarChart,
       name = name
     )
   }
