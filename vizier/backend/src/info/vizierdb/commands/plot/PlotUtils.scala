@@ -37,14 +37,18 @@ object PlotUtils
     // If we pull too many points, we're going to crash the client
     // so instead, what we're going to do is pull one more record
     // than we intend to display...
-    val rows = dataframe.take(MAX_RECORDS+1)
+    lazy val rows = 
+    { 
+      val rows = dataframe.take(MAX_RECORDS+1)
 
-    // And if we get all MAX+1 records, then bail out, letting the
-    // user know that there's too much data to display.
-    if(rows.size > MAX_RECORDS){
-      throw new VizierException(
-        s"$dataset has ${dataframe.count} rows, but chart cells are limited to $MAX_RECORDS rows.  Either summarize the data first, or use a python cell to plot the data."
-      )
+      // And if we get all MAX+1 records, then bail out, letting the
+      // user know that there's too much data to display.
+      if(rows.size > MAX_RECORDS){
+        throw new VizierException(
+          s"$dataset has ${dataframe.count} rows, but chart cells are limited to $MAX_RECORDS rows.  Either summarize the data first, or use a python cell to plot the data."
+        )
+      }
+      /* return */ rows
     }
 
     def vegaData(series: SeriesList): VegaData =
@@ -61,12 +65,12 @@ object PlotUtils
       )
 
 
-    def aggregateSeries(series: Series): Series = {
-      val aggExprs = series.dataframe.columns.flatMap {
-        case colName if colName == series.y =>
+    def aggregateSeries(): Series = {
+      val aggExprs = dataframe.columns.flatMap {
+        case colName if colName == y =>
           // For the column to sum, use the 'sum' aggregation.
           Some(sum(colName).as(colName))
-        case colName if colName == series.x =>
+        case colName if colName == x =>
           // For the groupBy column, we do not need an aggregation expression.
           None
         case colName =>
@@ -74,18 +78,12 @@ object PlotUtils
           Some(first(colName).as(colName))
       }
       // Apply the aggregation expressions to the DataFrame.
-      val aggDataframe = series.dataframe
-      .groupBy(series.x)
+      val aggDataframe = dataframe
+      .groupBy(x)
       .agg(aggExprs.head, aggExprs.tail: _*)
       
-      Series(
-        dataset = series.dataset,
-        x = series.x,
-        y = series.y,
-        dataframe = aggDataframe,
-        regression = series.regression,
-        sort = series.sort,
-        isBarChart = series.isBarChart
+      copy(
+        dataframe = aggDataframe
       )
     }
 
@@ -233,7 +231,7 @@ object PlotUtils
       else if(uniqueDatasetsAndYaxes.size == size){ series => series.dataset+"_"+series.y }
       else if(uniqueDatasetsAndXaxes.size == size){ series => series.dataset+"_"+series.x }
       else if(uniqueAxes.size == size)            { series => series.x+"_"+series.y }
-      else                                        { series => series.dataset+"_"+series.x+"_"+series.y+scala.util.Random.nextInt(10000).toString()}
+      else                                        { series => series.dataset+"_"+series.x+"_"+series.y}
 
     def seriesName(series: Series): String = 
       series.name.getOrElse { seriesLabel(series) }
@@ -255,10 +253,6 @@ object PlotUtils
       series.map { _.minY }.min
     lazy val maxY = 
       series.map { _.maxY }.max
-    lazy val minSeqAgg = 
-      series.map { series => series.aggregateSeries(series) }.map { _.minY }.min
-    lazy val maxSeqAgg =
-      series.map { series => series.aggregateSeries(series) }.map { _.maxY }.max
 
     lazy val xDomainRequiresOffset =
       if(minX > 0){ 
@@ -302,7 +296,7 @@ object PlotUtils
       series.flatMap { _.vegaRegression(this) }
 
     def aggregateSeries: SeriesList = {
-      val aggSeries = series.map { series => series.aggregateSeries(series) }
+      val aggSeries = series.map { series => series.aggregateSeries() }
       SeriesList(aggSeries)
     }
     
@@ -319,15 +313,6 @@ object PlotUtils
         val name = seriesName(data)
         VegaMark(
           VegaMarkType.Group,
-          // from = Some(VegaFrom(
-          //   data = name,
-          //   facet = Some(VegaFacet(
-          //     name = "facet", 
-          //     data = name, 
-          //     groupby = Some(data.x)
-          //   ))),
-
-          // ),
           marks = Some(simpleMarks(markType, tooltip, fill, opacity)),
           encode = Some(VegaMarkEncodingGroup(
             // 'enter' defines data in the initial state.
