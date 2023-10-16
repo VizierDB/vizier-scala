@@ -61,7 +61,6 @@ object PlotUtils
 
 
     def aggregateSeries(series: Series): Series = {
-
       val aggExprs = series.dataframe.columns.flatMap {
         case colName if colName == series.y =>
           // For the column to sum, use the 'sum' aggregation.
@@ -73,7 +72,6 @@ object PlotUtils
           // For all other columns, preserve the first entry.
           Some(first(colName).as(colName))
       }
-
       // Apply the aggregation expressions to the DataFrame.
       val aggDataframe = series.dataframe
       .groupBy(series.x)
@@ -180,11 +178,7 @@ object PlotUtils
   )
   {
     val size = series.size
-    val seqAgg = series.map { series => series.aggregateSeries(series)}
-    val minSeqAgg = seqAgg.map {_.minY}.min
-    val maxSeqAgg = seqAgg.map {_.maxY}.max
     
-
     def uniqueDatasets = 
       series.map { _.dataset }.toSet
     def uniqueXAxes = 
@@ -258,6 +252,10 @@ object PlotUtils
       series.map { _.minY }.min
     lazy val maxY = 
       series.map { _.maxY }.max
+    lazy val minSeqAgg = 
+      series.map { series => series.aggregateSeries(series) }.map { _.minY }.min
+    lazy val maxSeqAgg =
+      series.map { series => series.aggregateSeries(series) }.map { _.maxY }.max
 
     lazy val xDomainRequiresOffset =
       if(minX > 0){ 
