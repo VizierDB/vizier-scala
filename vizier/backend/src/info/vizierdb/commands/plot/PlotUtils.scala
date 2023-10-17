@@ -16,10 +16,13 @@ import info.vizierdb.artifacts.VegaValueReference
 import info.vizierdb.artifacts.VegaTransform
 import info.vizierdb.artifacts.VegaRegressionMethod
 import org.apache.spark.sql.types.DoubleType
+import org.apache.spark.sql.Column
+import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
 
 object PlotUtils
 {
   val MAX_RECORDS = 10000
+  val CDF_ATTR = "CDF"
 
   case class Series(
     val dataset: String,
@@ -126,6 +129,71 @@ object PlotUtils
       dataframe = dataframe,
       regression = regression,
       name = name
+    )
+  }
+
+  def makeCDF(
+    context: ExecutionContext,
+    datasetName: String, 
+    xIndex: Int, 
+    filter: Option[String],
+    name: Option[String] = None,
+  ): Series =
+  {
+    var dataframe = context.dataframe(datasetName)
+
+    // Apply the filter if provided
+    filter match {
+      case None | Some("") => ()
+      case Some(filter) => {
+        dataframe = dataframe.filter(filter)
+      }
+    }
+
+    val count = dataframe.count()
+
+    // Make sure the x and y columns are numeric
+    dataframe = dataframe.select(
+      dataframe.columns.zipWithIndex.map { case (col, idx) =>
+        if(idx == xIndex){
+          dataframe(col).cast(DoubleType)
+        } else { dataframe(col) }
+      }:_*
+    )
+
+    // Sort the data as appropriate
+    dataframe = dataframe.orderBy(
+      dataframe.columns(xIndex),
+    )
+
+    val attrs = dataframe.schema.names.toSet
+    val cdf_attr: String = 
+      if(attrs contains CDF_ATTR){
+        var i = 1
+        while( attrs contains s"${CDF_ATTR}_$i" ){
+          assert(i <= dataframe.schema.size)
+          i += 1
+        }
+        s"${CDF_ATTR}_$i"
+      } else { CDF_ATTR }
+
+    dataframe = AnnotateWithSequenceNumber(dataframe, cdf_attr)
+
+    dataframe = dataframe.select(
+      dataframe.columns.map { col =>
+        if(col == cdf_attr){ 
+          (dataframe(col).cast(DoubleType) / count).as(cdf_attr)
+        } else { dataframe(col) }
+      }:_*
+    )
+
+    PlotUtils.Series(
+      dataset = datasetName,
+      x = dataframe.columns(xIndex),
+      y = cdf_attr,
+      dataframe = dataframe,
+      regression = None,
+      name = name,
     )
   }
 

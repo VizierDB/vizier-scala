@@ -196,6 +196,7 @@ object CommandList
     "Visualize" -> Seq(
       SpecialCommand(label = "Line",        icon = "line_plot",    packageId = "plot", commandId = "line-chart", description = "Visualize datasets as a a series of lines (with or without points)"),
       SpecialCommand(label = "Scatterplot", icon = "scatter_plot", packageId = "plot", commandId = "scatterplot", description = "Visualize datasets as a series of colored points"),
+      SpecialCommand(label = "CDF",         icon = "cdf_plot",     packageId = "plot", commandId = "cdf", description = "Generate a Cumulative Distribution Function (CDF) plot of the data"),
       SpecialCommand(label = "Map",         icon = "geo_plot",     packageId = "plot", commandId = "geo", description = "Plot a geospatial dataset on a map"),
     ),
     "Document" -> Seq(

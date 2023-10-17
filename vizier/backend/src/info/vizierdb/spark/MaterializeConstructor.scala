@@ -12,6 +12,7 @@ import info.vizierdb.types._
 import info.vizierdb.filestore.Filestore
 import info.vizierdb.Vizier
 import info.vizierdb.catalog.Artifact
+import com.typesafe.scalalogging.LazyLogging
 
 case class MaterializeConstructor(
   input: Identifier,
@@ -22,11 +23,13 @@ case class MaterializeConstructor(
   options: Map[String,String],
 )
   extends DataFrameConstructor
+  with LazyLogging
 {
   def construct(
     context: Identifier => Artifact
   ): DataFrame = 
   {
+    logger.info("In Materialize Constructor")
     var parser = Vizier.sparkSession.read.format(format)
     for((option, value) <- options){
       parser = parser.option(option, value)
