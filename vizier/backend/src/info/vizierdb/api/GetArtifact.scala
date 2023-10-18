@@ -17,8 +17,9 @@ package info.vizierdb.api
 import scalikejdbc._
 import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
-
+import play.api.libs.json.JsArray
 import info.vizierdb.catalog.Artifact
+import info.vizierdb.util.ExperimentalOptions
 import info.vizierdb.types.{ Identifier, ArtifactType }
 import org.mimirdb.caveats.Caveat
 import info.vizierdb.spark.caveats.CaveatFormat._
@@ -42,6 +43,19 @@ object GetArtifact
         expecting.isEmpty || expecting.get.equals(artifact.t)
       }
 
+  /*
+   This is where the Original Vizier data profiler method will be placed 
+  */
+  // Never run the profiler unless True
+  // run the profiler before the return {} statement
+  // make sure when you run the profiler then you set all the stuff using updateDatasetProperty 
+  // i.e.:
+  /*
+      "is_profiler" : [profiler1, profiler2, profiler3, ...] <- verify this contains the profiler used
+      "column" : [..., ..., ...]
+      "count": [..., ..., ...]
+  */
+
   def apply(
     projectId: Identifier,
     artifactId: Identifier,
@@ -64,6 +78,14 @@ object GetArtifact
             limit = limit, 
             forceProfiler = forceProfiler,
             name = name.getOrElse { null },
+            // histogram code below <-
+
+            // artifact datasetData
+            /*
+            - artifact has methods [update dataset property, dataset property]
+            - allow to update and retrieve properties
+            - add specific property called "profile" or use 
+            */
           )
 
           // The parens below are part of the magic... artifact.describe()
@@ -77,7 +99,6 @@ object GetArtifact
         ErrorResponse.noSuchEntity
     }
   }
-
   def typed(
     expectedType: ArtifactType.T
   )(

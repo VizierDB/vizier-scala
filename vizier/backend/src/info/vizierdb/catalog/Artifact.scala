@@ -35,6 +35,7 @@ import info.vizierdb.spark.SparkSchema.fieldFormat
 import org.apache.spark.sql.AnalysisException
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.akka.VizierServer
+import info.vizierdb.profiler.DataProfiler
 
 case class Artifact(
   id: Identifier,
@@ -248,6 +249,34 @@ case class Artifact(
                  Map(id -> this), 
                  Artifact.get(_:Identifier)
                )
+
+    
+    val df = dataframe(session)()
+    println(datasetDescriptor.properties)
+    //println("this is the dataframe from Artifact.scala: ", df)
+    //println("this is the descriptor: ", descriptor)
+    println(datasetDescriptor.properties.get("is_profiled"))
+    //println(DataProfiler.apply(df))
+    
+    // if the profiler is false, then run the profiler and turn it into true
+    // Check if "is_profiled" is present and set it to true
+    val updatedProperties = datasetDescriptor.properties.get("is_profiled") match {
+      case Some(jsValue) if jsValue.isInstanceOf[JsBoolean] =>
+        // Update the property to true
+        println(DataProfiler.apply(df)) // applying data profiler
+        datasetDescriptor.properties + ("is_profiled" -> JsBoolean(true))
+      case _ =>
+        // "is_profiled" property is not present or not a JsBoolean, so add it
+        datasetDescriptor.properties + ("is_profiled" -> JsBoolean(true))
+    }
+
+    // Create a new datasetDescriptor with the updated properties
+    val updatedDatasetDescriptor = datasetDescriptor.copy(properties = updatedProperties)
+    replaceData(Json.toJson(updatedDatasetDescriptor))
+
+    
+
+      
     return { () => 
       try {
         QueryWithCaveats(
@@ -311,7 +340,19 @@ case class Artifact(
   def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Unit =
   {
     assert(t.equals(ArtifactType.DATASET))
-    replaceData(Json.toJson(datasetDescriptor.withProperty(name -> value)))
+    // adding is_profiled here to make sure that the dataset has been profiled or not
+    // First, get the updated datasetDescriptor with the new property
+    val updatedDescriptor = datasetDescriptor.withProperty(name -> value)
+
+    // Now, add the is_profiled key to the properties of the updatedDescriptor
+    val updatedProperties = updatedDescriptor.properties + ("is_profiled" -> JsBoolean(false))
+    
+    // Update the descriptor with the modified properties
+    val is_profiledProperty = updatedDescriptor.copy(properties = updatedProperties)
+    // currently profilers is only one, I will NEED TO MAKE IT INTO MULTIPLE PROFILERS LATER!!!
+  
+    // apply the updated version
+    replaceData(Json.toJson(is_profiledProperty))
   }
 
   /**
