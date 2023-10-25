@@ -138,6 +138,9 @@ class RowCache[T](
   def apply(idx: Long): Option[T] = 
     page(pageOf(idx))(idx)
 
+  def clear(): Unit =
+    cache.clear()
+
   /**
    * A wrapper around one page of cached data
    * @param  start      The first index of the data page.
@@ -226,14 +229,14 @@ class RowCache[T](
       def localIdx = (idx - start).toInt
       assert(localIdx >= 0)
       assert(localIdx < BUFFER_PAGE)
-      println(s"Fetch: $idx -> $localIdx (partial = $partial; size = ${data.map { _.size.toString }.getOrElse { "unloaded" }})")
+      // println(s"Fetch: $idx -> $localIdx (partial = $partial; size = ${data.map { _.size.toString }.getOrElse { "unloaded" }})")
       if(data.isEmpty || (partial && data.get.size <= localIdx)){ 
         // If this is a partial or data hasn't been loaded, trigger a full load
         tryToLoadData()
         return None
       } else {
         // If we have the data, return it
-        assert(localIdx < data.get.size)
+        assert(localIdx < data.get.size, s"Internal Error, rowCache retrieving element at block-local position $localIdx when only ${data.get.size} elements exist in the block")
         return Some(data.get(localIdx))
       }
     }

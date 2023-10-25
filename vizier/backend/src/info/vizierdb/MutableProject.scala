@@ -448,13 +448,15 @@ class MutableProject(
    * 
    * The sql query is evaluated synchronously.
    */
-  def sql(scriptTarget: (String, String)): Unit =
+  def sql(scriptTarget: (String, String), waitForResult: Boolean = true): Unit =
   {
     append("sql", "query")(
       "source" -> scriptTarget._1,
       "output_dataset" -> Option(scriptTarget._2)
     )
-    waitUntilReadyAndThrowOnError
+    if(waitForResult){
+      waitUntilReadyAndThrowOnError
+    }
   }
 
   /**

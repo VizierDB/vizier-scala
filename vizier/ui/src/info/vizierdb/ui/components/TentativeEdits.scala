@@ -248,9 +248,10 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
   ): TentativeModule =
   {
+    logger.trace("Prepending tentative module")
     val module = 
       new TentativeModule(this, nextTempElementDomId, defaultPackageList)
-    module.linkElementAfterSelf(first)
+    module.linkSelfToHead(first)
     first = module
     watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
     return module

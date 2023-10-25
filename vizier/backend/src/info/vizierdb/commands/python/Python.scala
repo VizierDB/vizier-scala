@@ -290,7 +290,8 @@ object Python extends Command
                 val connection = ArrowQuery(
                   QueryWithCaveats.build(
                     CatalogDB.withDB { implicit s => artifact.dataframe }(),
-                    true
+                    includeCaveats = false,
+                    includeRowids = false,
                   )
                 )
 

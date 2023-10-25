@@ -152,7 +152,17 @@ object UnloadDataset extends Command
         )
     )
 
-    if(useTempFile) { logger.trace("I think we should use a temporary file") }
+    if(useTempFile) { logger.info("I think we should use a temporary file") }
+    else { 
+      logger.info("Not using a tempfile because..."+
+        Seq(
+          if(!TEMPFILE_FORMATS(format)) { Some("Not a tempfile format") } else { None },
+          if(!url.isEmpty) { Some("Not outputting to an artifact") } else { None },
+          if((url.get.getProtocol() != "file")) { Some("Not outputting to the local filesystem") } else { None },
+
+        ).flatten.map { "\n"+_ }.mkString
+      )
+    } 
 
     val df: DataFrame = 
       {
@@ -225,21 +235,24 @@ object UnloadDataset extends Command
     }
 
     // Copy the target file to the right place and clean up the temp dir
-    if(tempDir.isDefined){
-      val allFiles = tempDir.get.listFiles
-      val dataFiles = allFiles.filter { _.getName.startsWith("part-") }
-      assert(dataFiles.size == 1, s"Spark generated ${dataFiles.size} data files: ${dataFiles.mkString(", ")}")
-      val artifact = 
-        dataFiles.head.renameTo(
-          url.map { u => new File(u.getPath) }.getOrElse {
-            outputArtifactIfNeeded.get.absoluteFile
-          }
-        )
-      for(f <- allFiles){
-        if(f.exists){ f.delete }
-      }
-      tempDir.get.delete
-    }
+    val finalOutputFile: URL = 
+      if(tempDir.isDefined){
+        val allFiles = tempDir.get.listFiles
+        val dataFiles = allFiles.filter { _.getName.startsWith("part-") }
+        assert(dataFiles.size == 1, s"Spark generated ${dataFiles.size} data files: ${dataFiles.mkString(", ")}")
+        val finalOutputFile = 
+          url.map { u => new File(u.getPath) }
+             .getOrElse {
+                outputArtifactIfNeeded.get.absoluteFile
+              }
+        logger.info(s"Moving ${dataFiles.head} to $finalOutputFile")
+        dataFiles.head.renameTo(finalOutputFile)
+        for(f <- allFiles){
+          if(f.exists && f != dataFiles.head){ f.delete }
+        }
+        tempDir.get.delete
+        new URL("file://" + finalOutputFile.getAbsolutePath())
+      } else { file }
 
     outputArtifactIfNeeded match {
       case Some(artifact) => 
@@ -247,7 +260,7 @@ object UnloadDataset extends Command
           s"<div><a href='${Vizier.urls.downloadFile(context.projectId, artifact.id)}' download='${datasetName}'>Download ${datasetName}</a></div>" 
         )
       case None => 
-         context.message("Export Successful")
+         context.message(s"Export to $finalOutputFile Successful")
     }
 
   }

@@ -10,7 +10,6 @@
 /.bsp
 __pycache__
 /bin/vizier
-/src/main/resources/__pycache__
 .python-version
 /out
 /node_modules
@@ -23,7 +22,7 @@ __pycache__
 /vizier/ui/src/info/vizierdb/ui/network/API.scala
 /mill.*
 /.ammonite
-/vizier/shared/resources/vizier.swagger
-/vizier/shared/resources/swagger
+/vizier/resources/vizier.swagger
+/vizier/resources/swagger
 /.vizier-cache
 /package-lock.json

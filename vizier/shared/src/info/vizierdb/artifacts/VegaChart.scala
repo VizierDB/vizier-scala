@@ -213,6 +213,91 @@ object VegaFileFormat
   implicit val format: Format[VegaFileFormat] = Json.format
 }
 
+
+sealed trait VegaRegressionMethod
+{
+  def key: String
+}
+object VegaRegressionMethod
+{
+  case object Linear extends VegaRegressionMethod
+  {
+    def key = "linear"
+  }
+  case object Logarithmic extends VegaRegressionMethod
+  {
+    def key = "log"
+  }
+  case object Exponential extends VegaRegressionMethod
+  {
+    def key = "exp"
+  }
+  case object Power extends VegaRegressionMethod
+  {
+    def key = "pow"
+  }
+  case object Quadratic extends VegaRegressionMethod
+  {
+    def key = "qua"
+  }
+
+  val all = Seq(
+    Linear,
+    Logarithmic,
+    Exponential,
+    Power,
+    Quadratic
+  )
+  val byKey =
+    all.map { x => x.key -> x }.toMap
+
+  def apply(name: String): Option[VegaRegressionMethod] = 
+    byKey.get(name)
+
+  implicit val format = Format[VegaRegressionMethod](
+    new Reads[VegaRegressionMethod] {
+      def reads(j: JsValue): JsResult[VegaRegressionMethod] = 
+        byKey.get(j.as[String]).map { JsSuccess (_) }.getOrElse { JsError() } 
+    },
+    new Writes[VegaRegressionMethod] {
+      def writes(j: VegaRegressionMethod): JsValue =
+        JsString(j.key)
+    }
+  ) 
+}
+
+
+
+sealed trait VegaTransform
+
+object VegaTransform
+{
+
+  case class Regression(
+    x:String,
+    y:String,
+    method: VegaRegressionMethod,
+    `type`: String = "regression"
+  ) extends VegaTransform
+  
+  implicit val regressionFormat: Format[Regression] = Json.format
+  implicit val format = Format[VegaTransform](
+    new Reads[VegaTransform]{ 
+      def reads(j: JsValue): JsResult[VegaTransform] =
+        (j \ "type").as[String] match {
+          case "regression" => JsSuccess(j.as[Regression])
+          case _ => JsError()
+        }
+    },
+    new Writes[VegaTransform]{
+      def writes(j: VegaTransform): JsValue =
+        j match {
+          case r:Regression => Json.toJson(r)
+        }
+    }
+  )
+}
+
 /**
  * A raw Vega Dataset
  * 
@@ -232,7 +317,7 @@ case class VegaData(
   values: Option[Seq[JsObject]] = None,
   async: Boolean = false,
   // on: Seq[VegaTrigger]
-  // transform: Seq[VegaTransform]
+  transform: Option[Seq[VegaTransform]] = None
 )
 object VegaData
 {
@@ -241,6 +326,8 @@ object VegaData
 
   implicit val format: Format[VegaData] = Json.format
 }
+
+
 
 /**
  * A vega scale type
@@ -1541,13 +1628,107 @@ object VegaFrom
   implicit val format: Format[VegaFrom] = Json.format
 }
 
-case class VegaAxisEncoding(
-  scale: String,
-  field: String
-)
-object VegaAxisEncoding
+/**
+ * A Vega Value Reference
+ * 
+ * See: https://vega.github.io/vega/docs/types/#Value
+ */
+sealed trait VegaValueReference
 {
-  implicit val format: Format[VegaAxisEncoding] = Json.format
+  def scale(s: String) = 
+    VegaValueReference.ScaleTransform(s, this)
+}
+object VegaValueReference
+{
+  /**
+   * Basic values
+   */
+  case class Literal(
+    value: JsValue,
+  ) extends VegaValueReference
+  /**
+   * References to fields
+   */
+  case class Field(
+    field: String,
+  ) extends VegaValueReference
+  case class Signal(
+    signal: String
+  ) extends VegaValueReference
+  /**
+   * Extend the target value with a scale transformation
+   */
+  case class ScaleTransform(
+    scale: String,
+    target: VegaValueReference
+  ) extends VegaValueReference
+
+  implicit val fieldFormat: Format[Field] = Json.format
+  implicit val valueFormat: Format[Literal] = Json.format
+  implicit val signalFormat: Format[Signal] = Json.format
+  implicit val scaleFormat: Format[ScaleTransform] = Format[ScaleTransform](
+    new Reads[ScaleTransform]{
+      def reads(j: JsValue): JsResult[ScaleTransform] =
+        j match {
+          case JsObject(elems) if elems contains "scale" => 
+            JsSuccess(
+              ScaleTransform(elems("scale").as[String], 
+                format.reads(
+                  JsObject(elems - "scale")
+                ).get
+              )
+            )
+          case _ => JsError()
+        }
+    },
+    new Writes[ScaleTransform]{
+      def writes(j: ScaleTransform): JsValue = 
+        Json.toJson(j.target) match {
+          case JsObject(elems) => 
+            JsObject(elems ++ Map("scale" -> JsString(j.scale)))
+          case x => 
+            JsObject(Map("scale" -> JsString(j.scale), "value" -> x))
+        }
+    }
+  )
+  implicit val format: Format[VegaValueReference] = Format[VegaValueReference](
+    new Reads[VegaValueReference]{
+      def reads(j: JsValue): JsResult[VegaValueReference] =
+        JsSuccess(
+          j match {
+            case JsObject(elems) =>
+              if(elems contains "scale"){
+                j.as[ScaleTransform]
+              } else if(elems contains "field"){
+                j.as[Field]
+              } else if(elems contains "signal"){
+                j.as[Signal]
+              } else {
+                j.as[Literal]
+              }
+            case _ => j.as[Literal]
+          }
+        )
+    },
+    new Writes[VegaValueReference]{
+      def writes(j: VegaValueReference): JsValue =
+        j match {
+          case j:Field => Json.toJson(j)
+          case j:Literal => Json.toJson(j)
+          case j:ScaleTransform => Json.toJson(j)
+          case j:Signal => Json.toJson(j)
+        }
+    }
+  )
+}
+
+//Signal Attribute
+case class VegaSignalEncoding(
+  signal: String
+)
+object VegaSignalEncoding
+{
+  implicit val format: Format[VegaSignalEncoding] = Json.format
 }
 
 /**
@@ -1564,11 +1745,15 @@ object VegaAxisEncoding
  * be a clear documentation of what's allowed anywhere.
  * 
  * TODO: Track down the full schema and plug it in here.
- */ 
+ */
+
 case class VegaMarkEncoding(
-  x: Option[VegaAxisEncoding] = None,
-  y: Option[VegaAxisEncoding] = None,
-  stroke: Option[VegaAxisEncoding] = None,
+  x: Option[VegaValueReference] = None,
+  y: Option[VegaValueReference] = None,
+  stroke: Option[VegaValueReference] = None,
+  fill: Option[VegaValueReference] = None,
+  tooltip: Option[VegaValueReference] = None,
+  opacity: Option[Double] = None
 )
 object VegaMarkEncoding
 {

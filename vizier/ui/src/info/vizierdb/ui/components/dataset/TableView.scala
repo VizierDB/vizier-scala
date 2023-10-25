@@ -175,7 +175,8 @@ class TableView(
         val w = data.columnWidthInPixels(i)
         root.appendChild(data.cellAt(row, i, w, position))
         position += w
-      }
+      } 
+      OnMount.trigger(root)
     }
 
   }

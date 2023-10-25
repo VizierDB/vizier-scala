@@ -164,6 +164,7 @@ object GetArtifact
     def apply(
       projectId: Identifier,
       artifactId: Identifier,
+      name: Option[String] = None
     ): Response =
     {
       getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match {
@@ -197,7 +198,8 @@ object GetArtifact
 
           FileResponse(
             csvFile, 
-            "dataset_"+artifactId+".csv", 
+            name.map { _+".csv" }
+                .getOrElse { "dataset_"+artifactId+".csv" }, 
             ContentType.parse("text/csv").right.get,
             () => { 
               tempFile.listFiles

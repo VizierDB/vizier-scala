@@ -12,6 +12,9 @@ import info.vizierdb.util.StringUtils
 import info.vizierdb.ui.components.dataset.CaveatModal
 import info.vizierdb.ui.rxExtras.RxBuffer
 import info.vizierdb.serialized
+import info.vizierdb.ui.network.BranchWatcherAPIProxy
+import info.vizierdb.ui.network.SpreadsheetTools
+import info.vizierdb.ui.widgets.Tooltip
 
 class TableOfContents(
   projectId: Identifier,
@@ -92,6 +95,10 @@ class TableOfContents(
               }
     )
 
+  def api:BranchWatcherAPIProxy =
+    Vizier.project.now.get
+          .branchSubscription.get
+          .Client
 
 
   val artifactNodes = 
@@ -111,14 +118,18 @@ class TableOfContents(
                   }
                   .sortBy { _._1 }
                   .map { case (name, artifact, element) => 
+                    val tooltip = span(name).render
+
                     div(`class` := "artifact",
-                      onmouseover := { _:dom.Event => 
+                      onmouseover := { evt:dom.MouseEvent => 
+                        if(name.length >= 12) { Tooltip.showSoon(evt)(tooltip) }
                         element match { 
                           case module:Module => module.highlight() = true
                           case _ => ()
                         }
                       },
                       onmouseout := { _:dom.Event => 
+                        if(name.length >= 12) { Tooltip.hideSoon() }
                         element match { 
                           case module:Module => module.highlight() = false
                           case _ => ()
@@ -148,9 +159,12 @@ class TableOfContents(
 
                               // Spreadsheet view
                               a(
-                                href := Vizier.links.spreadsheet(projectId, artifact.id), 
+                                // href := Vizier.links.spreadsheet(projectId, artifact.id), 
                                 target := "_blank",
-                                FontAwesome("table")
+                                FontAwesome("table"),
+                                onclick := { _:dom.Event =>
+                                  SpreadsheetTools.appendNewSpreadsheet(name)
+                                }
                               )
                             )
 
@@ -174,6 +188,7 @@ class TableOfContents(
                                 Vizier.api.artifactGetCsvURL(
                                   projectId,
                                   artifact.id,
+                                  Some(name)
                                 )
                               case ArtifactType.FILE =>
                                 Vizier.api.artifactGetFileURL(

@@ -65,6 +65,7 @@ object SimpleChart extends Command
 
 
   def name: String = "Simple Chart"
+  override def hidden: Boolean = true
   def parameters: Seq[Parameter] = Seq(
     DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
     StringParameter(id = PARAM_NAME, name = "Chart Name", required = false),

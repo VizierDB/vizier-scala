@@ -5,6 +5,7 @@ import org.scalajs.dom.html.Element
 import info.vizierdb.serialized.PackageCommand
 import rx._
 import info.vizierdb.ui.components.editors.CodeModuleSummary
+import info.vizierdb.ui.components.editors.SpreadsheetModuleSummary
 
 trait ModuleSummary
 {
@@ -20,9 +21,10 @@ object ModuleSummary
 {
   def apply(module: Module)(implicit owner: Ctx.Owner): Option[ModuleSummary] =
     (module.subscription.packageId, module.subscription.commandId) match {
-      case ("sql", "query")     => Some(new CodeModuleSummary(module, "sql"))
-      case ("script", "python") => Some(new CodeModuleSummary(module, "python"))
-      case ("script", "scala")  => Some(new CodeModuleSummary(module, "scala"))
+      case ("sql", "query")        => Some(new CodeModuleSummary(module, "sql"))
+      case ("script", "python")    => Some(new CodeModuleSummary(module, "python"))
+      case ("script", "scala")     => Some(new CodeModuleSummary(module, "scala"))
+      case ("data", "spreadsheet") => Some(new SpreadsheetModuleSummary(module))
       case _ => None
     }
 }

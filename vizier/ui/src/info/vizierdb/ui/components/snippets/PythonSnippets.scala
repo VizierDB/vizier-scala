@@ -8,7 +8,7 @@ object PythonSnippets extends SnippetsBase
                                    |ds = vizierdb['ARTIFACT_NAME'""".stripMargin,
 
     "Get Dataset Dataframe"   -> """# Get read-only pandas dataframe object for dataset with given name.');
-                                   |df = vizierdb.get_dataset_frame('UNIQUE_DS_NAME')""".stripMargin,
+                                   |df = vizierdb.get_data_frame('UNIQUE_DS_NAME')""".stripMargin,
 
     "Print Column Names"      -> """# Iterate over list of dataset columns and print column name
                                    |for col in ds.columns:

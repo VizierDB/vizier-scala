@@ -94,6 +94,28 @@ case class Branch(
     update(position, Module.make(packageId, commandId, properties = properties)(args:_*))
 
   /**
+   * Update the branch head by creating a module and replacing an existing cell with it
+   * 
+   * @param moduleId        The id of the module of the cell to modify
+   * @param packageId       The package id of the module's command
+   * @param commandId       The command id of the module's command
+   * @param properties      Initial properties for the newly created module
+   * @param args            The module's arguments
+   * @return                The updated Branch object and the new head [[Workflow]]
+   */
+  def updateById(moduleId: Identifier, packageId: String, commandId: String, properties: JsObject = Json.obj())
+            (args: (String, Any)*)
+            (implicit session: DBSession): (Branch, Workflow) =
+  {
+    update(
+      position = head.cellByModuleId(moduleId).get.position,
+      packageId = packageId,
+      commandId = commandId,
+      properties = properties
+    )(args:_*)
+  }
+
+  /**
    * Update the branch head by appending a module to the workflow
    * 
    * @param module          The module to append
