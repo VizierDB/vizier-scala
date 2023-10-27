@@ -16,7 +16,7 @@ $color_primary:                #214478;
 $color_primary_highlight:      #2e6098;
 $color_primary_faded:          #689eda;
 
-$color_done:                   #488ec8; // #36338d;
+$color_done:                   $color_primary; // #488ec8; // #36338d;
 $color_error:                  #9d284c;
 $color_frozen:                 #96c4e3;
 $color_running:                #2d93a5;
@@ -36,6 +36,7 @@ $color_message_markdown:       #eee;
 $color_message_markdown_bg:    #f9f9f9;
 
 $color_message_text:           #eee;
+$color_message_dark:           #333;
 $color_message_text_bg:        #f9f9f9;
 
 $color_row_highlight:          #f3f3f3;
@@ -680,13 +681,33 @@ $menu_height: 32px;
         flex-grow: 0;
         flex-shrink: 0;
         border-top: solid 1px white;
-        opacity: 0.15;
         display: flex;
         flex-direction: column;
         transition-property: opacity;
         transition-duration: 0.2s;
+        position: relative;
 
-        &:hover { opacity: 1.0 }
+        // Hack to de-emphasize bg colors
+        &:before
+        {
+          display: block;
+          content: " ";
+          position: absolute;
+          z-index: -1;
+          background: $color_done;
+          opacity: 0.15;
+          top:0;
+          right:0;
+          left:0;
+          bottom:0;
+        }
+
+        &:hover { 
+          &:before {
+            opacity: 1.0;
+          }
+          button { color: white; } 
+        }
         
         >*
         {
@@ -705,7 +726,7 @@ $menu_height: 32px;
           border: none;
           border-bottom: solid 1px white;
           background-color: inherit;
-          color: white;
+          color: $color_message_dark;
           cursor: pointer;
           // transition-property: transform;
           // transition-duration: 0.1s;
@@ -725,7 +746,6 @@ $menu_height: 32px;
           display: flex;
           flex-direction: row;
           height: $menu_width;
-          background-color: inherit;
 
           button { 
             flex-grow: 0; 
@@ -742,14 +762,18 @@ $menu_height: 32px;
             &.size5 { width: $menu_width * 6 }
             &.size6 { width: $menu_width * 7 }
 
-            button.to_confirm
-            { 
-              color: $color_button_abort; 
+            button {
+              color: white;
             }
-            button.confirm
-            { 
-              color: $color_button_confirm; 
-            }
+
+            // button.to_confirm
+            // { 
+            //   color: $color_button_abort; 
+            // }
+            // button.confirm
+            // { 
+            //   color: $color_button_confirm; 
+            // }
           }
           &.closed { 
             width: $menu_width; 
@@ -760,25 +784,35 @@ $menu_height: 32px;
         }
       }
 
-      &.highlight       { .menu { opacity: 1.0 } }
-      &.done_state      { .menu { background-color: $color_done; }
-                          .state {           color: $color_done }}
-      &.error_state     { .menu { background-color: $color_error; }
-                          .state {           color: $color_error }}
-      &.waiting_state   { .menu { background-color: $color_waiting; }
-                          .state {           color: $color_waiting }}
-      &.stale_state     { .menu { background-color: $color_waiting; }
-                          .state {           color: $color_waiting }}
-      &.cancelled_state { .menu { background-color: $color_error; }
-                          .state {           color: $color_error }}
-      &.frozen_state    { .menu { background-color: $color_frozen; }
-                          .state {           color: $color_frozen }}
-      &.running_state   { .menu { background-color: $color_running; }
-                          .state {           color: $color_running }}
-      &.tentative       { .menu { background-color: $color_tentative; }
-                          .state {           color: $color_tentative }}
-      &.inspector       { .menu { background-color: $color_inspector; }
-                          .state {           color: $color_inspector }}
+      &.highlight       { .menu { &:before { opacity: 1.0; }
+                                  button { color: white; background-color: inherit; } } }
+      &.done_state      { .menu:before {   background-color: $color_done; }
+                          .state {                    color: $color_done; }
+                          .pop_up_container.open { background-color: $color_done; }}
+      &.error_state     { .menu:before {   background-color: $color_error; }
+                          .state {                    color: $color_error; }
+                          .pop_up_container.open { background-color: $color_error; }}
+      &.waiting_state   { .menu:before {   background-color: $color_waiting; }
+                          .state {                    color: $color_waiting; }
+                          .pop_up_container.open { background-color: $color_waiting; }}
+      &.stale_state     { .menu:before {   background-color: $color_waiting; }
+                          .state {                    color: $color_waiting; }
+                          .pop_up_container.open { background-color: $color_waiting; }}
+      &.cancelled_state { .menu:before {   background-color: $color_error; }
+                          .state {                    color: $color_error; }
+                          .pop_up_container.open { background-color: $color_error; }}
+      &.frozen_state    { .menu:before {   background-color: $color_frozen; }
+                          .state {                    color: $color_frozen; }
+                          .pop_up_container.open { background-color: $color_frozen; }}
+      &.running_state   { .menu:before {   background-color: $color_running; }
+                          .state {                    color: $color_running; }
+                          .pop_up_container.open { background-color: $color_running; }}
+      &.tentative       { .menu:before {   background-color: $color_tentative; }
+                          .state {                    color: $color_tentative; }
+                          .pop_up_container.open { background-color: $color_tentative; }}
+      &.inspector       { .menu:before {   background-color: $color_inspector; }
+                          .state {                    color: $color_inspector; }
+                          .pop_up_container.open { background-color: $color_inspector; }}
 
       &.tentative
       {
