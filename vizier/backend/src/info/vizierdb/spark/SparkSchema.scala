@@ -4,6 +4,7 @@ import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
+import org.apache.spark.sql.sedona_sql.UDT.RasterUDT
 import org.apache.spark.sql.types.UDTRegistration
 import info.vizierdb.spark.udt.ImageUDT
 import org.apache.spark.mllib.linalg.VectorUDT
@@ -58,6 +59,7 @@ object SparkSchema {
       case "int" => IntegerType
       case "real" => DoubleType
       case "geometry" => GeometryUDT
+      case "raster" => RasterUDT
       case "vector" => vectorSingleton
       case "binary" => BinaryType
       case "image/png" => ImageUDT
@@ -79,6 +81,7 @@ object SparkSchema {
         // any subclass of UserDefinedType seems to match any other
         // subclass of the same.  Need to use an explicit isInstanceOf
       case _ if t.isInstanceOf[GeometryUDT] => "geometry"
+      case _ if t.isInstanceOf[RasterUDT] => "raster"
       case _ if t.isInstanceOf[VectorUDT] => "vector"
       case _ if t.isInstanceOf[ImageUDT] => "image/png"
       case _ => t.typeName

@@ -11,12 +11,17 @@ import scala.util.matching.Regex
 import scala.collection.mutable.ArraySeq
 import org.apache.spark.sql.types.UDTRegistration
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
+import org.apache.spark.sql.sedona_sql.UDT.RasterUDT
 import org.locationtech.jts.geom.Geometry
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.Row
 import org.apache.sedona.core.formatMapper.FormatMapper
-import org.apache.sedona.core.enums.FileDataSplitter
+import org.apache.sedona.common.enums.FileDataSplitter
+import org.apache.sedona.common.raster.RasterOutputs
+import org.apache.sedona.common.raster.RasterConstructors
+import org.apache.sedona.common.raster.{ Serde => SedonaRasterSerde }
+import org.geotools.coverage.grid.GridCoverage2D
 import java.awt.image.BufferedImage
 import java.nio.charset.StandardCharsets
 import org.apache.spark.sql.catalyst.util.ArrayData
@@ -119,6 +124,11 @@ object SparkPrimitive
     )
   }
 
+  /**
+   * Encode the provided spark value into Json
+   * @param   k           The spark value to encode
+   * @param   t           The data type of the spark value
+   */
   def encode(k: Any, t: DataType): JsValue =
   {
     logger.trace(s"ENCODE $t: \n$k")
@@ -134,8 +144,10 @@ object SparkPrimitive
         if(t.isInstanceOf[GeometryUDT]){
           k match {
             case geom:Geometry => JsString(geom.toText)
-            case enc:ArrayData => JsString(GeometrySerializer.deserialize(enc).toText)
+            case enc:ArrayData => JsString(GeometrySerializer.deserialize(enc.toByteArray()).toText)
           }
+        } else if(t.isInstanceOf[RasterUDT]){
+          JsString(base64Encode(SedonaRasterSerde.serialize(k.asInstanceOf[GridCoverage2D])))
         } else if(t.isInstanceOf[ImageUDT]){
           JsString(base64Encode(ImageUDT.serialize(k.asInstanceOf[BufferedImage]).asInstanceOf[Array[Byte]]))
         } else if(t.getClass().getName() == "org.apache.spark.ml.linalg.VectorUDT"
@@ -217,6 +229,8 @@ object SparkPrimitive
 
         if(t.isInstanceOf[GeometryUDT]){
           geometryFormatMapper.readGeometry(k.as[String]) // parse as WKT
+        } else if(t.isInstanceOf[RasterUDT]){
+          SedonaRasterSerde.deserialize(base64Decode(k.as[String]))
         } else if(t.isInstanceOf[ImageUDT]){
           ImageUDT.deserialize(base64Decode(k.as[String]))
         } else if(t.getClass().getName() == "org.apache.spark.ml.linalg.VectorUDT"
