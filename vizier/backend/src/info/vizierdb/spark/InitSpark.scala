@@ -14,8 +14,12 @@ import org.apache.spark.ml.linalg.{SparseVector, Vector, Vectors}
 import org.apache.spark.mllib.linalg.{Vector => OldVector}
 import info.vizierdb.Vizier
 import java.io.File
+import org.apache.sedona.spark.SedonaContext
+import org.apache.spark.sql.catalyst.FunctionIdentifier
+import com.typesafe.scalalogging.LazyLogging
 
 object InitSpark
+  extends LazyLogging
 {
   def local: SparkSession =
   {
@@ -75,21 +79,43 @@ object InitSpark
     return session
   }
 
-  def initPlugins(sparkSession: SparkSession)
+  def initPlugins(sparkSession: SparkSession): SparkSession =
   {
+    var spark: SparkSession = sparkSession
     //Set credential providers for tests that load from s3
-    sparkSession.conf.set("fs.s3a.aws.credentials.provider", 
+    spark.conf.set("fs.s3a.aws.credentials.provider", 
         "com.amazonaws.auth.EnvironmentVariableCredentialsProvider,"+
         "org.apache.hadoop.fs.s3a.SharedInstanceProfileCredentialsProvider,"+
         "org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider")
-    SedonaSQLRegistrator.registerAll(sparkSession)
-    SedonaVizRegistrator.registerAll(sparkSession)
+    // SedonaSQLRegistrator.registerAll(spark)
+    // SedonaVizRegistrator.registerAll(spark)
     System.setProperty("geospark.global.charset", "utf8")
-    Caveats.registerAllUDFs(sparkSession)
+    Caveats.registerAllUDFs(spark)
     UDTRegistration.register(classOf[BufferedImage].getName, classOf[ImageUDT].getName)
 
-    sparkSession.udf.register("vector_to_array", vectorToArrayUdf)
-    sparkSession.udf.register("array_to_vector", arrayToVectorUdf)
+    spark.udf.register("vector_to_array", vectorToArrayUdf)
+    spark.udf.register("array_to_vector", arrayToVectorUdf)
+    spark = SedonaContext.create(spark)
+
+    // Rejigger Sedona's AsPNG (if present) to dump out ImageUDT-typed data
+    {
+      val registry = 
+        sparkSession.sessionState
+                    .functionRegistry
+      val as_png = FunctionIdentifier("RS_AsPNG")
+      ( registry.lookupFunction(as_png),
+        registry.lookupFunctionBuilder(as_png)
+      ) match {
+        case (Some(info), Some(builder)) =>
+          registry.dropFunction(as_png)
+          registry.registerFunction(as_png, info, 
+            (args) => SedonaPNGWrapper(builder(args))
+          )
+        case (_,_) =>
+          logger.warn("Can not override Sedona PNG class; Sedona's RS_AsPNG's output will not display properly in spreadsheets")
+      }
+    }
+    return spark
   }
 
   // For some blasted reason these are private in 
