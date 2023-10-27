@@ -8,6 +8,7 @@ import play.api.libs.json._
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.serialized
 import info.vizierdb.serializers.mlvectorFormat
+import info.vizierdb.ui.widgets.Tooltip
 
 /**
  * Logic for rendering cell data values to dom nodes
@@ -43,6 +44,11 @@ object RenderCell
             img(
               `class` := "table_image", 
               src := "data:image/png;base64,"+value.as[String], 
+              Tooltip(
+                img(`class` := "tooltip_image",
+                    src := "data:image/png;base64,"+value.as[String],
+                )
+              )
             ),
           }
         case (_, JsString("vector")) => 
