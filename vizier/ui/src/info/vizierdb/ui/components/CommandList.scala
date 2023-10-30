@@ -198,6 +198,7 @@ object CommandList
       SpecialCommand(label = "Scatterplot", icon = "scatter_plot", packageId = "plot", commandId = "scatterplot", description = "Visualize datasets as a series of colored points"),
       SpecialCommand(label = "CDF",         icon = "cdf_plot",     packageId = "plot", commandId = "cdf", description = "Generate a Cumulative Distribution Function (CDF) plot of the data"),
       SpecialCommand(label = "Map",         icon = "geo_plot",     packageId = "plot", commandId = "geo", description = "Plot a geospatial dataset on a map"),
+      SpecialCommand(label = "Test",        icon = "line_plot",   packageId = "plot", commandId = "test", description = "Test Button Editor"),
     ),
     "Document" -> Seq(
       SpecialCommand(label = "Markdown", icon = "markdown", packageId = "docs", commandId = "markdown", description = "Document your project with markdown-formatted text"),

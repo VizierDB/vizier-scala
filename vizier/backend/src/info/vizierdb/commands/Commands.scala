@@ -105,6 +105,7 @@ object Commands
     "scatterplot"  -> info.vizierdb.commands.plot.ScatterPlot,
     "cdf"          -> info.vizierdb.commands.plot.CDFPlot,
     "geo"          -> info.vizierdb.commands.plot.GeoPlot,
+    "test"         -> info.vizierdb.commands.data.TestDatasetEditor,
   )
 
   register(packageId = "sql", name = "SQL", category = "code")(
