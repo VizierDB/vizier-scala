@@ -93,7 +93,6 @@ object ScatterPlot extends Command
             yIndex      = series.get[Int](PARAM_Y),
             filter      = series.getOpt[String](PARAM_FILTER),
             sort        = false,
-            isBarChart  = false,
             regression  = series.getOpt[String](PARAM_REGRESSION).flatMap { VegaRegressionMethod(_) },
             name        = series.getOpt[String](PARAM_LABEL),
           )

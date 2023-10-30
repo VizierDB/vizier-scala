@@ -1673,7 +1673,7 @@ object VegaValueReference
   case class ScaleBandRef(
     scale: String,
     band: Option[Int]
-    )extends VegaValueReference
+  ) extends VegaValueReference
 
   implicit val fieldFormat: Format[Field] = Json.format
   implicit val valueFormat: Format[Literal] = Json.format

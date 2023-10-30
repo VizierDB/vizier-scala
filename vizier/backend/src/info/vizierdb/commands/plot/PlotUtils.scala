@@ -122,7 +122,7 @@ object PlotUtils
     yIndex: Int, 
     filter: Option[String],
     sort: Boolean,
-    isBarChart: Boolean,
+    isBarChart: Boolean = false,
     regression: Option[VegaRegressionMethod] = None,
     name: Option[String] = None,
   ): Series =
@@ -156,12 +156,6 @@ object PlotUtils
     )
   }
 
-    // Sort the data as appropriate
-    if(sort){
-      dataframe = dataframe.orderBy(
-        dataframe.columns(xIndex),
-      )
-    }
 
     PlotUtils.Series(
       dataset = datasetName,
@@ -231,7 +225,7 @@ object PlotUtils
       else if(uniqueDatasetsAndYaxes.size == size){ series => series.dataset+"_"+series.y }
       else if(uniqueDatasetsAndXaxes.size == size){ series => series.dataset+"_"+series.x }
       else if(uniqueAxes.size == size)            { series => series.x+"_"+series.y }
-      else                                        { series => series.dataset+"_"+series.x+"_"+series.y}
+      else                                        { series => series.dataset+"_"+series.x+"_"+series.y }
 
     def seriesName(series: Series): String = 
       series.name.getOrElse { seriesLabel(series) }
@@ -342,26 +336,22 @@ object PlotUtils
             else { Some(VegaValueReference.Signal("datum")) },
           opacity = 
             if(opacity >= 1.0){ None }
-            else { Some(opacity) }
+            else { Some(opacity) },
+          width = 
+            if(markType == VegaMarkType.Rect) {
+              Some(VegaValueReference.ScaleBandRef("x", band = Some(1)))
+            } else { None },
+          y2 = 
+            if(markType == VegaMarkType.Rect) {
+              Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
+            } else { None }
         )
-
-        val updatedEncoding = 
-          if(markType == VegaMarkType.Rect) {
-            encoding.copy(
-              // y = Some(VegaValueReference.Field("sum(" + data.y + ")").scale("y")),
-              width = Some(VegaValueReference.ScaleBandRef("x", band = Some(1))),
-              y2 = Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
-            )
-          } else {
-            encoding
-          }
-
         VegaMark(
           markType,
           from = Some(VegaFrom(data = name)),
           encode = Some(VegaMarkEncodingGroup(
             // 'enter' defines data in the initial state.
-            enter = Some(updatedEncoding)
+            enter = Some(encoding),
           ))
         )
       } ++
