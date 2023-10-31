@@ -76,4 +76,84 @@ class PublishArtifactSpec extends Specification with BeforeAll
 
     project.artifacts.keys must contain(IMPORT_NAME)
   }
+
+  val PROFILER_EXPORT = "profiler-test"
+  val PROFILER_IMPORT = "profiler-import"
+
+  "testing profiler is contained in artifact" >> {
+    val project = MutableProject("Profiler Testing")
+    project.load("test_data/output_with_nulls.csv", "test")
+    project.append("data", "unload")(
+      UnloadDataset.PARAM_DATASET -> "test",
+      UnloadDataset.PARAM_FORMAT -> "publish_local",
+      UnloadDataset.PARAM_OPTIONS -> Seq(
+        Map(
+          UnloadDataset.PARAM_OPTIONS_KEY -> "name",
+          UnloadDataset.PARAM_OPTIONS_VALUE -> PROFILER_EXPORT,
+        )
+      )
+    )
+    project.waitUntilReadyAndThrowOnError
+    DB.readOnly { implicit s =>
+      PublishedArtifact.getOption(PROFILER_EXPORT) must not beNone
+    }
+    val description = GetPublishedArtifact(
+      artifactName = PROFILER_EXPORT
+    )
+    val df = project.dataframe("test")
+    val art = project.artifact("test")
+    val properties = art.datasetDescriptor.properties
+
+    // double checking if is_profiled is in dataset
+    properties.contains("is_profiled") must beTrue
+    properties.get("is_profiled") must not(beNone)
+
+  }
+
+  "Profiler Information" >> {
+    val project = MutableProject("Profiler Information")
+
+    project.append("data", "load")(
+      LoadDataset.PARAM_FILE -> 
+        FileArgument(
+          url = Some(Vizier.urls.publishedArtifact(PROFILER_EXPORT).toString)
+        ),
+      LoadDataset.PARAM_NAME -> PROFILER_IMPORT,
+      LoadDataset.PARAM_FORMAT -> "publish_local"
+    )
+    project.waitUntilReadyAndThrowOnError
+
+    project.artifacts.keys must contain(PROFILER_IMPORT)
+    val art = project.artifact(PROFILER_IMPORT)
+    val properties = art.datasetDescriptor.properties
+    //println(properties.get("is_profiled"))
+    val possibleJsonValue = properties.get("is_profiled")
+
+    possibleJsonValue match {
+      case Some(jsValue: JsValue) =>
+        val str = jsValue.toString()
+
+        // Parse the JSON string
+        val json = Json.parse(str)
+
+        // Extract values
+        val columns = (json \ "columns").as[JsArray].value
+
+        columns.foreach { column =>
+          val distinctValueCount = (column \ "distinctValueCount").as[Int]
+          val nullCount = (column \ "nullCount").as[Int]
+
+          distinctValueCount must beEqualTo(0)
+          nullCount must beEqualTo(25)
+          println(s"distinctValueCount: $distinctValueCount, nullCount: $nullCount")
+        }
+
+      case _ => println("is_profiled value is not a valid JSON object")
+    }
+
+
+    ok
+  }
+
+
 }

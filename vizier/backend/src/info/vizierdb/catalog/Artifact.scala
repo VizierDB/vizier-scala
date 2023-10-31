@@ -252,29 +252,29 @@ case class Artifact(
 
     
     val df = dataframe(session)()
-    println(datasetDescriptor.properties)
-    //println("this is the dataframe from Artifact.scala: ", df)
-    //println("this is the descriptor: ", descriptor)
-    println(datasetDescriptor.properties.get("is_profiled"))
-    //println(DataProfiler.apply(df))
+    //println(datasetDescriptor.properties)
+    //println(datasetDescriptor.properties.get("is_profiled"))
     
-    // if the profiler is false, then run the profiler and turn it into true
-    // Check if "is_profiled" is present and set it to true
+    // if the profiler is false, then run the profiler and
+    // Check if "is_profiled" is present and set it to the information generated
     val updatedProperties = datasetDescriptor.properties.get("is_profiled") match {
       case Some(jsValue) if jsValue.isInstanceOf[JsBoolean] =>
-        // Update the property to true
-        println(DataProfiler.apply(df)) // applying data profiler
-        datasetDescriptor.properties + ("is_profiled" -> JsBoolean(true))
+      // Profiler is ran at this point, [PROFILER HAS RAN]
+
+        val dataProfile: Map[String, JsValue] = DataProfiler.apply(df)
+        // Convert the Map to a JsValue (JSON object)
+        val json: JsValue = JsObject(dataProfile)
+        updateDatasetProperty("is_profiled", json)
+        println("profiler has been used")
+        // updateDatasetProperty to keep the information attached to the property.
       case _ =>
+
+      // Profiler is setting up at this point, [PROFILER HAS NOT RAN]
+
+        //println("profiler set up")
         // "is_profiled" property is not present or not a JsBoolean, so add it
-        datasetDescriptor.properties + ("is_profiled" -> JsBoolean(true))
+        //updateDatasetProperty("is_profiled", JsBoolean(false))
     }
-
-    // Create a new datasetDescriptor with the updated properties
-    val updatedDatasetDescriptor = datasetDescriptor.copy(properties = updatedProperties)
-    replaceData(Json.toJson(updatedDatasetDescriptor))
-
-    
 
       
     return { () => 
@@ -339,20 +339,22 @@ case class Artifact(
    */
   def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Unit =
   {
-    assert(t.equals(ArtifactType.DATASET))
-    // adding is_profiled here to make sure that the dataset has been profiled or not
+    assert(t.equals(ArtifactType.DATASET)) 
     // First, get the updated datasetDescriptor with the new property
     val updatedDescriptor = datasetDescriptor.withProperty(name -> value)
-
-    // Now, add the is_profiled key to the properties of the updatedDescriptor
-    val updatedProperties = updatedDescriptor.properties + ("is_profiled" -> JsBoolean(false))
-    
-    // Update the descriptor with the modified properties
-    val is_profiledProperty = updatedDescriptor.copy(properties = updatedProperties)
-    // currently profilers is only one, I will NEED TO MAKE IT INTO MULTIPLE PROFILERS LATER!!!
-  
-    // apply the updated version
-    replaceData(Json.toJson(is_profiledProperty))
+    // Check if "is_profiled" is already in the properties
+    val properties = updatedDescriptor.properties
+    if (!properties.contains("is_profiled")) {
+      // If "is_profiled" is not present, add it with a value of false
+      val updatedProperties = properties + ("is_profiled" -> JsBoolean(false))
+      // Update the descriptor with the modified properties
+      val finalDescriptor = updatedDescriptor.copy(properties = updatedProperties)
+      // Convert the final descriptor to JSON and replace the data
+      replaceData(Json.toJson(finalDescriptor))
+    } else {
+      // If "is_profiled" is already present, no need to add it. Continue with the original process.
+      replaceData(Json.toJson(updatedDescriptor))
+    }
   }
 
   /**

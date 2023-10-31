@@ -72,20 +72,12 @@ object GetArtifact
     val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
-        CatalogDB.withDBReadOnly { implicit s => 
+        CatalogDB.withDB{ implicit s => 
           artifact.describe(
             offset = offset, 
             limit = limit, 
             forceProfiler = forceProfiler,
             name = name.getOrElse { null },
-            // histogram code below <-
-
-            // artifact datasetData
-            /*
-            - artifact has methods [update dataset property, dataset property]
-            - allow to update and retrieve properties
-            - add specific property called "profile" or use 
-            */
           )
 
           // The parens below are part of the magic... artifact.describe()
