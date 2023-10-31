@@ -183,99 +183,142 @@ $max_workflow_width: 800px;
 {
   height: 100vh;
   overflow-y: scroll;
-}
+  
+  .project_list_wrapper 
+  {
+    border: 1px solid gray;
+    border-radius: 5px;
+    max-width: $max_workflow_width;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    
+    .project_list 
+    {
+      list-style: none;
+      width: 100%;
+      margin: 0px;
+      margin-bottom: 10px;
+      padding: 0px;
+      
+      li
+      {
+        margin-top: 10px;
+        width: calc(100% - 20px);
+        padding: 10px;
+        display: flex;
+        height: 40px;
+        justify-content: space-between;
+        
+        &.even
+        {
+          background-color: $alt_row_grey;
+        }
+        
+        a
+        {
+          font-size: 120%;
+          flex-grow: 10;
+          min-width: 200px;
+          height: 100%;
+          font-weight: bold;
+          padding-left: 10px;
+          display: table;
+          
+          span
+          {
+            display: table-cell;
+            vertical-align: middle;
+          }
+        }
+        
+        .dates
+        {
+          flex-grow: 0;
+          font-size: 80%;
+          color: gray;
+          display: table;
+          
+          .date_valign
+          {
+            display: table-cell;
+            vertical-align: middle;
+          }
+        }
 
-div.project_list_wrapper 
-{
-  border: 1px solid gray;
-  border-radius: 5px;
-  max-width: $max_workflow_width;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 8px;
-  margin-bottom: 8px;
-}
-ul.project_list 
-{
-  list-style: none;
-  width: 100%;
-  margin: 0px;
-  margin-bottom: 10px;
-  padding: 0px;
-}
-ul.project_list li
-{
-  margin-top: 10px;
-  width: calc(100% - 20px);
-  padding: 10px;
-  display: flex;
-  height: 40px;
-  justify-content: space-between;
-}
+        .actions
+        {
+          flex-grow: 0;
+          flex-shrink: 0;
+          height: 100%;
+          display: flex;
+          // margin-right: 8px;
 
-ul.project_list li.even
-{
-  background-color: $alt_row_grey;
-}
+          a {
+            flex-grow: 0;
+            min-width: 0px;
+            margin-top: 6px;
 
-ul.project_list li a
-{
-  font-size: 120%;
-  flex-grow: 10;
-  min-width: 200px;
-  height: 100%;
-  font-weight: bold;
-  padding-left: 10px;
-  display: table;
-}
-ul.project_list li a span
-{
-  display: table-cell;
-  vertical-align: middle;
-}
-ul.project_list li span.dates
-{
-  flex-grow: 0;
-  font-size: 80%;
-  color: gray;
-  display: table;
-}
-ul.project_list li span.dates div.date_valign
-{
-  display: table-cell;
-  vertical-align: middle;
-}
-div.project_list_wrapper button.create_project
-{
-  height: 50px;
-  width: 50px;
-  font-size: 30px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  padding: 0px;
-}
+            &:active { i.fa { 
+              transform: scale(0.95);
+            } }
+  
+            i.fa
+            {
+              width:20px;
+              height:20px;
+              border-radius: 4px;
+              border: solid 1px $color_artifact_button_border;
+              padding: 2px;
+              font-size: 16px;
+              margin-right: 4px;
+              text-align: center;
+              vertical-align: middle;
+              color: $color_artifact_button;
+              background-color: $color_artifact_button_bg;
+            }
+          }
 
-div.project_list_wrapper div.hint 
-{
-  display: block;
-  width: 100%;
-  text-align: center;
-  font-weight: bold;
-  color: gray;
-  font-size: 20px;
-  margin-bottom: 10px;
-}
 
-div.project_list_wrapper div.create_project_form 
-{
-  margin: 10px;
-}
-div.project_list_wrapper div.create_project_form input
-{
-  max-width: 400px;
+        }
+      }
+    }
+    
+    button.create_project
+    {
+      height: 50px;
+      width: 50px;
+      font-size: 30px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      padding: 0px;
+    }
+    
+    div.hint 
+    {
+      display: block;
+      width: 100%;
+      text-align: center;
+      font-weight: bold;
+      color: gray;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    
+    div.create_project_form 
+    {
+      margin: 10px;
+      
+      input
+      {
+        max-width: 400px;
+      }
+    }
+  }
 }
 
 /************ General Layout ************/
