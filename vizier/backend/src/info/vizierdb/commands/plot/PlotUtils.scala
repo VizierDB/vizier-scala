@@ -31,6 +31,8 @@ object PlotUtils
     val dataframe: DataFrame,
     val regression: Option[VegaRegressionMethod] = None,
     val name: Option[String] = None,
+    val sort: Boolean,
+    val isBarChart: Boolean
   )
   {
     // If we pull too many points, we're going to crash the client

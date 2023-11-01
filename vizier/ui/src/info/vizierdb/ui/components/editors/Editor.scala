@@ -41,7 +41,7 @@ class Editor(
       ),
     )
 
-override def currentState: Seq[CommandArgument] = {
+  override def currentState: Seq[CommandArgument] = {
     Seq(
         CommandArgument(
             "sampleKey",

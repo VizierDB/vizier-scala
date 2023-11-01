@@ -36,58 +36,16 @@ object TestDatasetEditor
         DatasetParameter(id = PARAM_DATASET, name = "Dataset")
     )
 
-    def predictProvenance(arguments: Seq[CommandArgument])(implicit context: ExecutionContext, catalog: CatalogDB): ProvenancePrediction = {
-        val dataset = arguments.find { _.id == PARAM_DATASET }.get.value.asInstanceOf[JsString].value
-        ProvenancePrediction(
-            artifact = Some(dataset),
-            artifacts = Seq(dataset)
-        )
+    def predictProvenance(arguments: Arguments, properties: JsObject): ProvenancePrediction = {
+        return ProvenancePrediction.empty
     }
 
-    def format(arguments: Seq[CommandArgument])(implicit context: ExecutionContext, catalog: CatalogDB): FormattedError = {
-        val dataset = arguments.find { _.id == PARAM_DATASET }.get.value.asInstanceOf[JsString].value
-        val schema = catalog.datasets.get(dataset).get.schema
-        val columns = schema.fields.map { field => 
-            Json.obj(
-                "name" -> field.name,
-                "type" -> dataTypeFormat.writes(field.dataType)
-            )
-        }
-        FormattedError(
-            "success",
-            Json.obj(
-                "columns" -> columns
-            )
-        )
+    def format(arguments: Arguments): String =  {
+        return "Test Dataset Editor"
     }
 
-    def process(arguments: Seq[CommandArgument], context: ExecutionContext)(implicit catalog: CatalogDB): Unit = {
-        val dataset = arguments.find { _.id == PARAM_DATASET }.get.value.asInstanceOf[JsString].value
-        val schema = catalog.datasets.get(dataset).get.schema
-        val columns = schema.fields.map { field => 
-            Json.obj(
-                "name" -> field.name,
-                "type" -> dataTypeFormat.writes(field.dataType)
-            )
-        }
-        val rows = catalog.datasets.get(dataset).get.rows
-        val data = rows.map { row => 
-            val values = row.values.zip(schema.fields).map { case (value, field) =>
-                field.dataType match {
-                    case DataType.fromJson("string") => JsString(value.asInstanceOf[String])
-                    case DataType.fromJson("integer") => JsNumber(value.asInstanceOf[Int])
-                    case DataType.fromJson("double") => JsNumber(value.asInstanceOf[Double])
-                    case DataType.fromJson("boolean") => JsBoolean(value.asInstanceOf[Boolean])
-                    case _ => JsNull
-                }
-            }
-            JsArray(values)
-        }
-        val result = Json.obj(
-            "columns" -> columns,
-            "data" -> data
-        )
-        context.output("result", result)
+    def process(arguments: Arguments, context: ExecutionContext): Unit = {
+        return context.message("Test Dataset Editor")
     }
 
     def title(arguments: Arguments): String = 
