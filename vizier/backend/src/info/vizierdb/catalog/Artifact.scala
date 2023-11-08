@@ -253,7 +253,7 @@ case class Artifact(
     
     val df = dataframe(session)()
     //println(datasetDescriptor.properties)
-    //println(datasetDescriptor.properties.get("is_profiled"))
+    //println(datasetDescriptor.properties.get("is_profiled")).
     
     // if the profiler is false, then run the profiler and turn it into true
     // Check if "is_profiled" is present and set it to true
