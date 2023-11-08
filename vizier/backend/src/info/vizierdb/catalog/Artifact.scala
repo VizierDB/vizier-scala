@@ -254,24 +254,18 @@ case class Artifact(
     val df = dataframe(session)()
     //println(datasetDescriptor.properties)
     //println(datasetDescriptor.properties.get("is_profiled"))
-    //println(DataProfiler.apply(df))
     
     // if the profiler is false, then run the profiler and turn it into true
     // Check if "is_profiled" is present and set it to true
     val updatedProperties = datasetDescriptor.properties.get("is_profiled") match {
-      case Some(jsValue) if jsValue.isInstanceOf[JsBoolean] =>
+      case Some(jsValue) if jsValue.isInstanceOf[JsObject] =>
+        // Profiled information is already attached, do nothing.
 
-        val dataProfile: Map[String, JsValue] = DataProfiler.apply(df)
-        // Convert the Map to a JsValue (JSON object)
-        val json: JsValue = JsObject(dataProfile)
-        updateDatasetProperty("is_profiled", json)
-        //println("profiler has been used")
-        // updateDatasetProperty to keep the information attached to the property.
       case _ =>
-        // println("profiler set up")
-        updateDatasetProperty("is_profiled", JsBoolean(false))
-        // "is_profiled" property is not present or not a JsBoolean, so add it
-        //updateDatasetProperty("is_profiled", JsBoolean(false))
+        // add individual properties, use a field to update each one at a time.
+        val dataProfile: Map[String, JsValue] = DataProfiler.apply(df)
+        updateDatasetProperty("is_profiled", json)
+
     }
 
       
