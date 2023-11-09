@@ -154,7 +154,7 @@ case class Artifact(
     name: String = null, 
     offset: Option[Long] = None, 
     limit: Option[Int] = None, 
-    forceProfiler: Boolean = false
+    forceProfiler: Boolean = true
   )(implicit session: DBSession): () => serialized.ArtifactDescription = 
   {
     val base = 
@@ -239,7 +239,7 @@ case class Artifact(
   def datasetData(
     offset: Option[Long] = None, 
     limit: Option[Int] = None,
-    forceProfiler: Boolean = false,
+    forceProfiler: Boolean = true,
     includeCaveats: Boolean = false
   )(implicit session: DBSession): () => DataContainer = 
   {
@@ -255,17 +255,16 @@ case class Artifact(
     //println(datasetDescriptor.properties)
     //println(datasetDescriptor.properties.get("is_profiled")).
     
-    // if the profiler is false, then run the profiler and turn it into true
-    // Check if "is_profiled" is present and set it to true
     val updatedProperties = datasetDescriptor.properties.get("is_profiled") match {
       case Some(jsValue) if jsValue.isInstanceOf[JsObject] =>
         // Profiled information is already attached, do nothing.
+        println("hello, below is the profiled information...")
+        println(datasetDescriptor.properties.get("is_profiled"))
 
       case _ =>
         // add individual properties, use a field to update each one at a time.
         val dataProfile: Map[String, JsValue] = DataProfiler.apply(df)
         updateDatasetProperty("is_profiled", json)
-
     }
 
       

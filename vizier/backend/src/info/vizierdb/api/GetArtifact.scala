@@ -37,7 +37,7 @@ object GetArtifact
   extends LazyLogging
 {
   def getArtifact(projectId: Long, artifactId: Long, expecting: Option[ArtifactType.T]): Option[Artifact] = 
-      CatalogDB.withDBReadOnly { implicit session => 
+      CatalogDB.withDB { implicit session => 
         Artifact.getOption(artifactId, Some(projectId))
       }.filter { artifact => 
         expecting.isEmpty || expecting.get.equals(artifact.t)
@@ -148,7 +148,7 @@ object GetArtifact
     {
       getArtifact(projectId, artifactId, None) match {
         case Some(artifact) => 
-          CatalogDB.withDBReadOnly { implicit s => artifact.summarize() }
+          CatalogDB.withDB { implicit s => artifact.summarize() }
         case None => 
           ErrorResponse.noSuchEntity
       }
