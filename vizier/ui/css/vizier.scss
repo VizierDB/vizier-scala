@@ -60,7 +60,7 @@ a:visited { color: blue; }
 $table_header_layer: 2;
 $table_gutter_layer: 1;
 $toc_layer: 10;
-$tooltip_layer: 1250;
+$tooltip_layer: 5000;
 $inter_module_hover_layer: $tooltip_layer;
 $menu_layer: 2500;
 $modal_layer: 2000;
@@ -346,6 +346,14 @@ $menu_height: 32px;
   border: solid 1px darkgrey;
   transition-property: visibility, opacity;
   transition-duration: 0.1s;
+
+  .tooltip_text
+  {
+    max-width: 300px;
+    font-size: 80%;
+    margin: 4px;
+    overflow-wrap: break-word;
+  }
 }
 
 #project

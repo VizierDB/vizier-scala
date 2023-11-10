@@ -9,6 +9,7 @@ import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.serialized
 import info.vizierdb.serializers.mlvectorFormat
 import info.vizierdb.ui.widgets.Tooltip
+import info.vizierdb.util.StringUtils
 
 /**
  * Logic for rendering cell data values to dom nodes
@@ -56,9 +57,21 @@ object RenderCell
             value.as[serialized.MLVector].show(5)
           }
         case (_, JsString("string")) => 
-          span(value.as[String])
+          val content = value.as[String]
+          span(
+            StringUtils.ellipsize(content, 20),
+            Tooltip(
+              div(`class` := "tooltip_text", content)
+            )
+          )
         case _ => 
-          span(value.toString())
+          val content = value.toString()
+          span(
+            StringUtils.ellipsize(content, 20),
+            Tooltip(
+              div(`class` := "tooltip_text", content)
+            )
+          )
       }),
       (if(caveatted.isDefined){
         val callback = caveatted.get
