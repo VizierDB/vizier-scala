@@ -28,6 +28,17 @@ object RenderCell
     onclick: (dom.Event => Unit) = (_ => ())
   ): Frag =
   {
+
+    def makeTextCell(content: String): Frag =
+      if(content.size > 23){
+        span(
+          StringUtils.ellipsize(content, 20),
+          Tooltip(
+            div(`class` := "tooltip_text", content)
+          )
+        )
+      } else { span(content) }
+
     div(
       `class` := (
         Seq("cell") ++ 
@@ -57,21 +68,9 @@ object RenderCell
             value.as[serialized.MLVector].show(5)
           }
         case (_, JsString("string")) => 
-          val content = value.as[String]
-          span(
-            StringUtils.ellipsize(content, 20),
-            Tooltip(
-              div(`class` := "tooltip_text", content)
-            )
-          )
+          makeTextCell(value.as[String])
         case _ => 
-          val content = value.toString()
-          span(
-            StringUtils.ellipsize(content, 20),
-            Tooltip(
-              div(`class` := "tooltip_text", content)
-            )
-          )
+          makeTextCell(value.toString())
       }),
       (if(caveatted.isDefined){
         val callback = caveatted.get
