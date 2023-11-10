@@ -35,6 +35,7 @@ import info.vizierdb.spark.SparkSchema.fieldFormat
 import org.apache.spark.sql.AnalysisException
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.akka.VizierServer
+import info.vizierdb.util.ExperimentalOptions
 
 case class Artifact(
   id: Identifier,
@@ -248,11 +249,13 @@ case class Artifact(
                  Map(id -> this), 
                  Artifact.get(_:Identifier)
                )
+    val computeCaveats = 
+      ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats
     return { () => 
       try {
         QueryWithCaveats(
           query = descriptor.construct(deps(_)),
-          includeCaveats = false,//includeCaveats,
+          includeCaveats = computeCaveats,
           limit = limit,
           offset = offset,
           computedProperties = descriptor.properties,
@@ -260,7 +263,7 @@ case class Artifact(
           columns = None
         )
       } catch {
-        case a:AnalysisException if includeCaveats => 
+        case a:AnalysisException if computeCaveats =>
           logger.debug(a.getStackTrace().map { _.toString }.mkString("\n"))
           logger.warn(s"Error applying caveats (${a.getMessage}).  Trying without.")
           QueryWithCaveats(
