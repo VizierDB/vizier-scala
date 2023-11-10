@@ -37,6 +37,19 @@ class PythonCommandSpec
   lazy val project = MutableProject("Data Project")
   sequential
 
+  "you should have the correct pyspark" >>
+  {
+    val expectedPyspark:String =
+      PythonProcess.REQUIRED_PACKAGES
+                   .find { _._1 == "pyspark" }
+                   .getOrElse { throw new Exception("Pyspark is not listed as a dependency") }
+                   ._2.split("==")(1)
+    val actualPyspark:String =
+      PythonProcess.run("""from pyspark import version
+                          |print(version.__version__)""".stripMargin)
+                   .strip()
+    actualPyspark must beEqualTo(expectedPyspark)
+  }
 
   "have an up-to-date requirements.txt" >> 
   {

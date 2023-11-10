@@ -86,18 +86,19 @@ object Query extends Command
         InjectedSparkSQL.getFunctionReferences(parsed)
                         .toSeq
                         .collect { case f if functions contains f => 
-                                      f -> functions(f) }
+                                      f -> 
+                                      CatalogDB.withDB { implicit s => 
+                                        val id = functions(f)
+                                        val a = Artifact.get(id, Some(context.projectId))
+                                        (
+                                          a.id,
+                                          a.mimeType,
+                                          a.string
+                                        )
+                                      }
+                                  }
+                        .toIndexedSeq // This is needed to force materialization
                         .toMap
-                        .mapValues { id =>  
-                          CatalogDB.withDB { implicit s => 
-                            val a = Artifact.get(id, Some(context.projectId))
-                            (
-                              a.id,
-                              a.mimeType,
-                              a.string
-                            )
-                          }
-                        }
 
       logger.trace(s"${fnDeps.keys.size} function dependencies: ${fnDeps.keys.mkString(", ")}")
 
