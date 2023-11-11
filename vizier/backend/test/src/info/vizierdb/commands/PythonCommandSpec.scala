@@ -286,5 +286,18 @@ print(df['A'].sum())
     geometry must beAnInstanceOf[org.locationtech.jts.geom.Geometry]
   }
 
+  "Export function synonyms properly" >> 
+  {
+    project.script("""
+      |def foo():
+      |  print("this is the function")
+      |bar = foo
+      |vizierdb["x"] = bar
+      """.stripMargin)
+    project.waitUntilReadyAndThrowOnError
+    project.artifacts.map { _._1 } must contain("x")
+    project.artifact("x").string must contain("print('this is the function')")
+  }
+
 }
 

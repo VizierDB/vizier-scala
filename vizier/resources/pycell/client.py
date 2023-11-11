@@ -167,7 +167,7 @@ class VizierDBClient(object):
     if type(updated_data) in primitive_type or type(updated_data) in sequence_type:
       self.export_parameter(key, updated_data)
     elif type(updated_data) is ModuleType or type(updated_data) is FunctionType:
-      self.export_module(key)
+      self.export_module(updated_data, name_override=key)
     elif type(updated_data) == pandas.core.frame.DataFrame:
       self.save_data_frame(key, updated_data)
     else:
@@ -597,6 +597,9 @@ class VizierDBClient(object):
       }), mime_type=OUTPUT_JAVASCRIPT)
 
   def export_module(self, exp: Any, name_override: Optional[str] = None, return_type: Any = None):
+    if exp.__code__.co_filename != "<string>":
+      raise Exception("Can not export symbols not in the file itself")
+
     if name_override is not None:
       exp_name = name_override
     elif inspect.isclass(exp):
@@ -604,13 +607,9 @@ class VizierDBClient(object):
     elif callable(exp):
       exp_name = exp.__name__
     else:
-      # If its a variable we grab the original name from the stack
-      lcls = inspect.stack()[1][0].f_locals
-      for name in lcls:
-        if lcls[name] == exp:
-          exp_name = name
+      exp_name = exp.__code__.co_name
     src_ast = ast.parse(self.source)
-    extractor = ModuleExtractor(exp_name)
+    extractor = ModuleExtractor(exp.__code__.co_name)
     extractor.visit(src_ast)
     src = extractor.get_Source()
     if return_type is None:
