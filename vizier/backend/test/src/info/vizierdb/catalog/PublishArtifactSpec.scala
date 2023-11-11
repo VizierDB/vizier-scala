@@ -77,83 +77,77 @@ class PublishArtifactSpec extends Specification with BeforeAll
     project.artifacts.keys must contain(IMPORT_NAME)
   }
 
-  val PROFILER_EXPORT = "profiler-test"
-  val PROFILER_IMPORT = "profiler-import"
+  "testing profiler" >> {
+    val project = MutableProject("test_profiler")
+    project.load(
+      file = "test_data/output_with_nulls.csv",
+      name = "test", 
+      format = "csv",
+    )
 
-  "testing profiler is contained in artifact" >> {
-    val project = MutableProject("Profiler Testing")
-    project.load("test_data/output_with_nulls.csv", "test")
-    project.append("data", "unload")(
-      UnloadDataset.PARAM_DATASET -> "test",
-      UnloadDataset.PARAM_FORMAT -> "publish_local",
-      UnloadDataset.PARAM_OPTIONS -> Seq(
-        Map(
-          UnloadDataset.PARAM_OPTIONS_KEY -> "name",
-          UnloadDataset.PARAM_OPTIONS_VALUE -> PROFILER_EXPORT,
-        )
-      )
+    GetArtifact(
+      projectId = project.projectId,
+      artifactId = project.artifact("test").id,
+      profile = Some("true"),
     )
-    project.waitUntilReadyAndThrowOnError
-    DB.readOnly { implicit s =>
-      PublishedArtifact.getOption(PROFILER_EXPORT) must not beNone
-    }
-    val description = GetPublishedArtifact(
-      artifactName = PROFILER_EXPORT
-    )
+
     val df = project.dataframe("test")
     val art = project.artifact("test")
     val properties = art.datasetDescriptor.properties
 
-    // double checking if is_profiled is in dataset
-    properties.contains("is_profiled") must beTrue
-    properties.get("is_profiled") must not(beNone)
-
+    properties.get("is_profiled") must beSome.which(_ == JsBoolean(true))
   }
 
-  "Profiler Information" >> {
-    val project = MutableProject("Profiler Information")
-
-    project.append("data", "load")(
-      LoadDataset.PARAM_FILE -> 
-        FileArgument(
-          url = Some(Vizier.urls.publishedArtifact(PROFILER_EXPORT).toString)
-        ),
-      LoadDataset.PARAM_NAME -> PROFILER_IMPORT,
-      LoadDataset.PARAM_FORMAT -> "publish_local"
+    "testing correct profiler information" >> {
+    val project = MutableProject("test_profiler")
+    project.load(
+      file = "test_data/output_with_nulls.csv",
+      name = "test", 
+      format = "csv",
     )
-    project.waitUntilReadyAndThrowOnError
 
-    project.artifacts.keys must contain(PROFILER_IMPORT)
-    val art = project.artifact(PROFILER_IMPORT)
+    GetArtifact(
+      projectId = project.projectId,
+      artifactId = project.artifact("test").id,
+      profile = Some("true"),
+    )
+
+    val df = project.dataframe("test")
+    val art = project.artifact("test")
     val properties = art.datasetDescriptor.properties
-    //println(properties.get("is_profiled"))
-    val possibleJsonValue = properties.get("is_profiled")
+    val columnsProperty = properties.get("columns")
 
-    possibleJsonValue match {
+    columnsProperty match {
       case Some(jsValue: JsValue) =>
-        val str = jsValue.toString()
-
         // Parse the JSON string
-        val json = Json.parse(str)
+        val json = Json.parse(jsValue.toString())
 
-        // Extract values
-        val columns = (json \ "columns").as[JsArray].value
+        // Validate and extract columns array
+        (json \ "columns").validate[JsArray] match {
+          case JsSuccess(columnsArray, _) =>
+            columnsArray.value.foreach { column =>
+              // Extract and test distinctValueCount
+              val distinctValueCount = (column \ "distinctValueCount").as[Int]
+              distinctValueCount must beEqualTo(0)
 
-        columns.foreach { column =>
-          val distinctValueCount = (column \ "distinctValueCount").as[Int]
-          val nullCount = (column \ "nullCount").as[Int]
+              // Extract and test nullCount
+              val nullCount = (column \ "nullCount").as[Int]
+              nullCount must beEqualTo(25)
 
-          distinctValueCount must beEqualTo(0)
-          nullCount must beEqualTo(25)
-          println(s"distinctValueCount: $distinctValueCount, nullCount: $nullCount")
+              println(s"Column Test Passed: distinctValueCount: $distinctValueCount, nullCount: $nullCount")
+            }
+
+          case JsError(errors) =>
+            failure(s"Error parsing columns JSON: $errors")
         }
 
-      case _ => println("is_profiled value is not a valid JSON object")
+      case _ => 
+        failure("Columns property not found or not a valid JSON object")
     }
-
 
     ok
   }
+
 
 
 }

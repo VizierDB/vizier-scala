@@ -43,18 +43,6 @@ object GetArtifact
         expecting.isEmpty || expecting.get.equals(artifact.t)
       }
 
-  /*
-   This is where the Original Vizier data profiler method will be placed 
-  */
-  // Never run the profiler unless True
-  // run the profiler before the return {} statement
-  // make sure when you run the profiler then you set all the stuff using updateDatasetProperty 
-  // i.e.:
-  /*
-      "is_profiler" : [profiler1, profiler2, profiler3, ...] <- verify this contains the profiler used
-      "column" : [..., ..., ...]
-      "count": [..., ..., ...]
-  */
 
   def apply(
     projectId: Identifier,
@@ -69,6 +57,7 @@ object GetArtifact
     name: Option[String] = None,
   ): serialized.ArtifactDescription = 
   {
+    // val forceProfiler = true
     val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
