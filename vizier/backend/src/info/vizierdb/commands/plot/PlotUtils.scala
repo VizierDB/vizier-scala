@@ -130,6 +130,8 @@ object PlotUtils
       y = dataframe.columns(yIndex),
       dataframe = dataframe,
       regression = regression,
+      sort = sort,
+      isBarChart = false,
       name = name
     )
   }
@@ -196,6 +198,8 @@ object PlotUtils
       dataframe = dataframe,
       regression = None,
       name = name,
+      sort = false,
+      isBarChart = false
     )
   }
 

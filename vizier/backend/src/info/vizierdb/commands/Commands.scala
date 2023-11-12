@@ -91,6 +91,7 @@ object Commands
     "unloadFile" -> info.vizierdb.commands.data.UnloadFile,
     "parameters" -> info.vizierdb.commands.data.DeclareParameters,
     "spreadsheet"-> info.vizierdb.commands.data.SpreadsheetCommand,
+    "test"         -> info.vizierdb.commands.data.TestDatasetEditor,
   )
 
   register(packageId = "transform", name = "Transformation", category = "data")(
@@ -105,7 +106,6 @@ object Commands
     "scatterplot"  -> info.vizierdb.commands.plot.ScatterPlot,
     "cdf"          -> info.vizierdb.commands.plot.CDFPlot,
     "geo"          -> info.vizierdb.commands.plot.GeoPlot,
-    "test"         -> info.vizierdb.commands.data.TestDatasetEditor,
   )
 
   register(packageId = "sql", name = "SQL", category = "code")(

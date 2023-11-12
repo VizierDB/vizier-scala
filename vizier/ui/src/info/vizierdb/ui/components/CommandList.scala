@@ -186,6 +186,7 @@ object CommandList
   val DEFAULT: Seq[(String, Seq[SpecialCommand])] = Seq(
     "Import" -> Seq(
       SpecialCommand(label = "Dataset", icon = "load_table", packageId = "data", commandId = "load", description = "Import a tabular data file (e.g., CSV) or previously exported dataframe"),
+      SpecialCommand(label = "Test",        icon = "line_plot",   packageId = "data", commandId = "test", description = "Test Button Editor"),
       // SpecialCommand(label = "Import File", icon = "load", packageId = "data", commandId = "load"),
     ),
     "Script" -> Seq(
@@ -198,7 +199,6 @@ object CommandList
       SpecialCommand(label = "Scatterplot", icon = "scatter_plot", packageId = "plot", commandId = "scatterplot", description = "Visualize datasets as a series of colored points"),
       SpecialCommand(label = "CDF",         icon = "cdf_plot",     packageId = "plot", commandId = "cdf", description = "Generate a Cumulative Distribution Function (CDF) plot of the data"),
       SpecialCommand(label = "Map",         icon = "geo_plot",     packageId = "plot", commandId = "geo", description = "Plot a geospatial dataset on a map"),
-      SpecialCommand(label = "Test",        icon = "line_plot",   packageId = "plot", commandId = "test", description = "Test Button Editor"),
     ),
     "Document" -> Seq(
       SpecialCommand(label = "Markdown", icon = "markdown", packageId = "docs", commandId = "markdown", description = "Document your project with markdown-formatted text"),
@@ -206,6 +206,7 @@ object CommandList
     "Export" -> Seq(
       SpecialCommand(label = "Dataset", icon = "dump_table", packageId = "data", commandId = "unload", description = "Export a dataset to your local filesystem or a server"),
       SpecialCommand(label = "File",    icon = "dump_file",  packageId = "data", commandId = "unloadFile", description = "Export a raw file to your local filesystem or a server"),
+
     ),
   )
 

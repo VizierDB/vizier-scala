@@ -33,7 +33,15 @@ object TestDatasetEditor
     def name: String = "Test Dataset Editor"
 
     def parameters: Seq[Parameter] = Seq(
-        DatasetParameter(id = PARAM_DATASET, name = "Dataset")
+        // ColIdParameter(
+        //     id = PARAM_DATASET,
+        //     name = "Dataset",
+            
+        // ),
+        StringParameter(
+        id = "sampleKey",
+        name = "Sample Input",
+        )
     )
 
     def predictProvenance(arguments: Arguments, properties: JsObject): ProvenancePrediction = {
@@ -45,7 +53,11 @@ object TestDatasetEditor
     }
 
     def process(arguments: Arguments, context: ExecutionContext): Unit = {
-        return context.message("Test Dataset Editor")
+        val sampleKey = arguments.get[String]("sampleKey")
+        return context.message(
+            s"Dataset: Sample Input: ${sampleKey}"
+
+        )
     }
 
     def title(arguments: Arguments): String = 

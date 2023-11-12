@@ -20,12 +20,14 @@ import info.vizierdb.util.Logging
 import info.vizierdb.types.DatasetFormat
 import play.api.libs.json._
 import info.vizierdb.serializers._
+import info.vizierdb.types._
+import info.vizierdb.ui.components.EnumerableParameter
 
 class Editor(
   val delegate: ModuleEditorDelegate,
-  val packageId: String = "plot",
+  val packageId: String = "data",
   val commandId: String = "test"
-)(implicit owner: Ctx.Owner) 
+)(implicit owner: Ctx.Owner)
   extends ModuleEditor
   with Logging
 {
@@ -37,28 +39,40 @@ class Editor(
       div("This is a dummy HTML representation for the custom editor."),
       div(
         label("Sample Input: "),
-        input(`type` := "text")
+        input(`type` := "text", id := "sample-input")
       ),
     )
 
   override def currentState: Seq[CommandArgument] = {
+    val input = dom.document.getElementById("sample-input").asInstanceOf[dom.html.Input]
     Seq(
-        CommandArgument(
-            "sampleKey",
-            Json.toJson("sampleValue")
-        )
+        dataset.toArgument,
+        CommandArgument("sampleKey", JsString(input.value)),
     )
-}
-  
+  }
 
-  override def loadState(arguments: Seq[CommandArgument]): Unit = {
-    for(arg <- arguments) {
-      println(s"Loading argument with id: ${arg.id} and value: ${arg.value}")
+  val dataset = 
+    new ArtifactParameter(
+      id = "dataset",
+      name = "Dataset: ",
+      artifactType = ArtifactType.DATASET,
+      artifacts = delegate.visibleArtifacts
+                          .map { _.mapValues { _._1.t } },
+      required = true,
+      hidden = false,
+    )
+
+  override def loadState(arguments: Seq[CommandArgument]): Unit = 
+  {
+    for ( arg <- arguments )
+    { 
+      arg.id match {
+        case "dataset" => 
+          dataset.set(arg.value)
+        case "sampleKey" => 
+          dom.document.getElementById("sample-input").asInstanceOf[dom.html.Input].value = arg.value.as[String]
+      }
     }
   }
 }
-
-
-
-
 
