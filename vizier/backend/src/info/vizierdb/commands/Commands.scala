@@ -91,7 +91,7 @@ object Commands
     "unloadFile" -> info.vizierdb.commands.data.UnloadFile,
     "parameters" -> info.vizierdb.commands.data.DeclareParameters,
     "spreadsheet"-> info.vizierdb.commands.data.SpreadsheetCommand,
-    "test"         -> info.vizierdb.commands.data.TestDatasetEditor,
+    "test"         -> info.vizierdb.commands.data.PlotDataset,
   )
 
   register(packageId = "transform", name = "Transformation", category = "data")(
