@@ -12,12 +12,14 @@ import info.vizierdb.spark.rowids.{ AnnotateWithRowIds, AnnotateWithSequenceNumb
 import org.mimirdb.caveats.lifting.ResolveLifts
 import org.apache.spark.sql.execution.{ ExtendedMode => SelectedExplainMode }
 import org.mimirdb.caveats.implicits._
-import org.mimirdb.caveats.{ Constants => Caveats }
+import org.mimirdb.caveats.{ Constants => CaveatConsts }
+import org.mimirdb.caveats.Caveats
 import org.apache.spark.sql.types._
 import info.vizierdb.catalog.Artifact
 import org.apache.spark.sql.AnalysisException
 import info.vizierdb.catalog.CatalogDB
 import org.mimirdb.caveats.annotate.CaveatExistsInPlan
+import info.vizierdb.util.ExperimentalOptions
 
 object QueryWithCaveats
   extends LazyLogging
@@ -84,11 +86,13 @@ object QueryWithCaveats
 
     var df = query
 
-    /////// Decorate any potentially erroneous heuristics
-    df = AnnotateImplicitHeuristics(df)
+    if(ExperimentalOptions.isEnabled("ENABLE-MIMIR")){
+      /////// Decorate any potentially erroneous heuristics
+      df = AnnotateImplicitHeuristics(df)
 
-    /////// ResolvePossible
-    df = ResolveLifts(df)
+      /////// ResolvePossible
+      df = ResolveLifts(df)
+    }
 
 
     logger.trace(s"----------- RAW-QUERY-----------\nSCHEMA:{ ${SparkSchema(df).mkString(", ")} }\n${df.queryExecution.explainString(SelectedExplainMode)}")
@@ -105,8 +109,12 @@ object QueryWithCaveats
 
     // temporarily working around a bug in pedantic caveatting: 
     // https://github.com/VizierDB/vizier-scala/issues/230
-    if(includeCaveats){ df = org.mimirdb.caveats.Caveats.annotate(df, CaveatExistsInPlanNonPedantic).stripCaveats }
-    else              { df = df.stripCaveats }
+    if(ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats){
+      df = Caveats.annotate(df, CaveatExistsInPlanNonPedantic)
+                  .stripCaveats 
+    } else {
+      df = df.stripCaveats
+    }
     
     logger.trace(s"############ \n${df.queryExecution.analyzed.treeString}")
     logger.trace("############")
@@ -260,13 +268,13 @@ object QueryWithCaveats
     /////// If necessary, extract which rows/cells are affected by caveats from
     /////// the result table.
     val (colTaint, rowTaint): (Seq[Seq[Boolean]], Seq[Boolean]) = 
-      if(includeCaveats){
+      if(ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats){
         results.map { row =>
-          val annotation = row.getAs[Row](Caveats.ANNOTATION_ATTRIBUTE)
-          val columnAnnotations = annotation.getAs[Row](Caveats.ATTRIBUTE_FIELD)
+          val annotation = row.getAs[Row](CaveatConsts.ANNOTATION_ATTRIBUTE)
+          val columnAnnotations = annotation.getAs[Row](CaveatConsts.ATTRIBUTE_FIELD)
           (
             schema.map { attribute => columnAnnotations.getAs[Boolean](attribute.name) },
-            annotation.getAs[Boolean](Caveats.ROW_FIELD)
+            annotation.getAs[Boolean](CaveatConsts.ROW_FIELD)
           )
         }.toSeq.unzip[Seq[Boolean], Boolean]
       } else { (Seq[Seq[Boolean]](), Seq[Boolean]()) }

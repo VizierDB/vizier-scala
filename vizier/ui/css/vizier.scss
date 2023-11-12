@@ -16,7 +16,7 @@ $color_primary:                #214478;
 $color_primary_highlight:      #2e6098;
 $color_primary_faded:          #689eda;
 
-$color_done:                   #488ec8; // #36338d;
+$color_done:                   $color_primary; // #488ec8; // #36338d;
 $color_error:                  #9d284c;
 $color_frozen:                 #96c4e3;
 $color_running:                #2d93a5;
@@ -36,6 +36,7 @@ $color_message_markdown:       #eee;
 $color_message_markdown_bg:    #f9f9f9;
 
 $color_message_text:           #eee;
+$color_message_dark:           #333;
 $color_message_text_bg:        #f9f9f9;
 
 $color_row_highlight:          #f3f3f3;
@@ -59,7 +60,7 @@ a:visited { color: blue; }
 $table_header_layer: 2;
 $table_gutter_layer: 1;
 $toc_layer: 10;
-$tooltip_layer: 1250;
+$tooltip_layer: 5000;
 $inter_module_hover_layer: $tooltip_layer;
 $menu_layer: 2500;
 $modal_layer: 2000;
@@ -182,99 +183,142 @@ $max_workflow_width: 800px;
 {
   height: 100vh;
   overflow-y: scroll;
-}
+  
+  .project_list_wrapper 
+  {
+    border: 1px solid gray;
+    border-radius: 5px;
+    max-width: $max_workflow_width;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    
+    .project_list 
+    {
+      list-style: none;
+      width: 100%;
+      margin: 0px;
+      margin-bottom: 10px;
+      padding: 0px;
+      
+      li
+      {
+        margin-top: 10px;
+        width: calc(100% - 20px);
+        padding: 10px;
+        display: flex;
+        height: 40px;
+        justify-content: space-between;
+        
+        &.even
+        {
+          background-color: $alt_row_grey;
+        }
+        
+        a
+        {
+          font-size: 120%;
+          flex-grow: 10;
+          min-width: 200px;
+          height: 100%;
+          font-weight: bold;
+          padding-left: 10px;
+          display: table;
+          
+          span
+          {
+            display: table-cell;
+            vertical-align: middle;
+          }
+        }
+        
+        .dates
+        {
+          flex-grow: 0;
+          font-size: 80%;
+          color: gray;
+          display: table;
+          
+          .date_valign
+          {
+            display: table-cell;
+            vertical-align: middle;
+          }
+        }
 
-div.project_list_wrapper 
-{
-  border: 1px solid gray;
-  border-radius: 5px;
-  max-width: $max_workflow_width;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 8px;
-  margin-bottom: 8px;
-}
-ul.project_list 
-{
-  list-style: none;
-  width: 100%;
-  margin: 0px;
-  margin-bottom: 10px;
-  padding: 0px;
-}
-ul.project_list li
-{
-  margin-top: 10px;
-  width: calc(100% - 20px);
-  padding: 10px;
-  display: flex;
-  height: 40px;
-  justify-content: space-between;
-}
+        .actions
+        {
+          flex-grow: 0;
+          flex-shrink: 0;
+          height: 100%;
+          display: flex;
+          // margin-right: 8px;
 
-ul.project_list li.even
-{
-  background-color: $alt_row_grey;
-}
+          a {
+            flex-grow: 0;
+            min-width: 0px;
+            margin-top: 6px;
 
-ul.project_list li a
-{
-  font-size: 120%;
-  flex-grow: 10;
-  min-width: 200px;
-  height: 100%;
-  font-weight: bold;
-  padding-left: 10px;
-  display: table;
-}
-ul.project_list li a span
-{
-  display: table-cell;
-  vertical-align: middle;
-}
-ul.project_list li span.dates
-{
-  flex-grow: 0;
-  font-size: 80%;
-  color: gray;
-  display: table;
-}
-ul.project_list li span.dates div.date_valign
-{
-  display: table-cell;
-  vertical-align: middle;
-}
-div.project_list_wrapper button.create_project
-{
-  height: 50px;
-  width: 50px;
-  font-size: 30px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  padding: 0px;
-}
+            &:active { i.fa { 
+              transform: scale(0.95);
+            } }
+  
+            i.fa
+            {
+              width:20px;
+              height:20px;
+              border-radius: 4px;
+              border: solid 1px $color_artifact_button_border;
+              padding: 2px;
+              font-size: 16px;
+              margin-right: 4px;
+              text-align: center;
+              vertical-align: middle;
+              color: $color_artifact_button;
+              background-color: $color_artifact_button_bg;
+            }
+          }
 
-div.project_list_wrapper div.hint 
-{
-  display: block;
-  width: 100%;
-  text-align: center;
-  font-weight: bold;
-  color: gray;
-  font-size: 20px;
-  margin-bottom: 10px;
-}
 
-div.project_list_wrapper div.create_project_form 
-{
-  margin: 10px;
-}
-div.project_list_wrapper div.create_project_form input
-{
-  max-width: 400px;
+        }
+      }
+    }
+    
+    button.create_project
+    {
+      height: 50px;
+      width: 50px;
+      font-size: 30px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      padding: 0px;
+    }
+    
+    div.hint 
+    {
+      display: block;
+      width: 100%;
+      text-align: center;
+      font-weight: bold;
+      color: gray;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    
+    div.create_project_form 
+    {
+      margin: 10px;
+      
+      input
+      {
+        max-width: 400px;
+      }
+    }
+  }
 }
 
 /************ General Layout ************/
@@ -302,6 +346,14 @@ $menu_height: 32px;
   border: solid 1px darkgrey;
   transition-property: visibility, opacity;
   transition-duration: 0.1s;
+
+  .tooltip_text
+  {
+    max-width: 300px;
+    font-size: 80%;
+    margin: 4px;
+    overflow-wrap: break-word;
+  }
 }
 
 #project
@@ -680,13 +732,33 @@ $menu_height: 32px;
         flex-grow: 0;
         flex-shrink: 0;
         border-top: solid 1px white;
-        opacity: 0.15;
         display: flex;
         flex-direction: column;
         transition-property: opacity;
         transition-duration: 0.2s;
+        position: relative;
 
-        &:hover { opacity: 1.0 }
+        // Hack to de-emphasize bg colors
+        &:before
+        {
+          display: block;
+          content: " ";
+          position: absolute;
+          z-index: -1;
+          background: $color_done;
+          opacity: 0.15;
+          top:0;
+          right:0;
+          left:0;
+          bottom:0;
+        }
+
+        &:hover { 
+          &:before {
+            opacity: 1.0;
+          }
+          button { color: white; } 
+        }
         
         >*
         {
@@ -705,7 +777,7 @@ $menu_height: 32px;
           border: none;
           border-bottom: solid 1px white;
           background-color: inherit;
-          color: white;
+          color: $color_message_dark;
           cursor: pointer;
           // transition-property: transform;
           // transition-duration: 0.1s;
@@ -725,7 +797,6 @@ $menu_height: 32px;
           display: flex;
           flex-direction: row;
           height: $menu_width;
-          background-color: inherit;
 
           button { 
             flex-grow: 0; 
@@ -742,14 +813,18 @@ $menu_height: 32px;
             &.size5 { width: $menu_width * 6 }
             &.size6 { width: $menu_width * 7 }
 
-            button.to_confirm
-            { 
-              color: $color_button_abort; 
+            button {
+              color: white;
             }
-            button.confirm
-            { 
-              color: $color_button_confirm; 
-            }
+
+            // button.to_confirm
+            // { 
+            //   color: $color_button_abort; 
+            // }
+            // button.confirm
+            // { 
+            //   color: $color_button_confirm; 
+            // }
           }
           &.closed { 
             width: $menu_width; 
@@ -760,25 +835,35 @@ $menu_height: 32px;
         }
       }
 
-      &.highlight       { .menu { opacity: 1.0 } }
-      &.done_state      { .menu { background-color: $color_done; }
-                          .state {           color: $color_done }}
-      &.error_state     { .menu { background-color: $color_error; }
-                          .state {           color: $color_error }}
-      &.waiting_state   { .menu { background-color: $color_waiting; }
-                          .state {           color: $color_waiting }}
-      &.stale_state     { .menu { background-color: $color_waiting; }
-                          .state {           color: $color_waiting }}
-      &.cancelled_state { .menu { background-color: $color_error; }
-                          .state {           color: $color_error }}
-      &.frozen_state    { .menu { background-color: $color_frozen; }
-                          .state {           color: $color_frozen }}
-      &.running_state   { .menu { background-color: $color_running; }
-                          .state {           color: $color_running }}
-      &.tentative       { .menu { background-color: $color_tentative; }
-                          .state {           color: $color_tentative }}
-      &.inspector       { .menu { background-color: $color_inspector; }
-                          .state {           color: $color_inspector }}
+      &.highlight       { .menu { &:before { opacity: 1.0; }
+                                  button { color: white; background-color: inherit; } } }
+      &.done_state      { .menu:before {   background-color: $color_done; }
+                          .state {                    color: $color_done; }
+                          .pop_up_container.open { background-color: $color_done; }}
+      &.error_state     { .menu:before {   background-color: $color_error; }
+                          .state {                    color: $color_error; }
+                          .pop_up_container.open { background-color: $color_error; }}
+      &.waiting_state   { .menu:before {   background-color: $color_waiting; }
+                          .state {                    color: $color_waiting; }
+                          .pop_up_container.open { background-color: $color_waiting; }}
+      &.stale_state     { .menu:before {   background-color: $color_waiting; }
+                          .state {                    color: $color_waiting; }
+                          .pop_up_container.open { background-color: $color_waiting; }}
+      &.cancelled_state { .menu:before {   background-color: $color_error; }
+                          .state {                    color: $color_error; }
+                          .pop_up_container.open { background-color: $color_error; }}
+      &.frozen_state    { .menu:before {   background-color: $color_frozen; }
+                          .state {                    color: $color_frozen; }
+                          .pop_up_container.open { background-color: $color_frozen; }}
+      &.running_state   { .menu:before {   background-color: $color_running; }
+                          .state {                    color: $color_running; }
+                          .pop_up_container.open { background-color: $color_running; }}
+      &.tentative       { .menu:before {   background-color: $color_tentative; }
+                          .state {                    color: $color_tentative; }
+                          .pop_up_container.open { background-color: $color_tentative; }}
+      &.inspector       { .menu:before {   background-color: $color_inspector; }
+                          .state {                    color: $color_inspector; }
+                          .pop_up_container.open { background-color: $color_inspector; }}
 
       &.tentative
       {
@@ -1055,9 +1140,9 @@ table.command_list
 
     .module_list
     {
-      flex-grow: 1;
+      flex-grow: 4;
       flex-shrink: 1;
-      max-height: 50%;
+      max-height: 33%;
       overflow-y: auto;
       padding-left: 8px;
 
@@ -1091,9 +1176,9 @@ table.command_list
 
     .artifact_list
     {
-      flex-grow: 1;
+      flex-grow: 4;
       flex-shrink: 1;
-      min-height: 50%;
+      min-height: 33%;
       overflow-y: auto;
       border-top: 1px solid $color_layout_border;
       padding-left: 8px;
@@ -1152,6 +1237,32 @@ table.command_list
             margin-right: 4px;
             color: $color_artifact_button;
             background-color: $color_artifact_button_bg;
+          }
+        }
+      }
+    }
+
+    .documentation_list
+    {
+      flex-grow: 1;
+      flex-shrink: 1;
+      max-height: 20%;
+      overflow-y: auto;
+      border-top: 1px solid $color_layout_border;
+      padding-left: 8px;
+
+      ul
+      {
+        padding: 0;
+        margin-top: 4px;
+
+        li
+        {
+          list-style: none;
+
+          a 
+          {
+            margin-left: 4px;
           }
         }
       }
@@ -1401,11 +1512,11 @@ div.data_table
             color : #ccc;
           }
 
-    //       img.table_image
-    //       {
-    //         max-height: 100%;
-    //         max-width: 100%;
-    //       }
+          img.table_image
+          {
+            max-height: 100%;
+            max-width: 100%;
+          }
 
     //       img.table_image:hover
     //       {

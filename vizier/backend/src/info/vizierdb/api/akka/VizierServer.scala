@@ -183,29 +183,33 @@ object VizierServer
 
     implicit def vizierResponseToAkkaResponse(vizierResp: Response): Route =
     {
-      val responseEntity = 
-        HttpEntity.Default(
-          contentType = vizierResp.contentType,
-          contentLength = vizierResp.contentLength,
-          data = Source.fromIterator { () =>
-            val buffer = new OutputStreamIterator()
-            executionContext.execute(
-              new Runnable {
-                def run() =
-                {
-                  try {
-                    vizierResp.write(buffer)
-                    buffer.close()
-                  } catch {
-                    case t: Throwable => 
-                      logger.error(s"Error writing Vizier response to Akka: $t")
+      val responseEntity =
+        if(vizierResp.contentLength > 0){ 
+          HttpEntity.Default(
+            contentType = vizierResp.contentType,
+            contentLength = vizierResp.contentLength,
+            data = Source.fromIterator { () =>
+              val buffer = new OutputStreamIterator()
+              executionContext.execute(
+                new Runnable {
+                  def run() =
+                  {
+                    try {
+                      vizierResp.write(buffer)
+                      buffer.close()
+                    } catch {
+                      case t: Throwable => 
+                        logger.error(s"Error writing Vizier response to Akka: $t")
+                    }
                   }
                 }
-              }
-            )
-            buffer.iterator
-          }
-        )
+              )
+              buffer.iterator
+            }
+          )
+        } else {
+          HttpEntity.empty(vizierResp.contentType)
+        }
 
       complete(
         status = vizierResp.status,

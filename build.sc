@@ -149,14 +149,17 @@ object vizier extends ScalaModule with PublishModule {
     ivy"com.databricks::spark-xml::0.15.0",
 
     // GIS
-    ivy"org.apache.sedona::sedona-core-3.0:1.1.1-incubating",
-    ivy"org.apache.sedona::sedona-sql-3.0:1.1.1-incubating",
-    ivy"org.apache.sedona::sedona-viz-3.0:1.1.1-incubating",
-    ivy"org.locationtech.jts:jts-core:1.18.2",
-    ivy"org.wololo:jts2geojson:0.14.3",
-    ivy"org.geotools:gt-main:24.0",
-    ivy"org.geotools:gt-referencing:24.0",
-    ivy"org.geotools:gt-epsg-hsql:24.0",
+    // ivy"org.apache.sedona::sedona-sql-3.0:1.1.1-incubating",
+    // ivy"org.apache.sedona::sedona-viz-3.0:1.1.1-incubating",
+    // ivy"org.locationtech.jts:jts-core:1.18.2",
+    // ivy"org.wololo:jts2geojson:0.14.3",
+    // ivy"org.geotools:gt-main:24.0",
+    // ivy"org.geotools:gt-referencing:24.0",
+    // ivy"org.geotools:gt-epsg-hsql:24.0",
+    ivy"org.apache.sedona:sedona-common:1.5.0",
+    ivy"org.apache.sedona::sedona-spark-shaded-3.0:1.5.0",
+    // ivy"org.apache.sedona::sedona-viz-3.0:1.5.0",
+    ivy"org.datasyslab:geotools-wrapper:1.5.0-28.2",
 
     // Charts
     ivy"info.vizierdb::vega:1.0.0",

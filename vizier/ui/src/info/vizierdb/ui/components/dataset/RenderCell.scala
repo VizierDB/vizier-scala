@@ -8,6 +8,8 @@ import play.api.libs.json._
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.serialized
 import info.vizierdb.serializers.mlvectorFormat
+import info.vizierdb.ui.widgets.Tooltip
+import info.vizierdb.util.StringUtils
 
 /**
  * Logic for rendering cell data values to dom nodes
@@ -26,6 +28,17 @@ object RenderCell
     onclick: (dom.Event => Unit) = (_ => ())
   ): Frag =
   {
+
+    def makeTextCell(content: String): Frag =
+      if(content.size > 23){
+        span(
+          StringUtils.ellipsize(content, 20),
+          Tooltip(
+            div(`class` := "tooltip_text", content)
+          )
+        )
+      } else { span(content) }
+
     div(
       `class` := (
         Seq("cell") ++ 
@@ -43,6 +56,11 @@ object RenderCell
             img(
               `class` := "table_image", 
               src := "data:image/png;base64,"+value.as[String], 
+              Tooltip(
+                img(`class` := "tooltip_image",
+                    src := "data:image/png;base64,"+value.as[String],
+                )
+              )
             ),
           }
         case (_, JsString("vector")) => 
@@ -50,9 +68,9 @@ object RenderCell
             value.as[serialized.MLVector].show(5)
           }
         case (_, JsString("string")) => 
-          span(value.as[String])
+          makeTextCell(value.as[String])
         case _ => 
-          span(value.toString())
+          makeTextCell(value.toString())
       }),
       (if(caveatted.isDefined){
         val callback = caveatted.get

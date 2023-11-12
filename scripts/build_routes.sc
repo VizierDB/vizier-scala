@@ -401,7 +401,7 @@ def websocketAPICall(route: Route): String =
     if(shouldIncludeBase){
       s"""  def ${route.actionLabel}(
          |${allParams.map { "    "+_ }.mkString(", \n")}
-         |  ): ${if(route.returnsAsScalaType == "Unit") { "Unit" } else { s"Future[${route.returnsAsScalaType}]" }} =
+         |  ): ${if(route.returnsAsScalaType == "Unit") { "Future[Any]" } else { s"Future[${route.returnsAsScalaType}]" }} =
          |  {
          |    val url = ${route.actionLabel}URL(${urlInvocation.mkString(", ")})
          |    Ajax.${route.verb.toLowerCase}(

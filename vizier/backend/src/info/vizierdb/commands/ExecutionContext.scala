@@ -541,7 +541,11 @@ class ExecutionContext(
    */
   def displayDataset(name: String, offset: Long = 0l, limit: Int = VizierServer.DEFAULT_DISPLAY_ROWS) = 
   {
+    logger.trace("Displaying Dataset")
+
     val dataset = artifact(name).get
+
+    logger.trace("Retrieving Data...")
 
     val data =  CatalogDB.withDBReadOnly { implicit s => 
                   dataset.datasetData(
@@ -550,6 +554,9 @@ class ExecutionContext(
                     includeCaveats = true
                   )
                 }()
+
+    logger.trace("Retrieving Row Count...")
+
     val rowCount: Long = 
         CatalogDB.withDB { implicit s => 
           dataset.datasetProperty("count")
@@ -560,6 +567,8 @@ class ExecutionContext(
             CatalogDB.withDB { implicit s => dataset.updateDatasetProperty("count", JsNumber(count)) }
             count
           }
+
+    logger.trace("Rendering dataset view...")
 
     message(MIME.DATASET_VIEW, 
       Json.toJson(

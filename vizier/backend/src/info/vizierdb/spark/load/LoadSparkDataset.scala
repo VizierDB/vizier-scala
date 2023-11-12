@@ -66,7 +66,13 @@ object LoadSparkDataset
         Vizier.sparkSession
               .read
               .format(format)
-              .options(sparkOptions)
+              .options(
+                sparkOptions ++ (
+                  format match {
+                    case "csv" => Map("inferSchema" -> "true")
+                    case _ => Map.empty
+                  }
+                ))
               .load(url.getPath(projectId, noRelativePaths = true)._1)
               .schema
       },

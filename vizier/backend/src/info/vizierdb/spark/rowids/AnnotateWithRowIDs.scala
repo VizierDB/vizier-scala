@@ -350,11 +350,21 @@ class AnnotateWithRowIds(
       }
 
       /*********************************************************/
-      case Window(
+      case w@Window(
           windowExpressions: Seq[NamedExpression],
           partitionSpec: Seq[Expression],
           orderSpec: Seq[SortOrder],
-          child: LogicalPlan) => ???
+          child: LogicalPlan) => 
+      {
+        val (newChild, annotation) = recur(child);
+        (
+          w.copy(
+            windowExpressions = windowExpressions :+ annotation,
+            child = newChild
+          ),
+          annotation
+        )
+      }
 
       /*********************************************************/
       case Expand(

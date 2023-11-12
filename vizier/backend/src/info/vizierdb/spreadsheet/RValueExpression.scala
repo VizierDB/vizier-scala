@@ -20,6 +20,9 @@ case class RValueExpression(rvalue: RValue)
 
   override def toString: String = 
     rvalue.toString()
+
+  override def sql: String = 
+    rvalue.column.toString()
 }
 
 case class InvalidRValue(msg: String)
