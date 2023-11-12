@@ -1,3 +1,17 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.commands.plot
 
 import org.apache.spark.sql.types._
@@ -32,7 +46,6 @@ object BarChart extends Command
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
-  val PARAM_SORT = "sort"
 
   override def name: String = "Bar Chart"
 
@@ -44,7 +57,6 @@ object BarChart extends Command
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
       StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
-      BooleanParameter(id = PARAM_SORT, name = "Sort", required = true, default = Some(false))
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
@@ -73,12 +85,11 @@ object BarChart extends Command
             datasetName = series.get[String](PARAM_DATASET),
             xIndex      = series.get[Int](PARAM_X),
             yIndex      = series.get[Int](PARAM_Y),
-            filter      = series.getOpt[String](PARAM_FILTER),
-            sort        = series.get[Boolean](PARAM_SORT),
+            xDataType   = StringType,
             name        = series.getOpt[String](PARAM_LABEL),
-            isBarChart  = true
           )
-          .aggregateSeries
+          .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
+          .aggregated()
         }
       )
     
@@ -105,8 +116,8 @@ object BarChart extends Command
           VegaScale("x", VegaScaleType.Band, 
             padding = Some(0.2),
             range = Some(VegaRange.Width),
-            domain = Some(VegaDomain.Literal(series.uniqueXValues
-            ))),
+            domain = Some(VegaDomain.Literal(series.uniqueXValues.toSeq))
+          ),
             
           // 'y': The y axis scale, mapping from data.y -> chart height
           VegaScale("y", VegaScaleType.Linear, 
@@ -116,11 +127,14 @@ object BarChart extends Command
               JsNumber(series.maxY)
               // JsNumber(series.minSumY),
               // JsNumber(series.maxSumY)
-            )))),
+            )))
+          ),
+
           // 'color': The color scale, mapping from data.c -> color category
           VegaScale("color", VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
-            domain = Some(VegaDomain.Literal(series.names.map { JsString(_) })))
+            domain = Some(VegaDomain.Literal(series.names.map { JsString(_) }))
+          )
         ),
 
         // Define the chart axes (based on the 'x' and 'y' scales)

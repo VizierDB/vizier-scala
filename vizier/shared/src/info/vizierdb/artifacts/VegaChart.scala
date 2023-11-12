@@ -1670,15 +1670,14 @@ object VegaValueReference
   /**
    * Used for Width of bar chart 
    */
-  case class ScaleBandRef(
-    scale: String,
-    band: Option[Int]
+  case class Band(
+    band: Int
   ) extends VegaValueReference
 
   implicit val fieldFormat: Format[Field] = Json.format
   implicit val valueFormat: Format[Literal] = Json.format
   implicit val signalFormat: Format[Signal] = Json.format
-  implicit val scaleBandRefFormat: Format[ScaleBandRef] = Json.format
+  implicit val scaleBandRefFormat: Format[Band] = Json.format
   implicit val scaleFormat: Format[ScaleTransform] = Format[ScaleTransform](
     new Reads[ScaleTransform]{
       def reads(j: JsValue): JsResult[ScaleTransform] =
@@ -1714,6 +1713,8 @@ object VegaValueReference
                 j.as[ScaleTransform]
               } else if(elems contains "field"){
                 j.as[Field]
+              } else if(elems contains "band"){
+                j.as[Band]
               } else if(elems contains "signal"){
                 j.as[Signal]
               } else {
@@ -1730,7 +1731,7 @@ object VegaValueReference
           case j:Literal => Json.toJson(j)
           case j:ScaleTransform => Json.toJson(j)
           case j:Signal => Json.toJson(j)
-          case j:ScaleBandRef => Json.toJson(j)// handle ScaleBandRef
+          case j:Band => Json.toJson(j)
         }
     }
   )
