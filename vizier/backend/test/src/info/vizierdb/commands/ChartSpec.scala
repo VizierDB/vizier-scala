@@ -107,5 +107,24 @@ class ChartSpec
     chart.data(0).values must beSome
     chart.data(0).values.get must haveSize(rCountOfAs)
   }
+  
+  "CDF" >>
+  {
+    project.append("plot", "cdf")(
+      BarChart.PARAM_SERIES -> Seq(
+        Map(
+          BarChart.PARAM_DATASET -> "r",
+          BarChart.PARAM_X -> 0,
+        )
+      ),
+      BarChart.PARAM_ARTIFACT -> "cdf"
+    )
+    project.waitUntilReadyAndThrowOnError
+    val chart =
+      project.artifact("cdf").json.as[VegaChart]
+    chart.data(0).name must beEqualTo("r")
+    chart.data(0).values must beSome
+    chart.data(0).values.get must haveSize(rCount)
+  }
 
 }
