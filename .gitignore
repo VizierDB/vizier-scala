@@ -26,3 +26,4 @@ __pycache__
 /vizier/resources/swagger
 /.vizier-cache
 /package-lock.json
+maven
