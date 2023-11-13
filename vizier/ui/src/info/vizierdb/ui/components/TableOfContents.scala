@@ -15,6 +15,7 @@ import info.vizierdb.serialized
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.network.SpreadsheetTools
 import info.vizierdb.ui.widgets.Tooltip
+import info.vizierdb.ui.widgets.SearchWidget
 
 class TableOfContents(
   projectId: Identifier,
@@ -107,9 +108,14 @@ class TableOfContents(
           .branchSubscription.get
           .Client
 
+  val artifactSearch = 
+    SearchWidget("Search artifacts...")
+
+  val visibleArtifacts:Rx[Iterable[(String, (serialized.ArtifactSummary, WorkflowElement))]] = 
+    artifactSearch.filter(artifacts){ _._1.contains(_) }
 
   val artifactNodes = 
-    artifacts.map { artifacts => 
+    visibleArtifacts.map { artifacts => 
               div(`class` := "the_artifacts",
                 artifacts
                   .toSeq
@@ -243,11 +249,12 @@ class TableOfContents(
       ),
       div(`class` := "artifact_list",
         h3(`class` := "title", "Artifacts"),
+        artifactSearch.root,
         artifactNodes,
       ),
       div(`class` := "documentation_list",
         h3(`class` := "title", "Packages"),
-        documentationNodes
+        documentationNodes,
       )
     )
 }
