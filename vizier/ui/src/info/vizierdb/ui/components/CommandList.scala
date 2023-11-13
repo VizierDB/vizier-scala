@@ -186,7 +186,7 @@ object CommandList
   val DEFAULT: Seq[(String, Seq[SpecialCommand])] = Seq(
     "Import" -> Seq(
       SpecialCommand(label = "Dataset", icon = "load_table", packageId = "data", commandId = "load", description = "Import a tabular data file (e.g., CSV) or previously exported dataframe"),
-      SpecialCommand(label = "Test",        icon = "line_plot",   packageId = "data", commandId = "test", description = "Test Button Editor"),
+      SpecialCommand(label = "Test",    icon = "line_plot",  packageId = "data", commandId = "plot", description = "Test Button Editor"),
       // SpecialCommand(label = "Import File", icon = "load", packageId = "data", commandId = "load"),
     ),
     "Script" -> Seq(

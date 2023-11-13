@@ -23,12 +23,11 @@ import info.vizierdb.util.ExperimentalOptions
 import info.vizierdb.spark.SparkSchema.dataTypeFormat
 import org.apache.spark.sql.types.DataType
 
-object TestDatasetEditor
+object PlotDataset
   extends Command
   with LazyLogging
 {
     val PARAM_DATASET = "dataset"
-
 
     def name: String = "Test Dataset Editor"
 

@@ -109,7 +109,7 @@ object ModuleEditor
   )(implicit owner: Ctx.Owner): ModuleEditor = {
     (packageId, command.id) match {
       case ("data", "load")   => new LoadDatasetEditor(delegate)
-      case ("data", "test")   => new Editor(delegate)
+      case ("data", "plot")   => new PlotEditor(delegate)
       case ("data", "unload") => new UnloadDatasetEditor(delegate)
       case _ => new DefaultModuleEditor(packageId, command, delegate)
     }
