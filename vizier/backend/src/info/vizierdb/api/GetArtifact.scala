@@ -57,7 +57,6 @@ object GetArtifact
     name: Option[String] = None,
   ): serialized.ArtifactDescription = 
   {
-    // val forceProfiler = true
     val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 

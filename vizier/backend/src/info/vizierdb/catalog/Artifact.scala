@@ -251,13 +251,10 @@ case class Artifact(
                )
     
     val df = dataframe(session)()
-    //println(datasetDescriptor.properties)
-    //println(datasetDescriptor.properties.get("is_profiled"))
     if (forceProfiler) {
       val updatedProperties = datasetDescriptor.properties.get("is_profiled") match {
         case Some(jsValue) if jsValue.isInstanceOf[JsBoolean] =>
-          // do nothing
-          println("profiler has already been generated")
+          // profiler has been generated so do nothing
         case _ =>
           // run the profiler
           val dataProfile: Map[String, JsValue] = DataProfiler.apply(df)
@@ -266,7 +263,7 @@ case class Artifact(
           // Transform the dataProfile into a sequence of tuples
           // Filter out the specified keys and transform the remaining dataProfile into a sequence of tuples
           val dynamicProperties: Seq[(String, JsValue)] = dataProfile
-            .filterKeys(key => key != "is_profiled" && key != "count")
+            .filterKeys(key => key != "is_profiled")
             .toSeq
             .map {
               case (key, value) => (key, JsObject(Map(key -> value)))
@@ -278,7 +275,7 @@ case class Artifact(
           )
       }
     }
-    //println(datasetDescriptor.properties)
+
 
     return { () => 
       try {
