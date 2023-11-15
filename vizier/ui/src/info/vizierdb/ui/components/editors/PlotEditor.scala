@@ -31,57 +31,102 @@ class PlotEditor(
     extends ModuleEditor
     with Logging
 {
-    override val editorFields: Frag = {
-        div(
-            label("Dataset: "),
-            dataset.editor,
-            label("X-axis: "),
-            xInput.editor,
-            label("Y-axis: "),
-            yInput.editor
-        )
-    }
 
-    override def currentState: Seq[CommandArgument] = {
-        Seq(
-            dataset.toArgument,
-            xInput.toArgument,
-            yInput.toArgument
+    override val editorFields: Frag = {
+        div(`class` := "module_list",
+        div(
+            div(`class` := "module tentative", id := "element_0",
+            div(`class` := "menu",
+                div(`class` := "spacer")
+            ),
+            div(`class` := "module_body",
+                span(`class` := "reactive",
+                div(`class` := "module_editor",
+                    div(style := "width: 100%;",
+                    div(style := "width: 100%;",
+                        fieldset(
+                        legend("Lines"),
+                        table(`class` := "parameter_list",
+                            thead(
+                            tr(
+                                th("Dataset: "),
+                                th("X:"),
+                                th("Y:"),
+
+                                th(
+                                button(
+                                    i(`class` := "fa fa-ellipsis-h", aria.hidden := "true")
+                                )
+                                ),
+                                th()
+                            )
+                            ),
+                            tbody(
+                            // ... tbody content
+                            )
+                        )
+                        )
+                    )
+                    ),
+                    div(`class` := "editor_actions",
+                    button(`class` := "cancel",
+                        i(`class` := "fa fa-arrow-left", aria.hidden := "true"), " Back"
+                        // onclick event handler
+                    ),
+                    div(`class` := "spacer"),
+                    button(`class` := "save",
+                        i(`class` := "fa fa-cogs", aria.hidden := "true"), " Plot"
+                        // onclick event handler
+                    )
+                    )
+                )
+                )
+            )
+            ),
+            div(`class` := "inter_module",
+            div(`class` := "elements",
+                span(`class` := "separator", "———"),
+                button(
+                i(`class` := "fa fa-pencil-square-o", aria.hidden := "true")
+                // onclick event handler
+                ),
+                button(
+                i(`class` := "fa fa-plus", aria.hidden := "true")
+                // onclick event handler
+                ),
+                button(
+                i(`class` := "fa fa-binoculars", aria.hidden := "true")
+                // onclick event handler
+                ),
+                span(`class` := "separator", "———")
+            )
+            )
         )
-    }
+        )
+            }
+
+    val dataset = 
+        new ArtifactParameter(
+        id = "dataset",
+        name = "Dataset: ",
+        artifactType = ArtifactType.DATASET,
+        artifacts = delegate.visibleArtifacts
+                            .map { _.mapValues { _._1.t } },
+        required = true,
+        hidden = false,
+        )
 
     override def loadState(arguments: Seq[CommandArgument]): Unit = {
         for (arg <- arguments) {
             arg.id match {
                 case "dataset" => dataset.set(arg.value)
-                case "xInput" => xInput.set(arg.value)
-                case "yInput" => yInput.set(arg.value)
             }
         }
     }
 
-    val dataset = new ArtifactParameter(
-        id = "dataset",
-        name = "Dataset: ",
-        artifactType = ArtifactType.DATASET,
-        artifacts = delegate.visibleArtifacts.map(_.mapValues(_._1.t)),
-        required = true,
-        hidden = false
-    )
-
-    val xInput = new StringParameter(
-        id = "xInput",
-        name = "X-axis: ",
-        value = "",
-        required = true,
-        hidden = false
-    )
-
-    val yInput = new StringParameter(
-        id = "yInput",
-        name = "Y-axis: ",
-        value = "",
-        required = true,
-        hidden = false
-    )
-}
+    override def currentState: Seq[CommandArgument] = {
+        Seq(
+            dataset.toArgument,
+            )
+        }
+    }
