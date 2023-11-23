@@ -46,7 +46,7 @@ object PlotUtils
   case class Series(
     val dataset: String,
     val x: String,
-    val y: String,
+    val y: Seq[String],
     val dataframe: DataFrame,
     val regression: Option[VegaRegressionMethod] = None,
     var name: String = null,
@@ -202,9 +202,9 @@ object PlotUtils
     def maxX = 
       rows.map { _.getAs[Double](x) }.max
     def minY = 
-      rows.map { _.getAs[Double](y) }.min
+      y.map { y => rows.map { _.getAs[Double](y) }.min }.min
     def maxY = 
-      rows.map { _.getAs[Double](y) }.max
+      y.map { y => rows.map { _.getAs[Double](y) }.max }.max
   }
 
 
@@ -212,7 +212,7 @@ object PlotUtils
     context: ExecutionContext,
     datasetName: String, 
     xIndex: Int, 
-    yIndex: Int, 
+    yIndex: Seq[Int], 
     xDataType: DataType = DoubleType,
     yDataType: DataType = DoubleType,
     castToNumeric: Set[Int] = null,
@@ -238,7 +238,7 @@ object PlotUtils
     PlotUtils.Series(
       dataset = datasetName,
       x = dataframe.columns(xIndex),
-      y = dataframe.columns(yIndex),
+      y = yIndex.map { dataframe.columns(_) },
       dataframe = dataframe,
       regression = regression,
       name = name.getOrElse { null }

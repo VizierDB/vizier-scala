@@ -47,32 +47,19 @@ object BarChart extends Command
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
   val PARAM_CATEGORY = "category"
+  val PARAM_CATEGORY_AXIS = "categoryAxis"
+  val PARAM_Y_AXIS = "yAxis"
 
   override def name: String = "Bar Chart"
 
   override def parameters: Seq[Parameter] = Seq(
     ListParameter(id = PARAM_SERIES, name = "Bars", components = Seq(
-      // Dataset [DatasetParameter]
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
-
-      // X column [ColIdParameter]
       ColIdParameter(id = PARAM_X, name = "X-axis"),
-      
-      // Y column [ListParameter]
-      ListParameter(id = PARAM_Y, name = "Y-axis", components = Seq(
-        // Y column [ColIdParameter]
+      ColIdListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(
         ColIdParameter(id = PARAM_Y, name = "Y-axis"),
       )),
-      
-      // Category columns [ListParameter]
-      ListParameter(id = PARAM_CATEGORY, name = "Category", components = Seq(
-        // Category Column [ColIdParameter]
-        ColIdParameter(id = PARAM_Y, name = "Y-axis"),
-      )),
-      // ColIdParameter(id = PARAM_Y, name = "Y-axis"),
-      StringParameter(id = PARAM_LABEL, name = "Label", required = false),
-      StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
-      StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
+      ListParameter(id = PARAM_CATEGORY, name = "Categories", components = Seq()),
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
@@ -100,7 +87,7 @@ object BarChart extends Command
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
             xIndex      = series.get[Int](PARAM_X),
-            yIndex      = series.get[Int](PARAM_Y),
+            yIndex      = series.get[Seq[Int]](PARAM_Y_AXIS),
             xDataType   = StringType,
             name        = series.getOpt[String](PARAM_LABEL),
           )

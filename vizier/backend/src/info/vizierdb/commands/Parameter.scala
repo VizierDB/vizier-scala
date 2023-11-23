@@ -518,6 +518,147 @@ case class ListParameter(
   }
 }
 
+case class ColIdListParameter(
+  id: String,
+  name: String,
+  components: Seq[Parameter],
+  required: Boolean = true,
+  hidden: Boolean = false
+) extends Parameter 
+{
+  def datatype = "list"
+  def doStringify(j: JsValue): String = 
+  {
+    val rows = j.as[Seq[Map[String, JsValue]]]
+    rows.map { row => 
+      "<" + components.map { t => t.stringify(row.getOrElse(t.id, t.getDefault)) }.mkString(",") + ">"
+    }.mkString("; ")
+  }
+  def zipParameters[T](record: Map[String,T]): Seq[(Parameter, Option[T])] =
+    components.map { component => component -> record.get(component.id) }
+
+  def doValidate(j: JsValue): Iterable[String] = 
+    if ((j == JsNull) && (!required)) { return None }
+    else if(!j.isInstanceOf[JsArray]){ return Some(s"Expected a list for $name") }
+    else { 
+      j.as[Seq[JsValue]].flatMap { elem => 
+        if(!elem.isInstanceOf[JsObject]) { 
+          return Some("Expected list elements in $name to be objects, but $elem isn't.") 
+        }
+        zipParameters(elem.as[Map[String, JsValue]])
+          .flatMap { case (component, v) => 
+            component.validate( v.getOrElse { component.getDefault }) 
+          }
+      }
+    }
+  def encode(v: Any): JsValue = 
+    v match { 
+      case Seq() => JsArray()
+      case iter:Iterable[Any] => {
+        val elems = iter.toSeq
+        val ret = 
+          if(elems.head.isInstanceOf[Map[_,_]]){
+            elems.asInstanceOf[Seq[Map[String,Any]]].map { 
+              zipParameters(_).map { case (component, subV) => 
+                component.id -> 
+                  subV.map { component.encode(_) }.getOrElse { component.getDefault }
+              }.toMap
+            }
+          } else if(components.length == 1) {
+            elems.map { elem => Map(components.head.id -> components.head.encode(elem)) }
+          } else {
+            throw new VizierException(s"Invalid Parameter to $name (expected Seq to contain Maps, but instead has ${elems.head})")
+          }
+        return Json.toJson(ret)
+      }
+      case _ => throw new VizierException(s"Invalid Parameter to $name (got ${v.getClass.getSimpleName}, but expected Seq)")
+    }
+  override def convertToProperty(j: JsValue): JsValue = 
+  {
+    Json.toJson(
+      j.as[Seq[Map[String,JsValue]]].map { row =>
+        components.map { param => 
+          val v = row.getOrElse(param.id, param.getDefault)
+          serialized.CommandArgument(id = param.id, value = param.convertToProperty(v))
+        }
+      }
+    )
+  }
+  override def convertFromProperty(
+    j: JsValue,
+    preprocess: ((Parameter, JsValue) => JsValue) = { (_, x) => x }
+  ): JsValue = 
+  {
+    JsArray(
+      j.as[Seq[serialized.CommandArgumentList.T]].map { case row => 
+        val arguments = serialized.CommandArgumentList.toMap(row)
+        JsObject(
+          components.flatMap { param => 
+            arguments.get(param.id)
+                     .map { v => 
+                        param.id -> 
+                          param.convertFromProperty(
+                            preprocess(param, v),
+                            preprocess
+                          )
+                     }
+          }
+          .toMap
+        )
+      }
+    )
+  }
+  override def describe(parent: Option[String], index: Int): Seq[serialized.ParameterDescription] =
+  {
+    super.describe(parent, index) ++ Parameter.doDescribe(components, index+1, Some(id))._1
+  }
+
+  override def getDefault: JsValue = JsArray(Seq())
+  override def replaceParameterValue( 
+    arg: JsValue, 
+    rule: PartialFunction[(Parameter, JsValue),JsValue]
+  ): Option[JsValue] =
+  {
+    var forceNonNoneReturn = false
+    val base: Seq[Map[String, JsValue]] = 
+      super.replaceParameterValue(arg, rule)
+           .flatMap { x => forceNonNoneReturn = true;
+                       x.asOpt[Seq[Map[String, JsValue]]] }
+           .getOrElse { Seq.empty }
+    val listReplacements: Seq[Option[JsObject]] = 
+      base.map { lineArgs =>
+        val lineReplacements = 
+          components.map { param =>
+            param.name -> 
+              param.replaceParameterValue(lineArgs.getOrElse(param.name, JsNull), rule)
+          }.filter { _._2.isDefined }
+           .map { x => x._1 -> x._2.get }
+           .toMap
+        if(lineReplacements.isEmpty) { None }
+        else {
+          Some(
+            JsObject(
+              lineArgs.map { case (k, v) => 
+                k -> lineReplacements.getOrElse(k, v)
+              }.toMap
+            )
+          )
+        }
+      }
+    if(listReplacements.flatten.isEmpty || !forceNonNoneReturn){ None }
+    else {
+      Some(
+        JsArray(
+          listReplacements.zip(base).map { case (replacement, original) => 
+            replacement.getOrElse(JsObject(original))
+          }.toSeq
+        )
+      )
+    }
+  }
+}
+
+
 case class RecordParameter(
   id: String,
   name: String,
