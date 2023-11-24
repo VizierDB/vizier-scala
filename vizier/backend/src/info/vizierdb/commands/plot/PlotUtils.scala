@@ -93,20 +93,22 @@ object PlotUtils
      * Retrieve the [VegaData] object encoding a regression over this series
      * @return          The [VegaData] object encoding a regression over this series
      */
-    def vegaRegression: Option[VegaData] =
-      regression.map { regression => 
+    def vegaRegression: Option[Seq[VegaData]] =
+    regression.flatMap { regressionMethod =>
+      Some(y.map { yVal =>
         VegaData(
-          name = regressionName,
+          name = s"${regressionName}_$yVal",
           source = Some(Seq(name)),
           transform = Some(Seq(
             VegaTransform.Regression(
               x = x,
-              y = y,
-              method = regression
+              y = yVal,
+              method = regressionMethod
             )
           ))
         )
-      }
+      })
+    }
 
     /**
      * Transform the series by aggregating the y-axis value.
@@ -190,7 +192,7 @@ object PlotUtils
 
       copy(
         dataframe = newDataframe,
-        y = cdf_attr
+        y = Seq(cdf_attr)
       )
     }
 
@@ -201,11 +203,11 @@ object PlotUtils
       rows.map { _.getAs[Double](x) }.min
     def maxX = 
       rows.map { _.getAs[Double](x) }.max
-    def minY = 
-      y.map { y => rows.map { _.getAs[Double](y) }.min }.min
-    def maxY = 
-      y.map { y => rows.map { _.getAs[Double](y) }.max }.max
-  }
+    def minY: Double = 
+      y.map(yCol => rows.map(_.getAs[Double](yCol)).min).min
+    def maxY: Double = 
+      y.map(yCol => rows.map(_.getAs[Double](yCol)).max).max
+}
 
 
   def makeSeries(
@@ -225,23 +227,23 @@ object PlotUtils
     // Make sure the relevant columns are numeric
     dataframe = dataframe.select(
       dataframe.columns.zipWithIndex.map { case (col, idx) =>
-        if(idx == xIndex){
+        if (idx == xIndex) {
           dataframe(col).cast(xDataType)
-        } else if(idx == yIndex){
+        } else if (yIndex.contains(idx)) {
           dataframe(col).cast(yDataType)
         } else {
           dataframe(col)
         }
-      }:_*
+      }: _*
     )
 
     PlotUtils.Series(
       dataset = datasetName,
       x = dataframe.columns(xIndex),
-      y = yIndex.map { dataframe.columns(_) },
+      y = yIndex.map(dataframe.columns(_)),
       dataframe = dataframe,
       regression = regression,
-      name = name.getOrElse { null }
+      name = name.getOrElse(null)
     )
   }
 
@@ -280,7 +282,7 @@ object PlotUtils
      * Compute the set of unique y-axis labels represented in all series
      */
     def uniqueYAxes = 
-      series.map { _.y }.toSet
+      series.flatMap { _.y }.toSet
 
     /**
      * Compute the set of unique dataset + x-axis label pairs represented in all series
@@ -318,7 +320,7 @@ object PlotUtils
      */
     private val seriesLabel: Series => String =
       if(uniqueDatasets.size == size)             { series => series.dataset }
-      else if(uniqueYAxes.size == size)           { series => series.y }
+      else if (uniqueYAxes.size == size)          { series => series.y.mkString("_") }
       else if(uniqueXAxes.size == size)           { series => series.x }
       else if(uniqueDatasetsAndYaxes.size == size){ series => series.dataset+"_"+series.y }
       else if(uniqueDatasetsAndXaxes.size == size){ series => series.dataset+"_"+series.x }
@@ -493,7 +495,7 @@ object PlotUtils
       series.map { _.vegaData } ++
           // Note: vegaRegression returns None if no regression is configured
           // The following list will be empty for series without regressions
-      series.flatMap { _.vegaRegression } 
+      series.flatMap { _.vegaRegression.getOrElse(Seq.empty) }
 
     def names = 
       series.map { _.name }
@@ -526,55 +528,53 @@ object PlotUtils
       tooltip: Boolean = false,
       fill: Boolean = false,
       opacity: Double = 1.0
-    ) =
-      series.map { s =>
-        val name = s.name
-        val encoding = VegaMarkEncoding(
-          x = Some(VegaValueReference.Field(s.x).scale("x")),
-          y = Some(VegaValueReference.Field(s.y).scale("y")),
-          stroke = Some(VegaValueReference.Literal(JsString(name)).scale("color")),
-          fill = 
-            if(!fill){ None }
-            else { Some(VegaValueReference.Literal(JsString(name)).scale("color")) },
-          tooltip = 
-            if(!tooltip){ None }
-            else { Some(VegaValueReference.Signal("datum")) },
-          opacity = 
-            if(opacity >= 1.0){ None }
-            else { Some(opacity) },
-          width = 
-            if(markType == VegaMarkType.Rect) {
-              Some(VegaValueReference.Band(1).scale("x"))
-            } else { None },
-          y2 = 
-            if(markType == VegaMarkType.Rect) {
-              Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
-            } else { None }
-        )
-        VegaMark(
-          markType,
-          from = Some(VegaFrom(data = name)),
-          encode = Some(VegaMarkEncodingGroup(
-            // 'enter' defines data in the initial state.
-            enter = Some(encoding),
-          ))
-        )
-      } ++
-      series.flatMap { s => 
-        s.regression.map { _ => 
-          VegaMark(
-            VegaMarkType.Line,
-            from = Some(VegaFrom(data = s.regressionName)),
-            encode = Some(VegaMarkEncodingGroup(
-              // 'enter' defines data in the initial state.
-              enter = Some(VegaMarkEncoding(
-                x = Some(VegaValueReference.Field(s.x).scale("x")),
-                y = Some(VegaValueReference.Field(s.y).scale("y")),
-                stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
-              ))
-            ))
+    ): Seq[VegaMark] =
+      series.flatMap { s =>
+        s.y.flatMap { yVal =>
+          val encoding = VegaMarkEncoding(
+            x = Some(VegaValueReference.Field(s.x).scale("x")),
+            y = Some(VegaValueReference.Field(yVal).scale("y")),
+            stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+            fill = 
+              if(!fill) None 
+              else Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+            tooltip = 
+              if(!tooltip) None 
+              else Some(VegaValueReference.Signal("datum")),
+            opacity = 
+              if(opacity >= 1.0) None 
+              else Some(opacity),
+            width = 
+              if(markType == VegaMarkType.Rect) Some(VegaValueReference.Band(1).scale("x"))
+              else None,
+            y2 = 
+              if(markType == VegaMarkType.Rect) Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
+              else None
           )
+          Some(VegaMark(
+            markType,
+            from = Some(VegaFrom(data = s.name)),
+            encode = Some(VegaMarkEncodingGroup(
+              enter = Some(encoding)
+            ))
+          ))
         }
+      } ++ series.flatMap { s => 
+          s.regression.map { _ => 
+            s.y.map { yVal =>
+              Some(VegaMark(
+                VegaMarkType.Line,
+                from = Some(VegaFrom(data = s.regressionName)),
+                encode = Some(VegaMarkEncodingGroup(
+                  enter = Some(VegaMarkEncoding(
+                    x = Some(VegaValueReference.Field(s.x).scale("x")),
+                    y = Some(VegaValueReference.Field(yVal).scale("y")),
+                    stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+                  ))
+                ))
+              ))
+            }
+          }.getOrElse(Seq.empty).flatten
       }
   }
 }
