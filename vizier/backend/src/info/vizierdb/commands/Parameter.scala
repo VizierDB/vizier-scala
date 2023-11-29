@@ -526,7 +526,7 @@ case class ColIdListParameter(
   hidden: Boolean = false
 ) extends Parameter 
 {
-  def datatype = "list"
+  def datatype = "listcolid"
   def doStringify(j: JsValue): String = 
   {
     val rows = j.as[Seq[Map[String, JsValue]]]
