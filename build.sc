@@ -15,7 +15,7 @@ import java.util.Calendar
  *** The Vizier Backend 
  *************************************************/
 object vizier extends ScalaModule with PublishModule {
-  val VERSION       = "2.0.0-SNAPSHOT"
+  val VERSION       = "2.1.0-SNAPSHOT"
   val PLAY_JS       = ivy"com.typesafe.play::play-json::2.9.2"
                            
   val MIMIR_CAVEATS = ivy"info.vizierdb::mimir-caveats::0.3.6"
