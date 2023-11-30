@@ -161,6 +161,20 @@ case class Workflow(
       }.map { Cell(_) }.single.apply()
     }
 
+  def cellAndModuleByModuleId(moduleId: Identifier)(implicit session: DBSession): Option[(Cell, Module)] =
+    {
+      withSQL {
+        val c = Cell.syntax
+        val m = Module.syntax
+        select(c.resultAll,m.resultAll)
+          .from(Cell as c)
+          .join(Module as m)
+          .where.eq(c.workflowId, id)
+            .and.eq(c.moduleId, moduleId)
+            .and.eq(m.id, moduleId)
+      }.map { rs => (Cell(rs), Module(rs)) }.single.apply()
+    }
+
   def length(implicit session: DBSession): Int = Workflow.getLength(id)
   def abortIfNeeded(implicit session:DBSession): Workflow =
   {

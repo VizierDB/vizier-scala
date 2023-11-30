@@ -23,7 +23,7 @@ import info.vizierdb.ui.widgets.SystemNotification
 
 class BranchSubscription(
   project: Project, 
-  branchId: Identifier, 
+  val branchId: Identifier, 
 )
   extends Object
   with Logging
@@ -103,6 +103,11 @@ class BranchSubscription(
   def onError(event: dom.Event) = 
   {
     logger.error(s"Error: $event")
+  }
+
+  def reconnect() =
+  {
+    socket = getSocket();
   }
 
   implicit val websocketRequestFormat = Json.format[websocket.WebsocketRequest]

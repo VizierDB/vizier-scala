@@ -7,10 +7,9 @@ import mill.scalalib._
 import mill.scalalib.publish._
 import mill.scalajslib._
 import coursier.maven.{ MavenRepository }
-import mill.util.Ctx
 import mill.api.{ Result, PathRef }
 import io.bit3.jsass.{ Compiler => SassCompiler, Options => SassOptions, OutputStyle => SassOutputStyle }
-
+import java.util.Calendar
 
 /*************************************************
  *** The Vizier Backend 
@@ -43,14 +42,39 @@ object vizier extends ScalaModule with PublishModule {
     super.compile()
   }
 
-  def sources = T.sources(
-    millSourcePath / "backend" / "src",
-    millSourcePath / "shared" / "src"
-  )
-  def resources = T.sources(
-    millSourcePath / "shared" / "resources",
-    ui.resourceDir()
-  )
+  def sources = T.sources {
+    super.sources() ++ Seq[PathRef](
+      PathRef(millSourcePath / "backend" / "src"),
+      PathRef(millSourcePath / "shared" / "src"),
+    )
+  }
+  def resources = T.sources {
+    os.write(T.dest / "vizier-version.txt", versionString())
+    super.resources() ++ Seq[PathRef](
+      PathRef(millSourcePath / "resources"),
+      PathRef(ui.resourceDir()),
+      PathRef(T.dest)
+    )
+  }
+  def versionString:T[String] = T {
+    val gitVersion:String = 
+      os.proc("git", "branch")
+        .call()
+        .out.lines()
+        .filter { _ startsWith "*" }
+        .head
+        .substring(2)
+    val gitRevision: String =
+      os.proc("git", "log", "--oneline")
+        .call()
+        .out.lines()
+        .head
+        .split(" ")(0)
+    val date =
+      Calendar.getInstance();
+
+    f"$VERSION (revision $gitVersion-$gitRevision; built ${date.get(Calendar.YEAR)}%04d-${date.get(Calendar.MONTH)}%02d-${date.get(Calendar.DAY_OF_MONTH)}%02d)"
+  }
 
   def internalJavaVersion = T {
     try {
@@ -84,7 +108,10 @@ object vizier extends ScalaModule with PublishModule {
  *************************************************/
   def ivyDeps = Agg(
     ////////////////////// Mimir ///////////////////////////
-    MIMIR_CAVEATS,
+    MIMIR_CAVEATS
+      .exclude(
+        "org.apache.logging.log4j" -> "log4j-slf4j-impl"
+      ),
 
     ////////////////////// Catalog Management //////////////
     ivy"org.scalikejdbc::scalikejdbc::4.0.0",
@@ -153,7 +180,7 @@ object vizier extends ScalaModule with PublishModule {
  *** Backend Tests
  *************************************************/
   object test 
-    extends Tests 
+    extends ScalaTests 
     with TestModule.Specs2 
   {
     def scalaVersion = vizier.scalaVersion
@@ -164,6 +191,7 @@ object vizier extends ScalaModule with PublishModule {
     )
     def resources = T.sources(
       millSourcePath / os.up / "backend" / "test" / "resources",
+
     )
 
     def scalacOptions = Seq("-Yrangepos")
@@ -239,7 +267,7 @@ object vizier extends ScalaModule with PublishModule {
 /*************************************************
  *** Frontend Tests
  *************************************************/
-    object test extends Tests with TestModule.Utest {
+    object test extends ScalaJSTests with TestModule.Utest {
       def testFramework = "utest.runner.Framework"
       def ivyDeps = Agg(
         ivy"com.lihaoyi::utest::0.7.10",
@@ -320,13 +348,13 @@ object vizier extends ScalaModule with PublishModule {
 
       // Vizier UI binary
       os.copy.over(
-        fastOpt().path,
+        fastLinkJS().dest.path / "main.js",
         target / "ui" / "vizier.js",
         createFolders = true
       )
       os.copy.over(
-        fastOpt().path / os.up / (fastOpt().path.last+".map"),
-        target / "ui" / (fastOpt().path.last+".map"),
+        fastLinkJS().dest.path / "main.js.map",
+        target / "ui" / "main.js.map",
         createFolders = true
       )
 

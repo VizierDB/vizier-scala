@@ -17,6 +17,7 @@ import sys
 import os
 from util import IO_Wrapper, format_stack_trace
 from pycell.client import VizierDBClient, Artifact
+from pycell.client import MIME_TYPE_PYTHON_IMPORT, ARTIFACT_TYPE_FUNCTION, ARTIFACT_TYPE_FILE, MIME_TYPE_NUMPY
 from pycell.plugins import python_cell_preload
 from dependency import analyze
 
@@ -85,6 +86,7 @@ try:
         "open": client.pycell_open,
     }
 
+    functions = []
 
     for var in inputs:
         variables[var] = client[var]
@@ -92,7 +94,6 @@ try:
     # print(variables)
     for var in outputs:
         client[var] = variables[var]
-
 
     sys.stdout.soft_flush()
     sys.stderr.soft_flush()
@@ -122,4 +123,3 @@ except Exception as ex:
 
 raw_output.flush()
 # exit(0)
-

@@ -155,32 +155,50 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
         val (icon, stateClass) = 
           if(connected) {
             (
-              state match {
+              FontAwesome(state match {
                 case ExecutionState.RUNNING   => "play-circle"
                 case ExecutionState.ERROR     => "exclamation-circle"
                 case ExecutionState.CANCELLED => "pause-circle"
                 case _                        => "stop-circle"
-              },
+              }),
               state.toString.toLowerCase
             )
-          } else { ("plug", "disconnected") }
+          } else { (
+            div(
+              FontAwesome("plug"), 
+              span(`class` := "text", "Disconnected!"),
+              FontAwesome("plug"), 
+            ),
+            "disconnected"
+          ) }
 
+        val options = 
+          if(connected){
+            Seq(
+              MenuItem("Stop Running", 
+                { () => project.branchSubscription.get.Client.workflowCancel() }, 
+                icon = "stop", 
+                enabled = (state == ExecutionState.RUNNING)
+              ),
+              MenuItem("Freeze Everything", 
+                { () => project.branchSubscription.get.Client.workflowFreezeFrom(0) }, 
+                icon = "snowflake-o"
+              ),
+              MenuItem("Thaw Everything", 
+                { () => project.branchSubscription.get.Client.workflowThawUpto(project.workflow.now.get.moduleViews.rxLength.now) }, 
+                icon = "sun-o"
+              ),
+            )
+          } else {
+            Seq(
+              MenuItem("Reconnect", 
+                { () => project.branchSubscription.get.reconnect() }, 
+                icon = "plug"
+              ),
+            )
+          }
 
-        Menu(s"right item state_$stateClass", FontAwesome(icon))(
-          MenuItem("Stop Running", 
-            { () => project.branchSubscription.get.Client.workflowCancel() }, 
-            icon = "stop", 
-            enabled = (state == ExecutionState.RUNNING)
-          ),
-          MenuItem("Freeze Everything", 
-            { () => project.branchSubscription.get.Client.workflowFreezeFrom(0) }, 
-            icon = "snowflake-o"
-          ),
-          MenuItem("Thaw Everything", 
-            { () => project.branchSubscription.get.Client.workflowThawUpto(project.workflow.now.get.moduleViews.rxLength.now) }, 
-            icon = "sun-o"
-          ),
-        )
+        Menu(s"right item state_$stateClass", icon)(options:_*)
       }.reactive,
 
       ////////////////// Help Menu ////////////////// 

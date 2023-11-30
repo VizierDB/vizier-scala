@@ -33,12 +33,21 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{Materializer, OverflowStrategy}
 import org.reactivestreams.Publisher
+import spire.implicits
+import info.vizierdb.catalog.Project
+import info.vizierdb.catalog.Branch
+import info.vizierdb.commands.Arguments
+import info.vizierdb.commands.data.SpreadsheetCommand
+import info.vizierdb.spreadsheet.EncodedSpreadsheet
+import info.vizierdb.catalog.Workflow
+import info.vizierdb.viztrails.Scheduler
 
 class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, system: ActorSystem, mat: Materializer)
   extends SpreadsheetCallbacks
   with LazyLogging
 {
   var spreadsheet: Spreadsheet = null
+  var inputDataset: Identifier = -1
 
   logger.debug(s"[$client] Websocket opened")
   
@@ -68,36 +77,159 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
 
     try {
       Json.parse(data).as[SpreadsheetRequest] match {
-        case OpenSpreadsheet(projectId, datasetId) => 
+
+        //////
+        // Open the spreadsheet sourced on an empty dataset
+        //////
+        case OpenEmpty() =>
         {
           if(spreadsheet != null){ send(ReportError("Spreadsheet already opened", "")); return }
-          logger.trace("Opening spreadsheet")
-          Future {
-            logger.trace("Initializing spreadsheet!")
-            spreadsheet = Spreadsheet(
+          logger.trace(s"Opening empty spreadsheet")
+
+          initWithSpreadsheet { Spreadsheet() }
+        }
+
+        //////
+        // Open the spreadsheet over a specific dataset artifact
+        //////
+        case OpenDataset(projectId, datasetId) => 
+        {
+          if(spreadsheet != null){ send(ReportError("Spreadsheet already opened", "")); return }
+          logger.trace(s"Opening spreadsheet on dataset $projectId:$datasetId")
+          initWithSpreadsheet {
+            Spreadsheet(
               CatalogDB.withDB { implicit s => 
                 Artifact.get(target = datasetId, projectId = Some(projectId))
                   .dataframe
               }()
             )
-            spreadsheet.callbacks += this
-            logger.trace("Spreadsheet initialized!")
-          }.onComplete {
-            case Success(_) => send(Connected("Test Dataset")); refreshEverything()
-            case Failure(err) => 
-              err.printStackTrace()
-              send(ReportError(err))
           }
         }
+
+        //////
+        // Open the spreadsheet, resuming an editing session persisted
+        // in a notebook cell
+        //////
+        case OpenWorkflowCell(projectId, branchId, moduleId) =>
+        {
+          if(spreadsheet != null){ send(ReportError("Spreadsheet already opened", "")); return }
+          logger.trace(s"Opening cell: $projectId/$branchId/head/$moduleId")
+          initWithSpreadsheet {
+            val (cell, module, args, source) =
+              CatalogDB.withDBReadOnly { implicit s =>
+                val (cell, module) =
+                  Branch.get(projectId, branchId)
+                        .head
+                        .cellAndModuleByModuleId(moduleId)
+                        .getOrElse {
+                          send(ReportError(s"Invalid cell: $projectId/$branchId/head/$moduleId", ""))
+                          return
+                        }
+                  if(  (module.packageId != "data")
+                    || (module.commandId != "spreadsheet"))
+                  {
+                    send(ReportError(s"Cell is not a spreadsheet: $projectId/$branchId/head/$moduleId (${module.packageId}.${module.commandId}", ""))
+                    return
+                  }
+                  val args = Arguments(module.arguments, SpreadsheetCommand.parameters)
+                  val input = args.getOpt[String](SpreadsheetCommand.PARAM_INPUT)
+                  (
+                    cell,
+                    module,
+                    args,
+                    input.map { artifact => 
+                      val artifacts = cell.inputs
+                        artifacts
+                          .find { _.userFacingName == artifact }
+                          .flatMap { a => 
+                            a.artifactId.map {
+                              a.userFacingName -> _
+                            } 
+                          }
+                          .getOrElse {
+                            send(ReportError(s"Invalid source dataset: $artifact (out of ${artifacts.map { _.userFacingName }.mkString(", ")}) ", ""))
+
+                            return
+                          }
+                    }
+                  )
+              }
+            args.getOpt[JsValue](SpreadsheetCommand.PARAM_SPREADSHEET) match {
+              case None | Some(JsNull) => 
+                source match {
+                  case Some( (_, datasetId) ) =>
+                    Spreadsheet(
+                      CatalogDB.withDB { implicit s => 
+                        Artifact.get(target = datasetId, projectId = Some(projectId))
+                          .dataframe
+                      }()
+                    )
+                  case None => 
+                    Spreadsheet()
+                }
+              case Some(encoded) =>
+                val parsed = encoded.as[EncodedSpreadsheet]
+                source match {
+                  case Some( (_, datasetId) ) =>
+                    parsed.rebuildFromDataframe(
+                      CatalogDB.withDB { implicit s => 
+                        Artifact.get(target = datasetId, projectId = Some(projectId))
+                          .dataframe
+                      }()
+                    )
+                  case None =>
+                    parsed.rebuildFromEmpty
+                }
+            }
+          }
+        }
+
+        case SaveWorkflowCell(projectId, branchId, moduleId, input, output) =>
+        {
+          val serialized = EncodedSpreadsheet.fromSpreadsheet(spreadsheet)
+          val (workflow, workflowIdToAbort): (Workflow, Option[Identifier]) = 
+            CatalogDB.withDB { implicit s =>
+              val branch = Branch.get(projectId, branchId)
+              val currentWorkflow = branch.head
+              val updatedWorkflow =
+                branch.updateById(moduleId, "data", "spreadsheet")(
+                  SpreadsheetCommand.PARAM_INPUT -> input.map { JsString(_) }.getOrElse { JsNull },
+                  SpreadsheetCommand.PARAM_OUTPUT -> output.map { JsString(_) }.getOrElse { JsNull },
+                  SpreadsheetCommand.PARAM_SPREADSHEET -> Json.toJson(serialized),
+                )._2
+              (
+                updatedWorkflow,
+                if(currentWorkflow.isRunning){ Some(currentWorkflow.id) } else { None }
+              )
+            }
+          logger.trace(s"Scheduling ${workflow.id}")
+          // The workflow must be scheduled AFTER the enclosing transaction finishes
+          if(workflowIdToAbort.isDefined) {
+            Scheduler.abort(workflowIdToAbort.get)
+          }
+          Scheduler.schedule(workflow)
+        }
+
+        //////
+        // Register a new set of rows as being "of interest"
+        //////
         case SubscribeRows(row, count) => 
         {
           spreadsheet.subscribe(row, count)
           refreshRows(row, count)
         }
+
+        //////
+        // Indicate a lack of interest in a set of rows
+        //////
         case UnsubscribeRows(row, count) => 
         {
           spreadsheet.unsubscribe(row, count)
         }
+
+        //////
+        // Update the contents of a cell
+        //////
         case EditCell(column, row, v) => 
         {
           spreadsheet.editCell(column, row, v)
@@ -109,6 +241,22 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
         e.printStackTrace()
         send(ReportError(e))
     }
+  }
+
+  def initWithSpreadsheet(constructor: => Spreadsheet): Unit =
+  {
+    Future { 
+      logger.debug("Initializing spreadsheet!")
+      spreadsheet = constructor 
+      spreadsheet.callbacks += this
+      logger.debug("Spreadsheet initialized!")
+    }
+      .onComplete {
+        case Success(_) => send(Connected("Generic Dataset")); refreshEverything()
+        case Failure(err) => 
+          err.printStackTrace()
+          send(ReportError(err))
+      }
   }
 
   /**
@@ -169,14 +317,16 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
       }.toArray
     ))
   }
+
   def refreshCell(column: Int, row: Long): Unit = 
   {
+    assert(row >= 0 && row < spreadsheet.size, s"The row $row doesn't exist")
     logger.trace(s"Cell invalidated: $column:$row")
     // These can come in bursts, so make notification delivery asynchronous
     Future {
       try {
         logger.trace(s"Constructing invalidation message for $column:$row")
-        val message = DeliverCell(column, row, SpreadsheetCell(spreadsheet.getCell(column, row), spreadsheet.schema(column).output.dataType))
+        val message = DeliverCell(column, row, SpreadsheetCell(spreadsheet.getCell(column, row, notify = true), spreadsheet.schema(column).output.dataType))
         logger.trace(s"Sending invalidation message $message")
         send(message)
         logger.trace(s"sent invalidation message")

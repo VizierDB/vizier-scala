@@ -16,8 +16,6 @@ import info.vizierdb.python.JupyterNotebook
 import info.vizierdb.python.JupyterCell
 import info.vizierdb.MutableProject
 
-
-import play.api.libs.json._
 class DependencySpec 
     extends Specification 
     with BeforeAll

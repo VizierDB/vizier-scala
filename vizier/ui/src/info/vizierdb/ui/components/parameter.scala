@@ -184,6 +184,7 @@ object Parameter
           case "fileid"      => new FileParameter(param)
           case "dataset"     => new ArtifactParameter(param, ArtifactType.DATASET, visibleArtifactsByType)
           case "datatype"    => new DataTypeParameter(param)
+          case "json"        => new JsonParameter(param)
           case _             => new UnsupportedParameter(param)
         }
 
@@ -947,7 +948,9 @@ class EnumerableParameter(
   def value = 
     JsString(inputNode[dom.html.Select].value)
   def set(v: JsValue): Unit = 
-    inputNode[dom.html.Select].value = v.as[String]
+    if(v != JsNull){
+      inputNode[dom.html.Select].value = v.as[String]
+    }
 
 }
 
@@ -957,6 +960,50 @@ class EnumerableParameter(
  * A string-valued parameter
  */
 class StringParameter(
+  val id: String, 
+  val name: String, 
+  val required: Boolean,
+  val hidden: Boolean,
+  val initialPlaceholder: String = "",
+  val initialPlaceholderIsDefaultValue: Boolean = true
+) extends Parameter
+{
+  def this(parameter: serialized.ParameterDescription)
+  {
+    this(
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden,
+      initialPlaceholder = parameter.helpText.getOrElse(""),
+      initialPlaceholderIsDefaultValue = !parameter.helpText.isDefined
+    )
+  }
+  val root = 
+    input(`type` := "text", placeholder := initialPlaceholder).render.asInstanceOf[dom.html.Input]
+  def value =
+    JsString(
+      inputNode[dom.html.Input].value match {
+        case "" if initialPlaceholderIsDefaultValue => 
+          inputNode[dom.html.Input].placeholder
+        case x => x
+      }
+    )
+  def set(v: JsValue): Unit = 
+    inputNode[dom.html.Input].value = v match {
+      case JsString(s) => s
+      case _ => 
+        println(s"WARNING: String parameter $name ($id) is being set to non-string value $v")
+        v.toString
+    }
+  def setHint(s: String): Unit =
+    inputNode[dom.html.Input].placeholder = s
+}
+
+/**
+ * A string-valued parameter
+ */
+class JsonParameter(
   val id: String, 
   val name: String, 
   val required: Boolean,
@@ -976,19 +1023,9 @@ class StringParameter(
   val root = 
     input(`type` := "text", placeholder := initialPlaceholder).render.asInstanceOf[dom.html.Input]
   def value =
-    JsString(
-      inputNode[dom.html.Input].value match {
-        case "" => inputNode[dom.html.Input].placeholder
-        case x => x
-      }
-    )
+    Json.parse(inputNode[dom.html.Input].value)
   def set(v: JsValue): Unit = 
-    inputNode[dom.html.Input].value = v match {
-      case JsString(s) => s
-      case _ => 
-        println(s"WARNING: String parameter $name ($id) is being set to non-string value $v")
-        v.toString
-    }
+    inputNode[dom.html.Input].value = v.toString
   def setHint(s: String): Unit =
     inputNode[dom.html.Input].placeholder = s
 }

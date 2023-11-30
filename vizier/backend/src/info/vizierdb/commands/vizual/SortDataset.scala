@@ -19,7 +19,9 @@ import info.vizierdb.spark.vizual
 
 object SortDataset extends VizualCommand
 {
+  
   def name: String = "Sort Dataset"
+  override def hidden = true
   def vizualParameters: Seq[Parameter] = Seq(
     ListParameter(id = "columns", name = "Columns", components = Seq(
       ColIdParameter(id = "columns_column", name = "Column"),

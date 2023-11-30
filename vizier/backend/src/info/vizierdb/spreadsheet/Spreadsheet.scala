@@ -24,47 +24,63 @@ import org.apache.spark.sql.catalyst.expressions.{
 }
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
+import info.vizierdb.VizierException
 
-class Spreadsheet(data: SpreadsheetDataSource)
-                 (implicit ec: ExecutionContext)
+class Spreadsheet(
+  val data: SpreadsheetDataSource,
+  val schema: mutable.ArrayBuffer[OutputColumn]
+)(implicit ec: ExecutionContext)
   extends LazyLogging
 {
   var size: Long = Await.result(data.size, Duration.Inf)
 
-  var nextColumnId = 0l
+  var nextColumnId = schema.map { _.id }.max + 1
   def getColumnId(): Long = 
     { val id = nextColumnId; nextColumnId += 1; id }
 
-  val schema: mutable.ArrayBuffer[OutputColumn] =
-    mutable.ArrayBuffer(
-      data.schema
-          .zipWithIndex
-          .map { case (field, idx) => 
-                  OutputColumn.mapFrom(idx, field, getColumnId(), idx) 
-          }:_*)
+  val columns = mutable.Map[Long, OutputColumn](
+     schema.map { col => col.id -> col }:_*)
 
-  def columns = mutable.Map[Long, OutputColumn](
-    schema.map { col => col.id -> col }:_*)
+  val executor = 
+    {
+      val ex = 
+        new SingleRowExecutor(
+          // retrieve source data
+          (col, row) => 
+            columns(col.id).source match {
+              case SourceDataset(idx, _) => data(idx, row)
+              case DefaultValue(v) => Future.successful(v)
+            },
 
-  val overlay = 
-    new UpdateOverlay(
-      sourceValue = { (column, row) => 
-        columns(column.id).source match {
-          case SourceDataset(idx, _) => Await.result(data(idx, row), Duration.Inf)
-          case DefaultValue(v) => v
-        }
-      },
-      cellModified = { (column, row) =>
-        callback { _.refreshCell(columns(column.id).position, row) }
-      }
+          // notify callback
+          (col, row) =>
+            callback {
+              _.refreshCell(columns(col.id).position, row)
+            }
+        )
+      for(col <- schema){ ex.addColumn(col.ref) }
+      ex
+    }
+
+  def this(data: SpreadsheetDataSource)(implicit ec: ExecutionContext) =
+  {
+    this(data = data, 
+         schema = mutable.ArrayBuffer(
+            data.schema
+                .zipWithIndex
+                .map { case (field, idx) => 
+                        OutputColumn.mapFrom(idx, field, idx, idx) 
+                }:_*
+          )
     )
-  for(col <- schema) { overlay.addColumn(col.ref) }
+  }
 
   def pickCachePageToDiscard(candidates: Seq[Long], pageSize: Int): Long =
   {
-    val criticalRows = overlay.requiredSourceRows
+    val criticalRows = 
+      executor.requiredSourceRows
     val nonCriticalCandidates = 
-      candidates.filter { start => (criticalRows intersect RangeSet(start, start+pageSize-1)).isEmpty }
+      candidates.filter { start => (criticalRows intersect (start until start+pageSize)).isEmpty }
     if(nonCriticalCandidates.isEmpty){
       logger.warn("Warning: Row cache is full.  Performance may degrade noticeably.")
       return candidates(Random.nextInt % candidates.size)
@@ -78,103 +94,101 @@ class Spreadsheet(data: SpreadsheetDataSource)
   private def callback(op: SpreadsheetCallbacks => Unit) = 
     callbacks.foreach(op)
 
-  def subscriptions: Iterator[(Long, Long)] = 
-    overlay.subscriptions.iterator
+  def subscriptions: Iterator[(Long, Long)] =
+    RangeSet.ofIndices(
+      executor.requiredSourceRows
+    ).iterator
 
-  def indexOfColumn(col: String): Int =
+  def getRow(row: Long): Array[Option[Try[Any]]] = 
   {
-    val idx = schema.indexWhere { _.output.name == col }
-    assert(idx >= 0, s"Column $col does not exist")
-    return idx
-  }
-
-  def getRow(row: Long): Array[Option[Try[Any]]] =
-  {
+    assert(0 <= row && row < size, "That row doesn't exist")
     schema.map { col => 
-            overlay.getFuture(SingleCell(col.ref, row)).value
+            executor.getFuture(col.ref, row).value
           }
           .toArray
   }
-  def getCell(column: Int, row: Long): Option[Try[Any]] =
+  def getCell(column: Int, row: Long, notify: Boolean = false): Option[Try[Any]] = 
   {
-    overlay.getFuture(SingleCell(schema(column).ref, row)).value
-  }
-
-  def getExpression(column: String, row: Long): Option[Expression] =
-  {
-    val columnIndex = indexOfColumn(column)
-    overlay.getExpression(SingleCell(columns(columnIndex).ref, row))
-  }
-
-  def subscribe(start: Long, count: Int): Unit =
-  {
-    overlay.subscribe(RangeSet(start, start+count-1))
-  }
-
-  def unsubscribe(start: Long, count: Int): Unit =
-  {
-    overlay.unsubscribe(RangeSet(start, start+count-1))
-  }
-
-  def attrToRValue(attr: String, exprRow: Long): RValue =
-  {
-    // This is presently SUUUUUPER hacky
-    // TODO: Replace me after discussing
-
-    // all of the non-digit chars
-    val columnString = 
-      attr.takeWhile { case x if x >= 48 && x <= 57 => false; case _ => true}
-          .toLowerCase()
-    val column =
-      schema.find { _.output.name.toLowerCase == columnString }.get
-    var rowString = 
-      attr.drop(columnString.size)
-    val row =
-      try { rowString.toLong-1 } catch { case _:NumberFormatException => exprRow }
-
-    SingleCell(column.ref, row)
-  }
-
-  def parse(expression: String, row: Long): Expression =
-  {
-    expr(expression).expr.transform {
-      case UnresolvedAttribute(Seq(attr)) => 
-        RValueExpression(attrToRValue(attr, row))
+    assert(0 <= row && row < size, "That row doesn't exist")
+    val fut = executor.getFuture(schema(column).ref, row)
+    if(!fut.isCompleted && notify){ 
+      fut.onComplete { result => callback( _.refreshCell(column, row) ) }
     }
+    return fut.value
   }
 
-  def editCell(column: Int, row: Long, value: JsValue): Unit =
+  def getExpression(column: Int, row: Long): Option[Expression] =
+  {
+    if(row >= size){ throw new VizierException(s"Request for undefined row at position $row (only $size rows)") }
+    executor.getExpression(columns(column).ref, row)
+  }
+
+  def subscribe(start: Long, count: Int): Unit = 
+  {
+    if(start >= size) { return }
+    executor.subscribe(RangeSet(start, Math.min(start+count-1, size-1)))
+  }
+
+  def unsubscribe(start: Long, count: Int): Unit = 
+  {
+    executor.unsubscribe(RangeSet(start, start+count-1))
+  }
+
+  // def attrToRValue(attr: String, exprRow: Long): RValue =
+  // {
+  //   // This is presently SUUUUUPER hacky
+  //   // TODO: Replace me after discussing
+
+  //   // all of the non-digit chars
+  //   val columnString = 
+  //     attr.takeWhile { case x if x >= 48 && x <= 57 => false; case _ => true}
+  //         .toLowerCase()
+  //   val column =
+  //     schema.find { _.output.name.toLowerCase == columnString }.get
+  //   var rowString = 
+  //     attr.drop(columnString.size)
+  //   val row =
+  //     try { rowString.toLong-1 } catch { case _:NumberFormatException => exprRow }
+
+  //   SingleCell(column.ref, row)
+  // }
+
+  def parse(expression: String): Expression =
+    Spreadsheet.bindVariables(expr(expression).expr, schema)
+
+  def editCell(column: Int, row: Long, value: JsValue): Unit = 
   {
     assert(0 <= row && row < size, "That row doesn't exist")
     assert(0 <= column && column < schema.size, "That row doesn't exist")
     val decoded: Expression =
       value match {
         case JsString(s) if s(0) == '=' => 
-          Cast(parse(s.drop(1), row), schema(column).output.dataType)
+          Cast(parse(s.drop(1)), schema(column).output.dataType)
         case _ => try {
-          Literal(
-            SparkPrimitive.decode(value, schema(column).output.dataType, castStrings = true), 
+          Cast(
+            lit(
+              SparkPrimitive.decode(value, schema(column).output.dataType, castStrings = true)
+            ).expr,
             schema(column).output.dataType
           )
         } catch {
           case t: Throwable => 
             logger.warn(s"Difficulty parsing $value (${t.getMessage()}); falling back to spark")
             Cast(
-              Literal(
+              lit(
                 value match { case JsString(s) => s; case _ => value.toString },
-                StringType
-              ),
+              ).expr,
               schema(column).output.dataType
             )
         }
       }
-    overlay.update(SingleCell(columns(column).ref, row), decoded)
+    executor.update(SingleCell(columns(column).ref, row), decoded)
   }
 
   def deleteRows(start: Long, count: Int): Unit =
   {
     assert(size >= start + count, "Those rows don't exist")
-    overlay.deleteRows(start,count)
+    executor.deleteRows(start,count)
     size = size - count
     callback { _.refreshRows(start, start - size) }
   }
@@ -182,7 +196,7 @@ class Spreadsheet(data: SpreadsheetDataSource)
   def insertRows(start: Long, count: Int): Unit =
   {
     assert(size >= start, "Can't insert there")
-    overlay.insertRows(start,count)
+    executor.insertRows(start,count)
     size = size + count
     callback { _.refreshRows(start, start - size) }
   }
@@ -192,11 +206,14 @@ class Spreadsheet(data: SpreadsheetDataSource)
     assert(to < from || from + count <= to, "Trying to move a group of rows to within itself")
     assert(size >= from+count, "Source rows don't exist")
     assert(size >= to, "Destination rows don't exist")
-    overlay.moveRows(from, to, count)
+    executor.moveRows(from, to, count)
     val start = math.min(from, to)
     val end = math.max(from+count, to)
     callback { _.refreshRows(start, end - start+1) }
   }
+
+  def indexOfColumn(name: String): Int =
+    schema.indexWhere { _.output.name.equalsIgnoreCase(name) }
 
   /**
    * Rename a column
@@ -251,15 +268,19 @@ class Spreadsheet(data: SpreadsheetDataSource)
     val idx = before match {
       case None => {
         schema.append(newCol(schema.size))
-        schema.size - 1
+        /* return */ schema.size - 1
       }
       case Some(name) => {
         val idx = indexOfColumn(name)
-        schema.insert(idx, newCol(idx))
+        val col = newCol(idx)
+        schema.insert(idx, col)
         for(i <- idx+1 until schema.size){ schema(i).position = i }
-        idx
+        /* return */ idx
       }
     }
+    val col = schema(idx)
+    columns(col.id) = col
+    executor.addColumn(col.ref)
     callback(_.refreshEverything())
   }
 
@@ -276,12 +297,13 @@ class Spreadsheet(data: SpreadsheetDataSource)
     callback(_.refreshEverything())
   }
 
-
 }
 
 object Spreadsheet
 {
-  def apply(base: DataFrame)(implicit ec: ExecutionContext) = 
+  type UpdateId = Long
+
+  def buildCache(base: DataFrame)(implicit ec: ExecutionContext): RowCache[Array[Any]] = 
   {
     val annotated = 
       AnnotateWithSequenceNumber(base)
@@ -309,17 +331,77 @@ object Spreadsheet
         selectForInvalidation = { (candidates, pageSize) => candidates.head }
       )
 
+    return cache
+  }
+
+  def apply(base: DataFrame)(implicit ec: ExecutionContext) = 
+  {
+    val cache = buildCache(base)
+
     val spreadsheet =
       new Spreadsheet(
         new CachedSource(
           base.schema.fields,
           cache,
-          Future { df.count() }
+          Future { base.count() }
         )
       )
     cache.selectForInvalidation = spreadsheet.pickCachePageToDiscard _
 
     /* return */ spreadsheet
   }
-  // def apply() = new Spreadsheet(base)
+
+  /**
+   * Generate and initialize a simple default spreadsheet over an empty
+   * source.
+   * 
+   * The default spreadsheet will have 3 columns and 5 rows
+   */
+  def apply()(implicit ec: ExecutionContext): Spreadsheet =
+  {
+    val spreadsheet = 
+      new Spreadsheet(
+        new InlineSource(
+          schema = Array(),
+          data = Array()
+        ),
+        mutable.ArrayBuffer(
+          OutputColumn(
+            DefaultValue(null),
+            StructField("A", StringType),
+            0,
+            0
+          ),
+          OutputColumn(
+            DefaultValue(null),
+            StructField("B", StringType),
+            1,
+            1
+          ),
+          OutputColumn(
+            DefaultValue(null),
+            StructField("C", StringType),
+            2,
+            2
+          )
+        )
+      )
+    spreadsheet.insertRows(0, 5)
+    return spreadsheet
+  }
+
+  def bindVariables(expression: Expression, schema: Iterable[OutputColumn]): Expression =
+  {
+    expression.transform {
+      case UnresolvedAttribute(Seq(attr)) => 
+        schema.find { _.output.name.toLowerCase == attr.toLowerCase }
+              .map { column => 
+                RValueExpression(OffsetCell(column.ref, 0))
+              }
+              .getOrElse {
+                InvalidRValue(s"Unknown column: '$attr'")
+              }
+    }
+  }
+
 }

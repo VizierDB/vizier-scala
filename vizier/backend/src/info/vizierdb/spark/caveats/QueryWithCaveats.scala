@@ -72,7 +72,8 @@ object QueryWithCaveats
 
   def build(
     query: DataFrame, 
-    includeCaveats: Boolean
+    includeCaveats: Boolean,
+    includeRowids: Boolean = true
   ): DataFrame =
   {
     // The order of operations in this method is very methodically selected:
@@ -93,7 +94,7 @@ object QueryWithCaveats
     logger.trace(s"----------- RAW-QUERY-----------\nSCHEMA:{ ${SparkSchema(df).mkString(", ")} }\n${df.queryExecution.explainString(SelectedExplainMode)}")
 
     /////// Add a __MIMIR_ROWID attribute
-    df = AnnotateWithRowIds(df)
+    if(includeRowids) { df = AnnotateWithRowIds(df) }
 
     logger.trace(s"----------- AFTER-ROWID -----------\n${df.queryExecution.explainString(SelectedExplainMode)}")
 

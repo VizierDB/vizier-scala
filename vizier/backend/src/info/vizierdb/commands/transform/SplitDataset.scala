@@ -24,6 +24,9 @@ import info.vizierdb.util.StringUtils
 import play.api.libs.json.JsObject
 import info.vizierdb.spark.ViewConstructor
 import info.vizierdb.api.FormattedError
+import info.vizierdb.types._
+import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.DataType
 
 object SplitDataset 
   extends Command
@@ -88,11 +91,13 @@ object SplitDataset
         context.outputDataset(
           outputTable,
           ViewConstructor(
-            datasets = Map("INPUT" -> inputDataset.id),
-            functions = Map.empty,
-            query = s"SELECT * FROM INPUT WHERE ${outputCondition}",
-            projectId = context.projectId,
-            context = { _ => inputDataset.datasetSchema }
+            datasets = Map("INPUT" -> inputDataset.id): Map[String, Identifier],
+            functions = Map.empty: Map[String, (Identifier, String, String)],
+            variables = Map.empty: Map[String, Identifier],
+            query = s"SELECT * FROM INPUT WHERE ${outputCondition}": String,
+            projectId = context.projectId: Identifier,
+            datasetSchemas = { _ => inputDataset.datasetSchema }: Identifier => Seq[StructField],
+            variableTypes = { _ => assert(false, "No parameters in Split Dataset"); ??? }: Identifier => DataType,
           )
         )
         logger.trace("Rendering dataset summary")

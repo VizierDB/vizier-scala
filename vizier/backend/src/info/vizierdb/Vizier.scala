@@ -190,7 +190,7 @@ object Vizier
     // initORMLogging("warn")
     bringDatabaseToSaneState()
     if(config.workingDirectory.isDefined){
-      System.setProperty("user.dir", config.workingDirectory())
+      System.setProperty("user.dir", new File(config.workingDirectory()).getAbsolutePath())
     }
 
     // Set up Mimir

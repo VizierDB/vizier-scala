@@ -13,6 +13,7 @@ sealed trait ParameterDescription
   def parent: Option[String]
   def index: Int
   def default: Option[JsValue]
+  def helpText: Option[String]
 }
 
 class ParameterDescriptionTree(
@@ -53,7 +54,8 @@ case class SimpleParameterDescription(
   required: Boolean,
   parent: Option[String],
   index: Int,
-  default: Option[JsValue]
+  default: Option[JsValue],
+  helpText: Option[String],
 ) extends ParameterDescription
 
 case class CodeParameterDescription(
@@ -65,7 +67,8 @@ case class CodeParameterDescription(
   parent: Option[String],
   index: Int,
   default: Option[JsValue],
-  language: String
+  language: String,
+  helpText: Option[String],
 ) extends ParameterDescription
 
 case class ArtifactParameterDescription(
@@ -77,7 +80,8 @@ case class ArtifactParameterDescription(
   parent: Option[String],
   index: Int,
   default: Option[JsValue],
-  artifactType: ArtifactType.T
+  artifactType: ArtifactType.T,
+  helpText: Option[String],
 ) extends ParameterDescription
 
 case class EnumerableValueDescription(
@@ -96,5 +100,6 @@ case class EnumerableParameterDescription(
   index: Int,
   default: Option[JsValue],
   values: Seq[EnumerableValueDescription],
-  allowOther: Boolean
+  allowOther: Boolean,
+  helpText: Option[String],
 ) extends ParameterDescription

@@ -20,6 +20,9 @@ import info.vizierdb.types.ArtifactType
 import info.vizierdb.commands.sql.Query
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.spark.ViewConstructor
+import org.apache.spark.sql.types.DataType
+import info.vizierdb.types.Identifier
+
 
 trait SQLTemplateCommand 
   extends Command
@@ -56,9 +59,11 @@ trait SQLTemplateCommand
         ViewConstructor(
           datasets = deps.mapValues { _.id },
           functions = Map.empty,
+          variables = Map.empty,
           query = sql, 
           projectId = context.projectId,
-          context = deps.map { case (_, d) => d.id -> d.datasetSchema }.toMap.apply(_)
+          datasetSchemas = deps.map { case (_, d) => d.id -> d.datasetSchema }.toMap.apply(_),
+          variableTypes = { _: Identifier => assert(false, "Template Commands can't take parameters"); null:DataType}
         )
       )
 

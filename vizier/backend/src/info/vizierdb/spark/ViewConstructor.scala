@@ -16,6 +16,8 @@ import info.vizierdb.Vizier
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.StructType
 import info.vizierdb.VizierException
+import org.apache.spark.sql.catalyst.expressions.Literal
+import org.apache.spark.sql.types.DataType
 
 case class ViewConstructor(
   datasets: Map[String, Identifier],
@@ -23,27 +25,30 @@ case class ViewConstructor(
   functions: Map[String, (Identifier, String, String)],
   query: String,
   projectId: Identifier,
-  schema: Seq[StructField]
+  schema: Seq[StructField],
+  variables: Option[Map[String, Identifier]],
 ) extends DataFrameConstructor
   with DefaultProvenance
 {
 
   lazy val lowerCaseDatasets = datasets.map { case (k, v) => k.toLowerCase -> v }.toMap
   lazy val lowerCaseFunctions = functions.map { case (k, v) => k.toLowerCase -> v }.toMap
+  lazy val lowerCaseVariables = variables.getOrElse { Map.empty }. map { case (k, v) => k.toLowerCase -> v }.toMap
 
   def construct(context: Identifier => Artifact): DataFrame =
   {
     var df = ViewConstructor.buildBase(
-                query,
-                datasets.mapValues { id => () => context(id).dataframeFromContext(context) },
-                functions
+                query = query,
+                tableMappings = datasets.mapValues { id => () => context(id).dataframeFromContext(context) },
+                functions = functions,
+                variables = variables.getOrElse { Map.empty }.mapValues { id => () => Literal(context(id).parameter.nativeValue) }
               )
     df = AnnotateImplicitHeuristics(df)
     df = ResolveLifts(df)
     return df 
   }
 
-  lazy val (viewDeps, fnDeps): (Set[String], Set[String]) =
+  lazy val (viewDeps, fnDeps, varDeps): (Set[String], Set[String], Set[String]) =
       InjectedSparkSQL.getDependencies(query)
   lazy val dependencies:Set[Identifier] = {
     viewDeps.map { _.toLowerCase }.map { x =>
@@ -51,10 +56,14 @@ case class ViewConstructor(
           throw new VizierException(s"Internal Error: Undefined view $x; looking in: ${datasets.keys.mkString(", ")}")
         )
       }.toSet ++
-      fnDeps.map { _.toLowerCase }.map { x => 
+    fnDeps.map { _.toLowerCase }.map { x => 
         lowerCaseFunctions.getOrElse(x,
-          throw new VizierException(s"Internal Error: Undefined function $x; looking in: ${datasets.keys.mkString(", ")}")
-        )._1 }.toSet
+          throw new VizierException(s"Internal Error: Undefined function $x; looking in: ${functions.keys.mkString(", ")}")
+        )._1 }.toSet ++
+    varDeps.map { _.toLowerCase }.map { x => 
+        lowerCaseVariables.getOrElse(x,
+          throw new VizierException("Internal Error: Undefined variable $"+s"$x; looking in: ${variables.getOrElse { Map.empty }.keys.mkString(", ")}")
+        ) }.toSet
   }
 }
 object ViewConstructor
@@ -66,22 +75,28 @@ object ViewConstructor
     datasets: Map[String, Identifier],
     // For functions, we need to cache the function mime type and text to avoid reentrancy.
     functions: Map[String, (Identifier, String, String)],
+    variables: Map[String, Identifier],
     query: String,
     projectId: Identifier,
-    context: Identifier => Seq[StructField]
+    datasetSchemas: Identifier => Seq[StructField],
+    variableTypes: Identifier => DataType,
   ): ViewConstructor = 
   {
     ViewConstructor(
-      datasets,
-      functions,
-      query,
-      projectId,
+      datasets = datasets,
+      functions = functions,
+      variables = Some(variables),
+      query = query,
+      projectId = projectId,
       schema = ViewConstructor.buildBase(
                   query,
                   datasets.mapValues { id => 
-                    () => Vizier.sparkSession.createDataFrame(new java.util.ArrayList[Row](), StructType(context(id)))
+                    () => Vizier.sparkSession.createDataFrame(new java.util.ArrayList[Row](), StructType(datasetSchemas(id)))
                   },
-                  functions
+                  functions,
+                  variables.mapValues { id => 
+                    () => Literal(null, variableTypes(id))
+                  }
                 ).schema
     )
   }
@@ -90,6 +105,7 @@ object ViewConstructor
     query: String, 
     tableMappings: Map[String, () => DataFrame],
     functions: Map[String, (Identifier, String, String)],
+    variables: Map[String, () => Expression],
   ): DataFrame =
     InjectedSparkSQL(
       sqlText = query, 
@@ -102,6 +118,8 @@ object ViewConstructor
           case (name, (_, mimeType, _)) => 
             throw new IllegalArgumentException(s"Unsupported user-defined-function $name with type ${mimeType}")
         }
-        .toMap
+        .toMap,
+      variableReferences = 
+        variables
     )
 }

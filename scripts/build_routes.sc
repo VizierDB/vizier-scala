@@ -10,7 +10,7 @@ import $file.lib.routes, routes._
 val SOURCE_DIR   = os.pwd / "vizier"
 val BACKEND_DIR  = SOURCE_DIR / "backend" / "src" / "info" / "vizierdb"
 val UI_DIR       = SOURCE_DIR / "ui"      / "src" / "info" / "vizierdb"
-val RESOURCE_DIR = SOURCE_DIR / "shared" / "resources"
+val RESOURCE_DIR = SOURCE_DIR / "resources"
 val INPUT        = RESOURCE_DIR / "vizier-routes.txt"
 
 // vizier-routes.txt contains a list of routes with information about the

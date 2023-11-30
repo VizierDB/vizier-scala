@@ -92,6 +92,7 @@ object Script extends VizualCommand
   val constructor = commands.map { cmd => cmd._2 -> cmd._3 }.toMap
 
   def name: String = "Script"
+  override def hidden = true
   def vizualParameters: Seq[Parameter] = Seq(
     ListParameter(id = "script", name = "Script", components = Seq(
       EnumerableParameter(id = "command", name = "Command",

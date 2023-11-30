@@ -72,9 +72,8 @@ object Filestore
     if(path.size <= 0) { new URL(path) } 
     else if(path(0) == '/'){ 
       new URL("file://"+path) 
-    } else if(!path.contains(":/") 
-                && Vizier.config.workingDirectory.isDefined) {
-      new URL("file://"+Vizier.config.workingDirectory()+"/"+path)
+    } else if(!path.contains(":/")) {
+      new URL(Vizier.config.workingDirectoryURL, path)
     } else {
       new URL(path)
     }
