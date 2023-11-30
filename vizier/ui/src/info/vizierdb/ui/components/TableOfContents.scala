@@ -57,9 +57,20 @@ class TableOfContents(
   def ModuleSummary(module: Module): Frag =
     Rx {
       val clazz = s"${module.subscription.state().toString.toLowerCase}_state"
+      val icon: Option[Frag] = 
+        module.subscription.state() match {
+          case ExecutionState.DONE      => None
+          case ExecutionState.ERROR     => Some(FontAwesome("exclamation-triangle"))
+          case ExecutionState.WAITING   => Some(FontAwesome("clock-o"))
+          case ExecutionState.STALE     => Some(FontAwesome("clock-o"))
+          case ExecutionState.CANCELLED => Some(FontAwesome("ban"))
+          case ExecutionState.FROZEN    => Some(FontAwesome("snowflake-o"))
+          case ExecutionState.RUNNING   => Some(FontAwesome("cogs"))
+        }
       module.toc.map { toc => 
                       li(`class` := clazz + toc.titleLevel.map { " level_"+_ }.getOrElse { "" },
                         LinkToModule(module, toc.title),
+                        icon.map { span(" (", _, ")") },
                         onmouseover := { _:dom.Event => module.highlight() = true },
                         onmouseout := { _:dom.Event => module.highlight() = false }
                       )
@@ -67,7 +78,8 @@ class TableOfContents(
                     .getOrElse { 
                       li(
                         `class` := clazz,
-                        s"${module.subscription.packageId}.${module.subscription.commandId}"
+                        s"${module.subscription.packageId}.${module.subscription.commandId}",
+                        icon.map { span(" (", _, ")") },
                       ) 
                     }
     }.reactive
