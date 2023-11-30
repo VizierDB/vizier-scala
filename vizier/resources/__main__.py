@@ -14,6 +14,7 @@
 # -- copyright-header:end --
 import json
 import sys
+import os
 from util import IO_Wrapper, format_stack_trace
 from pycell.client import VizierDBClient, Artifact
 from pycell.client import MIME_TYPE_PYTHON_IMPORT, ARTIFACT_TYPE_FUNCTION, ARTIFACT_TYPE_FILE, MIME_TYPE_NUMPY
@@ -88,24 +89,9 @@ try:
     functions = []
 
     for var in inputs:
-        assert var in client.artifacts
-        if client.artifacts[var].artifact_type == ARTIFACT_TYPE_FUNCTION:
-            if client.artifacts[var].mime_type == MIME_TYPE_PYTHON_IMPORT:
-                variables[var] = client[var]
-            else:
-                functions += [client[var]]
-        elif client.artifacts[var].artifact_type == ARTIFACT_TYPE_FILE:
-            if client.artifacts[var].mime_type == MIME_TYPE_NUMPY:
-                # Don't automatically import files unless they're numpy arrays
-                sys.stderr.write("Prepending script")
-            else:
-                pass
-        else:
-            variables[var] = client[var]
-
-    script = "\n\n".join(functions) + "\n\n" + script
+        variables[var] = client[var]
     exec(script, variables, variables)
-
+    # print(variables)
     for var in outputs:
         client[var] = variables[var]
 
