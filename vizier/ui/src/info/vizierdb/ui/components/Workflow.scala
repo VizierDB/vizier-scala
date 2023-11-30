@@ -58,13 +58,17 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
                               .scrollIntoView()
         }
       ).render,
-      button(
-        FontAwesome("binoculars"),
-        onclick := { _:dom.Event => 
-          moduleViewsWithEdits.insertInspectorAfter(prevElement)
-                              .scrollIntoView()
-        }
-      ).render
+      // Disabled for 2.0 by OK:
+      //   The inspector presently looks like shit.  It's not critical for the
+      //   2.0 release, so we're punting it.  Still... let's not give folks access
+      //   to something that still  looks like shit.
+      // button(
+      //   FontAwesome("binoculars"),
+      //   onclick := { _:dom.Event => 
+      //     moduleViewsWithEdits.insertInspectorAfter(prevElement)
+      //                         .scrollIntoView()
+      //   }
+      // ).render
     )
 
   /**
