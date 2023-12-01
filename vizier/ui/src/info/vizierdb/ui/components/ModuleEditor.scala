@@ -33,7 +33,7 @@ trait ModuleEditor
   with Logging
 {
   def saveState()
-  {
+  { 
     val response = 
       if(delegate.realModuleId.isDefined) {
         delegate.client.workflowReplace(
@@ -110,12 +110,11 @@ object ModuleEditor
     (packageId, command.id) match {
       case ("data", "load")   => new LoadDatasetEditor(delegate)
       case ("data", "unload") => new UnloadDatasetEditor(delegate)
+      case ("plot", "barchart") => new BarchartEditor(delegate, packageId, command)
       case _ => new DefaultModuleEditor(packageId, command, delegate)
     }
   }
 }
-
-
 
 class DefaultModuleEditor(
   val packageId: String, 
@@ -131,7 +130,7 @@ class DefaultModuleEditor(
     for(arg <- arguments){
       getParameter.get(arg.id) match {
         case Some(parameter) => parameter.set(arg.value)
-        case None => logger.warn(s"Load state with undefined parameter: ${arg.id}")
+        case None => logger.warn(s"Unknown argument: ${arg.id}")
       }
     }
   }
@@ -160,7 +159,6 @@ class DefaultModuleEditor(
 
   def currentState: Seq[CommandArgument] =
     parameters.map { _.toArgument }
-
 
   val editorFields =
     div(

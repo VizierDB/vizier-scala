@@ -199,6 +199,7 @@ object CommandList
       SpecialCommand(label = "CDF",         icon = "cdf_plot",     packageId = "plot", commandId = "cdf", description = "Generate a Cumulative Distribution Function (CDF) plot of the data"),
       SpecialCommand(label = "Map",         icon = "geo_plot",     packageId = "plot", commandId = "geo", description = "Plot a geospatial dataset on a map"),
       SpecialCommand(label = "Bar",        icon = "bar_plot",    packageId = "plot", commandId = "bar-chart", description = "Visualize datasets as a a series of bars"),
+      SpecialCommand(label = "Bar2.0",      icon = "bar_plot",    packageId = "plot", commandId = "barchart", description = "Visualize datasets as a a series of bars"),
     ),
     "Document" -> Seq(
       SpecialCommand(label = "Markdown", icon = "markdown", packageId = "docs", commandId = "markdown", description = "Document your project with markdown-formatted text"),

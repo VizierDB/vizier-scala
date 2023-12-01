@@ -720,6 +720,7 @@ class ListParameter(
     )
   }
 
+  // val profiler = Var[Option[serialized.ArtifactSummary]](None)
   val rows = RxBuffer[Seq[Parameter]]( generateRow() )
   val rowView = RxBufferView(tbody(), 
     rows.rxMap { row =>  
@@ -744,7 +745,7 @@ class ListParameter(
               rows.insert(idx+1, generateRow())
               }
             }
-        )
+        ),
       )
     })
 
@@ -899,6 +900,9 @@ class ColIdListParameter(
                   `class` := "add_y",
                   onclick := { e:dom.MouseEvent => 
                     val idx = rows.indexOf(row)
+                    println(s"Adding row at $idx")
+                    println(s"Rows: ${rows}")
+                    println(s"Length: ${rows.length}")
                     if(idx == rows.length - 1){
                       rows.insert(idx+1, generateRow())
                       }
