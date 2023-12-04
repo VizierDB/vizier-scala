@@ -720,8 +720,7 @@ class ListParameter(
     )
   }
 
-  // val profiler = Var[Option[serialized.ArtifactSummary]](None)
-  val rows = RxBuffer[Seq[Parameter]]( generateRow() )
+  val rows = RxBuffer[Seq[Parameter]]( tentativeRow() )
   val rowView = RxBufferView(tbody(), 
     rows.rxMap { row =>  
       tr( 
@@ -735,19 +734,26 @@ class ListParameter(
               rows.remove(idx)
             }
           }
-        ),
-        button(
-          FontAwesome("plus"),
-          `class` := "add_row",
-          onclick := { e:dom.MouseEvent => 
-            val idx = rows.indexOf(row)
-            if(idx == rows.length - 1){
-              rows.insert(idx+1, generateRow())
-              }
-            }
-        ),
+        )
       )
     })
+  def lastRow = Var(rows.last)
+
+  def tentativeRow(): Seq[Parameter] =
+  {
+    val row = generateRow()
+    row.foreach { _.onChange { e => touchRow(row) } }
+    row
+  }
+
+  def touchRow(row: Seq[Parameter])
+  {
+    if(row == lastRow.now) { 
+      val newLast = tentativeRow()
+      rows.append(newLast)
+      lastRow() = newLast
+    }
+  }
 
   val root = 
     fieldset(
@@ -787,13 +793,13 @@ class ListParameter(
   {
     rows.clear()
     for(rowData <- v){
-      val row = generateRow()
+      val row = tentativeRow()
       for(field <- row){
         field.set(rowData.getOrElse(field.id, JsNull))
       }
       rows.append(row)
     }
-    rows.append(generateRow())
+    rows.append(tentativeRow())
   }
 }
 object ListParameter
