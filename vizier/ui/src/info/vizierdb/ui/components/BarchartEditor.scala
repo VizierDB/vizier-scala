@@ -198,23 +198,20 @@ class BarchartEditor(
       listParam_bar.root,
       div(`class` := "profiler",
       ),
-      div(`class` := "add_row",
         button(
           "Add Row",
+          `class` := "add_row",
           onclick := { () => 
             println("Add Row")
           }
-        )
       ),
-      div(
-        `class` := "customization",
         button(
           FontAwesome("ellipsis-h"),
+          `class` := "customization",
           onclick := { () => 
             println("Customize")
           }
         )
-      )
     )
 
       // div(`class` := "profiler",
