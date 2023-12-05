@@ -48,7 +48,7 @@ object BarChart extends Command
   val PARAM_ARTIFACT = "artifact"
   val PARAM_CATEGORY = "category"
   val PARAM_CATEGORY_AXIS = "categoryAxis"
-  val PARAM_Y_AXIS = "yAxis"
+  val PARAM_Y_AXIS = "yList"
 
   override def name: String = "Bar Chart"
 
@@ -59,7 +59,8 @@ object BarChart extends Command
       ColIdListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(
         ColIdParameter(id = PARAM_Y, name = "Y-axis"),
       )),
-      ListParameter(id = PARAM_CATEGORY, name = "Categories", components = Seq()),
+      StringParameter(id = PARAM_FILTER, name = "Filter", required = false),
+      StringParameter(id = PARAM_LABEL, name = "Label", required = false),
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )

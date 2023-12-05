@@ -50,33 +50,27 @@ class BarchartEditor(
   //Keeps State of the arguments after editing
   override def loadState(arguments: Seq[CommandArgument]): Unit = 
   {
-    for( arg <- arguments )
-    {
+    for( arg <- arguments ){   
       arg.id match {
         case "dataset" => dataset.set(arg.value)
         case "x" => xcol.set(arg.value)
         case "y" => ycol.set(arg.value)
-        case "yList" => 
-          yListCol.set(
-            arg.value.as[Seq[JsValue]]
-               .map { CommandArgumentList.decodeAsMap(_) }
-               .filter { x => 
-                  x.get("yListColKey").map {
-                    case _ => true
-                  }.getOrElse { true }
-                }
-          )
-
+        case "yList" => yListCol.set(arg.value)
       }
     }
   }
 
     override def currentState: Seq[CommandArgument] =
       {
+        println("Current State")
+        println(dataset.toArgument)
+        println(xcol.toArgument)
+        println(ycol.toArgument)
+        println(yListCol.toArgument)
+
         Seq(
           dataset.toArgument,
           xcol.toArgument,
-          ycol.toArgument,
           yListCol.toArgument
         )
     }
@@ -102,9 +96,9 @@ class BarchartEditor(
             case None => Seq.empty
             case Some(datasetId) => 
               delegate.visibleArtifacts().get(datasetId) match {
-                case None => Seq.empty
                 case Some((ds:DatasetSummary,_)) => ds.columns
                 case Some((ds:DatasetDescription,_)) => ds.columns
+                case None => Seq.empty
               }
           }
       },
@@ -121,15 +115,17 @@ class BarchartEditor(
             case None => Seq.empty
             case Some(datasetId) => 
               delegate.visibleArtifacts().get(datasetId) match {
-                case None => Seq.empty
                 case Some((ds:DatasetSummary,_)) => ds.columns
                 case Some((ds:DatasetDescription,_)) => ds.columns
+                case None => Seq.empty
+              
               }
           }
       },
       true,
       false,
     )
+
   val yListCol = 
     new ColIdListParameter(
       "yList",
@@ -146,9 +142,6 @@ class BarchartEditor(
     )
 
 
-
-
-  
   //Have: 
   //VisibleArtifacts = Rx[Map[String, (serialized.ArtifactSummary, WorkflowElement)]]
   //selectedDataset = Rx[Option[String]]
@@ -160,7 +153,7 @@ class BarchartEditor(
   val listParam_bar: ListParameter =
     new ListParameter("bar",
       "bar",
-      Seq[String]("dataset", "x", "y"),
+      Seq[String]("dataset", "x", "yList"),
       {
         () => 
           Seq(

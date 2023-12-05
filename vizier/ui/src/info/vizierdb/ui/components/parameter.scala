@@ -930,15 +930,15 @@ class ColIdListParameter(
         )
       ).render
   }
-  def rawValue =
-    rows.toSeq
-        .dropRight(1) // drop the "template" row
-        .map { row => 
-          JsArray(row.map { field => Json.toJson(field.toArgument) })
-        }
+def rawValue =
+  rows.toSeq
+      .flatMap { row => 
+        row.map { field => Json.toJson(field.toArgument.value) }
+      }
 
-  def value = 
-    JsArray(rawValue)
+def value = 
+  JsArray(rawValue)
+
 
   def set(v: JsValue): Unit = 
   {
