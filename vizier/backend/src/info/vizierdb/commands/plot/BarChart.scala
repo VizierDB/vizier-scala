@@ -54,8 +54,8 @@ object BarChart extends Command
     ListParameter(id = PARAM_SERIES, name = "Bars", components = Seq(
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
       ColIdParameter(id = PARAM_X, name = "X-axis"),
-      ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(
-        ColIdParameter(id = PARAM_Y, name = "Y-axis"),
+      ListParameter(id = PARAM_Y_AXIS, name = "Y-axis", components = Seq(
+        ColIdParameter(id = PARAM_Y, name = "Y-axis")
       )),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),

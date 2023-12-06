@@ -57,18 +57,17 @@ class BarchartEditor(
         case "xcol" => xcol.set(arg.value)
         case "ycol" => ycol.set(arg.value)
         case "yList" => yListParam.set(arg.value)
+        case "filter" => filter.set(arg.value)
+        case "label" => label.set(arg.value)
       }
     }
   }
 
     override def currentState: Seq[CommandArgument] =
       {
-        println(dataset.toArgument)
-        println(datasetProfile)
         Seq(
-          dataset.toArgument,
-          xcol.toArgument,
-          yListParam.toArgument,
+          listParam_bar.toArgument,
+          artifact.toArgument,
         )
     }
   
@@ -123,20 +122,20 @@ class BarchartEditor(
       false,
     )
 
-  val yListCol = 
-    new ColIdListParameter(
-      "yList",
-      "Y-axes",
-      true,
-      Seq("y"),
-      {
-        () => 
-          Seq(
-            ycol
-          ),
-      },
-      false,
-    )
+  // val yListCol = 
+  //   new ColIdListParameter(
+  //     "yList",
+  //     "Y-axes",
+  //     true,
+  //     Seq("y"),
+  //     {
+  //       () => 
+  //         Seq(
+  //           ycol
+  //         ),
+  //     },
+  //     false,
+  //   )
   
   val yListParam = 
     new ListParameter(
@@ -152,7 +151,33 @@ class BarchartEditor(
       true,
       false
     )
+  
+  val filter =
+    new StringParameter(
+      "filter",
+      "Filter",
+      true,
+      false,
+      ""
+    )
+  
+  val label =
+    new StringParameter(
+      "label",
+      "Label",
+      true,
+      false,
+      ""
+    )
 
+  val artifact = 
+    new StringParameter(
+      "artifact",
+      "Output Artifact (blank to show only)",
+      false,
+      false,
+      ""
+    )
 
   //Have: 
   //VisibleArtifacts = Rx[Map[String, (serialized.ArtifactSummary, WorkflowElement)]]
@@ -165,13 +190,15 @@ class BarchartEditor(
   val listParam_bar: ListParameter =
     new ListParameter("series",
       "Bars",
-      Seq[String]("dataset", "xcol", "yList"),
+      Seq[String]("dataset", "xcol", "yList", "filter", "label"),
       {
         () => 
           Seq(
             dataset,
             xcol,
-            yListParam
+            yListParam,
+            filter,
+            label
           ),
       },
       true,
@@ -179,7 +206,7 @@ class BarchartEditor(
     )
   
   
-  dataset.selectedDataset.triggerLater { _ match {
+  dataset.selectedDataset.trigger { _ match {
     case None => println("No dataset selected")
     case Some(ds) => Vizier.api.artifactGet(
       Vizier.project.now.get.projectId,

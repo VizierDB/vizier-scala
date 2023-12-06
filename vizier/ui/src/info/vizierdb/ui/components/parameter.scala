@@ -176,7 +176,7 @@ object Parameter
         param.datatype match {
           case "colid"       => new ColIdParameter(param, visibleArtifacts, editor.selectedDataset)
           case "list"        => new ListParameter(param, tree.children, this.apply(_, editor), visibleArtifacts)
-          case "listcolid"   => new ColIdListParameter(param, tree.children, this.apply(_, editor), editor.selectedDataset, visibleArtifacts)
+          //case "listcolid"   => new ColIdListParameter(param, tree.children, this.apply(_, editor), editor.selectedDataset, visibleArtifacts)
           case "record"      => new RecordParameter(param, tree.children, this.apply(_, editor))
           case "string"      => new StringParameter(param)
           case "int"         => new IntParameter(param)
@@ -720,7 +720,7 @@ class ListParameter(
     )
   }
 
-  val rows = RxBuffer[Seq[Parameter]]( generateRow() )
+  val rows = RxBuffer[Seq[Parameter]]( tentativeRow() )
   val rowView = RxBufferView(tbody(), 
     rows.rxMap { row =>  
       tr( 
@@ -737,23 +737,23 @@ class ListParameter(
         )
       )
     })
-  // def lastRow = Var(rows.last)
+  def lastRow = Var(rows.last)
 
-  // def tentativeRow(): Seq[Parameter] =
-  // {
-  //   val row = generateRow()
-  //   row.foreach { _.onChange { e => touchRow(row) } }
-  //   row
-  // }
+  def tentativeRow(): Seq[Parameter] =
+  {
+    val row = generateRow()
+    row.foreach { _.onChange { e => touchRow(row) } }
+    row
+  }
 
-  // def touchRow(row: Seq[Parameter])
-  // {
-  //   if(row == lastRow.now) { 
-  //     val newLast = tentativeRow()
-  //     rows.append(newLast)
-  //     lastRow() = newLast
-  //   }
-  // }
+  def touchRow(row: Seq[Parameter])
+  {
+    if(row == lastRow.now) { 
+      val newLast = tentativeRow()
+      rows.append(newLast)
+      lastRow() = newLast
+    }
+  }
 
   val root = 
     fieldset(
@@ -793,13 +793,13 @@ class ListParameter(
   {
     rows.clear()
     for(rowData <- v){
-      val row = generateRow()
+      val row = tentativeRow()
       for(field <- row){
         field.set(rowData.getOrElse(field.id, JsNull))
       }
       rows.append(row)
     }
-    rows.append(generateRow())
+    rows.append(tentativeRow())
   }
 }
 object ListParameter
@@ -838,20 +838,12 @@ object ListParameter
               getParameter,
               datasets
             )
-          case (x, _) if x.parameter.datatype == "listcolid" =>
-            new ColIdListParameter(
-              x.parameter,
-              x.children,
-              getParameter,
-              dataset.selectedDataset,
-              datasets
-            )
           case (x, _) => getParameter(x)
-          }
         }
       }
     }
   }
+}
 
 /////////////////////////////////////////////////////////////////////////////
 /**
@@ -860,127 +852,104 @@ object ListParameter
  * The elements field defines the parameters that appear in each row of the list.
  */
 
-class ColIdListParameter(
-  val id: String,
-  val name: String,
-  val required: Boolean,
-  titles: Seq[String],
-  generateRow: () => Seq[Parameter],
-  val hidden: Boolean,
-)(implicit owner: Ctx.Owner) extends Parameter {
+// class ColIdListParameter(
+//   val id: String,
+//   val name: String,
+//   val required: Boolean,
+//   titles: Seq[String],
+//   generateRow: () => Seq[Parameter],
+//   val hidden: Boolean,
+// )(implicit owner: Ctx.Owner) extends Parameter {
 
-  def this(
-    parameter: serialized.ParameterDescription,
-    children: Seq[serialized.ParameterDescriptionTree],
-    getParameter: serialized.ParameterDescriptionTree => Parameter,
-    selectedDataset: Rx[Option[String]],
-    datasets: Rx[Map[String,serialized.ArtifactSummary]],
-  )(implicit owner: Ctx.Owner) {
-    this(
-      parameter.id,
-      parameter.name,
-      parameter.required,
-      children.map { _.parameter.name },
-      ColIdListParameter.generateChildConstructors(children, datasets, selectedDataset, getParameter),
-      parameter.hidden
-    )
-  }
-  val rows = RxBuffer[Seq[Parameter]]( generateRow() )
+//   def this(
+//     parameter: serialized.ParameterDescription,
+//     children: Seq[serialized.ParameterDescriptionTree],
+//     getParameter: serialized.ParameterDescriptionTree => Parameter,
+//     selectedDataset: Rx[Option[String]],
+//     datasets: Rx[Map[String,serialized.ArtifactSummary]],
+//   )(implicit owner: Ctx.Owner) {
+//     this(
+//       parameter.id,
+//       parameter.name,
+//       parameter.required,
+//       children.map { _.parameter.name },
+//       ColIdListParameter.generateChildConstructors(children, datasets, selectedDataset, getParameter),
+//       parameter.hidden
+//     )
+//   }
+//   val rows = RxBuffer[Seq[Parameter]]( generateRow() )
 
-  val root = {
-      fieldset(
-        table(
-          `class` := "y-axis",
-          thead(
-            tr(
-              titles.map { th(_) },
-              th("")
-            )
-          ),
-          tbody(
-            rows.rxMap { row =>  
-              tr( 
-                row.map { _.root }.map { td(_) } ,
-                button(
-                  FontAwesome("plus"),
-                  `class` := "add_y",
-                  onclick := { e:dom.MouseEvent => 
-                    val idx = rows.indexOf(row)
-                    println(s"Adding row at $idx")
-                    println(s"Rows: ${rows}")
-                    println(s"Length: ${rows.length}")
-                    if(idx == rows.length - 1){
-                      rows.insert(idx+1, generateRow())
-                      }
-                    }
-                ),
-                button(
-                "Delete",
-                `class` := "delete_y",
-                onclick := { e:dom.MouseEvent => 
-                  val idx = rows.indexOf(row)
-                  if(idx < rows.length - 1 && idx >= 0){
-                    rows.remove(idx)
-                  }
-                }
-              ),
-              )
-            }
-          )
-        )
-      ).render
-  }
-def rawValue =
-  rows.toSeq
-      .flatMap { row => 
-        row.map { field => Json.toJson(field.toArgument.value) }
-      }
+//   val root = {
+//       fieldset(
+//         table(
+//           `class` := "y-axis",
+//           thead(
+//             tr(
+//               titles.map { th(_) },
+//               th("")
+//             )
+//           ),
+//           tbody(
+//             rows.rxMap { row =>  
+//               tr( 
+//                 row.map { _.root }.map { td(_) }
+//               )
+//             }
+//           )
+//         )
+//       ).render
+//   }
+// def rawValue =
+//   rows.toSeq
+//       .flatMap { row => 
+//         row.map { field => Json.toJson(field.toArgument.value) }
+//       }
 
-def value = 
-  JsArray(rawValue)
+// def value = 
+//   JsArray(rawValue)
 
 
-  def set(v: JsValue): Unit = 
-  {
-    set(
-      v.as[Seq[serialized.CommandArgumentList.T]].map { 
-        serialized.CommandArgumentList.toMap(_)
-      }
-    )
-  }
+//   def set(v: JsValue): Unit = 
+//   {
+//     set(
+//       v.as[Seq[serialized.CommandArgumentList.T]].map { 
+//         serialized.CommandArgumentList.toMap(_)
+//       }
+//     )
+//   }
 
-  def set(v: Seq[Map[String, JsValue]]) =
-  {
-    rows.clear()
-    for(rowData <- v){
-      val row = generateRow()
-      for(field <- row){
-        field.set(rowData.getOrElse(field.id, JsNull))
-      }
-      rows.append(row)
-    }
-    rows.append(generateRow())
-  }
-}
-object ColIdListParameter {
-  def generateChildConstructors(
-    children: Seq[serialized.ParameterDescriptionTree],
-    datasets: Rx[Map[String,serialized.ArtifactSummary]],
-    selectedDataset: Rx[Option[String]],
-    getParameter: serialized.ParameterDescriptionTree => Parameter
-  )(implicit owner: Ctx.Owner): () => Seq[Parameter] = {
-    () => children.map {
-      case x if x.parameter.datatype == "colid" =>
-        new ColIdParameter(
-          x.parameter,
-          datasets,
-          selectedDataset
-        )
-      case x => 
-        getParameter(x)
-    }
-  }
-}
+//   def set(v: Seq[Map[String, JsValue]]) =
+//   {
+//     rows.clear()
+//     for(rowData <- v){
+//       val row = generateRow()
+//       for(field <- row){
+//         field.set(rowData.getOrElse(field.id, JsNull))
+//       }
+//       rows.append(row)
+//     }
+//     rows.append(generateRow())
+//   }
+// }
+// object ColIdListParameter {
+//   def generateChildConstructors(
+//     children: Seq[serialized.ParameterDescriptionTree],
+//     datasets: Rx[Map[String,serialized.ArtifactSummary]],
+//     selectedDataset: Rx[Option[String]],
+//     getParameter: serialized.ParameterDescriptionTree => Parameter
+//   )(implicit owner: Ctx.Owner): () => Seq[Parameter] = {
+//     () => children.map {
+//       case x if x.parameter.datatype == "colid" =>
+//         new ColIdParameter(
+//           x.parameter,
+//           datasets,
+//           selectedDataset
+//         )
+//       case x => 
+//         getParameter(x)
+//     }
+//   }
+// }
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -282,9 +282,7 @@ object PlotUtils
      * Compute the set of unique y-axis labels represented in all series
      */
     def uniqueYAxes = 
-      {
-        println(series.map { _.y }.toSet)
-        series.flatMap { _.y }.toSet}
+      series.flatMap { _.y }.toSet
 
     /**
      * Compute the set of unique dataset + x-axis label pairs represented in all series
