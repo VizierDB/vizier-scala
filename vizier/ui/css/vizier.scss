@@ -1594,6 +1594,9 @@ button.add_y {
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
+  &:hover{
+    background-color: $color_primary_highlight;
+  }
 }
 
 button.delete_y{
@@ -1605,30 +1608,41 @@ button.delete_y{
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
-  display : none ;
+  //display : none ;
+  &:hover{
+    background-color: $color_primary_highlight;
+  }
 }
 
 button.add_row {
   background-color:#f6f6f6;
   border:black;
   border-radius:0px;
+  display: flex;
   height:24px;
   padding-left: 8px;
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
+  &:hover{
+    background-color: $color_primary_highlight;
+  }
 }
 
 button.customization {
   background-color:#f6f6f6;
   border:black;
   border-radius:0px;
+  display: flex;
   height:24px;
   width:24px; 
   padding-left: 8px;
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
+  &:hover{
+    background-color: $color_primary_highlight;
+  }
 }
 
 .editor_actions

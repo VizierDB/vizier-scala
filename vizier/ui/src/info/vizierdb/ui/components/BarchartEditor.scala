@@ -53,22 +53,18 @@ class BarchartEditor(
   {
     for( arg <- arguments ){   
       arg.id match {
-        case "dataset" => dataset.set(arg.value)
-        case "xcol" => xcol.set(arg.value)
-        case "ycol" => ycol.set(arg.value)
-        case "yList" => yListParam.set(arg.value)
-        case "filter" => filter.set(arg.value)
-        case "label" => label.set(arg.value)
+        case "listParam_bar" => listParam_bar.set(arg.value)
+        case "artifact" => artifact.set(arg.value)
       }
     }
   }
 
-    override def currentState: Seq[CommandArgument] =
-      {
-        Seq(
+  override def currentState: Seq[CommandArgument] =
+    {
+      Seq(
           listParam_bar.toArgument,
           artifact.toArgument,
-        )
+      )
     }
   
 

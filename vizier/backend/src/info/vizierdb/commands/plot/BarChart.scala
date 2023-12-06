@@ -76,7 +76,6 @@ object BarChart extends Command
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
-    println(arguments)
     // Feed the configuration into PlotUtils
     val series =
       PlotUtils.SeriesList( 
