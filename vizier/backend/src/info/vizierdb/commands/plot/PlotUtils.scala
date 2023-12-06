@@ -223,7 +223,7 @@ object PlotUtils
   ): Series =
   {
     var dataframe = context.dataframe(datasetName)
-
+    println(yIndex.map(dataframe.columns(_)))
     // Make sure the relevant columns are numeric
     dataframe = dataframe.select(
       dataframe.columns.zipWithIndex.map { case (col, idx) =>
@@ -475,16 +475,24 @@ object PlotUtils
     /**
      * Return the numeric value to be used as the lower bound of the y-axis
      */
-    def domainMinY: Double = 
-      if(yDomainRequiresOffset && minY > 0){ minY }
-      else { 0 }
+    def domainMinY: Double = {
+      val calculatedMinY = series.flatMap { s =>
+        s.y.map(yVal => s.rows.map(_.getAs[Double](yVal)).min)
+      }.min
+
+      if(yDomainRequiresOffset && calculatedMinY > 0) calculatedMinY else 0
+    }
 
     /**
      * Return the numeric value to be used as the upper bound of the y-axis
      */
-    def domainMaxY: Double = 
-      if(yDomainRequiresOffset || maxY > 0){ maxY }
-      else { 0 }
+  def domainMaxY: Double = {
+    val calculatedMaxY = series.flatMap { s =>
+      s.y.map(yVal => s.rows.map(_.getAs[Double](yVal)).max)
+    }.max
+
+    if(yDomainRequiresOffset || calculatedMaxY > 0) calculatedMaxY else 0
+  }
 
     /**
      * Retrieve all [VegaData] objects for this series

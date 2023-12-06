@@ -54,8 +54,8 @@ object BarChart extends Command
     ListParameter(id = PARAM_SERIES, name = "Bars", components = Seq(
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
       ColIdParameter(id = PARAM_X, name = "X-axis"),
-      ListParameter(id = PARAM_Y_AXIS, name = "Y-axis", components = Seq(
-        ColIdParameter(id = PARAM_Y, name = "Y-axis")
+      ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(
+        ColIdParameter(id = PARAM_Y, name = "Y-axis"),
       )),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
@@ -76,6 +76,7 @@ object BarChart extends Command
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
+    println(arguments)
     // Feed the configuration into PlotUtils
     val series =
       PlotUtils.SeriesList( 
@@ -84,7 +85,7 @@ object BarChart extends Command
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
             xIndex      = series.get[Int](PARAM_X),
-            yIndex      = series.get[Seq[Int]](PARAM_Y_AXIS),
+            yIndex      = series.getList(PARAM_Y_AXIS).map { _.get[Int](PARAM_Y) },
             xDataType   = StringType,
             name        = series.getOpt[String](PARAM_LABEL),
           )
