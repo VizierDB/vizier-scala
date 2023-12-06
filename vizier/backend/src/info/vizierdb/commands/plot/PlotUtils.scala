@@ -223,7 +223,7 @@ object PlotUtils
   ): Series =
   {
     var dataframe = context.dataframe(datasetName)
-    println(yIndex.map(dataframe.columns(_)))
+    
     // Make sure the relevant columns are numeric
     dataframe = dataframe.select(
       dataframe.columns.zipWithIndex.map { case (col, idx) =>
@@ -517,17 +517,19 @@ object PlotUtils
       tooltip: Boolean = false,
       fill: Boolean = false,
       opacity: Double = 1.0
-    ) =
+    ): Seq[VegaMark] =
       series.map { s =>
         val name = s.name
         VegaMark(
           VegaMarkType.Group,
-          marks = Some(simpleMarks(markType, tooltip, fill, opacity)),
+          from = Some(VegaFrom(data = s.name)),
           encode = Some(VegaMarkEncodingGroup(
             // 'enter' defines data in the initial state.
             enter = Some(VegaMarkEncoding(
-              x = Some(VegaValueReference.Field(s.x).scale("x"))))
-          ))
+              x = Some(VegaValueReference.Field(s.x).scale("x"))
+            ))
+          )),
+          marks = Some(simpleMarks(markType, tooltip, fill, opacity))
         )
       }
 
@@ -536,53 +538,41 @@ object PlotUtils
       tooltip: Boolean = false,
       fill: Boolean = false,
       opacity: Double = 1.0
-    ): Seq[VegaMark] =
+    ): Seq[VegaMark] = {
       series.flatMap { s =>
-        s.y.flatMap { yVal =>
+        s.y.zipWithIndex.flatMap { case (yVal, yIdx) =>
           val encoding = VegaMarkEncoding(
-            x = Some(VegaValueReference.Field(s.x).scale("x")),
+            x = Some(VegaValueReference.Field("adjustedX").scale("x")),
             y = Some(VegaValueReference.Field(yVal).scale("y")),
             stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
-            fill = 
-              if(!fill) None 
-              else Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
-            tooltip = 
-              if(!tooltip) None 
-              else Some(VegaValueReference.Signal("datum")),
-            opacity = 
-              if(opacity >= 1.0) None 
-              else Some(opacity),
-            width = 
-              if(markType == VegaMarkType.Rect) Some(VegaValueReference.Band(1).scale("x"))
-              else None,
-            y2 = 
-              if(markType == VegaMarkType.Rect) Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
-              else None
+            fill = if (!fill) None else Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+            tooltip = if (!tooltip) None else Some(VegaValueReference.Signal("datum")),
+            opacity = if (opacity >= 1.0) None else Some(opacity)
           )
           Some(VegaMark(
             markType,
             from = Some(VegaFrom(data = s.name)),
-            encode = Some(VegaMarkEncodingGroup(
-              enter = Some(encoding)
-            ))
+            encode = Some(VegaMarkEncodingGroup(enter = Some(encoding)))
           ))
         }
       } ++ series.flatMap { s => 
-          s.regression.map { _ => 
-            s.y.map { yVal =>
-              Some(VegaMark(
-                VegaMarkType.Line,
-                from = Some(VegaFrom(data = s.regressionName)),
-                encode = Some(VegaMarkEncodingGroup(
-                  enter = Some(VegaMarkEncoding(
-                    x = Some(VegaValueReference.Field(s.x).scale("x")),
-                    y = Some(VegaValueReference.Field(yVal).scale("y")),
-                    stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
-                  ))
+        s.regression.map { _ => 
+          s.y.map { yVal =>
+            Some(VegaMark(
+              VegaMarkType.Line,
+              from = Some(VegaFrom(data = s.regressionName)),
+              encode = Some(VegaMarkEncodingGroup(
+                enter = Some(VegaMarkEncoding(
+                  x = Some(VegaValueReference.Field(s.x).scale("x")),
+                  y = Some(VegaValueReference.Field(yVal).scale("y")),
+                  stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
                 ))
               ))
-            }
-          }.getOrElse(Seq.empty).flatten
+            ))
+          }
+        }.getOrElse(Seq.empty).flatten
       }
+    }
+
   }
 }

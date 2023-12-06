@@ -72,7 +72,6 @@ case class Artifact(
    * Interpret the artifact's value as JSON data
    */
   lazy val json = string match { case "" => Json.obj(); case x => Json.parse(x) }
-  lazy val json = string match { case "" => Json.obj(); case x => Json.parse(x) }
   /**
    * Retrieve the dataset descriptor of a dataset artifact
    */
@@ -321,18 +320,6 @@ case class Artifact(
     datasetDescriptor.properties.get(name)
   }
 
-    /**
-   * Update the specified dataset property
-   * @param    name       The name of a dataset property.
-   * @param    value      The value to assign to the dataset property.
-   */
-  def updateDatasetProperties(props: (String, JsValue)*)(implicit session: DBSession): Artifact =
-  {
-    assert(t.equals(ArtifactType.DATASET))
-    replaceData(Json.toJson(
-      datasetDescriptor.withProperty(props:_*)
-    ))
-  }
 
   /**
    * Retrieve or construct the specified dataset property.
@@ -368,7 +355,6 @@ case class Artifact(
    * @param    name       The name of a dataset property.
    * @param    value      The value to assign to the dataset property.
    */
-  def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Artifact =
   def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Artifact =
   {
     assert(t.equals(ArtifactType.DATASET))
