@@ -35,6 +35,7 @@ import info.vizierdb.spark.SparkSchema.fieldFormat
 import org.apache.spark.sql.AnalysisException
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.akka.VizierServer
+import info.vizierdb.profiler.DataProfiler
 import info.vizierdb.util.ExperimentalOptions
 
 case class Artifact(
@@ -70,6 +71,7 @@ case class Artifact(
   /**
    * Interpret the artifact's value as JSON data
    */
+  lazy val json = string match { case "" => Json.obj(); case x => Json.parse(x) }
   lazy val json = string match { case "" => Json.obj(); case x => Json.parse(x) }
   /**
    * Retrieve the dataset descriptor of a dataset artifact
@@ -251,6 +253,34 @@ case class Artifact(
                )
     val computeCaveats = 
       ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats
+    
+    val df = dataframe(session)()
+    if (forceProfiler) {
+      val updatedProperties = datasetDescriptor.properties.get("is_profiled") match {
+        case Some(jsValue) if jsValue.isInstanceOf[JsBoolean] =>
+          // profiler has been generated so do nothing
+        case _ =>
+          // run the profiler
+          val dataProfile: Map[String, JsValue] = DataProfiler.apply(df)
+          println(dataProfile.keys)
+
+          // Transform the dataProfile into a sequence of tuples
+          // Filter out the specified keys and transform the remaining dataProfile into a sequence of tuples
+          val dynamicProperties: Seq[(String, JsValue)] = dataProfile
+            .filterKeys(key => key != "is_profiled")
+            .toSeq
+            .map {
+              case (key, value) => (key, JsObject(Map(key -> value)))
+            }
+
+          // Combine the static properties with the dynamic ones
+          updateDatasetProperties(
+            Seq("is_profiled" -> JsBoolean(true)) ++ dynamicProperties: _*
+          )
+      }
+    }
+
+
     return { () => 
       try {
         QueryWithCaveats(
@@ -291,6 +321,19 @@ case class Artifact(
     datasetDescriptor.properties.get(name)
   }
 
+    /**
+   * Update the specified dataset property
+   * @param    name       The name of a dataset property.
+   * @param    value      The value to assign to the dataset property.
+   */
+  def updateDatasetProperties(props: (String, JsValue)*)(implicit session: DBSession): Artifact =
+  {
+    assert(t.equals(ArtifactType.DATASET))
+    replaceData(Json.toJson(
+      datasetDescriptor.withProperty(props:_*)
+    ))
+  }
+
   /**
    * Retrieve or construct the specified dataset property.
    * @param    name       The name of a dataset property.
@@ -325,6 +368,7 @@ case class Artifact(
    * @param    name       The name of a dataset property.
    * @param    value      The value to assign to the dataset property.
    */
+  def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Artifact =
   def updateDatasetProperty(name: String, value: JsValue)(implicit session: DBSession): Artifact =
   {
     assert(t.equals(ArtifactType.DATASET))

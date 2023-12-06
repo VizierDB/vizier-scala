@@ -17,8 +17,9 @@ package info.vizierdb.api
 import scalikejdbc._
 import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
-
+import play.api.libs.json.JsArray
 import info.vizierdb.catalog.Artifact
+import info.vizierdb.util.ExperimentalOptions
 import info.vizierdb.types.{ Identifier, ArtifactType }
 import org.mimirdb.caveats.Caveat
 import info.vizierdb.spark.caveats.CaveatFormat._
@@ -36,11 +37,12 @@ object GetArtifact
   extends LazyLogging
 {
   def getArtifact(projectId: Long, artifactId: Long, expecting: Option[ArtifactType.T]): Option[Artifact] = 
-      CatalogDB.withDBReadOnly { implicit session => 
+      CatalogDB.withDB { implicit session => 
         Artifact.getOption(artifactId, Some(projectId))
       }.filter { artifact => 
         expecting.isEmpty || expecting.get.equals(artifact.t)
       }
+
 
   def apply(
     projectId: Identifier,
@@ -58,7 +60,7 @@ object GetArtifact
     val forceProfiler = profile.map { _.equals("true") }.getOrElse(false)
     getArtifact(projectId, artifactId, expecting) match {
       case Some(artifact) => 
-        CatalogDB.withDBReadOnly { implicit s => 
+        CatalogDB.withDB{ implicit s => 
           artifact.describe(
             offset = offset, 
             limit = limit, 
@@ -77,7 +79,6 @@ object GetArtifact
         ErrorResponse.noSuchEntity
     }
   }
-
   def typed(
     expectedType: ArtifactType.T
   )(
@@ -135,7 +136,7 @@ object GetArtifact
     {
       getArtifact(projectId, artifactId, None) match {
         case Some(artifact) => 
-          CatalogDB.withDBReadOnly { implicit s => artifact.summarize() }
+          CatalogDB.withDB { implicit s => artifact.summarize() }
         case None => 
           ErrorResponse.noSuchEntity
       }
