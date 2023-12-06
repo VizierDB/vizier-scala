@@ -46,8 +46,6 @@ object BarChart extends Command
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
-  val PARAM_CATEGORY = "category"
-  val PARAM_CATEGORY_AXIS = "categoryAxis"
   val PARAM_Y_AXIS = "yList"
 
   override def name: String = "Bar Chart"
@@ -56,7 +54,7 @@ object BarChart extends Command
     ListParameter(id = PARAM_SERIES, name = "Bars", components = Seq(
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
       ColIdParameter(id = PARAM_X, name = "X-axis"),
-      ColIdListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(
+      ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(
         ColIdParameter(id = PARAM_Y, name = "Y-axis"),
       )),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false),
@@ -68,8 +66,7 @@ object BarChart extends Command
     "Bar plot of "+arguments.getList(PARAM_SERIES).map { series =>
       series.get[String](PARAM_DATASET)
     }.toSet.mkString(", ")
-
-  override def format(arguments: Arguments): String =
+  override def format(arguments: Arguments): String = 
     title(arguments)
 
   override def process(arguments: Arguments, context: ExecutionContext): Unit =
@@ -79,7 +76,7 @@ object BarChart extends Command
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
-
+    println(arguments)
     // Feed the configuration into PlotUtils
     val series =
       PlotUtils.SeriesList( 

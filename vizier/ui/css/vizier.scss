@@ -1568,7 +1568,7 @@ table.parameter_list
 {
   tbody tr:last-child
   {
-    opacity: 0.6;
+    // opacity: 0.6;
 
     button.delete_row
     {
@@ -1584,17 +1584,52 @@ table.parameter_list
   }
 }
 
-.add_row {
-  background-color:white;
+button.add_y {
+  background-color:#f6f6f6;
   border:black;
-  border-radius:2px;
-  height:15px;
-  width:15px;
+  border-radius:0px;
+  height:24px;
+  width:24px; 
+  padding-left: 8px;
+  padding-right: 8px;
   text-align:center;
   cursor:pointer;
 }
 
+button.delete_y{
+  background-color:#f6f6f6;
+  border:black;
+  border-radius:0px;
+  height:24px;
+  padding-left: 8px;
+  padding-right: 8px;
+  text-align:center;
+  cursor:pointer;
+  display : none ;
+}
 
+button.add_row {
+  background-color:#f6f6f6;
+  border:black;
+  border-radius:0px;
+  height:24px;
+  padding-left: 8px;
+  padding-right: 8px;
+  text-align:center;
+  cursor:pointer;
+}
+
+button.customization {
+  background-color:#f6f6f6;
+  border:black;
+  border-radius:0px;
+  height:24px;
+  width:24px; 
+  padding-left: 8px;
+  padding-right: 8px;
+  text-align:center;
+  cursor:pointer;
+}
 
 .editor_actions
 {

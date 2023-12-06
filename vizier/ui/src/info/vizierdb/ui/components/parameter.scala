@@ -720,7 +720,7 @@ class ListParameter(
     )
   }
 
-  val rows = RxBuffer[Seq[Parameter]]( tentativeRow() )
+  val rows = RxBuffer[Seq[Parameter]]( generateRow() )
   val rowView = RxBufferView(tbody(), 
     rows.rxMap { row =>  
       tr( 
@@ -737,23 +737,23 @@ class ListParameter(
         )
       )
     })
-  def lastRow = Var(rows.last)
+  // def lastRow = Var(rows.last)
 
-  def tentativeRow(): Seq[Parameter] =
-  {
-    val row = generateRow()
-    row.foreach { _.onChange { e => touchRow(row) } }
-    row
-  }
+  // def tentativeRow(): Seq[Parameter] =
+  // {
+  //   val row = generateRow()
+  //   row.foreach { _.onChange { e => touchRow(row) } }
+  //   row
+  // }
 
-  def touchRow(row: Seq[Parameter])
-  {
-    if(row == lastRow.now) { 
-      val newLast = tentativeRow()
-      rows.append(newLast)
-      lastRow() = newLast
-    }
-  }
+  // def touchRow(row: Seq[Parameter])
+  // {
+  //   if(row == lastRow.now) { 
+  //     val newLast = tentativeRow()
+  //     rows.append(newLast)
+  //     lastRow() = newLast
+  //   }
+  // }
 
   val root = 
     fieldset(
@@ -793,13 +793,13 @@ class ListParameter(
   {
     rows.clear()
     for(rowData <- v){
-      val row = tentativeRow()
+      val row = generateRow()
       for(field <- row){
         field.set(rowData.getOrElse(field.id, JsNull))
       }
       rows.append(row)
     }
-    rows.append(tentativeRow())
+    rows.append(generateRow())
   }
 }
 object ListParameter

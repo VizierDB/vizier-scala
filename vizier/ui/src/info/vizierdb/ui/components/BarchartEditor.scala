@@ -25,6 +25,7 @@ import info.vizierdb.serialized.{
   ParameterDescriptionTree,
   DatasetSummary,
   DatasetDescription,
+  ArtifactDescription,
   DatasetColumn,
   PackageCommand
 }
@@ -53,25 +54,21 @@ class BarchartEditor(
     for( arg <- arguments ){   
       arg.id match {
         case "dataset" => dataset.set(arg.value)
-        case "x" => xcol.set(arg.value)
-        case "y" => ycol.set(arg.value)
-        case "yList" => yListCol.set(arg.value)
+        case "xcol" => xcol.set(arg.value)
+        case "ycol" => ycol.set(arg.value)
+        case "yList" => yListParam.set(arg.value)
       }
     }
   }
 
     override def currentState: Seq[CommandArgument] =
       {
-        println("Current State")
         println(dataset.toArgument)
-        println(xcol.toArgument)
-        println(ycol.toArgument)
-        println(yListCol.toArgument)
-
+        println(datasetProfile)
         Seq(
           dataset.toArgument,
           xcol.toArgument,
-          yListCol.toArgument
+          yListParam.toArgument,
         )
     }
   
@@ -79,7 +76,7 @@ class BarchartEditor(
   val dataset = 
     new ArtifactParameter(
       id = "dataset",
-      name = "Dataset: ",
+      name = "Dataset",
       artifactType = ArtifactType.DATASET,
       artifacts = delegate.visibleArtifacts
                           .map { _.mapValues { _._1.t } },
@@ -89,8 +86,8 @@ class BarchartEditor(
   
   val xcol = 
     new ColIdParameter(
-      "x",
-      "X Axis: ",
+      "xcol",
+      "X-axis",
       Rx{
           dataset.selectedDataset() match {
             case None => Seq.empty
@@ -108,8 +105,8 @@ class BarchartEditor(
 
   val ycol =
     new ColIdParameter(
-      "y",
-      "Y Axis: ",
+      "ycol",
+      "Y-Axis",
       Rx{
           dataset.selectedDataset() match {
             case None => Seq.empty
@@ -129,7 +126,7 @@ class BarchartEditor(
   val yListCol = 
     new ColIdListParameter(
       "yList",
-      "Y Axis: ",
+      "Y-axes",
       true,
       Seq("y"),
       {
@@ -139,6 +136,21 @@ class BarchartEditor(
           ),
       },
       false,
+    )
+  
+  val yListParam = 
+    new ListParameter(
+      "yList",
+      "Y-axes",
+      Seq[String]("ycol"),
+      {
+        () => 
+          Seq(
+            ycol
+          ),
+      },
+      true,
+      false
     )
 
 
@@ -151,15 +163,15 @@ class BarchartEditor(
 
   //Need this Rx[Seq[serialized.DatasetColumn]]
   val listParam_bar: ListParameter =
-    new ListParameter("bar",
-      "bar",
-      Seq[String]("dataset", "x", "yList"),
+    new ListParameter("series",
+      "Bars",
+      Seq[String]("dataset", "xcol", "yList"),
       {
         () => 
           Seq(
             dataset,
             xcol,
-            yListCol
+            yListParam
           ),
       },
       true,
@@ -171,14 +183,14 @@ class BarchartEditor(
     case None => println("No dataset selected")
     case Some(ds) => Vizier.api.artifactGet(
       Vizier.project.now.get.projectId,
-      delegate.visibleArtifacts.now.get(selectedDataset.now.get).get._1.id,
+      delegate.visibleArtifacts.now.get(dataset.selectedDataset.now.get).get._1.id,
       None,
       None,
       Some("true")
     ).onComplete {
       case Success(artifactDescription) =>
         artifactDescription match {
-          case ds:DatasetDescription => 
+          case ds:ArtifactDescription => 
             datasetProfile() = Some(ds)
           case _ => 
             Vizier.error("Not a dataset")
@@ -189,7 +201,7 @@ class BarchartEditor(
   }}
 
 
-  val datasetProfile: Var[Option[DatasetDescription]] = Var(None)
+  val datasetProfile: Var[Option[ArtifactDescription]] = Var(None)
 
   
   //What is displayed to users
