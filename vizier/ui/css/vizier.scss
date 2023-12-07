@@ -1629,6 +1629,21 @@ button.add_row {
   }
 }
 
+button.add_y_axis {
+  background-color:#f6f6f6;
+  border:black;
+  border-radius:0px;
+  display: flex;
+  height:24px;
+  padding-left: 8px;
+  padding-right: 8px;
+  text-align:center;
+  cursor:pointer;
+  &:hover{
+    background-color: $color_primary_highlight;
+  }
+}
+
 button.customization {
   background-color:#f6f6f6;
   border:black;

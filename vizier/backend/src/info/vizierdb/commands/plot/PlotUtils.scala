@@ -223,7 +223,7 @@ object PlotUtils
   ): Series =
   {
     var dataframe = context.dataframe(datasetName)
-    
+    println(yIndex.map(dataframe.columns(_)))
     // Make sure the relevant columns are numeric
     dataframe = dataframe.select(
       dataframe.columns.zipWithIndex.map { case (col, idx) =>
