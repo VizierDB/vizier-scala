@@ -223,7 +223,7 @@ object PlotUtils
   ): Series =
   {
     var dataframe = context.dataframe(datasetName)
-    println(yIndex.map(dataframe.columns(_)))
+
     // Make sure the relevant columns are numeric
     dataframe = dataframe.select(
       dataframe.columns.zipWithIndex.map { case (col, idx) =>
@@ -403,6 +403,14 @@ object PlotUtils
         s.distinctX.map { SparkPrimitive.encode(_, xType) }
       }.toSet
 
+    def uniqueYValues: Set[JsValue] = 
+      series.flatMap { s =>
+        val yType = s.dataframe.schema(s.y.head).dataType // Assuming all y columns have the same type
+        s.y.flatMap { yVal => 
+          s.dataframe.select(yVal).distinct.collect.map(row => SparkPrimitive.encode(row(0), yType))
+        }
+      }.toSet
+
     //
     // Offset Heuristics
     // 
@@ -517,19 +525,17 @@ object PlotUtils
       tooltip: Boolean = false,
       fill: Boolean = false,
       opacity: Double = 1.0
-    ): Seq[VegaMark] =
+    ) =
       series.map { s =>
         val name = s.name
         VegaMark(
           VegaMarkType.Group,
-          from = Some(VegaFrom(data = s.name)),
+          marks = Some(simpleMarks(markType, tooltip, fill, opacity)),
           encode = Some(VegaMarkEncodingGroup(
             // 'enter' defines data in the initial state.
             enter = Some(VegaMarkEncoding(
-              x = Some(VegaValueReference.Field(s.x).scale("x"))
-            ))
-          )),
-          marks = Some(simpleMarks(markType, tooltip, fill, opacity))
+              x = Some(VegaValueReference.Field(s.x).scale("x"))))
+          ))
         )
       }
 
@@ -538,41 +544,53 @@ object PlotUtils
       tooltip: Boolean = false,
       fill: Boolean = false,
       opacity: Double = 1.0
-    ): Seq[VegaMark] = {
+    ): Seq[VegaMark] =
       series.flatMap { s =>
-        s.y.zipWithIndex.flatMap { case (yVal, yIdx) =>
+        s.y.flatMap { yVal =>
           val encoding = VegaMarkEncoding(
-            x = Some(VegaValueReference.Field("adjustedX").scale("x")),
+            x = Some(VegaValueReference.Field(s.x).scale("x")),
             y = Some(VegaValueReference.Field(yVal).scale("y")),
             stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
-            fill = if (!fill) None else Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
-            tooltip = if (!tooltip) None else Some(VegaValueReference.Signal("datum")),
-            opacity = if (opacity >= 1.0) None else Some(opacity)
+            fill = 
+              if(!fill) None 
+              else Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+            tooltip = 
+              if(!tooltip) None 
+              else Some(VegaValueReference.Signal("datum")),
+            opacity = 
+              if(opacity >= 1.0) None 
+              else Some(opacity),
+            width = 
+              if(markType == VegaMarkType.Rect) Some(VegaValueReference.Band(1).scale("x"))
+              else None,
+            y2 = 
+              if(markType == VegaMarkType.Rect) Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
+              else None
           )
           Some(VegaMark(
             markType,
             from = Some(VegaFrom(data = s.name)),
-            encode = Some(VegaMarkEncodingGroup(enter = Some(encoding)))
+            encode = Some(VegaMarkEncodingGroup(
+              enter = Some(encoding)
+            ))
           ))
         }
       } ++ series.flatMap { s => 
-        s.regression.map { _ => 
-          s.y.map { yVal =>
-            Some(VegaMark(
-              VegaMarkType.Line,
-              from = Some(VegaFrom(data = s.regressionName)),
-              encode = Some(VegaMarkEncodingGroup(
-                enter = Some(VegaMarkEncoding(
-                  x = Some(VegaValueReference.Field(s.x).scale("x")),
-                  y = Some(VegaValueReference.Field(yVal).scale("y")),
-                  stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+          s.regression.map { _ => 
+            s.y.map { yVal =>
+              Some(VegaMark(
+                VegaMarkType.Line,
+                from = Some(VegaFrom(data = s.regressionName)),
+                encode = Some(VegaMarkEncodingGroup(
+                  enter = Some(VegaMarkEncoding(
+                    x = Some(VegaValueReference.Field(s.x).scale("x")),
+                    y = Some(VegaValueReference.Field(yVal).scale("y")),
+                    stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+                  ))
                 ))
               ))
-            ))
-          }
-        }.getOrElse(Seq.empty).flatten
+            }
+          }.getOrElse(Seq.empty).flatten
       }
-    }
-
   }
 }

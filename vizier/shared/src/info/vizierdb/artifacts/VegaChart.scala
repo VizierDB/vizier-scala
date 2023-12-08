@@ -1641,6 +1641,9 @@ sealed trait VegaValueReference
 {
   def scale(s: String) = 
     VegaValueReference.ScaleTransform(s, this)
+
+  def offset(o: Int): VegaValueReference = 
+    VegaValueReference.Offset(o, this)
 }
 object VegaValueReference
 {
@@ -1667,6 +1670,15 @@ object VegaValueReference
     target: VegaValueReference
   ) extends VegaValueReference
 
+
+  /**
+   * Apply an offset to the visual encoding.
+   */
+  case class Offset(
+    offset: Int,
+    target: VegaValueReference
+  ) extends VegaValueReference
+
   /**
    * Used for Width of bar chart 
    */
@@ -1678,6 +1690,7 @@ object VegaValueReference
   implicit val valueFormat: Format[Literal] = Json.format
   implicit val signalFormat: Format[Signal] = Json.format
   implicit val scaleBandRefFormat: Format[Band] = Json.format
+  implicit val offsetFormat: Format[Offset] = Json.format
   implicit val scaleFormat: Format[ScaleTransform] = Format[ScaleTransform](
     new Reads[ScaleTransform]{
       def reads(j: JsValue): JsResult[ScaleTransform] =
@@ -1717,6 +1730,8 @@ object VegaValueReference
                 j.as[Band]
               } else if(elems contains "signal"){
                 j.as[Signal]
+              } else if(elems contains "offset"){
+                j.as[Offset]
               } else {
                 j.as[Literal]
               }
@@ -1732,6 +1747,7 @@ object VegaValueReference
           case j:ScaleTransform => Json.toJson(j)
           case j:Signal => Json.toJson(j)
           case j:Band => Json.toJson(j)
+          case Offset(offset, target) => Json.obj("offset" -> offset) ++ Json.toJson(target).as[JsObject]
         }
     }
   )

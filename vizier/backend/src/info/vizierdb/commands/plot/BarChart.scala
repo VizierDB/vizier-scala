@@ -35,6 +35,8 @@ import info.vizierdb.artifacts.VegaAutosize
 import info.vizierdb.artifacts.VegaPadding
 import info.vizierdb.artifacts.VegaLegend
 import info.vizierdb.artifacts.VegaLegendType
+import info.vizierdb.artifacts.VegaValueReference
+
 
 object BarChart extends Command
 {
@@ -73,9 +75,12 @@ object BarChart extends Command
   {
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
+    val tooltip: Boolean = true // Set to true if you want tooltips, false otherwise
+
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
+    println(arguments)
     // Feed the configuration into PlotUtils
     val series =
       PlotUtils.SeriesList( 
@@ -92,7 +97,8 @@ object BarChart extends Command
           .aggregated()
         }
       )
-    
+
+    val yAxisLabels = series.series.flatMap(_.y).distinct 
     context.vega(
       VegaChart(
         description = "",
@@ -112,13 +118,17 @@ object BarChart extends Command
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
-          // Set the domain of the x scale
           VegaScale("x", VegaScaleType.Band, 
-            padding = Some(0.2),
+            padding = Some(0.1),
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Literal(series.uniqueXValues.toSeq))
           ),
-            
+          // 'xInner': An inner scale for grouping
+          VegaScale("xInner", VegaScaleType.Band, 
+            padding = Some(0.05),
+            range = Some(VegaRange.Width),
+            domain = Some(VegaDomain.Literal(series.uniqueYValues.toSeq))
+          ),
           // 'y': The y axis scale, mapping from data.y -> chart height
           VegaScale("y", VegaScaleType.Linear, 
             range = Some(VegaRange.Height),
@@ -133,9 +143,9 @@ object BarChart extends Command
           // 'color': The color scale, mapping from data.c -> color category
           VegaScale("color", VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
-            domain = Some(VegaDomain.Literal(series.names.map { JsString(_) }))
+            domain = Some(VegaDomain.Literal(yAxisLabels.map(JsString(_))))
           )
-        ),
+      ),
 
         // Define the chart axes (based on the 'x' and 'y' scales)
         axes = Seq(
@@ -146,12 +156,25 @@ object BarChart extends Command
         //Make Diagonal Axis 30 degrees
         ),
 
-        // Actually define the line(s).  There's a single mark here
-        // that generates one line per color (based on the stroke 
-        // encoding)
-        marks = series.groupMarks(VegaMarkType.Rect, 
-            fill = true, 
-            tooltip = true),
+        marks = series.series.flatMap { s =>
+          s.y.zipWithIndex.map { case (yVal, idx) =>
+            VegaMark(
+              VegaMarkType.Rect,
+              from = Some(VegaFrom(data = s.name)),
+              encode = Some(VegaMarkEncodingGroup(
+                enter = Some(VegaMarkEncoding(
+                  x = Some(VegaValueReference.Field(s.x).scale("x").offset(50 * idx - 5)),
+                  width = Some(VegaValueReference.Band(1).scale("xInner")),
+                  y = Some(VegaValueReference.Field(yVal).scale("y")),
+                  y2 = Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0)))),
+                  fill = Some(VegaValueReference.Literal(JsString(yVal)).scale("color")),
+                  tooltip = if (tooltip) Some(VegaValueReference.Signal("datum")) else None
+                ))
+              ))
+            )
+          }
+        },
+
 
         // Finally ensure that there is a legend displayed
         legends = Seq(
