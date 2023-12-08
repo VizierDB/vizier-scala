@@ -184,6 +184,8 @@ case class Artifact(
 
           val df = dataframe
 
+          logger.trace("Dataset Properties: \n"+string)
+
           { () => 
             val data = dataConstructor()
             val rowCount: Long = 
@@ -256,7 +258,7 @@ case class Artifact(
     val df = dataframe(session)()
     if (forceProfiler) {
       val updatedProperties = datasetDescriptor.properties.get("is_profiled") match {
-        case Some(jsValue) if jsValue.isInstanceOf[JsBoolean] =>
+        case Some(JsBoolean(true)) =>
           // profiler has been generated so do nothing
         case _ =>
           // run the profiler
@@ -268,9 +270,6 @@ case class Artifact(
           val dynamicProperties: Seq[(String, JsValue)] = dataProfile
             .filterKeys(key => key != "is_profiled")
             .toSeq
-            .map {
-              case (key, value) => (key, JsObject(Map(key -> value)))
-            }
 
           // Combine the static properties with the dynamic ones
           updateDatasetProperties(
