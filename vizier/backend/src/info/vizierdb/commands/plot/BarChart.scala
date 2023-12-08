@@ -59,7 +59,7 @@ object BarChart extends Command
       ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(
         ColIdParameter(id = PARAM_Y, name = "Y-axis"),
       )),
-      StringParameter(id = PARAM_FILTER, name = "Filter", required = false),
+      NumericalFilterParameter(id = PARAM_FILTER, name = "Filter", required = false),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)

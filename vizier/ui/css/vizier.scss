@@ -23,7 +23,6 @@ $color_running:                #2d93a5;
 $color_waiting:                #2d93a5;
 $color_tentative:              #777;
 $color_inspector:              #aaa;
-
 $color_button_abort:           #c00; 
 $color_button_confirm:         #292;
 
@@ -1576,6 +1575,11 @@ table.parameter_list
     }
   }
 
+  td
+  {
+    width: 150px;
+  }
+
   // Keep the labels for accessibility's sake, but don't include them
   // in the layout.
   td label
@@ -1584,7 +1588,7 @@ table.parameter_list
   }
 }
 
-button.add_y {
+button.add_y_axis {
   background-color:#f6f6f6;
   border:black;
   border-radius:0px;
@@ -1595,7 +1599,7 @@ button.add_y {
   text-align:center;
   cursor:pointer;
   &:hover{
-    background-color: $color_primary_highlight;
+    background-color: $color_inter_module_highlight;
   }
 }
 
@@ -1610,7 +1614,7 @@ button.delete_y{
   cursor:pointer;
   //display : none ;
   &:hover{
-    background-color: $color_primary_highlight;
+    background-color: $color_inter_module_highlight;
   }
 }
 
@@ -1618,29 +1622,13 @@ button.add_row {
   background-color:#f6f6f6;
   border:black;
   border-radius:0px;
-  display: flex;
   height:24px;
   padding-left: 8px;
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
   &:hover{
-    background-color: $color_primary_highlight;
-  }
-}
-
-button.add_y_axis {
-  background-color:#f6f6f6;
-  border:black;
-  border-radius:0px;
-  display: flex;
-  height:24px;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align:center;
-  cursor:pointer;
-  &:hover{
-    background-color: $color_primary_highlight;
+    background-color: $color_inter_module_highlight;
   }
 }
 
@@ -1648,7 +1636,6 @@ button.customization {
   background-color:#f6f6f6;
   border:black;
   border-radius:0px;
-  display: flex;
   height:24px;
   width:24px; 
   padding-left: 8px;
@@ -1656,7 +1643,7 @@ button.customization {
   text-align:center;
   cursor:pointer;
   &:hover{
-    background-color: $color_primary_highlight;
+    background-color: $color_inter_module_highlight;
   }
 }
 
