@@ -151,12 +151,11 @@ class BarchartEditor(
     )
   
   def filter =
-    new StringParameter(
+    new NumericalFilterParameter(
       "filter",
       "Filter",
-      true,
       false,
-      ""
+      false,
     )
   
   def label =

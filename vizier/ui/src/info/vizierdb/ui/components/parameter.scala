@@ -6,6 +6,7 @@ import scalajs.js
 import rx._
 import org.scalajs.dom
 import scalatags.JsDom.all._
+import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.types._
 import info.vizierdb.ui.facades.{ CodeMirror, CodeMirrorEditor }
@@ -176,7 +177,7 @@ object Parameter
         param.datatype match {
           case "colid"       => new ColIdParameter(param, visibleArtifacts, editor.selectedDataset)
           case "list"        => new ListParameter(param, tree.children, this.apply(_, editor), visibleArtifacts)
-          //case "listcolid"   => new ColIdListParameter(param, tree.children, this.apply(_, editor), editor.selectedDataset, visibleArtifacts)
+          case "numericalfilter" => new NumericalFilterParameter(param)
           case "record"      => new RecordParameter(param, tree.children, this.apply(_, editor))
           case "string"      => new StringParameter(param)
           case "int"         => new IntParameter(param)
@@ -852,104 +853,56 @@ object ListParameter
  * The elements field defines the parameters that appear in each row of the list.
  */
 
-// class ColIdListParameter(
-//   val id: String,
-//   val name: String,
-//   val required: Boolean,
-//   titles: Seq[String],
-//   generateRow: () => Seq[Parameter],
-//   val hidden: Boolean,
-// )(implicit owner: Ctx.Owner) extends Parameter {
+class NumericalFilterParameter(
+  val id: String,
+  val name: String,
+  val required: Boolean,
+  val hidden: Boolean
+)(implicit owner: Ctx.Owner) 
+extends Parameter
+{
+  def this (parameter: serialized.ParameterDescription)
+        (implicit owner: Ctx.Owner)
+  {
+    this(
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden
+    )
+  }
 
-//   def this(
-//     parameter: serialized.ParameterDescription,
-//     children: Seq[serialized.ParameterDescriptionTree],
-//     getParameter: serialized.ParameterDescriptionTree => Parameter,
-//     selectedDataset: Rx[Option[String]],
-//     datasets: Rx[Map[String,serialized.ArtifactSummary]],
-//   )(implicit owner: Ctx.Owner) {
-//     this(
-//       parameter.id,
-//       parameter.name,
-//       parameter.required,
-//       children.map { _.parameter.name },
-//       ColIdListParameter.generateChildConstructors(children, datasets, selectedDataset, getParameter),
-//       parameter.hidden
-//     )
-//   }
-//   val rows = RxBuffer[Seq[Parameter]]( generateRow() )
+  val root: Node = div(
+    `class` := "numerical_filter",
+      input(
+        `type` := "range",
+        `class` := "slider",
+        min := "0",
+        max := "100",
 
-//   val root = {
-//       fieldset(
-//         table(
-//           `class` := "y-axis",
-//           thead(
-//             tr(
-//               titles.map { th(_) },
-//               th("")
-//             )
-//           ),
-//           tbody(
-//             rows.rxMap { row =>  
-//               tr( 
-//                 row.map { _.root }.map { td(_) }
-//               )
-//             }
-//           )
-//         )
-//       ).render
-//   }
-// def rawValue =
-//   rows.toSeq
-//       .flatMap { row => 
-//         row.map { field => Json.toJson(field.toArgument.value) }
-//       }
+      ),
+      input(
+        `type` := "number",
+        `class` := "output",
+      )
+    ).render
 
-// def value = 
-//   JsArray(rawValue)
+  dom.document.body.appendChild(root)
 
+  val slider = dom.document.getElementsByClassName("slider")(0).asInstanceOf[dom.html.Input]
+  val output = dom.document.getElementsByClassName("output").asInstanceOf[dom.html.Div]
 
-//   def set(v: JsValue): Unit = 
-//   {
-//     set(
-//       v.as[Seq[serialized.CommandArgumentList.T]].map { 
-//         serialized.CommandArgumentList.toMap(_)
-//       }
-//     )
-//   }
+  slider.oninput = { (e: dom.Event) =>
+    output.textContent = slider.value
+  }
 
-//   def set(v: Seq[Map[String, JsValue]]) =
-//   {
-//     rows.clear()
-//     for(rowData <- v){
-//       val row = generateRow()
-//       for(field <- row){
-//         field.set(rowData.getOrElse(field.id, JsNull))
-//       }
-//       rows.append(row)
-//     }
-//     rows.append(generateRow())
-//   }
-// }
-// object ColIdListParameter {
-//   def generateChildConstructors(
-//     children: Seq[serialized.ParameterDescriptionTree],
-//     datasets: Rx[Map[String,serialized.ArtifactSummary]],
-//     selectedDataset: Rx[Option[String]],
-//     getParameter: serialized.ParameterDescriptionTree => Parameter
-//   )(implicit owner: Ctx.Owner): () => Seq[Parameter] = {
-//     () => children.map {
-//       case x if x.parameter.datatype == "colid" =>
-//         new ColIdParameter(
-//           x.parameter,
-//           datasets,
-//           selectedDataset
-//         )
-//       case x => 
-//         getParameter(x)
-//     }
-//   }
-// }
+  def value =
+    JsString("cid = " + inputNode[dom.html.Input].value)
+
+  def set(v: JsValue): Unit =
+    inputNode[dom.html.Input].value = v.as[String]
+  
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
