@@ -119,21 +119,6 @@ class BarchartEditor(
       true,
       false,
     )
-
-  // val yListCol = 
-  //   new ColIdListParameter(
-  //     "yList",
-  //     "Y-axes",
-  //     true,
-  //     Seq("y"),
-  //     {
-  //       () => 
-  //         Seq(
-  //           ycol
-  //         ),
-  //     },
-  //     false,
-  //   )
   
   def yListParam(dataset:ArtifactParameter) = 
     new ListParameter(
@@ -154,6 +139,7 @@ class BarchartEditor(
     new NumericalFilterParameter(
       "filter",
       "Filter",
+      datasetProfile,
       false,
       false,
     )
@@ -233,31 +219,6 @@ class BarchartEditor(
   override val editorFields = 
     div(`class` := "bar_chart_editor",
       listParam_bar.root,
-      div(`class` := "profiler",
-      ),
-      button(
-        FontAwesome("plus"),
-        "Add Y-Axis",
-        `class` := "add_y_axis",
-        onclick := { () => 
-          println("Add Y-Axis")
-        }
-      ),
-        button(
-          FontAwesome("plus"),
-          "Add Row",
-          `class` := "add_row",
-          onclick := { () => 
-            println("Add Row")
-          }
-      ),
-        button(
-          FontAwesome("ellipsis-h"),
-          `class` := "customization",
-          onclick := { () => 
-            println("Customize")
-          }
-        )
     )
 
       // div(`class` := "profiler",

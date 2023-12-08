@@ -187,11 +187,17 @@ case class Artifact(
           logger.trace("Dataset Properties: \n"+string)
 
           { () => 
-            val data = dataConstructor()
+            val data = dataConstructor()  
             val rowCount: Long = 
-                data.properties
-                    .get("count")
-                    .map { _.as[Long] }
+              data.properties
+                .get("count")
+                .flatMap { values =>
+                  try {
+                    Some(values.as[Long])
+                  } catch {
+                    case e: Exception => None
+                  }
+                }
                     .getOrElse { df().count() }
 
             Artifact.translateDatasetContainerToVizierClassic(
@@ -261,9 +267,9 @@ case class Artifact(
         case Some(JsBoolean(true)) =>
           // profiler has been generated so do nothing
         case _ =>
+          println("Profiler has been generated")
           // run the profiler
           val dataProfile: Map[String, JsValue] = DataProfiler.apply(df)
-          println(dataProfile.keys)
 
           // Transform the dataProfile into a sequence of tuples
           // Filter out the specified keys and transform the remaining dataProfile into a sequence of tuples

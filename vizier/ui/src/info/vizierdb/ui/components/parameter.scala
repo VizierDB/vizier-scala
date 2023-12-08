@@ -856,6 +856,7 @@ object ListParameter
 class NumericalFilterParameter(
   val id: String,
   val name: String,
+  val profile_data: Var[Option[serialized.PropertyList.T]],
   val required: Boolean,
   val hidden: Boolean
 )(implicit owner: Ctx.Owner) 
@@ -867,10 +868,19 @@ extends Parameter
     this(
       id = parameter.id,
       name = parameter.name,
+      profile_data = Var[Option[serialized.PropertyList.T]](None),
       required = parameter.required,
       hidden = parameter.hidden
     )
   }
+
+
+  // def maxVal = profile_data.map { 
+  //   case None => 0
+  //   case Some(data) => 
+  //     data.seq.map(_.value.as[Double]).max
+  // }.toString()
+
 
   val root: Node = div(
     `class` := "numerical_filter",
@@ -879,7 +889,7 @@ extends Parameter
         `class` := "slider",
         min := "0",
         max := "100",
-
+        scalatags.JsDom.all.value:= "50",
       ),
       input(
         `type` := "number",
@@ -891,13 +901,15 @@ extends Parameter
 
   val slider = dom.document.getElementsByClassName("slider")(0).asInstanceOf[dom.html.Input]
   val output = dom.document.getElementsByClassName("output").asInstanceOf[dom.html.Div]
+  val varValue = Var[Int](0)
 
-  slider.oninput = { (e: dom.Event) =>
+  slider.onchange = { (e: dom.Event) =>
     output.textContent = slider.value
+    varValue() = slider.value.toInt
   }
 
   def value =
-    JsString("cid = " + inputNode[dom.html.Input].value)
+    JsString(inputNode[dom.html.Input].value)
 
   def set(v: JsValue): Unit =
     inputNode[dom.html.Input].value = v.as[String]
