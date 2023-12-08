@@ -550,10 +550,10 @@ object PlotUtils
           val encoding = VegaMarkEncoding(
             x = Some(VegaValueReference.Field(s.x).scale("x")),
             y = Some(VegaValueReference.Field(yVal).scale("y")),
-            stroke = Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+            stroke = Some(VegaValueReference.Literal(JsString(yVal)).scale("color")),
             fill = 
               if(!fill) None 
-              else Some(VegaValueReference.Literal(JsString(s.name)).scale("color")),
+              else Some(VegaValueReference.Literal(JsString(yVal)).scale("color")),
             tooltip = 
               if(!tooltip) None 
               else Some(VegaValueReference.Signal("datum")),
@@ -561,7 +561,7 @@ object PlotUtils
               if(opacity >= 1.0) None 
               else Some(opacity),
             width = 
-              if(markType == VegaMarkType.Rect) Some(VegaValueReference.Band(1).scale("x"))
+              if(markType == VegaMarkType.Rect) Some(VegaValueReference.Band(1).scale("xInner"))
               else None,
             y2 = 
               if(markType == VegaMarkType.Rect) Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))

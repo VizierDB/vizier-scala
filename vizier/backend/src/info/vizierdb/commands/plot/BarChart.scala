@@ -80,7 +80,6 @@ object BarChart extends Command
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
-    println(arguments)
     // Feed the configuration into PlotUtils
     val series =
       PlotUtils.SeriesList( 
@@ -156,6 +155,14 @@ object BarChart extends Command
         //Make Diagonal Axis 30 degrees
         ),
 
+        // Actually define the line(s).  There's a single mark here
+        // that generates one line per color (based on the stroke 
+        // encoding)
+        marks = series.groupMarks(VegaMarkType.Rect, 
+            fill = true, 
+            tooltip = true),
+/*
+        // use group marks to draw the bars
         marks = series.series.flatMap { s =>
           s.y.zipWithIndex.map { case (yVal, idx) =>
             VegaMark(
@@ -175,7 +182,7 @@ object BarChart extends Command
           }
         },
 
-
+*/
         // Finally ensure that there is a legend displayed
         legends = Seq(
           VegaLegend(
