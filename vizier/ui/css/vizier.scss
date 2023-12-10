@@ -1577,8 +1577,13 @@ table.parameter_list
 
   td
   {
-    width: 150px;
+    width: 160px;
     vertical-align: center;
+    fieldset {
+      legend {
+        display: hidden ;
+      }
+    }
   }
 
   // Keep the labels for accessibility's sake, but don't include them
@@ -1589,8 +1594,8 @@ table.parameter_list
   }
 } 
 
-command-argument {
-  width: 140px;
+div.parameter {
+  width: 150px;
   vertical-align: center ;
 }
 
@@ -1603,6 +1608,7 @@ button.add_y_axis {
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
+  display: hidden ; 
   &:hover{
     background-color: $color_inter_module_highlight;
   }
@@ -1632,6 +1638,7 @@ button.add_row {
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
+  display: hidden ; 
   &:hover{
     background-color: $color_inter_module_highlight;
   }
@@ -1647,6 +1654,7 @@ button.customization {
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
+  display: hidden ; 
   &:hover{
     background-color: $color_inter_module_highlight;
   }
