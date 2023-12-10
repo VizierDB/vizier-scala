@@ -726,15 +726,17 @@ class ListParameter(
     rows.rxMap { row =>  
       tr( 
         row.map { _.root }.map { td(_) } ,
-        button(
-          "X",
-          `class` := "delete_row",
-          onclick := { e:dom.MouseEvent => 
-            val idx = rows.indexOf(row)
-            if(idx < rows.length - 1 && idx >= 0){
-              rows.remove(idx)
+        td (
+          button(
+            "X",
+            `class` := "delete_row",
+            onclick := { e:dom.MouseEvent => 
+              val idx = rows.indexOf(row)
+              if(idx < rows.length - 1 && idx >= 0){
+                rows.remove(idx)
+              }
             }
-          }
+          )
         )
       )
     })

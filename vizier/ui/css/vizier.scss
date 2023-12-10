@@ -1578,6 +1578,7 @@ table.parameter_list
   td
   {
     width: 150px;
+    vertical-align: center;
   }
 
   // Keep the labels for accessibility's sake, but don't include them
@@ -1586,6 +1587,11 @@ table.parameter_list
   {
     display: none;
   }
+} 
+
+command-argument {
+  width: 140px;
+  vertical-align: center ;
 }
 
 button.add_y_axis {
@@ -1593,7 +1599,6 @@ button.add_y_axis {
   border:black;
   border-radius:0px;
   height:24px;
-  width:24px; 
   padding-left: 8px;
   padding-right: 8px;
   text-align:center;
