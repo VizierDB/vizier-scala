@@ -1577,11 +1577,12 @@ table.parameter_list
 
   td
   {
-    width: 160px;
+    width: 140px;
     vertical-align: center;
     fieldset {
+      border: 0;
       legend {
-        display: hidden ;
+        display: none ;
       }
     }
   }
@@ -1594,8 +1595,8 @@ table.parameter_list
   }
 } 
 
-div.parameter {
-  width: 150px;
+select.command-argument {
+  width: 130px;
   vertical-align: center ;
 }
 
@@ -1608,7 +1609,7 @@ button.add_y_axis {
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
-  display: hidden ; 
+  display: none ; 
   &:hover{
     background-color: $color_inter_module_highlight;
   }
@@ -1638,7 +1639,7 @@ button.add_row {
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
-  display: hidden ; 
+  display: none ; 
   &:hover{
     background-color: $color_inter_module_highlight;
   }
@@ -1654,7 +1655,7 @@ button.customization {
   padding-right: 8px;
   text-align:center;
   cursor:pointer;
-  display: hidden ; 
+  display: none ; 
   &:hover{
     background-color: $color_inter_module_highlight;
   }

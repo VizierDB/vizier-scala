@@ -20,6 +20,7 @@ import info.vizierdb.ui.components.snippets.ScalaSnippets
 import org.scalajs.dom.Node
 import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.ui.widgets.Spinner
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
@@ -856,62 +857,191 @@ object ListParameter
  */
 
 class NumericalFilterParameter(
-  val id: String,
-  val name: String,
-  val profile_data: Var[Option[serialized.PropertyList.T]],
-  val required: Boolean,
-  val hidden: Boolean
+    val id: String,
+    val name: String,
+    val profile_data: Var[Option[serialized.PropertyList.T]],
+    val xDataColumn: Var[Option[Int]] = Var[Option[Int]](None),
+    val required: Boolean,
+    val hidden: Boolean
 )(implicit owner: Ctx.Owner) 
-extends Parameter
-{
-  def this (parameter: serialized.ParameterDescription)
-        (implicit owner: Ctx.Owner)
+  extends Parameter
+  {
+    
+  def this (parameter: serialized.ParameterDescription)(implicit owner: Ctx.Owner) = 
   {
     this(
-      id = parameter.id,
-      name = parameter.name,
-      profile_data = Var[Option[serialized.PropertyList.T]](None),
-      required = parameter.required,
-      hidden = parameter.hidden
+      parameter.id,
+      parameter.name,
+      Var[Option[serialized.PropertyList.T]](None),
+      Var[Option[Int]](None),
+      parameter.required,
+      parameter.hidden
     )
   }
 
+  val spin = Var[Option[String]](None)
+  val temp = Var[Option[Int]](None)
 
-  // def maxVal = profile_data.map { 
-  //   case None => 0
-  //   case Some(data) => 
-  //     data.seq.map(_.value.as[Double]).max
-  // }.toString()
+  def updateProfileData(data: serialized.PropertyList.T): Unit = 
+  {
+    profile_data() = Some(data)
+    // println(profile_data.now)
+  }
+
+  def updateXColumnData(profiledata: Option[serialized.PropertyList.T], xCol:Option[Int]): Unit = 
+  {
+    val columns = profiledata.get(2).value
+    
+    if ((columns \ "columns").asOpt[JsArray].isDefined) {
+      val result: Option[Seq[Map[String, JsValue]]] = (columns \ "columns").asOpt[JsArray].map { jsonArray =>
+        jsonArray.value.map { jsonObject =>
+          jsonObject.as[JsObject].value.toMap
+        }
+      }
+      val selectedMapOpt = result.flatMap { seqOfMaps =>
+        seqOfMaps.find { map =>
+          map.get("column") match {
+            case Some(jsValue) =>
+              (jsValue \ "id").asOpt[Int].contains(xCol.get)
+            case None =>
+              false
+          }
+        }
+      }
+      println(selectedMapOpt)
+      selectedMapOpt match {
+        case Some(map) =>
+          // Extract max value
+          val maxValueOpt = map.get("max").flatMap(_.asOpt[Int])
+
+          // Extract name value - it's nested within the "column" object
+          val nameValueOpt = map.get("column").flatMap(_.as[JsObject].value.get("name")).flatMap(_.asOpt[String])
+
+          (maxValueOpt, nameValueOpt) match {
+            case (Some(maxValue), Some(nameValue)) =>
+              xDataColumn() = Some(maxValue)
+              spin() = Some(nameValue) // Assign name value to spin()
+              temp() = Some(maxValue)
+              println(s"Max value found: $maxValue, Name: $nameValue")
+            case (None, _) =>
+              println("No max value found")
+            case (_, None) =>
+              println("No name value found")
+          }
+        case None => 
+          println("No matching column found")
+      }
+
+    }
 
 
-  val root: Node = div(
-    `class` := "numerical_filter",
-      input(
-        `type` := "range",
-        `class` := "slider",
-        min := "0",
-        max := "100",
-        scalatags.JsDom.all.value:= "50",
-      ),
-      input(
-        `type` := "number",
-        `class` := "output",
-      )
-    ).render
 
-  dom.document.body.appendChild(root)
 
-  val slider = dom.document.getElementsByClassName("slider")(0).asInstanceOf[dom.html.Input]
-  val output = dom.document.getElementsByClassName("output").asInstanceOf[dom.html.Div]
-  val varValue = Var[Int](0)
+    // else {
+    //   val columnsSeqOpt: Option[Seq[JsValue]] = (columns \ "columns").asOpt[Seq[JsValue]]
+    //   val matchingColumnOpt: Option[JsValue] = columnsSeqOpt.flatMap { columnsSeq =>
+    //     columnsSeq.find { col =>
+    //       (col \ "column" \ "id").asOpt[Int].contains(xCol)
+    //     }
+    //   }
+    //   matchingColumnOpt match {
+    //     case Some(columnJsValue) => println("DATA FOUND")
+    //     case None => println(s"No matching column found with ID $xCol")
+    //   }
+    // }
+  }
 
-  slider.onchange = { (e: dom.Event) =>
-    output.textContent = slider.value
-    varValue() = slider.value.toInt
+  
+
+
+
+
+    //scalatags.JsDom.all.
+  val root =  
+      span(
+        Rx {
+          temp() match {
+            case Some(spinVal) => 
+
+            println("Spinval: " + spinVal)
+              div(
+                `class` := "numerical_filter",
+                input(
+                  `type` := "range",
+                  `class` := "slider",
+                  min := "0",
+                  max := spinVal.toString,
+                  scalatags.JsDom.all.value:= spinVal.toString
+                ),
+                input(
+                  `type` := "number",
+                  `class` := "output",
+                  scalatags.JsDom.all.value:= spinVal.toString
+                )
+              )
+            case None => 
+              div(
+                `class` := "spinner_class",
+                Spinner().render,
+                println("No x")
+              )
+            case _ => 
+              div(
+                `class` := "spinner_class",
+                Spinner().render,
+              )
+            }
+          }.reactive
+        // spin() match {
+        //   case Some(spinVal) => 
+        //     div(
+        //       `class` := "numerical_filter",
+        //       input(
+        //         `type` := "range",
+        //         `class` := "slider",
+        //         min := "0",
+        //         max := spinVal.toString,
+        //         scalatags.JsDom.all.value:= spinVal.toString
+        //       ),
+        //       input(
+        //         `type` := "number",
+        //         `class` := "output",
+        //         scalatags.JsDom.all.value:= spinVal.toString
+        //       )
+        //     )
+        //   case None => 
+        //     div(
+        //       `class` := "spinner_class",
+        //       Spinner().render,
+        //       println("No x")
+        //     )
+        //   case _ => 
+        //     div(
+        //       `class` := "spinner_class",
+        //       Spinner().render,
+        //     )
+        //   }
+        // }.reactive
+      ).render
+    
+
+  
+
+  val slider = dom.document.getElementById("parameter_10").asInstanceOf[dom.html.Input]
+  val output = dom.document.getElementById("parameter_11").asInstanceOf[dom.html.Input]
+  val varValue = Var[Option[Int]](None)
+
+  if (slider != null) {
+    slider.onchange = { (e:dom.Event) => 
+      output.value = slider.value
+      varValue() = Some(slider.value.toInt)
+      // println(slider.value)
+      // println(profile_data.now)
+    }
   }
 
   def value =
-    JsString(inputNode[dom.html.Input].value)
+    JsString(spin.now.get + " <= " + inputNode[dom.html.Input].value)
 
   def set(v: JsValue): Unit =
     inputNode[dom.html.Input].value = v.as[String]
