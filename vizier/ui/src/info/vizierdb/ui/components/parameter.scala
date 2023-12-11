@@ -776,7 +776,7 @@ class ListParameter(
 
   def rawValue =
     rows.toSeq
-        .dropRight(1) // drop the "template" row
+        .dropRight(1) // drop the "xColMaxlate" row
         .map { row => 
           JsArray(row.map { field => Json.toJson(field.toArgument) })
         }
@@ -884,7 +884,7 @@ class NumericalFilterParameter(
   }
 
   val spin = Var[Option[String]](None)
-  val temp = Var[Option[Int]](None)
+  val xColMax = Var[Option[Int]](None)
   val slider = dom.document.getElementsByName("Filter").asInstanceOf[dom.html.Input]
   val varValue = Var[Option[Int]](None)
 
@@ -925,25 +925,33 @@ class NumericalFilterParameter(
 
           // Extract name value - it's nested within the "column" object
           val nameValueOpt = map.get("column").flatMap(_.as[JsObject].value.get("name")).flatMap(_.asOpt[String])
+          val columnType = map.get("column").flatMap(_.as[JsObject].value.get("type")).flatMap(_.asOpt[String])
+          if(columnType.get.equals("string")){
+            xColMax() = None
+            varValue() = None
+            return 
+          }
 
           (maxValueOpt, nameValueOpt) match {
             case (Some(maxValue), Some(nameValue)) =>
               xDataColumn() = Some(maxValue)
               spin() = Some(nameValue) // Assign name value to spin()
-              temp() = Some(maxValue)
+              xColMax() = Some(maxValue)
               varValue() = Some(maxValue)
               println(s"Max value found: $maxValue, Name: $nameValue")
             case (None, _) =>
               println("No max value found")
-              temp() = None
+              xColMax() = None
             case (_, None) =>
               println("No name value found")
+              xColMax() = None
           }
         case None => 
           println("No matching column found")
       }
 
     }
+  }
 
 
 
@@ -960,7 +968,7 @@ class NumericalFilterParameter(
     //     case None => println(s"No matching column found with ID $xCol")
     //   }
     // }
-  }
+  
 
   
 
@@ -979,8 +987,8 @@ class NumericalFilterParameter(
                   scalatags.JsDom.all.name := "slider_param",
                   `type` := "range",
                   min := "0",
-                  max := temp.now.get.toString,
-                  scalatags.JsDom.all.value:= spinVal.toString(),
+                  max := xColMax.now.get.toString,
+                  scalatags.JsDom.all.value:= spinVal.toString,
                   
                 ),
                 input(
@@ -1017,7 +1025,7 @@ class NumericalFilterParameter(
   }
 
   def value =
-    if (temp.now == None) {
+    if (xColMax.now == None) {
       JsString("")
     } else {
       JsString(spin.now.get + " <= " + (inputNode[dom.html.Input].value).toString)
@@ -1025,8 +1033,11 @@ class NumericalFilterParameter(
     
   def set(v: JsValue): Unit ={
     val stringVal = v.as[String]
+    if (stringVal.equals("")) {
+      return 
+    }
     val data = stringVal.split(" <= ")
-    temp() = Some(data(1).toInt)
+    xColMax() = Some(data(1).toInt)
     spin() = Some(data(0))
     varValue() = Some(data(1).toInt)
   }
