@@ -270,13 +270,11 @@ case class Artifact(
           println("Profiler has been generated")
           // run the profiler
           val dataProfile: Map[String, JsValue] = DataProfiler.apply(df)
-
           // Transform the dataProfile into a sequence of tuples
           // Filter out the specified keys and transform the remaining dataProfile into a sequence of tuples
           val dynamicProperties: Seq[(String, JsValue)] = dataProfile
             .filterKeys(key => key != "is_profiled")
             .toSeq
-
           // Combine the static properties with the dynamic ones
           updateDatasetProperties(
             Seq("is_profiled" -> JsBoolean(true)) ++ dynamicProperties: _*

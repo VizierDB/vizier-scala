@@ -118,15 +118,15 @@ object BarChart extends Command
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
           VegaScale("x", VegaScaleType.Band, 
-            padding = Some(0.1),
+            padding = Some((0.115)),
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Literal(series.uniqueXValues.toSeq))
           ),
           // 'xInner': An inner scale for grouping
           VegaScale("xInner", VegaScaleType.Band, 
-            padding = Some(0.05),
+            padding = Some(0.11),
             range = Some(VegaRange.Width),
-            domain = Some(VegaDomain.Literal(series.uniqueYValues.toSeq))
+            domain = Some(VegaDomain.Literal(yAxisLabels.map(JsString(_))))
           ),
           // 'y': The y axis scale, mapping from data.y -> chart height
           VegaScale("y", VegaScaleType.Linear, 
@@ -161,28 +161,7 @@ object BarChart extends Command
         marks = series.groupMarks(VegaMarkType.Rect, 
             fill = true, 
             tooltip = true),
-/*
-        // use group marks to draw the bars
-        marks = series.series.flatMap { s =>
-          s.y.zipWithIndex.map { case (yVal, idx) =>
-            VegaMark(
-              VegaMarkType.Rect,
-              from = Some(VegaFrom(data = s.name)),
-              encode = Some(VegaMarkEncodingGroup(
-                enter = Some(VegaMarkEncoding(
-                  x = Some(VegaValueReference.Field(s.x).scale("x").offset(50 * idx - 5)),
-                  width = Some(VegaValueReference.Band(1).scale("xInner")),
-                  y = Some(VegaValueReference.Field(yVal).scale("y")),
-                  y2 = Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0)))),
-                  fill = Some(VegaValueReference.Literal(JsString(yVal)).scale("color")),
-                  tooltip = if (tooltip) Some(VegaValueReference.Signal("datum")) else None
-                ))
-              ))
-            )
-          }
-        },
 
-*/
         // Finally ensure that there is a legend displayed
         legends = Seq(
           VegaLegend(

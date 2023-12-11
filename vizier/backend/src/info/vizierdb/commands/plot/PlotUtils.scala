@@ -546,32 +546,42 @@ object PlotUtils
       opacity: Double = 1.0
     ): Seq[VegaMark] =
       series.flatMap { s =>
-        s.y.flatMap { yVal =>
-          val encoding = VegaMarkEncoding(
-            x = Some(VegaValueReference.Field(s.x).scale("x")),
-            y = Some(VegaValueReference.Field(yVal).scale("y")),
-            stroke = Some(VegaValueReference.Literal(JsString(yVal)).scale("color")),
-            fill = 
-              if(!fill) None 
+          val yValsCount =
+              if (s.y.length == 1) 2
+              else s.y.length;
+          s.y.zipWithIndex.flatMap { case (yVal, idx) =>
+            val offsetx = 
+              if (yValsCount > 1) (100 / (yValsCount - 1)) * idx
+              else 0.0;
+            val encoding = VegaMarkEncoding(
+              x = 
+              if(markType == VegaMarkType.Rect) Some(VegaValueReference.Field(s.x).scale("x").offset(offsetx))
+              else Some(VegaValueReference.Field(s.x).scale("x")),
+              y = Some(VegaValueReference.Field(yVal).scale("y")),
+              stroke = 
+              if(markType == VegaMarkType.Rect) Some(VegaValueReference.Literal(JsString(s.name)).scale("color"))
               else Some(VegaValueReference.Literal(JsString(yVal)).scale("color")),
-            tooltip = 
-              if(!tooltip) None 
-              else Some(VegaValueReference.Signal("datum")),
-            opacity = 
-              if(opacity >= 1.0) None 
-              else Some(opacity),
-            width = 
-              if(markType == VegaMarkType.Rect) Some(VegaValueReference.Band(1).scale("xInner"))
-              else None,
-            y2 = 
-              if(markType == VegaMarkType.Rect) Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
-              else None
-          )
-          Some(VegaMark(
-            markType,
-            from = Some(VegaFrom(data = s.name)),
-            encode = Some(VegaMarkEncodingGroup(
-              enter = Some(encoding)
+              fill = 
+                if(!fill) None 
+                else Some(VegaValueReference.Literal(JsString(yVal)).scale("color")),
+              tooltip = 
+                if(!tooltip) None 
+                else Some(VegaValueReference.Signal("datum")),
+              opacity = 
+                if(opacity >= 1.0) None 
+                else Some(opacity),
+              width = 
+                if(markType == VegaMarkType.Rect) Some(VegaValueReference.Band(1.0 / yValsCount).scale("xInner"))
+                else None,
+              y2 = 
+                if(markType == VegaMarkType.Rect) Some(VegaValueReference.ScaleTransform("y", VegaValueReference.Literal(JsNumber(0))))
+                else None
+            )
+            Some(VegaMark(
+              markType,
+              from = Some(VegaFrom(data = s.name)),
+              encode = Some(VegaMarkEncodingGroup(
+                enter = Some(encoding)
             ))
           ))
         }

@@ -1642,7 +1642,7 @@ sealed trait VegaValueReference
   def scale(s: String) = 
     VegaValueReference.ScaleTransform(s, this)
 
-  def offset(o: Int): VegaValueReference = 
+  def offset(o: Double): VegaValueReference = 
     VegaValueReference.Offset(o, this)
 }
 object VegaValueReference
@@ -1675,7 +1675,7 @@ object VegaValueReference
    * Apply an offset to the visual encoding.
    */
   case class Offset(
-    offset: Int,
+    offset: Double,
     target: VegaValueReference
   ) extends VegaValueReference
 
@@ -1683,7 +1683,7 @@ object VegaValueReference
    * Used for Width of bar chart 
    */
   case class Band(
-    band: Int
+    band: Double
   ) extends VegaValueReference
 
   implicit val fieldFormat: Format[Field] = Json.format
