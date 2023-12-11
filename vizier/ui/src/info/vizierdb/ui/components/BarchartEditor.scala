@@ -54,7 +54,6 @@ class BarchartEditor(
   override def loadState(arguments: Seq[CommandArgument]): Unit = 
   {
     for( arg <- arguments ){   
-      println(arg)
       arg.id match {
         case "series" => listParam_bar.set(arg.value)
         case "artifact" => artifact.set(arg.value)
@@ -64,7 +63,6 @@ class BarchartEditor(
 
   override def currentState: Seq[CommandArgument] =
     {
-      println(datasetProfile)
       Seq(
           listParam_bar.toArgument,
           artifact.toArgument,
@@ -155,7 +153,7 @@ class BarchartEditor(
       false,
       ""
     )
-    
+
   //Need this Rx[Seq[serialized.DatasetColumn]]
   val listParam_bar: ListParameter =
     new ListParameter("series",

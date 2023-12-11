@@ -886,7 +886,7 @@ class NumericalFilterParameter(
   val spin = Var[Option[String]](None)
   val temp = Var[Option[Int]](None)
   val slider = dom.document.getElementsByName("Filter").asInstanceOf[dom.html.Input]
-  val varValue = Var[Option[Int]](Some(3))
+  val varValue = Var[Option[Int]](None)
 
   def updateProfileData(data: serialized.PropertyList.T): Unit = 
   {
@@ -935,6 +935,7 @@ class NumericalFilterParameter(
               println(s"Max value found: $maxValue, Name: $nameValue")
             case (None, _) =>
               println("No max value found")
+              temp() = None
             case (_, None) =>
               println("No name value found")
           }
@@ -970,24 +971,22 @@ class NumericalFilterParameter(
   val root =  
       span(
         Rx {
-          temp() match {
+          varValue() match {
             case Some(spinVal) => 
-
-            println("Spinval: " + spinVal)
               div(
                 `class` := "numerical_filter",
                 input(
                   scalatags.JsDom.all.name := "slider_param",
                   `type` := "range",
                   min := "0",
-                  max := spinVal.toString,
-                  scalatags.JsDom.all.value:= varValue.now.get.toString,
+                  max := temp.now.get.toString,
+                  scalatags.JsDom.all.value:= spinVal.toString(),
                   
                 ),
                 input(
                   scalatags.JsDom.all.name := "input_box",
                   `type` := "number",
-                  scalatags.JsDom.all.value:= varValue.now.get.toString
+                  scalatags.JsDom.all.value:= spinVal.toString
                 )
               )
             case None => 
@@ -1018,11 +1017,18 @@ class NumericalFilterParameter(
   }
 
   def value =
-    JsString(spin.now.get + " <= " + (inputNode[dom.html.Input].value).toString)
-
+    if (temp.now == None) {
+      JsString("")
+    } else {
+      JsString(spin.now.get + " <= " + (inputNode[dom.html.Input].value).toString)
+    }
+    
   def set(v: JsValue): Unit ={
-    inputNode[dom.html.Input].value = v.as[String]
-    inputNode[dom.html.Input].value = v.as[String]
+    val stringVal = v.as[String]
+    val data = stringVal.split(" <= ")
+    temp() = Some(data(1).toInt)
+    spin() = Some(data(0))
+    varValue() = Some(data(1).toInt)
   }
     
 }
