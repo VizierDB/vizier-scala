@@ -49,10 +49,12 @@ class BarchartEditor(
   with Logging
 {
   def xColumnData = Var[Option[Int]](None)
+  val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
   //Keeps State of the arguments after editing
   override def loadState(arguments: Seq[CommandArgument]): Unit = 
   {
     for( arg <- arguments ){   
+      println(arg)
       arg.id match {
         case "series" => listParam_bar.set(arg.value)
         case "artifact" => artifact.set(arg.value)
@@ -153,14 +155,7 @@ class BarchartEditor(
       false,
       ""
     )
-
-  //Have: 
-  //VisibleArtifacts = Rx[Map[String, (serialized.ArtifactSummary, WorkflowElement)]]
-  //selectedDataset = Rx[Option[String]]
-
-  // val colIdDataset = delegate.visibleArtifacts.now.get(selectedDataset.now.get)
-
-
+    
   //Need this Rx[Seq[serialized.DatasetColumn]]
   val listParam_bar: ListParameter =
     new ListParameter("series",
@@ -168,11 +163,11 @@ class BarchartEditor(
       Seq[String]("Dataset", "X", "Y Params", "Filter", "Label"),
       {
         () => 
+          val newFilter = filter
           val currentDataset = dataset
           val xCol = xcol(currentDataset)
-          val newFilter = filter
-          profiler(currentDataset)
-          xColChange(xCol)
+          profiler(currentDataset, newFilter)
+          xColChange(xCol, newFilter)
           Seq(
             currentDataset,
             xCol,
@@ -195,7 +190,7 @@ class BarchartEditor(
         false,
     )
   
-  def profiler(dataset:ArtifactParameter) =  dataset.selectedDataset.trigger { _ match {
+  def profiler(dataset:ArtifactParameter, filter:NumericalFilterParameter) =  dataset.selectedDataset.trigger { _ match {
     case None => println("No dataset selected")
     case Some(ds) => Vizier.api.artifactGet(
       Vizier.project.now.get.projectId,
@@ -215,9 +210,9 @@ class BarchartEditor(
     }
   }}
 
-  def xColChange(currentXCol:ColIdParameter) = currentXCol.selectedColumn.trigger { _ match {
+  def xColChange(currentXCol:ColIdParameter, filter:NumericalFilterParameter) = currentXCol.selectedColumn.trigger { _ match {
     case None => println("No column selected")
-    case Some(col) => filter.updateXColumnData(datasetProfile.now, Some(col))
+    case Some(col) => filter.updateXColumnData(Some(col))
   }}
 
   def yColChange(currentYCol:ColIdParameter) = currentYCol.selectedColumn.trigger { _ match {
@@ -227,7 +222,7 @@ class BarchartEditor(
 
   
   
-  val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
+  
 
   val selectedXCol = Var[Option[Int]](None)
   val selectedYCol = Var[Seq[Int]](Seq.empty)
