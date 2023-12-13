@@ -23,7 +23,7 @@ import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.test.SharedTestResources
 import info.vizierdb.MutableProject
-import info.vizierdb.commands.python.PythonProcess
+import info.vizierdb.python.PythonProcess
 import org.apache.spark.sql.types._
 import info.vizierdb.util.FeatureSupported
 import info.vizierdb.spark.caveats.DataContainer

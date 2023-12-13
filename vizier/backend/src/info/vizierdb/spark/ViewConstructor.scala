@@ -6,7 +6,7 @@ import info.vizierdb.types._
 import info.vizierdb.catalog.Artifact
 import org.apache.spark.sql.{ SparkSession, DataFrame }
 import org.apache.spark.sql.catalyst.expressions.Expression
-import info.vizierdb.commands.python.PythonProcess
+import info.vizierdb.python.PythonProcess
 import info.vizierdb.spark.caveats.AnnotateImplicitHeuristics
 import org.mimirdb.caveats.lifting.ResolveLifts
 import org.apache.spark.sql.types.StructField

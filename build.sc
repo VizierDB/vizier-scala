@@ -48,13 +48,20 @@ object vizier extends ScalaModule with PublishModule {
       PathRef(millSourcePath / "shared" / "src"),
     )
   }
+
+  def vendoredPython = T.sources {
+    Seq[PathRef](
+      PathRef(os.pwd / "vendor" / "python")
+    )
+  }
+
   def resources = T.sources {
     os.write(T.dest / "vizier-version.txt", versionString())
     super.resources() ++ Seq[PathRef](
       PathRef(millSourcePath / "resources"),
       PathRef(ui.resourceDir()),
-      PathRef(T.dest)
-    )
+      PathRef(T.dest),
+    ) ++ vendoredPython()
   }
   def versionString:T[String] = T {
     val gitVersion:String = 

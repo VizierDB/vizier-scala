@@ -30,7 +30,7 @@ import info.vizierdb.catalog.{
   Cell,
 }
 import info.vizierdb.catalog.workarounds.SQLiteNoReadOnlyDriver
-import info.vizierdb.commands.python.PythonProcess
+import info.vizierdb.python.PythonProcess
 import info.vizierdb.export.{ 
   ExportProject, 
   ImportProject,

@@ -7,8 +7,8 @@ import info.vizierdb.api.response.ErrorResponse
 import java.sql.SQLException
 import info.vizierdb.VizierException
 import info.vizierdb.Vizier
-import info.vizierdb.commands.python.PythonEnvironment
-import info.vizierdb.commands.python.Pyenv
+import info.vizierdb.python.PythonEnvironment
+import info.vizierdb.python.Pyenv
 import info.vizierdb.catalog.PythonVirtualEnvironmentRevision
 import info.vizierdb.types._
 import com.typesafe.scalalogging.LazyLogging

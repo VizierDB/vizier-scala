@@ -3,9 +3,10 @@ package info.vizierdb.catalog
 import scalikejdbc._
 import info.vizierdb.serialized.PythonPackage
 import java.io.File
-import info.vizierdb.commands.python.SystemPython
-import info.vizierdb.commands.python.Pyenv
-import info.vizierdb.commands.python.PythonEnvironment
+import info.vizierdb.python.SystemPython
+import info.vizierdb.python.Pyenv
+import info.vizierdb.python.PythonEnvironment
+import info.vizierdb.python.PythonProcess
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.Vizier
 import info.vizierdb.VizierException
@@ -13,7 +14,6 @@ import scala.sys.process._
 import info.vizierdb.catalog.binders._
 import info.vizierdb.serialized
 import info.vizierdb.util.FileUtils
-import info.vizierdb.commands.python.PythonProcess
 import info.vizierdb.types._
 
 case class PythonVirtualEnvironment(

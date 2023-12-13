@@ -34,6 +34,7 @@ import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.catalog.PythonVirtualEnvironment
+import info.vizierdb.python._
 
 object Python extends Command
   with LazyLogging

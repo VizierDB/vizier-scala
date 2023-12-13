@@ -1,4 +1,4 @@
-package info.vizierdb.commands.python
+package info.vizierdb.python
 
 import java.io.ByteArrayInputStream
 import java.util.Base64

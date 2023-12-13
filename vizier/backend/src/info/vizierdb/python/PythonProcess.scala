@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.commands.python
+package info.vizierdb.python
 
 import java.io._
 import scala.io._
@@ -78,14 +78,20 @@ object PythonProcess
 {
   val JAR_PREFIX = "^jar:(.*)!(.*)$".r
   val FILE_PREFIX = "f".r
+  lazy val PATH = Seq(
+    scriptResource("ipyflow/core")
+  )
 
   def udfBuilder = PythonUDFBuilder(Some(SystemPython))
 
   def scriptPath: String =
+    scriptResource("__main__.py")
+
+  def scriptResource(resourcePath: String): String =
   {
-    val resource = getClass().getClassLoader().getResource("__main__.py")
+    val resource = getClass().getClassLoader().getResource(resourcePath)
     if(resource == null){
-      throw new IOException("Python integration unsupported: __main__.py is unavailable");
+      throw new IOException(s"Python integration unsupported: $resourcePath is unavailable");
     }
 
     var path = resource.toURI().toString()
@@ -172,10 +178,24 @@ object PythonProcess
     }
   }
 
+  def initPath(cmd: JProcessBuilder): JProcessBuilder =
+  {
+    cmd.environment().put(
+      "PYTHONPATH",
+      (
+        Option(System.getenv("PYTHONPATH")).toSeq ++
+          PATH
+      ).mkString(":")
+    )
+    return cmd
+  }
+
   def apply(environment: PythonEnvironment = SystemPython): PythonProcess =
   {
     val cmd = 
       new JProcessBuilder(environment.python.toString, scriptPath)
+
+    initPath(cmd)
 
     if(Vizier.config.workingDirectory.isDefined){
       cmd.directory(new File(Vizier.config.workingDirectory()))
@@ -191,7 +211,7 @@ object PythonProcess
   {
     val ret = new StringBuffer()
 
-    val cmd = new JProcessBuilder(environment.python.toString).start()
+    val cmd = initPath(new JProcessBuilder(environment.python.toString)).start()
     val out = cmd.getOutputStream()
     out.write(script.getBytes())
     out.close()

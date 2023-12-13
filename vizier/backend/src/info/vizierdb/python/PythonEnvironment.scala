@@ -1,4 +1,4 @@
-package info.vizierdb.commands.python
+package info.vizierdb.python
 
 import info.vizierdb.Vizier
 import scala.sys.process._

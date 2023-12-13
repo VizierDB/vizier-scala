@@ -3,11 +3,11 @@ package info.vizierdb.commands
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 import info.vizierdb.test.SharedTestResources
-import info.vizierdb.commands.python.PythonProcess
 import java.io.File
 import info.vizierdb.Vizier
-import info.vizierdb.commands.python.SystemPython
-import info.vizierdb.commands.python.Pyenv
+import info.vizierdb.python.PythonProcess
+import info.vizierdb.python.SystemPython
+import info.vizierdb.python.Pyenv
 import info.vizierdb.catalog.PythonVirtualEnvironment
 
 class PythonVenvSpec 
