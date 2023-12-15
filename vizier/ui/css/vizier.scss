@@ -1,0 +1,2104 @@
+/******** Color Scheme ***********/
+$alt_row_grey: #ddd;
+$deemphasize_alpha: 0.6;
+$background_grey: #ddd;
+$background_grey_deemphasized: #ebebeb;
+$background_error: #de7e64;
+$background_cancelled: #edee3e;
+$background_frozen: #319cbc;
+$background_running: #135b0e;
+$background_highlight: #aaa;
+$button_shadow: #bbb;
+
+/*********************************/
+/****** Color Scheme - Revised ******/
+$color_primary:                #214478;
+$color_primary_highlight:      #2e6098;
+$color_primary_faded:          #689eda;
+
+$color_done:                   $color_primary; // #488ec8; // #36338d;
+$color_error:                  #9d284c;
+$color_frozen:                 #96c4e3;
+$color_running:                #2d93a5;
+$color_waiting:                #2d93a5;
+$color_tentative:              #777;
+$color_inspector:              #aaa;
+
+$color_button_abort:           #c00; 
+$color_button_confirm:         #292;
+
+$color_inter_module:           #ddd;
+$color_inter_module_highlight: #ccc;
+$color_inter_module_selected:  #777;
+$color_hint_text:              #aaa;
+
+$color_message_markdown:       #eee;
+$color_message_markdown_bg:    #f9f9f9;
+
+$color_message_text:           #eee;
+$color_message_dark:           #333;
+$color_message_text_bg:        #f9f9f9;
+
+$color_row_highlight:          #f3f3f3;
+
+$color_warning_on_dark:        #ff8f8f;
+
+$color_artifact_button:        $color_primary;
+$color_artifact_button_bg:     #f3f3f3;
+$color_artifact_button_bg_down:#d3d3d3;
+$color_artifact_button_border: #aaa;
+
+$color_layout_border:          lightgrey;
+
+$color_tooltip:                #f3e7ac;
+
+a         { color: blue; }
+a:visited { color: blue; }
+
+/***** Layers (z-index) **********/
+
+$table_header_layer: 2;
+$table_gutter_layer: 1;
+$toc_layer: 10;
+$tooltip_layer: 5000;
+$inter_module_hover_layer: $tooltip_layer;
+$menu_layer: 2500;
+$modal_layer: 2000;
+
+/*********** Sizes ***************/
+
+$max_workflow_width: 800px;
+
+
+/*********** Fonts ***************/
+
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans100italic.woff2");
+  font-style: italic;
+  font-weight: 100;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans100.woff2");
+  font-weight: 100;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans300italic.woff2");
+  font-style: italic;
+  font-weight: 300;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans300.woff2");
+  font-weight: 300;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans500italic.woff2");
+  font-style: italic;
+  font-weight: 500;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans500.woff2");
+  font-weight: 500;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans700italic.woff2");
+  font-style: italic;
+  font-weight: 700;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans700.woff2");
+  font-weight: 700;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans800italic.woff2");
+  font-style: italic;
+  font-weight: 800;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans800.woff2");
+  font-weight: 800;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans900italic.woff2");
+  font-style: italic;
+  font-weight: 900;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSans900.woff2");
+  font-weight: 900;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSansitalic.woff2");
+  font-style: italic;
+}
+@font-face
+{
+  font-family: "alegreya sans";
+  src: url("../fonts/AlegreyaSansregular.woff2");
+}
+
+/********* Animations ************/
+
+@keyframes spinner-rotate 
+{
+  0% { 
+    transform-origin: center, center;
+    transform: rotate(0);
+  }
+  100% { 
+    transform-origin: center, center;
+    transform: rotate(360deg);
+  }
+}
+
+
+/************ Project List ************/
+
+#project_list_content
+{
+  height: 100vh;
+  overflow-y: scroll;
+  
+  .project_list_wrapper 
+  {
+    border: 1px solid gray;
+    border-radius: 5px;
+    max-width: $max_workflow_width;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    
+    .project_list 
+    {
+      list-style: none;
+      width: 100%;
+      margin: 0px;
+      margin-bottom: 10px;
+      padding: 0px;
+      
+      li
+      {
+        margin-top: 10px;
+        width: calc(100% - 20px);
+        padding: 10px;
+        display: flex;
+        height: 40px;
+        justify-content: space-between;
+        
+        &.even
+        {
+          background-color: $alt_row_grey;
+        }
+        
+        a
+        {
+          font-size: 120%;
+          flex-grow: 10;
+          min-width: 200px;
+          height: 100%;
+          font-weight: bold;
+          padding-left: 10px;
+          display: table;
+          
+          span
+          {
+            display: table-cell;
+            vertical-align: middle;
+          }
+        }
+        
+        .dates
+        {
+          flex-grow: 0;
+          font-size: 80%;
+          color: gray;
+          display: table;
+          
+          .date_valign
+          {
+            display: table-cell;
+            vertical-align: middle;
+          }
+        }
+
+        .actions
+        {
+          flex-grow: 0;
+          flex-shrink: 0;
+          height: 100%;
+          display: flex;
+          // margin-right: 8px;
+
+          a {
+            flex-grow: 0;
+            min-width: 0px;
+            margin-top: 6px;
+
+            &:active { i.fa { 
+              transform: scale(0.95);
+            } }
+  
+            i.fa
+            {
+              width:20px;
+              height:20px;
+              border-radius: 4px;
+              border: solid 1px $color_artifact_button_border;
+              padding: 2px;
+              font-size: 16px;
+              margin-right: 4px;
+              text-align: center;
+              vertical-align: middle;
+              color: $color_artifact_button;
+              background-color: $color_artifact_button_bg;
+            }
+          }
+
+
+        }
+      }
+    }
+    
+    button.create_project
+    {
+      height: 50px;
+      width: 50px;
+      font-size: 30px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      padding: 0px;
+    }
+    
+    div.hint 
+    {
+      display: block;
+      width: 100%;
+      text-align: center;
+      font-weight: bold;
+      color: gray;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    
+    div.create_project_form 
+    {
+      margin: 10px;
+      
+      input
+      {
+        max-width: 400px;
+      }
+    }
+  }
+}
+
+/************ General Layout ************/
+
+body
+{
+  width: 100vw;
+  height: 100vh;
+  margin: 0px;  
+  padding: 0px;
+  font-family: "alegreya sans";
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+$menu_height: 32px;
+
+.tooltip
+{
+  // visibility: hidden;
+  position: absolute;
+  z-index: $tooltip_layer;
+  padding: 4px;
+  background-color: $color_tooltip;
+  border: solid 1px darkgrey;
+  transition-property: visibility, opacity;
+  transition-duration: 0.1s;
+
+  .tooltip_text
+  {
+    max-width: 300px;
+    font-size: 80%;
+    margin: 4px;
+    overflow-wrap: break-word;
+  }
+}
+
+#project
+{
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+
+  .content
+  {
+    position: absolute;
+    top: $menu_height;
+    left: 0px;
+    width: 100vw;
+    display: flex;
+    flex-direction: row-reverse;
+
+    .table_of_contents
+    {
+      position: absolute;
+      left: calc(100vw - 248px);
+      height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
+      width: 248px;
+      flex-grow: 0;
+      flex-shrink: 0;
+      // margin-left: 8px;
+    }
+
+    .workflow
+    {
+      position: absolute;
+      left: 0;
+      width: calc(100vw - 248px);
+      height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
+      overflow-y: auto;
+      border-right: solid 1px $color_layout_border;
+      margin-right: 0px;
+
+      .workflow_content
+      {
+        margin-left: auto;
+        margin-right: auto;
+        max-width: $max_workflow_width;
+      }
+    }
+  }
+}
+
+/************ Toast Dialogs ************/
+
+.toast
+{
+  display: block;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: calc(100% - 16px);
+  height: 1em;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  margin-left: 8px;
+  margin-right: 8px;
+  vertical-align: middle;
+  text-align: center;
+  background-color: $color_error;
+  border: solid 1px black;
+  border-top: none;
+
+  font-weight: bold;
+  color: white;
+
+  .detail
+  {
+    display: none;
+    visibility: hidden;
+  }
+}
+
+/************ Modal Dialogs ************/
+
+.modal
+{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(#fff, 0.6);
+  display: block;
+  z-index: $modal_layer;
+
+  .body
+  {
+    border: solid 1px lightgrey;
+    padding: 20px;
+    background-color: #eee;
+    margin-left: auto;
+    margin-right: auto;
+    width: auto;
+    max-width: 600px;
+    max-height: 400px;
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 2px 2px 5px lightgrey;
+    z-index: $modal_layer;
+    overflow-y: scroll;
+
+    .buttons
+    {
+      margin-top: 20px;
+      text-align: right;
+      width: auto;
+
+      button
+      {
+        margin-left: 20px;
+        height: 32px;
+        width: 64px;
+        border-radius: 0px;
+        border: none;
+        color: white;
+        font-weight: bold;
+        background-color: grey;
+        transition-property: transform;
+        transition-duration: 0.1s;
+
+        &.confirm
+        {
+          background-color: $color_button_confirm;
+        }
+
+        &.cancel
+        {
+          background-color: $color_button_abort;
+        }
+
+        &:active
+        {
+          transform: scale(0.95);
+        }
+      }
+
+    }
+  }
+}
+
+/************ Menu Bar ************/
+
+#menu_bar
+{
+  height: $menu_height;
+  width: 100vw;
+  background-color: $color_primary;
+  display: flex;
+  flex-direction: row;
+  color: white;
+
+  .left
+  {
+    border-right: solid 1px white;
+  }
+
+  .right
+  {
+    border-left: solid 1px white;
+  }
+  
+  .item
+  {
+    flex-grow: 0;
+    cursor: pointer;
+
+    &.state_disconnected
+    {
+      color: $color_warning_on_dark;
+    }
+
+    ul
+    {
+      visibility: hidden;
+      z-index: $menu_layer;
+      background-color: $color_primary;
+      margin: 0px;
+      position: absolute;
+      list-style: none;
+      padding: 0px;
+      padding: 0px;
+      color: white;
+
+      a { text-decoration: none; }
+
+      li
+      {
+        padding: 8px;
+        padding-left: 16px;
+        padding-right: 16px;
+
+        i.fa { 
+          padding: 0px; 
+          padding-right: 8px; 
+          font-size: 12px; 
+        }
+
+        &:hover
+        {
+          background-color: $color_primary_highlight;
+        }
+
+        &.separator
+        {
+          padding: 0px;
+          border-top: solid 1px white;
+        }
+
+        &.disabled
+        {
+          color: grey;
+          background-color: $color_primary;
+          // OK: not-allowed makes me feel sad.  Vizier should inspire joy.
+          // cursor: not-allowed;
+        }
+
+      }
+
+      &:hover
+      {
+        visibility: visible;
+      }
+    }
+
+    &:hover
+    {
+      background-color: $color_primary_highlight;
+      ul { visibility: visible; }
+    }
+  }
+
+  .text
+  {
+    font-size: 16px;
+    height: 18px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: $menu_height/2 - 8px;
+    padding-top: $menu_height/2 - 10px;
+    font-weight: bold;
+  }
+
+  i.fa
+  {
+    font-size: 16px;
+    height: 18px;
+    padding: ($menu_height - 18px) / 2;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  img
+  {
+    height: $menu_height - 8px;
+    width: $menu_height - 8px;
+    padding: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  a         { color: white; }
+  a:visited { color: white; }
+
+  div.spacer
+  {
+    flex-grow: 1;
+  }
+}
+
+/************ Workflow ************/
+
+#project .workflow
+{
+  padding: 0px;
+
+  .first
+  {
+    margin-top: 4px;
+  }
+
+  $inter_module_height: 18px;
+
+  .inter_module
+  {
+    width: 100%;
+    color: $color_inter_module;
+    height: $inter_module_height;
+    z-index: 2000;
+    position: relative;
+
+    .separator {
+      margin-left: 4px;
+      margin-right: 4px;
+      width: 42px;
+      display: inline-block;
+    }
+
+    .elements {
+      transition-property: transform;
+      transition-duration: 0.2s;
+      margin-left: auto;
+      margin-right: auto;
+      width: 200px;
+      text-align: center;
+
+      button {
+        background-color: white; //rgba(0, 0, 0, 1.0);
+        border: none;
+        border-radius: 4px;
+        height: $inter_module_height;
+        width: $inter_module_height;
+        vertical-align: middle;
+        text-align: center;
+        cursor: pointer;
+        transition-property: transform;
+        transition-duration: 0.1s;
+
+
+        i.fa { 
+          color: $color_inter_module; 
+          font-size: $inter_module_height - 6px;
+        }
+        &:hover i.fa {
+          color: $color_inter_module_selected;
+        }
+
+      }
+
+      &:hover { 
+        transform: scale(2.4); 
+        color: $color_inter_module_highlight;
+      }
+    }
+  }
+
+  .hint 
+  {
+    width: 100%;
+    text-align: center;
+    color: $color_hint_text;
+  }
+  
+  .module_list 
+  {
+    display: flex;
+    list-style: none;
+    padding: 0px;
+    margin: 0px;
+    width: 100%;
+    flex-direction: column;
+    margin-bottom: 16px;
+
+    .module
+    {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+
+      $menu_width: 28px;
+
+      .menu {
+        width: $menu_width;
+        margin-left: 8px;
+        margin-right: 8px;
+        flex-grow: 0;
+        flex-shrink: 0;
+        border-top: solid 1px white;
+        display: flex;
+        flex-direction: column;
+        transition-property: opacity;
+        transition-duration: 0.2s;
+        position: relative;
+
+        // Hack to de-emphasize bg colors
+        &:before
+        {
+          display: block;
+          content: " ";
+          position: absolute;
+          z-index: -1;
+          background: $color_done;
+          opacity: 0.15;
+          top:0;
+          right:0;
+          left:0;
+          bottom:0;
+        }
+
+        &:hover { 
+          &:before {
+            opacity: 1.0;
+          }
+          button { color: white; } 
+        }
+        
+        >*
+        {
+          flex-grow: 0;
+          flex-shrink: 0;
+        }
+        .spacer
+        {
+          min-height: 0px;
+          flex-grow: 1;
+        }
+
+        button {
+          width: $menu_width;
+          height: $menu_width;
+          border: none;
+          border-bottom: solid 1px white;
+          background-color: inherit;
+          color: $color_message_dark;
+          cursor: pointer;
+          // transition-property: transform;
+          // transition-duration: 0.1s;
+
+          &:hover { 
+            background-color: rgba(#fff, 0.1);
+          }
+
+          // &:active {
+          //   transform: scale(0.95);
+          // }
+
+        }
+
+        .pop_up_container
+        {
+          display: flex;
+          flex-direction: row;
+          height: $menu_width;
+
+          button { 
+            flex-grow: 0; 
+            flex-shrink: 0; 
+            cursor: pointer;
+          }
+
+          &.open { 
+            z-index: $menu_layer;
+            &.size1 { width: $menu_width * 2 }
+            &.size2 { width: $menu_width * 3 }
+            &.size3 { width: $menu_width * 4 }
+            &.size4 { width: $menu_width * 5 }
+            &.size5 { width: $menu_width * 6 }
+            &.size6 { width: $menu_width * 7 }
+
+            button {
+              color: white;
+            }
+
+            // button.to_confirm
+            // { 
+            //   color: $color_button_abort; 
+            // }
+            // button.confirm
+            // { 
+            //   color: $color_button_confirm; 
+            // }
+          }
+          &.closed { 
+            width: $menu_width; 
+            button.pop_up_button { 
+              visibility: hidden; 
+            }
+          }
+        }
+      }
+
+      &.highlight       { .menu { &:before { opacity: 1.0; }
+                                  button { color: white; background-color: inherit; } } }
+      &.done_state      { .menu:before {   background-color: $color_done; }
+                          .state {                    color: $color_done; }
+                          .pop_up_container.open { background-color: $color_done; }}
+      &.error_state     { .menu:before {   background-color: $color_error; }
+                          .state {                    color: $color_error; }
+                          .pop_up_container.open { background-color: $color_error; }}
+      &.waiting_state   { .menu:before {   background-color: $color_waiting; }
+                          .state {                    color: $color_waiting; }
+                          .pop_up_container.open { background-color: $color_waiting; }}
+      &.stale_state     { .menu:before {   background-color: $color_waiting; }
+                          .state {                    color: $color_waiting; }
+                          .pop_up_container.open { background-color: $color_waiting; }}
+      &.cancelled_state { .menu:before {   background-color: $color_error; }
+                          .state {                    color: $color_error; }
+                          .pop_up_container.open { background-color: $color_error; }}
+      &.frozen_state    { .menu:before {   background-color: $color_frozen; }
+                          .state {                    color: $color_frozen; }
+                          .pop_up_container.open { background-color: $color_frozen; }}
+      &.running_state   { .menu:before {   background-color: $color_running; }
+                          .state {                    color: $color_running; }
+                          .pop_up_container.open { background-color: $color_running; }}
+      &.tentative       { .menu:before {   background-color: $color_tentative; }
+                          .state {                    color: $color_tentative; }
+                          .pop_up_container.open { background-color: $color_tentative; }}
+      &.inspector       { .menu:before {   background-color: $color_inspector; }
+                          .state {                    color: $color_inspector; }
+                          .pop_up_container.open { background-color: $color_inspector; }}
+
+      &.tentative
+      {
+        margin-bottom: 16px;
+      }
+
+      .module_body
+      {
+        min-width: 300px;
+        flex-grow: 1;
+
+        .summary
+        {
+          overflow-x: scroll;
+        }
+
+        .summary.hidden
+        {
+          visibility: hidden;
+          position: absolute;
+        }
+
+        .status
+        {
+          font-size: 12px;
+  
+          &.hidden
+          {
+            visibility: hidden;
+            position: absolute;
+          }
+          .label { font-weight: bold; }
+        }
+
+        ul.messages
+        {
+          padding-left: 0px;
+          overflow-x: scroll;
+
+          .message.markdown
+          {
+            border: solid 1px $color_message_markdown;
+            background-color: $color_message_markdown_bg;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 5px;
+            padding-top: 5px;
+            margin-right: 10px;
+          }
+
+          .message.text
+          {
+            font-family: monospace;
+            border-right: solid 1px $color_message_text;
+            border-left: solid 1px $color_message_text;
+            background-color: $color_message_text_bg;
+            padding-left: 20px;
+            padding-right: 20px;
+            margin-right: 10px;
+
+            &:nth-of-type(1)
+            {
+              padding-top: 10px;
+              border-top: solid 1px $color_message_text;
+            }
+
+            &:last-of-type
+            {
+              padding-bottom: 10px;
+              border-bottom: solid 1px $color_message_text;
+            }
+          }
+
+        }
+
+        .CodeMirror
+        {
+          // background-color: #f9f9f9;
+          width: calc(100% - 10px);
+          height: auto;
+          // min-height: 200px;
+          border: 1px solid lightgrey;
+          margin-bottom: 12px;
+          margin-top: 8px;
+          margin-right: 0px;
+
+          .CodeMirrors-scroll
+          {
+            min-height: 200px;
+          }
+        }
+
+        .snippet_container
+        {
+          margin-bottom: 12px;
+
+          &.expanded
+          {
+            .header
+            {
+              border-bottom: none;
+              .toggle i.fa
+              {
+                transform: rotate(90deg);
+              }
+            }
+
+
+            .snippets
+            {
+              visibility: visible;
+              position: static;
+            }
+          }
+
+          .header
+          {
+            padding: 4px;
+            width: calc(100% - 8px - 10px);
+            background-color: lightgrey;
+            border: 1px solid lightgrey;
+            // color: white;
+            font-weight: bold;
+
+            .toggle
+            {
+              margin-right: 8px;
+              margin-left: 4px;
+
+              i.fa
+              {
+                transition-property: transform;
+                transition-duration: 0.5;
+              }
+            }
+          }
+
+          .snippets
+          {
+            display: flex;
+            width: calc(100% - 16px - 10px);
+            border: 1px solid lightgrey;
+            border-top: none;
+            padding: 8px;
+            transition-property: visibility;
+            transition-duration: 0.5;
+            visibility: hidden;
+            position: absolute;
+
+            .group 
+            {
+              margin-right: 16px;
+
+              .label
+              {
+                font-weight: bold;
+                margin-bottom: 4px;
+
+                i.fa
+                {
+                  margin-right: 4px;
+                }
+              }
+              
+              .snippet
+              {
+                cursor: pointer;
+                color: $color_artifact_button;
+
+                &:active
+                {
+                  transform: scale(0.95);
+                }
+              }
+            }
+          }
+        }
+      }
+
+    }
+  }
+
+}
+
+/********* Command Selector ***********/
+
+table.command_list
+{
+  width: 100%;
+  border: solid 1px lightgrey;
+  margin-top: 4px;
+  // tr:nth-child(2n)
+  // {
+  //   background-color: $color_row_highlight;
+  // }
+  th.group
+  {
+    font-weight: bold;
+    text-align: right;
+    vertical-align: top;
+    font-size: 120%;
+    padding-right: 16px;
+    padding-top: 8px;
+    width: 100px;
+  }
+  td.commands
+  {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    button.with_icon
+    {
+      background-color: #eee;
+      display: inline-block;
+      height: 80px;
+      width: 80px;
+      text-align: center;
+      margin-right: 8px;
+      font-weight: bold;
+      border-radius: 0px;
+      img.icon
+      {
+        height: 40px;
+        width: 40px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 4px;
+        display: block;
+      }
+    }
+
+    ul
+    {
+      margin: 0px;
+      padding-left: 0px;
+      li
+      {
+        margin-top: 4px;
+        list-style: none;
+      }
+    }
+  }
+}
+
+/************ Table of Contents ************/
+
+// This section includes only code pertaining to the inner layout 
+// of the contents area.  Options pertaining to the layout of the 
+// overall page (and how the contents is laid out in that context)
+// live above.
+#project .table_of_contents
+{
+  display: block;
+
+  >.reactive
+  {
+    display: block;
+    height: 100%;
+  }
+
+  .contents
+  {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    .title
+    {
+      margin: 0px 0px 4px 0px;
+      padding-top: 12px;
+      position: sticky;
+      top: 0px;
+      background-color: white;
+    }
+
+    .module_list
+    {
+      flex-grow: 4;
+      flex-shrink: 1;
+      max-height: 33%;
+      overflow-y: auto;
+      padding-left: 8px;
+
+      .the_modules
+      {
+        margin-top: 0px;
+        padding-left: 32px;
+
+        li
+        {
+          &.done_state      { color: $color_done; }
+          &.error_state     { color: $color_error; }
+          &.waiting_state   { color: $color_waiting; }
+          &.stale_state     { color: $color_waiting; }
+          &.cancelled_state { color: $color_error; }
+          &.frozen_state    { color: $color_frozen; }
+          &.running_state   { color: $color_running; }
+          &.tentative       { color: $color_tentative; }
+
+          a         { color: inherit; }
+          a:visited { color: inherit; }
+
+          &.level_1         { font-size: 140%; font-weight: bold; }
+          &.level_2         { font-size: 120%; font-weight: bold; }
+          &.level_3         { font-size: 110%; font-weight: bold; }
+          &.level_4         { font-weight: bold; }
+        }
+
+      }
+    }
+
+    .artifact_list
+    {
+      flex-grow: 4;
+      flex-shrink: 1;
+      min-height: 33%;
+      overflow-y: auto;
+      border-top: 1px solid $color_layout_border;
+      padding-left: 8px;
+
+      .artifact
+      {
+        display: flex;
+        flex-direction: row;
+        padding: 4px;
+        margin-right: 8px;
+
+        &:nth-child(2n)
+        {
+          background-color: $color_row_highlight;
+        }
+
+        .label
+        {
+          flex-grow: 0;
+          flex-shrink: 1;
+
+          i.fa 
+          { 
+            margin-right: 4px; 
+            font-size: 12px;
+            width: 12px;
+          }
+        }
+
+        .spacer
+        {
+          flex-grow: 1;
+          flex-shrink: 1;
+        }
+
+        .actions
+        {
+          flex-grow: 0;
+          flex-shrink: 0;
+          // margin-right: 8px;
+
+          a:active
+          {
+            i.fa
+            {
+              transform: scale(0.95);
+            }
+          }
+
+          i.fa
+          {
+            border-radius: 4px;
+            border: solid 1px $color_artifact_button_border;
+            padding: 2px;
+            font-size: 12px;
+            margin-right: 4px;
+            color: $color_artifact_button;
+            background-color: $color_artifact_button_bg;
+          }
+        }
+      }
+    }
+
+    .documentation_list
+    {
+      flex-grow: 1;
+      flex-shrink: 1;
+      max-height: 20%;
+      overflow-y: auto;
+      border-top: 1px solid $color_layout_border;
+      padding-left: 8px;
+
+      ul
+      {
+        padding: 0;
+        margin-top: 4px;
+
+        li
+        {
+          list-style: none;
+
+          a 
+          {
+            margin-left: 4px;
+          }
+        }
+      }
+    }
+  }
+}
+
+/************ Data Tables ************/
+
+// For Data Tables that are specifically embedded in the notebook
+div.dataset 
+{
+  div.data_table
+  {
+    display: block;
+    max-width: 700px;
+    min-width: 700px;
+    max-height: 400px;
+    // height: 400px;
+    position: relative;
+    left: 0px;
+    top: 0px;
+    border: solid 1px #999;
+    // margin: -1px;
+
+    div.table_header
+    {
+      position: sticky;
+    }
+  }
+
+  h3
+  {
+    display: inline-block;
+    margin-right: 8px;
+  }
+
+  a:active
+  {
+    i.fa
+    {
+      transform: scale(0.95);
+    }
+  }
+
+  i.fa
+  {
+    border-radius: 4px;
+    border: solid 1px $color_artifact_button_border;
+    padding: 2px;
+    font-size: 12px;
+    margin-right: 4px;
+    color: $color_artifact_button;
+    background-color: $color_artifact_button_bg;
+  }
+
+  button
+  {
+    margin-left: 20px;
+    height: 32px;
+    width: 64px;
+    border-radius: 0px;
+    border: none;
+    color: white;
+    font-weight: bold;
+    background-color: grey;
+    transition-property: transform;
+    transition-duration: 0.1s;
+
+    &.confirm
+    {
+      background-color: $color_button_confirm;
+    }
+
+    &.cancel
+    {
+      background-color: $color_button_abort;
+    }
+
+    opacity: 0.5;
+    
+    &.enabled
+    {
+      opacity: 1.0;
+      &:active
+      {
+        transform: scale(0.95);
+      }
+    }
+
+  }
+}
+
+div.standalone_spreadsheet
+{
+  width: 100vw;
+  height: 100vh;
+  div.header
+  {
+    height: 32px;
+    background-color: $color_primary;
+  }
+  div.data_table
+  {
+    position: absolute;
+    height: 100%;
+
+    div.table_header
+    {
+      position: absolute
+    }
+  }
+}
+
+// For all Data Tables
+div.data_table 
+{
+  // This is the outer wrapper that provides scrolling.  It is sized
+  // to fit the display
+  overflow-x: scroll;
+  overflow-y: scroll;
+  // background-color: #eee;
+
+  div.table_header
+  {
+    // This is the header row.
+    top: 0px;
+    left: 0px;
+    background-color: #ddd;
+    z-index: $table_header_layer;
+
+    div.cell
+    {
+      // This is one column of the header row
+      border-left: 2px solid #aaa;  
+      position: absolute;
+      height: 40px;
+      margin-left: -2px;
+      overflow-wrap: anywhere;
+      overflow-y: hidden;
+      overflow-x: hidden;
+
+      .title
+      {
+        // The bolded column name
+        margin-top: 5px;
+        display: block;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .datatype
+      {
+        // The subscript column type listed below
+        display: block;
+        font-weight: lighter;
+        font-size: 70%;
+        text-align: center;
+      }
+    }
+  }
+
+  div.table_contents
+  {
+    // This is the inner container.  It is sized to fit the entire table.
+    // Note that the full table contents will not be displayed here at any
+    // given time.  A subset of the dom elements will be paged in and out
+    // based on the active viewport.  Everything else is hidden.
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+
+    div.gutter 
+    {
+      font-size: 10px;
+      text-align: right;
+      position: absolute;
+      padding-right: 2px;
+      left: 0px;
+      margin-left: -4px;
+      margin-top: 10px;
+      overflow-wrap: anywhere;
+      overflow-y: hidden;
+      overflow-x: hidden;
+    }
+
+    div.table_body
+    {
+      // This is the actual set of rows of the table
+      position: relative;
+
+      div.table_row 
+      {
+        position: absolute;
+        left: 0px;
+        width: 100%;
+
+        &.even_row
+        {
+          background-color: #fff;
+          &.caveatted
+          {
+            background-color: #fee;
+          }
+          .gutter {
+            background-color: #fff;
+          }
+        }
+        &.odd_row
+        {
+          background-color: #eee;
+          &.caveatted
+          {
+            background-color: #edd;
+          }
+          .gutter {
+            background-color: #eee
+          }
+        }
+
+        div.cell
+        {
+          position: absolute;
+          max-height: 30px;
+          text-align: center;
+          overflow: hidden;
+          border-left: 2px solid #aaa;  
+          margin-left: -2px;
+          
+          &.caveatted
+          {
+            color: red;
+          }
+          &.null
+          {
+            background-color: #e9dfdf;
+            
+            span {
+              display: flex;
+              justify-content: center;
+            }
+          }
+          &.error
+          {
+            background-color : #611;
+            color : #ccc;
+          }
+
+          img.table_image
+          {
+            max-height: 100%;
+            max-width: 100%;
+          }
+
+    //       img.table_image:hover
+    //       {
+    //         position: absolute;
+    //         height: auto;
+    //         z-index: $tooltip_layer;
+    //       }
+        }
+      }
+    }
+  }
+}
+
+/************ Caveats ************/
+
+button.show_caveat
+{
+  float: right;
+  height: 20px;
+  width: 15px;
+  padding: 0px;
+  font-size: 10px;
+  text-align: center;
+}
+
+a.show_caveat
+{
+  font-weight: bold;
+  color: #600;
+}
+
+div.modal_background
+{
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  opacity: 0.3;
+  z-index: $modal_layer;
+}
+
+/************ Editor ************/
+
+/* The last child of a parameter list is a "template" placeholder to allow
+   adding more records by just typing */
+table.parameter_list 
+{
+  tbody tr:last-child
+  {
+    opacity: 0.6;
+
+    button.delete_row
+    {
+      display: none;
+    }
+  }
+
+  // Keep the labels for accessibility's sake, but don't include them
+  // in the layout.
+  td label
+  {
+    display: none;
+  }
+}
+
+
+
+.editor_actions
+{
+  display: flex;
+  flex-direction: row;
+  padding-left: 0px;
+  padding-right: 10px;
+
+  .spacer
+  {
+    flex-grow: 1;
+    flex-shrink: 1;
+  }
+
+  button
+  {
+    flex-grow: 0;
+    flex-shrink: 0;
+    height: 32px;
+    padding-left: 16px;
+    padding-right: 16px;
+    border-radius: 0px;
+    background-color: #f6f6f6;
+
+    &:active
+    {
+      transform: scale(0.95);
+    }
+
+    &.save
+    {
+      border: solid 1px $color_button_confirm;
+      color: $color_button_confirm;
+    }
+    &.cancel
+    {
+      border: solid 1px $color_button_abort;
+      color: $color_button_abort;
+    }
+  }
+}
+
+.module_editor 
+{
+
+  .load_dataset 
+  {
+    width: calc(100% - 20px);
+    border: 1px solid lightgray;
+    border-radius: 0px 5px 5px 0px;
+    border-left: none;
+    padding: 10px;
+    
+    div.header
+    {
+      width: 100%;
+      display: flex;
+      margin-bottom: 10px;
+    }
+    
+    div.back_button_wrapper
+    {
+      width: 40px;
+      flex-grow: none;
+      display: inline-block;
+
+      button { width: 20px; }
+    }
+    
+    div.url
+    {
+      flex: 1 1 auto;
+      input 
+      {
+        width: calc(100% - 5px);
+      }
+      label 
+      {
+        width: 50px;
+      }
+    }
+    
+    div.file_browser
+    {
+      width: 100%;
+      border: 1px solid black;
+    }
+    
+    .reactive
+    {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .spinner
+    {
+      margin-top: 20px;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+    
+    div.file_list
+    {
+      display: flex;
+      flex-wrap: wrap;
+      overflow-y: scroll;
+      max-height: 200px;
+      padding: 10px;
+      
+      div.file
+      {
+        width: 150px;
+        height: 20px;
+        margin: 5px;
+        background-color: #ddd;
+        padding: 7px;
+        border-radius: 5px;
+        box-shadow: 1px 1px 1px gray;
+        
+        span.label
+        {
+          margin-left: 5px;
+        }
+      }
+    }
+
+    div.format_field
+    {
+      margin-top: 10px;
+      display: flex;
+      
+      select
+      {
+        margin-left: 10px;
+        flex: 1 1 auto;
+      }
+    }
+  }
+}
+
+/************ History Panel ************/
+
+.history 
+{
+  width:      400px;
+  max-height: 400px;
+  overflow-y: scroll;
+  // background-color: white;
+  padding: 8px;
+  padding-bottom: 16px;
+
+  .workflow
+  {
+    display: flex;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+
+    a
+    {
+
+      i.fa
+      {
+        flex-grow: 0;
+        flex-shrink: 0;
+        border-radius: 4px;
+        border: solid 1px $color_artifact_button_border;
+        padding: 2px;
+        font-size: 12px;
+        margin-right: 4px;
+        color: $color_artifact_button;
+        background-color: $color_artifact_button_bg;
+      }
+
+      &:active i.fa
+      {
+        transform: scale(0.95);
+      }
+    }
+
+
+    .description
+    {
+      margin-left: 4px;
+      flex-grow: 1;
+    }
+
+    a
+    {
+      flex-grow: 0;
+      flex-shrink: 0;
+    }
+
+    &:nth-child(2n)
+    {
+      background-color: $color_row_highlight;
+    }
+  }
+}
+
+/************ Settings Page ************/
+
+.settings
+{
+  max-width: 720px;
+  min-width: 300px;
+  margin-right: auto;
+  margin-left: auto;
+  margin-top: 16px;
+
+  .tabs
+  {
+    height: 36px;
+    width: 100%;
+    background-color: white;
+    display: flex;
+    flex-direction: row;
+
+    span.reactive
+    {
+      flex-grow: 0;
+    }
+
+    .tab {
+      color: white;
+      height: calc(100% - 8px);
+      margin-right: 4px;
+      vertical-align: middle;
+      padding-left: 16px;
+      padding-right: 16px;
+      padding-top: 8px;
+      font-weight: bold;
+      cursor: pointer;
+
+      &.active 
+      {
+        background-color: $color_primary;
+      }
+
+      &.inactive
+      {
+        background-color: $color_primary_faded;
+        height: calc(100% - 10px);
+      }
+    }
+
+    .spacer
+    {
+      flex-grow: 1;
+    }
+  }
+
+  .content
+  {
+    border: solid 2px $color_primary;
+    padding: 8px;
+
+    .reactive
+    {
+      display: block;
+      width: 100%;
+      .loading
+      {
+        display: block;
+        text-align: center;
+      }
+    }
+
+    .group
+    {
+      margin-top: 16px;
+
+      &:nth-child(1)
+      {
+        margin-top: 0px;
+      }
+
+      .title
+      {
+        font-size: 140%;
+        font-weight: bold;
+      }
+
+      .description
+      {
+        font-size: 80%;
+        margin-left:  32px;
+        margin-right: 32px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        padding: 4px;
+
+        border: solid 1px #ddd;
+        border-radius: 4px;
+        background-color: #f6f6f6;
+        color: grey;
+      }
+
+      .setting
+      {
+
+        padding-top: 4px;
+        padding-bottom: 4px;
+
+        // &:nth-child(2n+1)
+        // {
+        //   background-color: $color_row_highlight;
+        // }
+
+        label
+        {
+          display: inline-block;
+          width: 200px;
+          text-align: right;
+          padding-right: 8px;
+          font-weight: bold;
+        }
+
+        input[type="checkbox"]
+        {
+          margin-left: 0px;
+        }
+
+        input[type="text"]
+        {
+          width: calc(100% - 220px);
+        }
+      }
+
+      button
+      {
+        margin-left: calc(100% - 154px);
+        height: 32px;
+        width: 150px;
+        border-radius: 0px;
+        border: none;
+        color: white;
+        font-weight: bold;
+        background-color: grey;
+        transition-property: transform;
+        transition-duration: 0.1s;
+        cursor: pointer;
+
+        &.changed 
+        {
+          background-color: $color_button_confirm;
+        }
+
+        &:active
+        {
+          transform: scale(0.95);
+        }
+
+
+      }
+    }
+
+    // Python environments tab
+    .python
+    {
+      .summary 
+      {
+        padding-right: 0px;
+
+        & > .spacer
+        {
+          width: 10px;
+          display: inline-block;
+        }
+
+        .save_button
+        {
+          float: right;
+          margin-right: 0px;
+
+          button
+          {
+            height: 24px;
+            background-color: $color_button_confirm;
+          } 
+
+          // i.fa
+          // {
+          //   background-color: $color_button_confirm;
+          //   color: white;
+          // }
+
+          .reactive
+          {
+            display: inline;
+          }
+        }
+      }
+
+      .packages
+      {
+        max-height: 800px;
+        overflow-y: scroll;
+        transition: max-height 0.1s linear;
+        width: 100%;
+        border: solid 1px $background_grey;
+        margin-top: 5px;
+        margin-bottom: 10px;
+
+        table
+        {
+          width: 100%;
+  
+          tbody
+          {
+            tr:nth-child(odd)
+            {
+              background-color: $color_row_highlight;
+            }
+
+            tr.deleted
+            {
+              td
+              {
+                text-decoration: line-through;
+                color: grey;
+
+                a
+                {
+                  color: grey;
+                }
+              }
+            }
+
+            td.actions 
+            {
+              text-align: center;
+            }
+            td.addpackage
+            {
+              text-align: center;
+              background-color: white;
+
+              button
+              {
+                margin-left: auto;
+                margin-right: auto;
+              }
+            }
+          }
+        }
+      }
+
+      .packages.closed
+      {
+        max-height: 0px;
+        // visibility: hidden;
+        overflow-y: hidden;
+        border: none;
+      }
+
+      .expander i.fa
+      {
+        border: none;
+        background-color: white;
+        font-size: 20px;
+      }
+
+      a:active
+      {
+        i.fa
+        {
+          transform: scale(0.95);
+        }
+      }
+
+      a.fabutton {
+        i.fa
+        {
+          width: 1em;
+          height: 1em;
+          border-radius: 4px;
+          border: solid 1px $color_artifact_button_border;
+          padding: 2px;
+          font-size: 12px;
+          margin-right: 4px;
+          color: $color_artifact_button;
+          background-color: $color_artifact_button_bg;
+        }
+
+        &.depressed
+        {
+          i.fa
+          {
+            background-color: $color_artifact_button_bg_down;
+          }
+        }
+      }
+
+    }
+  }
+}
+
+/************ Widgets ************/
+
+.expander
+{
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+
+  i.fa
+  {
+    font-size: 20px;
+    width: 20px;
+    width: 20px;
+    display: inline-block;
+  }
+}

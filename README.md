@@ -12,6 +12,7 @@ Vizier is an interactive, reactive **workbook**: A workflow system with a notebo
 * **Code-Optional**: Use a spreadsheet-style interface, or Vizier's "data lenses" to work with your data, code optional!
 * **Workflow Snapshots**: Vizier automatically keeps a record of how you edit your workflow so you can always go back to an earlier version.
 * **Scalable**: Vizier datasets are backed by Spark and Apache Arrow, allowing you to make big changes fast.
+* **Reactive**: Changes are reflected immediately.
 
 **See some [Screenshots](https://vizierdb.info/#features)**
 
@@ -50,6 +51,7 @@ docker run -p 5000:5000 --name vizier okennedy/vizier:latest
 ### More Info
 
 * [Project Website (w/ screenshots)](https://vizierdb.info)
+* [Vizier for Jupyter Users](https://github.com/VizierDB/vizier-scala/wiki/Migrating-from-Jupyter)
 * [User Documentation](https://github.com/VizierDB/vizier-scala/wiki)
 * [Developer Documentation](https://github.com/VizierDB/vizier-scala/blob/master/docs/DEVELOPER.md)
 
@@ -59,15 +61,84 @@ docker run -p 5000:5000 --name vizier okennedy/vizier:latest
 
 Unlike most notebooks, Vizier is not backed by a long-running kernel.  Each cell runs in a fresh interpreter.  
 
-Cells communicate by creating "artifacts":
+Cells communicate by exporting _artifacts_:
 * datasets (e.g., Pandas or Spark dataframes)
 * files
 * parameters
 * charts
-* python code
+* python functions
 
-For example, you can define and export a function in a python cell, and use it as a User Defined Function in a SQL cell.  
-Vizier tracks which artifacts a cell uses, so that if you change something, it knows which cells need to be re-run.
-When an artifact is updated (e.g., when you modify the function), every cell that used it (e.g., the SQL cell) will be re-executed.
+Define and export a function in a python cell, and then use it in a SQL cell.  
+
+Vizier tracks how cells use artifacts and inter-cell dependencies.  When a cell is updated, all cells that depend on it will be automatically re-run.  For example, when you modify the python function, Vizier will automatically re-run the SQL cell.
+
+---
+
+### Compiling
+
+To use this repository you'll need 
+* [Scala 2](https://www.scala-lang.org/download/scala2.html)
+* [Mill](https://com-lihaoyi.github.io/mill/mill/Intro_to_Mill.html#_installation) version 0.11 or greater
+* [Ammonite](http://ammonite.io/) version 3.0.0 or greater.  
+
+An easy way to install all three is with [Coursier](https://get-coursier.io/docs/cli-installation) (`cs setup` and `cs install mill`).
+
+Some useful commands for using this repository
+
+##### Compile Vizier
+```
+mill vizier.compile
+```
+Compiled class files will be in `out/vizier/compile/dest`
+
+##### Run Test Cases
+
+```
+mill vizier.test
+mill vizier.ui.test
+```
+
+The UI test cases require `node` and `jsdom`.  Install [node](https://nodejs.org/en/download/) and then 
+```
+npm install jsdom
+```
+
+To run a single test case:
+```
+mill vizier.test.testOnly [classname]
+```
+
+To run a single example:
+```
+mill vizier.test.testOnly [classname] -- ex "[any text in the example label]"
+```
+
+##### Run Vizier
+```
+mill vizier.run [vizier arguments]
+```
+
+Vizier defaults to running on port 5000 on localhost.
+
+If you see an error about `xdg-open`, it's probably because you're running Vizier in a VM.  Starting vizier with the `-n` flag should remove the error.
 
 
+##### Hack on the UI
+
+Vizier takes a few seconds to start.  If you're only editing the UI, you can get a faster development cycle by only rebuilding and reloading the resources directory
+
+```
+mill -w vizier.ui.resourceDir
+```
+
+Mill's `-w` flag watches for changes to files in the UI directory.  Any changes will trigger a recompile.  Vizier uses the generated resources directory in-situ, so reloading the UI in your web browser will load the updated version.
+
+##### Publish the Repo
+```
+mill vizier.publishLocal
+```
+
+##### Set up bloop/metals
+```
+mill mill.contrib.Bloop/install
+```

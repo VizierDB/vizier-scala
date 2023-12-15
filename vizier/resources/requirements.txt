@@ -1,0 +1,9 @@
+numpy
+bokeh
+matplotlib
+astor
+pyarrow
+pandas
+shapely
+pyspark==3.3.1
+Pillow

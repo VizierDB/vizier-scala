@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Vizier</title>
+    <link rel="icon" href="favicon.svg">
+    <link rel="stylesheet" href="css/vizier.css"/>
+    <link rel="stylesheet" href="css/font-awesome.min.css"/>
+    <!-- Include Scala.js compiled code -->
+    <script type="text/javascript" src="vizier.js"></script>
+    <script type="text/javascript">
+      var url = window.location.href.split("/")
+      url.pop()
+      url = url.join("/")+"/"
+      console.log(url)
+      Vizier.init(url)
+      Vizier.project_list()
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
