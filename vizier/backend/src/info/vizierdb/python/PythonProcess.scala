@@ -33,6 +33,7 @@ import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder}
 class PythonProcess(python: JProcess)
   extends LazyLogging
 {
+  lazy val input = new BufferedReader(new InputStreamReader(python.getInputStream))
 
   def send(event: String, args: (String, JsValue)*)
   {
@@ -42,27 +43,36 @@ class PythonProcess(python: JProcess)
     python.getOutputStream.flush()
   }
 
-  def monitor(handler: JsValue => Unit)(handleError: String => Unit): Int =
+  def read(): Option[JsValue] =
   {
-    val input = new BufferedReader(new InputStreamReader(python.getInputStream))
+    var line: String = input.readLine()
+    Option(line).map { Json.parse(_) }
+  }
 
+  def watchForErrors(handler: String => Unit): Unit =
+  {
     (new Thread(){ 
       override def run(){
         val error = new BufferedReader(new InputStreamReader(python.getErrorStream))
-        var line = error.readLine()
+        var line = error.readLine() 
         while( line != null ){
-          handleError(line)
+          handler(line)
           line = error.readLine()
         }
       }
     }).start()
+  }
 
-    var line: String = input.readLine()
-    while( line != null ){
-      val event = Json.parse(line)    
-      handler(event)
-      line = input.readLine()
-    }
+  def monitor(handler: JsValue => Unit)(handleError: String => Unit): Int =
+  {
+    watchForErrors(handleError)
+
+    var done = false
+    do {
+      val event = read()
+      event.foreach { handler(_) }
+      done = event.isEmpty
+    } while(!done)
 
     return python.waitFor()
   }
@@ -223,11 +233,13 @@ object PythonProcess
 
     if(err != ""){
       System.err.println(err)
-    }
+      // throw new IllegalArgumentException(err)
+    } //else {
+      Source.fromInputStream(cmd.getInputStream())
+            .getLines()
+            .mkString("\n")
+    //}
 
-    Source.fromInputStream(cmd.getInputStream())
-          .getLines()
-          .mkString("\n")
   }
 
 }

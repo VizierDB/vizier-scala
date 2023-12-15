@@ -14,9 +14,12 @@
 # -- copyright-header:end --
 import json
 import sys
+import os
 from util import IO_Wrapper, format_stack_trace
 from pycell.client import VizierDBClient, Artifact
+from pycell.client import MIME_TYPE_PYTHON_IMPORT, ARTIFACT_TYPE_FUNCTION, ARTIFACT_TYPE_FILE, MIME_TYPE_NUMPY
 from pycell.plugins import python_cell_preload
+from dependency import analyze
 
 raw_output = sys.stdout
 raw_stderr = sys.stderr
@@ -44,6 +47,18 @@ try:
             artifacts = cmd["artifacts"]
             project_id = cmd["projectId"]
             cell_id = cmd["cellId"]
+            (inputs, outputs) = analyze(script)
+
+        elif cmd["event"] == "dependency":
+            script = cmd["script"]
+            (deps, writes) = analyze(script)
+
+            raw_output.write(json.dumps({
+                "dependencies": deps,
+                "writes": writes,
+            }))
+            raw_output.flush()
+            exit(0)
         else:
             print("Unknown event type '{}'".format(cmd["event"]))
 
@@ -70,8 +85,16 @@ try:
         "show": client.show,
         "open": client.pycell_open,
     }
-    variables.update(client.get_artifact_proxies())
+
+    functions = []
+
+    for var in inputs:
+        variables[var] = client[var]
     exec(script, variables, variables)
+    # print(variables)
+    for var in outputs:
+        client[var] = variables[var]
+
     sys.stdout.soft_flush()
     sys.stderr.soft_flush()
 except Exception as ex:
@@ -100,4 +123,3 @@ except Exception as ex:
 
 raw_output.flush()
 # exit(0)
-

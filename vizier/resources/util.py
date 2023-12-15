@@ -49,7 +49,7 @@ class IO_Wrapper(IOBase):
 
 
 def debug_is_on():
-    return False
+    return True
 
 
 def format_stack_trace(ex, offset_lines=0):

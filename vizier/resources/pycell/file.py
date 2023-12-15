@@ -39,7 +39,7 @@ class FileClient(object):
                                         "filename": self.filename
                                        },
                                       )
-    assert(metadata is not None)
+    assert metadata is not None
     self.identifier = metadata["artifactId"]
     self.file_path = metadata["path"]
     self.meta_url = metadata["url"]
