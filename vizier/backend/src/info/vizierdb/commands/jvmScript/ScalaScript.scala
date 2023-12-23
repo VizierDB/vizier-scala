@@ -45,6 +45,7 @@ object ScalaScript extends Command
       |val spark = info.vizierdb.Vizier.sparkSession
       |def print(msg:Any) = vizierdb.message(msg.toString)
       |def println(msg:Any) = vizierdb.message(msg.toString+"\n")
+      |info.vizierdb.Vizier.setWorkingDirectory()
       |""".stripMargin
 
   private val executionContext = new ThreadLocal[ExecutionContext]

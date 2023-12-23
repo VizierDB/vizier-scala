@@ -28,4 +28,23 @@ class IPyFlowSpec
     ) must contain("Foo")
   }
 
+  "Compute Dependencies" >>
+  {
+    PythonProcess.run(
+      """from ipyflow.analysis.live_refs import ComputeLiveSymbolRefs
+        |import ast
+        |local_live = set()
+        |local_dead = set()
+        |refs = ComputeLiveSymbolRefs()
+        |refs.push_attributes(live=local_live, dead=local_dead)
+        |a = ast.parse('x = y')
+        |refs.visit(a) 
+        |print("-----------")
+        |print(local_live)
+        |print("-----------")
+        |""".stripMargin
+    ) must contain("shazbot")
+  }
+
+
 }

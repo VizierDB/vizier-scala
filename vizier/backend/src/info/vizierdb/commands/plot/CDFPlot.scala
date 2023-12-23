@@ -39,7 +39,7 @@ object CDFPlot extends Command
   override def parameters: Seq[Parameter] = Seq(
     ListParameter(id = PARAM_SERIES, name = "Lines", components = Seq(
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
-      ColIdParameter(id = PARAM_X, name = "X-axis"),
+      ColIdParameter(id = PARAM_X, name = "CDF"),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
       StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
@@ -69,8 +69,8 @@ object CDFPlot extends Command
           PlotUtils.makeSeries(
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
-            xIndex      = series.get[Int](PARAM_X),
-            yIndex      = series.get[Int](PARAM_X), // this is just a placeholder; CDF below replaces it
+            xIndex      = series.get[Int](PARAM_X), // this is just a placeholder; CDF below replaces it
+            yIndex      = series.get[Int](PARAM_X),
             name        = series.getOpt[String](PARAM_LABEL),
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))

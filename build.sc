@@ -59,6 +59,7 @@ object vizier extends ScalaModule with PublishModule {
     os.write(T.dest / "vizier-version.txt", versionString())
     super.resources() ++ Seq[PathRef](
       PathRef(millSourcePath / "resources"),
+      PathRef(millSourcePath / "python"),
       PathRef(ui.resourceDir()),
       PathRef(T.dest),
     ) ++ vendoredPython()
