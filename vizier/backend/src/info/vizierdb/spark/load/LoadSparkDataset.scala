@@ -89,6 +89,7 @@ object LoadSparkDataset
                 ))
               .load(url.getPath(projectId, noRelativePaths = true)._1)
               .schema
+              .map { s => s.copy(name = cleanColumnName(s.name)) }
       },
       sparkOptions,
       projectId

@@ -3,6 +3,7 @@ package info.vizierdb.spark
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.NamedExpression
+import info.vizierdb.VizierException
 
 object DataFrameOps
 {
@@ -17,16 +18,16 @@ object DataFrameOps
     df.queryExecution.logical.output
   
   def safeColumnLookup(df: DataFrame, col: String): Column =
-    safeColumnLookup.getOrElse { 
+    safeColumnLookupOpt(df, col).getOrElse { 
       throw new VizierException(s"Expected to find $col in ${df.columns.mkString(", ")}")
     }
 
   def safeColumnLookupOpt(df: DataFrame, col: String): Option[Column] =
-    safeOutputLookup(df, col)
+    safeOutputLookupOpt(df, col)
       .map { new Column(_) }
 
   def safeOutputLookup(df: DataFrame, col: String): NamedExpression =
-    safeOutputLookup.getOrElse { 
+    safeOutputLookupOpt(df, col).getOrElse { 
       throw new VizierException(s"Expected to find $col in ${df.columns.mkString(", ")}")
     }
     

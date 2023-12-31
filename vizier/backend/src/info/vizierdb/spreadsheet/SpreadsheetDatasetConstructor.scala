@@ -250,7 +250,7 @@ case class SpreadsheetDatasetConstructor(
       {
         colDefaults.get(col) match {
           case None => Literal(null)
-          case Some(None) => DataFrameOps.safeOutputLookup(colNames(col))
+          case Some(None) => DataFrameOps.safeOutputLookup(df, colNames(col))
           case Some(Some(pattern)) =>
             pattern.expression.transform {
               // Note: Any changes to this block MUST be reflected in the 
