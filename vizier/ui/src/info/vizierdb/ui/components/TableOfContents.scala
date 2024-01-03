@@ -47,13 +47,6 @@ class TableOfContents(
     )
   }
 
-  val packages = 
-    Seq[(String,String)](
-      "Vizier" -> "https://github.com/VizierDB/vizier-scala/wiki",
-      "Spark" -> "https://spark.apache.org/docs/3.3.1/sql-programming-guide.html",
-      "Sedona" -> "https://sedona.apache.org/1.5.0/"
-    )
-
   def LinkToModule(element: WorkflowElement, body: Frag*): Frag =
     a(
         // The href exists for copyable links
@@ -255,12 +248,6 @@ class TableOfContents(
             }
             .reactive
 
-  val documentationNodes = 
-    ul(
-      packages.map { case (name, link) =>
-        li( FontAwesome("book"), a(href := link, name, target := "_blank") )
-      }
-    ).render
 
   val projectNameEditor = 
     Var[Option[dom.html.Input]](None)
@@ -278,9 +265,9 @@ class TableOfContents(
         artifactSearch.root,
         artifactNodes,
       ),
-      div(`class` := "documentation_list",
-        h3(`class` := "title", "Packages"),
-        documentationNodes,
-      )
+      // div(`class` := "documentation_list",
+      //   h3(`class` := "title", "Packages"),
+      //   documentationNodes,
+      // )
     )
 }

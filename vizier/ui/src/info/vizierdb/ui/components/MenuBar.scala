@@ -27,7 +27,17 @@ import info.vizierdb.ui.Vizier
 class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 {  
 
-
+  /**
+   * A list of packages to provide help for.
+   * 
+   * Todo: These should be derived from dependencies in the notebook.
+   */
+  val packages = 
+    Seq[(String,String)](
+      "Vizier" -> "https://github.com/VizierDB/vizier-scala/wiki",
+      "Spark" -> "https://spark.apache.org/docs/3.3.1/sql-programming-guide.html",
+      "Sedona" -> "https://sedona.apache.org/1.5.0/"
+    )
 
   def Menu(clazz: String, title: Modifier*)(items: Frag*) = 
   {
@@ -37,16 +47,27 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
     div(contents:_*)
   }
 
-  def MenuItem(title: String, action: () => Unit, icon: String = null, enabled: Boolean = true): Frag =
+  def MenuItem(
+    title: String, 
+    action: () => Unit = { () => () }, 
+    icon: String = null, 
+    enabled: Boolean = true, 
+    link: String = null
+  ): Frag =
   {
     var contents = Seq[Modifier](title)
 
     if(!enabled){ contents = contents :+ (`class` := "disabled") }
-    else { contents = contents :+ (onclick := { _:dom.Event => action() })}
+    else if(link == null) {
+      contents = contents :+ (onclick := { _:dom.Event => action() })
+    }
 
     if(icon != null){ contents = FontAwesome(icon) +: contents }
-    
-    li(contents)
+  
+    var body: Frag = li(contents)
+    if(link != null && enabled){ body = a(href := link, target := "_blank", body) }
+
+    return body
   }
 
   def Separator: Frag = li(`class` := "separator")
@@ -154,6 +175,14 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
         a(href := "http://localhost:4040", target := "_blank", li("Spark Dashboard")),
       ),
 
+      ////////////////// Help Menu ////////////////// \
+
+      Menu(s"left item", FontAwesome("question-circle"))(
+        packages.map { case (name, link) =>
+          MenuItem(name, link = link, icon = "book")
+        }
+      ),
+
       ////////////////// Spacer ////////////////// 
       div(`class` := "spacer"),
 
@@ -214,14 +243,6 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 
         Menu(s"right item state_$stateClass", icon)(options:_*)
       }.reactive,
-
-      ////////////////// Help Menu ////////////////// 
-      a(
-        `class` := "right item", 
-        href := "https://www.github.com/VizierDB/vizier-scala/wiki", 
-        target := "_blank",
-        FontAwesome("question-circle")
-      ),
     ).render
 
 }
