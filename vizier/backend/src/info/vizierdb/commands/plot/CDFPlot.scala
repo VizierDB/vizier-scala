@@ -1,3 +1,17 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.commands.plot
 
 import org.apache.spark.sql.types._
@@ -39,7 +53,7 @@ object CDFPlot extends Command
   override def parameters: Seq[Parameter] = Seq(
     ListParameter(id = PARAM_SERIES, name = "Lines", components = Seq(
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
-      ColIdParameter(id = PARAM_X, name = "X-axis"),
+      ColIdParameter(id = PARAM_X, name = "CDF"),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
       StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
       StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
@@ -69,8 +83,8 @@ object CDFPlot extends Command
           PlotUtils.makeSeries(
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
-            xIndex      = series.get[Int](PARAM_X),
-            yIndex      = series.get[Int](PARAM_X), // this is just a placeholder; CDF below replaces it
+            xIndex      = series.get[Int](PARAM_X), // this is just a placeholder; CDF below replaces it
+            yIndex      = series.get[Int](PARAM_X),
             name        = series.getOpt[String](PARAM_LABEL),
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))

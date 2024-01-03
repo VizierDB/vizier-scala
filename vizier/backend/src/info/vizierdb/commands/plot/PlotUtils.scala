@@ -190,7 +190,7 @@ object PlotUtils
 
       copy(
         dataframe = newDataframe,
-        y = cdf_attr
+        x = cdf_attr
       )
     }
 

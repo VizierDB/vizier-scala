@@ -28,6 +28,8 @@ import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.Vizier
 import java.net.URL
 import info.vizierdb.VizierException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 object UnloadDataset extends Command
   with LazyLogging
@@ -245,11 +247,15 @@ object UnloadDataset extends Command
              .getOrElse {
                 outputArtifactIfNeeded.get.absoluteFile
               }
-        logger.info(s"Moving ${dataFiles.head} to $finalOutputFile")
-        dataFiles.head.renameTo(finalOutputFile)
         for(f <- allFiles){
           if(f.exists && f != dataFiles.head){ f.delete }
         }
+        logger.info(s"Moving ${dataFiles.head} to $finalOutputFile")
+        Files.move(
+          dataFiles.head.toPath, 
+          finalOutputFile.toPath,
+          StandardCopyOption.REPLACE_EXISTING
+        )
         tempDir.get.delete
         new URL("file://" + finalOutputFile.getAbsolutePath())
       } else { file }
