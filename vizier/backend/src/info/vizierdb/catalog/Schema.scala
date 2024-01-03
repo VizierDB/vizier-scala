@@ -266,6 +266,30 @@ object Schema
         Column("packages",        SQL.BLOB,     "json",         isRequired = true),
       )
     )),
+
+    ///////////////////// Published Workflows ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Script",
+      columns = List(
+        Column("id",              SQL.INTEGER,  "integer",      isRequired = true, 
+                                                                isPrimaryKey = true,
+                                                                isAutoIncrement = true),
+        Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true),
+      )
+    )),
+    CreateTableMigration(Table(
+      name = "ScriptRevision",
+      columns = List(
+        Column("scriptId",        SQL.INTEGER,  "integer",      isRequired = true, 
+                                                                isPrimaryKey = true),
+        Column("version",         SQL.INTEGER,  "integer",      isRequired = true,
+                                                                isPrimaryKey = true),
+        Column("project_id",      SQL.INTEGER,  "integer",      isRequired = true),
+        Column("branch_id",       SQL.INTEGER,  "integer",      isRequired = true),
+        Column("workflow_id",     SQL.INTEGER,  "integer",      isRequired = true),
+        Column("modules",         SQL.BLOB,     "json",         isRequired = true),
+      )
+    )),
   )
 
   val TABLES: Map[String, Table] =

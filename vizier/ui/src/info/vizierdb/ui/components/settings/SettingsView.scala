@@ -100,6 +100,5 @@ class SettingsView(initialTab: Option[String] = None)(implicit owner: Ctx.Owner)
           case Some(content) => content.root
         }.reactive
       ),
-
-    )
+    ).render
 }
