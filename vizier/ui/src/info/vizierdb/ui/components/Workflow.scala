@@ -39,12 +39,12 @@ class Workflow(val subscription: BranchSubscription, val project: Project)
     new TentativeEdits(moduleViews, project, this)
 
   val moduleNodes =
-    RxBufferView(div(`class` := "module_list"), 
+    RxBufferView(div(`class` := "module_list").render, 
       moduleViewsWithEdits.rxMap { element =>
         div(
           element.root,
           StandardInterModule(element)
-        )
+        ).render
       }
     )
 

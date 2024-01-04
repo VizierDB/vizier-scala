@@ -187,7 +187,7 @@ class TableView(
       var position = TableView.GUTTER_WIDTH
       for(i <- 0 until data.columnCount){ 
         val w = data.columnWidthInPixels(i)
-        root.appendChild(data.cellAt(row, i, w, position))
+        root.appendChild(data.cellAt(row, i, w, position).render)
         position += w
       } 
       OnMount.trigger(root)

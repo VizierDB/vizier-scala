@@ -142,6 +142,15 @@ abstract class RxBufferBase[A,B]
     RxBuffer.logger.trace(s"Registered watcher on $this@$id (now ${watchers.size} watchers)")
     return handler
   }
+
+  def asVar: Var[Seq[B]] = 
+  {
+    val data = Var[Seq[B]](elements.toSeq)
+    deliverUpdatesTo(new RxBufferTrigger[B] {
+      def onBufferChange(): Unit = { data() = elements.toSeq }
+    })
+    return data
+  }
 }
 
 trait RxBufferWatcher[A]

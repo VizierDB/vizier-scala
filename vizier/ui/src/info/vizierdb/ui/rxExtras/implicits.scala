@@ -50,12 +50,21 @@ class RxTagWrapper[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner)
   }
 }
 
+class RxWrapper[A, B](r: Rx[(A, B)])(implicit ctx: Ctx.Owner)
+{
+  def unzip: (Rx[A], Rx[B]) =
+  {
+    (r.map { _._1 }, r.map { _._2 })
+  }
+}
 
 package object implicits {
 
   implicit def rxFrag[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner): RxTagWrapper[T] =
     new RxTagWrapper[T](r)
   
-  implicit def renderFrag[T <% Frag](f: T): dom.Node = 
-    f.render
+  implicit def wrapRx[A, B](r: Rx[(A, B)])(implicit ctx: Ctx.Owner): RxWrapper[A, B] =
+    new RxWrapper[A, B](r)
 }
+
+

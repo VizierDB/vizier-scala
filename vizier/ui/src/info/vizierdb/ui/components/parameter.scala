@@ -435,7 +435,8 @@ class ColIdParameter(
         ):_*
       )
     }.reactive
-  )
+  ).render
+
   def value = 
     JsNumber(inputNode[dom.html.Select].value.toInt)
   override def set(v: JsValue): Unit = 
@@ -512,7 +513,8 @@ class ArtifactParameter(
         ):_*
       )
     }.reactive
-  )
+  ).render
+
   def value = 
     inputNode[dom.html.Select].value match {
       case "" => JsNull
@@ -598,7 +600,8 @@ class FileParameter(
         bodyText() = span(DEFAULT_BODY_TEXT)
         e.preventDefault()
       }
-    )
+    ).render
+
   val urlField:dom.Node =
   {
     val identity = s"parameter_${Parameter.nextInputId}"
@@ -610,7 +613,7 @@ class FileParameter(
         attr("id") := identity, 
         attr("name") := "URL"
       )
-    )
+    ).render
   }
 
   val displays = Seq[dom.Node](
@@ -643,7 +646,8 @@ class FileParameter(
     tab("Upload File", 0).reactive,
     tab("Load URL", 1).reactive,
     mode.map { displays(_) }.reactive
-  )
+  ).render
+
   def value =
     mode.now match {
       case 0 => Json.obj("fileid" -> uploadedFileId, "filename" -> uploadedFileName)
@@ -733,7 +737,7 @@ class ListParameter(
   }
 
   val rows = RxBuffer[Seq[Parameter]]( tentativeRow() )
-  val rowView = RxBufferView(tbody(), 
+  val rowView = RxBufferView(tbody().render, 
     rows.rxMap { row =>  
       tr( 
         row.map { _.root }.map { td(_) } ,
@@ -747,7 +751,7 @@ class ListParameter(
             }
           }
         )
-      )
+      ).render
     })
   def lastRow = Var(rows.last)
 
@@ -780,7 +784,7 @@ class ListParameter(
         ),
         rowView.root,
       )
-    )
+    ).render
 
   def rawValue =
     rows.toSeq
@@ -885,7 +889,7 @@ class RecordParameter(
       ul(
         elements.map { _.root }.map { li(_) }
       )
-    )
+    ).render
   def value = 
     Json.toJson(elements.map { _.toArgument })
   def set(v: JsValue): Unit = 
@@ -1230,7 +1234,7 @@ class UnsupportedParameter(
       parameter.hidden
     )
   }
-  val root = span(s"Unsupported parameter type: $dataType ($context)")
+  val root = span(s"Unsupported parameter type: $dataType ($context)").render
   def value = JsNull
   def set(v: JsValue): Unit = {}
 }

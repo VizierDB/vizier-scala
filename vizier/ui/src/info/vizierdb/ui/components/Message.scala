@@ -45,7 +45,7 @@ case class TextMessage(text: String, clazz: String = "message text") extends Mes
       text.toString
           .split("\n")
           .map { div(_) }
-    )
+    ).render
 }
 object TextMessage
 {
@@ -76,7 +76,7 @@ case class DatasetMessage(content: serialized.DatasetDescription, module: Module
       )
     }
   ))
-  val root = div(`class` := "message dataset", dataset.root)
+  val root = div(`class` := "message dataset", dataset.root).render
 }
 
 //////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ case class VegaMessage(content: JsValue) extends Message
         )
       },
       id := divId,
-    ):dom.Node
+    ).render
   ).asInstanceOf[dom.html.Div]
 }
 

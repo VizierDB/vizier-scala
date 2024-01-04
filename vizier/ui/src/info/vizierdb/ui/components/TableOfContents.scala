@@ -113,11 +113,11 @@ class TableOfContents(
 
 
   val moduleNodes =
-    RxBufferView(ol(`class` := "the_modules"), 
+    RxBufferView(ol(`class` := "the_modules").render, 
       modules.rxMap { 
-                case module:Module => ModuleSummary(module)
-                case edit:TentativeModule => TentativeSummary(edit)
-                case inspector:ArtifactInspector => InspectorSummary(inspector)
+                case module:Module => ModuleSummary(module).render
+                case edit:TentativeModule => TentativeSummary(edit).render
+                case inspector:ArtifactInspector => InspectorSummary(inspector).render
                 case _ => div().render
               }
     )

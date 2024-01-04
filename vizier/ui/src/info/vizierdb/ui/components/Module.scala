@@ -107,7 +107,7 @@ class Module(val subscription: ModuleSubscription)
   /**
    * A reactive DOM node of all of the messages displayed with this module
    */
-  val messageView = RxBufferView(ul(`class` := "messages"), messages.rxMap { _.root })
+  val messageView = RxBufferView(ul(`class` := "messages").render, messages.rxMap { _.root })
   logger.trace(s"${messageView.root.childNodes.length} messages rendered")
 
   /**
