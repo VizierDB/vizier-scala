@@ -76,9 +76,11 @@ object Schema
     val requiredMigrations = MIGRATIONS.drop(currentVersion)
     if(requiredMigrations.isEmpty){ return }
 
+    println(s"... updating vizier.db (old version: $currentVersion; new version: ${MIGRATIONS.size})")
+
     CatalogDB.withDB { implicit session => 
-      for((migration, idx) <- requiredMigrations.zipWithIndex){
-        logger.info(s"Applying Migration ${idx + currentVersion}")
+      for((migration, idx) <- requiredMigrations.zipWithIndex){ 
+        logger.info(s"Applying Migration ${idx + currentVersion}: ${migration.getClass.getSimpleName.replace("Migration", "")}")
         logger.trace(migration.sql)
         migration.apply
       }

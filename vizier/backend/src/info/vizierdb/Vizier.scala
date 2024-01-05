@@ -91,19 +91,6 @@ object Vizier
         // Read the above comment before modifying connectionTimeoutMillis please.
       )
     )
-
-    // The following initialize ScalikeJDBC's lazy variables
-    catalog.Project.columns;
-    catalog.Branch.columns;
-    catalog.Workflow.columns;
-    catalog.Cell.columns;
-    catalog.Branch.columns;
-    catalog.Artifact.columns;
-    catalog.InputArtifactRef.columns;
-    catalog.OutputArtifactRef.columns;
-    catalog.Result.columns;
-    catalog.Script.columns;
-    catalog.ScriptRevision.columns;
   }
 
   def initSpark() =
@@ -193,6 +180,9 @@ object Vizier
       return
     }
 
+    // Set up the working directory in environments and properties
+    setWorkingDirectory()
+
     // Check for non-mandatory dependencies
     println("Checking for dependencies...")
     PythonProcess.checkPython()
@@ -200,13 +190,13 @@ object Vizier
     // Set up the Vizier directory and database
     println("Setting up project library...")
     if(!config.basePath().exists) { config.basePath().mkdir() }
-    initSQLite()
-    Schema.initialize()
+    initSQLite()                // Connect to the DB
+    Schema.initialize()         // Init the DB and/or apply schema migrations
+    CatalogDB.initialize()      // Load ScalikeJDBC state
+    bringDatabaseToSaneState()  // Clean up 'running' transactions (e.g., from a system crash)
     // initORMLogging("warn")
-    bringDatabaseToSaneState()
-    setWorkingDirectory()
 
-    // Set up Mimir
+    // Set up Spark/Mimir/etc...
     println("Starting Spark...")
     initSpark()
 

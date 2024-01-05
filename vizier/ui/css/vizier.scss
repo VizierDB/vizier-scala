@@ -68,6 +68,8 @@ $modal_layer: 2000;
 /*********** Sizes ***************/
 
 $max_workflow_width: 800px;
+$main_menu_height: 32px;
+$cell_menu_width: 28px;
 
 
 /*********** Fonts ***************/
@@ -334,8 +336,6 @@ body
   overflow-y: hidden;
 }
 
-$menu_height: 32px;
-
 .tooltip
 {
   // visibility: hidden;
@@ -367,7 +367,7 @@ $menu_height: 32px;
   .content
   {
     position: absolute;
-    top: $menu_height;
+    top: $main_menu_height;
     left: 0px;
     width: 100vw;
     display: flex;
@@ -377,7 +377,7 @@ $menu_height: 32px;
     {
       position: absolute;
       left: calc(100vw - 248px);
-      height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
+      height: calc(100vh - 32px); // $main_menu_height -- sass doesn't like $vars in calc
       width: 248px;
       flex-grow: 0;
       flex-shrink: 0;
@@ -389,7 +389,7 @@ $menu_height: 32px;
       position: absolute;
       left: 0;
       width: calc(100vw - 248px);
-      height: calc(100vh - 32px); // $menu_height -- sass doesn't like $vars in calc
+      height: calc(100vh - 32px); // $main_menu_height -- sass doesn't like $vars in calc
       overflow-y: auto;
       border-right: solid 1px $color_layout_border;
       margin-right: 0px;
@@ -509,7 +509,7 @@ $menu_height: 32px;
 
 #menu_bar
 {
-  height: $menu_height;
+  height: $main_menu_height;
   width: 100vw;
   background-color: $color_primary;
   display: flex;
@@ -602,8 +602,8 @@ $menu_height: 32px;
     height: 18px;
     padding-left: 12px;
     padding-right: 12px;
-    padding-bottom: $menu_height/2 - 8px;
-    padding-top: $menu_height/2 - 10px;
+    padding-bottom: $main_menu_height/2 - 8px;
+    padding-top: $main_menu_height/2 - 10px;
     font-weight: bold;
   }
 
@@ -611,15 +611,15 @@ $menu_height: 32px;
   {
     font-size: 16px;
     height: 18px;
-    padding: ($menu_height - 18px) / 2;
+    padding: ($main_menu_height - 18px) / 2;
     padding-left: 16px;
     padding-right: 16px;
   }
 
   img
   {
-    height: $menu_height - 8px;
-    width: $menu_height - 8px;
+    height: $main_menu_height - 8px;
+    width: $main_menu_height - 8px;
     padding: 4px;
     padding-left: 8px;
     padding-right: 8px;
@@ -723,10 +723,8 @@ $menu_height: 32px;
       display: flex;
       flex-direction: row;
 
-      $menu_width: 28px;
-
       .menu {
-        width: $menu_width;
+        width: $cell_menu_width;
         margin-left: 8px;
         margin-right: 8px;
         flex-grow: 0;
@@ -772,8 +770,8 @@ $menu_height: 32px;
         }
 
         button {
-          width: $menu_width;
-          height: $menu_width;
+          width: $cell_menu_width;
+          height: $cell_menu_width;
           border: none;
           border-bottom: solid 1px white;
           background-color: inherit;
@@ -796,7 +794,7 @@ $menu_height: 32px;
         {
           display: flex;
           flex-direction: row;
-          height: $menu_width;
+          height: $cell_menu_width;
 
           button { 
             flex-grow: 0; 
@@ -806,12 +804,12 @@ $menu_height: 32px;
 
           &.open { 
             z-index: $menu_layer;
-            &.size1 { width: $menu_width * 2 }
-            &.size2 { width: $menu_width * 3 }
-            &.size3 { width: $menu_width * 4 }
-            &.size4 { width: $menu_width * 5 }
-            &.size5 { width: $menu_width * 6 }
-            &.size6 { width: $menu_width * 7 }
+            &.size1 { width: $cell_menu_width * 2 }
+            &.size2 { width: $cell_menu_width * 3 }
+            &.size3 { width: $cell_menu_width * 4 }
+            &.size4 { width: $cell_menu_width * 5 }
+            &.size5 { width: $cell_menu_width * 6 }
+            &.size6 { width: $cell_menu_width * 7 }
 
             button {
               color: white;
@@ -827,7 +825,7 @@ $menu_height: 32px;
             // }
           }
           &.closed { 
-            width: $menu_width; 
+            width: $cell_menu_width; 
             button.pop_up_button { 
               visibility: hidden; 
             }
@@ -2072,5 +2070,163 @@ table.parameter_list
     width: 20px;
     width: 20px;
     display: inline-block;
+  }
+}
+
+/************ Script Editor ************/
+
+.script_editor 
+{
+  .content {
+    position: absolute;
+    top: $main_menu_height;
+    left: 0px;
+    width: 100vw;
+    display: flex;
+    flex-direction: row-reverse;
+
+    .script_body
+    {
+      position: absolute;
+      left: 0;
+      width: calc(100vw - 248px);
+      height: calc(100vh - 32px); // $main_menu_height -- sass doesn't like $vars in calc
+      overflow-y: auto;
+      border-right: solid 1px $color_layout_border;
+      margin-right: 0px;
+
+      .script_content
+      {
+        margin-left: auto;
+        margin-right: auto;
+        max-width: $max_workflow_width;
+        display: flex;
+        flex-direction: column;
+
+        .module
+        {
+          display: flex;
+          flex-direction: row;
+          margin-top: 16px;
+
+          .menu 
+          {
+            width: $cell_menu_width;
+            background-color: $color_primary;
+            flex-grow: 0;
+            flex-shrink: 0;
+
+            button {
+              color: white;
+              width: $cell_menu_width;
+              height: $cell_menu_width;
+              border: none;
+              border-bottom: solid 1px white;
+              background-color: inherit;
+              cursor: pointer;
+
+            }
+          }
+
+          .module_body
+          {
+            margin-left: 8px;
+
+            h3
+            {
+              margin-top: 4px
+            }
+
+            overflow-y: scroll;
+          }
+
+          &.disabled
+          {
+            .menu {
+              background-color: $color_primary_faded;
+            }
+
+            .module_body {
+              background-color: white;
+              opacity: 0.3;
+            }
+          }
+
+          &.script_in_out
+          {
+            ul
+            {
+              list-style: none;
+              padding-left: 16px;
+
+              button
+              {
+                margin-left: 8px;
+                i.fa
+                {
+                  font-size: 12px;
+                }
+              }
+            }
+          }
+        }
+
+      }
+    }   
+
+    .script_config
+    {
+      position: absolute;
+      left: calc(100vw - 248px);
+      height: calc(100vh - 32px); // $main_menu_height -- sass doesn't like $vars in calc
+      width: 248px;
+      flex-grow: 0;
+      flex-shrink: 0;
+      // margin-left: 8px;
+      padding-left: 8px;
+
+      .script_field
+      {
+        margin-top: 8px;
+
+        button
+        {
+          width: 80%;
+        }
+      }
+      h2
+      {
+        margin-bottom: 0px;
+      }
+      p
+      {
+        margin: 0px
+      }
+
+      ul.outputs, ul.inputs
+      {
+        list-style: none;
+        padding-left: 0px;
+        
+        li
+        {
+          i.fa
+          {
+            margin-right: 4px;
+          }
+
+          &.disabled
+          {
+            opacity: 0.5;
+          }
+
+          button
+          {
+            margin-left: 8px;
+          }
+        }
+      }
+    }
+
   }
 }

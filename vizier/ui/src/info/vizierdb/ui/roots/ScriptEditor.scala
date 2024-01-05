@@ -31,6 +31,10 @@ import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.ui.rxExtras.RxBufferVar
 import info.vizierdb.serialized.ArtifactSummary
 import info.vizierdb.types._
+import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.ui.widgets.Tooltip
+import scala.util.{ Success, Failure }
+import info.vizierdb.ui.widgets.BrowserLocation
 
 class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
 {
@@ -39,6 +43,10 @@ class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
     RxBuffer.ofSeq(script.modules)
 
   var activeOutputs = Var[Set[String]](Set.empty)
+
+  var scriptId = script.id
+  val scriptName = Var[String](script.name)
+  val scriptVersion = Var[String](script.version.toString)
 
   // The last module optionally stores the activated outputs of the script.  
   // Strip this off and initialize activeOutputs if so
@@ -113,6 +121,20 @@ class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
     }
   }
 
+  def removeInput(name: String, moduleId: Identifier)
+  {
+    for( (module, idx) <- modules.zipWithIndex )
+    {
+      module match {
+        case module: VizierScriptModule.InputOutput if module.id == moduleId =>
+          modules.update(
+            idx, module.copy(imports = module.imports - name)
+          )
+        case _ => ()
+      }
+    }
+  }
+
   def addStaticOutput(name: String)
   {
     activeOutputs() = activeOutputs.now + name
@@ -152,17 +174,18 @@ class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
   def toScript: VizierScript =
     script.copy(
       version = script.version + 1,
-      name = scriptName,
+      name = nameInput.value,
       modules = getModules
     )
 
-  def scriptName = nameInput.value
+  val savingStatus = Var[Option[dom.Node]](None)
 
   def save(): Unit =
   {
+    savingStatus() = Some(Spinner(8).render)
     if(script.id < 0){
       Vizier.api.scriptCreateScript(
-        name = scriptName,
+        name = nameInput.value,
         projectId = script.projectId.toString,
         branchId = script.branchId.toString,
         workflowId = script.workflowId.toString,
@@ -171,12 +194,25 @@ class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
     } else {
       Vizier.api.scriptUpdateScript(
         scriptId = script.id.toString,
-        name = scriptName,
+        name = nameInput.value,
         projectId = script.projectId.toString,
         branchId = script.branchId.toString,
         workflowId = script.workflowId.toString,
         modules = getModules
       )
+    }.onComplete { 
+        case Success(newScript) => 
+          scriptId = newScript.id
+          scriptName() = newScript.name
+          scriptVersion() = newScript.version.toString
+          BrowserLocation.replaceQuery("script" -> scriptId.toString)
+          savingStatus() = Some(FontAwesome("check").render)
+          dom.window.setTimeout( { () => savingStatus() = None }, 2000 )
+
+        case Failure(err) => 
+          savingStatus() = Some(FontAwesome("times").render)
+          dom.window.setTimeout( { () => savingStatus() = None }, 2000 )
+          Vizier.error(err.getMessage())
     }
   }
 
@@ -189,88 +225,147 @@ class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
     ).render
 
   val moduleView = 
-    RxBufferView(div().render, 
+    RxBufferView(div(`class` := "script_content").render, 
       modules
         .rxMap { 
+
+          /////////////// Inline Module //////////////////////
+
           case module: VizierScriptModule.Inline =>
             val enabledClass = if(module.enabled){ "enabled" } else { "disabled" }
             val commandClass = s"module_${module.spec.command.packageId}_${module.spec.command.commandId}"
             div(`class` := s"module $enabledClass $commandClass",
-              h3(
+              div(`class` := "menu",
                 button(
-                  if(module.enabled) { "Disable" } else { "Enable" },
-                  onclick := { _:dom.Event => toggleEnabled(module.id) }
+                  FontAwesome("check-square-o"), 
+                  onclick := { _:dom.MouseEvent => toggleEnabled(module.id) },
+                  Tooltip("Toggle whether the cell will be included in the script")
                 ),
-                `class` := "module_type", s"${module.spec.command.packageId}.${module.spec.command.commandId}",
-                if(module.enabled){ span("") }
-                else { span(" [DISABLED]") }
               ),
-              pre(`class` := "module_content", module.spec.text)
+              div(`class` := "module_body",
+                h3(
+                  `class` := "module_type", s"${module.spec.command.packageId}.${module.spec.command.commandId}",
+                  if(module.enabled){ span("") }
+                  else { span(" [DISABLED]") }
+                ),
+                pre(`class` := "module_content", module.spec.text)
+              )
             ).render
+
+          /////////////// Input/Output Module //////////////////////
+
           case module: VizierScriptModule.InputOutput =>
             val enabledClass = if(module.enabled){ "enabled" } else { "disabled" }
             div(
               `class` := s"module $enabledClass script_in_out",
-              h3("Input/Output"),
-              ul(
-                module.imports.map { case (label, artType) =>
-                  li("➡: ", label, " [", artType.toString, "]") 
-                }.toSeq,
-                module.exports.map { case (label, artType) =>
-                  li("🠘: ", label, " [", artType.toString, "]") 
-                }.toSeq,
+              div(`class` := "menu"),
+              div(`class` := "module_body",
+                ( if(module.imports.isEmpty){ Seq[Frag]() }
+                  else { Seq(
+                    h3("Import Artifacts to Script"),
+                    ul(
+                      module.imports.map { case (label, artType) =>
+                        li(FontAwesome(ArtifactType.icon(artType)), " ➡ ", label, 
+                            button(FontAwesome("times"), onclick := { _:dom.Event => removeInput(label, module.id) })
+                          ) 
+                      }.toSeq,
+                    )
+                  )}
+                ),
+                ( if(module.exports.isEmpty){ Seq[Frag]() }
+                  else { Seq(
+                    h3("Export Artifacts from Script"),
+                    ul(
+                      module.exports.map { case (label, artType) =>
+                        li("🠘: ", label, " [", artType.toString, "]") 
+                      }.toSeq,
+                    )
+                  )}
+                ),
               ),
             ).render
         }
     )
 
-  val root = div(`class` := "script_editor",
-    div(`class` := "script_name",
-      label(`for` := "script_name", "Name:"),
-      nameInput,
-    ),
-    div(button("Save Workflow", onclick := { _:dom.Event => save() })),
-    Rx {
-      if(inputs().isEmpty){ div() }
-      else {
-        div(h2("Missing Inputs"),
-          ul(
-            inputs().toSeq.sortBy { _._1 }.map { case (name, artType) =>
-              li(name, " [", artType.toString, "]",
-                button("Add Import",
-                  onclick := { _:dom.Event => 
-                    addStaticInput(name, artType)
+  val menu = 
+    tag("nav")(id := "menu_bar",
+
+      ////////////////// Logo ////////////////// 
+      a(`class` := "left item", href := "index.html", img(src := "vizier.svg")),
+
+      ////////////////// Logo ////////////////// 
+      div(`class` := "left item", 
+        Rx {
+          div(`class` := "text", scriptName() + " (version ", scriptVersion(), ")")
+        }.reactive
+      )
+    ).render
+
+  val root = 
+    div(`class` := "script_editor",
+      menu,
+      div(`class` := "content",
+        div(`class` := "script_config",
+          h2("Publish"),
+          div(`class` := "script_field",
+            label(`for` := "script_name", "Name:"),
+            nameInput,
+          ),
+          div(`class` := "script_field",
+            Rx {
+              savingStatus() match {
+                case None => 
+                  div(button("Save Script", onclick := { _:dom.Event => save() }))
+                case Some(s) =>
+                  div(button(s))
+              }
+            }.reactive,
+          ),
+          Rx {
+            if(inputs().isEmpty){ div() }
+            else {
+              div(
+                h2("Missing Inputs"),
+                ul(`class` := "inputs",
+                  inputs().toSeq.sortBy { _._1 }.map { case (label, artType) =>
+                    li(
+                      FontAwesome(ArtifactType.icon(artType)),
+                      label.take(20) + (if(label.size > 20){ "..." } else { "" }),
+                      button("Add Import",
+                        onclick := { _:dom.Event => 
+                          addStaticInput(label, artType)
+                        }
+                      ),
+                      Tooltip(label)
+                    ) 
                   }
                 )
-              ) 
-            }
-          )
-        )
-      }
-    }.reactive,
-    div(
-      h2("Script"),
-      moduleView.root
-    ),
-    div(h2("Available Outputs"),
-      Rx {
-        val active = activeOutputs()
-        ul(
-          outputs().toSeq.sortBy { _._1 }.map { case (label, artType) =>
-            li(
-              label, " [", artType.toString, 
-              (if(active(label)) { "; ACTIVE" } else { "" }),
-              "] ",
-              button(
-                if(active(label)) { "Deactivate" } else { "Activate" },
-                onclick := { _:dom.Event => toggleStaticOutput(label) }
               )
-            )
-          }
-        )
-      }.reactive
-    ),
-  ).render
+            }
+          }.reactive,
+          div(
+            h2("Script Outputs"),
+            p("(click to enable)"),
+            Rx {
+              val active = activeOutputs()
+              ul(`class` := "outputs",
+                outputs().toSeq.sortBy { _._1 }.map { case (label, artType) =>
+                  li(`class` := (if(active(label)){ "enabled" } else { "disabled" }),
+                    onclick := { _:dom.Event => toggleStaticOutput(label) },
+                    FontAwesome(ArtifactType.icon(artType)),
+                    label.take(20) + (if(label.size > 20){ "..." } else { "" }),
+                    Tooltip(label + (if(active(label)){ " [Enabled]" } else { " [Disabled]" }))
+                  )
+                }
+              )
+            }.reactive
+          ),
+        ),
+        div(`class` := "script_body",
+          moduleView.root
+        ),
+      )
+    ).render
 }
 
 object ScriptEditor
@@ -288,6 +383,11 @@ object ScriptEditor
       (scriptId, projectId, branchId, workflowId) match {
         case (_, Some(projectId), Some(branchId), Some(workflowId)) => 
           Vizier.api.workflowGet(projectId, branchId, workflowId)
+                .map { workflow => 
+                  new ScriptEditor(VizierScript.fromWorkflow(projectId, branchId, workflow))
+                }
+        case (_, Some(projectId), Some(branchId), None) => 
+          Vizier.api.workflowHeadGet(projectId, branchId)
                 .map { workflow => 
                   new ScriptEditor(VizierScript.fromWorkflow(projectId, branchId, workflow))
                 }

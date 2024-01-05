@@ -42,7 +42,18 @@ object VizierScript
       branchId = branchId,
       workflowId = workflow.id,
       modules = workflow.modules.map { module =>
-        VizierScriptModule.Inline(module, enabled = {module.statev2 == types.ExecutionState.DONE})
+        val moduleRanSuccessfully = {module.statev2 == types.ExecutionState.DONE}
+        val moduleInvolvesDocumentation = 
+          module.command.packageId match {
+            case "docs" => true
+            case _ => false
+          }
+        val shouldEnable = (
+          moduleRanSuccessfully 
+            && !moduleInvolvesDocumentation
+        )
+
+        VizierScriptModule.Inline(module, enabled = shouldEnable)
       }
     )
   }

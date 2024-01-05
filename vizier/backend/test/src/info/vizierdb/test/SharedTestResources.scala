@@ -22,6 +22,7 @@ import java.nio.file.{ Files, Paths }
 import scala.sys.process.Process
 import info.vizierdb.commands.mimir.geocoder.Geocode
 import info.vizierdb.commands.mimir.geocoder.TestCaseGeocoder
+import info.vizierdb.catalog.CatalogDB
 
 object SharedTestResources
 {
@@ -66,6 +67,7 @@ object SharedTestResources
         // Reset the database
         Schema.drop
         Schema.initialize
+        CatalogDB.initialize()
 
         // And initialize testing
         DummyCommands.init

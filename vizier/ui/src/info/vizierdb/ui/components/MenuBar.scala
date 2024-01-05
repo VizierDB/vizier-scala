@@ -161,7 +161,14 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
                 { () => project.setActiveBranch(id) }, 
                 icon = if(id == activeBranchId){ "code-fork" } else { null }
               )
-            }
+            } ++ Seq[Frag](
+              Separator,
+              Rx { 
+                val projectId = project.projectId
+                val branchId =project.activeBranch().getOrElse(-1)
+                a(href := s"script.html?project=${projectId}&branch=${branchId}", target := "_blank", li("Publish as script..."))
+              }.reactive
+            )
           ):_*
         )
       }.reactive,
