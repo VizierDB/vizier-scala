@@ -212,7 +212,7 @@ object vizier extends ScalaModule with PublishModule {
  *** Backend Resources
  *************************************************/
   def buildRoutesScript = T.sources { os.pwd / "scripts" / "build_routes.sc" }
-  def routesFile        = T.sources { millSourcePath / "shared" / "resources" / "vizier-routes.txt" }
+  def routesFile        = T.sources { millSourcePath / "resources" / "vizier-routes.txt" }
 
   def routes = T { 
     println("Recompiling routes from "+routesFile().head.path); 

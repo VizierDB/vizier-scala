@@ -46,6 +46,8 @@ import scala.io.Source
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.api.akka.VizierServer
 import info.vizierdb.artifacts.VegaChart
+import info.vizierdb.catalog.Script
+import info.vizierdb.catalog.ScriptRevision
 
 class ExecutionContext(
   val projectId: Identifier,
@@ -54,7 +56,8 @@ class ExecutionContext(
   cell: Cell,
   module: Module,
   stdout: (String, Array[Byte]) => Unit,
-  stderr: String => Unit
+  stderr: String => Unit,
+  subId: Option[Integer] = None
 )
   extends LazyLogging
 {
@@ -100,6 +103,20 @@ class ExecutionContext(
     }
     val ret = scope.get(name.toLowerCase())
     if(registerInput){ ret.foreach { a => inputs.put(name.toLowerCase(), a.id) } }
+    return ret
+  }
+
+  /**
+   * Retrieve all artifacts
+   */
+  def artifacts(registerInput: Boolean = true): Map[String, Artifact] =
+  {
+    val ret: Map[String, Artifact] = 
+      (scope.mapValues { Some(_) } ++ outputs)
+        .flatMap { case (k, v) => v.map { k -> _ }}
+    if(registerInput){ 
+      inputs ++= ret.map { case (name, artifact) => name -> artifact.id }.toMap
+    }
     return ret
   }
 
@@ -700,12 +717,113 @@ class ExecutionContext(
     }
   }
 
+  var nextScriptId = 0;
+
+  /**
+   * Execute the referenced script
+   */
+  def runScript(
+    script: Script, 
+    revision: ScriptRevision,
+    inputs: Map[String, String], 
+    outputs: Map[String, String]
+  ): Long =
+  {
+    val subId = nextScriptId
+    nextScriptId += 1
+    val subcontext = 
+      new ExecutionContext(
+        projectId = projectId,
+        scope = Map.empty,
+        workflow = workflow,
+        cell = cell,
+        module = module,
+        stdout = stdout,
+        stderr = stderr,
+        subId = Some(subId)
+      )
+
+    for(module <- revision.decodeModules)
+    {
+      if(module.enabled){
+        module match {
+          case module: serialized.VizierScriptModule.InputOutput =>
+          {
+            for((id, _) <- module.imports){
+              subcontext.output(id, artifact(inputs(id)).get)
+            }
+            for((id,_) <- module.exports){
+              outputs.get(id) match {
+                case None => ()
+                case Some(localId) => 
+                  output(localId, subcontext.artifact(id).get)
+              }
+            }
+          }
+          case module: serialized.VizierScriptModule.Inline =>
+          {
+            val spec = module.spec
+            val command = 
+              Commands.getOption(spec.command.packageId, spec.command.commandId)
+                    .getOrElse { 
+                      subcontext.error(s"Command ${spec.command.packageId}.${spec.command.commandId} does not exist")
+                      throw new VizierException("Module does not exist")
+                    }
+            val arguments = Arguments(
+              serialized.CommandArgumentList.toMap(spec.command.arguments),
+              command.parameters
+            )
+            val argumentErrors = arguments.validate
+            if(!argumentErrors.isEmpty){
+              val msg = "Error in module arguments:\n"+argumentErrors.mkString("\n")
+              logger.warn(msg)
+              subcontext.error(msg)
+              throw new VizierException(msg)
+            }
+            command.process(arguments, subcontext)
+          }
+        }
+      }
+    }
+
+    revision.version
+  }
+
+  def runScript(
+    scriptId: Identifier, 
+    inputs: Map[String, String], 
+    outputs: Map[String, String]
+  ): Long =
+  {
+    val (script, revision) = 
+      CatalogDB.withDBReadOnly { implicit s => 
+        Script.getHead(scriptId)
+      }
+
+    runScript(script, revision, inputs, outputs)
+  }
+
+  def runScript(
+    name: String, 
+    inputs: Map[String, String], 
+    outputs: Map[String, String]
+  ): Long =
+  {
+    val (script, revision) =
+      CatalogDB.withDBReadOnly { implicit s => 
+        Script.getHeadByNameOption(name)
+      }.getOrElse { 
+        throw new VizierException(s"No script named $name")
+      }
+    runScript(script, revision, inputs, outputs)
+  }
+
   /**
    * Get a unique string for this execution
    */
   def executionIdentifier: String =
   {
-    s"${module.id}_${cell.position}${cell.resultId.map { "_"+_ }.getOrElse("")}"
+    s"${module.id}_${cell.position}${subId.map { i => s"_$i" }.getOrElse("")}${cell.resultId.map { "_"+_ }.getOrElse("")}"
   }
 
   override def toString: String =

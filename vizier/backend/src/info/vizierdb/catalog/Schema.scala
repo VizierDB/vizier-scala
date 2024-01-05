@@ -275,12 +275,13 @@ object Schema
                                                                 isPrimaryKey = true,
                                                                 isAutoIncrement = true),
         Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true),
+        Column("head_version",    SQL.INTEGER,  "integer",      isRequired = true),
       )
     )),
     CreateTableMigration(Table(
-      name = "ScriptRevision",
+      name = "Script_Revision",
       columns = List(
-        Column("scriptId",        SQL.INTEGER,  "integer",      isRequired = true, 
+        Column("script_id",        SQL.INTEGER,  "integer",      isRequired = true, 
                                                                 isPrimaryKey = true),
         Column("version",         SQL.INTEGER,  "integer",      isRequired = true,
                                                                 isPrimaryKey = true),

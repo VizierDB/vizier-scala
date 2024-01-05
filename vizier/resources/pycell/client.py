@@ -516,6 +516,17 @@ class VizierDBClient(object):
       print("***File access may not be reproducible because filesystem resources are transient***")
     return open(file, mode, buffering, encoding, errors, newline, closefd, opener)
 
+  def run_script(self,
+                 script: str,
+                 inputs: Dict[str, str] = {},
+                 outputs: Dict[str, str] = {}) -> None:
+    self.vizier_request("vizier_script",
+      script=script,
+      inputs=inputs,
+      outputs=outputs,
+      has_response=False,
+    )
+
   def show(self,
            value: Any,
            mime_type: Optional[str] = None,

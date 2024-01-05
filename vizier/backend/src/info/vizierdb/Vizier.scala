@@ -91,6 +91,19 @@ object Vizier
         // Read the above comment before modifying connectionTimeoutMillis please.
       )
     )
+
+    // The following initialize ScalikeJDBC's lazy variables
+    catalog.Project.columns;
+    catalog.Branch.columns;
+    catalog.Workflow.columns;
+    catalog.Cell.columns;
+    catalog.Branch.columns;
+    catalog.Artifact.columns;
+    catalog.InputArtifactRef.columns;
+    catalog.OutputArtifactRef.columns;
+    catalog.Result.columns;
+    catalog.Script.columns;
+    catalog.ScriptRevision.columns;
   }
 
   def initSpark() =

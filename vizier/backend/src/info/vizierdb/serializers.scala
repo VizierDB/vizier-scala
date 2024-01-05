@@ -230,4 +230,31 @@ object serializers
   implicit val pythonEnvironmentDescriptorFormat: Format[serialized.PythonEnvironmentDescriptor] = Json.format
   implicit val pythonEnvironmentSummaryFormat: Format[serialized.PythonEnvironmentSummary] = Json.format
   implicit val pythonSettingsSummaryFormat: Format[serialized.PythonSettingsSummary] = Json.format
+
+  implicit val vizierScriptModuleInlineFormat: Format[serialized.VizierScriptModule.Inline] = Json.format
+  implicit val vizierScriptModuleIOFormat: Format[serialized.VizierScriptModule.InputOutput] = Json.format
+  implicit val vizierScriptModuleFormat = Format[serialized.VizierScriptModule](
+    new Reads[serialized.VizierScriptModule] {
+      def reads(j: JsValue): JsResult[serialized.VizierScriptModule] =
+      {
+        (j \ "type").as[String] match {
+          case serialized.VizierScriptModule.INLINE =>
+            JsSuccess(j.as[serialized.VizierScriptModule.Inline])
+          case serialized.VizierScriptModule.INPUT_OUTPUT =>
+            JsSuccess(j.as[serialized.VizierScriptModule.InputOutput])
+          case _ => JsError()
+        }
+      }
+    },
+    new Writes[serialized.VizierScriptModule] {
+      def writes(j: serialized.VizierScriptModule): JsValue =
+      {
+        j match {
+          case v: serialized.VizierScriptModule.Inline => Json.toJson(v)
+          case v: serialized.VizierScriptModule.InputOutput => Json.toJson(v)
+        }
+      }
+    }
+  )
+  implicit val vizierScriptFormat: Format[serialized.VizierScript] = Json.format
 }

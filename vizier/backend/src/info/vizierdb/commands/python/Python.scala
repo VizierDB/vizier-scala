@@ -90,7 +90,7 @@ object Python extends Command
     python.send("script", 
       "script" -> JsString(script), 
       "artifacts" -> 
-        JsObject(context.scope.mapValues { artifact => 
+        JsObject(context.artifacts(registerInput = false).mapValues { artifact => 
           Json.obj(
             "type" -> artifact.t.toString(),
             "mimeType" -> artifact.mimeType,
@@ -227,7 +227,14 @@ object Python extends Command
                   handler(Some(existingDs.id), Some(existingDs.datasetSchema)) 
                 }
             }
-
+          case "vizier_script" => 
+            {
+              context.runScript(
+                name = (event\"script").as[String],
+                inputs = (event\"inputs").as[Map[String, String]],
+                outputs = (event\"outputs").as[Map[String, String]],
+              )
+            }
           case "create_dataset" => 
             {
               val artifact = 

@@ -65,6 +65,11 @@ package object implicits {
   
   implicit def wrapRx[A, B](r: Rx[(A, B)])(implicit ctx: Ctx.Owner): RxWrapper[A, B] =
     new RxWrapper[A, B](r)
+
+  // If you feel the urge to add an implicit .render for ScalaTags, 
+  // see commit note: d9b8c0ce4d2eef1617bfef7c381c8edd1ed90e4e
+  // TL;DR: implicit .render leads to unexpected semantics.  We prefer explicit
+
 }
 
 

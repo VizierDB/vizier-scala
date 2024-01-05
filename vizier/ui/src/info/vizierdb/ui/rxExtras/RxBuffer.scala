@@ -14,7 +14,7 @@
  * -- copyright-header:end -- */
 package info.vizierdb.ui.rxExtras
 
-import rx.Var
+import rx._
 import scala.collection.mutable
 import info.vizierdb.util.Logging
 
@@ -143,14 +143,30 @@ abstract class RxBufferBase[A,B]
     return handler
   }
 
-  def asVar: Var[Seq[B]] = 
-  {
-    val data = Var[Seq[B]](elements.toSeq)
-    deliverUpdatesTo(new RxBufferTrigger[B] {
-      def onBufferChange(): Unit = { data() = elements.toSeq }
-    })
-    return data
-  }
+  /**
+   * Obtain a variable reference to the sequence as a whole. 
+   * 
+   * This is not usually recommended, as it usually leads to O(N) code.
+   * 
+   * The variable is instantiated lazily to avoid unnecessary triggers.
+   * 
+   * The extra int field is necessary for rather dumb reasons: Buffer.toSeq will (sometimes)
+   * return an object that Rx thinks is the same value.  I *think* this might be Rx checking
+   * the pointer id of the object, and Buffer implements a no-copy or a CoW toSeq operation.
+   * 
+   * Either way, it means that if the Var includes only the Seq, then updates will not 
+   * propagate.  Adding an iteration id forces propagation.
+   */
+  lazy val asVar: Rx[(Int, Seq[B])] = 
+    {
+      val data = Var[(Int, Seq[B])]((0, elements.toSeq))
+      deliverUpdatesTo(new RxBufferTrigger[B] {
+        def onBufferChange(): Unit = { 
+          data() = (data.now._1 + 1, elements.toSeq)
+        }
+      })
+      /* return */ data
+    }
 }
 
 trait RxBufferWatcher[A]
