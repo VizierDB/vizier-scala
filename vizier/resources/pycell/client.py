@@ -520,12 +520,20 @@ class VizierDBClient(object):
                  script: str,
                  inputs: Dict[str, str] = {},
                  outputs: Dict[str, str] = {}) -> None:
-    self.vizier_request("vizier_script",
+    response = self.vizier_request("vizier_script",
       script=script,
       inputs=inputs,
       outputs=outputs,
-      has_response=False,
+      has_response=True,
     )
+    assert response is not None
+    for key in response["outputs"]:
+      self.artifacts[key] = Artifact(
+        name=key,
+        artifact_type=response["outputs"][key]["type"],
+        artifact_id=response["outputs"][key]["artifactId"],
+        mime_type=response["outputs"][key]["mimeType"]
+      )
 
   def show(self,
            value: Any,

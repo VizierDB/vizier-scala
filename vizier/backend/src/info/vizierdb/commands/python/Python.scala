@@ -229,10 +229,24 @@ object Python extends Command
             }
           case "vizier_script" => 
             {
+              val inputs = (event\"inputs").as[Map[String, String]]
+              val outputs = (event\"outputs").as[Map[String, String]]
               context.runScript(
                 name = (event\"script").as[String],
-                inputs = (event\"inputs").as[Map[String, String]],
-                outputs = (event\"outputs").as[Map[String, String]],
+                inputs = inputs,
+                outputs = outputs,
+              )
+              python.send("script_datasets",
+                "outputs" -> JsObject(
+                  outputs.map { case (scriptName, myName) =>
+                    val artifact = context.artifact(myName, registerInput = false).get
+                    myName -> Json.obj(
+                      "type" -> artifact.t.toString(),
+                      "mimeType" -> artifact.mimeType,
+                      "artifactId" -> artifact.id
+                    )
+                  }.toMap
+                )
               )
             }
           case "create_dataset" => 

@@ -738,7 +738,7 @@ class ExecutionContext(
         workflow = workflow,
         cell = cell,
         module = module,
-        stdout = stdout,
+        stdout = (_, _) => (), //disable output
         stderr = stderr,
         subId = Some(subId)
       )
@@ -769,10 +769,11 @@ class ExecutionContext(
                       subcontext.error(s"Command ${spec.command.packageId}.${spec.command.commandId} does not exist")
                       throw new VizierException("Module does not exist")
                     }
-            val arguments = Arguments(
-              serialized.CommandArgumentList.toMap(spec.command.arguments),
-              command.parameters
-            )
+            val arguments = 
+              Arguments(
+                command.argumentsFromPropertyList(spec.command.arguments).as[Map[String,JsValue]],
+                command.parameters
+              )
             val argumentErrors = arguments.validate
             if(!argumentErrors.isEmpty){
               val msg = "Error in module arguments:\n"+argumentErrors.mkString("\n")

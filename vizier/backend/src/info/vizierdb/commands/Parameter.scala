@@ -403,7 +403,7 @@ case class ListParameter(
     else { 
       j.as[Seq[JsValue]].flatMap { elem => 
         if(!elem.isInstanceOf[JsObject]) { 
-          return Some("Expected list elements in $name to be objects, but $elem isn't.") 
+          return Some(s"Expected list elements in $name to be objects, but $elem isn't.") 
         }
         zipParameters(elem.as[Map[String, JsValue]])
           .flatMap { case (component, v) => 
