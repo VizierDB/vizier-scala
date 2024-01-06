@@ -22,10 +22,17 @@ import info.vizierdb.api.response.RawJsonResponse
 import info.vizierdb.api.handler.DeterministicHandler
 import info.vizierdb.serialized
 import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.catalog.Script
 
 object ListScripts
 {
-  def apply(): Seq[serialized.VizierScript] =
-    ???
+  def apply(): serialized.VizierScriptList =
+  {
+    serialized.VizierScriptList(
+      CatalogDB.withDBReadOnly { implicit s => 
+        Script.list
+      }
+    )
+  }
 }
 

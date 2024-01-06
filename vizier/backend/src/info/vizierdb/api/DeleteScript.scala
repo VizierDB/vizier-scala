@@ -12,24 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.ui.roots
+package info.vizierdb.api
 
-import org.scalajs.dom.document
-import rx._
-import info.vizierdb.ui.rxExtras.OnMount
-import info.vizierdb.util.Logging
-import org.scalajs.dom
-import info.vizierdb.ui.components.ProjectListView
+import scalikejdbc.DB
+import play.api.libs.json._
+import info.vizierdb.catalog.Project
+import info.vizierdb.api.response._
+import info.vizierdb.api.response.RawJsonResponse
+import info.vizierdb.api.handler.DeterministicHandler
+import info.vizierdb.serialized
+import info.vizierdb.catalog.CatalogDB
+import info.vizierdb.catalog.Script
+import info.vizierdb.api.response._
 
-object ProjectList
-  extends Logging
+object DeleteScript
 {
-  def apply(arguments: Map[String, String])(implicit owner: Ctx.Owner): Unit =
+  def apply(scriptId: String): Response =
   {
-    val projectList = new ProjectListView()
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      document.body.appendChild( projectList.root )
-      OnMount.trigger(document.body)
-    })
+    CatalogDB.withDB { implicit s => 
+      Script.delete(scriptId.toLong)
+    }
+    return NoContentResponse()
   }
 }
+

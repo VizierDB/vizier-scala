@@ -2,6 +2,9 @@
 
 cd `dirname $0`/..
 
+# Fix Copyrights
+python3 scripts/fix_copyrights.py
+
 export SONATYPE_USERNAME="$(
   pass sonatype.org |
     grep '^login:' |

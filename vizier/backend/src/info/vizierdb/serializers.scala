@@ -257,4 +257,6 @@ object serializers
     }
   )
   implicit val vizierScriptFormat: Format[serialized.VizierScript] = Json.format
+  implicit val vizierScriptSummaryFormat: Format[serialized.VizierScriptSummary] = Json.format
+  implicit val vizierScriptListFormat: Format[serialized.VizierScriptList] = Json.format
 }

@@ -196,6 +196,13 @@ $cell_menu_width: 28px;
     margin-top: 8px;
     margin-bottom: 8px;
     
+    h2
+    {
+      width: 100%;
+      text-align: center;
+      text-decoration: underline;
+    }
+
     .project_list 
     {
       list-style: none;

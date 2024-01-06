@@ -20,6 +20,20 @@ import play.api.libs.json.Format
 import play.api.libs.json.Json
 import info.vizierdb.types
 
+case class VizierScriptList(
+  scripts: Seq[VizierScriptSummary]
+)
+
+case class VizierScriptSummary(
+  id: Identifier,
+  version: Long,
+  name: String,
+  projectId: Identifier,
+  branchId: Identifier,
+  workflowId: Identifier,
+)
+
+
 case class VizierScript(
   id: Identifier,
   version: Long,

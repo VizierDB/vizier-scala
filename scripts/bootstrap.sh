@@ -1,4 +1,4 @@
-ARTIFACT=info.vizierdb:vizier_2.12:2.0.0-rc2 
+ARTIFACT=info.vizierdb:vizier_2.12:2.1.0-b3
 
 coursier bootstrap $ARTIFACT\
   -r https://s01.oss.sonatype.org/content/groups/public/ \

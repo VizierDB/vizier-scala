@@ -32,7 +32,6 @@ import info.vizierdb.ui.components.dataset.TableView
 import info.vizierdb.ui.components.DisplayArtifact
 import info.vizierdb.ui.components.MenuBar
 import info.vizierdb.ui.components.Project
-import info.vizierdb.ui.components.ProjectListView
 import info.vizierdb.ui.components.settings.SettingsView
 import info.vizierdb.ui.components.StaticWorkflow
 import info.vizierdb.ui.network.{ API, ClientURLs, BranchSubscription, SpreadsheetClient }
@@ -104,7 +103,7 @@ object Vizier
   def projectView(): Unit    = roots.ProjectView(arguments = arguments)
 
   @JSExport("project_list")
-  def projectList(): Unit    = roots.ProjectList(arguments = arguments)
+  def projectList(): Unit    = roots.LandingPage(arguments = arguments)
 
   @JSExport("spreadsheet")
   def spreadsheet(): Unit    = roots.Spreadsheet(arguments = arguments)

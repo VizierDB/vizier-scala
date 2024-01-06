@@ -54,7 +54,8 @@ object ScriptRevision
 case class Script(
   id: Identifier,
   name: String,
-  headVersion: Identifier
+  headVersion: Identifier,
+  deleted: Boolean
 )
 {
   def head(implicit session:DBSession): ScriptRevision = 
@@ -110,6 +111,8 @@ case class Script(
 
     return (copy(headVersion = cleanForInsert.version), cleanForInsert)
   }
+  def delete(implicit session: DBSession): Unit =
+    Script.delete(id)
 }
 
 object Script
@@ -126,11 +129,13 @@ object Script
           insertInto(Script)
             .namedValues(
               s.name -> name,
-              s.headVersion -> -1
+              s.headVersion -> -1,
+              s.deleted -> false
             )
         }.updateAndReturnGeneratedKey.apply(),
       name = name,
-      headVersion = -1
+      headVersion = -1,
+      deleted = false
     )
   }
 
@@ -156,14 +161,38 @@ object Script
     }.map { apply(_) }.list.apply()
   }
 
-  def all(implicit session: DBSession): Seq[Script] =
+  def list(implicit session: DBSession): Seq[serialized.VizierScriptSummary] =
   {
     withSQL {
       val s = Script.syntax 
-      select
+      val sr = ScriptRevision.syntax
+      select(s.id, s.name, s.headVersion, sr.projectId, sr.branchId, sr.workflowId)
         .from(Script as s)
-    }.map { apply(_) }.list.apply()
+        .join(ScriptRevision as sr)
+        .where.eq(s.id, sr.scriptId)
+          .and.eq(s.headVersion, sr.version)
+          .and.eq(s.deleted, false)
+    }.map { r =>
+      serialized.VizierScriptSummary(
+        id = r.long(1),
+        name = r.string(2),
+        version = r.long(3),
+        projectId = r.long(4),
+        branchId = r.long(5),
+        workflowId = r.long(6)
+      )
+    }.list.apply()
   }
+
+  def delete(id: Identifier)(implicit session: DBSession): Unit =
+    withSQL {
+      val s = Script.column
+      update(Script)
+        .set(
+          s.deleted -> true
+        )
+        .where.eq(s.id, id)
+    }.update.apply()
 
   def getHead(target: Identifier)(implicit session: DBSession): (Script, ScriptRevision) =
     getHeadOption(target).get

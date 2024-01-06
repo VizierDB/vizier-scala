@@ -183,36 +183,40 @@ class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
   def save(): Unit =
   {
     savingStatus() = Some(Spinner(8).render)
-    if(script.id < 0){
-      Vizier.api.scriptCreateScript(
-        name = nameInput.value,
-        projectId = script.projectId.toString,
-        branchId = script.branchId.toString,
-        workflowId = script.workflowId.toString,
-        modules = getModules
-      )
-    } else {
-      Vizier.api.scriptUpdateScript(
-        scriptId = script.id.toString,
-        name = nameInput.value,
-        projectId = script.projectId.toString,
-        branchId = script.branchId.toString,
-        workflowId = script.workflowId.toString,
-        modules = getModules
-      )
-    }.onComplete { 
-        case Success(newScript) => 
-          scriptId = newScript.id
-          scriptName() = newScript.name
-          scriptVersion() = newScript.version.toString
-          BrowserLocation.replaceQuery("script" -> scriptId.toString)
-          savingStatus() = Some(FontAwesome("check").render)
-          dom.window.setTimeout( { () => savingStatus() = None }, 2000 )
+    // There's some sort of dumb GC that triggers if `ret` is not a variable.  
+    // Do not try to inline it and the subsequent onComplete.
+    val ret: Future[VizierScript] = 
+      if(script.id < 0){
+        Vizier.api.scriptCreateScript(
+          name = nameInput.value,
+          projectId = script.projectId.toString,
+          branchId = script.branchId.toString,
+          workflowId = script.workflowId.toString,
+          modules = getModules
+        )
+      } else {
+        Vizier.api.scriptUpdateScript(
+          scriptId = script.id.toString,
+          name = nameInput.value,
+          projectId = script.projectId.toString,
+          branchId = script.branchId.toString,
+          workflowId = script.workflowId.toString,
+          modules = getModules
+        )
+      }
+    ret.onComplete { 
+      case Success(newScript) => 
+        scriptId = newScript.id
+        scriptName() = newScript.name
+        scriptVersion() = newScript.version.toString
+        savingStatus() = Some(FontAwesome("check").render)
+        dom.window.setTimeout( { () => savingStatus() = None }, 2000 )
+        BrowserLocation.replaceQuery("script" -> scriptId.toString)
 
-        case Failure(err) => 
-          savingStatus() = Some(FontAwesome("times").render)
-          dom.window.setTimeout( { () => savingStatus() = None }, 2000 )
-          Vizier.error(err.getMessage())
+      case Failure(err) => 
+        savingStatus() = Some(FontAwesome("times").render)
+        dom.window.setTimeout( { () => savingStatus() = None }, 2000 )
+        Vizier.error(err.getMessage())
     }
   }
 

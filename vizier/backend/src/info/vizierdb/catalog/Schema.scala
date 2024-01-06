@@ -278,6 +278,7 @@ object Schema
                                                                 isAutoIncrement = true),
         Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true),
         Column("head_version",    SQL.INTEGER,  "integer",      isRequired = true),
+        Column("deleted",         SQL.BOOLEAN,  "boolean",      isRequired = true),
       )
     )),
     CreateTableMigration(Table(

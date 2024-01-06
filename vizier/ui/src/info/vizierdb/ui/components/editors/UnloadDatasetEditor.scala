@@ -160,18 +160,20 @@ class UnloadDatasetEditor(
 
   override val editorFields: Frag =
     div(`class` := "module editable unload_dataset",
-      dataset.root,
-      div(`class` := "format_field", 
-        label("Format: ", `for` := "file_format"),
-        format
-      ),
-      Rx { 
-        activeFormat() match {
-          case "publish_local" => publishName.root
-          case _ => publishUrl.root
-        }
-      }.reactive,
-      sparkOptions.root
+      div(
+        dataset.root,
+        div(`class` := "format_field", 
+          label("Format: ", `for` := "file_format"),
+          format
+        ),
+        Rx { 
+          activeFormat() match {
+            case "publish_local" => publishName.root
+            case _ => publishUrl.root
+          }
+        }.reactive,
+        sparkOptions.root
+      )
     )
 
 
