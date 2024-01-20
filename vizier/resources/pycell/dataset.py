@@ -738,28 +738,38 @@ def export_from_native_type(value: Any, data_type: str, context="the value") -> 
     return value
 
 
-TYPE_MAPPINGS = [
-  (datetime.date, [DATATYPE_DATE]),
-  (datetime.datetime, [DATATYPE_DATETIME]),
-  (int, [DATATYPE_INT, DATATYPE_SHORT, DATATYPE_LONG]),
-  (float, [DATATYPE_REAL]),
-  (str, [DATATYPE_VARCHAR]),
-  (bytes, [DATATYPE_BINARY]),
-]
-
-PYTHON_TO_VIZIER_TYPES = {p: tlist[0] for (p, tlist) in TYPE_MAPPINGS}
-VIZIER_TO_PYTHON_TYPES = {t: p for (p, tlist) in TYPE_MAPPINGS for t in tlist}
+PYTHON_TO_VIZIER_TYPES = {
+  datetime.date: [DATATYPE_DATE],
+  datetime.datetime: [DATATYPE_DATETIME],
+  int: [DATATYPE_INT, DATATYPE_SHORT, DATATYPE_LONG, DATATYPE_REAL],
+  float: [DATATYPE_REAL],
+  str: [DATATYPE_VARCHAR],
+  bytes: [DATATYPE_BINARY],
+}
+VIZIER_TYPES = set(
+  v
+  for p in PYTHON_TO_VIZIER_TYPES
+  for v in PYTHON_TO_VIZIER_TYPES[p]
+)
+VIZIER_TO_PYTHON_TYPES = {
+  v: [
+    p
+    for p in PYTHON_TO_VIZIER_TYPES
+    if v in PYTHON_TO_VIZIER_TYPES[p]
+  ]
+  for v in VIZIER_TYPES
+}
 
 
 def assert_type(value: Any, data_type: str, context="the value") -> Any:
   if value is None:
     return value
   elif data_type in VIZIER_TO_PYTHON_TYPES:
-    python_type = VIZIER_TO_PYTHON_TYPES[data_type]
-    if isinstance(value, python_type):
-      return value
-    else:
-      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a {data_type}")
+    valid_python_types = VIZIER_TO_PYTHON_TYPES[data_type]
+    for python_type in valid_python_types:
+      if isinstance(value, python_type):
+        return value
+    raise ValueError(f"{context} ({value}) is a {type(value)} but should be a {data_type}")
     # Special-case handling for Geometry types
   elif data_type == DATATYPE_IMAGE:
     from PIL.Image import Image
