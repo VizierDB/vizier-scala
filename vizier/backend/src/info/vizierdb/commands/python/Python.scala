@@ -29,6 +29,7 @@ import info.vizierdb.catalog.ArtifactRef
 import info.vizierdb.spark.vizual.{ VizualCommand, VizualScriptConstructor }
 import info.vizierdb.spark.caveats.QueryWithCaveats
 import info.vizierdb.util.ExperimentalOptions
+import info.vizierdb.util.JsonUtils
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.serialized
@@ -346,15 +347,26 @@ object Python extends Command
             python.kill()
         }
       } catch {
+        case m:UnsupportedOperationException => 
+          {
+            context.error(m.getMessage())
+            python.kill()
+          }
+
+        case j:JsResultException =>
+          {
+            context.error(s"INTERNAL ERROR: $j")
+            for(i <- JsonUtils.prettyJsonParseError(j))
+            {
+              System.err.println(i)
+            }
+            j.printStackTrace()
+            python.kill()
+          }
+
         case e: Exception => 
           {
-            e match {
-              case m:UnsupportedOperationException => 
-                context.error(m.getMessage())
-              case _ => 
-                e.printStackTrace()
-                context.error(s"INTERNAL ERROR: $e")
-            }
+            e.printStackTrace()
             python.kill()
           }
       }
