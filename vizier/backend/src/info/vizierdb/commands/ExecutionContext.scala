@@ -726,7 +726,8 @@ class ExecutionContext(
     script: Script, 
     revision: ScriptRevision,
     inputs: Map[String, String], 
-    outputs: Map[String, String]
+    outputs: Map[String, String],
+    quiet: Boolean = true
   ): Long =
   {
     val subId = nextScriptId
@@ -738,7 +739,7 @@ class ExecutionContext(
         workflow = workflow,
         cell = cell,
         module = module,
-        stdout = (_, _) => (), //disable output
+        stdout = if(quiet) { (_, _) => () } else { stdout }, //disable output
         stderr = stderr,
         subId = Some(subId)
       )

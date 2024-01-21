@@ -285,7 +285,7 @@ class VizierDBClient(object):
                      name: str,
                      dataset: DatasetClient,
                      backend_options: List[Tuple[str, str]] = [],
-                     use_deltas: bool = True
+                     use_deltas: bool = False
                      ) -> None:
     """Save a new dataset in Vizier with given name.
 
@@ -320,7 +320,7 @@ class VizierDBClient(object):
   def update_dataset(self,
                      name: str,
                      dataset: DatasetClient,
-                     use_deltas: bool = True
+                     use_deltas: bool = False
                      ) -> DatasetClient:
     """Update a given dataset.
 
@@ -519,11 +519,14 @@ class VizierDBClient(object):
   def run_script(self,
                  script: str,
                  inputs: Dict[str, str] = {},
-                 outputs: Dict[str, str] = {}) -> None:
+                 outputs: Dict[str, str] = {},
+                 passthrough_messages: bool = False
+                 ) -> None:
     response = self.vizier_request("vizier_script",
       script=script,
       inputs=inputs,
       outputs=outputs,
+      quiet=not passthrough_messages,
       has_response=True,
     )
     assert response is not None

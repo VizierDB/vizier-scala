@@ -231,6 +231,7 @@ object Python extends Command
             {
               val inputs = (event\"inputs").as[Map[String, String]]
               val outputs = (event\"outputs").as[Map[String, String]]
+              val quiet = (event\"quiet").asOpt[Boolean].getOrElse(true)
               context.runScript(
                 name = (event\"script").as[String],
                 inputs = inputs,
