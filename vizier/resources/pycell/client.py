@@ -528,12 +528,17 @@ class VizierDBClient(object):
     )
     assert response is not None
     for key in response["outputs"]:
+      self.invalidate_cache(key)
       self.artifacts[key] = Artifact(
         name=key,
         artifact_type=response["outputs"][key]["type"],
         artifact_id=response["outputs"][key]["artifactId"],
         mime_type=response["outputs"][key]["mimeType"]
       )
+
+  def invalidate_cache(self, artifact: str) -> None:
+    if artifact in self.datasets:
+      del self.datasets[artifact]
 
   def show(self,
            value: Any,
