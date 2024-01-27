@@ -571,10 +571,16 @@ class VizierDBClient(object):
         vizier_bokeh_show(value, None, None)
         return
       elif issubclass(type(value), MatplotlibFigure):
-        value = vizier_matplotlib_render(value)
+        import matplotlib
+        fig = value
+        value = vizier_matplotlib_render(fig)
+        matplotlib.pyplot.close(fig)
         mime_type = OUTPUT_HTML
       elif issubclass(type(value), MatplotlibAxes):
+        import matplotlib
+        fig = value.get_figure()
         value = vizier_matplotlib_render(value.get_figure())
+        matplotlib.pyplot.close(fig)
         mime_type = OUTPUT_HTML
       elif issubclass(type(value), list):
         for i in value:
