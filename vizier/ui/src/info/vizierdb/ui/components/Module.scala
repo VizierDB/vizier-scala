@@ -257,6 +257,18 @@ class Module(val subscription: ModuleSubscription)
             onclick := { _:dom.Event => subscription.delete(); }
           ).render
         ),
+        PopUpButton(
+          button(
+            `class` := "to_confirm",
+            FontAwesome("refresh"), 
+            Tooltip("Re-run this cell")
+          ).render,
+          button(
+            `class` := "confirm",
+            FontAwesome("check"),
+            onclick := { _:dom.Event => subscription.reRunModule(); }
+          ).render
+        ),
         div(`class` := "spacer")
       )} else { Seq.empty }:Seq[Frag]
     ),

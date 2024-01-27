@@ -113,4 +113,17 @@ class ModuleSubscription(
    */
   def thawUpto(): Unit = client.workflowThawUpto(position.now)
 
+  /**
+   * Rerun the present cell
+   */
+  def reRunModule(): Unit = 
+  {
+    client.workflowReplace(
+      modulePosition = position.now,
+      packageId = packageId,
+      commandId = commandId,
+      arguments = arguments.now
+    )
+  }
+
 }
