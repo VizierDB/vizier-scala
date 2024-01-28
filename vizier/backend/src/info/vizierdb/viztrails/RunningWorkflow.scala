@@ -62,7 +62,7 @@ class RunningWorkflow(workflow: Workflow, val classloader: ClassLoader)
 
   def exec: Boolean =
   {
-    ClassLoaderUtils.withContextClassloader[Boolean](classloader){
+    ClassLoaderUtils.withContextClassLoader[Boolean](classloader){
       val ret = 
         try { 
           logger.info(s"Starting execution of Workflow ${workflow.id}")

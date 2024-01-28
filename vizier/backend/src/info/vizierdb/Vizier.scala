@@ -159,6 +159,15 @@ object Vizier
     }
   }
 
+  def loadPlugins(plugins: Seq[File]): Unit =
+  {
+    for(p <- plugins){ 
+      println(s"  ...loading plugin $p")
+      val plugin = Plugin.load(p)
+      println(s"    ...loaded ${plugin.name}")
+    }
+  }
+
   def setWorkingDirectory(): Unit =
   {
     if(config.workingDirectory.isDefined){
@@ -199,6 +208,12 @@ object Vizier
     // Set up Spark/Mimir/etc...
     println("Starting Spark...")
     initSpark()
+
+    // Set up plugins
+    if(!config.plugins.isEmpty){
+      println("Loading plugins...")
+      loadPlugins(config.plugins)
+    }
 
     config.subcommand match {
       //////////////// HANDLE SPECIAL COMMANDS //////////////////

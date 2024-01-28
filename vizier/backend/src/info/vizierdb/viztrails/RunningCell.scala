@@ -80,7 +80,7 @@ class RunningCell(
 
   def exec(): Boolean =
   {
-    ClassLoaderUtils.withContextClassloader(workflowTask.classloader) {
+    ClassLoaderUtils.withContextClassLoader(workflowTask.classloader) {
       try {
         processSynchronously match {
           case _ if aborted.get => 

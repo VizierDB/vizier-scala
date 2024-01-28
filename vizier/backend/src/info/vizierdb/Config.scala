@@ -137,6 +137,16 @@ class Config(arguments: Seq[String])
     descr = "Set the SparkSQL warehouse directory (default: {cache-dir}/spark-warehouse)"
   )
 
+  val extraPlugins = opt[List[File]]("plugin",
+    short = 'P',
+    descr = "Enable a plugin for this session"
+  )
+
+  lazy val plugins:Seq[File] = 
+    Option(defaults.getProperty("vizier-plugins"))
+        .map { _.split(":").map { new File(_) }.toSeq }
+        .getOrElse { Seq() } ++ extraPlugins()
+
   def workingDirectoryFile: File = 
     new File(
       workingDirectory
