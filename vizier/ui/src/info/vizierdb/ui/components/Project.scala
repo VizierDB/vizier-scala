@@ -43,7 +43,7 @@ class Project(val projectId: Identifier, autosubscribe: Boolean = true)
                 .getOrElse { "Untitled Project" } }
   val branches = Var[Map[Identifier, serialized.BranchSummary]](Map.empty)
   val activeBranch = Var[Option[Identifier]](None)
-  val activeBranchName = Rx {
+  val activeBranchName: Rx[String] = Rx {
     activeBranch() match {
       case None => "Unknown Branch"
       case Some(id) => branches().get(id)

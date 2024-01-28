@@ -84,6 +84,13 @@ object Vizier
        .toMap
 
   val project = Var[Option[Project]](None)
+
+  Rx {
+    "Vizier" + project().map { project =>
+      ": " + project.projectName() + " ["+ project.activeBranchName() + "]"
+    }.getOrElse("")
+  }.trigger { document.title = _ }
+
   val menu = project.map { _.map { new MenuBar(_) } }
 
   def error(message: String) =
