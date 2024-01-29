@@ -85,10 +85,14 @@ object InitSpark
     // Force materialization
     session.sharedState.externalCatalog
 
-    // Reset old classloader
-    Thread.currentThread().setContextClassLoader(originalClassloader)
+    // TODO: In principle, we should be able to avoid the workaround above by
+    // adding the Vizier URL to the session.sharedState.jarClassLoader (which is,
+    // by design, mutable).  
 
-    // end workaround
+    // Since plugins are making use of it, we're going to make sure we use Spark's 
+    // classloader as the canonical classloader moving forward.
+    Thread.currentThread().setContextClassLoader(session.sharedState.jarClassLoader)
+    Vizier.mainClassLoader = session.sharedState.jarClassLoader
 
     return session
   }

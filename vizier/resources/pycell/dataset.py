@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 import datetime
 import io
+import math
 from bokeh.models.sources import ColumnDataSource  # type: ignore[import]
 
 """Identifier for column data types. By now the following data types are
@@ -705,10 +706,12 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
     import base64
     with io.BytesIO(base64.b64decode(value.encode('utf-8'))) as f:
       return Image.open(f)
-  elif data_type in ["string", "varchar", "int", "float", "double", "long", "real"]:
+  elif data_type in ["double", "float", "real"]:
+    return float(value)
+  elif data_type in ["string", "varchar", "int", "long"]:
     return value
   else:
-    print("Unknown type: "+data_type)
+    #print("Unknown type: "+data_type)
     return value
 
 
@@ -734,6 +737,13 @@ def export_from_native_type(value: Any, data_type: str, context="the value") -> 
     return value
   elif data_type == DATATYPE_DATETIME or data_type == DATATYPE_DATE:
     return value.isoformat()
+  elif data_type in ["double", "float", "real"]:
+    if value == math.inf:
+      return "infinity"
+    elif value == -math.inf:
+      return "-infinity"
+    else:
+      return value
   else:
     return value
 

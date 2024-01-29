@@ -140,7 +140,7 @@ object Python extends Command
               // each message object already gets a free newline, so trim here
               case "stderr" => {
                 logger.warn( (event\"content").as[String].trim() )
-                context.error( (event\"content").as[String].trim() )
+                context.warn( (event\"content").as[String].trim() )
               }
               case x => context.error(s"Received message on unknown stream '$x'")
             }

@@ -53,6 +53,7 @@ import info.vizierdb.api.BrowseFilesystem
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.api.akka.VizierServer
 import info.vizierdb.catalog.Metadata
+import info.vizierdb.viztrails.Scheduler
 
 object Vizier
   extends LazyLogging
@@ -60,6 +61,8 @@ object Vizier
   var config: Config = null
   var sparkSession: SparkSession = null
   var urls: VizierURLs = null
+  var mainClassLoader: ClassLoader = 
+      Thread.currentThread().getContextClassLoader()
 
   def initSQLite(db: String = "Vizier.db") = 
   {
@@ -209,6 +212,13 @@ object Vizier
     println("Starting Spark...")
     initSpark()
 
+    // Configure systemwide URLS
+    urls = new VizierURLs(
+      ui = new URL(VizierServer.publicURL),
+      base = new URL(s"${VizierServer.publicURL}vizier-db/api/v1/"),
+      api = Some(new URL(s"${VizierServer.publicURL}swagger/index.html"))
+    )
+
     // Set up plugins
     if(!config.plugins.isEmpty){
       println("Loading plugins...")
@@ -222,15 +232,22 @@ object Vizier
         //////////////////// Ingest ////////////////////
         if(subcommand.equals(config.ingest)){
           try {
-            Streams.closeAfter(new FileInputStream(config.ingest.file())) { 
+            val filePath = 
+              config.resolveToWorkingDir(config.ingest.file())
+            Streams.closeAfter(new FileInputStream(filePath)) { 
               ImportProject(
                 _,
                 execute = config.ingest.execute()
               )
             }
+            println("Import complete.  Waiting for execution to finish...")
+            Scheduler.joinAll()
+            println("  ... import complete.")
+            System.exit(0)
           } catch {
             case e:VizierException => 
               println(s"\nError: ${e.getMessage()}")
+              System.exit(-1)
           }
         //////////////////// Export ////////////////////
         } else if (subcommand.equals(config.export)){
@@ -332,12 +349,6 @@ object Vizier
       case None => 
         println("Starting server...")
         VizierServer.run()
-
-        urls = new VizierURLs(
-          ui = new URL(VizierServer.publicURL),
-          base = new URL(s"${VizierServer.publicURL}vizier-db/api/v1/"),
-          api = Some(new URL(s"${VizierServer.publicURL}swagger/index.html"))
-        )
 
         if(!config.serverMode.getOrElse(false)){
           // Disable local filesystem browsing if running in server

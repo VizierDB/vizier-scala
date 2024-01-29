@@ -517,6 +517,16 @@ class ExecutionContext(
   }
 
   /**
+   * Record that this execution has a potential problem
+   * 
+   * @param   message         The warning message to communicate to the user
+   */
+  def warn(message: String)
+  {
+    stderr(message)
+  }
+
+  /**
    * Communicate a message to the end-user.
    * 
    * @param   content         The text message to communicate to the user

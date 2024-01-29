@@ -38,26 +38,30 @@ object Plugin
               .toFile 
       }
 
+
     if(!jar.exists()){ throw new FileNotFoundException(jar.getAbsoluteFile.toString) }
     val url = jar.getAbsoluteFile().toURI().toURL()
 
-    // It feels like a bit of a hack to just stack plugins onto the currently running
-    // ClassLoader... but this seems to be the only way to make the loaded classes visible
-    // to the running spark instance.
-    val loader = new URLClassLoader(
+
+    // This classloader is used only to load the vizier-plugin.json file.  
+    // and then discarded    
+    val preloader = new URLClassLoader(
       Array(jar.toURI.toURL),
-      Thread.currentThread().getContextClassLoader()
+      Vizier.mainClassLoader
     )
-    Thread.currentThread().setContextClassLoader(loader)
 
     val plugin = 
       Json.parse(
-        loader.getResourceAsStream("vizier-plugin.json")
+        preloader.getResourceAsStream("vizier-plugin.json")
       ).asOpt[Plugin]
        .getOrElse { 
           throw new RuntimeException(s"$jar is not a valid Vizier Plugin")
        }
  
+    Vizier.sparkSession.sparkContext.addJar(jar.getAbsoluteFile().toString)
+    val loader = Vizier.sparkSession.sharedState.jarClassLoader
+    loader.addURL(url)
+
     val detail = s"${plugin.name} [$jar]"
 
     assert(

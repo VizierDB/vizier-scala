@@ -151,7 +151,7 @@ object SparkPrimitive
       case (_, null)                   => JsNull
       case (StringType, _)             => JsString(k.toString)
       case (BinaryType, _)             => JsString(base64Encode(k.asInstanceOf[Array[Byte]]))
-      case (_:UserDefinedType[_], _)     => 
+      case (ut:UserDefinedType[_], _)     => 
       {
         // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
         // so we need to do a manual comparison here.
@@ -175,6 +175,8 @@ object SparkPrimitive
                 MLVector(false, 0, Seq(), values)
             }
           )
+        } else if(!ut.sqlType.isInstanceOf[UserDefinedType[_]]){
+          encode(ut.asInstanceOf[UserDefinedType[Any]].serialize(k), ut.sqlType)
         } else {
           throw new VizierException(s"Unsupported UDT: $t (${t.getClass().getName()}")
         }
@@ -188,7 +190,11 @@ object SparkPrimitive
                                             "days"         -> k.asInstanceOf[CalendarInterval].days,
                                             "microseconds" -> k.asInstanceOf[CalendarInterval].microseconds
                                           )
+      case (DoubleType,_) if k.asInstanceOf[Double].isInfinite
+                                       => JsString( (if(k.asInstanceOf[Double] < 0){ "-" } else { "" }) + "infinity" )
       case (DoubleType,_)              => JsNumber(k.asInstanceOf[Double])
+      case (FloatType,_) if k.asInstanceOf[Float].isInfinite
+                                       => JsString( (if(k.asInstanceOf[Float] < 0){ "-" } else { "" }) + "infinity" )
       case (FloatType,_)               => JsNumber(k.asInstanceOf[Float])
       case (ByteType,_)                => JsNumber(k.asInstanceOf[Byte])
       case (IntegerType,_)             => JsNumber(k.asInstanceOf[Integer]:Int)
@@ -238,7 +244,7 @@ object SparkPrimitive
         case (_, DateType)                  => decodeDate(k.as[String])
         case (_, TimestampType)             => decodeTimestamp(k.as[String])
         case (_, BinaryType)                => base64Decode(k.as[String])
-        case (_, _:UserDefinedType[_])        => 
+        case (_, ut:UserDefinedType[_])        => 
         {
           // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
           // so we need to do a manual comparison here.
@@ -257,6 +263,8 @@ object SparkPrimitive
             } else {
               new linalg.DenseVector(v.values.toArray)
             }
+          } else if(!ut.sqlType.isInstanceOf[UserDefinedType[_]]) {
+            ut.deserialize(decode(k, ut.sqlType))
           } else {
             throw new VizierException(s"Unsupported UDT: $t (${t.getClass().getName}")
           }
@@ -272,7 +280,11 @@ object SparkPrimitive
           val fields = k.as[Map[String,JsValue]]
           new CalendarInterval(fields("months").as[Int], fields("days").as[Int], fields("microseconds").as[Int])
         }
+        case (JsString("infinity"), DoubleType)  => Double.PositiveInfinity
+        case (JsString("-infinity"), DoubleType) => Double.NegativeInfinity
         case (_, DoubleType)                => k.as[Double]
+        case (JsString("infinity"), FloatType)   => Float.PositiveInfinity
+        case (JsString("-infinity"), FloatType)  => Float.NegativeInfinity
         case (_, FloatType)                 => k.as[Float]
         case (_, ByteType)                  => k.as[Byte]
         case (_, IntegerType)               => k.as[Int]:Integer

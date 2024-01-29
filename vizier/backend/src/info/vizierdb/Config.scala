@@ -139,7 +139,8 @@ class Config(arguments: Seq[String])
 
   val extraPlugins = opt[List[File]]("plugin",
     short = 'P',
-    descr = "Enable a plugin for this session"
+    descr = "Enable a plugin for this session",
+    default = Some(List())
   )
 
   lazy val plugins:Seq[File] = 
@@ -178,7 +179,9 @@ class Config(arguments: Seq[String])
   lazy val pythonVenvDirFile = new File(cacheDirFile, "python")
 
   def resolveToDataDir(path: String) = { new File(dataDirFile, path).getAbsoluteFile }
-
+  def resolveToWorkingDir(path: File): File =
+    if(path.isAbsolute()) { path }
+    else { workingDirectoryFile.toPath.resolve(path.toPath).toFile }
 
   ////////////////////////// Ingest //////////////////////////
 

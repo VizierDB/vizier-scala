@@ -23,6 +23,7 @@ import org.apache.spark.sql.types.UDTRegistration
 import info.vizierdb.spark.udt.ImageUDT
 import org.apache.spark.mllib.linalg.VectorUDT
 import info.vizierdb.util.StringUtils
+import info.vizierdb.Vizier
 
 object SparkSchema {
   def apply(df: DataFrame): Seq[StructField] =
@@ -67,6 +68,12 @@ object SparkSchema {
 
   lazy val vectorSingleton = new VectorUDT
 
+  def loadUserDefinedType(fullyQualifiedName: String): UserDefinedType[_] =
+  {
+    val clazz = Class.forName(fullyQualifiedName, true, Vizier.mainClassLoader)
+    clazz.newInstance().asInstanceOf[UserDefinedType[_]]
+  }
+
   def decodeType(t: String): DataType =
     t match  {
       case "varchar" => StringType
@@ -81,6 +88,8 @@ object SparkSchema {
         Json.parse(t).as[DataType]
       case _ if t.startsWith("array:") => 
         ArrayType(decodeType(t.substring(6)))
+      case _ if t.startsWith("udt:") =>
+        loadUserDefinedType(t.substring(4))
       case _ => 
         DataType.fromJson("\""+t+"\"")
     }
@@ -98,6 +107,15 @@ object SparkSchema {
       case _ if t.isInstanceOf[RasterUDT] => "raster"
       case _ if t.isInstanceOf[VectorUDT] => "vector"
       case _ if t.isInstanceOf[ImageUDT] => "image/png"
+      case _ if t.isInstanceOf[UserDefinedType[_]] => 
+        {
+          // TODO: We need cleaner UDT handling.  Convention in most UDT-based systems is to 
+          // adopt a UDT object with the same name as the actual UDT.  Drop down to the base
+          // UDT if we see this
+          var udtName = t.getClass().getCanonicalName()
+          if(udtName.endsWith("$")){ udtName = udtName.dropRight(1) }
+          /* return */ "udt:"+udtName
+        }
       case _ => t.typeName
     }
 

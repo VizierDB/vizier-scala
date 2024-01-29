@@ -50,7 +50,7 @@ object Scheduler
       logger.trace(s"Allocating execution manager for ${workflow.id}")
       val executor = new RunningWorkflow(
                       workflow, 
-                      Thread.currentThread().getContextClassLoader()
+                      Vizier.mainClassLoader
                      )
       runningWorkflows.put(workflow.id, executor)
       logger.trace(s"Starting execution manager for ${workflow.id}")
@@ -137,6 +137,21 @@ object Scheduler
         logger.debug(s"Workflow complete.  Returned from block")
         cleanup(workflowId)
       }
+  }
+
+  /**
+   * Block until all running workflows have quiesced
+   */
+  def joinAll()
+  {
+    var nextWorkflowId =
+      this.synchronized { runningWorkflows.keys.headOption }
+    while(!nextWorkflowId.isEmpty)
+    {
+      joinWorkflow(nextWorkflowId.get, failIfNotRunning = false)
+      nextWorkflowId =
+        this.synchronized { runningWorkflows.keys.headOption }
+    }
   }
 }
 
