@@ -1,3 +1,17 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.spark.rowids
 
 import org.apache.spark.sql.{ SparkSession, DataFrame, Column }
@@ -19,7 +33,7 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 object AnnotateWithSequenceNumber
 {
   val ATTRIBUTE = "__MIMIR_ROW_INDEX"
-  val FIELD_TYPE = StructField(ATTRIBUTE, LongType)
+  def FIELD_TYPE(name:String) = StructField(name, LongType)
   val DEFAULT_FIRST_ROW = 0
 
   def withSequenceNumber(df: DataFrame)(op: DataFrame => DataFrame): DataFrame =
@@ -43,7 +57,7 @@ object AnnotateWithSequenceNumber
     attribute: String = ATTRIBUTE,
     offset:Long = 0
   ): DataFrame = {
-    if(df.schema.fieldNames.contains(ATTRIBUTE)){
+    if(df.schema.fieldNames.contains(attribute)){
       return df
     }
 
@@ -57,7 +71,7 @@ object AnnotateWithSequenceNumber
     new DataFrame(
       df.queryExecution.sparkSession,
       annotatedPlan,
-      RowEncoder(StructType(df.schema.fields :+ FIELD_TYPE))
+      RowEncoder(StructType(df.schema.fields :+ FIELD_TYPE(attribute)))
     )
   }
 

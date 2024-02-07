@@ -36,6 +36,7 @@ import org.apache.spark.sql.AnalysisException
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.akka.VizierServer
 import info.vizierdb.profiler.DataProfiler
+import info.vizierdb.util.ExperimentalOptions
 
 case class Artifact(
   id: Identifier,
@@ -277,11 +278,14 @@ case class Artifact(
     }
 
 
+    val computeCaveats = 
+      ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats
+
     return { () => 
       try {
         QueryWithCaveats(
           query = descriptor.construct(deps(_)),
-          includeCaveats = false,//includeCaveats,
+          includeCaveats = computeCaveats,
           limit = limit,
           offset = offset,
           computedProperties = descriptor.properties,
@@ -289,7 +293,7 @@ case class Artifact(
           columns = None
         )
       } catch {
-        case a:AnalysisException if includeCaveats => 
+        case a:AnalysisException if computeCaveats =>
           logger.debug(a.getStackTrace().map { _.toString }.mkString("\n"))
           logger.warn(s"Error applying caveats (${a.getMessage}).  Trying without.")
           QueryWithCaveats(
@@ -345,6 +349,20 @@ case class Artifact(
     assert(t.equals(ArtifactType.DATASET))
     datasetDescriptor.properties.get(name)
   }
+
+  /**
+   * Update the specified dataset property
+   * @param    name       The name of a dataset property.
+   * @param    value      The value to assign to the dataset property.
+   */
+  def updateDatasetProperties(props: (String, JsValue)*)(implicit session: DBSession): Artifact =
+  {
+    assert(t.equals(ArtifactType.DATASET))
+    replaceData(Json.toJson(
+      datasetDescriptor.withProperty(props:_*)
+    ))
+  }
+
   /**
    * Update the specified dataset property
    * @param    name       The name of a dataset property.

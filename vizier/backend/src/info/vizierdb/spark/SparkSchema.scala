@@ -1,9 +1,24 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.spark
 
 import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
+import org.apache.spark.sql.sedona_sql.UDT.RasterUDT
 import org.apache.spark.sql.types.UDTRegistration
 import info.vizierdb.spark.udt.ImageUDT
 import org.apache.spark.mllib.linalg.VectorUDT
@@ -58,6 +73,7 @@ object SparkSchema {
       case "int" => IntegerType
       case "real" => DoubleType
       case "geometry" => GeometryUDT
+      case "raster" => RasterUDT
       case "vector" => vectorSingleton
       case "binary" => BinaryType
       case "image/png" => ImageUDT
@@ -79,6 +95,7 @@ object SparkSchema {
         // any subclass of UserDefinedType seems to match any other
         // subclass of the same.  Need to use an explicit isInstanceOf
       case _ if t.isInstanceOf[GeometryUDT] => "geometry"
+      case _ if t.isInstanceOf[RasterUDT] => "raster"
       case _ if t.isInstanceOf[VectorUDT] => "vector"
       case _ if t.isInstanceOf[ImageUDT] => "image/png"
       case _ => t.typeName

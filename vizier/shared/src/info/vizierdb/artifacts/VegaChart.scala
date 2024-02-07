@@ -1,3 +1,17 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.artifacts
 
 import play.api.libs.json._
@@ -548,6 +562,7 @@ case class VegaScale(
   domainMax: Option[Double] = None,
   domainMin: Option[Double] = None,
   domainMid: Option[Double] = None,
+  padding: Option[Double] = None,
 )
 object VegaScale
 {
@@ -1562,6 +1577,7 @@ object VegaMarkType
   case object Line extends VegaMarkType
   case object Path extends VegaMarkType
   case object Rect extends VegaMarkType
+  case object Bar extends VegaMarkType
   case object Rule extends VegaMarkType
   case object Shape extends VegaMarkType
   case object Symbol extends VegaMarkType
@@ -1579,6 +1595,7 @@ object VegaMarkType
           case "line" => JsSuccess(Line)
           case "path" => JsSuccess(Path)
           case "rect" => JsSuccess(Rect)
+          case "bar" => JsSuccess(Bar)
           case "rule" => JsSuccess(Rule)
           case "shape" => JsSuccess(Shape)
           case "symbol" => JsSuccess(Symbol)
@@ -1597,6 +1614,7 @@ object VegaMarkType
           case Line => "line"
           case Path => "path"
           case Rect => "rect"
+          case Bar => "bar"
           case Rule => "rule"
           case Shape => "shape"
           case Symbol => "symbol"
@@ -1663,9 +1681,17 @@ object VegaValueReference
     target: VegaValueReference
   ) extends VegaValueReference
 
+  /**
+   * Used for Width of bar chart 
+   */
+  case class Band(
+    band: Int
+  ) extends VegaValueReference
+
   implicit val fieldFormat: Format[Field] = Json.format
   implicit val valueFormat: Format[Literal] = Json.format
   implicit val signalFormat: Format[Signal] = Json.format
+  implicit val scaleBandRefFormat: Format[Band] = Json.format
   implicit val scaleFormat: Format[ScaleTransform] = Format[ScaleTransform](
     new Reads[ScaleTransform]{
       def reads(j: JsValue): JsResult[ScaleTransform] =
@@ -1701,6 +1727,8 @@ object VegaValueReference
                 j.as[ScaleTransform]
               } else if(elems contains "field"){
                 j.as[Field]
+              } else if(elems contains "band"){
+                j.as[Band]
               } else if(elems contains "signal"){
                 j.as[Signal]
               } else {
@@ -1717,6 +1745,7 @@ object VegaValueReference
           case j:Literal => Json.toJson(j)
           case j:ScaleTransform => Json.toJson(j)
           case j:Signal => Json.toJson(j)
+          case j:Band => Json.toJson(j)
         }
     }
   )
@@ -1750,6 +1779,8 @@ object VegaSignalEncoding
 case class VegaMarkEncoding(
   x: Option[VegaValueReference] = None,
   y: Option[VegaValueReference] = None,
+  width: Option[VegaValueReference] = None,
+  y2: Option[VegaValueReference] = None,
   stroke: Option[VegaValueReference] = None,
   fill: Option[VegaValueReference] = None,
   tooltip: Option[VegaValueReference] = None,
@@ -1788,6 +1819,7 @@ case class VegaMark(
   role: Option[String] = None,
   style: Option[String] = None,
   zindex: Option[Int] = None,
+  marks: Option[Seq[VegaMark]] = None,
 )
 object VegaMark
 {

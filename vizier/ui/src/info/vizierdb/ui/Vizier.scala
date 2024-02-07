@@ -1,3 +1,17 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.ui
 
 import org.scalajs.dom.document
@@ -9,27 +23,28 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import java.net.URLDecoder
 import play.api.libs.json._
 
-import info.vizierdb.ui.rxExtras.implicits._
-import info.vizierdb.ui.rxExtras.OnMount
-import info.vizierdb.ui.rxExtras.RxBufferView
-import info.vizierdb.ui.network.{ API, ClientURLs, BranchSubscription, SpreadsheetClient }
-import info.vizierdb.ui.components.Project
-import scala.util.{ Try, Success, Failure }
-import info.vizierdb.util.Logging
+import info.vizierdb.api.spreadsheet.OpenDataset
+import info.vizierdb.nativeTypes
 import info.vizierdb.serialized.ProjectList
 import info.vizierdb.serialized.PropertyList
 import info.vizierdb.ui.components.dataset.Dataset
-import info.vizierdb.ui.components.MenuBar
-import info.vizierdb.ui.components.settings.SettingsView
 import info.vizierdb.ui.components.dataset.TableView
-import info.vizierdb.nativeTypes
-import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.components.DisplayArtifact
-import scala.concurrent.Future
+import info.vizierdb.ui.components.MenuBar
+import info.vizierdb.ui.components.Project
+import info.vizierdb.ui.components.ProjectListView
+import info.vizierdb.ui.components.settings.SettingsView
 import info.vizierdb.ui.components.StaticWorkflow
+import info.vizierdb.ui.network.{ API, ClientURLs, BranchSubscription, SpreadsheetClient }
+import info.vizierdb.ui.rxExtras.implicits._
+import info.vizierdb.ui.rxExtras.OnMount
+import info.vizierdb.ui.rxExtras.RxBufferView
+import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.widgets.SystemNotification
 import info.vizierdb.ui.widgets.Toast
-import info.vizierdb.api.spreadsheet.OpenDataset
+import info.vizierdb.util.Logging
+import scala.concurrent.Future
+import scala.util.{ Try, Success, Failure }
 
 
 /**
@@ -154,101 +169,12 @@ object Vizier
     })
   }
 
-  def createProject(name: String): Unit =
-  {
-    api.projectCreate(
-      PropertyList(
-        "name" -> JsString(name)
-      )
-    ) .onComplete {
-        case Success(result) => 
-          dom.window.location.href = s"project.html?project=${result.id}"
-        case Failure(ex) =>
-          error(ex.toString())
-      }
-  }
-
   @JSExport("project_list")
   def projectList(): Unit = 
   {
-    val projectListRequest = 
-      api.projectList()
+    val projectList = new ProjectListView()
     document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      var projects = Var[Option[ProjectList]](None)
-      val projectNameField = Var[Option[dom.html.Input]](None)
-      projectListRequest
-        .onComplete {
-          case Success(result) => 
-            projects() = Some(result)
-          case Failure(ex) =>
-            error(ex.toString())
-        }
-      document.body.appendChild(
-        div(id := "content",
-            projects.map {
-              case Some(ProjectList(projects)) => 
-                div(`class` := "project_list_wrapper",
-                  ul(`class` := "project_list",
-                    projects.zipWithIndex.map { case (projectRef, idx) =>
-                      li((if(idx % 2 == 0) { `class` := "even" } else { `class` := "odd" }),
-                        a(
-                          href := s"project.html?project=${projectRef.id}",
-                          span(
-                            `class` := "project_name",
-                            (
-                              projectRef("name")
-                                .flatMap { _.asOpt[String] }
-                                .getOrElse { "Untitled Project" }
-                            ):String
-                          ),
-                        ),
-                        span(
-                          `class` := "dates",
-                          div(`class` := "date_valign",
-                            div(`class` := "created", "Created: ", nativeTypes.formatDate(projectRef.createdAt)),
-                            div(`class` := "modified", "Modified: ", nativeTypes.formatDate(projectRef.lastModifiedAt)),
-                          )
-                        )
-                      )
-                    }
-                  ),
-                  div(
-                    projectNameField.map {
-                      case None => 
-                        div(
-                          button(
-                            `class` := "create_project",
-                            onclick := { (_:dom.MouseEvent) => 
-                              projectNameField() = 
-                                Some(input(`type` := "text", placeholder := "Project Name").render)
-                              projectNameField.now.get.focus()
-                            },
-                            "+"
-                          ),
-                          (if(projects.isEmpty){
-                            div(`class` := "hint",
-                                "↑", br(), "Click here to create a project")
-                          } else { div() })
-                        )
-                      case Some(f) => 
-                        div(`class` := "create_project_form", 
-                          f,
-                          button(
-                            onclick := { (_:dom.MouseEvent) =>
-                              createProject(f.value)
-                              projectNameField() = None
-                            },
-                            "Create"
-                          )
-                        )
-                    }.reactive,
-                  )
-                )
-              case None => 
-                div("Loading project list...")
-            }.reactive
-        )
-      )
+      document.body.appendChild( projectList.root )
       OnMount.trigger(document.body)
     })
   }
