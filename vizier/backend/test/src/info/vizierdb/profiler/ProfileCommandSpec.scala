@@ -1,4 +1,4 @@
-package info.vizierdb.commands
+package info.vizierdb.profiler
 
 import scalikejdbc._
 import play.api.libs.json._
