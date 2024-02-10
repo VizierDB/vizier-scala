@@ -34,16 +34,21 @@ object Query extends Command
 {
 
   val TEMPORARY_DATASET = "temporary_dataset"
+  val PARAM_SOURCE = "source"
+  val PARAM_OUTPUT_DATASET = "output_dataset"
+  val PARAM_SHOW_OUTPUT = "show_output"
+
 
   def name: String = "SQL Query"
   def parameters: Seq[Parameter] = Seq(
-    CodeParameter(id = "source", language = "sql", name = "SQL Code"),
-    StringParameter(id = "output_dataset", name = "Output Dataset", required = false)
+    CodeParameter(id = PARAM_SOURCE, language = "sql", name = "SQL Code"),
+    StringParameter(id = PARAM_OUTPUT_DATASET, name = "Output Dataset", required = false),
+    BooleanParameter(id = PARAM_SHOW_OUTPUT, name = "Show Query Result", required = false, default = Some(true)),
   )
   def format(arguments: Arguments): String = 
-    arguments.pretty("source")
+    arguments.pretty(PARAM_SOURCE)
   def title(arguments: Arguments): String =
-    arguments.getOpt[String]("source")
+    arguments.getOpt[String](PARAM_SOURCE)
              .flatMap { source =>
                 // If there's a -- comment on the first line, use it as the
                 // title.
@@ -56,7 +61,7 @@ object Query extends Command
                } else { None }
              }
              .orElse { 
-                arguments.getOpt[String]("output_dataset")
+                arguments.getOpt[String](PARAM_OUTPUT_DATASET)
                          .map { "SELECT into " + _ }
              }
     
@@ -74,8 +79,8 @@ object Query extends Command
                            .toSeq
                            .filter { _._2.t == ArtifactType.PARAMETER }
                            .toMap
-    val datasetName = arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
-    val query = arguments.get[String]("source")
+    val datasetName = arguments.getOpt[String](PARAM_OUTPUT_DATASET).getOrElse { TEMPORARY_DATASET }
+    val query = arguments.get[String](PARAM_SOURCE)
 
 
     try { 
@@ -148,8 +153,11 @@ object Query extends Command
         context.inputs.put(dep, parameters(dep).id)
       }
 
-      logger.trace("Rendering dataset summary")
-      context.displayDataset(datasetName)
+      if(arguments.getOpt[Boolean](PARAM_SHOW_OUTPUT).getOrElse { true })
+      {
+        logger.trace("Rendering dataset summary")
+        context.displayDataset(datasetName)
+      }
     } catch { 
       case e: info.vizierdb.api.FormattedError => 
         context.error(e.getMessage)
@@ -176,10 +184,10 @@ object Query extends Command
     try {
       ProvenancePrediction
         .definitelyReads(
-          computeDependencies(arguments.get[String]("source")):_*
+          computeDependencies(arguments.get[String](PARAM_SOURCE)):_*
         )
         .definitelyWrites(
-          arguments.getOpt[String]("output_dataset").getOrElse { TEMPORARY_DATASET }
+          arguments.getOpt[String](PARAM_OUTPUT_DATASET).getOrElse { TEMPORARY_DATASET }
         )
         .andNothingElse
     } catch {
