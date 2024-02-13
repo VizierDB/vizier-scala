@@ -899,79 +899,27 @@ class NumericalFilterParameter(
       println("No xCol")
       return 
     }
-    val columns = profile_data.now.get(2).value
-    
-    if ((columns \ "columns").asOpt[JsArray].isDefined) {
-      val result: Option[Seq[Map[String, JsValue]]] = (columns \ "columns").asOpt[JsArray].map { jsonArray =>
-        jsonArray.value.map { jsonObject =>
-          jsonObject.as[JsObject].value.toMap
+    val curr_xCol = xCol.get
+    if (curr_xCol != None) {
+      val columns = profile_data.now.get(2).value
+      val overall_data = columns(curr_xCol).as[JsObject]
+      val generalInfo = (overall_data \ "column")
+      val dataType = (generalInfo \ "type").as[String]
+      if (dataType == "string") {
+        println("X column is not numerical")
+        return 
+      }
+      else
+        {
+          val maxValue = (overall_data \ "max").as[Int]
+          xDataColumn() = Some(maxValue)
+          xColMax() = Some(maxValue)
+          varValue() = Some(maxValue)
         }
-      }
-      val selectedMapOpt = result.flatMap { seqOfMaps =>
-        seqOfMaps.find { map =>
-          map.get("column") match {
-            case Some(jsValue) =>
-              (jsValue \ "id").asOpt[Int].contains(xCol.get)
-            case None =>
-              false
-          }
-        }
-      }
-      println(selectedMapOpt)
-      selectedMapOpt match {
-        case Some(map) =>
-          // Extract max value
-          val maxValueOpt = map.get("max").flatMap(_.asOpt[Int])
 
-          // Extract name value - it's nested within the "column" object
-          val nameValueOpt = map.get("column").flatMap(_.as[JsObject].value.get("name")).flatMap(_.asOpt[String])
-          val columnType = map.get("column").flatMap(_.as[JsObject].value.get("type")).flatMap(_.asOpt[String])
-          if(columnType.get.equals("string")){
-            xColMax() = None
-            varValue() = None
-            return 
-          }
-
-          (maxValueOpt, nameValueOpt) match {
-            case (Some(maxValue), Some(nameValue)) =>
-              xDataColumn() = Some(maxValue)
-              spin() = Some(nameValue) // Assign name value to spin()
-              xColMax() = Some(maxValue)
-              varValue() = Some(maxValue)
-              println(s"Max value found: $maxValue, Name: $nameValue")
-            case (None, _) =>
-              println("No max value found")
-              xColMax() = None
-            case (_, None) =>
-              println("No name value found")
-              xColMax() = None
-          }
-        case None => 
-          println("No matching column found")
       }
 
-    }
   }
-
-
-
-
-    // else {
-    //   val columnsSeqOpt: Option[Seq[JsValue]] = (columns \ "columns").asOpt[Seq[JsValue]]
-    //   val matchingColumnOpt: Option[JsValue] = columnsSeqOpt.flatMap { columnsSeq =>
-    //     columnsSeq.find { col =>
-    //       (col \ "column" \ "id").asOpt[Int].contains(xCol)
-    //     }
-    //   }
-    //   matchingColumnOpt match {
-    //     case Some(columnJsValue) => println("DATA FOUND")
-    //     case None => println(s"No matching column found with ID $xCol")
-    //   }
-    // }
-  
-
-  
-
 
 
 

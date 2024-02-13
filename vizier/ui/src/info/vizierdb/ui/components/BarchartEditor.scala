@@ -199,7 +199,9 @@ class BarchartEditor(
       case Success(artifactDescription) =>
         artifactDescription match {
           case ds:DatasetDescription => 
+            // println(ds.properties)
             filter.updateProfileData(ds.properties)
+            
           case _ => 
             Vizier.error("Not a dataset")
         }
