@@ -1,3 +1,17 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.ui.components
 
 import org.scalajs.dom
@@ -219,12 +233,12 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     logger.trace(s"ON REMOVE: $n")
     val module = baseElements.remove(n)
     logger.trace(s"  remove at position ${module.displayPosition}")
+    watchers.foreach { _.onRemove(module.displayPosition) }
     val (oldPrev, oldNext) = module.removeSelf()
     if(oldPrev.isEmpty) { 
       assert(oldNext.isDefined)
       first = oldNext.get
     }
-    watchers.foreach { _.onRemove(module.displayPosition) }
   }
 
   /**
@@ -239,6 +253,9 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     logger.trace(s"ON UPDATE: $n; ")
     val module = baseElements(n)
     baseElements(n) = replacement
+    if(module.isFirst){
+      first = replacement
+    }
     module.replaceSelfWithElement(replacement)
     logger.trace(s"... displayed at ${module.displayPosition}")
     watchers.foreach { _.onUpdate(module.displayPosition, replacement) }
@@ -248,7 +265,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
     defaultPackageList: Option[Seq[serialized.PackageDescription]] = None
   ): TentativeModule =
   {
-    logger.trace("Prepending tentative module")
+    logger.trace(s"Prepending tentative module: Head = $head")
     val module = 
       new TentativeModule(this, nextTempElementDomId, defaultPackageList)
     module.linkSelfToHead(first)
@@ -302,11 +319,14 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def dropTentative(m: TentativeModule) = 
   {
+    logger.trace(s"Drop ${m} @ ${m.displayPosition}")
+    watchers.foreach { _.onRemove(m.displayPosition) }
     val (oldPrev, oldNext) = m.removeSelf()
     if(oldPrev.isEmpty) { 
       assert(oldNext.isDefined)
       first = oldNext.get
     }
+    logger.trace(s"Propagate drop of ${m} @ ${m.displayPosition}; end = ${Tail.displayPosition}")
   }
 
   /**
@@ -314,6 +334,7 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
    */
   def dropInspector(m: ArtifactInspector) = 
   {
+    watchers.foreach { _.onRemove(m.displayPosition) }
     val (oldPrev, oldNext) = m.removeSelf()
     if(oldPrev.isEmpty) { 
       assert(oldNext.isDefined)

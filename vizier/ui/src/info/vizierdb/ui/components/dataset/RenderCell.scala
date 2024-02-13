@@ -1,3 +1,17 @@
+/* -- copyright-header:v2 --
+ * Copyright (C) 2017-2021 University at Buffalo,
+ *                         New York University,
+ *                         Illinois Institute of Technology.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -- copyright-header:end -- */
 package info.vizierdb.ui.components.dataset
 
 import org.scalajs.dom
@@ -8,6 +22,8 @@ import play.api.libs.json._
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.serialized
 import info.vizierdb.serializers.mlvectorFormat
+import info.vizierdb.ui.widgets.Tooltip
+import info.vizierdb.util.StringUtils
 
 /**
  * Logic for rendering cell data values to dom nodes
@@ -26,6 +42,17 @@ object RenderCell
     onclick: (dom.Event => Unit) = (_ => ())
   ): Frag =
   {
+
+    def makeTextCell(content: String): Frag =
+      if(content.size > 23){
+        span(
+          StringUtils.ellipsize(content, 20),
+          Tooltip(
+            div(`class` := "tooltip_text", content)
+          )
+        )
+      } else { span(content) }
+
     div(
       `class` := (
         Seq("cell") ++ 
@@ -43,6 +70,11 @@ object RenderCell
             img(
               `class` := "table_image", 
               src := "data:image/png;base64,"+value.as[String], 
+              Tooltip(
+                img(`class` := "tooltip_image",
+                    src := "data:image/png;base64,"+value.as[String],
+                )
+              )
             ),
           }
         case (_, JsString("vector")) => 
@@ -50,9 +82,9 @@ object RenderCell
             value.as[serialized.MLVector].show(5)
           }
         case (_, JsString("string")) => 
-          span(value.as[String])
+          makeTextCell(value.as[String])
         case _ => 
-          span(value.toString())
+          makeTextCell(value.toString())
       }),
       (if(caveatted.isDefined){
         val callback = caveatted.get

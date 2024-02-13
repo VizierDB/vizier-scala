@@ -1,0 +1,1778 @@
+{
+  "swagger" : "2.0",
+  "basePath" : "vizier-db/api/v1",
+  "info" : {
+    "title" : "Vizier DB",
+    "description" : "A 'data-centric' microkernel notebook",
+    "version" : "v1.1",
+    "contact" : {
+      "name" : "University at Buffalo, Illinois Institute of Technology, New York University, Breadcrumb Analytics",
+      "url" : "https://vizierdb.info",
+      "email" : "info@vizierdb.info"
+    }
+  },
+  "paths" : {
+    "/" : {
+      "get" : {
+        "operationId" : "serviceDescriptor",
+        "produces" : [ "application/json" ],
+        "tags" : [ "service" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ ]
+    },
+    "/config/python" : {
+      "get" : {
+        "operationId" : "configListPythonEnvs",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ ]
+    },
+    "/config/python/envById/{envId}" : {
+      "get" : {
+        "operationId" : "configGetPythonEnv",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ ]
+      },
+      "put" : {
+        "operationId" : "configUpdatePythonEnv",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "spec" ],
+            "properties" : {
+              "spec" : {
+                "$ref" : "#/definitions/PythonEnvironmentDescriptor"
+              }
+            }
+          }
+        } ]
+      },
+      "delete" : {
+        "operationId" : "configDeletePythonEnv",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "envId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/config/python/envByName/{env}" : {
+      "get" : {
+        "operationId" : "configGetPythonEnvByname",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ ]
+      },
+      "put" : {
+        "operationId" : "configCreatePythonEnv",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "spec" ],
+            "properties" : {
+              "spec" : {
+                "$ref" : "#/definitions/PythonEnvironmentDescriptor"
+              }
+            }
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "env",
+        "in" : "path",
+        "required" : true,
+        "type" : "string"
+      } ]
+    },
+    "/config/registry" : {
+      "get" : {
+        "operationId" : "configGetRegistry",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ ]
+    },
+    "/config/registry/{key}" : {
+      "get" : {
+        "operationId" : "configGetRegistryKey",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ ]
+      },
+      "put" : {
+        "operationId" : "configSetRegistryKey",
+        "produces" : [ "application/json" ],
+        "tags" : [ "config" ],
+        "parameters" : [ {
+          "name" : "value",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "key",
+        "in" : "path",
+        "required" : true,
+        "type" : "string"
+      } ]
+    },
+    "/filesystem" : {
+      "get" : {
+        "operationId" : "fsGetRoot",
+        "produces" : [ "application/json" ],
+        "tags" : [ "fs" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ ]
+    },
+    "/filesystem/{path}" : {
+      "get" : {
+        "operationId" : "fsGet",
+        "produces" : [ "application/json" ],
+        "tags" : [ "fs" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "path",
+        "in" : "path",
+        "required" : true,
+        "type" : "string"
+      } ]
+    },
+    "/projects" : {
+      "get" : {
+        "operationId" : "projectList",
+        "produces" : [ "application/json" ],
+        "tags" : [ "project" ],
+        "parameters" : [ ]
+      },
+      "post" : {
+        "operationId" : "projectCreate",
+        "produces" : [ "application/json" ],
+        "tags" : [ "project" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "properties" ],
+            "properties" : {
+              "properties" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/Property"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "parameters" : [ ]
+    },
+    "/projects/import" : {
+      "post" : {
+        "operationId" : "projectImport",
+        "produces" : [ "application/json" ],
+        "tags" : [ "project" ],
+        "parameters" : [ {
+          "name" : "file",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "file"
+          }
+        } ]
+      },
+      "parameters" : [ ]
+    },
+    "/projects/{projectId}" : {
+      "post" : {
+        "operationId" : "projectReplaceProps",
+        "produces" : [ "application/json" ],
+        "tags" : [ "project" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "properties" ],
+            "properties" : {
+              "properties" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/Property"
+                }
+              },
+              "defaultBranch" : {
+                "$ref" : "#/definitions/Identifier"
+              }
+            }
+          }
+        } ]
+      },
+      "delete" : {
+        "operationId" : "projectDelete",
+        "produces" : [ "application/json" ],
+        "tags" : [ "project" ],
+        "parameters" : [ ]
+      },
+      "put" : {
+        "operationId" : "projectUpdate",
+        "produces" : [ "application/json" ],
+        "tags" : [ "project" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "properties" ],
+            "properties" : {
+              "properties" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/Property"
+                }
+              },
+              "defaultBranch" : {
+                "$ref" : "#/definitions/Identifier"
+              }
+            }
+          }
+        } ]
+      },
+      "get" : {
+        "operationId" : "projectGet",
+        "produces" : [ "application/json" ],
+        "tags" : [ "project" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/artifacts/{artifactId}" : {
+      "get" : {
+        "operationId" : "artifactGet",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ {
+          "name" : "offset",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        }, {
+          "name" : "profile",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "name",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/artifacts/{artifactId}/annotations" : {
+      "get" : {
+        "operationId" : "artifactGetAnnotations",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ {
+          "name" : "column",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        }, {
+          "name" : "row",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/artifacts/{artifactId}/csv" : {
+      "get" : {
+        "operationId" : "artifactGetCsv",
+        "produces" : [ "text/csv" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/artifacts/{artifactId}/descriptor" : {
+      "get" : {
+        "operationId" : "artifactGetSummary",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/artifacts/{artifactId}/file" : {
+      "get" : {
+        "operationId" : "artifactGetFile",
+        "produces" : [ "application/octet-stream" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches" : {
+      "get" : {
+        "operationId" : "branchList",
+        "produces" : [ "application/json" ],
+        "tags" : [ "branch" ],
+        "parameters" : [ ]
+      },
+      "post" : {
+        "operationId" : "branchCreate",
+        "produces" : [ "application/json" ],
+        "tags" : [ "branch" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "properties" ],
+            "properties" : {
+              "source" : {
+                "$ref" : "#/definitions/BranchSource"
+              },
+              "properties" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/Property"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}" : {
+      "get" : {
+        "operationId" : "branchGet",
+        "produces" : [ "application/json" ],
+        "tags" : [ "branch" ],
+        "parameters" : [ ]
+      },
+      "delete" : {
+        "operationId" : "branchDelete",
+        "produces" : [ "application/json" ],
+        "tags" : [ "branch" ],
+        "parameters" : [ ]
+      },
+      "put" : {
+        "operationId" : "branchUpdate",
+        "produces" : [ "application/json" ],
+        "tags" : [ "branch" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "properties" ],
+            "properties" : {
+              "properties" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/Property"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/cancel" : {
+      "post" : {
+        "operationId" : "workflowBranchCancel",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head" : {
+      "get" : {
+        "operationId" : "workflowHeadGet",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/cancel" : {
+      "post" : {
+        "operationId" : "workflowHeadCancel",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/graph" : {
+      "get" : {
+        "operationId" : "workflowHeadGraph",
+        "produces" : [ "image/svg+xml" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/modules" : {
+      "get" : {
+        "operationId" : "workflowHeadModules",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "post" : {
+        "operationId" : "workflowHeadAppend",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "packageId", "commandId", "arguments" ],
+            "properties" : {
+              "packageId" : {
+                "type" : "string"
+              },
+              "commandId" : {
+                "type" : "string"
+              },
+              "arguments" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/CommandArgument"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/modules/{modulePosition}" : {
+      "post" : {
+        "operationId" : "workflowHeadInsert",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "packageId", "commandId", "arguments" ],
+            "properties" : {
+              "packageId" : {
+                "type" : "string"
+              },
+              "commandId" : {
+                "type" : "string"
+              },
+              "arguments" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/CommandArgument"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "delete" : {
+        "operationId" : "workflowHeadDelete",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "put" : {
+        "operationId" : "workflowHeadReplace",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "packageId", "commandId", "arguments" ],
+            "properties" : {
+              "packageId" : {
+                "type" : "string"
+              },
+              "commandId" : {
+                "type" : "string"
+              },
+              "arguments" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/CommandArgument"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "get" : {
+        "operationId" : "workflowHeadGetModule",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/modules/{modulePosition}/charts/{artifactId}" : {
+      "get" : {
+        "operationId" : "artifactHeadGetChart",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/modules/{modulePosition}/freeze" : {
+      "post" : {
+        "operationId" : "workflowHeadFreezeFrom",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/modules/{modulePosition}/freeze_one" : {
+      "post" : {
+        "operationId" : "workflowHeadFreezeOne",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/modules/{modulePosition}/thaw" : {
+      "post" : {
+        "operationId" : "workflowHeadThawUpto",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/modules/{modulePosition}/thaw_one" : {
+      "post" : {
+        "operationId" : "workflowHeadThawOne",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/run" : {
+      "post" : {
+        "operationId" : "workflowRun",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ ],
+            "properties" : {
+              "modules" : {
+                "type" : "string"
+              }
+            }
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/sql" : {
+      "get" : {
+        "operationId" : "workflowHeadQuery",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "query",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/head/suggest" : {
+      "get" : {
+        "operationId" : "workflowHeadSuggest",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "before",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        }, {
+          "name" : "after",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}" : {
+      "get" : {
+        "operationId" : "workflowGet",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/cancel" : {
+      "post" : {
+        "operationId" : "workflowCancel",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/graph" : {
+      "get" : {
+        "operationId" : "workflowGraph",
+        "produces" : [ "image/svg+xml" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/modules" : {
+      "get" : {
+        "operationId" : "workflowModules",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "post" : {
+        "operationId" : "workflowAppend",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "packageId", "commandId", "arguments" ],
+            "properties" : {
+              "packageId" : {
+                "type" : "string"
+              },
+              "commandId" : {
+                "type" : "string"
+              },
+              "arguments" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/CommandArgument"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/modules/{modulePosition}" : {
+      "post" : {
+        "operationId" : "workflowInsert",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "packageId", "commandId", "arguments" ],
+            "properties" : {
+              "packageId" : {
+                "type" : "string"
+              },
+              "commandId" : {
+                "type" : "string"
+              },
+              "arguments" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/CommandArgument"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "delete" : {
+        "operationId" : "workflowDelete",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "put" : {
+        "operationId" : "workflowReplace",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "packageId", "commandId", "arguments" ],
+            "properties" : {
+              "packageId" : {
+                "type" : "string"
+              },
+              "commandId" : {
+                "type" : "string"
+              },
+              "arguments" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/CommandArgument"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "get" : {
+        "operationId" : "workflowGetModule",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/modules/{modulePosition}/charts/{artifactId}" : {
+      "get" : {
+        "operationId" : "artifactGetChart",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/modules/{modulePosition}/freeze" : {
+      "post" : {
+        "operationId" : "workflowFreezeFrom",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/modules/{modulePosition}/freeze_one" : {
+      "post" : {
+        "operationId" : "workflowFreezeOne",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/modules/{modulePosition}/thaw" : {
+      "post" : {
+        "operationId" : "workflowThawUpto",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/modules/{modulePosition}/thaw_one" : {
+      "post" : {
+        "operationId" : "workflowThawOne",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "modulePosition",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/sql" : {
+      "get" : {
+        "operationId" : "workflowQuery",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "query",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/branches/{branchId}/workflows/{workflowId}/suggest" : {
+      "get" : {
+        "operationId" : "workflowSuggest",
+        "produces" : [ "application/json" ],
+        "tags" : [ "workflow" ],
+        "parameters" : [ {
+          "name" : "before",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        }, {
+          "name" : "after",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "branchId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "workflowId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/datasets" : {
+      "post" : {
+        "operationId" : "artifactCreateDataset",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ {
+          "name" : "Body",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "object",
+            "required" : [ "columns", "rows", "properties" ],
+            "properties" : {
+              "name" : {
+                "type" : "string"
+              },
+              "annotations" : {
+                "$ref" : "#/definitions/DatasetAnnotation"
+              },
+              "properties" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/Property"
+                }
+              },
+              "columns" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/DatasetColumn"
+                }
+              },
+              "rows" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/definitions/DatasetRow"
+                }
+              }
+            }
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/datasets/{artifactId}" : {
+      "get" : {
+        "operationId" : "artifactGetDataset",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ {
+          "name" : "offset",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        }, {
+          "name" : "profile",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "name",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/datasets/{artifactId}/annotations" : {
+      "get" : {
+        "operationId" : "artifactDsGetAnnotations",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ {
+          "name" : "column",
+          "in" : "query",
+          "required" : false,
+          "type" : "integer"
+        }, {
+          "name" : "row",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/datasets/{artifactId}/csv" : {
+      "get" : {
+        "operationId" : "artifactDsGetCsv",
+        "produces" : [ "text/csv" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/datasets/{artifactId}/descriptor" : {
+      "get" : {
+        "operationId" : "artifactDsGetSummary",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/datasets/{artifactId}/file" : {
+      "get" : {
+        "operationId" : "artifactDsGetFile",
+        "produces" : [ "application/octet-stream" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/export" : {
+      "get" : {
+        "operationId" : "projectExport",
+        "produces" : [ "application/octet-stream" ],
+        "tags" : [ "project" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/files" : {
+      "post" : {
+        "operationId" : "artifactUpload",
+        "produces" : [ "application/json" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ {
+          "name" : "file",
+          "in" : "body",
+          "required" : true,
+          "schema" : {
+            "type" : "file"
+          }
+        } ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/files/{artifactId}" : {
+      "get" : {
+        "operationId" : "artifactDownload",
+        "produces" : [ "application/octet-stream" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      } ]
+    },
+    "/projects/{projectId}/files/{artifactId}/{tail}" : {
+      "get" : {
+        "operationId" : "artifactDownloadSubfile",
+        "produces" : [ "application/octet-stream" ],
+        "tags" : [ "artifact" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "projectId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "artifactId",
+        "in" : "path",
+        "required" : true,
+        "type" : "integer"
+      }, {
+        "name" : "tail",
+        "in" : "path",
+        "required" : true,
+        "type" : "string"
+      } ]
+    },
+    "/published/{artifactName}" : {
+      "get" : {
+        "operationId" : "publishedDownloadPublished",
+        "produces" : [ "application/json" ],
+        "tags" : [ "published" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ {
+        "name" : "artifactName",
+        "in" : "path",
+        "required" : true,
+        "type" : "string"
+      } ]
+    },
+    "/reload" : {
+      "post" : {
+        "operationId" : "serviceReload",
+        "produces" : [ "application/json" ],
+        "tags" : [ "service" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ ]
+    },
+    "/tasks" : {
+      "get" : {
+        "operationId" : "serviceList",
+        "produces" : [ "application/json" ],
+        "tags" : [ "service" ],
+        "parameters" : [ ]
+      },
+      "parameters" : [ ]
+    }
+  },
+  "host" : "localhost:5000/",
+  "schemes" : "http",
+  "definitions" : {
+    "PythonEnvironmentDescriptor" : {
+      "type" : "object",
+      "required" : [ "version", "packages" ],
+      "properties" : {
+        "version" : {
+          "type" : "string"
+        },
+        "packages" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/PythonPackage"
+          }
+        }
+      },
+      "additionalProperties" : null
+    },
+    "PythonPackage" : {
+      "type" : "object",
+      "required" : [ "name", "version" ],
+      "properties" : {
+        "name" : {
+          "type" : "string"
+        },
+        "version" : {
+          "type" : "string"
+        }
+      },
+      "additionalProperties" : null
+    },
+    "CommandArgument" : {
+      "type" : "object",
+      "required" : [ "id", "value" ],
+      "properties" : {
+        "id" : {
+          "type" : "string"
+        },
+        "value" : { }
+      },
+      "additionalProperties" : null
+    },
+    "DatasetAnnotation" : {
+      "type" : "object",
+      "required" : [ "columnId", "rowId", "key", "value" ],
+      "properties" : {
+        "columnId" : {
+          "type" : "integer"
+        },
+        "rowId" : {
+          "$ref" : "#/definitions/RowIdentifier"
+        },
+        "key" : {
+          "type" : "string"
+        },
+        "value" : {
+          "type" : "string"
+        }
+      },
+      "additionalProperties" : null
+    },
+    "RowIdentifier" : {
+      "type" : "string",
+      "description" : "An opaque, persistent, unique identifier for this row"
+    },
+    "BranchSource" : {
+      "type" : "object",
+      "required" : [ "branchId" ],
+      "properties" : {
+        "branchId" : {
+          "$ref" : "#/definitions/Identifier"
+        },
+        "workflowId" : {
+          "$ref" : "#/definitions/Identifier"
+        },
+        "moduleId" : {
+          "$ref" : "#/definitions/Identifier"
+        }
+      },
+      "additionalProperties" : null
+    },
+    "Identifier" : {
+      "type" : "string",
+      "description" : "An opaque identifier"
+    },
+    "DatasetColumn" : {
+      "type" : "object",
+      "required" : [ "id", "name", "type" ],
+      "properties" : {
+        "id" : {
+          "type" : "integer"
+        },
+        "name" : {
+          "type" : "string"
+        },
+        "type" : {
+          "$ref" : "#/definitions/CellDataType"
+        }
+      },
+      "additionalProperties" : null
+    },
+    "DatasetRow" : {
+      "type" : "object",
+      "required" : [ "id", "values" ],
+      "properties" : {
+        "id" : {
+          "$ref" : "#/definitions/RowIdentifier"
+        },
+        "values" : {
+          "type" : "array",
+          "items" : { }
+        },
+        "rowAnnotationFlags" : {
+          "type" : "array",
+          "items" : {
+            "type" : "boolean"
+          }
+        },
+        "rowIsAnnotated" : {
+          "type" : "boolean"
+        }
+      },
+      "additionalProperties" : null
+    },
+    "CellDataType" : {
+      "type" : "string",
+      "description" : "A Vizier-serialized spark data type.  See https://github.com/VizierDB/vizier-scala/blob/v2.0/vizier/backend/src/info/vizierdb/spark/SparkSchema.scala"
+    },
+    "JsValue" : {
+      "type" : "any",
+      "description" : "the value, encoded as Json"
+    },
+    "Property" : {
+      "type" : "object",
+      "required" : [ "key", "value" ],
+      "properties" : {
+        "key" : {
+          "type" : "string"
+        },
+        "value" : { }
+      },
+      "additionalProperties" : null
+    }
+  }
+}

@@ -9,13 +9,13 @@ import mill.scalajslib._
 import coursier.maven.{ MavenRepository }
 import mill.api.{ Result, PathRef }
 import io.bit3.jsass.{ Compiler => SassCompiler, Options => SassOptions, OutputStyle => SassOutputStyle }
-
+import java.util.Calendar
 
 /*************************************************
  *** The Vizier Backend 
  *************************************************/
 object vizier extends ScalaModule with PublishModule {
-  val VERSION       = "2.0.0-SNAPSHOT"
+  val VERSION       = "2.0.0-rc2"
   val PLAY_JS       = ivy"com.typesafe.play::play-json::2.9.2"
                            
   val MIMIR_CAVEATS = ivy"info.vizierdb::mimir-caveats::0.3.6"
@@ -42,14 +42,39 @@ object vizier extends ScalaModule with PublishModule {
     super.compile()
   }
 
-  def sources = T.sources(
-    millSourcePath / "backend" / "src",
-    millSourcePath / "shared" / "src"
-  )
-  def resources = T.sources(
-    millSourcePath / "resources",
-    ui.resourceDir()
-  )
+  def sources = T.sources {
+    super.sources() ++ Seq[PathRef](
+      PathRef(millSourcePath / "backend" / "src"),
+      PathRef(millSourcePath / "shared" / "src"),
+    )
+  }
+  def resources = T.sources {
+    os.write(T.dest / "vizier-version.txt", versionString())
+    super.resources() ++ Seq[PathRef](
+      PathRef(millSourcePath / "resources"),
+      PathRef(ui.resourceDir()),
+      PathRef(T.dest)
+    )
+  }
+  def versionString:T[String] = T {
+    val gitVersion:String = 
+      os.proc("git", "branch")
+        .call()
+        .out.lines()
+        .filter { _ startsWith "*" }
+        .head
+        .substring(2)
+    val gitRevision: String =
+      os.proc("git", "log", "--oneline")
+        .call()
+        .out.lines()
+        .head
+        .split(" ")(0)
+    val date =
+      Calendar.getInstance();
+
+    f"$VERSION (revision $gitVersion-$gitRevision; built ${date.get(Calendar.YEAR)}%04d-${date.get(Calendar.MONTH)}%02d-${date.get(Calendar.DAY_OF_MONTH)}%02d)"
+  }
 
   def internalJavaVersion = T {
     try {
@@ -124,20 +149,23 @@ object vizier extends ScalaModule with PublishModule {
     ivy"com.databricks::spark-xml::0.15.0",
 
     // GIS
-    ivy"org.apache.sedona::sedona-core-3.0:1.1.1-incubating",
-    ivy"org.apache.sedona::sedona-sql-3.0:1.1.1-incubating",
-    ivy"org.apache.sedona::sedona-viz-3.0:1.1.1-incubating",
-    ivy"org.locationtech.jts:jts-core:1.18.2",
-    ivy"org.wololo:jts2geojson:0.14.3",
-    ivy"org.geotools:gt-main:24.0",
-    ivy"org.geotools:gt-referencing:24.0",
-    ivy"org.geotools:gt-epsg-hsql:24.0",
+    // ivy"org.apache.sedona::sedona-sql-3.0:1.1.1-incubating",
+    // ivy"org.apache.sedona::sedona-viz-3.0:1.1.1-incubating",
+    // ivy"org.locationtech.jts:jts-core:1.18.2",
+    // ivy"org.wololo:jts2geojson:0.14.3",
+    // ivy"org.geotools:gt-main:24.0",
+    // ivy"org.geotools:gt-referencing:24.0",
+    // ivy"org.geotools:gt-epsg-hsql:24.0",
+    ivy"org.apache.sedona:sedona-common:1.5.0",
+    ivy"org.apache.sedona::sedona-spark-shaded-3.0:1.5.0",
+    // ivy"org.apache.sedona::sedona-viz-3.0:1.5.0",
+    ivy"org.datasyslab:geotools-wrapper:1.5.0-28.2",
 
     // Charts
     ivy"info.vizierdb::vega:1.0.0",
 
     // Scala Cell
-    ivy"org.scala-lang:scala-compiler:${scalaVersion}",
+    ivy"org.scala-lang:scala-compiler:2.12.15",
 
     // Python
     ivy"me.shadaj::scalapy-core:0.5.2",
@@ -166,6 +194,7 @@ object vizier extends ScalaModule with PublishModule {
     )
     def resources = T.sources(
       millSourcePath / os.up / "backend" / "test" / "resources",
+
     )
 
     def scalacOptions = Seq("-Yrangepos")

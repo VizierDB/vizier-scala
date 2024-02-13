@@ -42,6 +42,11 @@ class IO_Wrapper(IOBase):
     self.soft_flush()
     self.io.flush()
 
+  def print(self, b: str):
+    if not b.endswith("\n"):
+      b = b + "\n"
+    self.write(b)
+
 
 def debug_is_on():
     return False

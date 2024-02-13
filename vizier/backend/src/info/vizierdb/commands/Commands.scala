@@ -103,7 +103,9 @@ object Commands
     "chart"        -> info.vizierdb.commands.plot.SimpleChart,
     "line-chart"   -> info.vizierdb.commands.plot.LineChart,
     "scatterplot"  -> info.vizierdb.commands.plot.ScatterPlot,
+    "cdf"          -> info.vizierdb.commands.plot.CDFPlot,
     "geo"          -> info.vizierdb.commands.plot.GeoPlot,
+    "bar-chart"   -> info.vizierdb.commands.plot.BarChart,
   )
 
   register(packageId = "sql", name = "SQL", category = "code")(
