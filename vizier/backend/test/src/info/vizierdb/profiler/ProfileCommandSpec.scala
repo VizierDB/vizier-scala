@@ -145,6 +145,63 @@ class ProfileCommandSpec extends Specification with BeforeAll
     ok
   }
 
+  "testing correct profiler distinct values" >> {
+    val project = MutableProject("test_profiler")
+    project.load(
+      file = "test_data/NYC_18_Dec_2018.csv",
+      name = "test", 
+      format = "csv",
+    )
+
+    GetArtifact(
+      projectId = project.projectId,
+      artifactId = project.artifact("test").id,
+      profile = Some("true"),
+    )
+
+    val df = project.dataframe("test")
+    val art = project.artifact("test")
+    val properties = art.datasetDescriptor.properties
+    val columnsProperty = properties.get("columns")
+    println(df)
+
+
+    columnsProperty match {
+      case Some(jsValue: JsValue) =>
+        // Parse the JSON string
+        val json = Json.parse(jsValue.toString())
+        // Validate and extract columns array
+        (json \ "columns").validate[JsArray] match {
+          case JsSuccess(columnsArray, _) =>
+            columnsArray.value.foreach { column =>
+              // Extract and test distinctValueCount
+              val distinctValueCount = (column \ "distinctValueCount").as[Int]
+              val returnedValues = (column \ "values")
+              // Testing if values get returned or not
+              if(distinctValueCount > 20){
+                (returnedValues) match {
+                  case JsDefined(_) => failure("When distinct Value is over 20 then no values should be returned")
+                  case JsUndefined() => success 
+                }
+              }else {
+                (returnedValues) match {
+                  case JsDefined(_) => success
+                  case JsUndefined() => failure("Values should be returned when distinct Value is 20 or under")
+                }
+              }
+            }
+
+          case JsError(errors) =>
+            failure(s"Error parsing columns JSON: $errors")
+        }
+
+      case _ => 
+        failure("Columns property not found or not a valid JSON object")
+    }
+
+    ok
+  }
+
 
 
 }
