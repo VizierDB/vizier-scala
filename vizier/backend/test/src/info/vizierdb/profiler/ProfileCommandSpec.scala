@@ -163,7 +163,6 @@ class ProfileCommandSpec extends Specification with BeforeAll
     val art = project.artifact("test")
     val properties = art.datasetDescriptor.properties
     val columnsProperty = properties.get("columns")
-    println(df)
 
 
     columnsProperty match {
@@ -201,6 +200,82 @@ class ProfileCommandSpec extends Specification with BeforeAll
 
     ok
   }
+
+
+  "testing correct profiler min max mean" >> {
+    val project = MutableProject("test_profiler")
+    project.load(
+      file = "test_data/test_minmaxmean_columns.csv",
+      name = "test", 
+      format = "csv",
+    )
+
+    GetArtifact(
+      projectId = project.projectId,
+      artifactId = project.artifact("test").id,
+      profile = Some("true"),
+    )
+
+    val df = project.dataframe("test")
+    val art = project.artifact("test")
+    val properties = art.datasetDescriptor.properties
+    val columnsProperty = properties.get("columns")
+
+
+    columnsProperty match {
+      case Some(jsValue: JsValue) =>
+        // Parse the JSON string
+        val json = Json.parse(jsValue.toString())
+        // Validate and extract columns array
+        (json \ "columns").validate[JsArray] match {
+          case JsSuccess(columnsArray, _) =>
+            columnsArray.value.foreach { column =>
+              val columnInfo = (column \ "column")
+              val columnType = (columnInfo \ "type")
+              val minValue = (column \ "min") 
+              val maxValue = (column \ "max")
+              val meanValue = (column \ "mean")
+              columnType match {
+                case JsDefined(JsString(valueType)) if valueType == "integer" || valueType == "double" =>
+                  minValue match {
+                    case JsDefined(_) => success
+                    case JsUndefined() => failure("integer is supposed to have a min value")
+                  }
+                  maxValue match {
+                    case JsDefined(_) => success
+                    case JsUndefined() => failure("integer is supposed to have a max value")
+                  }
+                  meanValue match {
+                    case JsDefined(_) => success
+                    case JsUndefined() => failure("integer is supposed to have a mean value")
+                  }
+                case JsDefined(JsString(_)) => 
+                  minValue match {
+                    case JsDefined(_) => failure("type is not supposed to have a min value")
+                    case JsUndefined() => success
+                  }
+                  maxValue match {
+                    case JsDefined(_) => failure("type is not supposed to have a max value")
+                    case JsUndefined() => success
+                  }
+                  meanValue match {
+                    case JsDefined(_) => failure("type is not supposed to have a mean value")
+                    case JsUndefined() => success
+                  }
+                case JsUndefined() => failure("should contain a type")
+              }
+            }
+          case JsError(errors) =>
+            failure(s"Error parsing columns JSON: $errors")
+        }
+
+      case _ => 
+        failure("Columns property not found or not a valid JSON object")
+    }
+
+    ok
+  }
+  
 
 
 
