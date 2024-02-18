@@ -904,6 +904,7 @@ class NumericalFilterParameter(
       val columns = profile_data.now.get(2).value
       val overall_data = columns(curr_xCol).as[JsObject]
       val generalInfo = (overall_data \ "column")
+      val name_filter = (generalInfo \ "name").as[String]
       val dataType = (generalInfo \ "type").as[String]
       if (dataType == "string") {
         println("X column is not numerical")
@@ -915,14 +916,52 @@ class NumericalFilterParameter(
           xDataColumn() = Some(maxValue)
           xColMax() = Some(maxValue)
           varValue() = Some(maxValue)
+          spin() = Some(name_filter)
         }
 
       }
-
   }
 
+  def updateSliderValue(value: Int): Unit = 
+  {
+    varValue() = Some(value)
+    println("Slider value updated")
+  }
+
+  // val slider_input = Rx {
+  //   input(
+  //     scalatags.JsDom.all.name := "slider_param",
+  //         scalatags.JsDom.all.id := "slider_param",
+  //         `type` := "range",
+  //         min := 0,
+  //         max := xColMax().toString,
+  //         onchange := { (e:dom.Event) => 
+  //           updateSliderValue(slider.value.toInt)
+  //         }
+  //   );
+  // }.reactive
 
 
+  val slider_input = Rx {
+    xColMax().map { maxVal =>
+      input(
+        scalatags.JsDom.all.name := "slider_param",
+          scalatags.JsDom.all.id := "slider_param",
+          `type` := "range",
+          min := 0,
+          max := maxVal.toString,
+    )
+    }
+  }
+
+val input_box = Rx {
+  input(
+    scalatags.JsDom.all.name := "input_box",
+    `type` := "number",
+    scalatags.JsDom.all.value:= varValue().toString)
+  }
+
+    //scalatags.JsDom.all.
     //scalatags.JsDom.all.
   val root =  
       span(
@@ -935,7 +974,7 @@ class NumericalFilterParameter(
                   scalatags.JsDom.all.name := "slider_param",
                   `type` := "range",
                   min := "0",
-                  max := xColMax.now.get.toString,
+                  max := xColMax().toString,
                   scalatags.JsDom.all.value:= spinVal.toString,
                   
                 ),

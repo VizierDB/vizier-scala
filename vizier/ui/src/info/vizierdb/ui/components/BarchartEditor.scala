@@ -201,7 +201,8 @@ class BarchartEditor(
           case ds:DatasetDescription => 
             // println(ds.properties)
             filter.updateProfileData(ds.properties)
-            
+            xColChange(xcol(dataset), filter)
+
           case _ => 
             Vizier.error("Not a dataset")
         }
@@ -242,5 +243,4 @@ class BarchartEditor(
       //   ),
       //   artifactResultContainer.render,
       // ),
-
 }
