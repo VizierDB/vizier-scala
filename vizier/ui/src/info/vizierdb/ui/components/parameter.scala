@@ -885,7 +885,7 @@ class NumericalFilterParameter(
 
   val spin = Var[Option[String]](None)
   val xColMax = Var[Option[Int]](None)
-  val slider = dom.document.getElementsByName("Filter").asInstanceOf[dom.html.Input]
+  // val slider = dom.document.getElementsByName("Filter").asInstanceOf[dom.html.Input]
   val varValue = Var[Option[Int]](None)
 
   def updateProfileData(data: serialized.PropertyList.T): Unit = 
@@ -925,43 +925,57 @@ class NumericalFilterParameter(
   def updateSliderValue(value: Int): Unit = 
   {
     varValue() = Some(value)
+    println(value)
     println("Slider value updated")
   }
 
-  // val slider_input = Rx {
+
+// val slider_input = Rx { 
+//   input(
+//     scalatags.JsDom.all.name := "slider_param",
+//     scalatags.JsDom.all.id := "slider_param",
+//     `type` := "range",
+//     min := 0,
+//     max := xColMax().toString,
+//   )
+// }.reactive 
+
+  // val slider_input = Rx { 
   //   input(
   //     scalatags.JsDom.all.name := "slider_param",
-  //         scalatags.JsDom.all.id := "slider_param",
-  //         `type` := "range",
-  //         min := 0,
-  //         max := xColMax().toString,
-  //         onchange := { (e:dom.Event) => 
-  //           updateSliderValue(slider.value.toInt)
-  //         }
-  //   );
-  // }.reactive
+  //     scalatags.JsDom.all.id := "slider_param",
+  //     `type` := "range",
+  //     min := 0,
+  //     max := xColMax.now.toString,
+  //     onchange := { (e:dom.Event) => 
+  //       varValue() = Some(inputNode[dom.html.Input].value.toInt)
+  //     }
+  //   )
+  // }.reactive 
 
-
-  val slider_input = Rx {
-    xColMax().map { maxVal =>
-      input(
+val slider_input = Rx {
+  xColMax().map { maxVal =>
+    input(
         scalatags.JsDom.all.name := "slider_param",
           scalatags.JsDom.all.id := "slider_param",
           `type` := "range",
           min := 0,
           max := maxVal.toString,
+          scalatags.JsDom.all.value := varValue().toString,
+          onchange := { (e:dom.Event) => 
+            varValue() = Some(inputNode[dom.html.Input].value.toInt)
+      }
     )
-    }
   }
+}
 
 val input_box = Rx {
   input(
     scalatags.JsDom.all.name := "input_box",
     `type` := "number",
     scalatags.JsDom.all.value:= varValue().toString)
-  }
+  }.reactive
 
-    //scalatags.JsDom.all.
     //scalatags.JsDom.all.
   val root =  
       span(
@@ -970,19 +984,11 @@ val input_box = Rx {
             case Some(spinVal) => 
               div(
                 `class` := "numerical_filter",
-                input(
-                  scalatags.JsDom.all.name := "slider_param",
-                  `type` := "range",
-                  min := "0",
-                  max := xColMax().toString,
-                  scalatags.JsDom.all.value:= spinVal.toString,
-                  
-                ),
-                input(
+                  slider_input.reactive,
+                  input(
                   scalatags.JsDom.all.name := "input_box",
                   `type` := "number",
-                  scalatags.JsDom.all.value:= spinVal.toString
-                )
+                  scalatags.JsDom.all.value:= spinVal.toString),
               )
             case None => 
               div(
@@ -997,19 +1003,10 @@ val input_box = Rx {
               )
             }
           }.reactive
+
       ).render
     
 
-  
-
-
-
-  if (slider != null) {
-    slider.onchange = { (e:dom.Event) => 
-      println("SLIDE  ")
-      varValue() = Some(slider.value.toInt)
-    }
-  }
 
   def value =
     if (xColMax.now == None) {
