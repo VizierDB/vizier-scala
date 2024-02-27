@@ -1,7 +1,7 @@
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`org.scala-js::scalajs-env-jsdom-nodejs:1.0.0`
 import $ivy.`org.slf4j:slf4j-simple:1.6.1`
-import $ivy.`io.bit3:jsass:5.10.4`
+import $ivy.`io.bit3:jsass:5.11.0`
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
