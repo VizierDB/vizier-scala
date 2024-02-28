@@ -37,6 +37,7 @@ import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.widgets.FontAwesome
 import java.awt.Font
+import scala.concurrent.Future
 
 
 
@@ -50,6 +51,8 @@ class BarchartEditor(
 {
   def xColumnData = Var[Option[Int]](None)
   val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
+  val selectedXCol = Var[Option[Int]](None)
+  val selectedYCol = Var[Seq[Int]](Seq.empty)
   //Keeps State of the arguments after editing
   override def loadState(arguments: Seq[CommandArgument]): Unit = 
   {
@@ -145,6 +148,15 @@ class BarchartEditor(
       ""
     )
 
+  def newLabel = 
+    new LabelParameter(
+      "newLabel",
+      "Label",
+      true,
+      false,
+      None
+    )
+
   def artifact = 
     new StringParameter(
       "artifact",
@@ -154,6 +166,7 @@ class BarchartEditor(
       ""
     )
 
+    
   //Need this Rx[Seq[serialized.DatasetColumn]]
   val listParam_bar: ListParameter =
     new ListParameter("series",
@@ -161,9 +174,10 @@ class BarchartEditor(
       Seq[String]("Dataset", "X", "Y Params", "Filter", "Label"),
       {
         () => 
-          val newFilter = filter
+
           val currentDataset = dataset
           val xCol = xcol(currentDataset)
+          val newFilter = filter(xCol)
           profiler(currentDataset, newFilter)
           xColChange(xCol, newFilter)
           Seq(
@@ -178,19 +192,24 @@ class BarchartEditor(
       false
     )
 
-    def filter =
+    def filter(xColumn:ColIdParameter) = 
       new NumericalFilterParameter(
         "filter",
         "Filter",
         datasetProfile,
         xColumnData,
+        Rx { xColumn.selectedColumn() match {
+          case None => 0
+          case Some(col) => col
+        } },
         false,
         false,
     )
   
-  def profiler(dataset:ArtifactParameter, filter:NumericalFilterParameter) =  dataset.selectedDataset.trigger { _ match {
+  def profiler(dataset:ArtifactParameter, filter:NumericalFilterParameter) : Future[Unit] = Future {   dataset.selectedDataset.trigger { _ match {
     case None => println("No dataset selected")
-    case Some(ds) => Vizier.api.artifactGet(
+    case Some(ds) => 
+      Vizier.api.artifactGet(
       Vizier.project.now.get.projectId,
       delegate.visibleArtifacts.now.get(dataset.selectedDataset.now.get).get._1.id,
       limit = Some(0),
@@ -199,20 +218,20 @@ class BarchartEditor(
       case Success(artifactDescription) =>
         artifactDescription match {
           case ds:DatasetDescription => 
-            // println(ds.properties)
-            filter.updateProfileData(ds.properties)
-            xColChange(xcol(dataset), filter)
-
+            filter.profile_data() = Some(ds.properties) 
+            println("Profiled ")
           case _ => 
             Vizier.error("Not a dataset")
         }
       case Failure(exception) =>
         Vizier.error(exception.getMessage())
     }
-  }}
+    }}
+  }
 
   def xColChange(currentXCol:ColIdParameter, filter:NumericalFilterParameter) = currentXCol.selectedColumn.trigger { _ match {
-    case None => println("No column selected")
+    case null => println("No column selected" + "null")
+    case None => println("No column selected" + currentXCol.selectedColumn.now)
     case Some(col) => filter.updateXColumnData(Some(col))
   }}
 
@@ -224,10 +243,6 @@ class BarchartEditor(
   
   
   
-
-  val selectedXCol = Var[Option[Int]](None)
-  val selectedYCol = Var[Seq[Int]](Seq.empty)
-
   
   //What is displayed to users
   override val editorFields = 

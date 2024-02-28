@@ -179,6 +179,7 @@ object Parameter
           case "colid"       => new ColIdParameter(param, visibleArtifacts, editor.selectedDataset)
           case "list"        => new ListParameter(param, tree.children, this.apply(_, editor), visibleArtifacts)
           case "numericalfilter" => new NumericalFilterParameter(param)
+          case "label"       => new LabelParameter(param)
           case "record"      => new RecordParameter(param, tree.children, this.apply(_, editor))
           case "string"      => new StringParameter(param)
           case "int"         => new IntParameter(param)
@@ -844,7 +845,7 @@ object ListParameter
             )
           case (x, _) if x.parameter.datatype == "numericalfilter" =>
             new NumericalFilterParameter(
-              x.parameter
+              x.parameter,
             )
           case (x, _) => getParameter(x)
         }
@@ -865,130 +866,107 @@ class NumericalFilterParameter(
     val name: String,
     val profile_data: Var[Option[serialized.PropertyList.T]],
     val xDataColumn: Var[Option[Int]] = Var[Option[Int]](None),
+    schema : Rx[Int],
     val required: Boolean,
     val hidden: Boolean
 )(implicit owner: Ctx.Owner) 
   extends Parameter
   {
     
-  def this (parameter: serialized.ParameterDescription)(implicit owner: Ctx.Owner) = 
+  def this (
+    parameter: serialized.ParameterDescription, 
+  )(implicit owner: Ctx.Owner) = 
   {
     this(
       parameter.id,
       parameter.name,
       Var[Option[serialized.PropertyList.T]](None),
       Var[Option[Int]](None),
+      Var[Int](0),
       parameter.required,
       parameter.hidden
     )
   }
-
-  val spin = Var[Option[String]](None)
+  val currentColumn = Var[Option[String]](None)
   val xColMax = Var[Option[Int]](None)
   // val slider = dom.document.getElementsByName("Filter").asInstanceOf[dom.html.Input]
-  val varValue = Var[Option[Int]](None)
+  val currentFilterValue = Var[Option[Int]](None)
 
-  def updateProfileData(data: serialized.PropertyList.T): Unit = 
-  {
-    profile_data() = Some(data)
-  }
 
   def updateXColumnData(xCol:Option[Int]): Unit = 
   {
-    if (profile_data.now == None) {
-      println("No xCol")
-      return 
-    }
-    val curr_xCol = xCol.get
-    if (curr_xCol != None) {
-      val columns = profile_data.now.get(2).value
-      val overall_data = columns(curr_xCol).as[JsObject]
-      val generalInfo = (overall_data \ "column")
-      val name_filter = (generalInfo \ "name").as[String]
-      val dataType = (generalInfo \ "type").as[String]
-      if (dataType == "string") {
-        println("X column is not numerical")
-        return 
-      }
-      else
-        {
-          val maxValue = (overall_data \ "max").as[Int]
-          xDataColumn() = Some(maxValue)
-          xColMax() = Some(maxValue)
-          varValue() = Some(maxValue)
-          spin() = Some(name_filter)
+    try { 
+      profile_data.now match {
+        case Some(profile_data) =>
+          xCol match {
+            case None => 
+              println("No x column")
+            case Some(curr_xCol) =>
+            val columns = profile_data(2).value
+            val overall_data = columns(curr_xCol).as[JsObject]
+            val generalInfo = (overall_data \ "column")
+            val name_filter = (generalInfo \ "name").as[String]
+            val dataType = (generalInfo \ "type").as[String]
+            if (dataType == "string") {
+              println("X column is not numerical")
+              return 
+            }
+            else
+              {
+                val maxValue = (overall_data \ "max").as[Int]
+                xDataColumn() = Some(maxValue)
+                xColMax() = Some(maxValue)
+                currentFilterValue() = Some(maxValue)
+                currentColumn() = Some(name_filter)
+            }
+          }
+        case None => 
+          println("No x column")
         }
-
-      }
+    }
+    catch {
+      case e: Exception => 
+        println("Error in updating x column data")
+        println(e)
+    }
   }
 
-  def updateSliderValue(value: Int): Unit = 
-  {
-    varValue() = Some(value)
-    println(value)
-    println("Slider value updated")
+  val slider_input = Rx {
+    xColMax().map { maxVal =>
+        input(
+            scalatags.JsDom.all.name := "slider_param",
+              scalatags.JsDom.all.id := "slider_param",
+              `type` := "range",
+              min := 0,
+              max := maxVal.toString,
+              scalatags.JsDom.all.value := currentFilterValue().toString,
+              onchange := { (e:dom.Event) => 
+                currentFilterValue() = Some(inputNode[dom.html.Input].value.toInt)
+                println("Slider value updated")
+                print(currentFilterValue()) 
+          }
+        ).render
+    }
   }
-
-
-// val slider_input = Rx { 
-//   input(
-//     scalatags.JsDom.all.name := "slider_param",
-//     scalatags.JsDom.all.id := "slider_param",
-//     `type` := "range",
-//     min := 0,
-//     max := xColMax().toString,
-//   )
-// }.reactive 
-
-  // val slider_input = Rx { 
-  //   input(
-  //     scalatags.JsDom.all.name := "slider_param",
-  //     scalatags.JsDom.all.id := "slider_param",
-  //     `type` := "range",
-  //     min := 0,
-  //     max := xColMax.now.toString,
-  //     onchange := { (e:dom.Event) => 
-  //       varValue() = Some(inputNode[dom.html.Input].value.toInt)
-  //     }
-  //   )
-  // }.reactive 
-
-val slider_input = Rx {
-  xColMax().map { maxVal =>
-    input(
-        scalatags.JsDom.all.name := "slider_param",
-          scalatags.JsDom.all.id := "slider_param",
-          `type` := "range",
-          min := 0,
-          max := maxVal.toString,
-          scalatags.JsDom.all.value := varValue().toString,
-          onchange := { (e:dom.Event) => 
-            varValue() = Some(inputNode[dom.html.Input].value.toInt)
-      }
-    )
-  }
-}
-
-val input_box = Rx {
-  input(
-    scalatags.JsDom.all.name := "input_box",
-    `type` := "number",
-    scalatags.JsDom.all.value:= varValue().toString)
-  }.reactive
 
     //scalatags.JsDom.all.
   val root =  
       span(
         Rx {
-          varValue() match {
-            case Some(spinVal) => 
+          currentFilterValue() match {
+            case Some(filterValue) => 
               div(
                 `class` := "numerical_filter",
                   slider_input.reactive,
                   input(
                   scalatags.JsDom.all.name := "input_box",
                   `type` := "number",
-                  scalatags.JsDom.all.value:= spinVal.toString),
+                  scalatags.JsDom.all.value:= filterValue.toString),
+                  onkeypress := { (e: dom.KeyboardEvent) =>
+                    if (e.keyCode == 13) {
+                      currentFilterValue() = Some(inputNode[dom.html.Input].value.toInt)
+                  }
+                }
               )
             case None => 
               div(
@@ -1003,7 +981,6 @@ val input_box = Rx {
               )
             }
           }.reactive
-
       ).render
     
 
@@ -1012,7 +989,7 @@ val input_box = Rx {
     if (xColMax.now == None) {
       JsString("")
     } else {
-      JsString(spin.now.get + " <= " + (inputNode[dom.html.Input].value).toString)
+      JsString(currentColumn.now.get + " <= " + (inputNode[dom.html.Input].value).toString)
     }
     
   def set(v: JsValue): Unit ={
@@ -1021,9 +998,10 @@ val input_box = Rx {
       return 
     }
     val data = stringVal.split(" <= ")
+    println(data)
     xColMax() = Some(data(1).toInt)
-    spin() = Some(data(0))
-    varValue() = Some(data(1).toInt)
+    currentColumn() = Some(data(0))
+    currentFilterValue() = Some(data(1).toInt)
   }
     
 }
@@ -1410,6 +1388,48 @@ class UnsupportedParameter(
     )
   }
   val root = span(s"Unsupported parameter type: $dataType ($context)")
+  def value = JsNull
+  def set(v: JsValue): Unit = {}
+}
+
+class ColorParameter(
+  val id: String, 
+  val name: String, 
+  val required: Boolean,
+  val hidden: Boolean,
+  val defaultColor: Option[String]
+) extends Parameter
+{
+  def this(parameter: serialized.ParameterDescription)
+  {
+    this(
+      id = parameter.id,
+      name = parameter.name,
+      required = parameter.required,
+      hidden = parameter.hidden,
+      defaultColor = None
+    )
+  }
+
+  def hasDefaultColor: Boolean = defaultColor.isDefined
+
+  def getDefaultColor: String = defaultColor.getOrElse("#FFFFFF")
+
+
+  val root = 
+    div(
+      `class` := "label_parameter",
+      (1 to 6).map { i =>
+          input(
+            `type` := "radio",
+            scalatags.JsDom.all.name := "radioButton",
+            scalatags.JsDom.all.value := s"Option $i"
+          )
+      }
+    ).render
+
+
+
   def value = JsNull
   def set(v: JsValue): Unit = {}
 }
