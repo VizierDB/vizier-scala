@@ -253,6 +253,7 @@ class BooleanParameter(
       required = parameter.required,
       hidden = parameter.hidden
     )
+    if(parameter.default.isDefined){ set(parameter.default.get) }
   }
   val root = 
     input(`type` := "checkbox").render

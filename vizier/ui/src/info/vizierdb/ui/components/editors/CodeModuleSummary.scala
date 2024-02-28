@@ -34,6 +34,7 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.components.EnvironmentParameter
 import info.vizierdb.serialized.SimpleParameterDescription
 import info.vizierdb.ui.components.StringParameter
+import info.vizierdb.ui.components.BooleanParameter
 
 class CodeModuleSummary(
   module: Module,
@@ -122,6 +123,17 @@ class CodeModuleSummary(
           new StringParameter(p)
       }
 
+    val showOutputField: Option[BooleanParameter] =
+      command.parameters.collectFirst {
+        case p:SimpleParameterDescription if p.id == "show_output" =>
+          new BooleanParameter(p)
+      }
+
+    // The above is a HUGE cludge.  
+    // Why are we manually allowing *specific* fields?
+    // TODO: Fix before 2.1
+    // https://github.com/VizierDB/vizier-scala/issues/311
+
     var otherArgs = Seq[CommandArgument]()
 
     def commandId = command.id
@@ -131,6 +143,8 @@ class CodeModuleSummary(
       ) ++ environmentParam.map { e =>
         CommandArgument(e.id, e.value)
       } ++ outputDatasetField.map { o =>
+        CommandArgument(o.id, o.value)
+      } ++ showOutputField.map { o =>
         CommandArgument(o.id, o.value)
       }
 
@@ -158,6 +172,13 @@ class CodeModuleSummary(
           outputDatasetField.get.set(arg.get.value)
         }
       }
+
+      if(showOutputField.isDefined){
+        val arg = arguments.find { _.id == showOutputField.get.id }
+        if(arg.isDefined){
+          showOutputField.get.set(arg.get.value)
+        }
+      }
     }
 
     val editorFields: Frag = div(
@@ -167,6 +188,7 @@ class CodeModuleSummary(
       code.root,
       environmentParam.map { _.root },
       outputDatasetField.map { _.root },
+      showOutputField.map { _.root },
     ).render
   }
 
