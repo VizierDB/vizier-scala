@@ -1577,7 +1577,9 @@ table.parameter_list
 
   td
   {
-    width: 140px;
+    //width: 140px;
+    display: flex; 
+    text-align: center; 
     vertical-align: center;
     fieldset {
       border: 0;
