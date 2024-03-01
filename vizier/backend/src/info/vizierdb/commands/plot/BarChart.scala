@@ -37,10 +37,8 @@ import info.vizierdb.artifacts.VegaLegend
 import info.vizierdb.artifacts.VegaLegendType
 import info.vizierdb.artifacts.VegaValueReference
 
-
-object BarChart extends Command
-{
-  val PARAM_SERIES = "series" 
+object BarChart extends Command {
+  val PARAM_SERIES = "series"
   val PARAM_DATASET = "dataset"
   val PARAM_X = "xcol"
   val PARAM_Y = "ycol"
@@ -53,51 +51,79 @@ object BarChart extends Command
   override def name: String = "Bar Chart"
 
   override def parameters: Seq[Parameter] = Seq(
-    ListParameter(id = PARAM_SERIES, name = "Bars", components = Seq(
-      DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
-      ColIdParameter(id = PARAM_X, name = "X-axis"),
-      ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(
-        ColIdParameter(id = PARAM_Y, name = "Y-axis"),
-      )),
-      NumericalFilterParameter(id = PARAM_FILTER, name = "Filter", required = false),
-      StringParameter(id = PARAM_LABEL, name = "Label", required = false),
-    )),
-    StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
+    ListParameter(
+      id = PARAM_SERIES,
+      name = "Bars",
+      components = Seq(
+        DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
+        ColIdParameter(id = PARAM_X, name = "X-axis"),
+        ListParameter(
+          id = PARAM_Y_AXIS,
+          name = "Y-axes",
+          components = Seq(
+            ColIdParameter(id = PARAM_Y, name = "Y-axis")
+          )
+        ),
+        NumericalFilterParameter(
+          id = PARAM_FILTER,
+          name = "Filter",
+          required = false
+        ),
+        StringParameter(id = PARAM_LABEL, name = "Label", required = false),
+        StringParameter(id = PARAM_COLOR, name = "Color", required = false)
+      )
+    ),
+    StringParameter(
+      id = PARAM_ARTIFACT,
+      name = "Output Artifact (blank to show only)",
+      required = false
+    )
   )
-  override def title(arguments: Arguments): String = 
-    "Bar plot of "+arguments.getList(PARAM_SERIES).map { series =>
-      series.get[String](PARAM_DATASET)
-    }.toSet.mkString(", ")
-  override def format(arguments: Arguments): String = 
+  override def title(arguments: Arguments): String =
+    "Bar plot of " + arguments
+      .getList(PARAM_SERIES)
+      .map { series =>
+        series.get[String](PARAM_DATASET)
+      }
+      .toSet
+      .mkString(", ")
+  override def format(arguments: Arguments): String =
     title(arguments)
 
-  override def process(arguments: Arguments, context: ExecutionContext): Unit =
-  {
+  override def process(
+      arguments: Arguments,
+      context: ExecutionContext
+  ): Unit = {
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
-    val tooltip: Boolean = true // Set to true if you want tooltips, false otherwise
+    val tooltip: Boolean =
+      true // Set to true if you want tooltips, false otherwise
 
-    val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
-                                .flatMap { case "" => None 
-                                           case x => Some(x) }
+    val artifactName = arguments
+      .getOpt[String](PARAM_ARTIFACT)
+      .flatMap {
+        case "" => None
+        case x  => Some(x)
+      }
     // Feed the configuration into PlotUtils
     val series =
-      PlotUtils.SeriesList( 
-        arguments.getList(PARAM_SERIES).map { series => 
-          PlotUtils.makeSeries(
-            context     = context,
-            datasetName = series.get[String](PARAM_DATASET),
-            xIndex      = series.get[Int](PARAM_X),
-            yIndex      = series.getList(PARAM_Y_AXIS).map { _.get[Int](PARAM_Y) },
-            xDataType   = StringType,
-            name        = series.getOpt[String](PARAM_LABEL),
-          )
-          .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
-          .aggregated()
+      PlotUtils.SeriesList(
+        arguments.getList(PARAM_SERIES).map { series =>
+          PlotUtils
+            .makeSeries(
+              context = context,
+              datasetName = series.get[String](PARAM_DATASET),
+              xIndex = series.get[Int](PARAM_X),
+              yIndex = series.getList(PARAM_Y_AXIS).map { _.get[Int](PARAM_Y) },
+              xDataType = StringType,
+              name = series.getOpt[String](PARAM_LABEL)
+            )
+            .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
+            .aggregated()
         }
       )
 
-    val yAxisLabels = series.series.flatMap(_.y).distinct 
+    val yAxisLabels = series.series.flatMap(_.y).distinct
     context.vega(
       VegaChart(
         description = "",
@@ -117,72 +143,96 @@ object BarChart extends Command
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
-          VegaScale("x", VegaScaleType.Band, 
+          VegaScale(
+            "x",
+            VegaScaleType.Band,
             padding = Some((0.115)),
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Literal(series.uniqueXValues.toSeq))
           ),
           // 'xInner': An inner scale for grouping
-          VegaScale("xInner", VegaScaleType.Band, 
+          VegaScale(
+            "xInner",
+            VegaScaleType.Band,
             padding = Some(0.11),
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Literal(yAxisLabels.map(JsString(_))))
           ),
           // 'y': The y axis scale, mapping from data.y -> chart height
-          VegaScale("y", VegaScaleType.Linear, 
+          VegaScale(
+            "y",
+            VegaScaleType.Linear,
             range = Some(VegaRange.Height),
-            domain = Some(VegaDomain.Literal(Seq(
-              JsNumber(series.minY),
-              JsNumber(series.maxY)
-              // JsNumber(series.minSumY),
-              // JsNumber(series.maxSumY)
-            )))
+            domain = Some(
+              VegaDomain.Literal(
+                Seq(
+                  JsNumber(series.minY),
+                  JsNumber(series.maxY)
+                  // JsNumber(series.minSumY),
+                  // JsNumber(series.maxSumY)
+                )
+              )
+            )
           ),
 
           // 'color': The color scale, mapping from data.c -> color category
-          VegaScale("color", VegaScaleType.Ordinal,
+          VegaScale(
+            "color",
+            VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
             domain = Some(VegaDomain.Literal(yAxisLabels.map(JsString(_))))
           )
-      ),
+        ),
 
         // Define the chart axes (based on the 'x' and 'y' scales)
         axes = Seq(
-          VegaAxis("x", VegaOrientation.Bottom, ticks = Some(true),
-                   title = Some(series.xAxis)),
-          VegaAxis("y", VegaOrientation.Left, ticks = Some(true),
-                   title = Some(series.yAxis)),
-        //Make Diagonal Axis 30 degrees
+          VegaAxis(
+            "x",
+            VegaOrientation.Bottom,
+            ticks = Some(true),
+            title = Some(series.xAxis)
+          ),
+          VegaAxis(
+            "y",
+            VegaOrientation.Left,
+            ticks = Some(true),
+            title = Some(series.yAxis)
+          )
+          // Make Diagonal Axis 30 degrees
         ),
 
         // Actually define the line(s).  There's a single mark here
-        // that generates one line per color (based on the stroke 
+        // that generates one line per color (based on the stroke
         // encoding)
-        marks = series.groupMarks(VegaMarkType.Rect, 
-            fill = true, 
-            tooltip = true),
+        marks =
+          series.groupMarks(VegaMarkType.Rect, fill = true, tooltip = true),
 
         // Finally ensure that there is a legend displayed
         legends = Seq(
           VegaLegend(
             VegaLegendType.Symbol,
-            stroke = Some("color"),
-            fill = Some("color"),
+            stroke = Some(PARAM_COLOR),
+            fill = Some(PARAM_COLOR)
           )
         )
       ),
       identifier = artifactName.getOrElse(null),
       withMessage = true
-      
     )
   }
 
-  override def predictProvenance(arguments: Arguments, properties: JsObject): ProvenancePrediction =
+  override def predictProvenance(
+      arguments: Arguments,
+      properties: JsObject
+  ): ProvenancePrediction =
     ProvenancePrediction
       .definitelyReads(
-        arguments.getList(PARAM_SERIES)
-                 .map { _.get[String](PARAM_DATASET) }
-                 .toSet.toSeq:_*
+        arguments
+          .getList(PARAM_SERIES)
+          .map { _.get[String](PARAM_DATASET) }
+          .toSet
+          .toSeq: _*
       )
       .andNothingElse
 }
+
