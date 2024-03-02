@@ -1582,7 +1582,7 @@ table.parameter_list {
         }
       } 
     }
-    thead tr:last-child
+    thead th:last-child
     {
       width: 0px;
     }
@@ -1602,7 +1602,7 @@ table.parameter_list {
         }
       } 
     }
-    tbody tr:last-child
+    tbody td:last-child
     {
       // opacity: 0.6;
 
