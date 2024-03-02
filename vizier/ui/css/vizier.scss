@@ -1582,7 +1582,7 @@ table.parameter_list {
         }
       } 
     }
-    thead th:last-child
+    thead tr:last-child
     {
       width: 0px;
     }
@@ -1595,7 +1595,7 @@ table.parameter_list {
         display: flex;
         width: 100%;
         justify-content: center;
-        th {
+        td {
           display: flex;
           width: 100%;
           justify-content: center;
@@ -1605,6 +1605,8 @@ table.parameter_list {
     tbody tr:last-child
     {
       // opacity: 0.6;
+
+      width: 0px;
 
       button.delete_row
       {
