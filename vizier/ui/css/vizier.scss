@@ -1597,8 +1597,34 @@ table.parameter_list {
         justify-content: center;
         td {
           display: flex;
-          width: 100%;
+          width: 145px;
           justify-content: center;
+          #parameter_9 {
+            width: 140px;
+          }
+          .parameter {
+            display: inline-block;
+          }
+          input[type="radio"]{
+            #parameter_30 {
+              background: #000;
+            }
+            #parameter_31 {
+              background: #FFFFFF;
+            }
+            #parameter_32 {
+              background: #214478;
+            }
+            #parameter_33 {
+              background: #FF0000;
+            }
+            #parameter_34 {
+              background: #FFD600;
+            }
+            #parameter_35 {
+              background: #00B507;
+            }
+          }
         }
       } 
     }
