@@ -1563,37 +1563,102 @@ div.modal_background
 
 /* The last child of a parameter list is a "template" placeholder to allow
    adding more records by just typing */
-table.parameter_list 
-{
-  tbody tr:last-child
-  {
-    // opacity: 0.6;
+table.parameter_list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+    thead {
+      display: flex;
+      width: 100%;
+      justify-content: space-evenly;
+      tr {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        th {
+          display: flex;
+          width: 100%;
+          justify-content: center;
+        }
+      } 
+    }
+    thead th:last-child
+    {
+      width: 0px;
+    }
 
-    button.delete_row
+    tbody {
+      display: flex;
+      width: 100%;
+      justify-content: space-evenly;
+      tr {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        td {
+          display: flex;
+          width: 100%;
+          justify-content: center;
+          .parameter {
+            display: inline-block;
+          }
+          input[type="radio"]{
+            #parameter_30 {
+              background: #000;
+            }
+            #parameter_31 {
+              background: #FFFFFF;
+            }
+            #parameter_32 {
+              background: #214478;
+            }
+            #parameter_33 {
+              background: #FF0000;
+            }
+            #parameter_34 {
+              background: #FFD600;
+            }
+            #parameter_35 {
+              background: #00B507;
+            }
+          }
+        }
+      } 
+    }
+    tbody td:last-child
+    {
+      // opacity: 0.6;
+
+      width: 0px;
+
+      button.delete_row
+      {
+        display: none;
+      }
+    }
+
+
+    td
+    {
+      //width: 140px;
+      // display: flex; 
+      // text-align: center; 
+      // vertical-align: center;
+      fieldset {
+        border: 0;
+        legend {
+          display: none ;
+        }
+      }
+    }
+
+    // Keep the labels for accessibility's sake, but don't include them
+    // in the layout.
+    td label
     {
       display: none;
     }
-  }
-
-  td
-  {
-    width: 140px;
-    vertical-align: center;
-    fieldset {
-      border: 0;
-      legend {
-        display: none ;
-      }
-    }
-  }
-
-  // Keep the labels for accessibility's sake, but don't include them
-  // in the layout.
-  td label
-  {
-    display: none;
-  }
-} 
+}
 
 select.command-argument {
   width: 130px;
