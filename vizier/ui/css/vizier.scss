@@ -1597,8 +1597,11 @@ table.parameter_list {
         justify-content: center;
         td {
           display: flex;
-          width: 100%;
+          width: 145px;
           justify-content: center;
+          #parameter_9 {
+            width: 140px;
+          }
           .parameter {
             display: inline-block;
           }
