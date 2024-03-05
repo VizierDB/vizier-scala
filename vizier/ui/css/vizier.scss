@@ -1588,7 +1588,6 @@ table.parameter_list {
     }
 
     tbody {
-      display: flex;
       width: 100%;
       justify-content: space-evenly;
       tr {
@@ -1597,31 +1596,28 @@ table.parameter_list {
         justify-content: center;
         td {
           display: flex;
-          width: 145px;
+          width: 160px;
           justify-content: center;
-          #parameter_9 {
-            width: 140px;
-          }
           .parameter {
             display: inline-block;
           }
           input[type="radio"]{
-            #parameter_30 {
+            #parameter_10 {
               background: #000;
             }
-            #parameter_31 {
+            #parameter_11 {
               background: #FFFFFF;
             }
-            #parameter_32 {
+            #parameter_12 {
               background: #214478;
             }
-            #parameter_33 {
+            #parameter_13 {
               background: #FF0000;
             }
-            #parameter_34 {
+            #parameter_14 {
               background: #FFD600;
             }
-            #parameter_35 {
+            #parameter_15 {
               background: #00B507;
             }
           }
