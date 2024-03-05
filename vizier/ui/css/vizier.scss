@@ -1605,6 +1605,8 @@ table.parameter_list {
             display: none;
             &:checked + label{
               span { transform: scale(1.25); }}
+            }
+            div.color_parameter {
               label {
                 display: inline-block;
                 width: 15px;
@@ -1623,8 +1625,8 @@ table.parameter_list {
                   height: 100%;
                   transition: transform .2s ease-in-out;
                 }
-             
-          }
+              } 
+          
           div.color_parameter input:nth-child(1){
             background: #000;
           }
