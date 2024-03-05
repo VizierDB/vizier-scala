@@ -1601,25 +1601,46 @@ table.parameter_list {
           .parameter {
             display: inline-block;
           }
-          input[type="radio"]{
-            #parameter_10 {
-              background: #000;
-            }
-            #parameter_11 {
-              background: #FFFFFF;
-            }
-            #parameter_12 {
-              background: #214478;
-            }
-            #parameter_13 {
-              background: #FF0000;
-            }
-            #parameter_14 {
-              background: #FFD600;
-            }
-            #parameter_15 {
-              background: #00B507;
-            }
+          input[type="radio"] {
+            display: none;
+            &:checked + label{
+              span { transform: scale(1.25); }
+              label {
+                display: inline-block;
+                width: 15px;
+                height: 15px;
+                margin-right: 10px;
+                cursor: pointer;
+                &:hover {
+                  span { 
+                    transform: scale(1.25); 
+                  }
+                }
+                span {
+                  display: block;
+                  width: 100%;
+                  height: 100%;
+                  transition: transform .2s ease-in-out;
+                }
+          }
+          div.color_parameter input:nth-child(1){
+            background: #000;
+          }
+          div.color_parameter input:nth-child(2){
+            background: #FFFFFF;
+          }
+          div.color_parameter input:nth-child(3){
+            background: #214478;
+          }
+          div.color_parameter input:nth-child(4){
+            background: #FF0000;
+          }
+          div.color_parameter input:nth-child(5){
+            background: #FFD600;
+          }
+          div.color_parameter input:nth-child(6){
+            background: #00B507;
+          }
           }
         }
       } 
