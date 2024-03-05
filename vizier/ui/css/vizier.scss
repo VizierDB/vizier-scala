@@ -1601,6 +1601,9 @@ table.parameter_list {
           .parameter {
             display: inline-block;
           }
+          input[name="Label"]{
+            width: 85%;
+          }
           input[type="radio"] {
             display: none;
             label {
