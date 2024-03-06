@@ -1610,7 +1610,11 @@ table.parameter_list {
               display: none;
             }
             &:checked {
-                div.parameter {
+                div {
+                  display: inline-block;
+                  width: 15px;
+                  height: 15px;
+                  border: 1px;
                   border: 2px solid ;
                   border-color: black ;
                 }
