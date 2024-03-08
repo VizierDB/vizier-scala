@@ -1402,10 +1402,13 @@ class ColorParameter(
     div(
       `class` := "color_parameter",
       (1 to 6).map { i =>
-        input(
-          `type` := "radio",
-          scalatags.JsDom.all.name := "radioButton",
-          scalatags.JsDom.all.value := i.toString
+        label (
+          span(),
+          input(
+            `type` := "radio",
+            scalatags.JsDom.all.name := "radioButton",
+            scalatags.JsDom.all.value := i.toString
+          )
         )
       }
     ).render
