@@ -1403,7 +1403,7 @@ class ColorParameter(
       `class` := "color_parameter",
       (1 to 6).map { i =>
         label (
-          span(s"Option $i"),
+          span(),
           input(
             `type` := "radio",
             scalatags.JsDom.all.name := "radioButton",
