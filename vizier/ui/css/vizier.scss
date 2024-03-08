@@ -1593,10 +1593,10 @@ table.parameter_list {
       tr {
         display: flex;
         width: 100%;
-        justify-content: center;
+        justify-content: space-evenly;
         td {
           display: flex;
-          width: 160px;
+          width: 30%;
           justify-content: center;
           .parameter {
             display: inline-block;
@@ -1688,7 +1688,7 @@ table.parameter_list {
     {
       // opacity: 0.6;
 
-      width: 0px;
+      // width: 0px;
 
       button.delete_row
       {
