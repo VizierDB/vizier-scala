@@ -70,7 +70,7 @@ object BarChart extends Command {
           required = false
         ),
         StringParameter(id = PARAM_LABEL, name = "Label", required = false),
-        StringParameter(id = PARAM_COLOR, name = "Color", required = false)
+        ColorParameter(id = PARAM_COLOR, name = "Color", required = false)
       )
     ),
     StringParameter(
@@ -116,7 +116,8 @@ object BarChart extends Command {
               xIndex = series.get[Int](PARAM_X),
               yIndex = series.getList(PARAM_Y_AXIS).map { _.get[Int](PARAM_Y) },
               xDataType = StringType,
-              name = series.getOpt[String](PARAM_LABEL)
+              name = series.getOpt[String](PARAM_LABEL),
+              color = series.getOpt[String](PARAM_COLOR)
             )
             .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
             .aggregated()
@@ -154,7 +155,7 @@ object BarChart extends Command {
           VegaScale(
             "xInner",
             VegaScaleType.Band,
-            padding = Some(0.11),
+            padding = Some(0.25),
             range = Some(VegaRange.Width),
             domain = Some(VegaDomain.Literal(yAxisLabels.map(JsString(_))))
           ),
@@ -235,4 +236,3 @@ object BarChart extends Command {
       )
       .andNothingElse
 }
-

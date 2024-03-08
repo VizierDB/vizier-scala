@@ -30,12 +30,14 @@ import info.vizierdb.serialized.{
   PackageCommand,
   PropertyList
 }
+import info.vizierdb.ui.rxExtras.{OnMount, RxBuffer, RxBufferView}
 import info.vizierdb.types._
 import info.vizierdb.nativeTypes.JsValue
 import scala.util.{Success, Failure}
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.ui.widgets.SideMenu
 import java.awt.Font
 import scala.concurrent.Future
 
@@ -50,6 +52,7 @@ class BarchartEditor(
   val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
   val selectedXCol = Var[Option[Int]](None)
   val selectedYCol = Var[Seq[Int]](Seq.empty)
+
   // Keeps State of the arguments after editing
   override def loadState(arguments: Seq[CommandArgument]): Unit = {
     for (arg <- arguments) {
@@ -67,7 +70,7 @@ class BarchartEditor(
     )
   }
 
-  def dataset =
+  def makeDataset =
     new ArtifactParameter(
       id = "dataset",
       name = "Dataset",
@@ -78,7 +81,7 @@ class BarchartEditor(
       hidden = false
     )
 
-  def xcol(dataset: ArtifactParameter) =
+  def makeXColumn(dataset: ArtifactParameter) =
     new ColIdParameter(
       "xcol",
       "X-axis",
@@ -97,7 +100,7 @@ class BarchartEditor(
       false
     )
 
-  def ycol(dataset: ArtifactParameter) =
+  def makeYColumn(dataset: ArtifactParameter) =
     new ColIdParameter(
       "ycol",
       "Y-Axis",
@@ -117,21 +120,21 @@ class BarchartEditor(
       false
     )
 
-  def yListParam(dataset: ArtifactParameter) =
+  def makeyListParam(dataset: ArtifactParameter) =
     new ListParameter(
       "yList",
       "Y-axes",
       Seq[String]("ycol"),
       { () =>
         Seq(
-          ycol(dataset)
+          makeYColumn(dataset)
         ),
       },
       true,
       false
     )
 
-  def label =
+  def makeLabel =
     new StringParameter(
       "label",
       "Label",
@@ -140,10 +143,10 @@ class BarchartEditor(
       ""
     )
 
-  def newLabel =
+  def makeNewLabel =
     new ColorParameter(
-      "newLabel",
-      "Label",
+      "color",
+      "Color",
       true,
       false,
       None
@@ -165,25 +168,25 @@ class BarchartEditor(
       "Bars",
       Seq[String]("Dataset", "X", "Y Params", "Filter", "Label", "Colors"),
       { () =>
-        val currentDataset = dataset
-        val xCol = xcol(currentDataset)
-        val newFilter = filter(xCol)
+        val currentDataset = makeDataset
+        val xCol = makeXColumn(currentDataset)
+        val newFilter = makeFilter(xCol)
         profiler(currentDataset, newFilter)
         xColChange(xCol, newFilter)
         Seq(
           currentDataset,
           xCol,
-          yListParam(currentDataset),
+          makeyListParam(currentDataset),
           newFilter,
-          label,
-          newLabel
-        ),
+          makeLabel,
+          makeNewLabel
+        )
       },
       true,
       false
     )
 
-  def filter(xColumn: ColIdParameter) =
+  def makeFilter(xColumn: ColIdParameter) =
     new NumericalFilterParameter(
       "filter",
       "Filter",
@@ -254,16 +257,129 @@ class BarchartEditor(
       }
     }
 
+  val BarChart = new BarchartRow(
+    makeDataset,
+    makeXColumn(makeDataset),
+    Seq(makeYColumn(makeDataset)),
+    makeFilter(makeXColumn(makeDataset)),
+    makeLabel,
+    makeNewLabel
+  )
+
+  val SeqBarChart = Seq(
+    BarChart.datatset,
+    BarChart.xColumn,
+    BarChart.yColumn,
+    BarChart.filter,
+    BarChart.label,
+    BarChart.color
+  )
+
+  val titles = Seq("Dataset", "X", "Y Params", "Filter", "Label", "Colors")
+
+  def renderBarChartRow(barChart: BarchartRow) = {
+    Seq(
+      td(barChart.datatset.root),
+      td(barChart.xColumn.root),
+      td(barChart.yColumn.head.root),
+      td(barChart.filter.root),
+      td(barChart.label.root),
+      td(barChart.color.root)
+    )
+  }
+
+  val barChartRoot =
+    fieldset(
+      legend("Bars"),
+      table(
+        `class` := "parameter_list",
+        thead(
+          tr(
+            titles.map { th(_) },
+            th("")
+          )
+        ),
+        renderBarChartRow(BarChart)
+      ),
+      div(
+        `class` := "side_menu",
+        FontAwesome("ellipsis-v"),
+        SideMenu.sideMenuElement
+      )
+    ).render
+
   // What is displayed to users
   override val editorFields =
-    div(`class` := "bar_chart_editor", listParam_bar.root)
+    div(`class` := "bar_chart_editor", barChartRoot)
+}
 
-  // div(`class` := "profiler",
-  //   button (
-  //     FontAwesome("ellipsis-h"),
-  //     `class` := "chart_editor_button",
-  //     onclick := { () => println(selectedDataset.now) }
-  //   ),
-  //   artifactResultContainer.render,
-  // ),
+case class BarchartRow(
+    datatset: ArtifactParameter,
+    xColumn: ColIdParameter,
+    yColumn: Seq[ColIdParameter],
+    filter: NumericalFilterParameter,
+    label: StringParameter,
+    color: ColorParameter
+)
+
+case class BarChartConfig(rows: Seq[BarchartRow])
+case class AppState(barchartConfig: BarChartConfig)
+
+sealed trait BarchartAction
+case class UpdateXColumn(rowIndex: Int, newXColumn: ColIdParameter)
+
+object BarChartState {
+
+  val appState = Var(AppState(BarChartConfig(Seq())))
+
+  sealed trait BarchartAction
+  case class UpdateFilter(
+      rowIndex: Int,
+      newFilter: NumericalFilterParameter
+  ) extends BarchartAction
+  case class UpdateColor(rowIndex: Int, newColor: ColorParameter)
+      extends BarchartAction
+  case class UpdateXColumn(rowIndex: Int, newXColumn: ColIdParameter)
+      extends BarchartAction
+
+  def barchartReducer(
+      state: BarChartConfig,
+      action: BarchartAction
+  ): BarChartConfig = {
+    action match {
+      case UpdateXColumn(rowIndex, newXColumn) =>
+        state.copy(
+          rows = state.rows
+            .updated(rowIndex, state.rows(rowIndex).copy(xColumn = newXColumn))
+        )
+      case UpdateFilter(rowIndex, newFilter) =>
+        state.copy(
+          rows = state.rows
+            .updated(rowIndex, state.rows(rowIndex).copy(filter = newFilter))
+        )
+      case UpdateColor(rowIndex, newColor) =>
+        state.copy(
+          rows = state.rows
+            .updated(rowIndex, state.rows(rowIndex).copy(color = newColor))
+        )
+      case _ => state
+    }
+  }
+
+  def dispatch(action: BarchartAction): Unit = {
+    val updatedAppState = appState.now.copy(
+      barchartConfig = barchartReducer(
+        appState.now.barchartConfig,
+        action
+      )
+    )
+    appState() = updatedAppState
+  }
+
+  def sliderChange(
+      rowIndex: Int,
+      newFilter: NumericalFilterParameter
+  ): Unit = {
+    dispatch(UpdateFilter(rowIndex, newFilter))
+  }
 }
