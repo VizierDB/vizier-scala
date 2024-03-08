@@ -257,11 +257,13 @@ class BarchartEditor(
       }
     }
 
+  val dataset = makeDataset
+
   val BarChart = new BarchartRow(
-    makeDataset,
-    makeXColumn(makeDataset),
-    Seq(makeYColumn(makeDataset)),
-    makeFilter(makeXColumn(makeDataset)),
+    dataset,
+    makeXColumn(dataset),
+    Seq(makeYColumn(dataset)),
+    makeFilter(makeXColumn(dataset)),
     makeLabel,
     makeNewLabel
   )
