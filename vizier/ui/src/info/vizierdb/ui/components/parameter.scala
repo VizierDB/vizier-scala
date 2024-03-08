@@ -1407,9 +1407,9 @@ class ColorParameter(
           scalatags.JsDom.all.name := "radioButton",
           scalatags.JsDom.all.value := i.toString
         ),
-        label {
+        label (
           span(s"Option $i")
-        }
+        )
       }
     ).render
 
