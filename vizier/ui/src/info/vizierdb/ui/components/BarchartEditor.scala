@@ -257,12 +257,13 @@ class BarchartEditor(
     }
 
   val dataset = makeDataset
+  val xCol = makeXColumn(dataset)
 
   val BarChart = new BarchartRow(
     dataset,
-    makeXColumn(dataset),
+    xCol,
     Seq(makeYColumn(dataset)),
-    makeFilter(makeXColumn(dataset)),
+    makeFilter(xCol),
     makeLabel,
     makeNewLabel
   )
@@ -315,11 +316,12 @@ class BarchartEditor(
   // What is displayed to users
   override val editorFields =
     div(`class` := "bar_chart_editor", barChartRoot,
+
       div(`class` := "sidemenu_container", sideMenuElement, SideMenu.sideMenuContent)
     )
 }
 
-
+//Side Menu for Bar Chart Editor for Label, Filter, and Color
 object SideMenu {
 
   private var isOpen = false
@@ -337,17 +339,32 @@ object SideMenu {
     } 
   }
 
-  def renderSideMenuContent(barChart: BarchartRow): Unit = {
-    while (sideMenuContent.firstChild != null) {
-      sideMenuContent.removeChild(sideMenuContent.firstChild)
-    }
-
-    sideMenuContent.appendChild(div(
-      label("Label:"), barChart.label.root, br(),
-      label("Filter:"), barChart.filter.root, br(),
-      label("Color:"), barChart.color.root
-    ).render) 
+def renderSideMenuContent(barChart: BarchartRow): Unit = {
+  while (sideMenuContent.firstChild != null) {
+    sideMenuContent.removeChild(sideMenuContent.firstChild)
   }
+
+  sideMenuContent.appendChild(div(
+    table(
+      `class` := "sidemenu_table",
+      thead(
+        tr(
+          th("Label"),
+          th("Filter"),
+          th("Color")
+        )
+      ),
+      tbody(
+        tr(
+          td(barChart.label.root),
+          td(barChart.filter.root),
+          td(barChart.color.root)
+        )
+      )
+    ) 
+  ).render)
+}
+
 
   def showAt(x: Double, y: Double): Unit = {
     sideMenuContent.style.left = s"${x}px" // Target sideMenuContent 
