@@ -37,7 +37,6 @@ import scala.util.{Success, Failure}
 import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.widgets.FontAwesome
-import info.vizierdb.ui.widgets.SideMenu
 import java.awt.Font
 import scala.concurrent.Future
 
@@ -277,18 +276,21 @@ class BarchartEditor(
     BarChart.color
   )
 
-  val titles = Seq("Dataset", "X", "Y Params", "Filter", "Label", "Colors")
+  val titles = Seq("Dataset", "X", "Y Params") //"Filter", "Label", "Colors")
 
   def renderBarChartRow(barChart: BarchartRow) = {
-    Seq(
+  tbody( 
+    tr(
       td(barChart.datatset.root),
       td(barChart.xColumn.root),
       td(barChart.yColumn.head.root),
-      td(barChart.filter.root),
-      td(barChart.label.root),
-      td(barChart.color.root)
-    )
-  }
+      // td(barChart.filter.root)
+      
+      // td(barChart.label.root),
+      // td(barChart.color.root)
+    ) 
+  )
+}
 
   val barChartRoot =
     fieldset(
@@ -303,18 +305,69 @@ class BarchartEditor(
         ),
         renderBarChartRow(BarChart)
       ),
-      div(
-        `class` := "side_menu",
-        FontAwesome("ellipsis-v"),
-        SideMenu.sideMenuElement
-      )
+    ).render
+
+  val sideMenuElement =
+    button(`class` := "sidemenu_button", onclick := { (e: dom.MouseEvent) => SideMenu.toggleMenu(e,BarChart) }, 
+      FontAwesome("ellipsis-v")
     ).render
 
   // What is displayed to users
   override val editorFields =
-    div(`class` := "bar_chart_editor", barChartRoot)
+    div(`class` := "bar_chart_editor", barChartRoot,
+      div(`class` := "sidemenu_container", sideMenuElement, SideMenu.sideMenuContent)
+    )
 }
 
+
+object SideMenu {
+
+  private var isOpen = false
+  
+  val sideMenuContent =  div(`class` := "sidemenu", style := "visibility: visible").render
+
+  def toggleMenu(buttonEvent: dom.MouseEvent, barChart:BarchartRow): Unit = {
+    if (isOpen) {
+      hide()
+      isOpen = false
+    } else {
+      showAt(buttonEvent.pageX + 50, buttonEvent.pageY + 50)
+      isOpen = true
+      SideMenu.renderSideMenuContent(barChart)
+    } 
+  }
+
+  def renderSideMenuContent(barChart: BarchartRow): Unit = {
+    while (sideMenuContent.firstChild != null) {
+      sideMenuContent.removeChild(sideMenuContent.firstChild)
+    }
+
+    sideMenuContent.appendChild(div(
+      label("Label:"), barChart.label.root, br(),
+      label("Filter:"), barChart.filter.root, br(),
+      label("Color:"), barChart.color.root
+    ).render) 
+  }
+
+  def showAt(x: Double, y: Double): Unit = {
+    sideMenuContent.style.left = s"${x}px" // Target sideMenuContent 
+    sideMenuContent.style.top = s"${y}px"
+    sideMenuContent.style.visibility = "visible"
+    sideMenuContent.style.opacity = "1.0"
+  }
+
+  def hide(): Unit = {
+    sideMenuContent.style.visibility = "hidden" // Target sideMenuContent
+    sideMenuContent.style.opacity = "0"
+  }
+}
+
+
+
+
+
+
+// BarChart Single Row Instance for Controlled Variables outside of Parameter Class
 case class BarchartRow(
     datatset: ArtifactParameter,
     xColumn: ColIdParameter,
