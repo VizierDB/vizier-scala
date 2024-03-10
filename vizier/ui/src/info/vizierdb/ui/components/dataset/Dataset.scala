@@ -53,18 +53,11 @@ class Dataset(
                     (candidates, pageSize) => candidates.maxBy { pageIdx => math.abs(pageIdx - table.firstRowIndex) }
                   )
   val datasetSummary = new DatasetSummary(projectId, datasetId)                
-
+  
   def displayDatasetSummary(): Unit = {
-  datasetSummary.fetchAndRenderDatasetInfo().onComplete {
-    case Success(dsSummary) =>
-      val datasetBody = root.querySelector(".dataset_body")
+    val datasetBody = root.querySelector(".dataset_body")
       datasetBody.innerHTML = "" 
-      datasetBody.appendChild(dsSummary.render)
-    case Failure(exception) =>
-      // Handle error
-      val datasetBody = root.querySelector(".dataset_body")
-      datasetBody.innerHTML = s"Error loading dataset summary: ${exception.getMessage}"
-  }
+      datasetBody.appendChild(datasetSummary.root)
   }
   var table: TableView = null
 
@@ -142,32 +135,33 @@ class Dataset(
     ).map { _.rows }
   }
 
-  def handleAction(event: dom.Event): Unit = {
-    event.preventDefault() 
-    displayDatasetSummary()
+  def handleAction(action: () => Unit)(event: dom.Event): Unit = {
+    event.preventDefault()
+    action()
   }
 
-  def handleAction2(event: dom.Event): Unit = {
-    event.preventDefault() 
-    displayTable()
-  }
-
-  val newDataSummaryCommand: Dataset.Command = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
-    val element = a(FontAwesome("info")).render
-    element.addEventListener("click", handleAction _) 
+  val newDataSummaryCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
+    val element = a(FontAwesome("info-circle")).render
+    element.addEventListener("click", handleAction(() => displayDatasetSummary())) 
     element
   }
 
   val newOpenSpreadsheetCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
     val element = a(FontAwesome("table")).render
-    element.addEventListener("click", handleAction2 _) 
+    element.addEventListener("click", handleAction(() => displayTable())) 
     element
   }
 
-  val new_menu: Seq[Dataset.Command] = menu.map {
-    case Dataset.COMMAND_DATA_SUMMARY => newDataSummaryCommand
-    case other => other
+  val newDownloadCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
+    val element = a(
+      href := Vizier.api.artifactGetCsvURL(projectId, datasetId, name = Some(datasetName)),
+      target := "_blank",
+      FontAwesome("download")
+    ).render 
+    element   
   }
+  
+  val new_menu = Seq(newDownloadCommand,newDataSummaryCommand,newOpenSpreadsheetCommand)
 
 
   val root:dom.html.Div = div(
@@ -189,14 +183,16 @@ class Dataset(
 object Dataset
 {
   type Command = (Identifier, Identifier, String) => Frag
-  var COMMAND_OPEN_SPREADSHEET = 
+  
+  val COMMAND_OPEN_SPREADSHEET = 
     (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
       a(
         href := Vizier.links.spreadsheet(projectId, datasetId),
         target := "_blank",
         FontAwesome("table")
       )
-
+    
+  
   val COMMAND_DOWNLOAD =
     (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
       a(
@@ -209,5 +205,5 @@ object Dataset
     (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
       a(FontAwesome("info"))
   
-  val DEFAULT_COMMANDS = Seq(COMMAND_DATA_SUMMARY,COMMAND_DOWNLOAD)
+  val DEFAULT_COMMANDS = Seq(COMMAND_DOWNLOAD)
 }

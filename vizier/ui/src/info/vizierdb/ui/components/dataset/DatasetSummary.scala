@@ -51,10 +51,10 @@ class DatasetSummary(projectId: Identifier, datasetId: Identifier)(implicit val 
                     case _ => div() // No additional stats for non-numeric types
                   }
                   
-                  div(
-                    div(s"Column: $columnName"),
-                    div(s"Type: $columnType"),
-                    div(s"Column Information:",
+                  div(style := "display: flex; align-items: center; margin-bottom: 10px;",
+                    div(style := "margin-right: 20px;", s"Column Name: $columnName"),
+                    div(style := "margin-right: 20px;", s"Type: $columnType"),
+                    div(style := "margin-right: 20px;",
                         div(s"Distinct Values: $distinctValueCount"),
                         div(s"Null Count: $nullCount"),
                         div(s"Count: $count"),
@@ -70,5 +70,21 @@ class DatasetSummary(projectId: Identifier, datasetId: Identifier)(implicit val 
         div("Not a dataset or dataset information could not be retrieved.")
     }
   }
+  
+  def updateSummary(): Unit = {
+  this.fetchAndRenderDatasetInfo().onComplete {
+    case Success(dsSummary) =>
+      root.innerHTML = "" // Clear the content of root directly
+      root.appendChild(dsSummary.render) // Append the new summary to root
+
+    case Failure(exception) =>
+      root.innerHTML = s"Error loading dataset summary: ${exception.getMessage}" // Update root directly
+  }
+  }
+
+  val root: dom.html.Div = div(`class` := "dataset_summary",s"").render
+
+
+  updateSummary()
 }
 
