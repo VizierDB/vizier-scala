@@ -30,6 +30,10 @@ import info.vizierdb.ui.Vizier
 import info.vizierdb.util.RowCache
 import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.ui.network.SpreadsheetClient
+import scala.util.{ Success, Failure }
+import play.api.libs.json._
+
+
 
 /**
  * A representation of a dataset artifact
@@ -62,7 +66,20 @@ class Dataset(
                     fetchRowsWithAPI, 
                     (candidates, pageSize) => candidates.maxBy { pageIdx => math.abs(pageIdx - table.firstRowIndex) }
                   )
+  val datasetSummary = new DatasetSummary(projectId, datasetId)                
+  
+  def displayDatasetSummary(): Unit = {
+    val datasetBody = root.querySelector(".dataset_body")
+      datasetBody.innerHTML = "" 
+      datasetBody.appendChild(datasetSummary.root)
+  }
   var table: TableView = null
+
+  def displayTable(): Unit = {
+    val datasetBody = root.querySelector(".dataset_body")
+      datasetBody.innerHTML = "" 
+      datasetBody.appendChild(table.root)
+  }
 
   def setSource(source: TableDataSource, invalidate: Boolean = true){
     if(table == null){
@@ -72,7 +89,7 @@ class Dataset(
         maxHeight = 400,
         headerHeight = 40
       )
-      root.appendChild(table.root)
+      root.appendChild(div(`class` := "dataset_body",table.root))
       cache.onRefresh.append(table.refresh(_,_))
     } else { 
       source match {
@@ -81,6 +98,7 @@ class Dataset(
       }
       table.setData(source, invalidate = invalidate)
     }
+
   }
 
   val name = Var[String]("unnamed")
@@ -131,6 +149,35 @@ class Dataset(
     ).map { _.rows }
   }
 
+  def handleAction(action: () => Unit)(event: dom.Event): Unit = {
+    event.preventDefault()
+    action()
+  }
+
+  val newDataSummaryCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
+    val element = a(FontAwesome("info-circle")).render
+    element.addEventListener("click", handleAction(() => displayDatasetSummary())) 
+    element
+  }
+
+  val newOpenSpreadsheetCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
+    val element = a(FontAwesome("table")).render
+    element.addEventListener("click", handleAction(() => displayTable())) 
+    element
+  }
+
+  val newDownloadCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
+    val element = a(
+      href := Vizier.api.artifactGetCsvURL(projectId, datasetId, name = Some(datasetName)),
+      target := "_blank",
+      FontAwesome("download")
+    ).render 
+    element   
+  }
+  
+  val new_menu = Seq(newDownloadCommand,newDataSummaryCommand,newOpenSpreadsheetCommand)
+
+
   val root:dom.html.Div = div(
     `class` := "dataset",
     div(
@@ -139,16 +186,18 @@ class Dataset(
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
       }.reactive,
       Rx { 
-        span(menu.map { _(projectId, datasetId, name()) })
+        span(new_menu.map { _(projectId, datasetId, name()) })
       }.reactive
     )
     // Table root is appended by setSource()
   ).render
+
 }
 
 object Dataset
 {
   type Command = (Identifier, Identifier, String) => Frag
+  
   val COMMAND_OPEN_SPREADSHEET = 
     (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
       a(
@@ -156,7 +205,8 @@ object Dataset
         target := "_blank",
         FontAwesome("table")
       )
-
+    
+  
   val COMMAND_DOWNLOAD =
     (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
       a(
@@ -165,5 +215,9 @@ object Dataset
         FontAwesome("download")
       )
 
+  val COMMAND_DATA_SUMMARY = 
+    (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
+      a(FontAwesome("info"))
+  
   val DEFAULT_COMMANDS = Seq(COMMAND_DOWNLOAD)
 }
