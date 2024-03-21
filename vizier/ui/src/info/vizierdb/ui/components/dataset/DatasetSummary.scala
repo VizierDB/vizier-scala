@@ -19,14 +19,16 @@ import play.api.libs.json._
 class DatasetSummary(projectId: Identifier, datasetId: Identifier)(implicit val owner: Ctx.Owner) {
   
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-  
-  def fetchAndRenderDatasetInfo(): Future[HtmlTag] = {
-    Vizier.api.artifactGet(
+
+  val artifact = Vizier.api.artifactGet(
       projectId,
       datasetId,
       limit = Some(0),
       profile = Some("true")
-    ).map {
+    )
+  
+  def fetchAndRenderDatasetInfo(): Future[HtmlTag] = {
+    artifact.map {
       case ds: DatasetDescription =>
         ds.properties.find(_.key == "columns") match {
           case Some(property) =>
@@ -74,8 +76,8 @@ class DatasetSummary(projectId: Identifier, datasetId: Identifier)(implicit val 
   def updateSummary(): Unit = {
   this.fetchAndRenderDatasetInfo().onComplete {
     case Success(dsSummary) =>
-      root.innerHTML = "" // Clear the content of root directly
-      root.appendChild(dsSummary.render) // Append the new summary to root
+      root.innerHTML = ""
+      root.appendChild(dsSummary.render) 
 
     case Failure(exception) =>
       root.innerHTML = s"Error loading dataset summary: ${exception.getMessage}" // Update root directly

@@ -55,16 +55,17 @@ class Dataset(
   val datasetSummary = new DatasetSummary(projectId, datasetId)                
   
   def displayDatasetSummary(): Unit = {
+    datasetSummary.updateSummary()
     val datasetBody = root.querySelector(".dataset_body")
-      datasetBody.innerHTML = "" 
-      datasetBody.appendChild(datasetSummary.root)
+    datasetBody.innerHTML = "" 
+    datasetBody.appendChild(datasetSummary.root)
   }
   var table: TableView = null
 
   def displayTable(): Unit = {
     val datasetBody = root.querySelector(".dataset_body")
-      datasetBody.innerHTML = "" 
-      datasetBody.appendChild(table.root)
+    datasetBody.innerHTML = "" 
+    datasetBody.appendChild(table.root)
   }
 
   def setSource(source: TableDataSource, invalidate: Boolean = true){
