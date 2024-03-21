@@ -846,3 +846,21 @@ case class EnvironmentParameter(
       helpText = helpText,
     ))
 }
+
+case class ColorParameter(
+  id: String,
+  name: String,
+  default: Option[String] = None,
+  required: Boolean = true,
+  hidden: Boolean = false
+  ) extends Parameter with StringEncoder
+  {
+    def datatype = "color"
+    def doStringify(j: JsValue): String = j.as[String]
+    def doValidate(j: JsValue) = if(j.isInstanceOf[JsString]){ None }
+                               else if ((j == JsNull) && (default.isDefined || !required)) { None }
+                               else { Some(s"Expected a string/color for $name") }
+    override def getDefault: JsValue =
+      default.map { JsString(_) }.getOrElse { JsNull }
+  }
+

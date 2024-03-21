@@ -17,20 +17,20 @@ package info.vizierdb.ui.widgets
 import org.scalajs.dom
 import scalatags.JsDom.all._
 
-object Tooltip
-{
+object Tooltip {
   lazy val tooltip = {
-    val tt = div(`class` := "tooltip", style := "visibility: hidden;", "???").render
+    val tt =
+      div(`class` := "tooltip", style := "visibility: hidden;", "???").render
     dom.window.document.body.appendChild(tt)
-    /* return */ tt
+    /* return */
+    tt
   }
-  private var triggerHandle:Option[Int] = None
+  private var triggerHandle: Option[Int] = None
 
-  def show(x: Double, y: Double)(content: dom.Node*): Unit =
-  {
+  def show(x: Double, y: Double)(content: dom.Node*): Unit = {
     tooltip.style.left = s"${x}px"
-    tooltip.style.top  = s"${y}px"
-    while(tooltip.firstChild != null){
+    tooltip.style.top = s"${y}px"
+    while (tooltip.firstChild != null) {
       tooltip.removeChild(tooltip.firstChild)
     }
     content.foreach { tooltip.appendChild(_) }
@@ -39,21 +39,23 @@ object Tooltip
     tooltip.style.opacity = "1.0"
   }
 
-  def showSoon(x: Double, y: Double)(content: dom.Node*): Unit =
-  {
+  def showSoon(x: Double, y: Double)(content: dom.Node*): Unit = {
     clearTrigger()
-    triggerHandle = Some(dom.window.setTimeout({ () => 
-      show(x, y)(content:_*)
-    }, 1000))
+    triggerHandle = Some(
+      dom.window.setTimeout(
+        { () =>
+          show(x, y)(content: _*)
+        },
+        1000
+      )
+    )
   }
 
-  def showSoon(evt: dom.MouseEvent)(content: dom.Node*): Unit =
-  {
-    showSoon(evt.pageX + 20, evt.pageY + 20)(content:_*)
+  def showSoon(evt: dom.MouseEvent)(content: dom.Node*): Unit = {
+    showSoon(evt.pageX + 20, evt.pageY + 20)(content: _*)
   }
 
-  def hide(): Unit =
-  {
+  def hide(): Unit = {
     clearTrigger()
     tooltip.style.visibility = "hidden"
     tooltip.style.opacity = "0"
@@ -62,35 +64,44 @@ object Tooltip
     // }
   }
 
-  def hideSoon(): Unit =
-  {
+  def hideSoon(): Unit = {
     clearTrigger()
-    triggerHandle = Some(dom.window.setTimeout({ () => 
-      hide()
-    }, 100))
+    triggerHandle = Some(
+      dom.window.setTimeout(
+        { () =>
+          hide()
+        },
+        100
+      )
+    )
   }
 
-  def clearTrigger(): Unit =
-  {
-    if(triggerHandle.isDefined){
+  def clearTrigger(): Unit = {
+    if (triggerHandle.isDefined) {
       dom.window.clearTimeout(triggerHandle.get)
       triggerHandle = None
     }
   }
 
-  def apply(msg: String): Seq[AttrPair] = 
+  def apply(msg: String): Seq[AttrPair] =
     apply(span(msg))
 
   def apply(elem: Frag*): Seq[AttrPair] =
-    make(elem.map { _.render }:_*)
+    make(elem.map { _.render }: _*)
 
-  def make(content: dom.Node*): Seq[AttrPair] = 
+  def make(content: dom.Node*): Seq[AttrPair] =
     Seq(
-      onmouseover := { (evt:dom.MouseEvent) => 
-        showSoon(evt)(content:_*)
+      onmouseover := { (evt: dom.MouseEvent) =>
+        showSoon(evt)(content: _*)
       },
-      onmouseout := { (_:dom.Event) => 
+      onmouseout := { (_: dom.Event) =>
         hideSoon()
       }
     )
+
+  val root = div(
+    `class` := "side_menu_content",
+    style := "position: absolute; display: none;"
+  ).render
 }
+

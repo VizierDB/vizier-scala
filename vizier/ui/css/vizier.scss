@@ -1593,42 +1593,102 @@ table.parameter_list {
       tr {
         display: flex;
         width: 100%;
-        justify-content: center;
+        justify-content: space-evenly;
         td {
           display: flex;
-          width: 160px;
+          width: 30%;
           justify-content: center;
           .parameter {
             display: inline-block;
           }
-          input[type="radio"]{
-            #parameter_10 {
-              background: #000;
+          input[name="Label"]{
+            width: 85%;
+          }
+          input[type="radio"] {
+            display: none;
             }
-            #parameter_11 {
-              background: #FFFFFF;
+
+          .color_parameter input[type="radio"]:checked ~ label:before {
+            span {
+                  border: 3px solid;
+                  border-color: #000000;
+                  transform: scale(1.25);
             }
-            #parameter_12 {
-              background: #214478;
+          }
+            div.color_parameter {
+              label {
+                font-size: 0;
+                display: inline-block;
+                width: 15px;
+                height: 15px;
+                margin-right: 10px;
+                cursor: pointer;
+                &:hover {
+                     span { 
+                        transform: scale(1.25); 
+                      }
+                }
+                span {
+                  display: block;
+                  width: 100%;
+                  height: 100%;
+                  transition: transform .2s ease-in-out; }
+              }
+            } 
+          
+          div.color_parameter :nth-child(1){
+            span {
+             background: #000;
+              border: 0.5px solid;
+             border-color: #000000;
             }
-            #parameter_13 {
-              background: #FF0000;
+          }
+          div.color_parameter :nth-child(2){
+            span {
+            background: #FFFFFF;
+             border: 0.5px solid;
+             border-color: #000000;
             }
-            #parameter_14 {
-              background: #FFD600;
+          }
+          div.color_parameter :nth-child(3){
+            span {
+            background: #214478;
+            border: 0.5px solid;
+             border-color: #000000;
             }
-            #parameter_15 {
-              background: #00B507;
+          }
+          div.color_parameter :nth-child(4){
+            span {
+            background: #FF0000;
+             border: 0.5px solid;
+             border-color: #000000;
             }
+          }
+          div.color_parameter :nth-child(5){
+            span {
+            background: #FFD600;
+            border: 0.5px solid;
+            border-color: #000000;
+            }
+          }
+          div.color_parameter :nth-child(6){
+            span {
+            background: #00B507;
+             border: 0.5px solid;
+             border-color: #000000;
+            }
+          }
+   
+    
           }
         }
       } 
-    }
+
     tbody td:last-child
     {
       // opacity: 0.6;
 
-      width: 0px;
+      // width: 0px;
 
       button.delete_row
       {
@@ -1658,6 +1718,130 @@ table.parameter_list {
       display: none;
     }
 }
+
+table.sidemenu_table {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+    thead {
+      display: flex;
+      width: 100%;
+      justify-content: space-evenly;
+      tr {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        th {
+          display: flex;
+          width: 100%;
+          justify-content: center;
+        }
+      } 
+    }
+
+    tbody {
+      width: 100%;
+      justify-content: space-evenly;
+      tr {
+        display: flex;
+        width: 100%;
+        justify-content: space-evenly;
+        td {
+          display: flex;
+          width: 30%;
+          justify-content: center;
+          label {
+            display: none;
+          }
+          .parameter {
+            display: inline-block;
+          }
+          input[name="Label"]{
+            width: 85%;
+          }
+          input[type="radio"] {
+            display: none;
+            }
+
+          .color_parameter input[type="radio"]:checked ~ label:before {
+            span {
+                  border: 3px solid;
+                  border-color: #000000;
+                  transform: scale(1.25);
+            }
+          }
+            div.color_parameter {
+              label {
+                font-size: 0;
+                display: inline-block;
+                width: 15px;
+                height: 15px;
+                margin-right: 10px;
+                cursor: pointer;
+                &:hover {
+                     span { 
+                        transform: scale(1.25); 
+                      }
+                }
+                span {
+                  display: block;
+                  width: 100%;
+                  height: 100%;
+                  transition: transform .2s ease-in-out; }
+              }
+            } 
+          
+          div.color_parameter :nth-child(1){
+            span {
+             background: #000;
+              border: 0.5px solid;
+             border-color: #000000;
+            }
+          }
+          div.color_parameter :nth-child(2){
+            span {
+            background: #FFFFFF;
+             border: 0.5px solid;
+             border-color: #000000;
+            }
+          }
+          div.color_parameter :nth-child(3){
+            span {
+            background: #214478;
+            border: 0.5px solid;
+             border-color: #000000;
+            }
+          }
+          div.color_parameter :nth-child(4){
+            span {
+            background: #FF0000;
+             border: 0.5px solid;
+             border-color: #000000;
+            }
+          }
+          div.color_parameter :nth-child(5){
+            span {
+            background: #FFD600;
+            border: 0.5px solid;
+            border-color: #000000;
+            }
+          }
+          div.color_parameter :nth-child(6){
+            span {
+            background: #00B507;
+             border: 0.5px solid;
+             border-color: #000000;
+            }
+          }
+   
+    
+          }
+        }
+      } 
+
+}
+
+
 
 select.command-argument {
   width: 130px;
