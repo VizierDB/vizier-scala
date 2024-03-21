@@ -162,7 +162,7 @@ class Dataset(
     element   
   }
   
-  val new_menu = Seq(newDownloadCommand,newDataSummaryCommand,newOpenSpreadsheetCommand)
+  val newMenu = Seq(newDownloadCommand,newDataSummaryCommand,newOpenSpreadsheetCommand)
 
 
   val root:dom.html.Div = div(
