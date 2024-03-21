@@ -1,7 +1,7 @@
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`org.scala-js::scalajs-env-jsdom-nodejs:1.0.0`
 import $ivy.`org.slf4j:slf4j-simple:1.6.1`
-import $ivy.`io.bit3:jsass:5.10.4`
+import $ivy.`io.bit3:jsass:5.11.0`
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
@@ -15,7 +15,7 @@ import java.util.Calendar
  *** The Vizier Backend 
  *************************************************/
 object vizier extends ScalaModule with PublishModule {
-  val VERSION       = "2.0.0-SNAPSHOT"
+  val VERSION       = "2.0.0-rc3"
   val PLAY_JS       = ivy"com.typesafe.play::play-json::2.9.2"
                            
   val MIMIR_CAVEATS = ivy"info.vizierdb::mimir-caveats::0.3.6"
@@ -165,7 +165,7 @@ object vizier extends ScalaModule with PublishModule {
     ivy"info.vizierdb::vega:1.0.0",
 
     // Scala Cell
-    ivy"org.scala-lang:scala-compiler:${scalaVersion}",
+    ivy"org.scala-lang:scala-compiler:2.12.15",
 
     // Python
     ivy"me.shadaj::scalapy-core:0.5.2",

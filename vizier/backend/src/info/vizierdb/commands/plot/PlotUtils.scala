@@ -192,7 +192,11 @@ object PlotUtils
 
       copy(
         dataframe = newDataframe,
+<<<<<<< HEAD
         y = Seq(cdf_attr)
+=======
+        x = cdf_attr
+>>>>>>> origin
       )
     }
 
