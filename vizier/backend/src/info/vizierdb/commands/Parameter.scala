@@ -864,3 +864,69 @@ case class ColorParameter(
       default.map { JsString(_) }.getOrElse { JsNull }
   }
 
+
+case class MultiSelectParameter(
+  id: String,
+  name: String,
+  values: Seq[EnumerableValue],
+  default: Option[Seq[Int]] = None,
+  required: Boolean = true,
+  hidden: Boolean = false
+) extends Parameter with StringEncoder
+{
+  def datatype = "multiselect"
+  def doStringify(j: JsValue): String = 
+  {
+    val selected = j.as[Seq[Int]]
+    selected.map { values(_).text }.mkString(", ")
+  }
+  def doValidate(j: JsValue) = 
+    if(j.isInstanceOf[JsArray]){ 
+      val selected = j.as[Seq[Int]]
+      if(selected.forall { _ < values.size }) { None }
+      else { Some(s"Invalid selection for $name") }
+    }
+    else if ((j == JsNull) && (default.isDefined || !required)) { None }
+    else { Some(s"Expected a list of integers for $name") }
+  override def getDefault: JsValue = 
+    default.map { Json.toJson(_) }.getOrElse { JsNull }
+}
+
+
+case class AggregateParameter(
+  id: String,
+  name: String,
+  components: Seq[Parameter],
+  required: Boolean = true,
+  hidden: Boolean = false
+) extends Parameter with StringEncoder
+{
+  def datatype = "aggregate"
+  def doStringify(j: JsValue): String = 
+  {
+    val record = j.as[Map[String, JsValue]]
+    "<" + components.map { t => t.stringify(record.getOrElse(t.id, t.getDefault)) }.mkString(", ") + ">"
+  }
+  def zipParameters[T](record: Map[String,T]): Seq[(Parameter, Option[T])] =
+    components.map { component => component -> record.get(component.id) }
+
+  def doValidate(j: JsValue): Iterable[String] =
+    if ((j == JsNull) && (!required)) { None }
+    else if(!j.isInstanceOf[JsObject]){ return Some(s"Expected an object for $name") }
+    else {
+      zipParameters(j.as[Map[String, JsValue]])
+        .flatMap { case (component, v) => 
+          component.validate( v.getOrElse { component.getDefault } )
+        }
+    }
+  override def convertToProperty(j: JsValue): JsValue = 
+  {
+    val record = j.as[Map[String,JsValue]]
+    Json.toJson(
+      components.map { param => 
+        val v = record.getOrElse(param.id, param.getDefault)
+        serialized.CommandArgument(id = param.id, value = param.convertToProperty(v))
+      }
+    )
+  }
+}

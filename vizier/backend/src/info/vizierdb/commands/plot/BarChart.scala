@@ -36,6 +36,8 @@ import info.vizierdb.artifacts.VegaPadding
 import info.vizierdb.artifacts.VegaLegend
 import info.vizierdb.artifacts.VegaLegendType
 import info.vizierdb.artifacts.VegaValueReference
+import info.vizierdb.artifacts.VegaTitle
+
 
 object BarChart extends Command {
   val PARAM_SERIES = "series"
@@ -92,8 +94,7 @@ object BarChart extends Command {
 
   override def process(
       arguments: Arguments,
-      context: ExecutionContext
-  ): Unit = {
+      context: ExecutionContext): Unit = {
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
     val tooltip: Boolean =
@@ -140,6 +141,8 @@ object BarChart extends Command {
         // Rely on PlotUtils to pick these out
         // data = series.aggregateSeries.vegaData,
         data = series.vegaData,
+
+        title = Some(VegaTitle(arguments.getList(PARAM_SERIES).head.get[String](PARAM_LABEL))),
 
         // Let vega know how to map data values to plot features
         scales = Seq(
