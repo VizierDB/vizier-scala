@@ -52,7 +52,8 @@ class Dataset(
                     fetchRowsWithAPI, 
                     (candidates, pageSize) => candidates.maxBy { pageIdx => math.abs(pageIdx - table.firstRowIndex) }
                   )
-  val datasetSummary = new DatasetSummary(projectId, datasetId)                
+  val datasetSummary = new DatasetSummary(projectId, datasetId)  
+  private var isSummaryDisplayed = false              
   
   def displayDatasetSummary(): Unit = {
     datasetSummary.updateSummary()
@@ -85,7 +86,6 @@ class Dataset(
       }
       table.setData(source, invalidate = invalidate)
     }
-
   }
 
   val name = Var[String]("unnamed")
@@ -143,13 +143,20 @@ class Dataset(
 
   val newDataSummaryCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
     val element = a(FontAwesome("info-circle")).render
-    element.addEventListener("click", handleAction(() => displayDatasetSummary())) 
+    element.addEventListener("click", (event: dom.Event) => {
+      event.preventDefault()
+      if (!isSummaryDisplayed) {
+        displayTable()
+      } else {
+        displayDatasetSummary()
+      }
+      isSummaryDisplayed = !isSummaryDisplayed
+    })
     element
   }
 
   val newOpenSpreadsheetCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
     val element = a(FontAwesome("table")).render
-    element.addEventListener("click", handleAction(() => displayTable())) 
     element
   }
 
@@ -162,7 +169,7 @@ class Dataset(
     element   
   }
   
-  val newMenu = Seq(newDownloadCommand,newDataSummaryCommand,newOpenSpreadsheetCommand)
+  val newMenu = Seq(newDownloadCommand,newDataSummaryCommand,Dataset.COMMAND_OPEN_SPREADSHEET)
 
 
   val root:dom.html.Div = div(
@@ -173,7 +180,7 @@ class Dataset(
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
       }.reactive,
       Rx { 
-        span(new_menu.map { _(projectId, datasetId, name()) })
+        span(newMenu.map { _(projectId, datasetId, name()) })
       }.reactive
     )
     // Table root is appended by setSource()
@@ -191,7 +198,7 @@ object Dataset
         href := Vizier.links.spreadsheet(projectId, datasetId),
         target := "_blank",
         FontAwesome("table")
-      )
+      ).render
     
   
   val COMMAND_DOWNLOAD =

@@ -19,16 +19,14 @@ import play.api.libs.json._
 class DatasetSummary(projectId: Identifier, datasetId: Identifier)(implicit val owner: Ctx.Owner) {
   
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-
-  val artifact = Vizier.api.artifactGet(
+  
+  def fetchAndRenderDatasetInfo(): Future[HtmlTag] = {
+    Vizier.api.artifactGet(
       projectId,
       datasetId,
       limit = Some(0),
       profile = Some("true")
-    )
-  
-  def fetchAndRenderDatasetInfo(): Future[HtmlTag] = {
-    artifact.map {
+    ).map {
       case ds: DatasetDescription =>
         ds.properties.find(_.key == "columns") match {
           case Some(property) =>
