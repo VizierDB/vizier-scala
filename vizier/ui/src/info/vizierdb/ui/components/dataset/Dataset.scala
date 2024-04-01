@@ -159,7 +159,7 @@ class Dataset(
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
       }.reactive,
       Rx { 
-        span(menu.map { _(projectId, datasetId, name()) }, dataSummaryCommand(projectId,datasetId, name()))
+        span(menu.map { _(projectId, datasetId, name()) }, if(menu.size > 0) {dataSummaryCommand(projectId,datasetId, name())})
       }.reactive
     )
     // Table root is appended by setSource()
