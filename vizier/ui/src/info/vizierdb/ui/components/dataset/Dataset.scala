@@ -136,8 +136,8 @@ class Dataset(
       limit = Some(limit)
     ).map { _.rows }
   }
-  /*
-  val newDataSummaryCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
+  
+  val dataSummaryCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
     val element = a(FontAwesome("info-circle")).render
     element.addEventListener("click", (event: dom.Event) => {
       event.preventDefault()
@@ -151,18 +151,6 @@ class Dataset(
     element
   }
 
-  val newDownloadCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
-    val element = a(
-      href := Vizier.api.artifactGetCsvURL(projectId, datasetId, name = Some(datasetName)),
-      target := "_blank",
-      FontAwesome("download")
-    ).render 
-    element   
-  }
-  
-  val newMenu = Seq(newDownloadCommand,newDataSummaryCommand)
-  */
-
   val root:dom.html.Div = div(
     `class` := "dataset",
     div(
@@ -171,7 +159,7 @@ class Dataset(
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
       }.reactive,
       Rx { 
-        span(menu.map { _(projectId, datasetId, name()) })
+        span(menu.map { _(projectId, datasetId, name()) }, dataSummaryCommand(projectId,datasetId, name()))
       }.reactive
     )
     // Table root is appended by setSource()
@@ -199,10 +187,6 @@ object Dataset
         target := "_blank",
         FontAwesome("download")
       )
-
-  val COMMAND_DATA_SUMMARY = 
-    (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
-      a(FontAwesome("info"))
   
-  val DEFAULT_COMMANDS = Seq(COMMAND_DOWNLOAD,COMMAND_DATA_SUMMARY)
+  val DEFAULT_COMMANDS = Seq(COMMAND_DOWNLOAD)
 }
