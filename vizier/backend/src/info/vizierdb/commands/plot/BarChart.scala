@@ -57,18 +57,8 @@ object BarChart extends Command {
       components = Seq(
         DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
         ColIdParameter(id = PARAM_X, name = "X-axis"),
-        ListParameter(
-          id = PARAM_Y_AXIS,
-          name = "Y-axes",
-          components = Seq(
-            ColIdParameter(id = PARAM_Y, name = "Y-axis")
-          )
-        ),
-        NumericalFilterParameter(
-          id = PARAM_FILTER,
-          name = "Filter",
-          required = false
-        ),
+        ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(ColIdParameter(id = PARAM_Y, name = "Y-axis"))),
+        NumericalFilterParameter(id = PARAM_FILTER, name = "Filter",required = false),
         StringParameter(id = PARAM_LABEL, name = "Label", required = false),
         ColorParameter(id = PARAM_COLOR, name = "Color", required = false)
       )

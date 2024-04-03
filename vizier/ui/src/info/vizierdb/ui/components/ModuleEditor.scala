@@ -124,8 +124,7 @@ object ModuleEditor
     (packageId, command.id) match {
       case ("data", "load")   => new LoadDatasetEditor(delegate)
       case ("data", "unload") => new UnloadDatasetEditor(delegate)
-      case ("plot", "barchart") => new BarchartEditor(delegate, packageId, command)
-      case ("plot", "scatterplot2") => new Editor(delegate, packageId, command)
+      case ("plot", x) => new ChartEditor(delegate, packageId, command, x)
       case _ => new DefaultModuleEditor(packageId, command, delegate)
     }
   }

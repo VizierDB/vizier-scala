@@ -65,9 +65,9 @@ object ScatterPlot extends Command
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
       ColIdParameter(id = PARAM_X, name = "X-axis"),
       ColIdParameter(id = PARAM_Y, name = "Y-axis"),
+      NumericalFilterParameter(id = PARAM_FILTER, name = "Filter",required = false),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
-      StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
-      StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
+      ColorParameter(id = PARAM_COLOR, name = "Color", required = false),
       EnumerableParameter(id = PARAM_REGRESSION, name = "Regression", required = false, values = EnumerableValue.withNames(
         "---"         -> "",
         "Linear"      -> VegaRegressionMethod.Linear.key,
@@ -92,6 +92,7 @@ object ScatterPlot extends Command
 
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
+    println(arguments)
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
