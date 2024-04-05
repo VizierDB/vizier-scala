@@ -1293,6 +1293,106 @@ div.dataset
     }
   }
 
+  div.dataset_summary {
+    display: block;
+    width: 700px; /* Fixed width for consistency */
+    max-height: 400px; /* Maximum height with scrolling */
+    overflow: auto; /* Enables scrolling when content exceeds max height */
+    position: relative;
+    border: 1px solid #999;
+    font-family: Arial, sans-serif; /* Modern, readable font */
+    font-size: 14px; /* Standard font size */
+  }
+  
+  div.dataset_summary_header {
+    display: flex;
+    justify-content: space-between;
+    background-color: #f0f0f0; /* Light grey background for the header */
+    border-bottom: 2px solid #ccc; /* Separator for header */
+    padding: 5px 10px; /* Padding for aesthetic spacing */
+    position: sticky;
+    top: 0; /* Keeps header at top */
+    z-index: 100; /* Ensures header is above scrolled content */
+  }
+
+  div.column_name_header {
+    flex: 0 0 30%;
+    font-weight: bold;
+    color: #333;
+    position: relative; 
+  }
+  
+  div.statistics_header {
+    flex: 1; 
+    font-weight: bold;
+    color: #333;
+    position: relative; 
+  }
+
+  div.column_name_header:not(:last-child),
+  div.statistics_header:not(:last-child) {
+    border-right: 2px solid #ccc; 
+    margin-right: 20px; 
+    padding-right: 20px; 
+}
+  
+  div.dataset_summary_body {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  div.column_detail {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 10px;
+    border-bottom: 1px solid #eee;
+    align-items: stretch; /* Align children's height */
+  }
+  
+  div.column_detail:nth-child(odd) {
+    background-color: #fafafa;
+  }
+  
+  div.column_name {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; 
+    flex: 0 0 30%; /* Aligns with the header */
+    border-right: 1px solid #ddd; /* Separator */
+    padding-right: 20px; /* Ensures space between this column and the next */
+  }
+  
+  div.statistics {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; 
+    flex: 1; /* Takes up remaining space */
+    display: flex;
+    flex-direction: column;
+  }
+  
+
+  div.column_name:not(:last-child),
+  div.statistics:not(:last-child) {
+    border-right: 1px solid #ddd; 
+    margin-right: 20px; 
+    padding-right: 20px; 
+  }
+  
+  .statistics_detail {
+    display: flex;
+    flex: 1; 
+    border-bottom: 1px solid #ddd; 
+    margin-bottom: 2px; 
+    padding-bottom: 2px; 
+  }
+  
+  .statistics_detail:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
   h3
   {
     display: inline-block;
@@ -1863,6 +1963,8 @@ button.customization {
         flex: 1 1 auto;
       }
     }
+
+
   }
 }
 
