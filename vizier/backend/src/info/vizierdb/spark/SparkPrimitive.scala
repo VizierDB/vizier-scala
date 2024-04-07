@@ -209,6 +209,14 @@ object SparkPrimitive
       case (DecimalType(),d:Decimal)   => JsNumber(d.toBigDecimal)
       case (DecimalType(),d:java.math.BigDecimal)
                                        => JsNumber(d)
+      case (MapType(keyType, valueType, _), elems: Map[_, _]) => JsArray(
+                                            elems.map { case (k, v) => 
+                                              Json.obj(
+                                                "key" -> encode(k, keyType),
+                                                "value" -> encode(v, valueType)
+                                              )
+                                            }.toIndexedSeq
+                                          )
       case _ if k != null           => JsString(k.toString)
       case _                        => JsNull
     }
@@ -294,6 +302,18 @@ object SparkPrimitive
         case (_, NullType)                  => JsNull
         case (_, ArrayType(element,_))      => ArraySeq(k.as[Seq[JsValue]].map { decode(_, element) }:_*)
         case (_, s:StructType)              => decodeStruct(k, s, castStrings = castStrings)
+        case (JsObject(elems), MapType(keyType, valueType, _)) => 
+                        elems.map { case (key, value) => 
+                                        ( decode(JsString(key), keyType, castStrings), 
+                                          decode(value, valueType, castStrings)
+                                        ) }.toMap
+        case (JsArray(elems), MapType(keyType, valueType, _)) => 
+                        elems.map { arr =>
+                                    val fields = arr.as[Map[String, JsValue]]
+                                    ( decode(fields("key"), keyType, castStrings), 
+                                      decode(fields("value"), valueType, castStrings)
+                                    ) }.toMap
+        case (_, _:MapType)                 => throw new JsResultException(Seq())
         case _                    => throw new IllegalArgumentException(s"Unsupported type for decode: $t; ${t.getClass()}")
       }
     } catch {
