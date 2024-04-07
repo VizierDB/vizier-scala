@@ -58,9 +58,15 @@ class FileClient(object):
 
     return self.io
 
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, type, value, tb):
+    import traceback
+    self.io.flush()
     self.io.close()
     self.io = None
+    if tb is not None:
+      print(tb)
+      traceback.print_tb(tb)
+      raise Exception("Error while writing file")
     return self
 
   def _repr_html_(self) -> str:

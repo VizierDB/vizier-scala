@@ -34,6 +34,7 @@ import info.vizierdb.viztrails.ProvenancePrediction
 import java.io.FileOutputStream
 import info.vizierdb.gis._
 import info.vizierdb.util.StringUtils
+import java.awt.image.BufferedImage
 
 object GeoPlot extends Command
   with LazyLogging
@@ -79,6 +80,22 @@ object GeoPlot extends Command
 
   def fileNameForIndex(idx: Int) = s"geojson_$idx"
 
+  def renderDatum(datum: Any): String =
+  {
+    datum match {
+      case img:BufferedImage =>
+        val out = new ByteArrayOutputStream()
+        ImageIO.write(img, "png", out)
+        (
+          "<img src=\"data:image/png;base64," + 
+          Base64.getEncoder()
+                .encodeToString(out.toByteArray()) +
+          "\">"
+        )
+      case d => d.toString
+    }
+  }
+
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     var bounds: Envelope = null
@@ -119,7 +136,7 @@ object GeoPlot extends Command
                         .zipWithIndex
                         .filterNot { _._2 == shapeColumnIdx }
                         .map { case (field, idx) => 
-                          s"<tr><th>$field</th><td>${row.get(idx)}</td></tr>"
+                          s"<tr><th>$field</th><td>${renderDatum(row.get(idx))}</td></tr>"
                         }
                         .mkString("\n")+
                       "</table>"
@@ -204,7 +221,7 @@ object GeoPlot extends Command
                     .zipWithIndex
                     .filterNot { _._2 == shapeColumnIdx }
                     .map { case (field, idx) => 
-                      s"<tr><th>$field</th><td>${row.get(idx)}</td></tr>"
+                      s"<tr><th>$field</th><td>${renderDatum(row.get(idx))}</td></tr>"
                     }
                     .mkString("\n")+
                   "</table>"
