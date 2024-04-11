@@ -98,6 +98,14 @@ class ChartEditor(
                 row.regression.toArgument
                 ))})),
                 datasetRows.now.head.artifact.toArgument)
+        case "cdf" => 
+            Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
+                Json.toJson(Seq(
+                row.dataset.toArgument,
+                row.xColumn.toArgument,
+                row.filter.toArgument
+                ))})),
+                datasetRows.now.head.artifact.toArgument)
         case _ => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
                 Json.toJson(Seq(
@@ -294,6 +302,25 @@ class ChartEditor(
                         )
                     )
                     ).render
+            case "cdf" =>
+                fieldset(
+                legend("CDF"),
+                table(
+                    `class` := "parameter_list",
+                    thead(
+                    tr(
+                        th("Dataset"),
+                        th("X"),
+                    )
+                    ),
+                    tbody( 
+                    tr(
+                        td(dataset.root),
+                        td(xColumn.root),
+                    ) 
+                    )
+                )
+                ).render
                 }
         }
         class ChartYColumn(dataset: ArtifactParameter)
