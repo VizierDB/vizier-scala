@@ -89,10 +89,8 @@ object ScatterPlot extends Command
 
   override def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
-
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
-    println(arguments)
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
@@ -112,6 +110,7 @@ object ScatterPlot extends Command
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
         }
       )
+    println(series.series.head.dataset)
 
     val yAxisLabels = series.series.flatMap(_.y).distinct
 
@@ -157,7 +156,7 @@ object ScatterPlot extends Command
           // 'color': The color scale, mapping from data.c -> color category
           VegaScale("color", VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
-            domain = Some(VegaDomain.Literal(yAxisLabels.map(JsString(_)))))
+            domain = Some(VegaDomain.Literal(series.names.map(JsString(_)))))
         ),
 
         // Define the chart axes (based on the 'x' and 'y' scales)

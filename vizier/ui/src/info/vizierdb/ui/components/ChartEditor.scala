@@ -57,12 +57,31 @@ class ChartEditor(
     println(chartType)
     override def loadState(arguments: Seq[CommandArgument]): Unit = {
     // This function should translate arguments into a new datsetRows()
-    datasetRows() = datasetRows.now
+    for (arg <- arguments){
+        arg.id match {
+        case "series" => 
+            arg.value match {
+            case JsArray(series) => 
+                datasetRows() = series.map { row =>
+                new ChartRow()
+                }
+            case _ => 
+                println("Error: Expected JsArray")
+            
+            }
+        case "artifact" =>
+            arg.value match {
+            case JsString(artifact) =>
+                Rx{datasetRows().head.artifact.value(artifact)}
+            case _ =>
+                println("Error: Expected JsString")
+            }
+        }
+    }
     }
 
     override def currentState: Seq[CommandArgument] = 
     {
-    println(datasetRows.now)
     chartType match{
         case "scatterplot" => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
@@ -79,7 +98,7 @@ class ChartEditor(
                 row.regression.toArgument
                 ))})),
                 datasetRows.now.head.artifact.toArgument)
-        case "barchart" => 
+        case _ => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
                 Json.toJson(Seq(
                 row.dataset.toArgument,
@@ -191,11 +210,11 @@ class ChartEditor(
             "Regression",
             Seq(
                 EnumerableValueDescription.apply(true,"---",""),
-                EnumerableValueDescription.apply(true,"Linear",VegaRegressionMethod.Linear.key),
-                EnumerableValueDescription.apply(true,"Logarithmic",VegaRegressionMethod.Logarithmic.key),
-                EnumerableValueDescription.apply(true,"Exponential",VegaRegressionMethod.Exponential.key),
-                EnumerableValueDescription.apply(true,"Power",VegaRegressionMethod.Power.key),
-                EnumerableValueDescription.apply(true,"Quadratic",VegaRegressionMethod.Quadratic.key)
+                EnumerableValueDescription.apply(false,"Linear",VegaRegressionMethod.Linear.key),
+                EnumerableValueDescription.apply(false,"Logarithmic",VegaRegressionMethod.Logarithmic.key),
+                EnumerableValueDescription.apply(false,"Exponential",VegaRegressionMethod.Exponential.key),
+                EnumerableValueDescription.apply(false,"Power",VegaRegressionMethod.Power.key),
+                EnumerableValueDescription.apply(false,"Quadratic",VegaRegressionMethod.Quadratic.key)
             ),
             true,
             false,
@@ -232,6 +251,29 @@ class ChartEditor(
             case "barchart" =>
                     fieldset(
                     legend("Bars"),
+                    table(
+                        `class` := "parameter_list",
+                        thead(
+                        tr(
+                            th("Dataset"),
+                            th("X"),
+                            th("Y"),
+                        )
+                        ),
+                        tbody( 
+                        tr(
+                            td(dataset.root),
+                            td(xColumn.root),
+                            td(
+                            yColumns.map { _.map { _.root } }.reactive
+                            ),
+                        ) 
+                        )
+                    )
+                    ).render
+            case "line-chart" =>
+                    fieldset(
+                    legend("Lines"),
                     table(
                         `class` := "parameter_list",
                         thead(
@@ -373,12 +415,12 @@ class ChartEditor(
                         datasetRows().map(
                             row => {
                                 row.filter.root})}.reactive,
+                    ),
                     td(Rx{
                         datasetRows().map(
                             row => {
                                 row.color.root})}.reactive
                         )
-                )
                 )
             ) 
             )).render)
