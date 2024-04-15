@@ -102,10 +102,9 @@ object Commands
   register(packageId = "plot", name = "Data Plotting", category = "plot")(
     "chart"        -> info.vizierdb.commands.plot.SimpleChart,
     "line-chart"   -> info.vizierdb.commands.plot.LineChart,
-    "scatterplot"  -> info.vizierdb.commands.plot.ScatterPlot,
+    "scatterplot" -> info.vizierdb.commands.plot.ScatterPlot,
     "cdf"          -> info.vizierdb.commands.plot.CDFPlot,
     "geo"          -> info.vizierdb.commands.plot.GeoPlot,
-    "bar-chart"   -> info.vizierdb.commands.plot.BarChart,
     "barchart"    -> info.vizierdb.commands.plot.BarChart,
   )
 

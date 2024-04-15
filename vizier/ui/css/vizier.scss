@@ -1582,10 +1582,10 @@ table.parameter_list {
         }
       } 
     }
-    thead th:last-child
-    {
-      width: 0px;
-    }
+    // thead th:last-child
+    // {
+    //   width: 0px;
+    // }
 
     tbody {
       width: 100%;
@@ -1593,7 +1593,7 @@ table.parameter_list {
       tr {
         display: flex;
         width: 100%;
-        justify-content: space-evenly;
+        justify-content: space-around;
         td {
           display: flex;
           width: 30%;

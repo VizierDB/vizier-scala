@@ -39,7 +39,7 @@ import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.widgets.FontAwesome
 import java.awt.Font
 import scala.concurrent.Future
-import info.vizierdb.serialized.CommandArgument
+import info.vizierdb.serialized.EnumerableValueDescription
 
 class BarchartEditor(
     override val delegate: ModuleEditorDelegate,

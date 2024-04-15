@@ -44,6 +44,7 @@ object LineChart extends Command
   val PARAM_DATASET = "dataset"
   val PARAM_X = "xcol"
   val PARAM_Y = "ycol"
+  val PARAM_Y_AXIS = "yList"
   val PARAM_FILTER = "filter"
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
@@ -53,12 +54,12 @@ object LineChart extends Command
 
   override def parameters: Seq[Parameter] = Seq(
     ListParameter(id = PARAM_SERIES, name = "Lines", components = Seq(
-      DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
-      ColIdParameter(id = PARAM_X, name = "X-axis"),
-      ColIdParameter(id = PARAM_Y, name = "Y-axis"),
-      StringParameter(id = PARAM_LABEL, name = "Label", required = false),
-      StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
-      StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
+        DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
+        ColIdParameter(id = PARAM_X, name = "X-axis"),
+        ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(ColIdParameter(id = PARAM_Y, name = "Y-axis"))),
+        NumericalFilterParameter(id = PARAM_FILTER, name = "Filter",required = false),
+        StringParameter(id = PARAM_LABEL, name = "Label", required = false),
+        ColorParameter(id = PARAM_COLOR, name = "Color", required = false)
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
@@ -86,7 +87,7 @@ object LineChart extends Command
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
             xIndex      = series.get[Int](PARAM_X),
-            yIndex      = Seq(series.get[Int](PARAM_Y)),
+            yIndex      = series.getList(PARAM_Y_AXIS).map { _.get[Int](PARAM_Y) },
             name        = series.getOpt[String](PARAM_LABEL)
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))

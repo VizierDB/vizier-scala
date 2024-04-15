@@ -55,8 +55,8 @@ object CDFPlot extends Command
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
       ColIdParameter(id = PARAM_X, name = "CDF"),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
-      StringParameter(id = PARAM_FILTER, name = "Filter", required = false, helpText = Some("e.g., state = 'NY'")),
-      StringParameter(id = PARAM_COLOR, name = "Color", required = false, helpText = Some("e.g., #214478")),
+      NumericalFilterParameter(id = PARAM_FILTER, name = "Filter",required = false),
+      ColorParameter(id = PARAM_COLOR, name = "Color", required = false),
     )),
     StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
   )
@@ -84,7 +84,7 @@ object CDFPlot extends Command
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
             xIndex      = series.get[Int](PARAM_X),
-            yIndex      = Seq(series.get[Int](PARAM_X)), // this is just a placeholder; CDF below replaces it
+            yIndex      = Seq(series.get[Int](PARAM_X)),
             name        = series.getOpt[String](PARAM_LABEL),
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
