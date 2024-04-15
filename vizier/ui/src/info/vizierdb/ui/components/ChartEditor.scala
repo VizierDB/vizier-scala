@@ -193,6 +193,19 @@ class ChartEditor(
                 false,
                 false
             )
+        val sort =
+            new EnumerableParameter(
+                "sort",
+                "Sort",
+                Seq(
+                    EnumerableValueDescription.apply(true,"---",""),
+                    EnumerableValueDescription.apply(false,"Ascending","ascending"),
+                    EnumerableValueDescription.apply(false,"Decending","decending"),
+
+                ),
+                true,
+                false
+            )
         
         val color =
             new ColorParameter(
@@ -227,38 +240,56 @@ class ChartEditor(
             true,
             false,
             )
+        
+        val chartTitle = 
+            new StringParameter(
+            "chartTitle",
+            "Chart Title",
+            true,
+            false,
+            ""
+            )
+        
+        val xAxisTitle =
+            new StringParameter(
+            "xAxisTitle",
+            "X-Axis Title",
+            true,
+            false,
+            ""
+            )
+        
+        val yAxisTitle =
+            new StringParameter(
+            "yAxisTitle",
+            "Y-Axis Title",
+            true,
+            false,
+            ""
+            )
+
+        val chartLegend = 
+            new EnumerableParameter(
+                "legend",
+                "Legend",
+                Seq(
+                    EnumerableValueDescription.apply(true,"---",""),
+                    EnumerableValueDescription.apply(false,"Top","top"),
+                    EnumerableValueDescription.apply(false,"Bottom","bottom"),
+                    EnumerableValueDescription.apply(false,"Left","left"),
+                    EnumerableValueDescription.apply(false,"Right","right")
+                ),
+                true,
+                false
+            )
+        
 
 
-    val root = 
-        chartType match{
-            case "scatterplot" => 
-                fieldset(
-                legend("Scatter"),
-                table(
-                    `class` := "parameter_list",
-                    thead(
-                    tr(
-                        th("Dataset"),
-                        th("X"),
-                        th("Y"),
-                        th("Regression")
-                    )
-                    ),
-                    tbody( 
-                    tr(
-                        td(dataset.root),
-                        td(xColumn.root),
-                        td(
-                        yColumns.map { _.map { _.root } }.reactive
-                        ),
-                        td(regression.root)
-                    ) 
-                    )
-                )
-                ).render
-            case "barchart" =>
+        val root = 
+            chartType match{
+                case "scatterplot" => 
                     fieldset(
-                    legend("Bars"),
+                    legend("Scatter"),
                     table(
                         `class` := "parameter_list",
                         thead(
@@ -266,6 +297,9 @@ class ChartEditor(
                             th("Dataset"),
                             th("X"),
                             th("Y"),
+                            th("Filter"),
+                            th("Sort"),
+                            th("Regression")
                         )
                         ),
                         tbody( 
@@ -275,53 +309,91 @@ class ChartEditor(
                             td(
                             yColumns.map { _.map { _.root } }.reactive
                             ),
+                            td(filter.root),
+                            td(sort.root),
+                            td(regression.root)
                         ) 
                         )
                     )
                     ).render
-            case "line-chart" =>
+                case "barchart" =>
+                        fieldset(
+                        legend("Bars"),
+                        table(
+                            `class` := "parameter_list",
+                            thead(
+                            tr(
+                                th("Dataset"),
+                                th("X"),
+                                th("Y"),
+                                th("Filter"),
+                                th("Sort"),
+                            )
+                            ),
+                            tbody( 
+                            tr(
+                                td(dataset.root),
+                                td(xColumn.root),
+                                td(
+                                yColumns.map { _.map { _.root } }.reactive
+                                ),
+                                td(filter.root),
+                                td(sort.root)
+                            ) 
+                            )
+                        )
+                        ).render
+                case "line-chart" =>
+                        fieldset(
+                        legend("Lines"),
+                        table(
+                            `class` := "parameter_list",
+                            thead(
+                            tr(
+                                th("Dataset"),
+                                th("X"),
+                                th("Y"),
+                                th("Filter"),
+                                th("Sort"),
+                            )
+                            ),
+                            tbody( 
+                            tr(
+                                td(dataset.root),
+                                td(xColumn.root),
+                                td(
+                                yColumns.map { _.map { _.root } }.reactive
+                                ),
+                                td(filter.root),
+                                td(sort.root)
+                            ) 
+                            )
+                        )
+                        ).render
+                case "cdf" =>
                     fieldset(
-                    legend("Lines"),
+                    legend("CDF"),
                     table(
                         `class` := "parameter_list",
                         thead(
                         tr(
                             th("Dataset"),
                             th("X"),
-                            th("Y"),
+                            th("Filter"),
+                            th("Sort"),
                         )
                         ),
                         tbody( 
                         tr(
                             td(dataset.root),
                             td(xColumn.root),
-                            td(
-                            yColumns.map { _.map { _.root } }.reactive
-                            ),
+                            td(filter.root),
+                            td(sort.root)
                         ) 
                         )
                     )
                     ).render
-            case "cdf" =>
-                fieldset(
-                legend("CDF"),
-                table(
-                    `class` := "parameter_list",
-                    thead(
-                    tr(
-                        th("Dataset"),
-                        th("X"),
-                    )
-                    ),
-                    tbody( 
-                    tr(
-                        td(dataset.root),
-                        td(xColumn.root),
-                    ) 
-                    )
-                )
-                ).render
-                }
+                    }
         }
         class ChartYColumn(dataset: ArtifactParameter)
         {
@@ -403,17 +475,32 @@ class ChartEditor(
             `class` := "sidemenu_table",
             thead(
                 tr(
-                th("Aggregate"),
-                th("Multi Select"),
+                td("Chart Title"),
+                td("X-Axis Title"),
+                td("Y-Axis Title"),
+                td("Legend")
                 )
             ),
             tbody(
                 tr(
-                // td(barChart.aggregate.root),
-                // td(barChart.multiSelect.root)
+                    td(Rx{
+                        datasetRows().map(
+                            row => {
+                                row.chartTitle.root})}.reactive),
+                    td(Rx{
+                        datasetRows().map(
+                            row => {
+                                row.xAxisTitle.root})}.reactive),
+                    td(Rx{
+                        datasetRows().map(
+                            row => {
+                                row.yAxisTitle.root})}.reactive),
+                    td(Rx{
+                        datasetRows().map(
+                            row => {
+                                row.chartLegend.root})}.reactive)
                 )
-            )
-            ) 
+            ))
         ).render)
         }
 
@@ -427,8 +514,7 @@ class ChartEditor(
                 thead(
                 tr(
                     th("Label"),
-                    th("Filter"),
-                    th("Color")
+                    th("Color"),
                 )
                 ),
                 tbody(
@@ -438,11 +524,6 @@ class ChartEditor(
                             row => {
                                 row.label.root})}.reactive
                         ),
-                    td(Rx{
-                        datasetRows().map(
-                            row => {
-                                row.filter.root})}.reactive,
-                    ),
                     td(Rx{
                         datasetRows().map(
                             row => {
@@ -478,14 +559,16 @@ class ChartEditor(
             Rx {
                 div(datasetRows().map(_.root))
             }.reactive,
-            div(`class` := "sidemenu_container", 
+            div(`class` := "sidemenu_container",
                 button(`class` := "sidemenu_button", 
+                "Line Config",
                 onclick := { (e: dom.MouseEvent) => 
                     SideMenu.toggleMenu(e,true) }, 
                 FontAwesome("ellipsis-v")), 
             SideMenu.sideMenuContent),
-            div(`class` := "chartConfig_container", 
+            div(`class` := "chartConfig_container",
                 button(`class` := "chartConfig_button", 
+            "Chart Config",
                 onclick := { (e: dom.MouseEvent) => 
                     SideMenu.toggleMenu(e,false) }, 
             FontAwesome("cog")), 
