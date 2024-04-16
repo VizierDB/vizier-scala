@@ -1563,6 +1563,10 @@ div.modal_background
 
 /* The last child of a parameter list is a "template" placeholder to allow
    adding more records by just typing */
+
+div.scatterplot_chart_editor {
+  width: 850px;
+}
 table.parameter_list {
   display: flex;
   flex-direction: column;
