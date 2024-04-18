@@ -1841,8 +1841,9 @@ div.chartConfig_container {
               }
             }
 
-            &:first-child:nth-last-child(2),
-            &:last-child:nth-last-child(2) {
+             // Select td elements within tr only when tr has exactly two td elements
+            &:only-child:nth-child(1),
+            &:only-child:nth-child(2) {
                 width: 50%; // If there are exactly two tds, set width to 50%
             }
             
