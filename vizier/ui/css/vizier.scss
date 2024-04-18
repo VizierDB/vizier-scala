@@ -1752,8 +1752,8 @@ div.chartConfig_container {
           display: flex;
           width: 100%;
           justify-content: space-evenly;
-        }
-        tr > td {
+        
+         td {
             display: flex;
             width: auto;
             justify-content: center;
@@ -1840,14 +1840,14 @@ div.chartConfig_container {
               border-color: #000000;
               }
             }
-    
-      
+
+            &:nth-child(2):only-child,
+            &:nth-child(1):only-child {
+                width: 50%; 
             }
-            
-            tr > td:nth-child(2):only-child,
-            tr > td:nth-child(1):only-child {
-                width: 50%; /* If there's only one td, set width to 50% */
+
             }
+          
           }
         }
 }
