@@ -1752,7 +1752,8 @@ div.chartConfig_container {
           display: flex;
           width: 100%;
           justify-content: space-evenly;
-          td {
+        }
+        tr > td {
             display: flex;
             width: auto;
             justify-content: center;
@@ -1843,13 +1844,14 @@ div.chartConfig_container {
       
             }
             
-          }
+          
           tr > td:nth-child(2):only-child {
             width: 100%; /* If there's only one td, set width to 100% */
+            
           }
           
           tr > td:nth-child(2) {
-              width: 50%; /* If there are exactly two td elements, set width to 30% */
+              width: 50%; /* If there are exactly two td elements, set width to 50% */
           }
         } 
 
