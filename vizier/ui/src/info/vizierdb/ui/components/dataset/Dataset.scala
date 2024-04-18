@@ -54,7 +54,7 @@ class Dataset(
                   )
   val datasetSummary = new DatasetSummary(projectId, datasetId) 
   datasetSummary.updateSummary() 
-  private var isSummaryDisplayed = false              
+  private var isSummaryDisplayed = false
   
   def displayDatasetSummary(): Unit = {
     datasetSummary.updateSummary()
@@ -139,11 +139,16 @@ class Dataset(
   
   val dataSummaryCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
     val element = a(FontAwesome("info-circle")).render
+    val iconElement = element.firstChild.asInstanceOf[dom.html.Element]
     element.addEventListener("click", (event: dom.Event) => {
       event.preventDefault()
       if (isSummaryDisplayed == false) {
+        iconElement.style.color = "#f3f3f3"
+        iconElement.style.backgroundColor = "#214478"
         displayDatasetSummary()
       } else {
+        iconElement.style.color = "#214478"
+        iconElement.style.backgroundColor = "#f3f3f3"
         displayTable()
       }
       isSummaryDisplayed = !isSummaryDisplayed
