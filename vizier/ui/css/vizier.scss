@@ -1844,18 +1844,12 @@ div.chartConfig_container {
       
             }
             
-          
-          tr > td:nth-child(2):only-child {
-            width: 100%; /* If there's only one td, set width to 100% */
-            
+            tr > td:nth-child(2):only-child,
+            tr > td:nth-child(1):only-child {
+                width: 50%; /* If there's only one td, set width to 50% */
+            }
           }
-          
-          tr > td:nth-child(2) {
-              width: 50%; /* If there are exactly two td elements, set width to 50% */
-          }
-        } 
-
-  }
+        }
 }
 
 
