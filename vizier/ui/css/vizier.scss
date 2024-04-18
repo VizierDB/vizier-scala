@@ -1723,129 +1723,6 @@ table.parameter_list {
     }
 }
 
-div.sidemenu_container {
-  table.sidemenu_table {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
-      thead {
-        display: flex;
-        width: 100%;
-        justify-content: space-evenly;
-        tr {
-          display: flex;
-          width: 100%;
-          justify-content: center;
-          th {
-            display: flex;
-            width: 100%;
-            justify-content: center;
-          }
-        } 
-      }
-
-      tbody {
-        width: 100%;
-        justify-content: space-evenly;
-        tr {
-          display: flex;
-          width: 100%;
-          justify-content: space-evenly;
-          td {
-            display: flex;
-            width: 50%;
-            justify-content: center;
-            label {
-              display: none;
-            }
-            .parameter {
-              display: inline-block;
-            }
-            input[name="Label"]{
-              width: 85%;
-            }
-            input[type="radio"] {
-              display: none;
-              }
-
-            .color_parameter input[type="radio"]:checked ~ label:before {
-              span {
-                    border: 3px solid;
-                    border-color: #000000;
-                    transform: scale(1.25);
-              }
-            }
-              div.color_parameter {
-                label {
-                  font-size: 0;
-                  display: inline-block;
-                  width: 15px;
-                  height: 15px;
-                  margin-right: 10px;
-                  cursor: pointer;
-                  &:hover {
-                      span { 
-                          transform: scale(1.25); 
-                        }
-                  }
-                  span {
-                    display: block;
-                    width: 100%;
-                    height: 100%;
-                    transition: transform .2s ease-in-out; }
-                }
-              } 
-            
-            div.color_parameter :nth-child(1){
-              span {
-              background: #000;
-                border: 0.5px solid;
-              border-color: #000000;
-              }
-            }
-            div.color_parameter :nth-child(2){
-              span {
-              background: #FFFFFF;
-              border: 0.5px solid;
-              border-color: #000000;
-              }
-            }
-            div.color_parameter :nth-child(3){
-              span {
-              background: #214478;
-              border: 0.5px solid;
-              border-color: #000000;
-              }
-            }
-            div.color_parameter :nth-child(4){
-              span {
-              background: #FF0000;
-              border: 0.5px solid;
-              border-color: #000000;
-              }
-            }
-            div.color_parameter :nth-child(5){
-              span {
-              background: #FFD600;
-              border: 0.5px solid;
-              border-color: #000000;
-              }
-            }
-            div.color_parameter :nth-child(6){
-              span {
-              background: #00B507;
-              border: 0.5px solid;
-              border-color: #000000;
-              }
-            }
-    
-      
-            }
-          }
-        } 
-
-  }
-}
 
 div.chartConfig_container {
   table.sidemenu_table {
@@ -1965,6 +1842,14 @@ div.chartConfig_container {
     
       
             }
+            
+          }
+          tr > td:nth-child(2):only-child {
+            width: 100%; /* If there's only one td, set width to 100% */
+          }
+          
+          tr > td:nth-child(2) {
+              width: 50%; /* If there are exactly two td elements, set width to 30% */
           }
         } 
 
