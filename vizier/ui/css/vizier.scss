@@ -1727,20 +1727,26 @@ table.parameter_list {
 div.sidemenu_container {
   display: flex;
   width: 100%;
-  justify-content: space-between;
+  justify-content: center;
   align-items: flex-start;
+  height: 75px;
+  position: relative;
+  padding-top: 10px;
   
-  .button {
+  .sidemenu_button {
+    left: 0;
     position: absolute;
     top: 0;
   }
   
-  .sidemenu_button {
-    left: 0;
-  }
-  
   .chartConfig_button {
     right: 0;
+    position: absolute;
+    top: 0;
+  }
+  .sidemenu {
+    align-self: flex-end;
+    width: 100%;
   }
   table.sidemenu_table {
     display: flex;
