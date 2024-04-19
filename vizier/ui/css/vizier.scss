@@ -1725,6 +1725,23 @@ table.parameter_list {
 
 
 div.sidemenu_container {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-start;
+  
+  .button {
+    position: absolute;
+    top: 0;
+  }
+  
+  .sidemenu_button {
+    left: 0;
+  }
+  
+  .chartConfig_button {
+    right: 0;
+  }
   table.sidemenu_table {
     display: flex;
     flex-direction: column;
