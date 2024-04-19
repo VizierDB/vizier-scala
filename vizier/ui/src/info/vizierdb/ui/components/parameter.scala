@@ -875,8 +875,7 @@ object ListParameter {
 class NumericalFilterParameter(
     val id: String,
     val name: String,
-    val profile_data: Var[Option[serialized.PropertyList.T]],
-    val xDataColumn: Var[Option[Int]] = Var[Option[Int]](None),
+    val profiler_dump: Var[Option[serialized.PropertyList.T]],
     schema: Rx[Int],
     val required: Boolean,
     val hidden: Boolean
@@ -890,65 +889,76 @@ class NumericalFilterParameter(
       parameter.id,
       parameter.name,
       Var[Option[serialized.PropertyList.T]](None),
-      Var[Option[Int]](None),
       Var[Int](0),
       parameter.required,
       parameter.hidden
     )
   }
-  val currentColumn = Var[Option[String]](None)
+  val columnName = Var[Option[String]](None)
   val xColMax = Var[Option[Int]](None)
   val currentFilterValue = Var[Option[Int]](None)
   val ready = Var[Boolean](false)
-  val test = Var[String]("0")
 
-  def updateXColumnData(xCol: Option[Int]): Unit = {
-    try {
-      profile_data.now match {
-        case Some(profile_data) =>
-          xCol match {
-            case None =>
-              println("No x column")
-            case Some(curr_xCol) =>
-              val columns = profile_data(2).value
-              val overall_data = columns(curr_xCol).as[JsObject]
-              val generalInfo = (overall_data \ "column")
-              val name_filter = (generalInfo \ "name").as[String]
-              val dataType = (generalInfo \ "type").as[String]
-              if (dataType == "string") {
-                println("X column is not numerical")
-                xColMax() = None
-                currentFilterValue() = None
-                currentColumn() = None
-                ready() = false
-
-                return
-              } else { 
-                try {
-                  val maxValue = (overall_data \ "max").as[Int]
-                  try {xDataColumn() = Some(maxValue)} catch {case e: Exception => println("Data column not updated")}
-                  try {xColMax() = Some(maxValue)} catch {case e: Exception => {
-                    println("Max value not updated") 
-                  println(e)}}
-                  try {currentFilterValue() = Some(maxValue)} catch {case e: Exception => {
-                    println("Filter value not updated") 
-                    println(e)}}
-                  try {currentColumn() = Some(name_filter)} catch {case e: Exception => println("Column name not updated")}
-                  ready() = true
-                } catch {
-                  case e: Exception =>
-                    println("DSADSAError in updating x column data")
-                    println(e)
-                }
-              }
+  Rx {
+    profiler_dump().map {
+      profiler_dump =>
+        val columns = profiler_dump(2).value
+        println(schema.now)
+        val overall_data = columns(schema.now).as[JsObject]
+        val generalInfo = (overall_data \ "column")
+        val name_filter = (generalInfo \ "name").as[String]
+        val dataType = (generalInfo \ "type").as[String]
+        if (dataType == "string") {
+          println("X column is not numerical")
+          xColMax() = None
+          currentFilterValue() = None
+          columnName() = None
+          ready() = false
+        } else {
+          try {
+            val maxValue = (overall_data \ "max").as[Int]
+            xColMax() = Some(maxValue)
+            currentFilterValue() = Some(maxValue)
+            columnName() = Some(name_filter)
+            ready() = true
+          } catch {
+            case e: Exception =>
+              println("Error in updating x column data")
+              println(e)
           }
-        case None =>
-          println("No x column")
+        }
+    }
+  }
+
+  schema.foreach { xCol =>{
+    println("Schema updated")
+    profiler_dump.now.map 
+    { profiler_dump =>
+      val columns = profiler_dump(2).value
+      val overall_data = columns(xCol).as[JsObject]
+      val generalInfo = (overall_data \ "column")
+      val name_filter = (generalInfo \ "name").as[String]
+      val dataType = (generalInfo \ "type").as[String]
+      if (dataType == "string") {
+        println("X column is not numerical")
+        xColMax() = None
+        currentFilterValue() = None
+        columnName() = None
+        ready() = false
+      } else {
+        try {
+          val maxValue = (overall_data \ "max").as[Int]
+          xColMax() = Some(maxValue)
+          currentFilterValue() = Some(maxValue)
+          columnName() = Some(name_filter)
+          ready() = true
+        } catch {
+          case e: Exception =>
+            println("Error in updating x column data")
+            println(e)
+          }
+        }
       }
-    } catch {
-      case e: Exception =>
-        println("Error in updating x column data")
-        println(e)
     }
   }
 
@@ -1013,7 +1023,7 @@ class NumericalFilterParameter(
       JsString("")
     } else {
       JsString(
-        currentColumn.now.get + " <= " + (inputNode[
+        columnName.now.get + " <= " + (inputNode[
           dom.html.Input
         ].value).toString
       )
@@ -1027,7 +1037,7 @@ class NumericalFilterParameter(
     val data = stringVal.split(" <= ")
     println(data)
     xColMax() = Some(data(1).toInt)
-    currentColumn() = Some(data(0))
+    columnName() = Some(data(0))
     currentFilterValue() = Some(data(1).toInt)
   }
 

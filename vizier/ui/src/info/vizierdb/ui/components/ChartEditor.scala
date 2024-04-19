@@ -130,7 +130,6 @@ class ChartEditor(
 
     class ChartRow(){
         val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
-        val xColumnData = Var[Option[Int]](None)
 
         val dataset: ArtifactParameter =
             new ArtifactParameter(
@@ -183,16 +182,44 @@ class ChartEditor(
                 "filter",
                 "Filter",
                 datasetProfile,
-                xColumnData,
                 Rx {
                     xColumn.selectedColumn() match {
                     case None      => 0
-                    case Some(col) => col
+                    case Some(col) => {
+                        println("DSADA")
+                        col
+                    }
                     }
                 },
                 false,
                 false
             )
+        
+        dataset.selectedDataset.triggerLater{
+            _ match {
+                case None => 
+                    datasetProfile() = None
+                case Some(ds) =>
+                    Vizier.api.artifactGet(
+                        Vizier.project.now.get.projectId,
+                        delegate.visibleArtifacts.now.get(dataset.selectedDataset.now.get).get._1.id,
+                        limit = Some(0),
+                        profile = Some("true")
+                    ).onComplete{
+                        case Success(artifactDescription) => 
+                            artifactDescription match {
+                                case ds: DatasetDescription => 
+                                    datasetProfile() = Some(ds.properties)
+                                    println("Working Profiled Data")
+                                case _ => None
+                            }
+                        case Failure(e) =>
+                            println(e)
+                            None
+                    }
+                }
+            }
+
         val sort =
             new EnumerableParameter(
                 "sort",
@@ -201,7 +228,6 @@ class ChartEditor(
                     EnumerableValueDescription.apply(true,"---",""),
                     EnumerableValueDescription.apply(false,"Ascending","ascending"),
                     EnumerableValueDescription.apply(false,"Decending","decending"),
-
                 ),
                 true,
                 false
@@ -475,10 +501,10 @@ class ChartEditor(
             `class` := "sidemenu_table",
             thead(
                 tr(
-                td("Chart Title"),
-                td("X-Axis Title"),
-                td("Y-Axis Title"),
-                td("Legend")
+                th("Chart Title"),
+                th("X-Axis Title"),
+                th("Y-Axis Title"),
+                th("Legend")
                 )
             ),
             tbody(
@@ -565,9 +591,8 @@ class ChartEditor(
                 onclick := { (e: dom.MouseEvent) => 
                     SideMenu.toggleMenu(e,true) }, 
                 FontAwesome("ellipsis-v")), 
-            SideMenu.sideMenuContent),
-            div(`class` := "chartConfig_container",
-                button(`class` := "chartConfig_button", 
+            SideMenu.sideMenuContent,
+            button(`class` := "chartConfig_button", 
             "Chart Config",
                 onclick := { (e: dom.MouseEvent) => 
                     SideMenu.toggleMenu(e,false) }, 

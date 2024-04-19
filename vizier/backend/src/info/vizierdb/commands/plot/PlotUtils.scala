@@ -111,7 +111,7 @@ object PlotUtils {
           )
         })
       }
-      println(vegaRegression)
+    
 
     /** Transform the series by aggregating the y-axis value.
       * @param aggFn
