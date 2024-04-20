@@ -1603,8 +1603,10 @@ table.parameter_list {
             display: inline-block;
             width: fit-content;
             select.command-argument {
+              //width: 130px;
               max-width: 120px;
               min-width: 100px;
+              vertical-align: center ;
             }
           }
           input[name="Label"]{
@@ -1727,11 +1729,11 @@ table.parameter_list {
 
 
 div.sidemenu_container {
-  display: flex;
+  //display: flex;
   width: 100%;
   justify-content: center;
   //align-items: flex-start;
-  height: 75px;
+  height: 24px;
   position: relative;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -1758,7 +1760,7 @@ div.sidemenu_container {
     //top: 0;
   }
   .sidemenu {
-    align-self: flex-end;
+    //align-self: flex-end;
     width: 100%;
   }
   table.sidemenu_table {
@@ -1798,6 +1800,10 @@ div.sidemenu_container {
             }
             .parameter {
               display: inline-block;
+              select.command-argument {
+                width: 130px;
+                vertical-align: center ;
+              }
             }
             input{
               width: 85%;
@@ -1886,7 +1892,9 @@ div.sidemenu_container {
 
 
 select.command-argument {
-  width: 130px;
+  //width: 130px;
+  // max-width: 120px;
+  // min-width: 100px;
   vertical-align: center ;
 }
 
