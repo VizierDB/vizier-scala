@@ -1728,21 +1728,31 @@ div.sidemenu_container {
   display: flex;
   width: 100%;
   justify-content: center;
-  align-items: flex-start;
+  //align-items: flex-start;
   height: 75px;
   position: relative;
   padding-top: 10px;
   
   .sidemenu_button {
-    left: 0;
+    height: 16px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 0px;
+    border: solid 1px black;
+    left: 4px;
     position: absolute;
-    top: 0;
+    //top: 0;
   }
   
   .chartConfig_button {
-    right: 0;
+    height: 16px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 0px;
+    border: solid 1px black;
+    right: 4px;
     position: absolute;
-    top: 0;
+    //top: 0;
   }
   .sidemenu {
     align-self: flex-end;
