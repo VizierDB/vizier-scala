@@ -877,6 +877,7 @@ class NumericalFilterParameter(
     val name: String,
     val profiler_dump: Var[Option[serialized.PropertyList.T]],
     schema: Rx[Int],
+    columns: Rx[Seq[serialized.DatasetColumn]],
     val required: Boolean,
     val hidden: Boolean
 )(implicit owner: Ctx.Owner)
@@ -890,6 +891,7 @@ class NumericalFilterParameter(
       parameter.name,
       Var[Option[serialized.PropertyList.T]](None),
       Var[Int](0),
+      Var[Seq[serialized.DatasetColumn]](Seq.empty),
       parameter.required,
       parameter.hidden
     )
@@ -898,6 +900,7 @@ class NumericalFilterParameter(
   val xColMax = Var[Option[Int]](None)
   val currentFilterValue = Var[Option[Int]](None)
   val ready = Var[Boolean](false)
+  val temp = Var[Boolean](false)
 
   Rx {
     profiler_dump().map {
@@ -914,6 +917,7 @@ class NumericalFilterParameter(
           currentFilterValue() = None
           columnName() = None
           ready() = false
+          temp() = true
         } else {
           try {
             val maxValue = (overall_data \ "max").as[Int]
@@ -945,6 +949,7 @@ class NumericalFilterParameter(
         currentFilterValue() = None
         columnName() = None
         ready() = false
+        temp() = true
       } else {
         try {
           val maxValue = (overall_data \ "max").as[Int]
@@ -961,6 +966,17 @@ class NumericalFilterParameter(
       }
     }
   }
+
+  val pulldownColumns = Rx {
+    pulldown(
+      columns().zipWithIndex
+        .find { _._1 == columnName.now.getOrElse("")}
+        .map { _._2 }
+        .getOrElse { 0 }
+    )(columns().map { v => v.name -> v.id.toString }: _*).render
+      .asInstanceOf[dom.html.Select]
+  }
+
 
   val slider_input = Rx {
     xColMax().map { maxVal =>
@@ -982,22 +998,26 @@ class NumericalFilterParameter(
       }
     }
 
+  val sliderInput = input(
+    `type` := "range",
+    min := 0,
+    max := xColMax.now,
+    step := 1
+  ).render
+
   val input_box = Rx  {
     currentFilterValue().map { filterVal =>
     input(
       scalatags.JsDom.all.name := "input_box",
       `type` := "number",
       scalatags.JsDom.all.value := filterVal.toString,
-      // oninput := { (e: dom.Event) =>
-      //   val newValue = e.target.asInstanceOf[dom.html.Input].value.toInt
-      //   // Only update if the new value is different to avoid circular dependency.
-      //   if(currentFilterValue.now != Some(newValue)) {
-      //     currentFilterValue() = Some(newValue)
-      //   }
-      // }
     )
   }
 }
+  val stringInput = input(
+    `type` := "text",
+    placeholder := "Enter Filter"
+  ).render
 
   val root =
     span(
@@ -1006,14 +1026,25 @@ class NumericalFilterParameter(
           case true =>
             div(
               `class` := "numerical_filter",
-              slider_input.reactive,
+              pulldownColumns.reactive,
+              sliderInput,
             )
           case false =>
-            div(
-              `class` := "spinner_class",
-              Spinner().render,
-              println("No x")
-            )
+            temp() match {
+              case true =>
+                div(
+                  `class` := "numerical_filter",
+                  pulldownColumns.reactive,
+                  stringInput,
+                  println("Yes x")
+                )
+              case false =>
+              div(
+                `class` := "spinner_class",
+                Spinner().render,
+                println("No x")
+              )
+            }
         }
       }.reactive
     )
