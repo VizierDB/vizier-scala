@@ -1749,7 +1749,7 @@ div.sidemenu_container {
     padding-right: 8px;
     border-radius: 0px;
     border: solid 1px black;
-    left: 4px;
+    left: 2px;
     position: absolute;
     //top: 0;
     i {
@@ -1763,7 +1763,7 @@ div.sidemenu_container {
     padding-right: 8px;
     border-radius: 0px;
     border: solid 1px black;
-    right: 4px;
+    right: 3px;
     position: absolute;
     //top: 0;
     i {
@@ -1773,6 +1773,9 @@ div.sidemenu_container {
   .sidemenu {
     //align-self: flex-end;
     width: 100%;
+    div {
+      margin-top: 32px;
+    }
   }
   table.sidemenu_table {
     display: flex;
