@@ -1599,13 +1599,18 @@ table.parameter_list {
           display: flex;
           width: 30%;
           justify-content: center;
+          .reactive {
+            div {
+              display: inline-flex;
+            }
+          }
           .parameter {
             display: inline-block;
             width: fit-content;
             select.command-argument {
               //width: 130px;
               max-width: 120px;
-              min-width: 100px;
+              min-width: 90px;
               vertical-align: center ;
             }
           }
@@ -1729,11 +1734,11 @@ table.parameter_list {
 
 
 div.sidemenu_container {
-  //display: flex;
+  display: flex;
   width: 100%;
   justify-content: center;
-  //align-items: flex-start;
-  height: 24px;
+  align-items: stretch;
+  min-height: 24px;
   position: relative;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -1747,6 +1752,9 @@ div.sidemenu_container {
     left: 4px;
     position: absolute;
     //top: 0;
+    i {
+      margin-right: 4px;
+    }
   }
   
   .chartConfig_button {
@@ -1758,6 +1766,9 @@ div.sidemenu_container {
     right: 4px;
     position: absolute;
     //top: 0;
+    i {
+      margin-right: 4px;
+    }
   }
   .sidemenu {
     //align-self: flex-end;
