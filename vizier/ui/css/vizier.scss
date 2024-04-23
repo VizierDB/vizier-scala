@@ -1814,6 +1814,9 @@ div.sidemenu_container {
             }
             .parameter {
               display: inline-block;
+              div:first-child {
+                margin-top: 32px;
+              }
               select.command-argument {
                 width: 130px;
                 vertical-align: center ;
