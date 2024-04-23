@@ -160,6 +160,25 @@ class ChartEditor(
             true,
             false
             )
+        
+        val category: ColIdParameter = 
+            new ColIdParameter(
+            "category",
+            "Category",
+            Rx {
+                dataset.selectedDataset() match {
+                case None => Seq.empty 
+                case Some(datasetId) =>
+                    delegate.visibleArtifacts().get(datasetId) match {
+                    case Some((ds: DatasetSummary, _))     => ds.columns
+                    case Some((ds: DatasetDescription, _)) => ds.columns
+                    case None                              => Seq.empty
+                    }
+                }
+            },
+            true,
+            false
+            )
 
         val yColumns = Var[Seq[ChartYColumn]](Seq())
 
@@ -333,6 +352,7 @@ class ChartEditor(
                             th("Dataset"),
                             th("X"),
                             th("Y"),
+                            th("Category"),
                             th("Filter"),
                             th("Regression")
                         )
@@ -354,6 +374,7 @@ class ChartEditor(
                                 )
                             }.reactive
                             ),
+                            td(category.root),
                             td(filter.root),
                             td(regression.root)
                         ) 
@@ -431,6 +452,7 @@ class ChartEditor(
                                 th("Dataset"),
                                 th("X"),
                                 th("Y"),
+                                th("Category"),
                                 th("Filter"),
                                 th("Sort"),
                             )
@@ -454,6 +476,7 @@ class ChartEditor(
                                 }.reactive
                             )
                                 ),
+                                td(category.root),
                                 td(filter.root),
                                 td(sort.root)
                             ) 
@@ -617,35 +640,49 @@ class ChartEditor(
         ).render)
         }
 
-        def renderSideMenuContent(): Unit = {
-            while (sideMenuContent.firstChild != null) {
-            sideMenuContent.removeChild(sideMenuContent.firstChild)}
-            
-            sideMenuContent.appendChild(div(
-            table(
-                `class` := "sidemenu_table",
-                thead(
-                tr(
-                    th("Label"),
-                    th("Color"),
-                )
-                ),
-                tbody(
-                tr(
-                    td(Rx{
-                        datasetRows().map(
-                            row => {
-                                row.label.root})}.reactive
-                        ),
-                    td(Rx{
-                        datasetRows().map(
-                            row => {
-                                row.color.root})}.reactive
-                        )
-                )
-            ) 
-            )).render)
+    def renderSideMenuContent(): Unit = {
+        // Clear existing content in the side menu
+        while (sideMenuContent.firstChild != null) {
+            sideMenuContent.removeChild(sideMenuContent.firstChild)
         }
+        
+        // Use Rx to reactively update the side menu whenever datasetRows changes
+        Rx {
+            datasetRows().foreach { row =>
+                // Create a section for each dataset
+                val sections = row.yColumns().map { yColumn =>
+                    // Create a subsection for each Y column within the dataset
+                    div(
+                        `class` := "sidemenu_table",
+                        h3("Dataset: ", row.dataset.selectedDataset()),
+                        table(
+                            cls := "sidemenu_table",
+                            thead(
+                                tr(
+                                    th("Parameter"),
+                                    th("Value")
+                                )
+                            ),
+                            tbody(
+                                tr(
+                                    td("Label"),
+                                    td(row.label.root)  // Assuming each Y column has a label parameter
+                                ),
+                                tr(
+                                    td("Color"),
+                                    td(row.color.root)  // Assuming each Y column has a color parameter
+                                )
+                            )
+                        )
+                    )
+                }
+                // Append each Y column section to the side menu for the current dataset
+                sections.foreach { section =>
+                    sideMenuContent.appendChild(section.render)
+                }
+            }
+        }.reactive
+    }
 
 
         def showAt(x: Double, y: Double): Unit = {
@@ -680,14 +717,16 @@ class ChartEditor(
                 FontAwesome("ellipsis-v"),  
                 "Line Config",
                 onclick := { (e: dom.MouseEvent) => 
-                    SideMenu.toggleMenu(e,true) }, 
-            SideMenu.sideMenuContent),
+                    SideMenu.toggleMenu(e,true) },
+                ),
+            SideMenu.sideMenuContent,
             button(`class` := "chartConfig_button", 
             FontAwesome("cog"), 
             "Chart Config",
                 onclick := { (e: dom.MouseEvent) => 
-                    SideMenu.toggleMenu(e,false) }, 
-            SideMenu.sideMenuContent)
+                    SideMenu.toggleMenu(e,false) }
+            ),
+            SideMenu.sideMenuContent
             ))
 
 }
