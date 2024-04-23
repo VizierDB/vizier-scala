@@ -1773,7 +1773,7 @@ div.sidemenu_container {
   .sidemenu {
     //align-self: flex-end;
     width: 100%;
-    div:first-child {
+    div.sidemenu_table {
       margin-top: 32px;
     }
   }
