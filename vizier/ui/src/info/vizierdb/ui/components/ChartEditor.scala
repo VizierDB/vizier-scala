@@ -82,15 +82,13 @@ class ChartEditor(
 
     override def currentState: Seq[CommandArgument] = 
     {
+    println(datasetRows.now)
     chartType match{
         case "scatterplot" => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
                 Json.toJson(Seq(
                 row.dataset.toArgument,
                 row.xColumn.toArgument,
-                // CommandArgument("yList", JsArray(row.yColumns.now.map { yCol =>
-                //     Json.toJson(yCol.yColumn.toArgument)}
-                // )),
                 row.yColumns.now.head.yColumn.toArgument,
                 row.filter.toArgument,
                 row.label.toArgument,
@@ -343,8 +341,7 @@ class ChartEditor(
         val root = 
             chartType match{
                 case "scatterplot" => 
-                    fieldset(
-                    legend("Scatter"),
+                    div(
                     table(
                         `class` := "parameter_list",
                         thead(
@@ -394,8 +391,7 @@ class ChartEditor(
                         })
                     ).render
                 case "barchart" =>
-                        fieldset(
-                        legend("Bars"),
+                        div(
                         table(
                             `class` := "parameter_list",
                             thead(
@@ -443,8 +439,7 @@ class ChartEditor(
                             })
                         ).render
                 case "line-chart" =>
-                        fieldset(
-                        legend("Lines"),
+                        div(
                         table(
                             `class` := "parameter_list",
                             thead(
@@ -496,8 +491,7 @@ class ChartEditor(
                             })
                         ).render
                 case "cdf" =>
-                    fieldset(
-                    legend("CDF"),
+                    div(
                     table(
                         `class` := "parameter_list",
                         thead(
@@ -560,53 +554,28 @@ class ChartEditor(
     // val BarChart = new ChartRow()
     appendChartRow() 
 
-    object SideMenu {
-        private var isOpen = false
-        private var sideMenuOpen = false
-        private var chartConfigOpen = false
+    object SideMenu extends Enumeration{
+        val Closed, ChartConfiguration, LineConfiguration = Value
         
-        val sideMenuContent =  div(`class` := "sidemenu", style := "visibility: visible").render
+        val currentConfigState = Var(Closed)
 
-        def getIsOpen(): Boolean = {
-            isOpen
-        }
-
-        def getSideMenuOpen(): Boolean = {
-            sideMenuOpen
-        }
-
-        def getChartConfigOpen(): Boolean = {
-            chartConfigOpen
-        }
-
-        def toggleMenu(buttonEvent: dom.MouseEvent, chartType: Boolean): Unit = {
-            if (isOpen) {
-                hide()
-                isOpen = false
-            } else {
-                if (chartType) {
-                    if (chartConfigOpen){
-                        hide()
-                    }
-                    showAt(buttonEvent.pageX + 50, buttonEvent.pageY + 50)
-                    isOpen = true
-                    SideMenu.renderSideMenuContent()
-                } else {
-                    if (sideMenuOpen){
-                        hide()
-                    }
-                    showAt(buttonEvent.pageX + 50, buttonEvent.pageY + 50)
-                    isOpen = true
-                    SideMenu.renderChartContent()
-                }
+        val sideMenuContent = Rx {
+            currentConfigState() match {
+                case Closed => 
+                    div()
+                case ChartConfiguration => 
+                    div(
+                        renderChartContent.render
+                    )
+                case LineConfiguration => 
+                    div(
+                        renderSideMenuContent.render
+                    )
             }
-            } 
+        }.reactive
 
-        def renderChartContent(): Unit = {
-        while (sideMenuContent.firstChild != null) {
-            sideMenuContent.removeChild(sideMenuContent.firstChild)
-        }
-        sideMenuContent.appendChild(div(
+    val renderChartContent =
+        Rx{
             table(
             `class` := "sidemenu_table",
             thead(
@@ -619,87 +588,50 @@ class ChartEditor(
             ),
             tbody(
                 tr(
-                    td(Rx{
+                    td(
                         datasetRows().map(
                             row => {
-                                row.chartTitle.root})}.reactive),
-                    td(Rx{
+                                row.chartTitle.root})),
+                    td(
                         datasetRows().map(
                             row => {
-                                row.xAxisTitle.root})}.reactive),
-                    td(Rx{
+                                row.xAxisTitle.root})),
+                    td(
                         datasetRows().map(
                             row => {
-                                row.yAxisTitle.root})}.reactive),
-                    td(Rx{
+                                row.yAxisTitle.root})),
+                    td(
                         datasetRows().map(
                             row => {
-                                row.chartLegend.root})}.reactive)
+                                row.chartLegend.root}))
                 )
             ))
-        ).render)
-        }
-
-    def renderSideMenuContent(): Unit = {
-        // Clear existing content in the side menu
-        while (sideMenuContent.firstChild != null) {
-            sideMenuContent.removeChild(sideMenuContent.firstChild)
-        }
+        }.reactive
         
-        // Use Rx to reactively update the side menu whenever datasetRows changes
+
+    val renderSideMenuContent =     
         Rx {
-            datasetRows().foreach { row =>
-                // Create a section for each dataset
-                val sections = row.yColumns().map { yColumn =>
-                    // Create a subsection for each Y column within the dataset
-                    div(
-                        `class` := "sidemenu_table",
-                        h3("Dataset: ", row.dataset.selectedDataset()),
-                        table(
-                            cls := "sidemenu_table",
-                            thead(
-                                tr(
-                                    th("Parameter"),
-                                    th("Value")
-                                )
-                            ),
-                            tbody(
-                                tr(
-                                    td("Label"),
-                                    td(row.label.root)  // Assuming each Y column has a label parameter
-                                ),
-                                tr(
-                                    td("Color"),
-                                    td(row.color.root)  // Assuming each Y column has a color parameter
-                                )
-                            )
+            datasetRows().map { row =>
+                table(
+                    `class` := "sidemenu_table",
+                    thead(
+                        tr(
+                            th("Label"),
+                            th("Color")
+                        )
+                    ),
+                    tbody(
+                        tr(
+                            td(row.label.root)  // Assuming each Y column has a label parameter
+                        ),
+                        tr(
+                            td(row.color.root)  // Assuming each Y column has a color parameter
                         )
                     )
-                }
-                // Append each Y column section to the side menu for the current dataset
-                sections.foreach { section =>
-                    sideMenuContent.appendChild(section.render)
-                }
+                )
             }
-        }.reactive
+            }.reactive
     }
-
-
-        def showAt(x: Double, y: Double): Unit = {
-            sideMenuContent.style.left = s"${x}px" // Target sideMenuContent 
-            sideMenuContent.style.top = s"${y}px"
-            sideMenuContent.style.visibility = "visible"
-            sideMenuContent.style.opacity = "1.0"
-            sideMenuContent.style.display = "block"
-        }
-
-        def hide(): Unit = {
-            sideMenuContent.style.display = "none"
-            sideMenuContent.style.visibility = "hidden" // Target sideMenuContent
-            sideMenuContent.style.opacity = "0"
-        }
-        }
-
     //Reactive Val for sideMenuElement
 
 
@@ -709,23 +641,48 @@ class ChartEditor(
     override val editorFields =
         div(`class` := chartType+"_chart_editor", 
             Rx {
-                div(datasetRows().map(_.root))
+                fieldset(
+                    legend(
+                        chartType match {
+                            case "scatterplot" => 
+                                "Scatter"
+                            case "barchart" => 
+                                "Bars"
+                            case "line-chart" => 
+                                "Lines"
+                            case "cdf" => 
+                                "CDF"
+                            case _ => 
+                                "Chart"
+                        }
+                    ),
+                div(datasetRows().map(_.root)))
             }.reactive,
             div(`class` := "sidemenu_container",
-                
                 button(`class` := "sidemenu_button",
                 FontAwesome("ellipsis-v"),  
-                "Line Config",
+                chartType match {
+                    case "scatterplot" => 
+                        "Point"
+                    case "barchart" => 
+                        "Bar"
+                    case "line-chart" => 
+                        "Line"
+                    case "cdf" => 
+                        "Line"
+                    case _ => 
+                        "Chart"
+                },
                 onclick := { (e: dom.MouseEvent) => 
-                    SideMenu.toggleMenu(e,true) },
+                    SideMenu.currentConfigState() = if(SideMenu.currentConfigState.now == SideMenu.LineConfiguration) SideMenu.Closed else SideMenu.LineConfiguration
+                        },
                 ),
-            SideMenu.sideMenuContent,
             button(`class` := "chartConfig_button", 
             FontAwesome("cog"), 
-            "Chart Config",
+            "Chart",
                 onclick := { (e: dom.MouseEvent) => 
-                    SideMenu.toggleMenu(e,false) }
-            ),
+                    SideMenu.currentConfigState() = if(SideMenu.currentConfigState.now == SideMenu.ChartConfiguration) SideMenu.Closed else SideMenu.ChartConfiguration
+                }),
             SideMenu.sideMenuContent
             ))
 
