@@ -20,6 +20,8 @@ import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.sedona_sql.expressions.ST_AsText
 import org.apache.spark.sql.Column
 import org.mimirdb.caveats.implicits._
+import org.apache.spark.sql.functions.base64
+import org.apache.spark.sql.types.BinaryType
 
 /**
  * Certain column types (most notably UDTs) are not safe for export through 
@@ -37,6 +39,9 @@ object SafeExport
         column.dataType match {
           case t:UserDefinedType[_] if t.isInstanceOf[GeometryUDT] =>
             new Column(ST_AsText(Seq(base.expr)))
+
+          case BinaryType => 
+            base64(base)
 
           case _ => 
             base
