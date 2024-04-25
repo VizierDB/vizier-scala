@@ -122,10 +122,15 @@ class ChartEditor(
 
     val datasetRows = Var[Seq[ChartRow]](Seq())
 
-    def appendChartRow(): Unit =
-        // datasetRows() = datasetRows.now :+ new ChartRow()
-        // datasetRows() = datasetRows.now :+ BarChart
-        datasetRows.update(_ :+ new ChartRow())
+def appendChartRow(): Unit = {
+    println("Appending a new row")
+    datasetRows.update(currentRows => {
+        val newRow = new ChartRow()
+        val updatedRows = currentRows :+ newRow
+        println(s"New rows count: ${updatedRows.length}")
+        updatedRows
+    })
+}
     class ChartRow(){
         val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
 
@@ -375,12 +380,12 @@ class ChartEditor(
                             td(category.root),
                             td(filter.root),
                             td(regression.root),
-                            td(button(FontAwesome("plus"),"Add Row",
+                            td(button(FontAwesome("plus"),
                                 onclick := { (e: dom.MouseEvent) =>
                                     appendChartRow()
                                 },
                                 ),
-                                button(FontAwesome("minus"),"Delete Row",
+                                button(FontAwesome("minus"),
                                 onclick := { (e: dom.MouseEvent) =>
                                     datasetRows() = datasetRows.now.dropRight(1)
                                 },
@@ -421,15 +426,15 @@ class ChartEditor(
                                 ),
                                 td(filter.root),
                                 td(sort.root),
-                                td(button(FontAwesome("plus"),"Add Row",
+                                td(button(FontAwesome("plus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         appendChartRow()
                                     },
-                                    )),
-                                button(FontAwesome("minus"),"Delete Row",
+                                    ),
+                                button(FontAwesome("minus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         datasetRows() = datasetRows.now.dropRight(1)
-                                    },
+                                    }),
                                     ))))
                         ).render
                 case "line-chart" =>
@@ -471,15 +476,15 @@ class ChartEditor(
                                 td(category.root),
                                 td(filter.root),
                                 td(sort.root),
-                                td(button(FontAwesome("plus"),"Add Row",
+                                td(button(FontAwesome("plus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         appendChartRow()
                                     },
-                                    )),
-                                td(button(FontAwesome("minus"),"Delete Row",
+                                    ),
+                                td(button(FontAwesome("minus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         datasetRows() = datasetRows.now.dropRight(1)
-                                    },
+                                    }),
                                     ))
                             ) 
                             )
@@ -502,15 +507,14 @@ class ChartEditor(
                             td(dataset.root),
                             td(xColumn.root),
                             td(filter.root),
-                            td(button(FontAwesome("plus"),"Add Row",
+                            td(button(FontAwesome("plus"),
                                 onclick := { (e: dom.MouseEvent) =>
                                     appendChartRow()
-                                },
-                                )),
-                                button(FontAwesome("minus"),"Delete Row",
+                                }),
+                                button(FontAwesome("minus"),
                                 onclick := { (e: dom.MouseEvent) =>
                                     datasetRows() = datasetRows.now.dropRight(1)
-                                },
+                                }),
                                 ))) 
                     ),
                     ).render
