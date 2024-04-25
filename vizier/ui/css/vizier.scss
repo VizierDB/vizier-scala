@@ -1600,8 +1600,16 @@ table.parameter_list {
           width: 30%;
           justify-content: center;
           .reactive {
-            div {
-              display: inline list-item;
+            // div {
+            //   display: inline list-item;
+            // }
+            button {
+              width: 24px;
+            }
+          }
+          button {
+            i {
+              margin-right: 4px;
             }
           }
           .parameter {
@@ -1799,6 +1807,7 @@ div.sidemenu_container {
       }
 
       tbody {
+        display: flex;
         width: 100%;
         justify-content: space-evenly;
         tr {
@@ -1913,50 +1922,50 @@ select.command-argument {
   vertical-align: center ;
 }
 
-button.add_y_axis {
-  background-color:#f6f6f6;
-  border:black;
-  border-radius:0px;
-  height:24px;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align:center;
-  cursor:pointer;
-  display: none ; 
-  &:hover{
-    background-color: $color_inter_module_highlight;
-  }
-}
+// button.add_y_axis {
+//   background-color:#f6f6f6;
+//   border:black;
+//   border-radius:0px;
+//   height:24px;
+//   padding-left: 8px;
+//   padding-right: 8px;
+//   text-align:center;
+//   cursor:pointer;
+//   display: none ; 
+//   &:hover{
+//     background-color: $color_inter_module_highlight;
+//   }
+// }
 
-button.delete_y{
-  background-color:#f6f6f6;
-  border:black;
-  border-radius:0px;
-  height:24px;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align:center;
-  cursor:pointer;
-  //display : none ;
-  &:hover{
-    background-color: $color_inter_module_highlight;
-  }
-}
+// button.delete_y{
+//   background-color:#f6f6f6;
+//   border:black;
+//   border-radius:0px;
+//   height:24px;
+//   padding-left: 8px;
+//   padding-right: 8px;
+//   text-align:center;
+//   cursor:pointer;
+//   //display : none ;
+//   &:hover{
+//     background-color: $color_inter_module_highlight;
+//   }
+// }
 
-button.add_row {
-  background-color:#f6f6f6;
-  border:black;
-  border-radius:0px;
-  height:24px;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align:center;
-  cursor:pointer;
-  display: none ; 
-  &:hover{
-    background-color: $color_inter_module_highlight;
-  }
-}
+// button.add_row {
+//   background-color:#f6f6f6;
+//   border:black;
+//   border-radius:0px;
+//   height:24px;
+//   padding-left: 8px;
+//   padding-right: 8px;
+//   text-align:center;
+//   cursor:pointer;
+//   display: none ; 
+//   &:hover{
+//     background-color: $color_inter_module_highlight;
+//   }
+// }
 
 button.customization {
   background-color:#f6f6f6;
