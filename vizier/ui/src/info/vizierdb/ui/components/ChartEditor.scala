@@ -353,7 +353,6 @@ class ChartEditor(
                             th("Filter"),
                             th("Regression"),
                             th(""),
-                            th("")
                         )
                         ),
                         tbody( 
@@ -376,19 +375,16 @@ class ChartEditor(
                             td(category.root),
                             td(filter.root),
                             td(regression.root),
-                            td(button("Add Row",
+                            td(button(FontAwesome("plus"),"Add Row",
                                 onclick := { (e: dom.MouseEvent) =>
                                     appendChartRow()
                                 },
-                                FontAwesome("plus"))),
-                            td(button("Delete Row",
+                                ),
+                                button(FontAwesome("minus"),"Delete Row",
                                 onclick := { (e: dom.MouseEvent) =>
                                     datasetRows() = datasetRows.now.dropRight(1)
                                 },
-                                FontAwesome("minus")))
-                        ) 
-                        )
-                    )
+                                )))))
                     ).render
                 case "barchart" =>
                         div(
@@ -402,7 +398,6 @@ class ChartEditor(
                                 th("Filter"),
                                 th("Sort"),
                                 th(""),
-                                th("")
                             )
                             ),
                             tbody( 
@@ -426,19 +421,16 @@ class ChartEditor(
                                 ),
                                 td(filter.root),
                                 td(sort.root),
-                                td(button("Add Row",
+                                td(button(FontAwesome("plus"),"Add Row",
                                     onclick := { (e: dom.MouseEvent) =>
                                         appendChartRow()
                                     },
-                                    FontAwesome("plus"))),
-                                td(button("Delete Row",
+                                    )),
+                                button(FontAwesome("minus"),"Delete Row",
                                     onclick := { (e: dom.MouseEvent) =>
                                         datasetRows() = datasetRows.now.dropRight(1)
                                     },
-                                    FontAwesome("minus")))
-                            ) 
-                            )
-                        )
+                                    ))))
                         ).render
                 case "line-chart" =>
                         div(
@@ -453,8 +445,6 @@ class ChartEditor(
                                 th("Filter"),
                                 th("Sort"),
                                 th(""),
-                                th("")
-
                             )
                             ),
                             tbody( 
@@ -481,16 +471,16 @@ class ChartEditor(
                                 td(category.root),
                                 td(filter.root),
                                 td(sort.root),
-                                td(button("Add Row",
+                                td(button(FontAwesome("plus"),"Add Row",
                                     onclick := { (e: dom.MouseEvent) =>
                                         appendChartRow()
                                     },
-                                    FontAwesome("plus"))),
-                                td(button("Delete Row",
+                                    )),
+                                td(button(FontAwesome("minus"),"Delete Row",
                                     onclick := { (e: dom.MouseEvent) =>
                                         datasetRows() = datasetRows.now.dropRight(1)
                                     },
-                                    FontAwesome("minus")))
+                                    ))
                             ) 
                             )
                         )
@@ -505,7 +495,6 @@ class ChartEditor(
                             th("X"),
                             th("Filter"),
                             th(""),
-                            th("")
                         )
                         ),
                         tbody( 
@@ -513,18 +502,16 @@ class ChartEditor(
                             td(dataset.root),
                             td(xColumn.root),
                             td(filter.root),
-                            td(button("Add Row",
+                            td(button(FontAwesome("plus"),"Add Row",
                                 onclick := { (e: dom.MouseEvent) =>
                                     appendChartRow()
                                 },
-                                FontAwesome("plus"))),
-                            td(button("Delete Row",
+                                )),
+                                button(FontAwesome("minus"),"Delete Row",
                                 onclick := { (e: dom.MouseEvent) =>
                                     datasetRows() = datasetRows.now.dropRight(1)
                                 },
-                                FontAwesome("minus")))
-                        ) 
-                        )
+                                ))) 
                     ),
                     ).render
                     }
