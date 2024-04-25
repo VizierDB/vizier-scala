@@ -45,6 +45,7 @@ object LineChart extends Command
   val PARAM_X = "xcol"
   val PARAM_Y = "ycol"
   val PARAM_Y_AXIS = "yList"
+  val PARAM_CATEGORY = "category"
   val PARAM_FILTER = "filter"
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
@@ -57,6 +58,7 @@ object LineChart extends Command
         DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
         ColIdParameter(id = PARAM_X, name = "X-axis"),
         ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(ColIdParameter(id = PARAM_Y, name = "Y-axis"))),
+        ColIdParameter(id = PARAM_CATEGORY, name = "Category", required = false),
         NumericalFilterParameter(id = PARAM_FILTER, name = "Filter",required = false),
         StringParameter(id = PARAM_LABEL, name = "Label", required = false),
         ColorParameter(id = PARAM_COLOR, name = "Color", required = false)
@@ -82,16 +84,21 @@ object LineChart extends Command
     // Feed the configuration into PlotUtils
     val series =
       PlotUtils.SeriesList( 
-        arguments.getList(PARAM_SERIES).map { series => 
-          PlotUtils.makeSeries(
+        arguments.getList(PARAM_SERIES).flatMap { series => 
+          val createdSeries = PlotUtils.makeSeries(
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
             xIndex      = series.get[Int](PARAM_X),
             yIndex      = series.getList(PARAM_Y_AXIS).map { _.get[Int](PARAM_Y) },
-            name        = series.getOpt[String](PARAM_LABEL)
+            name        = series.getOpt[String](PARAM_LABEL),
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
           .sorted
+          
+          series.getOpt[Int](PARAM_CATEGORY) match {
+            case Some(categoryIndex) => createdSeries.groupDataByCategory(categoryIndex)
+            case None => Seq(createdSeries)
+          }
         }
       )
     val yAxisLabels = series.series.flatMap(_.y).distinct 
@@ -181,6 +188,4 @@ object LineChart extends Command
                  .toSet.toSeq:_*
       )
       .andNothingElse
-
-
 }

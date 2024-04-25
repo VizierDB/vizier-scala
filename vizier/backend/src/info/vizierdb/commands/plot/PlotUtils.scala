@@ -50,7 +50,7 @@ object PlotUtils {
       val regression: Option[VegaRegressionMethod] = None,
       var name: String = null,
       var index: Int = -1,
-      var color: String
+      var color: String,
   ) {
     // If we pull too many points, we're going to crash the client
     // so instead, what we're going to do is pull one more record
@@ -141,6 +141,21 @@ object PlotUtils {
         dataframe = aggDataframe
       )
     }
+
+    def groupDataByCategory(category:Int): Seq[Series] = {
+      val categoryColumn = dataframe.columns(category)
+      val distinctCategories = dataframe.select(categoryColumn).distinct().collect()
+
+      val dataframes = distinctCategories.map {
+        categoryValue => 
+          copy(
+            dataframe = dataframe.filter(col(categoryColumn) === categoryValue)
+          )
+      }
+
+      dataframes
+    }
+
 
     /** Transform the series by sorting on the x axis
       * @return
@@ -245,7 +260,7 @@ object PlotUtils {
       dataframe = dataframe,
       regression = regression,
       name = name.getOrElse(null),
-      color = color.getOrElse("#0000FF")
+      color = color.getOrElse("#0000FF"),
     )
   }
 
@@ -491,16 +506,16 @@ object PlotUtils {
 
       if (yDomainRequiresOffset || calculatedMaxY > 0) calculatedMaxY else 0
     }
-
+    
     /** Retrieve all [VegaData] objects for this series
       *
       * For any
       */
     def vegaData =
       series.map { _.vegaData } ++
-        // Note: vegaRegression returns None if no regression is configured
-        // The following list will be empty for series without regressions
-        series.flatMap { _.vegaRegression.getOrElse(Seq.empty) }
+      // Note: vegaRegression returns None if no regression is configured
+      // The following list will be empty for series without regressions
+      series.flatMap { _.vegaRegression.getOrElse(Seq.empty) }
 
     def names =
       series.map { _.name }

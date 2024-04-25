@@ -175,6 +175,4 @@ object CDFPlot extends Command
                  .toSet.toSeq:_*
       )
       .andNothingElse
-
-
 }
