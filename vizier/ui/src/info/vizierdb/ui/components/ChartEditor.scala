@@ -75,10 +75,7 @@ class ChartEditor(
                 Rx{datasetRows().head.artifact.value(artifact)}
             case _ =>
                 println("Error: Expected JsString")
-            }
-        }
-    }
-    }
+            }}}}
 
     override def currentState: Seq[CommandArgument] = 
     {
@@ -122,15 +119,10 @@ class ChartEditor(
 
     val datasetRows = Var[Seq[ChartRow]](Seq())
 
-def appendChartRow(): Unit = {
-    println("Appending a new row")
-    datasetRows.update(currentRows => {
-        val newRow = new ChartRow()
-        val updatedRows = currentRows :+ newRow
-        println(s"New rows count: ${updatedRows.length}")
-        updatedRows
-    })
-}
+    def appendChartRow(): Unit =
+        // datasetRows() = datasetRows.now :+ new ChartRow()
+        // datasetRows() = datasetRows.now :+ BarChart
+        datasetRows.update(_ :+ new ChartRow())
     class ChartRow(){
         val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
 
@@ -164,24 +156,7 @@ def appendChartRow(): Unit = {
             false
             )
         
-        val category: ColIdParameter = 
-            new ColIdParameter(
-            "category",
-            "Category",
-            Rx {
-                dataset.selectedDataset() match {
-                case None => Seq.empty 
-                case Some(datasetId) =>
-                    delegate.visibleArtifacts().get(datasetId) match {
-                    case Some((ds: DatasetSummary, _))     => ds.columns
-                    case Some((ds: DatasetDescription, _)) => ds.columns
-                    case None                              => Seq.empty
-                    }
-                }
-            },
-            true,
-            false
-            )
+        val category = new ChartCategoryColumn(dataset)
 
         val yColumns = Var[Seq[ChartYColumn]](Seq())
 
@@ -377,7 +352,7 @@ def appendChartRow(): Unit = {
                                 )
                             }.reactive
                             ),
-                            td(category.root),
+                            td(category.category.root),
                             td(filter.root),
                             td(regression.root),
                             td(button(FontAwesome("plus"),
@@ -473,7 +448,7 @@ def appendChartRow(): Unit = {
                                 }.reactive
                             )
                                 ),
-                                td(category.root),
+                                td(category.category.root),
                                 td(filter.root),
                                 td(sort.root),
                                 td(button(FontAwesome("plus"),
@@ -520,6 +495,45 @@ def appendChartRow(): Unit = {
                     ).render
                     }
         }
+
+        class ChartCategoryColumn(dataset: ArtifactParameter)
+        {
+        val category =
+            new ColIdParameter(
+            "category",
+            "Category",
+            Rx {
+                dataset.selectedDataset() match {
+                    case None => Seq.empty
+                case Some(datasetId) =>
+                    delegate.visibleArtifacts().get(datasetId) match {
+                    case Some((ds: DatasetSummary, _))     => ds.columns
+                    case Some((ds: DatasetDescription, _)) => ds.columns
+                    case None                              => Seq.empty
+
+                    }
+                }
+            },
+            true,
+            false
+            )
+        val label =
+            new StringParameter(
+            "label",
+            "Label",
+            true,
+            false,
+            ""
+            )
+        val color =
+            new ColorParameter(
+            "color",
+            "Color",
+            true,
+            false,
+            Some("#214478")
+            )
+        }
         class ChartYColumn(dataset: ArtifactParameter)
         {
         val yColumn =
@@ -541,6 +555,22 @@ def appendChartRow(): Unit = {
             true,
             false
             )
+        val label =
+            new StringParameter(
+            "label",
+            "Label",
+            true,
+            false,
+            ""
+            )
+        val color =
+            new ColorParameter(
+            "color",
+            "Color",
+            true,
+            false,
+            Some("#214478")
+        )
         val root =
             div(yColumn.root)
         }
@@ -603,36 +633,45 @@ def appendChartRow(): Unit = {
             ))
         }.reactive
         
+    def datasetRowLabel = Rx{
+        datasetRows().map(
+            row => {
+                row.yColumns().map(
+                    yCol => {
+                        yCol.label.root
+                    }
+                )
+            }
+        )
+    }
+
+    def datasetRowColor = Rx{
+        datasetRows().map(
+            row => {
+                row.yColumns().map(
+                    yCol => {
+                        yCol.color.root
+                    }
+                )
+            }
+        )
+    }
 
     val renderSideMenuContent =     
         Rx {
-            datasetRows().map { row =>
                 table(
                     `class` := "sidemenu_table",
                     thead(
-                        tr(
-                            th("Label"),
-                            th("Color")
-                        )
-                    ),
-                    tbody(
-                        tr(
-                            td(row.label.root)  // Assuming each Y column has a label parameter
+                        tr(th("Label")),
+                        tr(th("Color"))
                         ),
-                        tr(
-                            td(row.color.root)  // Assuming each Y column has a color parameter
-                        )
+                    tbody(
+                        tr(td(datasetRowLabel())),
+                        tr(td(datasetRowColor()))
                     )
                 )
-            }
             }.reactive
     }
-    //Reactive Val for sideMenuElement
-
-
-    //css class for type of chart editor
-
-    // What is displayed to users
     override val editorFields =
         div(`class` := chartType+"_chart_editor", 
             Rx {

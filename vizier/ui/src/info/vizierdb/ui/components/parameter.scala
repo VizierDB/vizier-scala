@@ -967,15 +967,12 @@ class NumericalFilterParameter(
     }
   }
 
-  val pulldownColumns = Rx {
-    pulldown(
-      columns().zipWithIndex
-        .find { _._1 == columnName.now.getOrElse("")}
-        .map { _._2 }
-        .getOrElse { 0 }
-    )(columns().map { v => v.name -> v.id.toString }: _*).render
-      .asInstanceOf[dom.html.Select]
-  }
+val pulldownColumns = Rx {
+  val options = ("---", "none") +: columns().map { v => (v.name, v.id.toString) }
+  pulldown(
+    columns().zipWithIndex.find(_._1 == columnName.now.getOrElse("")).map(_._2 + 1).getOrElse(0)
+  )(options: _*).render.asInstanceOf[dom.html.Select]
+}
 
 
   val slider_input = Rx {
@@ -1050,7 +1047,10 @@ class NumericalFilterParameter(
     )
 
   def value =
-    if (xColMax.now == None) {
+    if(inputNode[dom.html.Input].value == "none") {
+      JsString("")
+    }
+    else if (xColMax.now == None) {
       JsString("")
     } else {
       JsString(
