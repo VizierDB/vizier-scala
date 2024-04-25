@@ -1595,10 +1595,14 @@ table.parameter_list {
         display: flex;
         width: 100%;
         justify-content: space-around;
+        
         td {
           display: flex;
           width: 30%;
           justify-content: center;
+          .remove_y_column_button:first-child {
+            display: none;
+          }
           .reactive {
             // div {
             //   display: inline list-item;
@@ -1608,9 +1612,8 @@ table.parameter_list {
             }
           }
           button {
-            i {
-              margin-right: 4px;
-            }
+            width: 24px;
+            height: 24px;
           }
           .parameter {
             display: inline-block;
