@@ -1564,11 +1564,9 @@ div.modal_background
 /* The last child of a parameter list is a "template" placeholder to allow
    adding more records by just typing */
 
-div.module_editor {
-  fieldset table:first-of-type button.remove_row_button {
+div.module_editor fieldset div div:first-of-type button.remove_row_button {
     display: none;
   }
-}
 
 table.parameter_list {
   display: flex;
