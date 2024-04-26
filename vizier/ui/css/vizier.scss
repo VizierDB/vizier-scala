@@ -1623,6 +1623,11 @@ table.parameter_list {
           .parameter {
             display: inline-block;
             width: fit-content;
+            input.command-argument {
+              max-width: 120px;
+              min-width: 90px;
+              vertical-align: center ;
+            }
             select.command-argument {
               //width: 130px;
               max-width: 120px;
