@@ -75,7 +75,7 @@ object PlotUtils {
       * @return
       *   The [VegaData] object encoding this series
       */
-    println(regressionName)
+    
     def vegaData: VegaData =
       VegaData(
         name = name,
@@ -87,7 +87,6 @@ object PlotUtils {
           )
         }.toSeq)
       )
-      println(vegaData)
 
     /** Retrieve the [VegaData] object encoding a regression over this series
       * @return
@@ -111,7 +110,7 @@ object PlotUtils {
           )
         })
       }
-      println(vegaRegression)
+    
 
     /** Transform the series by aggregating the y-axis value.
       * @param aggFn

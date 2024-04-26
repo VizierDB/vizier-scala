@@ -1564,9 +1564,6 @@ div.modal_background
 /* The last child of a parameter list is a "template" placeholder to allow
    adding more records by just typing */
 
-div.scatterplot_chart_editor {
-  width: 850px;
-}
 table.parameter_list {
   display: flex;
   flex-direction: column;
@@ -1594,16 +1591,52 @@ table.parameter_list {
     tbody {
       width: 100%;
       justify-content: space-evenly;
+      // tr:first-child {
+      //   button.remove_row_button {
+      //     display: none;
+      //   }
+      // }
       tr {
         display: flex;
         width: 100%;
         justify-content: space-around;
+        
         td {
           display: flex;
           width: 30%;
           justify-content: center;
+          .remove_y_column_button:first-child {
+            display: none;
+          }
+          .reactive {
+            // div {
+            //   display: inline list-item;
+            // }
+            button {
+              width: 24px;
+            }
+          }
+          button {
+            width: 24px;
+            height: 24px;
+          }
           .parameter {
             display: inline-block;
+            // width: fit-content;
+            max-width: 120px;
+            min-width: 90px;
+            // vertical-align: center ;
+            // input[type="range"].command-argument {
+            //   max-width: 120px;
+            //   min-width: 90px;
+            //   vertical-align: center ;
+            // }
+            select.command-argument {
+              width: fit-content;
+              //max-width: 120px;
+              min-width: 90px;
+              vertical-align: center ;
+            }
           }
           input[name="Label"]{
             width: 85%;
@@ -1620,6 +1653,7 @@ table.parameter_list {
             }
           }
             div.color_parameter {
+              margin-top: -8px; 
               label {
                 font-size: 0;
                 display: inline-block;
@@ -1724,8 +1758,52 @@ table.parameter_list {
 }
 
 
-div.chartConfig_container {
+div.sidemenu_container {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: stretch;
+  min-height: 24px;
+  position: relative;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  
+  .sidemenu_button {
+    height: 24px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 0px;
+    border: solid 1px black;
+    left: 2px;
+    position: absolute;
+    //top: 0;
+    i {
+      margin-right: 4px;
+    }
+  }
+  
+  .chartConfig_button {
+    height: 24px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 0px;
+    border: solid 1px black;
+    right: 3px;
+    position: absolute;
+    //top: 0;
+    i {
+      margin-right: 4px;
+    }
+  }
+  .sidemenu {
+    //align-self: flex-end;
+    width: 100%;
+    div.sidemenu_table {
+      margin-top: 32px;
+    }
+  }
   table.sidemenu_table {
+    margin-top: 32px;
     display: flex;
     flex-direction: column;
     justify-content: space-evenly;
@@ -1746,6 +1824,7 @@ div.chartConfig_container {
       }
 
       tbody {
+        display: flex;
         width: 100%;
         justify-content: space-evenly;
         tr {
@@ -1762,6 +1841,10 @@ div.chartConfig_container {
             }
             .parameter {
               display: inline-block;
+              select.command-argument {
+                width: 130px;
+                vertical-align: center ;
+              }
             }
             input{
               width: 85%;
@@ -1778,6 +1861,7 @@ div.chartConfig_container {
               }
             }
               div.color_parameter {
+                margin-top: -8px; 
                 label {
                   font-size: 0;
                   display: inline-block;
@@ -1850,54 +1934,56 @@ div.chartConfig_container {
 
 
 select.command-argument {
-  width: 130px;
+  //width: 130px;
+  // max-width: 120px;
+  // min-width: 100px;
   vertical-align: center ;
 }
 
-button.add_y_axis {
-  background-color:#f6f6f6;
-  border:black;
-  border-radius:0px;
-  height:24px;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align:center;
-  cursor:pointer;
-  display: none ; 
-  &:hover{
-    background-color: $color_inter_module_highlight;
-  }
-}
+// button.add_y_axis {
+//   background-color:#f6f6f6;
+//   border:black;
+//   border-radius:0px;
+//   height:24px;
+//   padding-left: 8px;
+//   padding-right: 8px;
+//   text-align:center;
+//   cursor:pointer;
+//   display: none ; 
+//   &:hover{
+//     background-color: $color_inter_module_highlight;
+//   }
+// }
 
-button.delete_y{
-  background-color:#f6f6f6;
-  border:black;
-  border-radius:0px;
-  height:24px;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align:center;
-  cursor:pointer;
-  //display : none ;
-  &:hover{
-    background-color: $color_inter_module_highlight;
-  }
-}
+// button.delete_y{
+//   background-color:#f6f6f6;
+//   border:black;
+//   border-radius:0px;
+//   height:24px;
+//   padding-left: 8px;
+//   padding-right: 8px;
+//   text-align:center;
+//   cursor:pointer;
+//   //display : none ;
+//   &:hover{
+//     background-color: $color_inter_module_highlight;
+//   }
+// }
 
-button.add_row {
-  background-color:#f6f6f6;
-  border:black;
-  border-radius:0px;
-  height:24px;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align:center;
-  cursor:pointer;
-  display: none ; 
-  &:hover{
-    background-color: $color_inter_module_highlight;
-  }
-}
+// button.add_row {
+//   background-color:#f6f6f6;
+//   border:black;
+//   border-radius:0px;
+//   height:24px;
+//   padding-left: 8px;
+//   padding-right: 8px;
+//   text-align:center;
+//   cursor:pointer;
+//   display: none ; 
+//   &:hover{
+//     background-color: $color_inter_module_highlight;
+//   }
+// }
 
 button.customization {
   background-color:#f6f6f6;
