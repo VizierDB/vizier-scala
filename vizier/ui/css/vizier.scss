@@ -1591,6 +1591,11 @@ table.parameter_list {
     tbody {
       width: 100%;
       justify-content: space-evenly;
+      // tr:first-child {
+      //   button.remove_row_button {
+      //     display: none;
+      //   }
+      // }
       tr {
         display: flex;
         width: 100%;
@@ -1640,6 +1645,7 @@ table.parameter_list {
             }
           }
             div.color_parameter {
+              margin-top: -8px; 
               label {
                 font-size: 0;
                 display: inline-block;
@@ -1847,6 +1853,7 @@ div.sidemenu_container {
               }
             }
               div.color_parameter {
+                margin-top: -8px; 
                 label {
                   font-size: 0;
                   display: inline-block;
