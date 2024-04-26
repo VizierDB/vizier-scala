@@ -50,6 +50,7 @@ object ScatterPlot extends Command
   val PARAM_DATASET = "dataset"
   val PARAM_X = "xcol"
   val PARAM_Y = "ycol"
+  val PARAM_CATEGORY = "category"
   val PARAM_FILTER = "filter"
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
@@ -65,6 +66,7 @@ object ScatterPlot extends Command
       DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
       ColIdParameter(id = PARAM_X, name = "X-axis"),
       ColIdParameter(id = PARAM_Y, name = "Y-axis"),
+      ColIdParameter(id = PARAM_CATEGORY, name = "Category", required = false),
       NumericalFilterParameter(id = PARAM_FILTER, name = "Filter",required = false),
       StringParameter(id = PARAM_LABEL, name = "Label", required = false),
       ColorParameter(id = PARAM_COLOR, name = "Color", required = false),
@@ -98,8 +100,8 @@ object ScatterPlot extends Command
     // Feed the configuration into PlotUtils
     val series =
       PlotUtils.SeriesList( 
-        arguments.getList(PARAM_SERIES).map { series => 
-          PlotUtils.makeSeries(
+        arguments.getList(PARAM_SERIES).flatMap { series => 
+          val createdSeries = PlotUtils.makeSeries(
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
             xIndex      = series.get[Int](PARAM_X),
@@ -108,6 +110,11 @@ object ScatterPlot extends Command
             name        = series.getOpt[String](PARAM_LABEL),
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
+
+          series.getOpt[Int](PARAM_CATEGORY) match {
+            case Some(categoryIndex) => createdSeries.groupDataByCategory(categoryIndex)
+            case None => Seq(createdSeries)
+          }
         }
       )
     println(series.series.head.dataset)

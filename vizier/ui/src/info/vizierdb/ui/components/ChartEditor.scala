@@ -83,15 +83,31 @@ class ChartEditor(
     chartType match{
         case "scatterplot" => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
-                Json.toJson(Seq(
-                row.dataset.toArgument,
-                row.xColumn.toArgument,
-                row.yColumns.now.head.yColumn.toArgument,
-                row.filter.toArgument,
-                row.label.toArgument,
-                row.color.toArgument,
-                row.regression.toArgument
-                ))})),
+                row.category.category.selectedColumn.now match {
+                    case Some(categoryValueId) =>
+                        Json.toJson(Seq(
+                        row.dataset.toArgument,
+                        row.xColumn.toArgument,
+                        row.yColumns.now.head.yColumn.toArgument,
+                        row.category.category.toArgument,
+                        row.filter.toArgument,
+                        row.label.toArgument,
+                        row.color.toArgument,
+                        row.regression.toArgument
+                        ))
+                    case None =>
+                        Json.toJson(Seq(
+                        row.dataset.toArgument,
+                        row.xColumn.toArgument,
+                        row.yColumns.now.head.yColumn.toArgument,
+                        row.filter.toArgument,
+                        row.label.toArgument,
+                        row.color.toArgument,
+                        row.regression.toArgument
+                        ))
+                
+                }
+                })),
                 datasetRows.now.head.artifact.toArgument)
         case "cdf" => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
@@ -101,6 +117,37 @@ class ChartEditor(
                 row.filter.toArgument
                 ))})),
                 datasetRows.now.head.artifact.toArgument)
+        case "line-chart" => 
+            Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
+                row.category.category.selectedColumn.now match {
+                    case Some(categoryValueId) =>
+                        Json.toJson(Seq(
+                        row.dataset.toArgument,
+                        row.xColumn.toArgument,
+                        CommandArgument("yList", JsArray(row.yColumns.now.map { yCol =>
+                            Json.toJson(Seq(yCol.yColumn.toArgument))}
+                        )),
+                        row.category.category.toArgument,
+                        row.filter.toArgument,
+                        row.label.toArgument,
+                        row.color.toArgument
+                        ))
+                    case None =>
+                        Json.toJson(Seq(
+                        row.dataset.toArgument,
+                        row.xColumn.toArgument,
+                        CommandArgument("yList", JsArray(row.yColumns.now.map { yCol =>
+                            Json.toJson(Seq(yCol.yColumn.toArgument))}
+                        )),
+                        row.filter.toArgument,
+                        row.label.toArgument,
+                        row.color.toArgument
+                        ))
+                }
+            
+            })),
+                datasetRows.now.head.artifact.toArgument)
+                
         case _ => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
                 Json.toJson(Seq(

@@ -143,13 +143,15 @@ object PlotUtils {
 
     def groupDataByCategory(category:Int): Seq[Series] = {
       val categoryColumn = dataframe.columns(category)
-      val distinctCategories = dataframe.select(categoryColumn).distinct().collect()
+      val distinctCategories = dataframe.select(categoryColumn).distinct().filter(row => !row.isNullAt(0)).collect()
 
       val dataframes = distinctCategories.map {
         categoryValue => 
+          val convertedCategoryValue = categoryValue(0);
           copy(
-            dataframe = dataframe.filter(col(categoryColumn) === categoryValue)
-          )
+            dataframe = dataframe.filter(dataframe(categoryColumn) === convertedCategoryValue),
+            name = s"${name} - Category:${convertedCategoryValue}"
+            )
       }
 
       dataframes
