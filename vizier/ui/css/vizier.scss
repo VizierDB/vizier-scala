@@ -1623,7 +1623,13 @@ table.parameter_list {
           .parameter {
             display: inline-block;
             width: 90px;
+            input.command-argument {
+              width: 90px;
+            }
             input[type="range"].command-argument {
+              width: 90px;
+            }
+            input[type="text"].command-argument {
               width: 90px;
             }
             select.command-argument {
