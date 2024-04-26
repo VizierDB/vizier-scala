@@ -906,7 +906,6 @@ class NumericalFilterParameter(
     profiler_dump().map {
       profiler_dump =>
         val columns = profiler_dump(2).value
-        println(schema.now)
         val overall_data = columns(schema.now).as[JsObject]
         val generalInfo = (overall_data \ "column")
         val name_filter = (generalInfo \ "name").as[String]
@@ -974,47 +973,16 @@ val pulldownColumns = Rx {
   )(options: _*).render.asInstanceOf[dom.html.Select]
 }
 
-
-  val slider_input = Rx {
-    xColMax().map { maxVal =>
-      div(
-        `class` := "numerical_filter",
-        input(
-          scalatags.JsDom.all.name := "slider_param",
-          scalatags.JsDom.all.id := "slider_param",
-          `type` := "range",
-          min := 0,
-          max := maxVal.toString,
-          scalatags.JsDom.all.value := maxVal.toString,
-          onchange := { (e: dom.Event) =>
-            println("Slider value updated")
-            currentFilterValue() = Some(inputNode[dom.html.Input].value.toInt)
-            }
-          )
-        )
-      }
-    }
-
   val sliderInput = input(
     `type` := "range",
     min := 0,
     max := xColMax.now,
-    step := 1
-  ).render
+  )
 
-  val input_box = Rx  {
-    currentFilterValue().map { filterVal =>
-    input(
-      scalatags.JsDom.all.name := "input_box",
-      `type` := "number",
-      scalatags.JsDom.all.value := filterVal.toString,
-    )
-  }
-}
   val stringInput = input(
     `type` := "text",
     placeholder := "Enter Filter"
-  ).render
+  )
 
   val root =
     span(
@@ -1024,7 +992,7 @@ val pulldownColumns = Rx {
             div(
               `class` := "numerical_filter",
               pulldownColumns.reactive,
-              sliderInput,
+              sliderInput.render,
             )
           case false =>
             temp() match {
@@ -1032,7 +1000,7 @@ val pulldownColumns = Rx {
                 div(
                   `class` := "numerical_filter",
                   pulldownColumns.reactive,
-                  stringInput,
+                  stringInput.render,
                   println("Yes x")
                 )
               case false =>

@@ -355,12 +355,14 @@ class ChartEditor(
                             td(category.category.root),
                             td(filter.root),
                             td(regression.root),
-                            td(button(FontAwesome("plus"),
+                            td(button(`class` := "add_row_button",
+                                FontAwesome("plus"),
                                 onclick := { (e: dom.MouseEvent) =>
                                     appendChartRow()
                                 },
                                 ),
-                                button(FontAwesome("minus"),
+                                button(`class` := "remove_row_button",
+                                    FontAwesome("minus"),
                                 onclick := { (e: dom.MouseEvent) =>
                                     datasetRows() = datasetRows.now.dropRight(1)
                                 },
@@ -401,12 +403,14 @@ class ChartEditor(
                                 ),
                                 td(filter.root),
                                 td(sort.root),
-                                td(button(FontAwesome("plus"),
+                                td(button(`class` := "add_row_button",
+                                    FontAwesome("plus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         appendChartRow()
                                     },
                                     ),
-                                button(FontAwesome("minus"),
+                                button(`class` := "remove_row_button",
+                                    FontAwesome("minus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         datasetRows() = datasetRows.now.dropRight(1)
                                     }),
@@ -451,12 +455,14 @@ class ChartEditor(
                                 td(category.category.root),
                                 td(filter.root),
                                 td(sort.root),
-                                td(button(FontAwesome("plus"),
+                                td(button(`class` := "add_row_button",
+                                FontAwesome("plus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         appendChartRow()
                                     },
                                     ),
-                                td(button(FontAwesome("minus"),
+                                td(button(`class` := "remove_row_button",
+                                    FontAwesome("minus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         datasetRows() = datasetRows.now.dropRight(1)
                                     }),
@@ -482,11 +488,13 @@ class ChartEditor(
                             td(dataset.root),
                             td(xColumn.root),
                             td(filter.root),
-                            td(button(FontAwesome("plus"),
+                            td(button(`class` := "add_row_button",
+                                FontAwesome("plus"),
                                 onclick := { (e: dom.MouseEvent) =>
                                     appendChartRow()
                                 }),
-                                button(FontAwesome("minus"),
+                                button(`class` := "remove_row_button",
+                                    FontAwesome("minus"),
                                 onclick := { (e: dom.MouseEvent) =>
                                     datasetRows() = datasetRows.now.dropRight(1)
                                 }),
@@ -634,7 +642,7 @@ class ChartEditor(
         }.reactive
         
     def datasetRowLabel = Rx{
-        datasetRows().map(
+        datasetRows().flatMap(
             row => {
                 row.yColumns().map(
                     yCol => {
@@ -642,17 +650,26 @@ class ChartEditor(
                     }
                 )
             }
+        ) ++ datasetRows().map(
+            row => {
+                row.category.label.root
+            }
         )
     }
 
     def datasetRowColor = Rx{
-        datasetRows().map(
+        datasetRows().flatMap(
             row => {
                 row.yColumns().map(
                     yCol => {
                         yCol.color.root
                     }
                 )
+            }
+        ) ++ 
+        datasetRows().map(
+            row => {
+                row.category.color.root
             }
         )
     }
