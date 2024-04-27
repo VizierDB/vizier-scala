@@ -38,10 +38,10 @@ object SafeExport
 
         column.dataType match {
           case t:UserDefinedType[_] if t.isInstanceOf[GeometryUDT] =>
-            new Column(ST_AsText(Seq(base.expr)))
+            new Column(ST_AsText(Seq(base.expr))) as column.name
 
           case BinaryType => 
-            base64(base)
+            base64(base) as column.name
 
           case _ => 
             base
