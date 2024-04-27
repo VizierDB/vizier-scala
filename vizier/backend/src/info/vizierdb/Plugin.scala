@@ -38,6 +38,7 @@ object Plugin
 {
 
   val loaded = mutable.Map[String, Plugin]()
+  val jars = mutable.Buffer[URL]()
 
 
   implicit val pluginFormat: Format[Plugin] = Json.format
@@ -89,6 +90,7 @@ object Plugin
     )
 
     loaded.put(plugin.name, plugin)
+    jars.append(jar.toURI.toURL)
 
     val clazz = Class.forName(plugin.plugin_class, true, loader)
     val singleton = clazz.getDeclaredField("MODULE$").get()
@@ -100,4 +102,6 @@ object Plugin
 
     return plugin
   }
+
+  def loadedJars = jars.toSeq
 }

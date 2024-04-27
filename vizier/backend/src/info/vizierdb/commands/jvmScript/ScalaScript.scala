@@ -32,6 +32,9 @@ import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
 import info.vizierdb.viztrails.ProvenancePrediction
 import play.api.libs.json.JsObject
+import java.net.URLClassLoader
+import info.vizierdb.Vizier
+import info.vizierdb.Plugin
 
 object ScalaScript extends Command
 {
@@ -62,7 +65,14 @@ object ScalaScript extends Command
 
   def eval(script: String, context: ExecutionContext): Unit =
   {
-    val toolbox = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
+    val classLoader = 
+      new URLClassLoader(
+        Plugin.loadedJars.toArray,
+        Vizier.mainClassLoader
+      )
+
+    val toolbox = universe.runtimeMirror(classLoader)
+                          .mkToolBox()
     val tree = toolbox.parse(STANDARD_PREFIX + "\n" + script)
     executionContext.set(context)
     toolbox.eval(tree)
