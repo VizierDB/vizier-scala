@@ -133,6 +133,8 @@ case class SampleConstructor(
 }
 
 object SampleConstructor
+  extends DataFrameConstructorCodec
 {
   implicit val format: Format[SampleConstructor] = Json.format
+  def apply(j: JsValue) = j.as[SampleConstructor]
 }

@@ -50,7 +50,11 @@ object BasicSample extends Command
     val outputName = arguments.getOpt[String](PAR_OUTPUT_DATASET)
                               .getOrElse { inputName }
     val probability = arguments.get[Float](PAR_SAMPLE_RATE)
-    val seedMaybe = arguments.getOpt[String](PAR_SEED).map { _.toLong }
+    val seedMaybe = arguments.getOpt[String](PAR_SEED)
+                             .flatMap { 
+                                case "" => None
+                                case x => Some(x)
+                              }.map { _.toLong }
     val seed = seedMaybe.getOrElse { Random.nextLong }
 
     val input = context.artifact(inputName)
