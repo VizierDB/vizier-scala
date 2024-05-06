@@ -701,8 +701,16 @@ class ChartEditor(
                         tr(th("Color"))
                         ),
                     tbody(
-                        tr(td(datasetRowLabel())),
-                        tr(td(datasetRowColor()))
+                        datasetRowLabel().map(
+                            label => {
+                                tr(td(label))
+                            }
+                        ),
+                        datasetRowColor().map(
+                            color => {
+                                tr(td(color))
+                            }
+                        )
                     )
                 )
             }.reactive
