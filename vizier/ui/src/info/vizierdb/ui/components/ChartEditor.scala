@@ -755,19 +755,37 @@ class ChartEditor(
             ))
 
     class Filter (
-        dataset:ArtifactParameter, 
-        filter:StringParameter, 
-        datasetProfile:Var[Option[PropertyList.T]]) extends Logging
-        {
+        val dataset:ArtifactParameter, 
+        val filter:StringParameter, 
+        val datasetProfile:Var[Option[PropertyList.T]]) extends Logging {
 
-        val filterType: Var[Option[FilterType]] = Var(None)
-        val columnName = Var[Option[String]](None)
-        val maxFilterValue = Var[Option[Int]](None)
-        val currentFilterValue = Var[Option[Int]](None)
-        val profiledComplete = Var[Boolean](false)
-        val temp = Var[Boolean](false)
-        val selectedFilterValue = Var[Option[Int]](None)
         val profiler_dump = Var[Option[PropertyList.T]](None)
+        val seqProfiledInfo = Var[Seq[ColumnStats]](Seq())
+        val maxFilterValue = Var[Option[Double]](None)
+        val columnName = Var[Option[String]](None)
+        val selectedFilterValue = Var[Option[Int]](None)
+
+        sealed trait ColumnStats {
+            def columnName: String
+            def columnType: String
+        }
+
+        case class Numerical(
+            columnName: String,
+            columnType: String,
+            minValue: Double,
+            maxValue: Double,
+            mean: Double,
+            slider: Frag
+        ) extends ColumnStats
+
+        case class Categorical
+        (
+            columnName: String,
+            columnType: String,
+            distinctValuesCount: Int,
+            nullCount: Int,
+        ) extends ColumnStats
 
         dataset.selectedDataset.triggerLater{
             _ match {
@@ -792,6 +810,31 @@ class ChartEditor(
                 }
             }
 
+        Rx {
+            profiler_dump() match {
+                case None => 
+                    None
+                case Some(profile) =>
+                    val profiledData = profile(2).value.as[JsArray].value// Assuming 'profile' itself is the array
+                    profiledData.foreach { column =>
+                        println(column.toString())
+                        val columnData = column.as[JsObject]
+                        val columnName = (columnData \ "column" \ "name").as[String]
+                        val columnType = (columnData \ "column" \ "type").as[String]
+                        if (columnType == "integer" || columnType == "double") { // Assuming numerical data could be integer or double
+                            val minValue = (columnData \ "min").as[Double]
+                            val maxValue = (columnData \ "max").as[Double]
+                            val mean = (columnData \ "mean").as[Double]
+                            seqProfiledInfo() = seqProfiledInfo.now :+ Numerical(columnName, columnType, minValue, maxValue, mean, sliderInput(maxValue.toInt))
+                        } else if (columnType == "string") {
+                            val distinctValuesCount = (columnData \ "distinctValueCount").as[Int]
+                            val nullCount = (columnData \ "nullCount").as[Int]
+                            seqProfiledInfo() = seqProfiledInfo.now :+ Categorical(columnName, columnType, distinctValuesCount, nullCount)
+                        }
+                    }
+            }
+        }
+
         val availableColumns = Rx {
                     dataset.selectedDataset() match {
                     case None => Seq.empty
@@ -804,6 +847,8 @@ class ChartEditor(
                     }
                 }
 
+
+        
 
         /** A unique identifier for the parameter; the key in the module arguments
             */
@@ -859,9 +904,9 @@ class ChartEditor(
                 
         val pulldownColumns = Rx {
             val options = ("---", "none") +: availableColumns().map { v => (v.name, v.id.toString) }
-            val initialSelectionIndex = availableColumns().zipWithIndex.find(_._1 == columnName.now.getOrElse("")).map(_._2 + 1).getOrElse(0)
-            val selectElement = pulldown(initialSelectionIndex)(options: _*).render.asInstanceOf[dom.html.Select]
-        selectElement
+            pulldown(
+                availableColumns().zipWithIndex.find(_._1 == columnName.now.getOrElse("")).map(_._2 + 1).getOrElse(0)
+            )(options: _*).render.asInstanceOf[dom.html.Select]
         }
 
         onChange { e =>
@@ -870,84 +915,14 @@ class ChartEditor(
             selectedFilterValue() = Some(selectedValue.toInt)
         }
 
-        Rx {
-            profiler_dump().map { profiler_dump =>
-                val columnsData = profiler_dump(2).value
-                logger.info(columnsData.toString())
-                val overall_data = columnsData(0).as[JsObject]
-                logger.info(overall_data.toString())
-                val generalInfo = (overall_data \ "column")
-                val name_filter = (generalInfo \ "name").as[String]
-                val dataType = (generalInfo \ "type").as[String]
-                if (dataType == "string") {
-                maxFilterValue() = None
-                currentFilterValue() = None
-                columnName() = None
-                profiledComplete() = false
-                temp() = true
-                filterType() = Some(Categorical)
-                } else {
-                try {
-                    val maxValue = (overall_data \ "max").as[Int]
-                    maxFilterValue() = Some(maxValue)
-                    currentFilterValue() = Some(maxValue)
-                    columnName() = Some(name_filter)
-                    profiledComplete() = true
-                    filterType() = Some(Numerical)
-                } catch {
-                    case e: Exception =>
-                    logger.error("Error in updating x column data")
-                    logger.error(e.toString())
-                }
-                }
-            }
-        }
-
-    Rx{
-        selectedFilterValue().foreach { filterValue =>{
-        logger.info("Schema is updated")
-        profiler_dump.now.map { profiler_dump =>
-            val columns = profiler_dump(2).value
-            val overall_data = columns(filterValue).as[JsObject]
-            val generalInfo = (overall_data \ "column")
-            val name_filter = (generalInfo \ "name").as[String]
-            val dataType = (generalInfo \ "type").as[String]
-            if (dataType == "string") {
-            maxFilterValue() = None
-            currentFilterValue() = None
-            columnName() = None
-            profiledComplete() = false
-            temp() = true
-            filterType() = Some(Categorical)
-            } else {
-            try {
-                val maxValue = (overall_data \ "max").as[Int]
-                logger.info("Max Value: " + maxValue.toString())
-                maxFilterValue() = Some(maxValue)
-                currentFilterValue() = Some(maxValue)
-                columnName() = Some(name_filter)
-                profiledComplete() = true
-                filterType() = Some(Numerical)
-            } catch {
-                case e: Exception =>
-                logger.error("Error in updating x column data")
-                logger.error(e.toString())
-                }
-            }
-            }
-        }
-        }
-    }
 
 
-        val sliderInput = Rx {
-            maxFilterValue().map { maxVal =>
+        def sliderInput(maxVal:Int) : Frag = {
             input(
             scalatags.JsDom.all.id := "filter_slider",
             `type` := "range",
             min := 0,
-            max := maxVal).render } 
-        }
+            max := maxVal)}
 
         val stringInput = input(
             `type` := "text",
@@ -956,38 +931,26 @@ class ChartEditor(
 
 
         val root = Rx {
-            filterType() match {
-                case Some(Numerical) => 
+            selectedFilterValue() match {
+                case None =>
                     div(
-                        `class` := "numerical_filter",
                         pulldownColumns.reactive,
-                        sliderInput.reactive,
                     )
-                case Some(Categorical) => 
-                    div(
-                        `class` := "numerical_filter",
-                        pulldownColumns.reactive,
-                        stringInput.render,
-                    )
-                case None => div(
-                    Rx {
-                        dataset.selectedDataset() match {
-                            case None => div()
-                            case _ => 
-                                {
-                                div(
-                                    pulldownColumns.reactive
-                            )}
-                        }
-                    }.reactive
-                )
+                case Some(value) =>
+                    seqProfiledInfo.now(value) match {
+                        case Numerical(columnName, columnType, minValue, maxValue, mean, slider) =>
+                            div(
+                                pulldownColumns.reactive,
+                                slider.render,
+                            )
+                        case Categorical(columnName, columnType, distinctValuesCount, nullCount) =>
+                            div(
+                                pulldownColumns.reactive,
+                                stringInput
+                            )
+                    }
             }
         }
-
-
-        sealed trait FilterType
-        case object Numerical extends FilterType
-        case object Categorical extends FilterType
 }
 
     class Color{
