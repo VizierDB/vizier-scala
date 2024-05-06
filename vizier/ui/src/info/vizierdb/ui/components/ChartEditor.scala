@@ -43,6 +43,10 @@ import info.vizierdb.serialized.CommandArgument
 import info.vizierdb.ui.components.dataset.Dataset
 import info.vizierdb.serialized.EnumerableValueDescription
 import info.vizierdb.artifacts.VegaRegressionMethod
+import info.vizierdb.serializers
+import info.vizierdb.ui.components._
+import info.vizierdb.util.Logger
+import scala.collection.mutable
 
 
 class ChartEditor(
@@ -50,23 +54,30 @@ class ChartEditor(
     override val packageId: String,
     override val command: serialized.PackageCommand,
     val chartType: String
-)(implicit owner: Ctx.Owner)
-    extends DefaultModuleEditor(packageId, command, delegate)
-    with Logging {
+)(implicit owner: Ctx.Owner) extends DefaultModuleEditor(packageId, command, delegate) with Logging {
     // Keeps State of the arguments after editing
-    println(chartType)
     override def loadState(arguments: Seq[CommandArgument]): Unit = {
     // This function should translate arguments into a new datsetRows()
     for (arg <- arguments){
         arg.id match {
         case "series" => 
             arg.value match {
-            case JsArray(series) => 
-                datasetRows() = series.map { row =>
-                new ChartRow()
+            case JsArray(series) => Rx{
+                datasetRows().map { row =>
+                    series.foreach { series =>
+                        series match {
+                            case JsArray(series) => 
+                                row.dataset.set(series(0))
+                                row.xColumn.set(series(1))
+                                
+                            case _ => 
+                                logger.error("Error: Expected JsArray")
+                        }
+                    }
                 }
+            }
             case _ => 
-                println("Error: Expected JsArray")
+                logger.error("Error: Expected JsArray")
             
             }
         case "artifact" =>
@@ -74,12 +85,51 @@ class ChartEditor(
             case JsString(artifact) =>
                 Rx{datasetRows().head.artifact.value(artifact)}
             case _ =>
-                println("Error: Expected JsString")
-            }}}}
+                logger.error("Error: Expected JsString")
+            }
+        case "xTitle" =>
+            arg.value match {
+                case JsString(xTitle) =>
+                    Rx{datasetRows().head.xAxisTitle.value(xTitle)}
+                case _ =>
+                    logger.error("Error: Expected JsString")
+            }
+        case "yTitle" =>
+            arg.value match {
+                case JsString(yTitle) =>
+                    Rx{datasetRows().head.yAxisTitle.value(yTitle)}
+                case _ =>
+                    logger.error("Error: Expected JsString")
+            }
+        case "chartTitle" =>
+            arg.value match {
+                case JsString(chartTitle) =>
+                    Rx{datasetRows().head.chartTitle.value(chartTitle)}
+                case _ =>
+                    logger.error("Error: Expected JsString")
+            }
+        case "legend" =>
+            arg.value match {
+                case JsString(legend) =>
+                    Rx{datasetRows().head.chartLegend.value(legend)}
+                case _ =>
+                    logger.error("Error: Expected JsString")
+            }
+        case "sort" =>
+            arg.value match {
+                case JsString(sort) =>
+                    Rx{datasetRows().head.sort.value(sort)}
+                case _ =>
+                    logger.error("Error: Expected JsString")
+            }
+        case _ =>
+            logger.error("Error: Unknown argument")
+        }}
+    }
+
 
     override def currentState: Seq[CommandArgument] = 
     {
-    println(datasetRows.now)
     chartType match{
         case "scatterplot" => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
@@ -89,10 +139,15 @@ class ChartEditor(
                 row.yColumns.now.head.yColumn.toArgument,
                 row.filter.toArgument,
                 row.label.toArgument,
-                row.color.toArgument,
+                CommandArgument("color", row.color.value),
                 row.regression.toArgument
                 ))})),
-                datasetRows.now.head.artifact.toArgument)
+                datasetRows.now.head.artifact.toArgument,
+                datasetRows.now.head.xAxisTitle.toArgument,
+                datasetRows.now.head.yAxisTitle.toArgument,
+                datasetRows.now.head.chartTitle.toArgument,
+                datasetRows.now.head.chartLegend.toArgument
+                )
         case "cdf" => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
                 Json.toJson(Seq(
@@ -100,7 +155,12 @@ class ChartEditor(
                 row.xColumn.toArgument,
                 row.filter.toArgument
                 ))})),
-                datasetRows.now.head.artifact.toArgument)
+                datasetRows.now.head.artifact.toArgument,
+                datasetRows.now.head.xAxisTitle.toArgument,
+                datasetRows.now.head.yAxisTitle.toArgument,
+                datasetRows.now.head.chartTitle.toArgument,
+                datasetRows.now.head.chartLegend.toArgument
+                )
         case _ => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
                 Json.toJson(Seq(
@@ -109,11 +169,17 @@ class ChartEditor(
                 CommandArgument("yList", JsArray(row.yColumns.now.map { yCol =>
                     Json.toJson(Seq(yCol.yColumn.toArgument))}
                 )),
-                row.filter.toArgument,
+                CommandArgument("filter", JsString("")),
                 row.label.toArgument,
-                row.color.toArgument
+                CommandArgument("color", row.color.value),
                 ))})),
-                datasetRows.now.head.artifact.toArgument)
+                datasetRows.now.head.artifact.toArgument,
+                datasetRows.now.head.xAxisTitle.toArgument,
+                datasetRows.now.head.yAxisTitle.toArgument,
+                datasetRows.now.head.chartTitle.toArgument,
+                datasetRows.now.head.chartLegend.toArgument,
+                datasetRows.now.head.sort.toArgument
+                )
         }
     }
 
@@ -125,6 +191,7 @@ class ChartEditor(
         datasetRows.update(_ :+ new ChartRow())
     class ChartRow(){
         val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
+
 
         val dataset: ArtifactParameter =
             new ArtifactParameter(
@@ -164,6 +231,7 @@ class ChartEditor(
             yColumns() = yColumns.now :+ new ChartYColumn(dataset)
 
         appendYColumn()
+        
 
         val label =
             new StringParameter(
@@ -173,59 +241,17 @@ class ChartEditor(
                 false,
                 ""
             )
-        
+
         val filter =
-            new NumericalFilterParameter(
+            new StringParameter(
                 "filter",
                 "Filter",
-                datasetProfile,
-                Rx {
-                    xColumn.selectedColumn() match {
-                    case None      => 0
-                    case Some(col) => {
-                        col
-                    }
-                    }
-                },
-                Rx {
-                    dataset.selectedDataset() match {
-                    case None => Seq.empty 
-                    case Some(datasetId) =>
-                        delegate.visibleArtifacts().get(datasetId) match {
-                        case Some((ds: DatasetSummary, _))     => ds.columns
-                        case Some((ds: DatasetDescription, _)) => ds.columns
-                        case None                              => Seq.empty
-                        }
-                    }
-                },
                 false,
-                false
+                false,
+                ""
             )
-        
-        dataset.selectedDataset.triggerLater{
-            _ match {
-                case None => 
-                    datasetProfile() = None
-                case Some(ds) =>
-                    Vizier.api.artifactGet(
-                        Vizier.project.now.get.projectId,
-                        delegate.visibleArtifacts.now.get(dataset.selectedDataset.now.get).get._1.id,
-                        limit = Some(0),
-                        profile = Some("true")
-                    ).onComplete{
-                        case Success(artifactDescription) => 
-                            artifactDescription match {
-                                case ds: DatasetDescription => 
-                                    datasetProfile() = Some(ds.properties)
-                                    println("Working Profiled Data")
-                                case _ => None
-                            }
-                        case Failure(e) =>
-                            println(e)
-                            None
-                    }
-                }
-            }
+
+        val filterSeq = Var[Seq[Filter]](Seq())
 
         val sort =
             new EnumerableParameter(
@@ -234,20 +260,13 @@ class ChartEditor(
                 Seq(
                     EnumerableValueDescription.apply(true,"---",""),
                     EnumerableValueDescription.apply(false,"Ascending","ascending"),
-                    EnumerableValueDescription.apply(false,"Decending","decending"),
+                    EnumerableValueDescription.apply(false,"Descending","descending"),
                 ),
                 true,
                 false
             )
         
-        val color =
-            new ColorParameter(
-            "color",
-            "Color",
-            true,
-            false,
-            Some("#214478")
-            )
+        val color = new Color()
 
         val artifact =
             new StringParameter(
@@ -285,7 +304,7 @@ class ChartEditor(
         
         val xAxisTitle =
             new StringParameter(
-            "xAxisTitle",
+            "xTitle",
             "X-Axis Title",
             true,
             false,
@@ -294,7 +313,7 @@ class ChartEditor(
         
         val yAxisTitle =
             new StringParameter(
-            "yAxisTitle",
+            "yTitle",
             "Y-Axis Title",
             true,
             false,
@@ -307,15 +326,16 @@ class ChartEditor(
                 "Legend",
                 Seq(
                     EnumerableValueDescription.apply(true,"---",""),
-                    EnumerableValueDescription.apply(false,"Top","top"),
-                    EnumerableValueDescription.apply(false,"Bottom","bottom"),
-                    EnumerableValueDescription.apply(false,"Left","left"),
-                    EnumerableValueDescription.apply(false,"Right","right")
+                    EnumerableValueDescription.apply(false,"Top Right","top-right"),
+                    EnumerableValueDescription.apply(false,"Bottom Right","bottom-right"),
+                    EnumerableValueDescription.apply(false,"Top Left","top-left"),
+                    EnumerableValueDescription.apply(false,"Botton Left","bottom-left")
                 ),
                 true,
                 false
             )
         
+        val testFilter = new Filter(dataset,filter, datasetProfile)
 
 
         val root = 
@@ -358,8 +378,7 @@ class ChartEditor(
                             td(button(`class` := "add_row_button",
                                 FontAwesome("plus"),
                                 onclick := { (e: dom.MouseEvent) =>
-                                    appendChartRow()
-                                },
+                                    appendChartRow()}
                                 ),
                                 button(`class` := "remove_row_button",
                                     FontAwesome("minus"),
@@ -453,7 +472,7 @@ class ChartEditor(
                             )
                                 ),
                                 td(category.category.root),
-                                td(filter.root),
+                                td(testFilter.root.reactive),
                                 td(sort.root),
                                 td(button(`class` := "add_row_button",
                                 FontAwesome("plus"),
@@ -461,11 +480,11 @@ class ChartEditor(
                                         appendChartRow()
                                     },
                                     ),
-                                td(button(`class` := "remove_row_button",
+                                button(`class` := "remove_row_button",
                                     FontAwesome("minus"),
                                     onclick := { (e: dom.MouseEvent) =>
                                         datasetRows() = datasetRows.now.dropRight(1)
-                                    }),
+                                    },
                                     ))
                             ) 
                             )
@@ -641,8 +660,8 @@ class ChartEditor(
             ))
         }.reactive
         
-    def datasetRowLabel = Rx{
-        datasetRows().flatMap(
+    val datasetRowLabel = Rx{
+        val label = datasetRows().flatMap(
             row => {
                 row.yColumns().map(
                     yCol => {
@@ -650,28 +669,27 @@ class ChartEditor(
                     }
                 )
             }
-        ) ++ datasetRows().map(
-            row => {
-                row.category.label.root
-            }
         )
+    val categoryLabel = datasetRows()
+            .filter(_.category.category.selectedColumn() != None)
+            .map { row => 
+                row.category.label.root
+        }
+        label ++ categoryLabel
     }
 
-    def datasetRowColor = Rx{
-        datasetRows().flatMap(
-            row => {
-                row.yColumns().map(
-                    yCol => {
-                        yCol.color.root
-                    }
-                )
+    val datasetRowColor = Rx{
+        val colors = datasetRows().flatMap { row => 
+            row.yColumns().map { yCol => 
+            yCol.color.root
             }
-        ) ++ 
-        datasetRows().map(
-            row => {
+        }
+        val categoryColors = datasetRows()
+            .filter(_.category.category.selectedColumn() != None)
+            .map { row => 
                 row.category.color.root
-            }
-        )
+        }
+        colors ++ categoryColors
     }
 
     val renderSideMenuContent =     
@@ -736,10 +754,276 @@ class ChartEditor(
             SideMenu.sideMenuContent
             ))
 
+    class Filter (
+        dataset:ArtifactParameter, 
+        filter:StringParameter, 
+        datasetProfile:Var[Option[PropertyList.T]]) extends Logging
+        {
+
+        val filterType: Var[Option[FilterType]] = Var(None)
+        val columnName = Var[Option[String]](None)
+        val maxFilterValue = Var[Option[Int]](None)
+        val currentFilterValue = Var[Option[Int]](None)
+        val profiledComplete = Var[Boolean](false)
+        val temp = Var[Boolean](false)
+        val selectedFilterValue = Var[Option[Int]](None)
+        val profiler_dump = Var[Option[PropertyList.T]](None)
+
+        dataset.selectedDataset.triggerLater{
+            _ match {
+                case None => 
+                    datasetProfile() = None
+                case Some(ds) =>
+                    Vizier.api.artifactGet(
+                        Vizier.project.now.get.projectId,
+                        delegate.visibleArtifacts.now.get(dataset.selectedDataset.now.get).get._1.id,
+                        limit = Some(0),
+                        profile = Some("true")
+                    ).onComplete{
+                        case Success(artifactDescription) => 
+                            artifactDescription match {
+                                case ds: DatasetDescription => 
+                                    profiler_dump() = Some(ds.properties)
+                                case _ => None
+                            }
+                        case Failure(e) =>
+                            None
+                    }
+                }
+            }
+
+        val availableColumns = Rx {
+                    dataset.selectedDataset() match {
+                    case None => Seq.empty
+                    case Some(datasetId) =>
+                        delegate.visibleArtifacts().get(datasetId) match {
+                        case Some((ds: DatasetSummary, _))     => ds.columns
+                        case Some((ds: DatasetDescription, _)) => ds.columns
+                        case None                              => Seq.empty
+                        }
+                    }
+                }
+
+
+        /** A unique identifier for the parameter; the key in the module arguments
+            */
+        val id = "filter"
+
+        /** A human-readable name for the parameter.
+            */
+        val name = "Filter"
+
+        /** Callbacks to trigger when the value of the element changes
+            */
+        private val changeHandlers = mutable.Buffer[dom.Event => Unit]()
+
+        /** Register code to run when the element's value changes
+            */
+        def onChange(handler: dom.Event => Unit) =
+            changeHandlers.append(handler)
+            
+        def field(
+            basetag: String,
+            attrs: AttrPair*
+        )(elems: Frag*): Frag = {
+            val identity = s"parameter_${Parameter.nextInputId}"
+            div(
+            `class` := "parameter",
+            label(attr("for") := identity, name),
+            tag(basetag)(
+                attrs,
+                `class` := Parameter.PARAMETER_WIDGET_CLASS,
+                attr("id") := identity,
+                attr("name") := name,
+                elems
+            ),
+            onchange := { (e: dom.Event) => changeHandlers.foreach { _(e) } }
+            )
+        }
+
+        def pulldown(
+            selected: Int
+        )(options: (String, String)*): Frag =
+            field("select")(
+            options.zipWithIndex.map { case ((description, value), idx) =>
+                option(
+                attr("value") := value,
+                if (idx == selected) { attr("selected", raw = true) := "" }
+                else { "" },
+                description
+                )
+            }: _*
+            )
+
+
+                
+        val pulldownColumns = Rx {
+            val options = ("---", "none") +: availableColumns().map { v => (v.name, v.id.toString) }
+            val initialSelectionIndex = availableColumns().zipWithIndex.find(_._1 == columnName.now.getOrElse("")).map(_._2 + 1).getOrElse(0)
+            val selectElement = pulldown(initialSelectionIndex)(options: _*).render.asInstanceOf[dom.html.Select]
+        selectElement
+        }
+
+        onChange { e =>
+            val selectElement = e.target.asInstanceOf[dom.html.Select]
+            val selectedValue = selectElement.options(selectElement.selectedIndex).value
+            selectedFilterValue() = Some(selectedValue.toInt)
+        }
+
+        Rx {
+            profiler_dump().map { profiler_dump =>
+                val columnsData = profiler_dump(2).value
+                logger.info(columnsData.toString())
+                val overall_data = columnsData(0).as[JsObject]
+                logger.info(overall_data.toString())
+                val generalInfo = (overall_data \ "column")
+                val name_filter = (generalInfo \ "name").as[String]
+                val dataType = (generalInfo \ "type").as[String]
+                if (dataType == "string") {
+                maxFilterValue() = None
+                currentFilterValue() = None
+                columnName() = None
+                profiledComplete() = false
+                temp() = true
+                filterType() = Some(Categorical)
+                } else {
+                try {
+                    val maxValue = (overall_data \ "max").as[Int]
+                    maxFilterValue() = Some(maxValue)
+                    currentFilterValue() = Some(maxValue)
+                    columnName() = Some(name_filter)
+                    profiledComplete() = true
+                    filterType() = Some(Numerical)
+                } catch {
+                    case e: Exception =>
+                    logger.error("Error in updating x column data")
+                    logger.error(e.toString())
+                }
+                }
+            }
+        }
+
+    Rx{
+        selectedFilterValue().foreach { filterValue =>{
+        logger.info("Schema is updated")
+        profiler_dump.now.map { profiler_dump =>
+            val columns = profiler_dump(2).value
+            val overall_data = columns(filterValue).as[JsObject]
+            val generalInfo = (overall_data \ "column")
+            val name_filter = (generalInfo \ "name").as[String]
+            val dataType = (generalInfo \ "type").as[String]
+            if (dataType == "string") {
+            maxFilterValue() = None
+            currentFilterValue() = None
+            columnName() = None
+            profiledComplete() = false
+            temp() = true
+            filterType() = Some(Categorical)
+            } else {
+            try {
+                val maxValue = (overall_data \ "max").as[Int]
+                logger.info("Max Value: " + maxValue.toString())
+                maxFilterValue() = Some(maxValue)
+                currentFilterValue() = Some(maxValue)
+                columnName() = Some(name_filter)
+                profiledComplete() = true
+                filterType() = Some(Numerical)
+            } catch {
+                case e: Exception =>
+                logger.error("Error in updating x column data")
+                logger.error(e.toString())
+                }
+            }
+            }
+        }
+        }
+    }
+
+
+        val sliderInput = Rx {
+            maxFilterValue().map { maxVal =>
+            input(
+            scalatags.JsDom.all.id := "filter_slider",
+            `type` := "range",
+            min := 0,
+            max := maxVal).render } 
+        }
+
+        val stringInput = input(
+            `type` := "text",
+            placeholder := "Enter Filter"
+        )
+
+
+        val root = Rx {
+            filterType() match {
+                case Some(Numerical) => 
+                    div(
+                        `class` := "numerical_filter",
+                        pulldownColumns.reactive,
+                        sliderInput.reactive,
+                    )
+                case Some(Categorical) => 
+                    div(
+                        `class` := "numerical_filter",
+                        pulldownColumns.reactive,
+                        stringInput.render,
+                    )
+                case None => div(
+                    Rx {
+                        dataset.selectedDataset() match {
+                            case None => div()
+                            case _ => 
+                                {
+                                div(
+                                    pulldownColumns.reactive
+                            )}
+                        }
+                    }.reactive
+                )
+            }
+        }
+
+
+        sealed trait FilterType
+        case object Numerical extends FilterType
+        case object Categorical extends FilterType
+}
+
+    class Color{
+
+        val selectedColor = Var("1")
+
+        val root =
+            div(
+            `class` := "color_parameter",
+            (1 to 6).map { i =>
+                label (
+                span(
+                input(
+                    `type` := "radio",
+                    scalatags.JsDom.all.name := "radioButton",
+                    scalatags.JsDom.all.value := i,
+                    onchange := { (e: dom.Event) =>
+                    selectedColor() = i.toString()
+                    }
+                )
+                )
+                )
+            }
+            ).render
+
+        def value = {
+            selectedColor.now match {
+            case "1" => JsString("#000000")
+            case "2" => JsString("#FFFFFF")
+            case "3" => JsString("#214478")
+            case "4" => JsString("#FF0000")
+            case "5" => JsString("#FFD600")
+            case "6" => JsString("#00B507")
+            }}
+
+    }
 }
 
 
-//Side Menu for Bar Chart Editor for Label, Filter, and Color
-
-
-// BarChart Single Row Instance for Controlled Variables outside of Parameter Class
