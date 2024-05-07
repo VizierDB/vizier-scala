@@ -47,6 +47,8 @@ import info.vizierdb.serializers
 import info.vizierdb.ui.components._
 import info.vizierdb.util.Logger
 import scala.collection.mutable
+import play.api.libs.json._
+import cats.arrow.Category
 
 
 class ChartEditor(
@@ -64,14 +66,43 @@ class ChartEditor(
             arg.value match {
             case JsArray(series) => Rx{
                 datasetRows().map { row =>
-                    series.foreach { series =>
-                        series match {
-                            case JsArray(series) => 
-                                row.dataset.set(series(0))
-                                row.xColumn.set(series(1))
-                                
-                            case _ => 
-                                logger.error("Error: Expected JsArray")
+                    series.foreach { seriesElement =>
+                        val seriesArray = seriesElement.as[JsArray].value
+                        seriesArray.map{ element =>
+                            (element \ "id").as[String] match {
+                                case "dataset" => 
+                                    row.dataset.set((element \ "value").as[JsValue])
+                                case "xcol" =>
+                                    row.xColumn.set((element \ "value").as[JsValue])
+                                case "yList" =>
+                                    val yElements = (element \ "value").as[JsArray].value
+                                    yElements.zipWithIndex.foreach { case (yElement, index) =>
+                                        if (index >= row.yColumns().length) {
+                                            row.appendYColumn()
+                                            row.yColumns().lift(index).map { yCol =>
+                                                yCol.yColumn.set((yElement \ "value").as[JsValue])
+                                            }
+                                        }
+                                        else{
+                                        row.yColumns().lift(index).map { yCol =>
+                                            yCol.yColumn.set((yElement(0) \ "value").as[JsValue])
+                                        }}
+                                    }
+                                case "filter" =>
+                                    row.filter.set((element \ "value").as[JsValue])
+                                case "label" =>
+                                    row.label.set((element \ "value").as[JsValue])
+                                case "regression" =>
+                                    row.regression.set((element \ "value").as[JsValue])
+                                case "category" =>
+                                    row.category.category.set((element \ "value").as[JsValue])
+                                case "sort" =>
+                                    row.sort.set((element \ "value").as[JsValue])
+                                case "color" =>
+                                    Rx {row.color.selectedColor() = ((element \ "value").as[String])}
+                                case _ =>
+                                    logger.error("Error: Unknown argument")
+                        }
                         }
                     }
                 }
@@ -189,6 +220,29 @@ class ChartEditor(
         // datasetRows() = datasetRows.now :+ new ChartRow()
         // datasetRows() = datasetRows.now :+ BarChart
         datasetRows.update(_ :+ new ChartRow())
+
+    sealed trait ColumnStats {
+            def columnName: String
+            def columnType: String
+        }
+
+        case class Numerical(
+            columnName: String,
+            columnType: String,
+            minValue: Double,
+            maxValue: Double,
+            mean: Double,
+            distinctValuesCount: Int,
+            slider: Frag
+        ) extends ColumnStats
+
+        case class Categorical
+        (
+            columnName: String,
+            columnType: String,
+            distinctValuesCount: Int,
+            nullCount: Int,
+        ) extends ColumnStats
     class ChartRow(){
         val datasetProfile: Var[Option[PropertyList.T]] = Var(None)
 
@@ -203,6 +257,66 @@ class ChartEditor(
             required = true,
             hidden = false
             )
+
+        dataset.selectedDataset.triggerLater{
+            _ match {
+                case None => 
+                    datasetProfile() = None
+                case Some(ds) =>
+                    Vizier.api.artifactGet(
+                        Vizier.project.now.get.projectId,
+                        delegate.visibleArtifacts.now.get(dataset.selectedDataset.now.get).get._1.id,
+                        limit = Some(0),
+                        profile = Some("true")
+                    ).onComplete{
+                        case Success(artifactDescription) => 
+                            artifactDescription match {
+                                case ds: DatasetDescription => 
+                                    datasetProfile() = Some(ds.properties)
+                                case _ => None
+                            }
+                        case Failure(e) =>
+                            None
+                    }
+                }
+            }
+
+        val seqProfiledInfo = Var[Seq[ColumnStats]](Seq())
+
+
+        Rx {
+            datasetProfile() match {
+                case None => 
+                    None
+                case Some(profile) =>
+                    val profiledData = profile(2).value.as[JsArray].value// Assuming 'profile' itself is the array
+                    profiledData.foreach { column =>
+                        println(column)
+                        val columnData = column.as[JsObject]
+                        val columnName = (columnData \ "column" \ "name").as[String]
+                        val columnType = (columnData \ "column" \ "type").as[String]
+                        if (columnType == "integer" || columnType == "double") { // Assuming numerical data could be integer or double
+                            val minValue = (columnData \ "min").as[Double]
+                            val maxValue = (columnData \ "max").as[Double]
+                            val mean = (columnData \ "mean").as[Double]
+                            val distinctValuesCount = (columnData \ "distinctValueCount").as[Int]
+                            seqProfiledInfo() = seqProfiledInfo.now :+ Numerical(columnName, columnType, minValue, maxValue, mean, distinctValuesCount, sliderInput(maxValue.toInt))
+                        } else if (columnType == "string") {
+                            val distinctValuesCount = (columnData \ "distinctValueCount").as[Int]
+                            val nullCount = (columnData \ "nullCount").as[Int]
+                            seqProfiledInfo() = seqProfiledInfo.now :+ Categorical(columnName, columnType, distinctValuesCount, nullCount)
+                        }
+                    }
+            }
+        }
+
+        def sliderInput(maxVal:Int) : Frag = {
+            input(
+            scalatags.JsDom.all.id := "filter_slider",
+            `type` := "range",
+            min := 0,
+            max := maxVal)}
+
 
         val xColumn: ColIdParameter = 
             new ColIdParameter(
@@ -335,7 +449,7 @@ class ChartEditor(
                 false
             )
         
-        val testFilter = new Filter(dataset,filter, datasetProfile)
+        val testFilter = new Filter(dataset,filter, datasetProfile, seqProfiledInfo)
 
 
         val root = 
@@ -552,14 +666,6 @@ class ChartEditor(
             false,
             ""
             )
-        val color =
-            new ColorParameter(
-            "color",
-            "Color",
-            true,
-            false,
-            Some("#214478")
-            )
         }
         class ChartYColumn(dataset: ArtifactParameter)
         {
@@ -679,18 +785,34 @@ class ChartEditor(
     }
 
     val datasetRowColor = Rx{
-        val colors = datasetRows().flatMap { row => 
+        datasetRows().flatMap { row => 
             row.yColumns().map { yCol => 
             yCol.color.root
             }
         }
-        val categoryColors = datasetRows()
-            .filter(_.category.category.selectedColumn() != None)
-            .map { row => 
-                row.category.color.root
-        }
-        colors ++ categoryColors
     }
+
+    val datasetRowColorCategory = Rx {
+        datasetRows().flatMap { row =>
+            row.category.category.selectedColumn().flatMap { columnIndex =>
+                row.seqProfiledInfo().lift(columnIndex).map {
+                    case Categorical(_, _, distinctValuesCount, _) =>
+                        Some(Seq.fill(distinctValuesCount)(row.color.root)) // Wrap Seq in Some
+                    case Numerical(_, _, _, _, _, distinctValuesCount, _) =>
+                        Some(Seq.fill(distinctValuesCount)(row.color.root)) // Wrap Seq in Some
+                    case _ =>
+                        Some(Seq.empty[Frag]) // Wrap Seq in Some
+                }.getOrElse(Some(Seq.empty[Frag])) // Wrap Seq in Some and default to Some(Seq.empty[Frag]) if no stats info
+            }
+        }
+    }
+
+
+    val combinedColor = Rx {
+
+        datasetRowColor() ++ datasetRowColorCategory().flatten
+    }
+    
 
     val renderSideMenuContent =
         Rx {
@@ -711,29 +833,6 @@ class ChartEditor(
                 }
             )
         }.reactive
-
-//    val renderSideMenuContent =
-//        Rx {
-//                table(
-//                    `class` := "sidemenu_table",
-//                    thead(
-//                        tr(th("Label")),
-//                        tr(th("Color"))
-//                        ),
-//                    tbody(
-//                        datasetRowLabel().map(
-//                            label => {
-//                                tr(td(label))
-//                            }
-//                        ),
-//                        datasetRowColor().map(
-//                            color => {
-//                                tr(td(color))
-//                            }
-//                        )
-//                    )
-//                )
-//            }.reactive
     }
 
 
@@ -787,83 +886,16 @@ class ChartEditor(
     class Filter (
         val dataset:ArtifactParameter, 
         val filter:StringParameter, 
-        val datasetProfile:Var[Option[PropertyList.T]]) extends Logging {
+        val datasetProfile:Var[Option[PropertyList.T]],
+        val seqProfiledInfo:Var[Seq[ColumnStats]]
+        ) extends Logging {
 
-        val profiler_dump = Var[Option[PropertyList.T]](None)
-        val seqProfiledInfo = Var[Seq[ColumnStats]](Seq())
+        
         val maxFilterValue = Var[Option[Double]](None)
         val columnName = Var[Option[String]](None)
         val selectedFilterValue = Var[Option[Int]](None)
 
-        sealed trait ColumnStats {
-            def columnName: String
-            def columnType: String
-        }
 
-        case class Numerical(
-            columnName: String,
-            columnType: String,
-            minValue: Double,
-            maxValue: Double,
-            mean: Double,
-            slider: Frag
-        ) extends ColumnStats
-
-        case class Categorical
-        (
-            columnName: String,
-            columnType: String,
-            distinctValuesCount: Int,
-            nullCount: Int,
-        ) extends ColumnStats
-
-        dataset.selectedDataset.triggerLater{
-            _ match {
-                case None => 
-                    datasetProfile() = None
-                case Some(ds) =>
-                    Vizier.api.artifactGet(
-                        Vizier.project.now.get.projectId,
-                        delegate.visibleArtifacts.now.get(dataset.selectedDataset.now.get).get._1.id,
-                        limit = Some(0),
-                        profile = Some("true")
-                    ).onComplete{
-                        case Success(artifactDescription) => 
-                            artifactDescription match {
-                                case ds: DatasetDescription => 
-                                    profiler_dump() = Some(ds.properties)
-                                case _ => None
-                            }
-                        case Failure(e) =>
-                            None
-                    }
-                }
-            }
-
-        Rx {
-            profiler_dump() match {
-                case None => 
-                    None
-                case Some(profile) =>
-                    val profiledData = profile(2).value.as[JsArray].value// Assuming 'profile' itself is the array
-                    profiledData.foreach { column =>
-                        println(column.toString())
-                        val columnData = column.as[JsObject]
-                        val columnName = (columnData \ "column" \ "name").as[String]
-                        val columnType = (columnData \ "column" \ "type").as[String]
-                        if (columnType == "integer" || columnType == "double") { // Assuming numerical data could be integer or double
-                            val minValue = (columnData \ "min").as[Double]
-                            val maxValue = (columnData \ "max").as[Double]
-                            val mean = (columnData \ "mean").as[Double]
-                            seqProfiledInfo() = seqProfiledInfo.now :+ Numerical(columnName, columnType, minValue, maxValue, mean, sliderInput(maxValue.toInt))
-                        } else if (columnType == "string") {
-                            val distinctValuesCount = (columnData \ "distinctValueCount").as[Int]
-                            val nullCount = (columnData \ "nullCount").as[Int]
-                            seqProfiledInfo() = seqProfiledInfo.now :+ Categorical(columnName, columnType, distinctValuesCount, nullCount)
-                        }
-                    }
-            }
-        }
 
         val availableColumns = Rx {
                     dataset.selectedDataset() match {
@@ -876,9 +908,6 @@ class ChartEditor(
                         }
                     }
                 }
-
-
-        
 
         /** A unique identifier for the parameter; the key in the module arguments
             */
@@ -968,7 +997,7 @@ class ChartEditor(
                     )
                 case Some(value) =>
                     seqProfiledInfo.now(value) match {
-                        case Numerical(columnName, columnType, minValue, maxValue, mean, slider) =>
+                        case Numerical(columnName, columnType, minValue, maxValue, mean, distinctValuesCount ,slider) =>
                             div(
                                 pulldownColumns.reactive,
                                 slider.render,

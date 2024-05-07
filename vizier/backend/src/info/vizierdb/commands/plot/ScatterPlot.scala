@@ -55,6 +55,11 @@ object ScatterPlot extends Command
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
   val PARAM_REGRESSION = "regression"
+  val PARAM_X_TITLE = "xTitle"
+  val PARAM_Y_TITLE = "yTitle"
+  val PARAM_CHART_TITLE = "chartTitle"
+  val LEGEND = "legend"
+
 
   val MAX_RECORDS = 10000
 
@@ -77,7 +82,17 @@ object ScatterPlot extends Command
         "Quadratic"   -> VegaRegressionMethod.Quadratic.key,
       ))
     )),
-    StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
+    StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false),
+    StringParameter(id = PARAM_X_TITLE, name = "X-axis Title", required = false),
+    StringParameter(id = PARAM_Y_TITLE, name = "Y-axis Title", required = false),
+    StringParameter(id = PARAM_CHART_TITLE, name = "Chart Title", required = false),
+    EnumerableParameter(id = LEGEND, name = "Legend", required = false, values = EnumerableValue.withNames(
+      "---" -> "",
+      "Top Right" -> "top-right",
+      "Bottom Right" -> "bottom-right",
+      "Top Left" -> "top-left",
+      "Bottom Left" -> "bottom-left",
+    ))
   )
   override def title(arguments: Arguments): String = 
     "Scatter plot of "+arguments.getList(PARAM_SERIES).map { series =>

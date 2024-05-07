@@ -26,8 +26,9 @@ import info.vizierdb.artifacts.VegaChart
 import info.vizierdb.artifacts.VegaScale
 import info.vizierdb.artifacts.VegaScaleType
 import info.vizierdb.artifacts.VegaAxis
-import info.vizierdb.artifacts.VegaOrientation
+import info.vizierdb.artifacts.VegaLegendOrientation
 import info.vizierdb.artifacts.VegaMarkEncoding
+import info.vizierdb.artifacts.VegaOrientation
 import info.vizierdb.artifacts.VegaMarkEncodingGroup
 import info.vizierdb.artifacts.VegaValueReference
 import info.vizierdb.artifacts.VegaDomain
@@ -49,6 +50,11 @@ object LineChart extends Command
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
+  val PARAM_X_TITLE = "xTitle"
+  val PARAM_Y_TITLE = "yTitle"
+  val PARAM_CHART_TITLE = "chartTitle"
+  val LEGEND = "legend"
+  val SORT = "sort"
 
   override def name: String = "Line Chart"
 
@@ -57,11 +63,28 @@ object LineChart extends Command
         DatasetParameter(id = PARAM_DATASET, name = "Dataset"),
         ColIdParameter(id = PARAM_X, name = "X-axis"),
         ListParameter(id = PARAM_Y_AXIS, name = "Y-axes", components = Seq(ColIdParameter(id = PARAM_Y, name = "Y-axis"))),
-        NumericalFilterParameter(id = PARAM_FILTER, name = "Filter",required = false),
+        StringParameter(id = PARAM_FILTER, name = "Filter",required = false),
         StringParameter(id = PARAM_LABEL, name = "Label", required = false),
-        ColorParameter(id = PARAM_COLOR, name = "Color", required = false)
+        ColorParameter(id = PARAM_COLOR, name = "Color", required = false),
+
     )),
-    StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
+    StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false),
+    StringParameter(id = PARAM_X_TITLE, name = "X-axis Title", required = false),
+    StringParameter(id = PARAM_Y_TITLE, name = "Y-axis Title", required = false),
+    StringParameter(id = PARAM_CHART_TITLE, name = "Chart Title", required = false),
+    EnumerableParameter(id = LEGEND, name = "Legend", required = false, values = EnumerableValue.withNames(
+      "---" -> "",
+      "Top Right" -> "top-right",
+      "Bottom Right" -> "bottom-right",
+      "Top Left" -> "top-left",
+      "Botton Left" -> "bottom-left",
+    )),
+    EnumerableParameter(id = SORT, name = "Sort", required = false, values = EnumerableValue.withNames(
+      "---" -> "",
+      "Ascending" -> "ascending",
+      "Descending" -> "descending"
+    ))
+
   )
   override def title(arguments: Arguments): String = 
     "Line plot of "+arguments.getList(PARAM_SERIES).map { series =>
@@ -75,9 +98,14 @@ object LineChart extends Command
   {
     // Figure out if we are being asked to emit a named artifact
     // Store the result in an option-type
+    println(arguments)
     val artifactName = arguments.getOpt[String](PARAM_ARTIFACT)
                                 .flatMap { case "" => None 
                                            case x => Some(x) }
+
+    val xTitle = arguments.getOpt[String](PARAM_X_TITLE)
+    val yTitle = arguments.getOpt[String](PARAM_Y_TITLE)
+    val chartTitle = arguments.getOpt[String](PARAM_CHART_TITLE)
 
     // Feed the configuration into PlotUtils
     val series =
@@ -88,13 +116,18 @@ object LineChart extends Command
             datasetName = series.get[String](PARAM_DATASET),
             xIndex      = series.get[Int](PARAM_X),
             yIndex      = series.getList(PARAM_Y_AXIS).map { _.get[Int](PARAM_Y) },
-            name        = series.getOpt[String](PARAM_LABEL)
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
           .sorted
         }
       )
     val yAxisLabels = series.series.flatMap(_.y).distinct 
+
+    val (domainMinX, domainMaxX) = if (arguments.getOpt[String]("sort") == Some("descending")) {
+        (Some(series.domainMaxX), Some(series.domainMinX))
+      } else {
+        (Some(series.domainMinX), Some(series.domainMaxX))
+      }
     // Output a chart
     context.vega(
       VegaChart(
@@ -111,6 +144,8 @@ object LineChart extends Command
         // Rely on PlotUtils to pick these out
         data = series.vegaData,
 
+        
+
         // Let vega know how to map data values to plot features
         scales = Seq(
           // 'x': The x axis scale, mapping from data.x -> chart width
@@ -120,8 +155,8 @@ object LineChart extends Command
               JsNumber(series.minX),
               JsNumber(series.maxX)
             ))),
-            domainMin = Some(series.domainMinX),
-            domainMax = Some(series.domainMaxX),
+            domainMin = domainMinX,
+            domainMax = domainMaxX
           ),
           
           // 'y': The y axis scale, mapping from data.y -> chart height
@@ -144,9 +179,9 @@ object LineChart extends Command
         // Define the chart axes (based on the 'x' and 'y' scales)
         axes = Seq(
           VegaAxis("x", VegaOrientation.Bottom, ticks = Some(true),
-                   title = Some(series.xAxis)),
+                  title = if(xTitle != Some("")) Some(xTitle.get) else Some(series.xAxis)),
           VegaAxis("y", VegaOrientation.Left, ticks = Some(true),
-                   title = Some(series.yAxis)),
+                  title = if(yTitle != Some("")) Some(yTitle.get) else Some(series.yAxis)),
         ),
 
         // Actually define the line(s).  There's a single mark here
@@ -165,6 +200,13 @@ object LineChart extends Command
             VegaLegendType.Symbol,
             stroke = Some("color"),
             fill = Some("color"),
+            orient = arguments.getOpt[String](LEGEND) match {
+              case Some("top-right") => Some(VegaLegendOrientation.TopRight)
+              case Some("bottom-right") => Some(VegaLegendOrientation.BottomRight)
+              case Some("top-left") => Some(VegaLegendOrientation.TopLeft)
+              case Some("bottom-left") => Some(VegaLegendOrientation.BottomLeft)
+              case _ => Some(VegaLegendOrientation.TopRight)
+            }
           )
         )
       ),
