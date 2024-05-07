@@ -1613,9 +1613,18 @@ table.parameter_list {
             display: none;
           }
           .reactive {
-            // div {
-            //   display: inline list-item;
-            // }
+            display: inline-block;
+            width: 90px;
+            input[type="range"].command-argument {
+              width: 90px;
+            }
+            input[type="text"].command-argument {
+              width: 82px;
+            }
+            select.command-argument {
+              width: 90px;
+              vertical-align: center ;
+            }
             button {
               width: 24px;
             }
