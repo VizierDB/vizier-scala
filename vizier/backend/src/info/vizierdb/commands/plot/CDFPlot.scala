@@ -47,6 +47,11 @@ object CDFPlot extends Command
   val PARAM_COLOR = "color"
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
+  val PARAM_X_TITLE = "xTitle"
+  val PARAM_Y_TITLE = "yTitle"
+  val PARAM_CHART_TITLE = "chartTitle"
+  val LEGEND = "legend"
+  
 
   override def name: String = "CDF Plot"
 
@@ -58,7 +63,18 @@ object CDFPlot extends Command
       NumericalFilterParameter(id = PARAM_FILTER, name = "Filter",required = false),
       ColorParameter(id = PARAM_COLOR, name = "Color", required = false),
     )),
-    StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false)
+    StringParameter(id = PARAM_ARTIFACT, name = "Output Artifact (blank to show only)", required = false),
+    StringParameter(id = PARAM_X_TITLE, name = "X-axis Title", required = false),
+    StringParameter(id = PARAM_Y_TITLE, name = "Y-axis Title", required = false),
+    StringParameter(id = PARAM_CHART_TITLE, name = "Chart Title", required = false),
+    EnumerableParameter(id=LEGEND, name="Legend", required=false, values=EnumerableValue.withNames(
+      "---" -> "",
+      "Top Right" -> "top-right",
+      "Bottom Right" -> "bottom-right",
+      "Top Left" -> "top-left",
+      "Botton Left" -> "bottom-left",
+    ))
+
   )
   override def title(arguments: Arguments): String = 
     "CDF plot of "+arguments.getList(PARAM_SERIES).map { series =>

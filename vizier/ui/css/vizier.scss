@@ -1664,6 +1664,10 @@ div.modal_background
 /* The last child of a parameter list is a "template" placeholder to allow
    adding more records by just typing */
 
+div.module_editor fieldset div div:first-of-type button.remove_row_button {
+    display: none;
+  }
+
 table.parameter_list {
   display: flex;
   flex-direction: column;
@@ -1709,9 +1713,18 @@ table.parameter_list {
             display: none;
           }
           .reactive {
-            // div {
-            //   display: inline list-item;
-            // }
+            display: inline-block;
+            width: 90px;
+            input[type="range"].command-argument {
+              width: 90px;
+            }
+            input[type="text"].command-argument {
+              width: 82px;
+            }
+            select.command-argument {
+              width: 90px;
+              vertical-align: center ;
+            }
             button {
               width: 24px;
             }
@@ -1722,19 +1735,15 @@ table.parameter_list {
           }
           .parameter {
             display: inline-block;
-            // width: fit-content;
-            max-width: 120px;
-            min-width: 90px;
-            // vertical-align: center ;
-            // input[type="range"].command-argument {
-            //   max-width: 120px;
-            //   min-width: 90px;
-            //   vertical-align: center ;
-            // }
+            width: 90px;
+            input[type="range"].command-argument {
+              width: 90px;
+            }
+            input[type="text"].command-argument {
+              width: 82px;
+            }
             select.command-argument {
-              width: fit-content;
-              //max-width: 120px;
-              min-width: 90px;
+              width: 90px;
               vertical-align: center ;
             }
           }

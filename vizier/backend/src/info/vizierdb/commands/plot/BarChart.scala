@@ -49,6 +49,11 @@ object BarChart extends Command {
   val PARAM_LABEL = "label"
   val PARAM_ARTIFACT = "artifact"
   val PARAM_Y_AXIS = "yList"
+  val PARAM_X_TITLE = "xTitle"
+  val PARAM_Y_TITLE = "yTitle"
+  val PARAM_CHART_TITLE = "chartTitle"
+  val LEGEND = "legend"
+  val SORT = "sort"
 
   override def name: String = "Bar Chart"
 
@@ -69,7 +74,23 @@ object BarChart extends Command {
       id = PARAM_ARTIFACT,
       name = "Output Artifact (blank to show only)",
       required = false
-    )
+    ),
+    StringParameter(id = PARAM_X_TITLE, name = "X-axis Title", required = false),
+    StringParameter(id = PARAM_Y_TITLE, name = "Y-axis Title", required = false),
+    StringParameter(id = PARAM_CHART_TITLE, name = "Chart Title", required = false),
+    EnumerableParameter(id=LEGEND, name="Legend", required=false, values=EnumerableValue.withNames(
+      "---" -> "",
+      "Top Right" -> "top-right",
+      "Bottom Right" -> "bottom-right",
+      "Top Left" -> "top-left",
+      "Botton Left" -> "bottom-left",
+    )),
+    EnumerableParameter(id=SORT, name="Sort", required=false, values=EnumerableValue.withNames(
+      "---" -> "",
+      "Ascending" -> "ascending",
+      "Descending" -> "descending"
+    ))
+
   )
   override def title(arguments: Arguments): String =
     "Bar plot of " + arguments
@@ -174,7 +195,7 @@ object BarChart extends Command {
             "color",
             VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
-            domain = Some(VegaDomain.Literal(yAxisLabels.map(JsString(_))))
+            domain = Some(VegaDomain.Literal(series.names.map { JsString(_) }))
           )
         ),
 

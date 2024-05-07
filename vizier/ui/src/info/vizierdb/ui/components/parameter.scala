@@ -192,7 +192,6 @@ object Parameter extends Logging {
           case "rowid"   => new RowIdParameter(param)
           case "fileid"  => new FileParameter(param)
           case "multi" => new MultiSelectParameter(param, visibleArtifacts, editor.selectedDataset)
-          case "agg" => new AggregateParameter(param)
           case "dataset" =>
             new ArtifactParameter(
               param,
@@ -865,12 +864,6 @@ object ListParameter {
   }
 }
 
-/////////////////////////////////////////////////////////////////////////////
-/** A nested list of ColIDParameters.
-  *
-  * The elements field defines the parameters that appear in each row of the
-  * list.
-  */
 
 class NumericalFilterParameter(
     val id: String,
@@ -897,10 +890,11 @@ class NumericalFilterParameter(
     )
   }
   val columnName = Var[Option[String]](None)
-  val xColMax = Var[Option[Int]](None)
+  val maxFilterValue = Var[Option[Int]](None)
   val currentFilterValue = Var[Option[Int]](None)
-  val ready = Var[Boolean](false)
+  val profiledComplete = Var[Boolean](false)
   val temp = Var[Boolean](false)
+  val selectedFilterValue = Var[Option[Int]](None)
 
   Rx {
     profiler_dump().map {
@@ -912,18 +906,18 @@ class NumericalFilterParameter(
         val dataType = (generalInfo \ "type").as[String]
         if (dataType == "string") {
           println("X column is not numerical")
-          xColMax() = None
+          maxFilterValue() = None
           currentFilterValue() = None
           columnName() = None
-          ready() = false
+          profiledComplete() = false
           temp() = true
         } else {
           try {
             val maxValue = (overall_data \ "max").as[Int]
-            xColMax() = Some(maxValue)
+            maxFilterValue() = Some(maxValue)
             currentFilterValue() = Some(maxValue)
             columnName() = Some(name_filter)
-            ready() = true
+            profiledComplete() = true
           } catch {
             case e: Exception =>
               println("Error in updating x column data")
@@ -933,38 +927,47 @@ class NumericalFilterParameter(
     }
   }
 
-  schema.foreach { xCol =>{
-    println("Schema updated")
-    profiler_dump.now.map 
-    { profiler_dump =>
-      val columns = profiler_dump(2).value
-      val overall_data = columns(xCol).as[JsObject]
-      val generalInfo = (overall_data \ "column")
-      val name_filter = (generalInfo \ "name").as[String]
-      val dataType = (generalInfo \ "type").as[String]
-      if (dataType == "string") {
-        println("X column is not numerical")
-        xColMax() = None
-        currentFilterValue() = None
-        columnName() = None
-        ready() = false
-        temp() = true
-      } else {
-        try {
-          val maxValue = (overall_data \ "max").as[Int]
-          xColMax() = Some(maxValue)
-          currentFilterValue() = Some(maxValue)
-          columnName() = Some(name_filter)
-          ready() = true
-        } catch {
-          case e: Exception =>
-            println("Error in updating x column data")
-            println(e)
+  onChange { e: dom.Event =>
+    selectedFilterValue() = inputNode[dom.html.Select].value match {
+      case "" => None
+      case x  => Some(x.toInt)
+    }
+  }
+
+  Rx{
+    selectedFilterValue().foreach { filterValue =>{
+      println("Schema updated")
+      profiler_dump.now.map { profiler_dump =>
+        val columns = profiler_dump(2).value
+        val overall_data = columns(filterValue).as[JsObject]
+        val generalInfo = (overall_data \ "column")
+        val name_filter = (generalInfo \ "name").as[String]
+        val dataType = (generalInfo \ "type").as[String]
+        if (dataType == "string") {
+          println("X column is not numerical")
+          maxFilterValue() = None
+          currentFilterValue() = None
+          columnName() = None
+          profiledComplete() = false
+          temp() = true
+        } else {
+          try {
+            val maxValue = (overall_data \ "max").as[Int]
+            println("Max value is " + maxValue)
+            maxFilterValue() = Some(maxValue)
+            currentFilterValue() = Some(maxValue)
+            columnName() = Some(name_filter)
+            profiledComplete() = true
+          } catch {
+            case e: Exception =>
+              println("Error in updating x column data")
+              println(e)
+            }
           }
         }
       }
     }
-  }
+}
 
 val pulldownColumns = Rx {
   val options = ("---", "none") +: columns().map { v => (v.name, v.id.toString) }
@@ -973,11 +976,16 @@ val pulldownColumns = Rx {
   )(options: _*).render.asInstanceOf[dom.html.Select]
 }
 
-  val sliderInput = input(
+  val sliderInput = 
+    input(
     `type` := "range",
     min := 0,
-    max := xColMax.now,
-  )
+    max := maxFilterValue.now).render.asInstanceOf[dom.html.Input]
+
+    sliderInput.style.maxWidth = 120.px
+    sliderInput.style.minWidth = 90.px
+    sliderInput.style.verticalAlign = "center"
+
 
   val stringInput = input(
     `type` := "text",
@@ -987,12 +995,12 @@ val pulldownColumns = Rx {
   val root =
     span(
       Rx {
-        ready() match {
+        profiledComplete() match {
           case true =>
             div(
               `class` := "numerical_filter",
               pulldownColumns.reactive,
-              sliderInput.render,
+              sliderInput,
             )
           case false =>
             temp() match {
@@ -1004,30 +1012,35 @@ val pulldownColumns = Rx {
                   println("Yes x")
                 )
               case false =>
-              div(
-                `class` := "spinner_class",
-                Spinner().render,
-                println("No x")
+                div(
+                  `class` := "spinner_class",
+                  Spinner().render,
+                  println("No x")
               )
             }
         }
       }.reactive
     )
 
-  def value =
+  def value = {
     if(inputNode[dom.html.Input].value == "none") {
       JsString("")
     }
-    else if (xColMax.now == None) {
+    else if (maxFilterValue.now == None) {
       JsString("")
-    } else {
+    } 
+    else if (temp.now == true) {
+      JsString(inputNode[dom.html.Input].value)
+    }
+    else {
+      println("DSADSA")
       JsString(
         columnName.now.get + " <= " + (inputNode[
           dom.html.Input
         ].value).toString
       )
     }
-
+  }
   def set(v: JsValue): Unit = {
     val stringVal = v.as[String]
     if (stringVal.equals("")) {
@@ -1035,7 +1048,7 @@ val pulldownColumns = Rx {
     }
     val data = stringVal.split(" <= ")
     println(data)
-    xColMax() = Some(data(1).toInt)
+    maxFilterValue() = Some(data(1).toInt)
     columnName() = Some(data(0))
     currentFilterValue() = Some(data(1).toInt)
   }
@@ -1557,66 +1570,4 @@ class MultiSelectParameter (
     val selected = v.as[Seq[String]]
     inputNode[dom.html.Select].value = selected.head
   }
-}
-
-class AggregateParameter(
-    val id: String,
-    val name: String,
-    val required: Boolean,
-    val hidden: Boolean,
-    val initialPlaceholder: Option[String] = None
-) extends Parameter {
-  def this(parameter: serialized.ParameterDescription) {
-    this(
-      id = parameter.id,
-      name = parameter.name,
-      required = parameter.required,
-      hidden = parameter.hidden
-    )
-  }
-
-  val currentAggregate = Var[Option[String]](None)
-
-  val root = 
-    div(
-      `class` := "aggregate_parameter",
-      select(
-        `class` := "aggregate_select",
-        option(
-          scalatags.JsDom.all.value := "count",
-          "Count"
-        ),
-        option(
-          scalatags.JsDom.all.value := "sum",
-          "Sum"
-        ),
-        option(
-          scalatags.JsDom.all.value := "mean",
-          "Mean"
-        ),
-        option(
-          scalatags.JsDom.all.value := "median",
-          "Median"
-        ),
-        option(
-          scalatags.JsDom.all.value := "min",
-          "Min"
-        ),
-        option(
-          scalatags.JsDom.all.value := "max",
-          "Max"
-        ),
-        onchange := { (e: dom.Event) =>
-          val selected = inputNode[dom.html.Select].value
-          currentAggregate() = Some(selected)
-        }
-      )
-    ).render
-  def value =
-    Json.parse(inputNode[dom.html.Input].value)
-
-  def set(v: JsValue): Unit =
-    inputNode[dom.html.Input].value = v.toString
-  def setHint(s: String): Unit =
-    inputNode[dom.html.Input].placeholder = s
 }
