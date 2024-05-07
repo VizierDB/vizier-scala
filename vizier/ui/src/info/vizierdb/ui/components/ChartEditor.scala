@@ -692,29 +692,51 @@ class ChartEditor(
         colors ++ categoryColors
     }
 
-    val renderSideMenuContent =     
+    val renderSideMenuContent =
         Rx {
-                table(
-                    `class` := "sidemenu_table",
-                    thead(
-                        tr(th("Label")),
-                        tr(th("Color"))
-                        ),
+            val datalabels = datasetRowLabel()
+            val datacolors = datasetRowColor()
+
+            table(
+                `class` := "sidemenu_table",
+                thead(
+                    tr(th("Label")),
+                    tr(th("Color"))
+                ),
+                (datalabels zip datacolors).map { case (label, color) =>
                     tbody(
-                        datasetRowLabel().map(
-                            label => {
-                                tr(td(label))
-                            }
-                        ),
-                        datasetRowColor().map(
-                            color => {
-                                tr(td(color))
-                            }
-                        )
+                        tr(td(label)),
+                        tr(td(color))
                     )
-                )
-            }.reactive
+                }
+            )
+        }.reactive
+
+//    val renderSideMenuContent =
+//        Rx {
+//                table(
+//                    `class` := "sidemenu_table",
+//                    thead(
+//                        tr(th("Label")),
+//                        tr(th("Color"))
+//                        ),
+//                    tbody(
+//                        datasetRowLabel().map(
+//                            label => {
+//                                tr(td(label))
+//                            }
+//                        ),
+//                        datasetRowColor().map(
+//                            color => {
+//                                tr(td(color))
+//                            }
+//                        )
+//                    )
+//                )
+//            }.reactive
     }
+
+
     override val editorFields =
         div(`class` := chartType+"_chart_editor", 
             Rx {
