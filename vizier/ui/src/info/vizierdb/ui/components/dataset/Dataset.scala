@@ -66,19 +66,22 @@ class Dataset(
                     fetchRowsWithAPI, 
                     (candidates, pageSize) => candidates.maxBy { pageIdx => math.abs(pageIdx - table.firstRowIndex) }
                   )
-  val datasetSummary = new DatasetSummary(projectId, datasetId)                
+  val datasetSummary = new DatasetSummary(projectId, datasetId) 
+  datasetSummary.updateSummary() 
+  private var isSummaryDisplayed = false
   
   def displayDatasetSummary(): Unit = {
+    datasetSummary.updateSummary()
     val datasetBody = root.querySelector(".dataset_body")
-      datasetBody.innerHTML = "" 
-      datasetBody.appendChild(datasetSummary.root)
+    datasetBody.innerHTML = "" 
+    datasetBody.appendChild(datasetSummary.root)
   }
   var table: TableView = null
 
   def displayTable(): Unit = {
     val datasetBody = root.querySelector(".dataset_body")
-      datasetBody.innerHTML = "" 
-      datasetBody.appendChild(table.root)
+    datasetBody.innerHTML = "" 
+    datasetBody.appendChild(table.root)
   }
 
   def setSource(source: TableDataSource, invalidate: Boolean = true){
@@ -98,7 +101,6 @@ class Dataset(
       }
       table.setData(source, invalidate = invalidate)
     }
-
   }
 
   val name = Var[String]("unnamed")
@@ -148,35 +150,25 @@ class Dataset(
       limit = Some(limit)
     ).map { _.rows }
   }
-
-  def handleAction(action: () => Unit)(event: dom.Event): Unit = {
-    event.preventDefault()
-    action()
-  }
-
-  val newDataSummaryCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
-    val element = a(FontAwesome("info-circle")).render
-    element.addEventListener("click", handleAction(() => displayDatasetSummary())) 
-    element
-  }
-
-  val newOpenSpreadsheetCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
-    val element = a(FontAwesome("table")).render
-    element.addEventListener("click", handleAction(() => displayTable())) 
-    element
-  }
-
-  val newDownloadCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
-    val element = a(
-      href := Vizier.api.artifactGetCsvURL(projectId, datasetId, name = Some(datasetName)),
-      target := "_blank",
-      FontAwesome("download")
-    ).render 
-    element   
-  }
   
-  val new_menu = Seq(newDownloadCommand,newDataSummaryCommand,newOpenSpreadsheetCommand)
-
+  val dataSummaryCommand = (projectId: Identifier, datasetId: Identifier, datasetName: String) => {
+    val element = a(FontAwesome("info-circle")).render
+    val iconElement = element.firstChild.asInstanceOf[dom.html.Element]
+    element.addEventListener("click", (event: dom.Event) => {
+      event.preventDefault()
+      if (isSummaryDisplayed == false) {
+        iconElement.style.color = "#f3f3f3"
+        iconElement.style.backgroundColor = "#214478"
+        displayDatasetSummary()
+      } else {
+        iconElement.style.color = "#214478"
+        iconElement.style.backgroundColor = "#f3f3f3"
+        displayTable()
+      }
+      isSummaryDisplayed = !isSummaryDisplayed
+    })
+    element
+  }
 
   val root:dom.html.Div = div(
     `class` := "dataset",
@@ -186,7 +178,7 @@ class Dataset(
         h3(if(name().isEmpty()) { "Untitled Dataset "} else { name() })
       }.reactive,
       Rx { 
-        span(new_menu.map { _(projectId, datasetId, name()) })
+        span(menu.map { _(projectId, datasetId, name()) }, if(menu.size > 0) {dataSummaryCommand(projectId,datasetId, name())})
       }.reactive
     )
     // Table root is appended by setSource()
@@ -214,10 +206,6 @@ object Dataset
         target := "_blank",
         FontAwesome("download")
       )
-
-  val COMMAND_DATA_SUMMARY = 
-    (projectId: Identifier, datasetId: Identifier, datasetName: String) =>
-      a(FontAwesome("info"))
   
   val DEFAULT_COMMANDS = Seq(COMMAND_DOWNLOAD)
 }

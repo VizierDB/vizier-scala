@@ -44,24 +44,23 @@ class DatasetSummary(projectId: Identifier, datasetId: Identifier)(implicit val 
                       val min = (columnJson \ "min").asOpt[Double].getOrElse("N/A")
                       val max = (columnJson \ "max").asOpt[Double].getOrElse("N/A")
                       div(
-                        div(s"Mean: $mean"),
-                        div(s"Min: $min"),
-                        div(s"Max: $max")
+                        div(`class` := "statistics_detail",s"Mean: $mean"),
+                        div(`class` := "statistics_detail",s"Min: $min"),
+                        div(`class` := "statistics_detail",s"Max: $max")
                       )
                     case _ => div() // No additional stats for non-numeric types
                   }
-                  
-                  div(style := "display: flex; align-items: center; margin-bottom: 10px;",
-                    div(style := "margin-right: 20px;", s"Column Name: $columnName"),
-                    div(style := "margin-right: 20px;", s"Type: $columnType"),
-                    div(style := "margin-right: 20px;",
-                        div(s"Distinct Values: $distinctValueCount"),
-                        div(s"Null Count: $nullCount"),
-                        div(s"Count: $count"),
+                    div(`class` := "column_detail",
+                    div(`class` := "column_name", div(s"$columnName"), div(s"($columnType)")),
+                    div(`class` := "statistics",
+                        div(`class` := "statistics_detail",s"Distinct Values: $distinctValueCount"),
+                        div(`class` := "statistics_detail",s"Null Count: $nullCount"),
+                        div(`class` := "statistics_detail",s"Count: $count"),
                         statsHtml),
-                  )
+                  )                 
                 }
-                div(columnsHtml: _*)
+
+                 div(columnsHtml: _*)
               case None => div("Columns data is not available.")
             }
           case None => div("Columns property not found.")
@@ -74,16 +73,23 @@ class DatasetSummary(projectId: Identifier, datasetId: Identifier)(implicit val 
   def updateSummary(): Unit = {
   this.fetchAndRenderDatasetInfo().onComplete {
     case Success(dsSummary) =>
-      root.innerHTML = "" // Clear the content of root directly
-      root.appendChild(dsSummary.render) // Append the new summary to root
+      val dsSummaryBody = root.querySelector(".dataset_summary_body")
+      dsSummaryBody.innerHTML = ""
+      dsSummaryBody.appendChild(dsSummary.render) 
 
     case Failure(exception) =>
       root.innerHTML = s"Error loading dataset summary: ${exception.getMessage}" // Update root directly
   }
   }
 
-  val root: dom.html.Div = div(`class` := "dataset_summary",s"").render
-
+  val root: dom.html.Div = div(`class` := "dataset_summary",
+                                div(`class` := "dataset_summary_header",
+                                div(`class` := "column_name_header", b(s"Column Name")),
+                                div(`class` := "statistics_header", b(s"Statistics"))
+                                ),
+                                div(`class` := "dataset_summary_body")
+                              ).render
+val headersHtml = 
 
   updateSummary()
 }
