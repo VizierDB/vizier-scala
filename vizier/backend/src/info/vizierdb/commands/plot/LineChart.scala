@@ -145,7 +145,7 @@ object LineChart extends Command
           // 'color': The color scale, mapping from series name -> color category
           VegaScale("color", VegaScaleType.Ordinal,
             range = Some(VegaRange.Category),
-            domain = Some(VegaDomain.Literal(yAxisLabels.map(JsString(_)))))
+            domain = Some(VegaDomain.Literal(series.names.map(JsString(_)))))
         ),
 
         // Define the chart axes (based on the 'x' and 'y' scales)

@@ -568,16 +568,23 @@ object PlotUtils {
               else Some(VegaValueReference.Field(s.x).scale("x")),
             y = Some(VegaValueReference.Field(yVal).scale("y")),
             stroke =
-              if (markType == VegaMarkType.Rect)
+              //if (markType != VegaMarkType.Rect)
                 Some(
                   VegaValueReference.Literal(JsString(s.name)).scale("color")
                 )
-              else
-                Some(VegaValueReference.Literal(JsString(yVal)).scale("color")),
+              //else
+              //  Some(VegaValueReference.Literal(JsString(yVal)).scale("color"))
+              ,
             fill =
               if (!fill) None
               else
-                Some(VegaValueReference.Literal(JsString(s.color))),
+                //if (markType != VegaMarkType.Rect)
+                Some(
+                  VegaValueReference.Literal(JsString(s.name)).scale("color")
+                )
+              //else
+              //  Some(VegaValueReference.Literal(JsString(yVal)).scale("color"))
+              ,
             tooltip =
               if (!tooltip) None
               else Some(VegaValueReference.Signal("datum")),
