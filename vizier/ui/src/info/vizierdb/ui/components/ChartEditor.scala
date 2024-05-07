@@ -99,7 +99,7 @@ class ChartEditor(
                                 case "sort" =>
                                     row.sort.set((element \ "value").as[JsValue])
                                 case "color" =>
-                                    Rx {row.color.selectedColor() = ((element \ "value").as[String])}
+                                    Rx {row.color.selectedColor() = ("1")}
                                 case _ =>
                                     logger.error("Error: Unknown argument")
                         }
@@ -164,15 +164,31 @@ class ChartEditor(
     chartType match{
         case "scatterplot" => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
-                Json.toJson(Seq(
-                row.dataset.toArgument,
-                row.xColumn.toArgument,
-                row.yColumns.now.head.yColumn.toArgument,
-                row.filter.toArgument,
-                row.label.toArgument,
-                CommandArgument("color", row.color.value),
-                row.regression.toArgument
-                ))})),
+                row.category.category.selectedColumn.now match {
+                    case Some(categoryValueId) =>
+                        Json.toJson(Seq(
+                        row.dataset.toArgument,
+                        row.xColumn.toArgument,
+                        row.yColumns.now.head.yColumn.toArgument,
+                        row.category.category.toArgument,
+                        row.filter.toArgument,
+                        row.label.toArgument,
+                        CommandArgument("color", row.color.value),
+                        row.regression.toArgument
+                        ))
+                    case None =>
+                        Json.toJson(Seq(
+                        row.dataset.toArgument,
+                        row.xColumn.toArgument,
+                        row.yColumns.now.head.yColumn.toArgument,
+                        row.filter.toArgument,
+                        row.label.toArgument,
+                        CommandArgument("color", row.color.value),
+                        row.regression.toArgument
+                        ))
+                
+                }
+                })),
                 datasetRows.now.head.artifact.toArgument,
                 datasetRows.now.head.xAxisTitle.toArgument,
                 datasetRows.now.head.yAxisTitle.toArgument,
@@ -192,7 +208,43 @@ class ChartEditor(
                 datasetRows.now.head.chartTitle.toArgument,
                 datasetRows.now.head.chartLegend.toArgument
                 )
-        case _ => 
+        case "line-chart" => 
+            Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
+                row.category.category.selectedColumn.now match {
+                    case Some(categoryValueId) =>
+                        Json.toJson(Seq(
+                        row.dataset.toArgument,
+                        row.xColumn.toArgument,
+                        CommandArgument("yList", JsArray(row.yColumns.now.map { yCol =>
+                            Json.toJson(Seq(yCol.yColumn.toArgument))}
+                        )),
+                        row.category.category.toArgument,
+                        row.filter.toArgument,
+                        row.label.toArgument,
+                        CommandArgument("color", row.color.value),
+                        ))
+                    case None =>
+                        Json.toJson(Seq(
+                        row.dataset.toArgument,
+                        row.xColumn.toArgument,
+                        CommandArgument("yList", JsArray(row.yColumns.now.map { yCol =>
+                            Json.toJson(Seq(yCol.yColumn.toArgument))}
+                        )),
+                        row.filter.toArgument,
+                        row.label.toArgument,
+                        CommandArgument("color", row.color.value),
+                        ))
+                }
+            
+            })),
+                datasetRows.now.head.artifact.toArgument,
+                datasetRows.now.head.xAxisTitle.toArgument,
+                datasetRows.now.head.yAxisTitle.toArgument,
+                datasetRows.now.head.chartTitle.toArgument,
+                datasetRows.now.head.chartLegend.toArgument,
+                datasetRows.now.head.sort.toArgument
+                )
+        case "barchart" => 
             Seq(CommandArgument("series",JsArray(datasetRows.now.map { row =>
                 Json.toJson(Seq(
                 row.dataset.toArgument,
