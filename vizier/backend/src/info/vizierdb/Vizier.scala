@@ -140,7 +140,7 @@ object Vizier
     }
   }
 
-  def launchUIIfPossible()
+  def launchUIIfPossible(): Unit =
   {
     val command: Seq[String] = 
       System.getProperty("os.name").toLowerCase match {
@@ -156,6 +156,14 @@ object Vizier
     } catch {
       case e: Throwable => 
         println(s"   ...opening your browser didn't work (${e.getMessage()}")
+    }
+  }
+
+  def setWorkingDirectory(): Unit =
+  {
+    if(config.workingDirectory.isDefined){
+      val path = new File(config.workingDirectory()).getAbsolutePath()
+      System.setProperty("user.dir", path)
     }
   }
 
@@ -183,9 +191,7 @@ object Vizier
     Schema.initialize()
     // initORMLogging("warn")
     bringDatabaseToSaneState()
-    if(config.workingDirectory.isDefined){
-      System.setProperty("user.dir", new File(config.workingDirectory()).getAbsolutePath())
-    }
+    setWorkingDirectory()
 
     // Set up Mimir
     println("Starting Spark...")
@@ -322,6 +328,7 @@ object Vizier
         }
         BrowseFilesystem.mountPublishedArtifacts()
 
+        println(s"... working directory < ${System.getProperty("user.dir")} >")
         println(s"... server running at < ${urls.ui} >")
 
         // Don't auto-launch the UI if we're asked not to

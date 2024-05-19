@@ -18,8 +18,8 @@ package info.vizierdb.ui.components.snippets
 object PythonSnippets extends SnippetsBase
 {
   AddGroup("desktop", "Access and Output")(
-    "Get Artifact"            -> """# Get read-only pandas dataframe object for dataset with given name.
-                                   |ds = vizierdb['ARTIFACT_NAME'""".stripMargin,
+    "Get Artifact"            -> """# Get the artifact with the given name.
+                                   |ds = vizierdb['ARTIFACT_NAME']""".stripMargin,
 
     "Get Dataset Dataframe"   -> """# Get read-only pandas dataframe object for dataset with given name.');
                                    |df = vizierdb.get_data_frame('UNIQUE_DS_NAME')""".stripMargin,
