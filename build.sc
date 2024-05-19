@@ -75,6 +75,9 @@ object vizier extends ScalaModule with PublishModule {
 
     f"$VERSION (revision $gitVersion-$gitRevision; built ${date.get(Calendar.YEAR)}%04d-${date.get(Calendar.MONTH)}%02d-${date.get(Calendar.DAY_OF_MONTH)}%02d)"
   }
+  def version = T {
+    VERSION
+  }
 
   def internalJavaVersion = T {
     try {
