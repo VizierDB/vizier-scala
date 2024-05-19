@@ -60,6 +60,12 @@ object SparkSchema {
                 field.name -> writes(field.dataType)
               }.toMap
             )
+          case MapType(keyType, valueType, containsNulls) =>
+            JsString("map:" + Json.obj(
+              "key" -> writes(keyType),
+              "value" -> writes(valueType),
+              "nulls" -> containsNulls
+            ).toString)
           case _ => JsString(encodeType(d))
         }
     }
@@ -81,13 +87,22 @@ object SparkSchema {
         Json.parse(t).as[DataType]
       case _ if t.startsWith("array:") => 
         ArrayType(decodeType(t.substring(6)))
+      case _ if t.startsWith("map:") => 
+        {
+          val map = Json.parse(t.substring(6))
+          MapType(
+            (map \ "key").as[DataType],
+            (map \ "value").as[DataType],
+            (map \ "nulls").as[Boolean]
+          )
+        }
       case _ => 
         DataType.fromJson("\""+t+"\"")
     }
 
   def encodeType(t: DataType): String =
     t match {
-      case (_:ArrayType) | (_:StructType) => Json.toJson(t).toString
+      case (_:ArrayType) | (_:StructType) | (_:MapType) => Json.toJson(t).toString
       case DoubleType => "real"
       case IntegerType => "int"
       case BinaryType => "binary"
@@ -98,7 +113,7 @@ object SparkSchema {
       case _ if t.isInstanceOf[RasterUDT] => "raster"
       case _ if t.isInstanceOf[VectorUDT] => "vector"
       case _ if t.isInstanceOf[ImageUDT] => "image/png"
-      case _ => t.typeName
+      case _ => assert(t.typeName != "map"); t.typeName
     }
 
 
