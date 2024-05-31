@@ -48,7 +48,7 @@ case class MaterializeConstructor(
     for((option, value) <- options){
       parser = parser.option(option, value)
     }
-    val materialized = Filestore.getRelative(projectId = projectId, artifactId = artifactId)
+    val materialized = Filestore.getAbsolute(projectId = projectId, artifactId = artifactId)
     var df = parser.load(materialized.toString)
 
     // println(absoluteUrl)

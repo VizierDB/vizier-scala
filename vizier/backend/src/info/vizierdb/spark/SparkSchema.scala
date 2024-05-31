@@ -61,6 +61,12 @@ object SparkSchema {
                 field.name -> writes(field.dataType)
               }.toMap
             )
+          case MapType(keyType, valueType, containsNulls) =>
+            JsString("map:" + Json.obj(
+              "key" -> writes(keyType),
+              "value" -> writes(valueType),
+              "nulls" -> containsNulls
+            ).toString)
           case _ => JsString(encodeType(d))
         }
     }
@@ -75,6 +81,7 @@ object SparkSchema {
   }
 
   def decodeType(t: String): DataType =
+  {
     t match  {
       case "varchar" => StringType
       case "int" => IntegerType
@@ -90,13 +97,25 @@ object SparkSchema {
         ArrayType(decodeType(t.substring(6)))
       case _ if t.startsWith("udt:") =>
         loadUserDefinedType(t.substring(4))
+      case _ if t.startsWith("map:") => 
+        {
+          val map = Json.parse(t.substring(4))
+          MapType(
+            (map \ "key").as[DataType],
+            (map \ "value").as[DataType],
+            (map \ "nulls").as[Boolean]
+          )
+        }
       case _ => 
         DataType.fromJson("\""+t+"\"")
     }
+  }
 
   def encodeType(t: DataType): String =
+  {
     t match {
       case (_:ArrayType) | (_:StructType) => Json.toJson(t).toString
+      case (_:MapType) => Json.toJson(t).as[String]
       case DoubleType => "real"
       case IntegerType => "int"
       case BinaryType => "binary"
@@ -118,7 +137,7 @@ object SparkSchema {
         }
       case _ => t.typeName
     }
-
+  }
 
   implicit val fieldFormat = Format[StructField](
     new Reads[StructField] { 

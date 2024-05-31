@@ -49,7 +49,7 @@ object CheckpointDataset extends Command
 
     context.message("Checkpointing data...")
 
-    val artifact = context.outputDatasetWithFile(name, { artifact => 
+    val artifact = context.outputDatasetWithFile(datasetName, { artifact => 
       Staging.stage( 
         input = df, 
         format = MaterializeConstructor.DEFAULT_FORMAT,

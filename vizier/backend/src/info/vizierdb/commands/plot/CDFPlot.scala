@@ -83,8 +83,8 @@ object CDFPlot extends Command
           PlotUtils.makeSeries(
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
-            xIndex      = series.get[Int](PARAM_X), // this is just a placeholder; CDF below replaces it
-            yIndex      = series.get[Int](PARAM_X),
+            xIndex      = series.get[Int](PARAM_X),
+            yIndex      = series.get[Int](PARAM_X), // this is just a placeholder; CDF below replaces it
             name        = series.getOpt[String](PARAM_LABEL),
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))
