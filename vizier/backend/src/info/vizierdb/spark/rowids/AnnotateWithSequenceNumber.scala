@@ -62,17 +62,18 @@ object AnnotateWithSequenceNumber
     }
 
     val annotatedPlan =
-      apply(
-        df.queryExecution.analyzed,
-        df.queryExecution.sparkSession,
+      AttachDistributedSequence(
         AttributeReference(attribute, LongType, false)(),
-        offset
+        df.queryExecution.logical
       )
-    new DataFrame(
-      df.queryExecution.sparkSession,
-      annotatedPlan,
-      RowEncoder(StructType(df.schema.fields :+ FIELD_TYPE(attribute)))
-    )
+    val ret = 
+      new DataFrame(
+        df.queryExecution.sparkSession,
+         annotatedPlan,
+        RowEncoder(StructType(annotatedPlan.output.map { a => StructField(a.name, a.dataType) }))
+      )
+    if(offset == 0){ return ret }
+    else { ??? }
   }
 
   def apply(
