@@ -1,4 +1,6 @@
-ARTIFACT=info.vizierdb:vizier_2.12:2.1.0-b3
+cd `dirname $0`/..
+VERSION=$(mill show vizier.version | jq -r)
+ARTIFACT=info.vizierdb:vizier_2.12:${VERSION}
 
 coursier bootstrap $ARTIFACT\
   -r https://s01.oss.sonatype.org/content/groups/public/ \

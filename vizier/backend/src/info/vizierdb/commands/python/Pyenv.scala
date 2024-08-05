@@ -18,6 +18,7 @@ import info.vizierdb.Vizier
 import java.io.File
 import scala.sys.process._
 import info.vizierdb.VizierException
+import java.io.IOException
 
 object Pyenv
 {
@@ -27,6 +28,7 @@ object Pyenv
       return true
     } catch {
       case _:RuntimeException => return false
+      case _:IOException => return false
     }
 
   def apply(command: String*) =
@@ -42,7 +44,11 @@ object Pyenv
 
   def versions: Seq[String] =
   {
-    apply("install", "--list").!!.split("\n").drop(1).map { _.trim() }
+    try {
+      apply("install", "--list").!!.split("\n").drop(1).map { _.trim() }
+    } catch {
+      case _:IOException => Seq.empty
+    }
   } 
 
   def installed: Seq[String] =

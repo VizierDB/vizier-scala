@@ -114,8 +114,7 @@ object SparkSchema {
   def encodeType(t: DataType): String =
   {
     t match {
-      case (_:ArrayType) | (_:StructType) => Json.toJson(t).toString
-      case (_:MapType) => Json.toJson(t).as[String]
+      case (_:ArrayType) | (_:StructType) | (_:MapType) => Json.toJson(t).toString
       case DoubleType => "real"
       case IntegerType => "int"
       case BinaryType => "binary"
