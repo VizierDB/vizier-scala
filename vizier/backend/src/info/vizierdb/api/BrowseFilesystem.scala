@@ -73,6 +73,7 @@ object BrowseFilesystem
                   hasChildren = element.isDirectory
                 )
              }
+             .sortBy { _.label }
     }
   }
 

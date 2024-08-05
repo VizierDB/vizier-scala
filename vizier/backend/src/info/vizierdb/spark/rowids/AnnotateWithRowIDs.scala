@@ -442,6 +442,10 @@ class AnnotateWithRowIds(
         passthrough(plan)
 
       /*********************************************************/
+      case AttachDistributedSequence(_, child: LogicalPlan) => 
+        passthrough(plan)
+
+      /*********************************************************/
       case leaf:LeafNode => 
       {
         // Leaf-node fallback if nothing else works:  Add an identifier
