@@ -118,10 +118,13 @@ class LoadDatasetEditor(
       new StringParameter("delimiter", "Field Delimiter: ", true, false, ","),
     Set(DatasetFormat.CSV) ->
       new BooleanParameter("loadInferTypes", "Guess Schema: ", true, false, true),
+    Set(DatasetFormat.JSON) ->
+      new BooleanParameter("multiline", "Records Span Multiple Lines: ", true, false, true)
   )
   val directToSparkOptionalParameters = Set(
     "header",
-    "delimiter"
+    "delimiter",
+    "multiline",
   )
   val optionalParameterByKey = 
     optionalParameters.map { param => param._2.id -> param._2 }

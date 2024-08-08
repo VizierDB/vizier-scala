@@ -66,6 +66,12 @@ object LandingPage
         }
     }
 
+    def createProjectButtonClick(input: dom.html.Input): Unit =
+    {
+      createProject(input.value)
+      projectNameField() = None
+    }
+
     val root =
       projects.map {
         case Some(serialized.ProjectList(projects)) => 
@@ -120,7 +126,19 @@ object LandingPage
                       `class` := "create_project",
                       onclick := { (_:dom.MouseEvent) => 
                         projectNameField() = 
-                          Some(input(`type` := "text", placeholder := "Project Name").render)
+                          Some(input(
+                            `type` := "text", 
+                            placeholder := "Project Name",
+                            // Submit on enter key
+                            onkeyup := { evt:dom.KeyboardEvent => 
+                              if(evt.keyCode == 13){ 
+                                evt.preventDefault()
+                                createProjectButtonClick(
+                                  evt.target.asInstanceOf[dom.html.Input]
+                                )
+                              }
+                            },
+                          ).render)
                         projectNameField.now.get.focus()
                       },
                       "+"
@@ -135,8 +153,7 @@ object LandingPage
                     f,
                     button(
                       onclick := { (_:dom.MouseEvent) =>
-                        createProject(f.value)
-                        projectNameField() = None
+                        createProjectButtonClick(f)
                       },
                       "Create"
                     )

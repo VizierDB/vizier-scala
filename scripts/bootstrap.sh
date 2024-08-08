@@ -1,4 +1,12 @@
-ARTIFACT=info.vizierdb:vizier_2.12:2.1.0-b3
+MAVEN_BASE=info.vizierdb:vizier_2.12
+VERSION=$(
+  mill show vizier.versionString 2> /dev/null | 
+    jq -r |
+    sed 's/ .*//'
+)
+ARTIFACT=$MAVEN_BASE:$VERSION
+
+echo $ARTIFACT
 
 coursier bootstrap $ARTIFACT\
   -r https://s01.oss.sonatype.org/content/groups/public/ \
