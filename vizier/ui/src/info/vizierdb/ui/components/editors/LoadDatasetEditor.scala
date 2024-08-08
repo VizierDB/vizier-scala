@@ -43,7 +43,6 @@ class LoadDatasetEditor(
   extends ModuleEditor
   with Logging
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val urlField = input(`type` := "text", 
                        name := "url",

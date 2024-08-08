@@ -56,7 +56,7 @@ class Dataset(
 {
   val ROW_HEIGHT = 30
 
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
 
   val cache = new RowCache[DatasetRow] (
                     fetchRowsWithAPI, 

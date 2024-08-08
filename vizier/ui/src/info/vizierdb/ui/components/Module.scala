@@ -39,7 +39,7 @@ class Module(val subscription: ModuleSubscription)
   with Logging
   with ModuleEditorDelegate
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
 
   /**
    * The working identifier of the module, the real one or the tentative

@@ -33,7 +33,7 @@ class History(
   branches: Rx[Seq[(String, Identifier)]]
 )(implicit owner: Ctx.Owner)
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
 
   def this(project: Project)(implicit owner: Ctx.Owner) =
   {

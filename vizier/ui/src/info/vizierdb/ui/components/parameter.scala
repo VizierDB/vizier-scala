@@ -1104,7 +1104,7 @@ class EnvironmentParameter(
   val hidden: Boolean
 )(implicit owner: Ctx.Owner) extends Parameter
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   
   def this(parameter: serialized.CodeParameterDescription)(implicit owner: Ctx.Owner)
   {

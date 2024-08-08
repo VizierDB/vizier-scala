@@ -19,7 +19,6 @@ import scalatags.JsDom.all._
 import rx._
 import scala.scalajs.js
 import info.vizierdb.serialized
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.util.Logging
 import info.vizierdb.serializers._
 import info.vizierdb.api.websocket
@@ -46,6 +45,8 @@ trait ModuleEditor
   extends Object
   with Logging
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
+
   def saveState()
   {
     val response = 

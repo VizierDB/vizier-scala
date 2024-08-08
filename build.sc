@@ -25,7 +25,7 @@ object vizier extends ScalaModule with PublishModule {
                             "log4j" -> "*",
                           )
 
-  def scalaVersion = "2.12.15"
+  def scalaVersion = "2.12.19"
 
   def repositoriesTask = T.task { super.repositoriesTask() ++ Seq(
     MavenRepository("https://maven.mimirdb.org/"),
@@ -46,6 +46,9 @@ object vizier extends ScalaModule with PublishModule {
     super.sources() ++ Seq[PathRef](
       PathRef(millSourcePath / "backend" / "src"),
       PathRef(millSourcePath / "shared" / "src"),
+      // Until we have a proper deployment mechanism, keep plugins as
+      // part of the Vizier source tree
+      PathRef(millSourcePath / "plugin" / "sedona" / "src"),
     )
   }
   def resources = T.sources {
@@ -231,12 +234,12 @@ object vizier extends ScalaModule with PublishModule {
     licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("vizierdb", "vizier-scala"),
     developers = Seq(
-      Developer("okennedy", "Oliver Kennedy", "https://odin.cse.buffalo.edu"),
-      Developer("mrb24", "Michael Brachmann", "https://github.com/mrb24"),
-      Developer("bglavic", "Boris Glavic", "http://www.cs.iit.edu/~dbgroup/members/bglavic.html"),
-      Developer("hmueller", "Heiko Mueller", "https://cims.nyu.edu/~hmueller/"),
-      Developer("scastelo", "Sonia Castelo", "https://github.com/soniacq"),
-      Developer("maqazi", "Munaf Arshad Qazi", ""),
+      Developer("okennedy", "Oliver Kennedy",    "https://odin.cse.buffalo.edu"),
+      Developer("mrb24",    "Michael Brachmann", "https://github.com/mrb24"),
+      Developer("bglavic",  "Boris Glavic",      "http://www.cs.iit.edu/~dbgroup/members/bglavic.html"),
+      Developer("hmueller", "Heiko Mueller",     "https://cims.nyu.edu/~hmueller/"),
+      Developer("scastelo", "Sonia Castelo",     "https://github.com/soniacq"),
+      Developer("maqazi",   "Munaf Arshad Qazi", ""),
     )
   )
 
@@ -248,7 +251,7 @@ object vizier extends ScalaModule with PublishModule {
   object ui extends ScalaJSModule { 
 
     def scalaVersion = vizier.scalaVersion
-    def scalaJSVersion = "1.7.1"
+    def scalaJSVersion = "1.16.0"
 
 /*************************************************
  *** Frontend Dependencies

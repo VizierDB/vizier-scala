@@ -119,14 +119,14 @@ object TestFixtures
 
   val defaultPackages: Seq[serialized.PackageDescription] = 
     Seq(
-      BuildA.Package("debug")(
-        BuildA.Command("add")(
-          SimpleParameterDescription("output", "Output", "string", false, false, None, _, None)
-        ),
-        BuildA.Command("drop")(
-          SimpleParameterDescription("dataset", "Dataset", "string", false, false, None, _, None)
-        )
-      )
+      // BuildA.Package("debug")(
+      //   BuildA.Command("add")(
+      //     SimpleParameterDescription("output", "Output", "string", false, false, None, _, None)
+      //   ),
+      //   BuildA.Command("drop")(
+      //     SimpleParameterDescription("dataset", "Dataset", "string", false, false, None, _, None)
+      //   )
+      // )
     )
 
   def command(packageId: String, commandId: String) =

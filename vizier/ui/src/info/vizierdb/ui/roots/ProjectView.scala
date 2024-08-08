@@ -23,13 +23,13 @@ import scala.util.{ Try, Success, Failure }
 import info.vizierdb.ui.components.Project
 import info.vizierdb.util.Logging
 import info.vizierdb.ui.widgets.Spinner
-import scala.concurrent.ExecutionContext.Implicits.global
 import rx._
 import info.vizierdb.ui.rxExtras.OnMount
 
 object ProjectView
   extends Logging
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   def apply(arguments: Map[String, String])(implicit owner: Ctx.Owner): Unit =
   {
     val projectId = 

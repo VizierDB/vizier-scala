@@ -19,7 +19,6 @@ import scala.scalajs.js.annotation._
 import scalatags.JsDom.all._
 import org.scalajs.dom
 import rx._
-import scala.concurrent.ExecutionContext.Implicits.global
 import java.net.URLDecoder
 import play.api.libs.json._
 
@@ -72,16 +71,19 @@ object Vizier
   }
 
   lazy val arguments: Map[String, String] = 
-    dom.window.location.search
-       .substring(1)
-       .split("&")
-       .map { _.split("=").toSeq }
-       .collect { 
-          case Seq(k, v) => 
-            URLDecoder.decode(k, "UTF-8") ->
-              URLDecoder.decode(v, "UTF-8") 
-        }
-       .toMap
+    if(dom.window.location.search.isEmpty()){ Map.empty }
+    else {
+      dom.window.location.search
+         .substring(1)
+         .split("&")
+         .map { _.split("=").toSeq }
+         .collect { 
+            case Seq(k, v) => 
+              URLDecoder.decode(k, "UTF-8") ->
+                URLDecoder.decode(v, "UTF-8") 
+          }
+         .toMap
+    }
 
   val project = Var[Option[Project]](None)
 

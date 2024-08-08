@@ -22,7 +22,6 @@ import info.vizierdb.types._
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.ui.components.Module
 import info.vizierdb.ui.components.TentativeEdits
 import info.vizierdb.ui.components.Workflow
@@ -37,6 +36,8 @@ class ModuleSubscription(
   extends Object
   with Logging
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
+
   var id: Identifier = initial.moduleId
   val state = Var(initial.statev2)
   val commandId = initial.command.commandId

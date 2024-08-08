@@ -18,7 +18,6 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import rx._
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.serialized
 import scala.concurrent.{ Future, Promise }
@@ -39,6 +38,7 @@ class TentativeModule(
   with ModuleEditorDelegate
   with ScrollIntoView.CanScroll
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   var defaultModule: Option[(String, String)] = None
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)

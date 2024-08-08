@@ -54,6 +54,7 @@ import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.api.akka.VizierServer
 import info.vizierdb.catalog.Metadata
 import info.vizierdb.viztrails.Scheduler
+import info.vizierdb.plugin.sedona.VizierSedona
 
 object Vizier
   extends LazyLogging
@@ -63,6 +64,9 @@ object Vizier
   var urls: VizierURLs = null
   var mainClassLoader: ClassLoader = 
       Thread.currentThread().getContextClassLoader()
+  val internalPlugins = Seq[Plugin](
+    VizierSedona.Plugin
+  )
 
   def initSQLite(db: String = "Vizier.db") = 
   {
@@ -171,6 +175,16 @@ object Vizier
     }
   }
 
+  def loadInternalPlugins(): Unit =
+  {
+    val classloader = this.getClass().getClassLoader()
+    for(p <- internalPlugins){
+      println(s"  ...loading builtin plugin ${p.name}")
+      Plugin.load(classloader, p)
+      println(s"    ...loaded ${p.name}")
+    }
+  }
+
   def setWorkingDirectory(): Unit =
   {
     if(config.workingDirectory.isDefined){
@@ -222,6 +236,7 @@ object Vizier
     // Set up plugins
     if(!config.plugins.isEmpty){
       println("Loading plugins...")
+      loadInternalPlugins()
       loadPlugins(config.plugins)
     }
 

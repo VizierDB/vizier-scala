@@ -22,7 +22,6 @@ import scala.concurrent.{ Promise, Future }
 import info.vizierdb.serialized
 import info.vizierdb.ui.network.{ API, BranchSubscription }
 import info.vizierdb.ui.rxExtras.implicits._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
 import info.vizierdb.types.Identifier
@@ -36,6 +35,7 @@ class Project(val projectId: Identifier, autosubscribe: Boolean = true)
   extends Object
   with Logging
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   val properties = Var[Map[String, JsValue]](Map.empty)
   val projectName = Rx { 
     properties().get("name")

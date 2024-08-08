@@ -40,7 +40,7 @@ class ArtifactInspector(
   with NoWorkflowOutputs
   with ScrollIntoView.CanScroll
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   val selected = Var[Either[(String, ArtifactDescription), String]](Right("Select an artifact..."))
 
   var nowShowing:Option[Identifier] = None

@@ -24,7 +24,6 @@ import scala.concurrent.{ Promise, Future }
 import info.vizierdb.ui.rxExtras.RxBufferVar
 import info.vizierdb.types._
 import scala.scalajs.js.timers._
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized
 import info.vizierdb.api.websocket
@@ -42,6 +41,8 @@ class BranchSubscription(
   extends Object
   with Logging
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
+
   var socket = getSocket() 
   var keepaliveTimer: SetIntervalHandle = null
 

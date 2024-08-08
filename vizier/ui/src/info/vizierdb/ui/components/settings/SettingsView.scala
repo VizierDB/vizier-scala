@@ -26,7 +26,7 @@ import scala.util.Success
 
 class SettingsView(initialTab: Option[String] = None)(implicit owner: Ctx.Owner)
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   
   val tabs = Seq[SettingsTab](
     new GeneralSettings(this),

@@ -88,9 +88,16 @@ object Plugin
       !loaded.contains(plugin.name),
       s"Plugin ${plugin.name} is already loaded."
     )
-
-    loaded.put(plugin.name, plugin)
     jars.append(jar.toURI.toURL)
+
+    load(loader, plugin)
+    return plugin
+  }
+
+  def load(loader: ClassLoader, plugin: Plugin)
+  {
+    loaded.put(plugin.name, plugin)
+
 
     val clazz = Class.forName(plugin.plugin_class, true, loader)
     val singleton = clazz.getDeclaredField("MODULE$").get()
@@ -99,8 +106,6 @@ object Plugin
     ClassLoaderUtils.withContextClassLoader(loader) {
       initMethod.invoke(singleton, Vizier.sparkSession)
     }
-
-    return plugin
   }
 
   def loadedJars = jars.toSeq

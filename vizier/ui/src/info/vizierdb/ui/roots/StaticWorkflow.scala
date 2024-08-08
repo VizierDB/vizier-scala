@@ -16,7 +16,6 @@ package info.vizierdb.ui.roots
 
 import rx._
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.ui.Vizier
 import org.scalajs.dom.document
 import org.scalajs.dom
@@ -29,6 +28,7 @@ import info.vizierdb.ui.components
 
 object StaticWorkflow
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   def apply(arguments: Map[String, String])(implicit owner: Ctx.Owner): Unit =
   {
     val projectId = arguments.get("project").get.toLong

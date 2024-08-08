@@ -24,10 +24,10 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.ui.components.DisplayArtifact
 import scala.util.{ Try, Success, Failure }
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object ArtifactView
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   def apply(arguments: Map[String, String])(implicit owner: Ctx.Owner): Unit =
   {
     val projectId = arguments.get("project").get.toLong

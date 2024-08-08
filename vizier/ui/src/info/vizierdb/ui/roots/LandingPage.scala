@@ -25,7 +25,6 @@ import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
 import info.vizierdb.ui.Vizier
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.nativeTypes
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.widgets.FontAwesome
@@ -34,6 +33,7 @@ import info.vizierdb.ui.widgets.FontAwesome
 object LandingPage
   extends Logging
 {
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
   class ProjectView()(implicit owner: Ctx.Owner)
   {
     val projects = Var[Option[serialized.ProjectList]](None)
@@ -42,11 +42,14 @@ object LandingPage
     
     def loadProjectList(): Unit =
     {
+      println("A");
       Vizier.api.projectList()
         .onComplete {
           case Success(result) => 
+            println("B");
             projects() = Some(result)
           case Failure(ex) =>
+            println("C");
             Vizier.error(ex.toString())
         }
     }

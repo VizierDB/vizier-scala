@@ -26,7 +26,7 @@ import scala.util.Success
 
 class APIKeySettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends SettingsTab
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
 
   val title = "API Keys"
 

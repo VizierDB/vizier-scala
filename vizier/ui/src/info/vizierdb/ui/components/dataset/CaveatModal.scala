@@ -34,7 +34,7 @@ case class CaveatModal(
 ) 
 {
   implicit val ctx = Vizier.ctx
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
 
   val caveatsOrError = Var[Option[Either[Seq[Caveat],String]]](None)
 

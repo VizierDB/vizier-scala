@@ -129,6 +129,7 @@ case class Route(
 
 def readRoutes(path: os.Path): Seq[Route] = 
   os.read(path).split("\n")
+    .toSeq
     .map { description => 
       val components = description.split("\\s+")
       val pathAndArguments = components(0).split("\\?")

@@ -26,7 +26,7 @@ import info.vizierdb.ui.Vizier
 // https://getbootstrap.com/docs/4.3/components/spinners/
 object Spinner
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
 
   def apply(size: Int = 15): dom.Node =
     span(

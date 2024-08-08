@@ -26,7 +26,7 @@ import info.vizierdb.ui.widgets.SystemNotification
 
 class GeneralSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends SettingsTab
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
 
   val title = "General"
 

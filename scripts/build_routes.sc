@@ -310,10 +310,10 @@ def renderWebsocketRouteHandler(route: Route): (String, String) =
        |import info.vizierdb.serializers._
        |import scala.concurrent.Future
        |import info.vizierdb.spark.caveats.DataContainer
-       |import scala.concurrent.ExecutionContext.Implicits.global
        |
        |abstract class BranchWatcherAPIProxy
        |{
+       |  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
        |  def sendRequest(leafPath: Seq[String], args: Map[String, JsValue]): Future[JsValue]
        |
        |${WEBSOCKET_ROUTES.map { renderWebsocketRouteHandler(_)._2 }
@@ -431,7 +431,6 @@ def websocketAPICall(route: Route): String =
        |
        |import info.vizierdb.types._
        |import scala.concurrent.Future
-       |import scala.concurrent.ExecutionContext.Implicits.global
        |
        |import info.vizierdb.serialized
        |import info.vizierdb.ui.components.Parameter
@@ -445,6 +444,7 @@ def websocketAPICall(route: Route): String =
        |  with Logging
        |  with APIExtras
        |{
+       |  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
        |
        |  def makeUrl(path: String, query: (String, Option[String])*): String = 
        |    baseUrl + path + (

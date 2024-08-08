@@ -26,7 +26,6 @@ import scala.util.Success
 import scala.util.Failure
 import info.vizierdb.util.Logging
 import info.vizierdb.ui.components.dataset.Dataset
-import scala.concurrent.ExecutionContext
 import info.vizierdb.types._
 import info.vizierdb.serialized.PackageCommand
 import info.vizierdb.ui.components.ModuleEditorDelegate
@@ -47,7 +46,7 @@ class SpreadsheetModuleSummary(
   with Logging
 {
 
-  implicit val ec: ExecutionContext = ExecutionContext.global
+  implicit val ec: scala.concurrent.ExecutionContext = scala.scalajs.concurrent.JSExecutionContext.queue
 
   val inputName: Rx[Option[String]] = 
     module.subscription
