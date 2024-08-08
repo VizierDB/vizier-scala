@@ -17,13 +17,14 @@ package info.vizierdb.spark
 import play.api.libs.json._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
-import org.apache.spark.sql.sedona_sql.UDT.RasterUDT
 import org.apache.spark.sql.types.UDTRegistration
 import info.vizierdb.spark.udt.ImageUDT
 import org.apache.spark.mllib.linalg.VectorUDT
 import info.vizierdb.util.StringUtils
 import info.vizierdb.Vizier
+import scala.collection.mutable
+import info.vizierdb.Plugin.PluginUDTByName
+import info.vizierdb.Plugin.PluginUDTByType
 
 object SparkSchema {
   def apply(df: DataFrame): Seq[StructField] =
@@ -86,8 +87,6 @@ object SparkSchema {
       case "varchar" => StringType
       case "int" => IntegerType
       case "real" => DoubleType
-      case "geometry" => GeometryUDT
-      case "raster" => RasterUDT
       case "vector" => vectorSingleton
       case "binary" => BinaryType
       case "image/png" => ImageUDT
@@ -106,6 +105,7 @@ object SparkSchema {
             (map \ "nulls").as[Boolean]
           )
         }
+      case PluginUDTByName(p) => p.dataType
       case _ => 
         DataType.fromJson("\""+t+"\"")
     }
@@ -121,11 +121,10 @@ object SparkSchema {
         // Something changed in a recent version of spark/scala and now
         // any subclass of UserDefinedType seems to match any other
         // subclass of the same.  Need to use an explicit isInstanceOf
-      case _ if t.isInstanceOf[GeometryUDT] => "geometry"
-      case _ if t.isInstanceOf[RasterUDT] => "raster"
       case _ if t.isInstanceOf[VectorUDT] => "vector"
       case _ if t.isInstanceOf[ImageUDT] => "image/png"
-      case _ if t.isInstanceOf[UserDefinedType[_]] => 
+      case PluginUDTByType(p) => p.shortName
+      case udt:UserDefinedType[_] => 
         {
           // TODO: We need cleaner UDT handling.  Convention in most UDT-based systems is to 
           // adopt a UDT object with the same name as the actual UDT.  Drop down to the base

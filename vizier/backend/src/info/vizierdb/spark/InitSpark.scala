@@ -28,7 +28,6 @@ import org.apache.spark.ml.linalg.{SparseVector, Vector, Vectors}
 import org.apache.spark.mllib.linalg.{Vector => OldVector}
 import info.vizierdb.Vizier
 import java.io.File
-import org.apache.sedona.spark.SedonaContext
 import org.apache.spark.sql.catalyst.FunctionIdentifier
 import com.typesafe.scalalogging.LazyLogging
 
@@ -113,26 +112,7 @@ object InitSpark
 
     spark.udf.register("vector_to_array", vectorToArrayUdf)
     spark.udf.register("array_to_vector", arrayToVectorUdf)
-    spark = SedonaContext.create(spark)
 
-    // Rejigger Sedona's AsPNG (if present) to dump out ImageUDT-typed data
-    {
-      val registry = 
-        sparkSession.sessionState
-                    .functionRegistry
-      val as_png = FunctionIdentifier("RS_AsPNG")
-      ( registry.lookupFunction(as_png),
-        registry.lookupFunctionBuilder(as_png)
-      ) match {
-        case (Some(info), Some(builder)) =>
-          registry.dropFunction(as_png)
-          registry.registerFunction(as_png, info, 
-            (args) => SedonaPNGWrapper(builder(args))
-          )
-        case (_,_) =>
-          logger.warn("Can not override Sedona PNG class; Sedona's RS_AsPNG's output will not display properly in spreadsheets")
-      }
-    }
     return spark
   }
 

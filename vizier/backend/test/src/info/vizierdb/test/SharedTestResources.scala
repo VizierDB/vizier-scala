@@ -50,6 +50,7 @@ object SharedTestResources
         // Normal initialization
         Vizier.initSQLite()
         Vizier.initSpark()
+        Vizier.loadInternalPlugins()
         Geocode.init(
           geocoders = Seq(
             TestCaseGeocoder("GOOGLE"),

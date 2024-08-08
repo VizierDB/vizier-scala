@@ -24,22 +24,13 @@ import java.sql.{ Date, Timestamp }
 import scala.util.matching.Regex
 import scala.collection.mutable.ArraySeq
 import org.apache.spark.sql.types.UDTRegistration
-import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
-import org.apache.spark.sql.sedona_sql.UDT.RasterUDT
-import org.locationtech.jts.geom.Geometry
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.Row
-import org.apache.sedona.core.formatMapper.FormatMapper
-import org.apache.sedona.common.enums.FileDataSplitter
-import org.apache.sedona.common.raster.RasterOutputs
-import org.apache.sedona.common.raster.RasterConstructors
-import org.apache.sedona.common.raster.{ Serde => SedonaRasterSerde }
 import org.geotools.coverage.grid.GridCoverage2D
 import java.awt.image.BufferedImage
 import java.nio.charset.StandardCharsets
 import org.apache.spark.sql.catalyst.util.ArrayData
-import org.apache.sedona.sql.utils.GeometrySerializer
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.types.{ UserDefinedType, BinaryType }
 import info.vizierdb.VizierException
@@ -48,6 +39,7 @@ import info.vizierdb.serialized.MLVector
 import info.vizierdb.serializers.mlvectorFormat
 import info.vizierdb.util.JsonUtils
 import org.apache.spark.sql.catalyst.expressions.UnsafeArrayData
+import info.vizierdb.Plugin.PluginUDTByType
 
 object SparkPrimitive
   extends Object
@@ -120,9 +112,6 @@ object SparkPrimitive
       case _ => throw new IllegalArgumentException(s"Invalid Timestamp: '$timestamp'")
     }
 
-  lazy val geometryFormatMapper = 
-    new FormatMapper(FileDataSplitter.WKT, false)
-
   def encodeStruct(k: Any, t: StructType): JsObject =
   {
     JsObject(
@@ -152,19 +141,10 @@ object SparkPrimitive
       case (_, null)                   => JsNull
       case (StringType, _)             => JsString(k.toString)
       case (BinaryType, _)             => JsString(base64Encode(k.asInstanceOf[Array[Byte]]))
-      case (ut:UserDefinedType[_], _)     => 
+      case (PluginUDTByType(p), _)     => p.encode(k)
+      case (ut:UserDefinedType[_], _)  => 
       {
-        // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
-        // so we need to do a manual comparison here.
-
-        if(t.isInstanceOf[GeometryUDT]){
-          k match {
-            case geom:Geometry => JsString(geom.toText)
-            case enc:ArrayData => JsString(GeometrySerializer.deserialize(enc.toByteArray()).toText)
-          }
-        } else if(t.isInstanceOf[RasterUDT]){
-          JsString(base64Encode(SedonaRasterSerde.serialize(k.asInstanceOf[GridCoverage2D])))
-        } else if(t.isInstanceOf[ImageUDT]){
+        if(t.isInstanceOf[ImageUDT]){
           JsString(base64Encode(ImageUDT.serialize(k.asInstanceOf[BufferedImage]).asInstanceOf[Array[Byte]]))
         } else if(t.getClass().getName() == "org.apache.spark.ml.linalg.VectorUDT"
                   || t.getClass().getName() == "org.apache.spark.mllib.linalg.VectorUDT") {
@@ -268,16 +248,10 @@ object SparkPrimitive
         case (_, DateType)                  => decodeDate(k.as[String])
         case (_, TimestampType)             => decodeTimestamp(k.as[String])
         case (_, BinaryType)                => base64Decode(k.as[String])
-        case (_, ut:UserDefinedType[_])        => 
+        case (_, PluginUDTByType(p))        => p.decode(k)
+        case (_, ut:UserDefinedType[_])     => 
         {
-          // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
-          // so we need to do a manual comparison here.
-
-          if(t.isInstanceOf[GeometryUDT]){
-            geometryFormatMapper.readGeometry(k.as[String]) // parse as WKT
-          } else if(t.isInstanceOf[RasterUDT]){
-            SedonaRasterSerde.deserialize(base64Decode(k.as[String]))
-          } else if(t.isInstanceOf[ImageUDT]){
+          if(t.isInstanceOf[ImageUDT]){
             ImageUDT.deserialize(base64Decode(k.as[String]))
           } else if(t.getClass().getName() == "org.apache.spark.ml.linalg.VectorUDT"
                     || t.getClass().getName() == "org.apache.spark.mllib.linalg.VectorUDT") {

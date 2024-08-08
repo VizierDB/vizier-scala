@@ -65,7 +65,7 @@ object Vizier
   var mainClassLoader: ClassLoader = 
       Thread.currentThread().getContextClassLoader()
   val internalPlugins = Seq[Plugin](
-    VizierSedona.Plugin
+    VizierSedona.plugin
   )
 
   def initSQLite(db: String = "Vizier.db") = 
@@ -234,9 +234,9 @@ object Vizier
     )
 
     // Set up plugins
+    loadInternalPlugins()
     if(!config.plugins.isEmpty){
       println("Loading plugins...")
-      loadInternalPlugins()
       loadPlugins(config.plugins)
     }
 

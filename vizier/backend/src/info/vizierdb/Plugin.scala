@@ -22,6 +22,7 @@ import java.io.FileNotFoundException
 import com.typesafe.scalalogging.LazyLogging
 import scala.collection.mutable
 import info.vizierdb.util.ClassLoaderUtils
+import org.apache.spark.sql.types.UserDefinedType
 
 case class Plugin(
   name: String,
@@ -37,9 +38,16 @@ object Plugin
   extends LazyLogging
 {
 
+  case class VizierUDT[T >: Null](
+    shortName: String, 
+    dataType: UserDefinedType[T], 
+    encode: Any => JsValue, 
+    decode: JsValue => Any
+  )
+
   val loaded = mutable.Map[String, Plugin]()
   val jars = mutable.Buffer[URL]()
-
+  private val udt = mutable.Map[String, VizierUDT[_ >: Null]]()
 
   implicit val pluginFormat: Format[Plugin] = Json.format
 
@@ -109,4 +117,29 @@ object Plugin
   }
 
   def loadedJars = jars.toSeq
+
+
+  def registerUDT(shortName: String, dataType: UserDefinedType[_ >: Null], encode: Any => JsValue, decode: JsValue => Any) = 
+  {
+    val spec = VizierUDT(shortName, dataType, encode, decode)
+    udt(shortName) = spec
+  }
+
+  object PluginUDTByType
+  {
+    def unapply(base: UserDefinedType[_]): Option[VizierUDT[_]] =
+    {
+      for(p <- udt.values){
+        if(p.dataType.equals(base)) { return Some(p) }
+      }
+      return None
+    }
+  }
+  object PluginUDTByName
+  {
+    def unapply(base: String): Option[VizierUDT[_]] =
+    {
+      udt.get(base)
+    }
+  }
 }
