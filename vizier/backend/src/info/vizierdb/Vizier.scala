@@ -100,34 +100,18 @@ object Vizier
     )
   }
 
+  def getProperty(p: String): Option[String] =
+    config.properties.get(p)
+          .orElse {
+            CatalogDB.withDBReadOnly { implicit s =>
+              Metadata.getOption(p)
+            }
+          }
+
   def initSpark() =
   {
     sparkSession = InitSpark.local
     InitSpark.initPlugins(sparkSession)
-
-    // MimirAPI.blobs = info.vizierdb.commands.python.SparkPythonUDFRelay
-    // MimirAPI.pythonUDF = info.vizierdb.commands.python.PythonProcess.udfBuilder
-
-    val geocoders = 
-      CatalogDB.withDBReadOnly { implicit s => 
-        Seq(
-          config.googleAPIKey.toOption
-                .orElse { Metadata.getOption("google-api-key") }
-                .map { k =>
-                  logger.debug("Google Services Will Be Available")
-                  new info.vizierdb.commands.mimir.geocoder.GoogleGeocoder(k) 
-                },
-          config.osmServer.toOption
-                .orElse { Metadata.getOption("osm-url") }
-                .map { k =>
-                  logger.debug("OSM Services Will Be Available")
-                  new info.vizierdb.commands.mimir.geocoder.OSMGeocoder(k) 
-                }
-        ).flatten
-      }
-    if(!geocoders.isEmpty){ 
-      info.vizierdb.commands.mimir.geocoder.Geocode.init(geocoders) 
-    }
   }
 
   def initORMLogging(logLevel: String = "trace")

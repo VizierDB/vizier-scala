@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.commands.mimir.geocoder
+package info.vizierdb.plugin.sedona.geocoder
 
 import java.net.URLEncoder
 import play.api.libs.json._

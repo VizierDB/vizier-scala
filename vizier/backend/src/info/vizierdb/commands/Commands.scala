@@ -154,7 +154,6 @@ object Commands
     "shape_watcher"  -> info.vizierdb.commands.mimir.ShapeWatcher,
     "comment"        -> info.vizierdb.commands.mimir.Comment,
     "pivot"          -> info.vizierdb.commands.mimir.Pivot,
-    "geotag"         -> info.vizierdb.commands.mimir.Geotag,
   )
 }
 

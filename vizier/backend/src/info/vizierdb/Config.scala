@@ -21,6 +21,7 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.catalog.Cell
 import scala.io.Source
 import java.net.URL
+import scala.collection.convert.ImplicitConversions._
 
 class Config(arguments: Seq[String]) 
   extends ScallopConf(arguments)
@@ -41,23 +42,16 @@ class Config(arguments: Seq[String])
            |Usage: vizier [OPTIONS]
            |    or vizier import [OPTIONS] export
            |""".stripMargin)
-  val defaults = Config.loadDefaults()
+
+  /// STOP: Defaults is meant to be used only within this file.  
+  /// You probably want to use `Vizier.getProperty` instead
+  private val defaults = Config.loadDefaults()
 
   val help = opt[Boolean]("help",
     descr = "Display this help message",
     default = Option(false)
   )
 
-  val googleAPIKey = opt[String]("google-api-key", 
-    descr = "Your Google API Key (for Geocoding)",
-    default = Option(defaults.getProperty("google-api-key")),
-    noshort = true
-  )
-  val osmServer = opt[String]("osm-server",
-    descr = "Your Open Street Maps server (for Geocoding)",
-    default = Option(defaults.getProperty("osm-server")),
-    noshort = true
-  )
   val basePath = opt[File]("database",
     descr = "Path to the project database (e.g., vizier.db)",
     default = Some(new File("vizier.db"))
@@ -81,6 +75,15 @@ class Config(arguments: Seq[String])
     short = 'X',
     descr = "Enable an experimental option",
     default = Some(List[String]()))
+
+  val commandLineProperties = props[String]('E',
+    descr = "Enable a property (e.g., for plugin configuration)"
+  )
+  lazy val properties = 
+    defaults.entrySet
+            .map { a => a.getKey.toString -> a.getValue.toString } 
+            .toMap ++
+            commandLineProperties
 
   val devel = opt[Boolean]("devel", 
     descr = "Launch vizier in development mode (bind to all ports, permissive CORS headers)",

@@ -20,6 +20,8 @@ import org.apache.sedona.common.raster.{ Serde => SedonaRasterSerde }
 import org.apache.spark.sql.sedona_sql.UDT.RasterUDT
 import java.util.Base64
 import org.geotools.coverage.grid.GridCoverage2D
+import info.vizierdb.commands.Commands
+import info.vizierdb.Vizier
 
 object VizierSedona 
   extends LazyLogging
@@ -37,6 +39,7 @@ object VizierSedona
   {
     // Sedona setup hooks
     SedonaContext.create(spark)
+    System.setProperty("geospark.global.charset", "utf8")
 
     // Sedona UDTs
     Plugin.registerUDT("geometry", GeometryUDT,
@@ -56,7 +59,27 @@ object VizierSedona
         k => SedonaRasterSerde.deserialize(base64Decode(k.as[String]))
       }
     )
+
+    // Sedona Cell Types
+    //// TODO: Historically, most of these ops were part of the mimir package.  
+    //// We should set up some sort of schema upgrade to migrate it
+    //// over to e.g., the sedona package
+    Commands("mimir").register("geotag" -> Geotag)
     
+    val geocoders = Seq(
+      Vizier.getProperty("google-api-key")
+            .map { new geocoder.GoogleGeocoder(_) },
+      Vizier.getProperty("osm-server")
+            .map { new geocoder.OSMGeocoder(_) },
+    ).flatten
+    if(!geocoders.isEmpty){
+      Commands("mimir").register("geocode" -> new geocoder.Geocode(
+        geocoders = geocoders.map { x => x.name -> x }.toMap,
+        cacheFormat = Vizier.getProperty("geocode-cache-format")
+                            .getOrElse("parquet")
+      ))
+    }
+
     // Rejigger Sedona's AsPNG (if present) to dump out ImageUDT-typed data
     {
       val registry = 

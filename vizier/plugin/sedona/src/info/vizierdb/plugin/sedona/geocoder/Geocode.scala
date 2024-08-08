@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.commands.mimir.geocoder
+package info.vizierdb.plugin.sedona.geocoder
 
 import java.io.File
 import scalikejdbc._
@@ -214,22 +214,4 @@ class Geocode(
     ???
   }
 
-}
-
-object Geocode
-{
-
-  def init(
-    geocoders: Seq[Geocoder], 
-    cacheFormat:String = "parquet",
-    label:String = "geocode"
-  )
-  {
-    Commands("mimir").register(
-      label -> new Geocode(
-        geocoders = geocoders.map { g => g.name -> g }.toMap,
-        cacheFormat = cacheFormat
-      ),
-    )
-  }
 }

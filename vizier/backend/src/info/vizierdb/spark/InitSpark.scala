@@ -104,9 +104,6 @@ object InitSpark
         "com.amazonaws.auth.EnvironmentVariableCredentialsProvider,"+
         "org.apache.hadoop.fs.s3a.SharedInstanceProfileCredentialsProvider,"+
         "org.apache.hadoop.fs.s3a.AnonymousAWSCredentialsProvider")
-    // SedonaSQLRegistrator.registerAll(spark)
-    // SedonaVizRegistrator.registerAll(spark)
-    System.setProperty("geospark.global.charset", "utf8")
     Caveats.registerAllUDFs(spark)
     UDTRegistration.register(classOf[BufferedImage].getName, classOf[ImageUDT].getName)
 
