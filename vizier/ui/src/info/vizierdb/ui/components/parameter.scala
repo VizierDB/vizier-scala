@@ -511,6 +511,8 @@ class ArtifactParameter(
           Seq("---" -> "") ++ 
           artifacts().filter { _._2 == artifactType }
                      .map { x => x._1 -> x._1 }
+                     .toSeq
+                     .sorted
         ):_*
       )
     }.reactive

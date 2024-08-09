@@ -1,6 +1,12 @@
-cd `dirname $0`/..
-VERSION=$(mill show vizier.version | jq -r)
-ARTIFACT=info.vizierdb:vizier_2.12:${VERSION}
+MAVEN_BASE=info.vizierdb:vizier_2.12
+VERSION=$(
+  mill show vizier.versionString 2> /dev/null | 
+    jq -r |
+    sed 's/ .*//'
+)
+ARTIFACT=$MAVEN_BASE:$VERSION
+
+echo $ARTIFACT
 
 coursier bootstrap $ARTIFACT\
   -r https://s01.oss.sonatype.org/content/groups/public/ \

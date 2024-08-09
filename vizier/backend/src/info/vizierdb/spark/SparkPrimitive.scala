@@ -47,6 +47,7 @@ import org.apache.spark.ml.linalg
 import info.vizierdb.serialized.MLVector
 import info.vizierdb.serializers.mlvectorFormat
 import info.vizierdb.util.JsonUtils
+import org.apache.spark.sql.catalyst.expressions.UnsafeArrayData
 
 object SparkPrimitive
   extends Object
@@ -201,7 +202,22 @@ object SparkPrimitive
       case (LongType,_)                => JsNumber(k.asInstanceOf[Long])
       case (ShortType,_)               => JsNumber(k.asInstanceOf[Short])
       case (NullType,_)                => JsNull
-      case (ArrayType(element,_),_)    => JsArray(k.asInstanceOf[Seq[_]].map { encode(_, element) })
+      case (ArrayType(element,_),_)    => 
+        JsArray((k match {
+          case i:Iterable[_] => i
+          case u:UnsafeArrayData => {
+            element match {
+              case BooleanType => u.toBooleanArray()
+              case ByteType => u.toByteArray()
+              case ShortType => u.toShortArray()
+              case IntegerType => u.toIntArray()
+              case LongType => u.toLongArray()
+              case FloatType => u.toFloatArray()
+              case DoubleType => u.toDoubleArray()
+            }
+          }: Iterable[Any]
+          case a:ArrayData => a.array: Iterable[Any]
+        }).map { encode(_, element) }.toSeq)
       case (s:StructType,_)            => encodeStruct(k, s)
                                        // Encode Geometry as WKT
 
