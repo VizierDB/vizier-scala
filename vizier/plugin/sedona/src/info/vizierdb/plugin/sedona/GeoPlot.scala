@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * -- copyright-header:end -- */
-package info.vizierdb.commands.plot
+package info.vizierdb.plugin.sedona
 
 import play.api.libs.json._
 import info.vizierdb.commands._

@@ -252,6 +252,11 @@ class Config(arguments: Seq[String])
     else { return false }
   }
 
+  def setProperty(key: String, value: String) = 
+  {
+    defaults.setProperty(key, value)
+  }
+
 }
 
 object Config

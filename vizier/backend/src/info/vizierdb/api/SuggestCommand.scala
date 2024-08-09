@@ -40,7 +40,7 @@ object SuggestCommand
     before: Option[Identifier], 
     after: Option[Identifier],
     workflowId: Option[Identifier] = None,
-  ): Seq[serialized.PackageDescription] =
+  ): serialized.CommandList =
   {
     // Placeholder for now.  Suggest the common commands: 
     Commands.describe {

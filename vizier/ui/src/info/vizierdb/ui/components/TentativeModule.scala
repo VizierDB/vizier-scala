@@ -110,8 +110,8 @@ class TentativeModule(
             editList.project.projectId,
             editList.project.activeBranch.now.get,
           )
-          .onSuccess { case packages => 
-            showCommandList(packages)
+          .onSuccess { case commandList => 
+            showCommandList(commandList.packages)
           }
     }
   }

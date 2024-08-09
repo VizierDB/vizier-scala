@@ -20,8 +20,6 @@ import info.vizierdb.{ Vizier, VizierURLs, Config }
 import info.vizierdb.catalog.Schema
 import java.nio.file.{ Files, Paths }
 import scala.sys.process.Process
-import info.vizierdb.commands.mimir.geocoder.Geocode
-import info.vizierdb.commands.mimir.geocoder.TestCaseGeocoder
 import info.vizierdb.catalog.CatalogDB
 
 object SharedTestResources
@@ -50,13 +48,8 @@ object SharedTestResources
         // Normal initialization
         Vizier.initSQLite()
         Vizier.initSpark()
+        Vizier.config.setProperty("test-geocoders", "on")
         Vizier.loadInternalPlugins()
-        Geocode.init(
-          geocoders = Seq(
-            TestCaseGeocoder("GOOGLE"),
-            TestCaseGeocoder("OSM")
-          )
-        ) 
 
         Vizier.urls = 
           new VizierURLs(

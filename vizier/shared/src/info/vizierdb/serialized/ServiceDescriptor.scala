@@ -25,7 +25,7 @@ case class ServiceDescriptorEnvironment(
   name: String,
   version: String,
   backend: String,
-  packages: Seq[PackageDescription]
+  packages: CommandList
 )
 
 case class ServiceDescriptor(

@@ -14,6 +14,18 @@
  * -- copyright-header:end -- */
 package info.vizierdb.serialized
 
+case class CommandList(
+  emphasis: Seq[(String, Seq[EmphasizedCommand])],
+  packages: Seq[PackageDescription]
+)
+
+case class PackageDescription(
+  category: String,
+  id: String,
+  name: String,
+  commands: Seq[PackageCommand]
+)
+
 case class PackageCommand(
   id: String,
   name: String,
@@ -21,3 +33,14 @@ case class PackageCommand(
   suggest: Option[Boolean],
   hidden: Option[Boolean] = Some(false)
 )
+
+case class EmphasizedCommand(
+  label: String,
+  icon: String,
+  packageId: String,
+  commandId: String,
+  description: String,
+)
+{
+  def tuple = (packageId, commandId)
+}

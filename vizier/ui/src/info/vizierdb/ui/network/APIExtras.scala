@@ -34,6 +34,7 @@ trait APIExtras
     serviceDescriptor.map { 
       _.environment
        .packages
+       .packages
        .toSeq
     }
 

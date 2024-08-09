@@ -22,6 +22,7 @@ import java.util.Base64
 import org.geotools.coverage.grid.GridCoverage2D
 import info.vizierdb.commands.Commands
 import info.vizierdb.Vizier
+import info.vizierdb.plugin.sedona.geocoder.Geocoder
 
 object VizierSedona 
   extends LazyLogging
@@ -41,6 +42,8 @@ object VizierSedona
     SedonaContext.create(spark)
     System.setProperty("geospark.global.charset", "utf8")
 
+    /////////////////////////////////////////
+    
     // Sedona UDTs
     Plugin.registerUDT("geometry", GeometryUDT,
       {
@@ -60,17 +63,37 @@ object VizierSedona
       }
     )
 
-    // Sedona Cell Types
-    //// TODO: Historically, most of these ops were part of the mimir package.  
-    //// We should set up some sort of schema upgrade to migrate it
-    //// over to e.g., the sedona package
-    Commands("mimir").register("geotag" -> Geotag)
+    /////////////////////////////////////////
     
-    val geocoders = Seq(
+    // Sedona Cell Types
+    //// TODO: Historically, most of these ops were part of the mimir/plot 
+    //// packages, and not a sedona-specific package.  Unfortunately, we 
+    //// can't change the package name without invalidating all the 
+    //// existing workflows that use the command.  At some point, it
+    //// would be good to add a 'schema migration'-like capability 
+    //// but for now, we're going to just keep the package associations
+
+    /// Geotag
+    Commands("mimir").register("geotag" -> Geotag)
+
+    /// Geoplot
+    Commands("plot").register("geo" -> GeoPlot)
+    
+    /// Geocoders (if config provided)
+    val geocoders = Seq[Iterable[Geocoder]](
       Vizier.getProperty("google-api-key")
             .map { new geocoder.GoogleGeocoder(_) },
       Vizier.getProperty("osm-server")
             .map { new geocoder.OSMGeocoder(_) },
+      Vizier.getProperty("test-geocoders")
+            .toSeq
+            .flatMap { 
+              case "on" => Seq(
+                geocoder.TestCaseGeocoder("GOOGLE"),
+                geocoder.TestCaseGeocoder("OSM"),
+              )
+              case _ => Seq.empty
+            },
     ).flatten
     if(!geocoders.isEmpty){
       Commands("mimir").register("geocode" -> new geocoder.Geocode(
@@ -79,6 +102,8 @@ object VizierSedona
                             .getOrElse("parquet")
       ))
     }
+
+    /////////////////////////////////////////
 
     // Rejigger Sedona's AsPNG (if present) to dump out ImageUDT-typed data
     {

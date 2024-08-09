@@ -34,6 +34,8 @@ object serializers
   implicit val parameterDescriptionFormat: Format[serialized.ParameterDescription] = Json.format
   implicit val packageCommandFormat: Format[serialized.PackageCommand] = Json.format
   implicit val packageDescriptionFormat: Format[serialized.PackageDescription] = Json.format
+  implicit val emphasizedCommandFormat: Format[serialized.EmphasizedCommand] = Json.format
+  implicit val commandListFormat: Format[serialized.CommandList] = Json.format
 
   implicit val serviceDescriptorDefaultsFormat: Format[serialized.ServiceDescriptorDefaults] = Json.format
   implicit val serviceDescriptorEnvironmentFormat: Format[serialized.ServiceDescriptorEnvironment] = Json.format

@@ -17,11 +17,15 @@ package info.vizierdb.commands
 import play.api.libs.json._
 import info.vizierdb.VizierException
 import info.vizierdb.serialized
+import scala.collection.mutable
 
 object Commands
 {
   val packages = 
-    scala.collection.mutable.Map[String, Package]()
+    mutable.Map[String, Package]()
+
+  val emphasis =
+    mutable.Buffer[(String, mutable.Buffer[serialized.EmphasizedCommand])]()
 
   def getOption(packageId: String, commandId: String): Option[Command] =
     packages.get(packageId)
@@ -41,31 +45,44 @@ object Commands
 
   def apply(packageId: String): Package = packages(packageId)
 
-
-  def describe: Seq[serialized.PackageDescription] =
+  def describe: serialized.CommandList =
     describe { (_:String,_:String) => Some(false) }
 
   def describe(
     suggest: (String, String) => Option[Boolean]
-  ): Seq[serialized.PackageDescription] =
+  ): serialized.CommandList =
   {
-    packages.values.map { pkg => 
-      serialized.PackageDescription(
-        category = pkg.category,
-        id = pkg.id,
-        name = pkg.name,
-        commands = 
-          pkg.commands.map { case (commandId, command) =>
-            serialized.PackageCommand(
-              id = commandId,
-              name = command.name,
-              parameters = Parameter.describe(command.parameters),
-              suggest = suggest(pkg.id, commandId),
-              hidden = Some(command.hidden)
-            )
-          }.toSeq
-      )
-    }.toSeq
+    serialized.CommandList(
+      emphasis = Seq(),
+      packages = 
+        packages.values.map { pkg => 
+          serialized.PackageDescription(
+            category = pkg.category,
+            id = pkg.id,
+            name = pkg.name,
+            commands = 
+              pkg.commands.map { case (commandId, command) =>
+                serialized.PackageCommand(
+                  id = commandId,
+                  name = command.name,
+                  parameters = Parameter.describe(command.parameters),
+                  suggest = suggest(pkg.id, commandId),
+                  hidden = Some(command.hidden)
+                )
+              }.toSeq
+          )
+        }.toSeq
+    )
+  }
+
+  def emphasize(category: String)(command: serialized.EmphasizedCommand*): Unit =
+  {
+    val idx = emphasis.indexWhere { _._1 == category }
+    if(idx < 0){ 
+      emphasis.append(category -> mutable.Buffer(command:_*))
+    } else {
+      emphasis(idx)._2.appendAll(command)
+    }
   }
 
   ///////////////// Hardcoded Command Definitions ///////////////////
@@ -104,7 +121,6 @@ object Commands
     "line-chart"   -> info.vizierdb.commands.plot.LineChart,
     "scatterplot"  -> info.vizierdb.commands.plot.ScatterPlot,
     "cdf"          -> info.vizierdb.commands.plot.CDFPlot,
-    "geo"          -> info.vizierdb.commands.plot.GeoPlot,
     "bar-chart"   -> info.vizierdb.commands.plot.BarChart,
   )
 
@@ -155,5 +171,36 @@ object Commands
     "comment"        -> info.vizierdb.commands.mimir.Comment,
     "pivot"          -> info.vizierdb.commands.mimir.Pivot,
   )
+
+  //////////////////////////////////////
+  def iconUrl(icon: String) = s"icons/${icon}.svg"
+
+  emphasize("Import")(
+    serialized.EmphasizedCommand(label = "Dataset", icon = iconUrl("load_table"), packageId = "data", commandId = "load", description = "Import a tabular data file (e.g., CSV) or previously exported dataframe"),
+  )
+  
+  emphasize("Script")(
+    serialized.EmphasizedCommand(label = "SQL",    icon = "sql",       packageId = "sql",    commandId = "query", description = "Generate or update a dataset using SQL"),
+    serialized.EmphasizedCommand(label = "Python", icon = "python",    packageId = "script", commandId = "python", description = "Transform or generate data using Python"),
+    serialized.EmphasizedCommand(label = "Scala",  icon = "scala",     packageId = "script", commandId = "scala", description = "Transform or generate data using Scala"),
+  )
+  
+  emphasize("Visualize")(
+    serialized.EmphasizedCommand(label = "Line",        icon = "line_plot",    packageId = "plot", commandId = "line-chart", description = "Visualize datasets as a a series of lines (with or without points)"),
+    serialized.EmphasizedCommand(label = "Scatterplot", icon = "scatter_plot", packageId = "plot", commandId = "scatterplot", description = "Visualize datasets as a series of colored points"),
+    serialized.EmphasizedCommand(label = "CDF",         icon = "cdf_plot",     packageId = "plot", commandId = "cdf", description = "Generate a Cumulative Distribution Function (CDF) plot of the data"),
+    serialized.EmphasizedCommand(label = "Map",         icon = "geo_plot",     packageId = "plot", commandId = "geo", description = "Plot a geospatial dataset on a map"),
+    serialized.EmphasizedCommand(label = "Bar",         icon = "bar_plot",    packageId = "plot", commandId = "bar-chart", description = "Visualize datasets as a a series of bars"),
+  )
+
+  emphasize("Document")(
+    serialized.EmphasizedCommand(label = "Markdown", icon = "markdown", packageId = "docs", commandId = "markdown", description = "Document your project with markdown-formatted text"),
+  )
+
+  emphasize("Export")(
+    serialized.EmphasizedCommand(label = "Dataset", icon = "dump_table", packageId = "data", commandId = "unload", description = "Export a dataset to your local filesystem or a server"),
+    serialized.EmphasizedCommand(label = "File",    icon = "dump_file",  packageId = "data", commandId = "unloadFile", description = "Export a raw file to your local filesystem or a server"),
+  )
+
 }
 
