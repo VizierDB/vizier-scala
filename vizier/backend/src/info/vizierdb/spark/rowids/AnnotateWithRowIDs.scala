@@ -168,6 +168,11 @@ class AnnotateWithRowIds(
           isAll: Boolean) => ???
 
       /*********************************************************/
+      case AttachDistributedSequence(
+          attr: Attribute, 
+          child: LogicalPlan) => passthrough(plan)
+
+      /*********************************************************/
       case Union(children: Seq[LogicalPlan], byName: Boolean, allowMissingCol: Boolean) => 
       {
         val newAnnotation = annotationAttribute()
