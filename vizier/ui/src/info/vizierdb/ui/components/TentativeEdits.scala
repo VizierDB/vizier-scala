@@ -156,26 +156,52 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
   /**
    * Insert a single "real" module at the specified source position
    * 
-   * This function works with [[WorkflowElement]] to manage the bookkeeping
+   * This method works with [[WorkflowElement]] to manage the bookkeeping
    * of the list.  Most of the bookkeeping happens in 
    * [[WorkflowElement]]'s <tt>linkElementAfterSelf</tt> and <tt>replaceSelfWithElement</tt>
    * methods.  This method is mainly concerned with finding the correct point to
    * do the insertion and maintaining [[first]], [[last]], and [[baseElements]]
+   * 
+   * The other bit of magic performed by this method is management of interactions
+   * between TentativeModule and the backend.  Under normal usage, we keep a TentativeModule
+   * around as a placeholder while we wait for the backend to replicate the module back to 
+   * us.  If a module is inserted with the same ID as a TentativeModule located at or around 
+   * the same location (see `findReplacementCandidate`), the TentativeModule will be 
+   * discarded (i.e., the backend has replicated the 'real' module back to us).
    */
   def onInsertOne(n: Int, module: Module): Unit =
   {
     logger.debug(s"INSERT @ $n / ${baseElements.size} of $module")
     assert(n <= baseElements.size)
+
+    // Start by figuring out whether we're replacing a TentativeModule or if this insertion 
+    // came from somewhere else (e.g., the spreadsheet button or another client connected to
+    // the same workflow.
+    // 
+    // If the update was triggered by a TentativeModule located between the Nth and N+1th base 
+    // modules, the replacement will arrive as an insertion at the N+1th base module position.
+    // 
+    // We use findReplacementCandidate to search the **tentative** list in the range between the
+    // Nth and N+1th base modules (not inclusive).  Note that while this range will never contain
+    // actual modules, it *may* contain tentative elements, including the one that we want to
+    // replace.
+    // 
+    // findReplacementCandidate wants us to pass it the immediate predecessor of the N+1th base
+    // module (predecessor, so that it can stop as soon as it hits the first module).
+    // There are two additional corner cases that we need to handle:
+    // - We're appending to the *end* of the list.  In this case, there is no N+1th module, so 
+    //   we start the search from the list's tail.
+    // - We're inserting at the 0th base module, and there are no tentative modules preceding it.
+    //   In this case, just pass the 0th base module and findReplacementCandidate will return
+    //   None immediately (and we fall through to normal replacement)
     val replacementSearchStart = 
       if(n == baseElements.size){ Tail }
-      else { baseElements(n).safePrev.getOrElse { baseElements(n) } }
+      else { 
+        // Note that 'safePrev' is just a read-only alias for 'prev'
+        baseElements(n).safePrev.getOrElse { baseElements(n) } 
+      }
 
-    // If this isn't a replacement, then insert it after the first
-    // preceding real Module.
-    val insertionPoint =
-      replacementSearchStart.prevRealModuleExcludingSelf
-
-    logger.debug(s"Starting replacement search at $replacementSearchStart; inserting at $insertionPoint")
+    logger.debug(s"Starting replacement search at $replacementSearchStart")
 
     findReplacementCandidate(module.id, replacementSearchStart) match {
 
@@ -186,22 +212,39 @@ class TentativeEdits(val project: Project, val workflow: Workflow)
         replacement.replaceSelfWithElement(module)
         watchers.foreach { _.onUpdate(module.displayPosition, module) }
 
-      // ... or there is no matching TentativeModule
-      case None => insertionPoint match {
+      // ... or there is no matching TentativeModule and this is just a straight insertion
+      case None => {
+        // ... so insert it after the first preceding real Module.
+        // None => Insert at head, Some(x) => x is the preceding WorkflowElement
+        val insertionPoint: Option[WorkflowElement] =
+          // If no elements, insert at head
+          if(baseElements.isEmpty) { None }
+          // If appending, insert after tail
+          else if(n >= baseElements.size){ Some(baseElements.last) }
+          // Otherwise, insert it immediately after the N-1th base module (or head if N=0)
+          // Sept 2024 by OK: I *think* this search is overkill... we could just use 
+          //                  if(n > 0) { Some(baseElements(n-1)) } else { None }
+          //                  but I don't want to poke the happy fun tentative view machine
+          //                  any more than is strictly needed.
+          else { baseElements(n).prevRealModuleExcludingSelf }
 
-        // Possibility two: Insert at the head
-        case None => 
-          logger.debug(s"Insert will be at head")
-          module.linkSelfToHead(first)
-          first = module
-          watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
+        logger.debug(s"Inserting at $insertionPoint")
 
-        // Possibility three: Insert elsewhere
-        case Some(prev) =>
-          logger.debug(s"Insert will be after $prev")
-          prev.linkElementAfterSelf(module)
-          watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
+        insertionPoint match {
+          // Possibility two: Insert at the head
+          case None => 
+            logger.debug(s"Insert will be at head")
+            module.linkSelfToHead(first)
+            first = module
+            watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
 
+          // Possibility three: Insert elsewhere
+          case Some(prev) =>
+            logger.debug(s"Insert will be after $prev")
+            prev.linkElementAfterSelf(module)
+            watchers.foreach { _.onInsertAll(module.displayPosition, Seq(module)) }
+
+        }
       }
     }
     if(n == baseElements.size){ baseElements.append(module) }
