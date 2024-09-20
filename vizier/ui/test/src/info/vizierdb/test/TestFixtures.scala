@@ -121,10 +121,10 @@ object TestFixtures
     Seq(
       BuildA.Package("debug")(
         BuildA.Command("add")(
-          SimpleParameterDescription("output", "Output", "string", false, false, None, _, None)
+          SimpleParameterDescription("output", "Output", "string", false, false, None, _, None, None)
         ),
         BuildA.Command("drop")(
-          SimpleParameterDescription("dataset", "Dataset", "string", false, false, None, _, None)
+          SimpleParameterDescription("dataset", "Dataset", "string", false, false, None, _, None, None)
         )
       )
     )

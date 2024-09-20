@@ -16,7 +16,7 @@
 from glob import glob
 import re
 
-LICENSE_VERSION = 2
+LICENSE_VERSION = 3
 
 with open("LICENSE.txt") as f:
   LICENSE = [

@@ -72,16 +72,20 @@ object Vizier
   }
 
   lazy val arguments: Map[String, String] = 
-    dom.window.location.search
-       .substring(1)
-       .split("&")
-       .map { _.split("=").toSeq }
-       .collect { 
-          case Seq(k, v) => 
-            URLDecoder.decode(k, "UTF-8") ->
-              URLDecoder.decode(v, "UTF-8") 
-        }
-       .toMap
+    Option(dom.window.location.search)
+      .filter {  _.length > 0 }
+      .map {
+        _.substring(1)
+         .split("&")
+         .map { _.split("=").toSeq }
+         .collect { 
+            case Seq(k, v) => 
+              URLDecoder.decode(k, "UTF-8") ->
+                URLDecoder.decode(v, "UTF-8") 
+          }
+         .toMap
+      }
+      .getOrElse { Map.empty }
 
   val project = Var[Option[Project]](None)
 

@@ -129,6 +129,7 @@ case class Route(
 
 def readRoutes(path: os.Path): Seq[Route] = 
   os.read(path).split("\n")
+    .toIndexedSeq
     .map { description => 
       val components = description.split("\\s+")
       val pathAndArguments = components(0).split("\\?")
@@ -136,6 +137,7 @@ def readRoutes(path: os.Path): Seq[Route] =
       val pathQuery:Seq[PathVariable] = 
         if(pathAndArguments.size > 1){ 
           pathAndArguments(1).split("&")
+                             .toIndexedSeq
                              .map { _.split(":").toSeq }
                              .map {
                               case Seq(identifier, dataType) => PathVariable(identifier, dataType)
@@ -147,6 +149,7 @@ def readRoutes(path: os.Path): Seq[Route] =
         components(6) match {
           case "-" | "_" => Seq()
           case x => x.split(";")
+            .toIndexedSeq
             .map { _.split(":").toSeq }
             .map { 
               case Seq(identifier, dataType) => Param(identifier, dataType) 
