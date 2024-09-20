@@ -65,7 +65,18 @@ abstract class WorkflowElement(implicit owner: Ctx.Owner)
    */
   private var prev: Option[WorkflowElement] = None
 
+  /**
+   * The next element of the linked list.
+   * 
+   * This function is named 'safe' because it is read-only
+   */
   def safeNext = next
+
+  /**
+   * The previous element of the linked list.
+   * 
+   * This function is named 'safe' because it is read-only
+   */
   def safePrev = prev
 
   def propagateAllMyArtifacts(): Unit =
