@@ -25,7 +25,7 @@ object vizier extends ScalaModule with PublishModule {
                             "log4j" -> "*",
                           )
 
-  def scalaVersion = "2.12.15"
+  def scalaVersion = "2.12.20"
 
   def repositoriesTask = T.task { super.repositoriesTask() ++ Seq(
     MavenRepository("https://maven.mimirdb.org/"),
@@ -248,7 +248,7 @@ object vizier extends ScalaModule with PublishModule {
   object ui extends ScalaJSModule { 
 
     def scalaVersion = vizier.scalaVersion
-    def scalaJSVersion = "1.7.1"
+    def scalaJSVersion = "1.16.0"
 
 /*************************************************
  *** Frontend Dependencies
@@ -264,6 +264,10 @@ object vizier extends ScalaModule with PublishModule {
       millSourcePath / "src",
       vizier.millSourcePath / "shared" / "src"
     )
+
+    override def scalacOptions: Target[Seq[String]] = T { Seq(
+      "-P:scalajs:nowarnGlobalExecutionContext"
+    )}
   
     override def compile = T {
       routes()
