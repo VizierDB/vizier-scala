@@ -52,7 +52,7 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
   logger.debug(s"[$client] Websocket opened")
   
   val (remote, publisher): (ActorRef, Publisher[TextMessage.Strict]) =
-        Source.actorRef[String](4096, OverflowStrategy.fail)
+        Source.actorRef[String](100000, OverflowStrategy.fail)
           .map(msg => TextMessage.Strict(msg))
           .toMat(Sink.asPublisher(false))(Keep.both)
           .run()
