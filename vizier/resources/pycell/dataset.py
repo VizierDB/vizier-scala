@@ -686,7 +686,7 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
   elif data_type == DATATYPE_GEOMETRY:
     from shapely import wkt  # type: ignore[import]
     return wkt.loads(value)
-  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+  elif data_type == DATATYPE_BINARY:
     import base64
     return base64.b64decode(value.encode('utf-8'))
   elif data_type == DATATYPE_DATETIME:
@@ -705,7 +705,9 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
     from PIL import Image
     import base64
     with io.BytesIO(base64.b64decode(value.encode('utf-8'))) as f:
-      return Image.open(f)
+      i = Image.open(f)
+      i.getexif()
+      return i
   elif data_type in ["double", "float", "real"]:
     return float(value)
   elif data_type in ["string", "varchar", "int", "long"]:
