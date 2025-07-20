@@ -39,6 +39,7 @@ import org.apache.spark.sql.catalyst.expressions.{
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import info.vizierdb.VizierException
+import info.vizierdb.spark.DataFrameOps
 
 class Spreadsheet(
   val data: SpreadsheetDataSource,
@@ -325,11 +326,13 @@ object Spreadsheet
       annotated.select(
         (
           annotated(AnnotateWithSequenceNumber.ATTRIBUTE) +:
-          base.columns.map { annotated(_) }
+          DataFrameOps.columns(base)
         ):_*
       )
     val seqNo = df(AnnotateWithSequenceNumber.ATTRIBUTE)
-    val baseCols = base.columns.map { df(_) }
+    val baseCols = DataFrameOps.columnsWhere(df){
+                                  _ != AnnotateWithSequenceNumber.ATTRIBUTE
+                                }
 
     val cache = 
       new RowCache[Array[Any]](

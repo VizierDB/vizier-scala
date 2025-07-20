@@ -31,7 +31,10 @@ import org.apache.spark.sql.catalyst.expressions.Literal
 import info.vizierdb.Vizier
 import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
 import info.vizierdb.spark.DataFrameConstructorCodec
+import info.vizierdb.spark.DataFrameOps
+import info.vizierdb.VizierException
 import play.api.libs.json._
+import scala.annotation.meta.field
 
 case class SpreadsheetDatasetConstructor(
   source: Option[Identifier],
@@ -101,7 +104,9 @@ case class SpreadsheetDatasetConstructor(
           rowIdMap.as(AnnotateWithSequenceNumber.ATTRIBUTE) +:
           spreadsheet.schema.map { col =>
             col.source match {
-              case SourceDataset(_, field) => df(field.name).as(col.output.name)
+              case SourceDataset(_, field) => 
+                DataFrameOps.safeColumnLookup(df, field.name)
+                            .as(col.output.name)
               case DefaultValue(default) => lit(default).as(col.output.name)
             }
           }
@@ -201,7 +206,8 @@ case class SpreadsheetDatasetConstructor(
               // exists) or the source dataset value for the column (if not)
               case Some(None) => 
                 colDefaults(col) match {
-                  case None => df(colNames(col)).expr
+                  case None => 
+                    DataFrameOps.safeOutputLookup(df, colNames(col))
                   case Some(default) => default.expression
                 }
               // And finally, if the column is defined. use it
@@ -244,7 +250,7 @@ case class SpreadsheetDatasetConstructor(
       {
         colDefaults.get(col) match {
           case None => Literal(null)
-          case Some(None) => df(colNames(col)).expr
+          case Some(None) => DataFrameOps.safeOutputLookup(df, colNames(col))
           case Some(Some(pattern)) =>
             pattern.expression.transform {
               // Note: Any changes to this block MUST be reflected in the 
