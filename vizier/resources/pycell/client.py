@@ -171,7 +171,10 @@ class VizierDBClient(object):
     elif type(updated_data) == pandas.core.frame.DataFrame:
       self.save_data_frame(key, updated_data)
     else:
-      raise ValueError('Type Not in any specified types supported by Python')
+      try:
+        self.export_pickle(key, updated_data)
+      except:
+        raise ValueError(f"Type '{type(updated_data)}' is not presently supported by Vizier.  Please file a ticket at https://github.com/VizierDB/vizier-scala/issues")
 
   def vizier_request(self,
                      event: str,
@@ -479,9 +482,6 @@ class VizierDBClient(object):
     return pickle.loads(data)
 
   def export_pickle(self, key: str, value: Any) -> None:
-    if key in self.artifacts:
-      raise ValueError("An artifact named {} already exists".format(key))
-
     exported = pickle.dumps(value)
     encoded = base64.encodebytes(exported).decode()
 
