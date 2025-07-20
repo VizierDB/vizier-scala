@@ -44,13 +44,11 @@ export MILL_PGP_SECRET_BASE64="$(
   gpg --batch --yes \
       --passphrase-file <(echo $MILL_PGP_PASSPHRASE) \
       --pinentry-mode loopback \
-      --export-secret-key -a $VIZIER_GPG_KEY_ID | base64
+      --export-secret-key -a $VIZIER_GPG_KEY_ID | base64 | tr -d "\n"
 )"
 
-$(dirname $0)/mill vizier.publishSonatypeCentral --release true
-
-#mill mill.javalib.SonatypeCentralPublishModule/ \
-      #--publishArtifacts vizier.publishArtifacts \
+$(dirname $0)/mill mill.javalib.SonatypeCentralPublishModule/ \
+      --publishArtifacts vizier.publishArtifacts \
       #--release true
       #--sonatypeUri https://central.sonatype.com/service/local \
       #--sonatypeSnapshotUri https://central.sonatype.com/content/repositories/snapshots

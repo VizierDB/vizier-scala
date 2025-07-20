@@ -16,7 +16,7 @@ import java.util.Calendar
  *** The Vizier Backend 
  *************************************************/
 object vizier extends ScalaModule with SonatypeCentralPublishModule {
-  val VERSION       = "2.1.0"
+  val VERSION       = "2.1.1"
   val PLAY_JS       = mvn"com.typesafe.play::play-json::2.9.2"
                            
   val MIMIR_CAVEATS = mvn"info.vizierdb::mimir-caveats::0.3.6"
@@ -173,7 +173,7 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
     mvn"info.vizierdb::vega:1.0.0",
 
     // Scala Cell
-    mvn"org.scala-lang:scala-compiler:${scalaVersion}",
+    mvn"org.scala-lang:scala-compiler:2.12.20",
 
     // Python
     mvn"me.shadaj::scalapy-core:0.5.2",
