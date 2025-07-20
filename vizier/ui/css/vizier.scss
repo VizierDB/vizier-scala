@@ -531,6 +531,11 @@ body
   .right
   {
     border-left: solid 1px white;
+
+    ul {
+      // Make sure the 'run' menu and any other right-aligned menus actually render right-aligned
+      right: 0px;
+    }
   }
   
   .item
