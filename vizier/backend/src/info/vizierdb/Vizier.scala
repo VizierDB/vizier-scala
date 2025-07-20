@@ -172,6 +172,14 @@ object Vizier
     }
   }
 
+  def setWorkingDirectory(): Unit =
+  {
+    if(config.workingDirectory.isDefined){
+      val path = new File(config.workingDirectory()).getAbsolutePath()
+      System.setProperty("user.dir", path)
+    }
+  }
+
   def main(args: Array[String]) 
   {
     config = new Config(args)

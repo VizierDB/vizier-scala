@@ -106,20 +106,20 @@ class TransformCommandsSpec
 
     {
       val data = project.dataframe("s").collect().toSeq
-      data.map { _.getString(0) } must not contain(1.toString)
+      data.map { _.getInt(0) } must not contain(1)
       data must haveSize(3)    
     }
     
     {
       val data = project.dataframe("t").collect().toSeq
-      data.map { _.getString(0) } must not contain(1.toString)
-      data.map { _.getString(0) } must contain(2.toString)
+      data.map { _.getInt(0) } must not contain(1)
+      data.map { _.getInt(0) } must contain(2)
       data must haveSize(3)    
     }
     
     {
       val data = project.dataframe("u").collect().toSeq
-      data.map { _.getString(0) } must contain(exactly(1.toString, 1.toString, 1.toString, 1.toString))
+      data.map { _.getInt(0) } must contain(exactly(1, 1, 1, 1))
     }
   }
 

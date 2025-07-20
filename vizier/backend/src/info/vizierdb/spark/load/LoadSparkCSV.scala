@@ -54,7 +54,7 @@ case class LoadSparkCSV(
 {
   override def construct(context: Identifier => Artifact): DataFrame = 
   {
-    AnnotateWithSequenceNumber.withSequenceNumber(
+    val df =
       Vizier.sparkSession
             .read
             .options(sparkOptions)
@@ -93,7 +93,9 @@ case class LoadSparkCSV(
                         .as(field.name)
             }:_*
           )
-    )( _.filter { col(AnnotateWithSequenceNumber.ATTRIBUTE) > 0 })
+    AnnotateWithSequenceNumber.withSequenceNumber(df)( 
+      _.filter { col(AnnotateWithSequenceNumber.ATTRIBUTE) > 0 }
+    )
   }
 
   override def dependencies: Set[Identifier] = Set.empty

@@ -124,15 +124,16 @@ object PythonProcess
    * module_to_test_package_existence -> pypi_package_name
    */
   def REQUIRED_PACKAGES = Seq[(String, String)](
-    "numpy"      -> "numpy",
-    "bokeh"      -> "bokeh",
-    "matplotlib" -> "matplotlib",
-    "astor"      -> "astor",
-    "pyarrow"    -> "pyarrow",
-    "pandas"     -> "pandas",
-    "shapely"    -> "shapely",
-    "pyspark"    -> "pyspark==3.3.1",
-    "PIL"        -> "Pillow"
+    "numpy"       -> "numpy",
+    "bokeh"       -> "bokeh",
+    "matplotlib"  -> "matplotlib",
+    "astor"       -> "astor",
+    "pyarrow"     -> "pyarrow",
+    "pandas"      -> "pandas",
+    "shapely"     -> "shapely",
+    "pyspark"     -> "pyspark==3.3.1",
+    "PIL"         -> "Pillow",
+    "fastparquet" -> "fastparquet",
   )
 
   def checkPython(environment: PythonEnvironment = SystemPython)

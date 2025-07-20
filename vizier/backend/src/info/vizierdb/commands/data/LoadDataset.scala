@@ -67,7 +67,7 @@ object LoadDataset
                         values = EnumerableValue.withNames(DatasetFormat.ALL:_*),
                         default = Some(0)),
     TemplateParameters.SCHEMA,
-    BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(false)),
+    BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(true)),
     BooleanParameter(name = "Annotate Load Errors", id = PARAM_ANNOTATE_ERRORS, default = Some(false)),
     ListParameter(name = "Load Options", id = PARAM_OPTIONS, required = false, components = Seq(
       StringParameter(name = "Option Key", id  = PARAM_OPTION_KEY),
@@ -149,6 +149,14 @@ object LoadDataset
                       option.get[String](PARAM_OPTION_KEY) ->
                         option.get[String](PARAM_OPTION_VALUE)
                     }
+
+    if(!finalSparkOptions.contains("inferSchema")) {
+      val guessTypes = arguments.getOpt[Boolean](PARAM_GUESS_TYPES)
+      if(guessTypes.isDefined) {
+        finalSparkOptions = finalSparkOptions ++ Map("inferSchema" -> guessTypes.get.toString)
+      }
+    }
+    
     try {
 
       // Do some pre-processing / default configuration for specific formats

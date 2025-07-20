@@ -65,7 +65,7 @@ object AnnotateWithSequenceNumber
     val annotatedPlan =
       AttachDistributedSequence(
         AttributeReference(attribute, LongType, false)(),
-        df.queryExecution.logical
+        df.queryExecution.analyzed
       )
     val ret = 
       new DataFrame(

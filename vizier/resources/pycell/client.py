@@ -691,6 +691,8 @@ class VizierDBClient(object):
       raise ValueError(f"{value} is not a valid parameter")
 
     vizier_data_type = PYTHON_TO_VIZIER_TYPES[python_data_type]
+    if type(vizier_data_type) == list:
+      vizier_data_type = vizier_data_type[0]
 
     value = export_from_native_type(value, vizier_data_type)	
     
