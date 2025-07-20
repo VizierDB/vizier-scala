@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -76,9 +77,11 @@ object Schema
     val requiredMigrations = MIGRATIONS.drop(currentVersion)
     if(requiredMigrations.isEmpty){ return }
 
+    println(s"... updating vizier.db (old version: $currentVersion; new version: ${MIGRATIONS.size})")
+
     CatalogDB.withDB { implicit session => 
-      for((migration, idx) <- requiredMigrations.zipWithIndex){
-        logger.info(s"Applying Migration ${idx + currentVersion}")
+      for((migration, idx) <- requiredMigrations.zipWithIndex){ 
+        logger.info(s"Applying Migration ${idx + currentVersion}: ${migration.getClass.getSimpleName.replace("Migration", "")}")
         logger.trace(migration.sql)
         migration.apply
       }
@@ -264,6 +267,32 @@ object Schema
                                                                 isAutoIncrement = true),
         Column("env_id",          SQL.INTEGER,  "integer",      isRequired = true),
         Column("packages",        SQL.BLOB,     "json",         isRequired = true),
+      )
+    )),
+
+    ///////////////////// Published Workflows ///////////////////// 
+    CreateTableMigration(Table(
+      name = "Script",
+      columns = List(
+        Column("id",              SQL.INTEGER,  "integer",      isRequired = true, 
+                                                                isPrimaryKey = true,
+                                                                isAutoIncrement = true),
+        Column("name",            SQL.VARCHAR,  "varchar(255)", isRequired = true),
+        Column("head_version",    SQL.INTEGER,  "integer",      isRequired = true),
+        Column("deleted",         SQL.BOOLEAN,  "boolean",      isRequired = true),
+      )
+    )),
+    CreateTableMigration(Table(
+      name = "Script_Revision",
+      columns = List(
+        Column("script_id",        SQL.INTEGER,  "integer",      isRequired = true, 
+                                                                isPrimaryKey = true),
+        Column("version",         SQL.INTEGER,  "integer",      isRequired = true,
+                                                                isPrimaryKey = true),
+        Column("project_id",      SQL.INTEGER,  "integer",      isRequired = true),
+        Column("branch_id",       SQL.INTEGER,  "integer",      isRequired = true),
+        Column("workflow_id",     SQL.INTEGER,  "integer",      isRequired = true),
+        Column("modules",         SQL.BLOB,     "json",         isRequired = true),
       )
     )),
   )

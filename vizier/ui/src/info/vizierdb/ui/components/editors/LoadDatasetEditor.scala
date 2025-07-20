@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -118,10 +119,13 @@ class LoadDatasetEditor(
       new StringParameter("delimiter", "Field Delimiter: ", true, false, ","),
     Set(DatasetFormat.CSV) ->
       new BooleanParameter("loadInferTypes", "Guess Schema: ", true, false, true),
+    Set(DatasetFormat.JSON) ->
+      new BooleanParameter("multiline", "Records Span Multiple Lines: ", true, false, true)
   )
   val directToSparkOptionalParameters = Set(
     "header",
-    "delimiter"
+    "delimiter",
+    "multiline",
   )
   val optionalParameterByKey = 
     optionalParameters.map { param => param._2.id -> param._2 }

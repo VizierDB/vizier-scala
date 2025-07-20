@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -66,7 +67,7 @@ object LoadDataset
                         values = EnumerableValue.withNames(DatasetFormat.ALL:_*),
                         default = Some(0)),
     TemplateParameters.SCHEMA,
-    BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(false)),
+    BooleanParameter(name = "Guess Types", id = PARAM_GUESS_TYPES, default = Some(true)),
     BooleanParameter(name = "Annotate Load Errors", id = PARAM_ANNOTATE_ERRORS, default = Some(false)),
     ListParameter(name = "Load Options", id = PARAM_OPTIONS, required = false, components = Seq(
       StringParameter(name = "Option Key", id  = PARAM_OPTION_KEY),
@@ -148,6 +149,14 @@ object LoadDataset
                       option.get[String](PARAM_OPTION_KEY) ->
                         option.get[String](PARAM_OPTION_VALUE)
                     }
+
+    if(!finalSparkOptions.contains("inferSchema")) {
+      val guessTypes = arguments.getOpt[Boolean](PARAM_GUESS_TYPES)
+      if(guessTypes.isDefined) {
+        finalSparkOptions = finalSparkOptions ++ Map("inferSchema" -> guessTypes.get.toString)
+      }
+    }
+    
     try {
 
       // Do some pre-processing / default configuration for specific formats

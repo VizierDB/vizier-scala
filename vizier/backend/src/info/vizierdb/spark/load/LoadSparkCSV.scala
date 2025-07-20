@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,7 +54,7 @@ case class LoadSparkCSV(
 {
   override def construct(context: Identifier => Artifact): DataFrame = 
   {
-    AnnotateWithSequenceNumber.withSequenceNumber(
+    val df =
       Vizier.sparkSession
             .read
             .options(sparkOptions)
@@ -92,7 +93,9 @@ case class LoadSparkCSV(
                         .as(field.name)
             }:_*
           )
-    )( _.filter { col(AnnotateWithSequenceNumber.ATTRIBUTE) > 0 })
+    AnnotateWithSequenceNumber.withSequenceNumber(df)( 
+      _.filter { col(AnnotateWithSequenceNumber.ATTRIBUTE) > 0 }
+    )
   }
 
   override def dependencies: Set[Identifier] = Set.empty

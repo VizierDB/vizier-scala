@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -105,20 +106,20 @@ class TransformCommandsSpec
 
     {
       val data = project.dataframe("s").collect().toSeq
-      data.map { _.getString(0) } must not contain(1.toString)
+      data.map { _.getInt(0) } must not contain(1)
       data must haveSize(3)    
     }
     
     {
       val data = project.dataframe("t").collect().toSeq
-      data.map { _.getString(0) } must not contain(1.toString)
-      data.map { _.getString(0) } must contain(2.toString)
+      data.map { _.getInt(0) } must not contain(1)
+      data.map { _.getInt(0) } must contain(2)
       data must haveSize(3)    
     }
     
     {
       val data = project.dataframe("u").collect().toSeq
-      data.map { _.getString(0) } must contain(exactly(1.toString, 1.toString, 1.toString, 1.toString))
+      data.map { _.getInt(0) } must contain(exactly(1, 1, 1, 1))
     }
   }
 

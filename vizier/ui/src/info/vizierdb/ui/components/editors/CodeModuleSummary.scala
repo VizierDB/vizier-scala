@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,6 +35,7 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.components.EnvironmentParameter
 import info.vizierdb.serialized.SimpleParameterDescription
 import info.vizierdb.ui.components.StringParameter
+import info.vizierdb.ui.components.BooleanParameter
 
 class CodeModuleSummary(
   module: Module,
@@ -122,6 +124,17 @@ class CodeModuleSummary(
           new StringParameter(p)
       }
 
+    val showOutputField: Option[BooleanParameter] =
+      command.parameters.collectFirst {
+        case p:SimpleParameterDescription if p.id == "show_output" =>
+          new BooleanParameter(p)
+      }
+
+    // The above is a HUGE cludge.  
+    // Why are we manually allowing *specific* fields?
+    // TODO: Fix before 2.1
+    // https://github.com/VizierDB/vizier-scala/issues/311
+
     var otherArgs = Seq[CommandArgument]()
 
     def commandId = command.id
@@ -131,6 +144,8 @@ class CodeModuleSummary(
       ) ++ environmentParam.map { e =>
         CommandArgument(e.id, e.value)
       } ++ outputDatasetField.map { o =>
+        CommandArgument(o.id, o.value)
+      } ++ showOutputField.map { o =>
         CommandArgument(o.id, o.value)
       }
 
@@ -158,6 +173,13 @@ class CodeModuleSummary(
           outputDatasetField.get.set(arg.get.value)
         }
       }
+
+      if(showOutputField.isDefined){
+        val arg = arguments.find { _.id == showOutputField.get.id }
+        if(arg.isDefined){
+          showOutputField.get.set(arg.get.value)
+        }
+      }
     }
 
     val editorFields: Frag = div(
@@ -167,6 +189,7 @@ class CodeModuleSummary(
       code.root,
       environmentParam.map { _.root },
       outputDatasetField.map { _.root },
+      showOutputField.map { _.root },
     ).render
   }
 

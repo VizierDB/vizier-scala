@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -83,8 +84,8 @@ object CDFPlot extends Command
           PlotUtils.makeSeries(
             context     = context,
             datasetName = series.get[String](PARAM_DATASET),
-            xIndex      = series.get[Int](PARAM_X), // this is just a placeholder; CDF below replaces it
-            yIndex      = series.get[Int](PARAM_X),
+            xIndex      = series.get[Int](PARAM_X),
+            yIndex      = series.get[Int](PARAM_X), // this is just a placeholder; CDF below replaces it
             name        = series.getOpt[String](PARAM_LABEL),
           )
           .filtered(series.getOpt[String](PARAM_FILTER).getOrElse(""))

@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -253,6 +254,7 @@ class BooleanParameter(
       required = parameter.required,
       hidden = parameter.hidden
     )
+    if(parameter.default.isDefined){ set(parameter.default.get) }
   }
   val root = 
     input(`type` := "checkbox").render
@@ -435,7 +437,8 @@ class ColIdParameter(
         ):_*
       )
     }.reactive
-  )
+  ).render
+
   def value = 
     JsNumber(inputNode[dom.html.Select].value.toInt)
   override def set(v: JsValue): Unit = 
@@ -509,10 +512,13 @@ class ArtifactParameter(
           Seq("---" -> "") ++ 
           artifacts().filter { _._2 == artifactType }
                      .map { x => x._1 -> x._1 }
+                     .toSeq
+                     .sorted
         ):_*
       )
     }.reactive
-  )
+  ).render
+
   def value = 
     inputNode[dom.html.Select].value match {
       case "" => JsNull
@@ -598,7 +604,8 @@ class FileParameter(
         bodyText() = span(DEFAULT_BODY_TEXT)
         e.preventDefault()
       }
-    )
+    ).render
+
   val urlField:dom.Node =
   {
     val identity = s"parameter_${Parameter.nextInputId}"
@@ -610,7 +617,7 @@ class FileParameter(
         attr("id") := identity, 
         attr("name") := "URL"
       )
-    )
+    ).render
   }
 
   val displays = Seq[dom.Node](
@@ -643,7 +650,8 @@ class FileParameter(
     tab("Upload File", 0).reactive,
     tab("Load URL", 1).reactive,
     mode.map { displays(_) }.reactive
-  )
+  ).render
+
   def value =
     mode.now match {
       case 0 => Json.obj("fileid" -> uploadedFileId, "filename" -> uploadedFileName)
@@ -733,7 +741,7 @@ class ListParameter(
   }
 
   val rows = RxBuffer[Seq[Parameter]]( tentativeRow() )
-  val rowView = RxBufferView(tbody(), 
+  val rowView = RxBufferView(tbody().render, 
     rows.rxMap { row =>  
       tr( 
         row.map { _.root }.map { td(_) } ,
@@ -747,7 +755,7 @@ class ListParameter(
             }
           }
         )
-      )
+      ).render
     })
   def lastRow = Var(rows.last)
 
@@ -780,7 +788,7 @@ class ListParameter(
         ),
         rowView.root,
       )
-    )
+    ).render
 
   def rawValue =
     rows.toSeq
@@ -885,7 +893,7 @@ class RecordParameter(
       ul(
         elements.map { _.root }.map { li(_) }
       )
-    )
+    ).render
   def value = 
     Json.toJson(elements.map { _.toArgument })
   def set(v: JsValue): Unit = 
@@ -1230,7 +1238,7 @@ class UnsupportedParameter(
       parameter.hidden
     )
   }
-  val root = span(s"Unsupported parameter type: $dataType ($context)")
+  val root = span(s"Unsupported parameter type: $dataType ($context)").render
   def value = JsNull
   def set(v: JsValue): Unit = {}
 }

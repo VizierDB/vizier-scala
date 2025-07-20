@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -205,4 +206,33 @@ object serializers
   implicit val pythonEnvironmentDescriptorFormat: Format[serialized.PythonEnvironmentDescriptor] = Json.format
   implicit val pythonEnvironmentSummaryFormat: Format[serialized.PythonEnvironmentSummary] = Json.format
   implicit val pythonSettingsSummaryFormat: Format[serialized.PythonSettingsSummary] = Json.format
+
+  implicit val vizierScriptModuleInlineFormat: Format[serialized.VizierScriptModule.Inline] = Json.format
+  implicit val vizierScriptModuleIOFormat: Format[serialized.VizierScriptModule.InputOutput] = Json.format
+  implicit val vizierScriptModuleFormat = Format[serialized.VizierScriptModule](
+    new Reads[serialized.VizierScriptModule] {
+      def reads(j: JsValue): JsResult[serialized.VizierScriptModule] =
+      {
+        (j \ "type").as[String] match {
+          case serialized.VizierScriptModule.INLINE =>
+            JsSuccess(j.as[serialized.VizierScriptModule.Inline])
+          case serialized.VizierScriptModule.INPUT_OUTPUT =>
+            JsSuccess(j.as[serialized.VizierScriptModule.InputOutput])
+          case _ => JsError()
+        }
+      }
+    },
+    new Writes[serialized.VizierScriptModule] {
+      def writes(j: serialized.VizierScriptModule): JsValue =
+      {
+        j match {
+          case v: serialized.VizierScriptModule.Inline => Json.toJson(v)
+          case v: serialized.VizierScriptModule.InputOutput => Json.toJson(v)
+        }
+      }
+    }
+  )
+  implicit val vizierScriptFormat: Format[serialized.VizierScript] = Json.format
+  implicit val vizierScriptSummaryFormat: Format[serialized.VizierScriptSummary] = Json.format
+  implicit val vizierScriptListFormat: Format[serialized.VizierScriptList] = Json.format
 }

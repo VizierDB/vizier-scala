@@ -15,7 +15,7 @@ import java.util.Calendar
  *** The Vizier Backend 
  *************************************************/
 object vizier extends ScalaModule with PublishModule {
-  val VERSION       = "2.0.0"
+  val VERSION       = "2.1.0"
   val PLAY_JS       = ivy"com.typesafe.play::play-json::2.9.2"
                            
   val MIMIR_CAVEATS = ivy"info.vizierdb::mimir-caveats::0.3.6"
@@ -25,7 +25,7 @@ object vizier extends ScalaModule with PublishModule {
                             "log4j" -> "*",
                           )
 
-  def scalaVersion = "2.12.15"
+  def scalaVersion = "2.12.20"
 
   def repositoriesTask = T.task { super.repositoriesTask() ++ Seq(
     MavenRepository("https://maven.mimirdb.org/"),
@@ -74,6 +74,9 @@ object vizier extends ScalaModule with PublishModule {
       Calendar.getInstance();
 
     f"$VERSION (revision $gitVersion-$gitRevision; built ${date.get(Calendar.YEAR)}%04d-${date.get(Calendar.MONTH)}%02d-${date.get(Calendar.DAY_OF_MONTH)}%02d)"
+  }
+  def version = T {
+    VERSION
   }
 
   def internalJavaVersion = T {
@@ -165,7 +168,7 @@ object vizier extends ScalaModule with PublishModule {
     ivy"info.vizierdb::vega:1.0.0",
 
     // Scala Cell
-    ivy"org.scala-lang:scala-compiler:2.12.15",
+    ivy"org.scala-lang:scala-compiler:${scalaVersion}",
 
     // Python
     ivy"me.shadaj::scalapy-core:0.5.2",
@@ -211,8 +214,8 @@ object vizier extends ScalaModule with PublishModule {
 /*************************************************
  *** Backend Resources
  *************************************************/
-  def buildRoutesScript = T.sources { os.pwd / "scripts" / "build_routes.sc" }
-  def routesFile        = T.sources { millSourcePath / "shared" / "resources" / "vizier-routes.txt" }
+  def buildRoutesScript = T.sources { build.millSourcePath / "scripts" / "build_routes.sc" }
+  def routesFile        = T.sources { millSourcePath / "resources" / "vizier-routes.txt" }
 
   def routes = T { 
     println("Recompiling routes from "+routesFile().head.path); 
@@ -245,7 +248,7 @@ object vizier extends ScalaModule with PublishModule {
   object ui extends ScalaJSModule { 
 
     def scalaVersion = vizier.scalaVersion
-    def scalaJSVersion = "1.7.1"
+    def scalaJSVersion = "1.16.0"
 
 /*************************************************
  *** Frontend Dependencies
@@ -261,6 +264,10 @@ object vizier extends ScalaModule with PublishModule {
       millSourcePath / "src",
       vizier.millSourcePath / "shared" / "src"
     )
+
+    override def scalacOptions: Target[Seq[String]] = T { Seq(
+      "-P:scalajs:nowarnGlobalExecutionContext"
+    )}
   
     override def compile = T {
       routes()

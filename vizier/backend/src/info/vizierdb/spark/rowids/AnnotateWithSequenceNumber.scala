@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -62,17 +63,18 @@ object AnnotateWithSequenceNumber
     }
 
     val annotatedPlan =
-      apply(
-        df.queryExecution.analyzed,
-        df.queryExecution.sparkSession,
+      AttachDistributedSequence(
         AttributeReference(attribute, LongType, false)(),
-        offset
+        df.queryExecution.analyzed
       )
-    new DataFrame(
-      df.queryExecution.sparkSession,
-      annotatedPlan,
-      RowEncoder(StructType(df.schema.fields :+ FIELD_TYPE(attribute)))
-    )
+    val ret = 
+      new DataFrame(
+        df.queryExecution.sparkSession,
+         annotatedPlan,
+        RowEncoder(StructType(annotatedPlan.output.map { a => StructField(a.name, a.dataType) }))
+      )
+    if(offset == 0){ return ret }
+    else { ??? }
   }
 
   def apply(

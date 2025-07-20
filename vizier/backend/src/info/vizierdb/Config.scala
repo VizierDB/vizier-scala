@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -137,6 +138,17 @@ class Config(arguments: Seq[String])
     descr = "Set the SparkSQL warehouse directory (default: {cache-dir}/spark-warehouse)"
   )
 
+  val extraPlugins = opt[List[File]]("plugin",
+    short = 'P',
+    descr = "Enable a plugin for this session",
+    default = Some(List())
+  )
+
+  lazy val plugins:Seq[File] = 
+    Option(defaults.getProperty("vizier-plugins"))
+        .map { _.split(":").map { new File(_) }.toSeq }
+        .getOrElse { Seq() } ++ extraPlugins()
+
   def workingDirectoryFile: File = 
     new File(
       workingDirectory
@@ -168,7 +180,9 @@ class Config(arguments: Seq[String])
   lazy val pythonVenvDirFile = new File(cacheDirFile, "python")
 
   def resolveToDataDir(path: String) = { new File(dataDirFile, path).getAbsoluteFile }
-
+  def resolveToWorkingDir(path: File): File =
+    if(path.isAbsolute()) { path }
+    else { workingDirectoryFile.toPath.resolve(path.toPath).toFile }
 
   ////////////////////////// Ingest //////////////////////////
 

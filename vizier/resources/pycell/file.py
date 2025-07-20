@@ -1,7 +1,8 @@
-# -- copyright-header:v2 --
-# Copyright (C) 2017-2021 University at Buffalo,
+# -- copyright-header:v4 --
+# Copyright (C) 2017-2025 University at Buffalo,
 #                         New York University,
-#                         Illinois Institute of Technology.
+#                         Illinois Institute of Technology,
+#                         Breadcrumb Analytics.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -58,9 +59,15 @@ class FileClient(object):
 
     return self.io
 
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, type, value, tb):
+    import traceback
+    self.io.flush()
     self.io.close()
     self.io = None
+    if tb is not None:
+      print(tb)
+      traceback.print_tb(tb)
+      raise Exception("Error while writing file")
     return self
 
   def _repr_html_(self) -> str:

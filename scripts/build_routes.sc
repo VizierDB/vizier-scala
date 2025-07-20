@@ -506,6 +506,13 @@ def websocketAPICall(route: Route): String =
       "additionalProperties" -> extra,
     )
 
+  def mkAnyOf(options: JsValue*) = 
+  {
+    Json.obj(
+      "anyOf" -> options
+    )
+  }
+
   def mkArray(elem: JsValue) = Json.obj("type" -> "array", "items" -> elem)
 
   define { "Identifier" -> Json.obj(
@@ -561,6 +568,17 @@ def websocketAPICall(route: Route): String =
   define { "PythonEnvironmentDescriptor" -> mkObject()(
     "version" -> Json.obj("type" -> "string"),
     "packages" -> mkArray(typeRef("PythonPackage")),
+  )}
+  define { "VizierScriptModule" -> mkAnyOf(
+    mkObject()(
+      "type" -> Json.obj("const" -> "inline"),
+      "spec" -> typeRef("JsValue"),
+    ),
+    mkObject()(
+      "type" -> Json.obj("const" -> "in_out"),
+      "imports" -> typeRef("JsValue"),
+      "exports" -> typeRef("JsValue"),
+    )
   )}
 
   val aliases = Map(

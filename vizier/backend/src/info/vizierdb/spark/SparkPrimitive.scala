@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -46,6 +47,8 @@ import info.vizierdb.VizierException
 import org.apache.spark.ml.linalg
 import info.vizierdb.serialized.MLVector
 import info.vizierdb.serializers.mlvectorFormat
+import info.vizierdb.util.JsonUtils
+import org.apache.spark.sql.catalyst.expressions.UnsafeArrayData
 
 object SparkPrimitive
   extends Object
@@ -150,7 +153,7 @@ object SparkPrimitive
       case (_, null)                   => JsNull
       case (StringType, _)             => JsString(k.toString)
       case (BinaryType, _)             => JsString(base64Encode(k.asInstanceOf[Array[Byte]]))
-      case (_:UserDefinedType[_], _)     => 
+      case (ut:UserDefinedType[_], _)     => 
       {
         // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
         // so we need to do a manual comparison here.
@@ -174,6 +177,8 @@ object SparkPrimitive
                 MLVector(false, 0, Seq(), values)
             }
           )
+        } else if(!ut.sqlType.isInstanceOf[UserDefinedType[_]]){
+          encode(ut.asInstanceOf[UserDefinedType[Any]].serialize(k), ut.sqlType)
         } else {
           throw new VizierException(s"Unsupported UDT: $t (${t.getClass().getName()}")
         }
@@ -187,14 +192,33 @@ object SparkPrimitive
                                             "days"         -> k.asInstanceOf[CalendarInterval].days,
                                             "microseconds" -> k.asInstanceOf[CalendarInterval].microseconds
                                           )
+      case (DoubleType,_) if k.asInstanceOf[Double].isInfinite
+                                       => JsString( (if(k.asInstanceOf[Double] < 0){ "-" } else { "" }) + "infinity" )
       case (DoubleType,_)              => JsNumber(k.asInstanceOf[Double])
+      case (FloatType,_) if k.asInstanceOf[Float].isInfinite
+                                       => JsString( (if(k.asInstanceOf[Float] < 0){ "-" } else { "" }) + "infinity" )
       case (FloatType,_)               => JsNumber(k.asInstanceOf[Float])
       case (ByteType,_)                => JsNumber(k.asInstanceOf[Byte])
       case (IntegerType,_)             => JsNumber(k.asInstanceOf[Integer]:Int)
       case (LongType,_)                => JsNumber(k.asInstanceOf[Long])
       case (ShortType,_)               => JsNumber(k.asInstanceOf[Short])
       case (NullType,_)                => JsNull
-      case (ArrayType(element,_),_)    => JsArray(k.asInstanceOf[Seq[_]].map { encode(_, element) })
+      case (ArrayType(element,_),_)    => 
+        JsArray((k match {
+          case i:Iterable[_] => i
+          case u:UnsafeArrayData => {
+            element match {
+              case BooleanType => u.toBooleanArray()
+              case ByteType => u.toByteArray()
+              case ShortType => u.toShortArray()
+              case IntegerType => u.toIntArray()
+              case LongType => u.toLongArray()
+              case FloatType => u.toFloatArray()
+              case DoubleType => u.toDoubleArray()
+            }
+          }: Iterable[Any]
+          case a:ArrayData => a.array: Iterable[Any]
+        }).map { encode(_, element) }.toSeq)
       case (s:StructType,_)            => encodeStruct(k, s)
                                        // Encode Geometry as WKT
 
@@ -202,6 +226,14 @@ object SparkPrimitive
       case (DecimalType(),d:Decimal)   => JsNumber(d.toBigDecimal)
       case (DecimalType(),d:java.math.BigDecimal)
                                        => JsNumber(d)
+      case (MapType(keyType, valueType, _), elems: Map[_, _]) => JsArray(
+                                            elems.map { case (k, v) => 
+                                              Json.obj(
+                                                "key" -> encode(k, keyType),
+                                                "value" -> encode(v, valueType)
+                                              )
+                                            }.toIndexedSeq
+                                          )
       case _ if k != null           => JsString(k.toString)
       case _                        => JsNull
     }
@@ -222,66 +254,88 @@ object SparkPrimitive
     // The following matching order is important
     logger.trace(s"DECODE $t: \n$k")
 
-    (k, t) match {  
-      // Check for null first to avoid null pointer errors
-      case (JsNull, _)                    => null
+    try {
+      (k, t) match {  
+        // Check for null first to avoid null pointer errors
+        case (JsNull, _)                    => null
 
-      // Check for string-based parsing before the cast-strings fallback
-      case (JsString(str), StringType)    => str
-      case (JsNumber(num), StringType)    => num.toString()
-      case (JsBoolean(b), StringType)     => b.toString()
+        // Check for string-based parsing before the cast-strings fallback
+        case (JsString(str), StringType)    => str
+        case (JsNumber(num), StringType)    => num.toString()
+        case (JsBoolean(b), StringType)     => b.toString()
 
-      // Formats that are encoded as strings, but use a non-string internal
-      // representation need to come next, before the cast-strings fallback
-      case (_, DateType)                  => decodeDate(k.as[String])
-      case (_, TimestampType)             => decodeTimestamp(k.as[String])
-      case (_, BinaryType)                => base64Decode(k.as[String])
-      case (_, _:UserDefinedType[_])        => 
-      {
-        // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
-        // so we need to do a manual comparison here.
+        // Formats that are encoded as strings, but use a non-string internal
+        // representation need to come next, before the cast-strings fallback
+        case (_, DateType)                  => decodeDate(k.as[String])
+        case (_, TimestampType)             => decodeTimestamp(k.as[String])
+        case (_, BinaryType)                => base64Decode(k.as[String])
+        case (_, ut:UserDefinedType[_])        => 
+        {
+          // GeometryUDT is broken: https://issues.apache.org/jira/browse/SEDONA-89?filter=-2
+          // so we need to do a manual comparison here.
 
-        if(t.isInstanceOf[GeometryUDT]){
-          geometryFormatMapper.readGeometry(k.as[String]) // parse as WKT
-        } else if(t.isInstanceOf[RasterUDT]){
-          SedonaRasterSerde.deserialize(base64Decode(k.as[String]))
-        } else if(t.isInstanceOf[ImageUDT]){
-          ImageUDT.deserialize(base64Decode(k.as[String]))
-        } else if(t.getClass().getName() == "org.apache.spark.ml.linalg.VectorUDT"
-                  || t.getClass().getName() == "org.apache.spark.mllib.linalg.VectorUDT") {
-          val v = k.as[MLVector]
-          if(v.sparse){
-            new linalg.SparseVector(v.size, v.indices.toArray, v.values.toArray)
+          if(t.isInstanceOf[GeometryUDT]){
+            geometryFormatMapper.readGeometry(k.as[String]) // parse as WKT
+          } else if(t.isInstanceOf[RasterUDT]){
+            SedonaRasterSerde.deserialize(base64Decode(k.as[String]))
+          } else if(t.isInstanceOf[ImageUDT]){
+            ImageUDT.deserialize(base64Decode(k.as[String]))
+          } else if(t.getClass().getName() == "org.apache.spark.ml.linalg.VectorUDT"
+                    || t.getClass().getName() == "org.apache.spark.mllib.linalg.VectorUDT") {
+            val v = k.as[MLVector]
+            if(v.sparse){
+              new linalg.SparseVector(v.size, v.indices.toArray, v.values.toArray)
+            } else {
+              new linalg.DenseVector(v.values.toArray)
+            }
+          } else if(!ut.sqlType.isInstanceOf[UserDefinedType[_]]) {
+            ut.deserialize(decode(k, ut.sqlType))
           } else {
-            new linalg.DenseVector(v.values.toArray)
+            throw new VizierException(s"Unsupported UDT: $t (${t.getClass().getName}")
           }
-        } else {
-          throw new VizierException(s"Unsupported UDT: $t (${t.getClass().getName}")
         }
-      }
 
-      // Now that we've gotten through all String types, check if we still have
-      // a string and fall back to string parsing if so.
-      case (_:JsString, _) if castStrings => Cast(Literal(k.as[String]), t).eval()
+        // Now that we've gotten through all String types, check if we still have
+        // a string and fall back to string parsing if so.
+        case (_:JsString, _) if castStrings => Cast(Literal(k.as[String]), t).eval()
 
-      // Finally, types with native Json parsers.  These can come in any order
-      case (_, BooleanType)               => k.as[Boolean]
-      case (_, CalendarIntervalType)      => {
-        val fields = k.as[Map[String,JsValue]]
-        new CalendarInterval(fields("months").as[Int], fields("days").as[Int], fields("microseconds").as[Int])
+        // Finally, types with native Json parsers.  These can come in any order
+        case (_, BooleanType)               => k.as[Boolean]
+        case (_, CalendarIntervalType)      => {
+          val fields = k.as[Map[String,JsValue]]
+          new CalendarInterval(fields("months").as[Int], fields("days").as[Int], fields("microseconds").as[Int])
+        }
+        case (JsString("infinity"), DoubleType)  => Double.PositiveInfinity
+        case (JsString("-infinity"), DoubleType) => Double.NegativeInfinity
+        case (_, DoubleType)                => k.as[Double]
+        case (JsString("infinity"), FloatType)   => Float.PositiveInfinity
+        case (JsString("-infinity"), FloatType)  => Float.NegativeInfinity
+        case (_, FloatType)                 => k.as[Float]
+        case (_, ByteType)                  => k.as[Byte]
+        case (_, IntegerType)               => k.as[Int]:Integer
+        case (_, LongType)                  => k.as[Long]
+        case (_, ShortType)                 => k.as[Short]
+        case (_, DecimalType())             => k.as[java.math.BigDecimal]
+        case (_, NullType)                  => JsNull
+        case (_, ArrayType(element,_))      => ArraySeq(k.as[Seq[JsValue]].map { decode(_, element) }:_*)
+        case (_, s:StructType)              => decodeStruct(k, s, castStrings = castStrings)
+        case (JsObject(elems), MapType(keyType, valueType, _)) => 
+                        elems.map { case (key, value) => 
+                                        ( decode(JsString(key), keyType, castStrings), 
+                                          decode(value, valueType, castStrings)
+                                        ) }.toMap
+        case (JsArray(elems), MapType(keyType, valueType, _)) => 
+                        elems.map { arr =>
+                                    val fields = arr.as[Map[String, JsValue]]
+                                    ( decode(fields("key"), keyType, castStrings), 
+                                      decode(fields("value"), valueType, castStrings)
+                                    ) }.toMap
+        case (_, _:MapType)                 => throw new JsResultException(Seq())
+        case _                    => throw new IllegalArgumentException(s"Unsupported type for decode: $t; ${t.getClass()}")
       }
-      case (_, DoubleType)                => k.as[Double]
-      case (_, FloatType)                 => k.as[Float]
-      case (_, ByteType)                  => k.as[Byte]
-      case (_, IntegerType)               => k.as[Int]:Integer
-      case (_, LongType)                  => k.as[Long]
-      case (_, ShortType)                 => k.as[Short]
-      case (_, DecimalType())             => k.as[java.math.BigDecimal]
-      case (_, NullType)                  => JsNull
-      case (_, ArrayType(element,_))      => ArraySeq(k.as[Seq[JsValue]].map { decode(_, element) }:_*)
-      case (_, s:StructType)              => decodeStruct(k, s, castStrings = castStrings)
-      case _                    => throw new IllegalArgumentException(s"Unsupported type for decode: $t; ${t.getClass()}")
-    }
+    } catch {
+      case e: JsResultException =>
+        throw new VizierException(s"Failed to decode $k as a $t (cast strings = $castStrings): ${JsonUtils.prettyJsonParseError(e).mkString("; ")}")    }
   }
 
   implicit val dataTypeFormat = SparkSchema.dataTypeFormat

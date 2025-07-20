@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,8 +19,9 @@ import info.vizierdb.types._
 import info.vizierdb.ui.Vizier
 import info.vizierdb.serialized.CommandArgument
 import play.api.libs.json._
+import info.vizierdb.util.Logging
 
-object SpreadsheetTools
+object SpreadsheetTools extends Logging
 {
   val SPREADSHEET_PACKAGE = "data"
   val SPREADSHEET_COMMAND = "spreadsheet"
@@ -32,6 +34,7 @@ object SpreadsheetTools
 
   def insertNewSpreadsheet(datasetName: String, position: Int): Unit =
   {
+    logger.trace(s"Inserting spreadsheet for $datasetName @ $position")    
     Vizier.project.now.get
           .branchSubscription.get
           .Client
@@ -45,6 +48,7 @@ object SpreadsheetTools
 
   def appendNewSpreadsheet(datasetName: String): Unit =
   {
+    logger.trace(s"Appending spreadsheet for $datasetName")    
     Vizier.project.now.get
           .branchSubscription.get
           .Client

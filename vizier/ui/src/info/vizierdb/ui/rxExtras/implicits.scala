@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -50,12 +51,26 @@ class RxTagWrapper[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner)
   }
 }
 
+class RxWrapper[A, B](r: Rx[(A, B)])(implicit ctx: Ctx.Owner)
+{
+  def unzip: (Rx[A], Rx[B]) =
+  {
+    (r.map { _._1 }, r.map { _._2 })
+  }
+}
 
 package object implicits {
 
   implicit def rxFrag[T <% Frag](r: Rx[T])(implicit ctx: Ctx.Owner): RxTagWrapper[T] =
     new RxTagWrapper[T](r)
   
-  implicit def renderFrag[T <% Frag](f: T): dom.Node = 
-    f.render
+  implicit def wrapRx[A, B](r: Rx[(A, B)])(implicit ctx: Ctx.Owner): RxWrapper[A, B] =
+    new RxWrapper[A, B](r)
+
+  // If you feel the urge to add an implicit .render for ScalaTags, 
+  // see commit note: d9b8c0ce4d2eef1617bfef7c381c8edd1ed90e4e
+  // TL;DR: implicit .render leads to unexpected semantics.  We prefer explicit
+
 }
+
+

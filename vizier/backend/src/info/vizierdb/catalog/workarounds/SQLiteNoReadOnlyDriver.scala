@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -80,12 +81,12 @@ class SQLiteNoReadOnlyConnection(sqlite: Connection)
   def prepareCall(x: String,y: Int,z: Int,q: Int): java.sql.CallableStatement = { logger.trace("prepareCall"); sqlite.prepareCall(x, y, z, q) }
   def prepareCall(x: String,y: Int,z: Int): java.sql.CallableStatement = { logger.trace("prepareCall"); sqlite.prepareCall(x, y, z) }
   def prepareCall(x: String): java.sql.CallableStatement = { logger.trace("prepareCall"); sqlite.prepareCall(x) }
-  def prepareStatement(x: String,y: Array[String]): java.sql.PreparedStatement = { logger.trace("prepareStatement"); sqlite.prepareStatement(x, y) }
-  def prepareStatement(x: String,y: Array[Int]): java.sql.PreparedStatement = { logger.trace("prepareStatement"); sqlite.prepareStatement(x, y) }
-  def prepareStatement(x: String,y: Int): java.sql.PreparedStatement = { logger.trace("prepareStatement"); sqlite.prepareStatement(x, y) }
-  def prepareStatement(x: String,y: Int,z: Int,q: Int): java.sql.PreparedStatement = { logger.trace("prepareStatement"); sqlite.prepareStatement(x, y, z, q) }
-  def prepareStatement(x: String,y: Int,z: Int): java.sql.PreparedStatement = { logger.trace("prepareStatement"); sqlite.prepareStatement(x, y, z) }
-  def prepareStatement(x: String): java.sql.PreparedStatement = { logger.trace("prepareStatement"); sqlite.prepareStatement(x) }
+  def prepareStatement(x: String,y: Array[String]): java.sql.PreparedStatement = { logger.trace(s"prepareStatement: $x"); sqlite.prepareStatement(x, y) }
+  def prepareStatement(x: String,y: Array[Int]): java.sql.PreparedStatement = { logger.trace(s"prepareStatement: $x"); sqlite.prepareStatement(x, y) }
+  def prepareStatement(x: String,y: Int): java.sql.PreparedStatement = { logger.trace(s"prepareStatement: $x"); sqlite.prepareStatement(x, y) }
+  def prepareStatement(x: String,y: Int,z: Int,q: Int): java.sql.PreparedStatement = { logger.trace(s"prepareStatement: $x"); sqlite.prepareStatement(x, y, z, q) }
+  def prepareStatement(x: String,y: Int,z: Int): java.sql.PreparedStatement = { logger.trace(s"prepareStatement: $x"); sqlite.prepareStatement(x, y, z) }
+  def prepareStatement(x: String): java.sql.PreparedStatement = { logger.trace(s"prepareStatement: $x"); sqlite.prepareStatement(x) }
   def releaseSavepoint(x: java.sql.Savepoint): Unit = { logger.trace("releaseSavepoint"); sqlite.releaseSavepoint(x) }
   def rollback(x: java.sql.Savepoint): Unit = { logger.trace("rollback"); sqlite.rollback(x) }
   def rollback(): Unit = { logger.trace("rollback"); sqlite.rollback() }

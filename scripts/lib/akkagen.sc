@@ -94,6 +94,7 @@ def decodePath(route: Route, handler: AkkaDirective): AkkaDirective =
       case PathVariable(_, "long") => "LongNumber"
       case PathVariable(_, "subpath") => "Remaining"
       case PathVariable(_, "string") => "Segment"
+      case PathVariable(_, pvt) => throw new RuntimeException(s"Invalid path variable type '$pvt' (expecting 'int', 'long', 'subpath', or 'string')")
     }
 
   val (pathParamInputs, pathParamOutputs) = 

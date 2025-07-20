@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,7 +33,6 @@ import info.vizierdb.ui.components.dataset.TableView
 import info.vizierdb.ui.components.DisplayArtifact
 import info.vizierdb.ui.components.MenuBar
 import info.vizierdb.ui.components.Project
-import info.vizierdb.ui.components.ProjectListView
 import info.vizierdb.ui.components.settings.SettingsView
 import info.vizierdb.ui.components.StaticWorkflow
 import info.vizierdb.ui.network.{ API, ClientURLs, BranchSubscription, SpreadsheetClient }
@@ -73,18 +73,29 @@ object Vizier
   }
 
   lazy val arguments: Map[String, String] = 
-    dom.window.location.search
-       .substring(1)
-       .split("&")
-       .map { _.split("=").toSeq }
-       .collect { 
-          case Seq(k, v) => 
-            URLDecoder.decode(k, "UTF-8") ->
-              URLDecoder.decode(v, "UTF-8") 
-        }
-       .toMap
+    Option(dom.window.location.search)
+      .filter {  _.length > 0 }
+      .map {
+        _.substring(1)
+         .split("&")
+         .map { _.split("=").toSeq }
+         .collect { 
+            case Seq(k, v) => 
+              URLDecoder.decode(k, "UTF-8") ->
+                URLDecoder.decode(v, "UTF-8") 
+          }
+         .toMap
+      }
+      .getOrElse { Map.empty }
 
   val project = Var[Option[Project]](None)
+
+  Rx {
+    "Vizier" + project().map { project =>
+      ": " + project.projectName() + " ["+ project.activeBranchName() + "]"
+    }.getOrElse("")
+  }.trigger { document.title = _ }
+
   val menu = project.map { _.map { new MenuBar(_) } }
 
   def error(message: String) =
@@ -101,195 +112,24 @@ object Vizier
   }
   
   @JSExport("project_view")
-  def projectView(): Unit = 
-  {
-    val projectId = 
-      arguments.get("project")
-               .getOrElse { error("No Project ID specified") }
-               .toLong
-    val projectRequest = api.projectGet(projectId)
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      try {
-        projectRequest
-            .onComplete { 
-              case Success(response) => 
-                project() = Some(new Project(projectId).load(response))
-                logger.debug(s"Project: ${project.now.get}")
-                document.addEventListener("keydown", { (evt:dom.KeyboardEvent) => 
-                  if(evt.key == "Enter" && evt.ctrlKey){
-                    project.now.foreach { 
-                      _.workflow.now.foreach {
-                        _.moduleViewsWithEdits.saveAllCells()
-                      }
-                    }
-                    evt.stopPropagation()
-                  } else if (evt.keyCode == 116 /* f5 */) {
-                    // disable reload https://github.com/VizierDB/vizier-scala/issues/159
-                    evt.preventDefault()
-                  // } else {
-                  //   println(s"KEY: ${evt.keyCode}")
-                  }
-                })
-
-                // The following bit can be uncommented for onLoad triggers
-                // to automate development debugging
-                // dom.window.setTimeout(
-                //   () => {
-                //     val workflow = 
-                //       project.now
-                //              .get
-                //              .workflow
-                //              .now
-                //              .get
-                //     val module = 
-                //       workflow.moduleViewsWithEdits
-                //               .prependTentative()
-                //     // module.activeView.trigger { _ match {
-                //     //   case Some(Left(commandlist)) =>
-                //     //     commandlist.simulateClick("data", "load")
-                //     //   case _ => 
-                //     //     println("Waiting...")
-                //     // }}
-                //   },
-                //   500
-                // )
-
-              case Failure(ex) => 
-                error(ex.toString)
-            }
-
-        document.body.appendChild(
-          Rx { project().map { _.root }
-                        .getOrElse { Spinner(size = 30) } }.reactive
-        )
-        OnMount.trigger(document.body)
-      } catch {
-        case t: Throwable => logger.error(t.toString)
-      }
-    })
-  }
+  def projectView(): Unit    = roots.ProjectView(arguments = arguments)
 
   @JSExport("project_list")
-  def projectList(): Unit = 
-  {
-    val projectList = new ProjectListView()
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      document.body.appendChild( projectList.root )
-      OnMount.trigger(document.body)
-    })
-  }
+  def projectList(): Unit    = roots.LandingPage(arguments = arguments)
 
   @JSExport("spreadsheet")
-  def spreadsheet(): Unit =
-  {
-    val projectId = arguments.get("project").get.toLong
-    val datasetId = arguments.get("dataset").get.toLong
-    val branchId = arguments.get("branch").map { _.toLong }
-
-    val cli = new SpreadsheetClient(OpenDataset(projectId, datasetId), api)
-    cli.connected.trigger { connected => 
-      if(connected){ cli.subscribe(0) }
-    }
-    val table = new TableView(cli, 
-        rowHeight = 30,
-        maxHeight = 400,
-        headerHeight = 40
-    )
-    cli.table = Some(table)
-
-    val body = div(
-      `class` := "standalone_spreadsheet",
-      div(
-        `class` := "header",
-        button(
-          onclick := { _:(dom.Event) =>
-            cli.save()
-          },
-          "Save"
-        )
-      ),
-      table.root
-    ).render
-
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      document.body.appendChild(body)
-      OnMount.trigger(document.body)
-    })
-  }
+  def spreadsheet(): Unit    = roots.Spreadsheet(arguments = arguments)
 
   @JSExport("settings")
-  def settings(): Unit =
-  {
-    val settings = new SettingsView(arguments.get("tab"))
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) => 
-      document.body.appendChild(settings.root)
-      OnMount.trigger(document.body)
-    })
-  }
+  def settings(): Unit       = roots.Settings(arguments = arguments)
 
   @JSExport("artifact")  
-  def artifact(): Unit =
-  {
-    val projectId = arguments.get("project").get.toLong
-    val artifactId = arguments.get("artifact").get.toLong
-    val name = arguments.get("name")
-    val artifact = api.artifactGet(projectId, artifactId, name = name)
-
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) =>
-      val root = Var[Frag](div(`class` := "display_artifact", Spinner(50)))
-
-      document.body.appendChild(root.reactive)
-      OnMount.trigger(document.body)
-
-      artifact.onComplete { 
-        case Success(a) => root() = new DisplayArtifact(a).root
-        case Failure(err) => Vizier.error(err.getMessage())
-      }
-    })
-  }
+  def artifact(): Unit       = roots.ArtifactView(arguments = arguments)
 
   @JSExport("static_workflow")
-  def staticWorkflow(): Unit =
-  {
-    val projectId = arguments.get("project").get.toLong
-    val branchIdMaybe = arguments.get("branch").map { _.toLong }
-    val workflowIdMaybe = arguments.get("workflow").map { _.toLong }
+  def staticWorkflow(): Unit = roots.StaticWorkflow(arguments = arguments)
 
-    val branchId = 
-      branchIdMaybe.map { Future(_) }
-                   .getOrElse { 
-                       api.projectGet(projectId)
-                          .map { _.defaultBranch }
-                   }
-
-    val workflowId =
-      workflowIdMaybe.map { Future(_) }
-                     .getOrElse { 
-                       branchId.flatMap { Vizier.api.branchGet(projectId, _) }
-                               .map { _.head.id }
-                     }
-
-    val workflow = 
-      branchId.flatMap { b => 
-        workflowId.flatMap { w => 
-          println(s"Getting workflow: ($projectId, $b, $w)")
-          api.workflowGet(projectId, b, w)
-        }
-      }
-
-    document.addEventListener("DOMContentLoaded", { (e: dom.Event) =>
-      val root = Var[Frag](div(`class` := "display_workflow", Spinner(50)))
-
-      document.body.appendChild(root.reactive)
-      OnMount.trigger(document.body)
-
-      workflow.onComplete { 
-        case Success(w) => 
-          println(s"Got workflow: $w")
-          root() = new StaticWorkflow(projectId, w).root
-        case Failure(err) => Vizier.error(err.getMessage())
-      }
-    })
-  }
+  @JSExport("script_editor")
+  def scriptEditor(): Unit   = roots.ScriptEditor(arguments = arguments)
 
 }  

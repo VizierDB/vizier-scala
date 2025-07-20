@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -50,7 +51,7 @@ object Scheduler
       logger.trace(s"Allocating execution manager for ${workflow.id}")
       val executor = new RunningWorkflow(
                       workflow, 
-                      Thread.currentThread().getContextClassLoader()
+                      Vizier.mainClassLoader
                      )
       runningWorkflows.put(workflow.id, executor)
       logger.trace(s"Starting execution manager for ${workflow.id}")
@@ -137,6 +138,21 @@ object Scheduler
         logger.debug(s"Workflow complete.  Returned from block")
         cleanup(workflowId)
       }
+  }
+
+  /**
+   * Block until all running workflows have quiesced
+   */
+  def joinAll()
+  {
+    var nextWorkflowId =
+      this.synchronized { runningWorkflows.keys.headOption }
+    while(!nextWorkflowId.isEmpty)
+    {
+      joinWorkflow(nextWorkflowId.get, failIfNotRunning = false)
+      nextWorkflowId =
+        this.synchronized { runningWorkflows.keys.headOption }
+    }
   }
 }
 

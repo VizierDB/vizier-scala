@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,6 +35,7 @@ import info.vizierdb.viztrails.ProvenancePrediction
 import java.io.FileOutputStream
 import info.vizierdb.gis._
 import info.vizierdb.util.StringUtils
+import java.awt.image.BufferedImage
 
 object GeoPlot extends Command
   with LazyLogging
@@ -79,6 +81,22 @@ object GeoPlot extends Command
 
   def fileNameForIndex(idx: Int) = s"geojson_$idx"
 
+  def renderDatum(datum: Any): String =
+  {
+    datum match {
+      case img:BufferedImage =>
+        val out = new ByteArrayOutputStream()
+        ImageIO.write(img, "png", out)
+        (
+          "<img src=\"data:image/png;base64," + 
+          Base64.getEncoder()
+                .encodeToString(out.toByteArray()) +
+          "\">"
+        )
+      case d => d.toString
+    }
+  }
+
   def process(arguments: Arguments, context: ExecutionContext): Unit = 
   {
     var bounds: Envelope = null
@@ -119,7 +137,7 @@ object GeoPlot extends Command
                         .zipWithIndex
                         .filterNot { _._2 == shapeColumnIdx }
                         .map { case (field, idx) => 
-                          s"<tr><th>$field</th><td>${row.get(idx)}</td></tr>"
+                          s"<tr><th>$field</th><td>${renderDatum(row.get(idx))}</td></tr>"
                         }
                         .mkString("\n")+
                       "</table>"
@@ -204,7 +222,7 @@ object GeoPlot extends Command
                     .zipWithIndex
                     .filterNot { _._2 == shapeColumnIdx }
                     .map { case (field, idx) => 
-                      s"<tr><th>$field</th><td>${row.get(idx)}</td></tr>"
+                      s"<tr><th>$field</th><td>${renderDatum(row.get(idx))}</td></tr>"
                     }
                     .mkString("\n")+
                   "</table>"

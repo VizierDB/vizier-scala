@@ -1,7 +1,8 @@
-# -- copyright-header:v2 --
-# Copyright (C) 2017-2021 University at Buffalo,
+# -- copyright-header:v4 --
+# Copyright (C) 2017-2025 University at Buffalo,
 #                         New York University,
-#                         Illinois Institute of Technology.
+#                         Illinois Institute of Technology,
+#                         Breadcrumb Analytics.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -171,7 +172,10 @@ class VizierDBClient(object):
     elif type(updated_data) == pandas.core.frame.DataFrame:
       self.save_data_frame(key, updated_data)
     else:
-      raise ValueError('Type Not in any specified types supported by Python')
+      try:
+        self.export_pickle(key, updated_data)
+      except:
+        raise ValueError(f"Type '{type(updated_data)}' is not presently supported by Vizier.  Please file a ticket at https://github.com/VizierDB/vizier-scala/issues")
 
   def vizier_request(self,
                      event: str,
@@ -285,7 +289,7 @@ class VizierDBClient(object):
                      name: str,
                      dataset: DatasetClient,
                      backend_options: List[Tuple[str, str]] = [],
-                     use_deltas: bool = True
+                     use_deltas: bool = False
                      ) -> None:
     """Save a new dataset in Vizier with given name.
 
@@ -320,7 +324,7 @@ class VizierDBClient(object):
   def update_dataset(self,
                      name: str,
                      dataset: DatasetClient,
-                     use_deltas: bool = True
+                     use_deltas: bool = False
                      ) -> DatasetClient:
     """Update a given dataset.
 
@@ -479,9 +483,6 @@ class VizierDBClient(object):
     return pickle.loads(data)
 
   def export_pickle(self, key: str, value: Any) -> None:
-    if key in self.artifacts:
-      raise ValueError("An artifact named {} already exists".format(key))
-
     exported = pickle.dumps(value)
     encoded = base64.encodebytes(exported).decode()
 
@@ -516,6 +517,33 @@ class VizierDBClient(object):
       print("***File access may not be reproducible because filesystem resources are transient***")
     return open(file, mode, buffering, encoding, errors, newline, closefd, opener)
 
+  def run_script(self,
+                 script: str,
+                 inputs: Dict[str, str] = {},
+                 outputs: Dict[str, str] = {},
+                 passthrough_messages: bool = False
+                 ) -> None:
+    response = self.vizier_request("vizier_script",
+      script=script,
+      inputs=inputs,
+      outputs=outputs,
+      quiet=not passthrough_messages,
+      has_response=True,
+    )
+    assert response is not None
+    for key in response["outputs"]:
+      self.invalidate_cache(key)
+      self.artifacts[key] = Artifact(
+        name=key,
+        artifact_type=response["outputs"][key]["type"],
+        artifact_id=response["outputs"][key]["artifactId"],
+        mime_type=response["outputs"][key]["mimeType"]
+      )
+
+  def invalidate_cache(self, artifact: str) -> None:
+    if artifact in self.datasets:
+      del self.datasets[artifact]
+
   def show(self,
            value: Any,
            mime_type: Optional[str] = None,
@@ -544,10 +572,16 @@ class VizierDBClient(object):
         vizier_bokeh_show(value, None, None)
         return
       elif issubclass(type(value), MatplotlibFigure):
-        value = vizier_matplotlib_render(value)
+        import matplotlib
+        fig = value
+        value = vizier_matplotlib_render(fig)
+        matplotlib.pyplot.close(fig)
         mime_type = OUTPUT_HTML
       elif issubclass(type(value), MatplotlibAxes):
+        import matplotlib
+        fig = value.get_figure()
         value = vizier_matplotlib_render(value.get_figure())
+        matplotlib.pyplot.close(fig)
         mime_type = OUTPUT_HTML
       elif issubclass(type(value), list):
         for i in value:
@@ -657,6 +691,8 @@ class VizierDBClient(object):
       raise ValueError(f"{value} is not a valid parameter")
 
     vizier_data_type = PYTHON_TO_VIZIER_TYPES[python_data_type]
+    if type(vizier_data_type) == list:
+      vizier_data_type = vizier_data_type[0]
 
     value = export_from_native_type(value, vizier_data_type)	
     

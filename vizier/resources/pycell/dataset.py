@@ -1,7 +1,8 @@
-# -- copyright-header:v2 --
-# Copyright (C) 2017-2021 University at Buffalo,
+# -- copyright-header:v4 --
+# Copyright (C) 2017-2025 University at Buffalo,
 #                         New York University,
-#                         Illinois Institute of Technology.
+#                         Illinois Institute of Technology,
+#                         Breadcrumb Analytics.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 
 import datetime
 import io
+import math
 from bokeh.models.sources import ColumnDataSource  # type: ignore[import]
 
 """Identifier for column data types. By now the following data types are
@@ -685,7 +687,7 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
   elif data_type == DATATYPE_GEOMETRY:
     from shapely import wkt  # type: ignore[import]
     return wkt.loads(value)
-  elif data_type == DATATYPE_BINARY or data_type == DATATYPE_IMAGE:
+  elif data_type == DATATYPE_BINARY:
     import base64
     return base64.b64decode(value.encode('utf-8'))
   elif data_type == DATATYPE_DATETIME:
@@ -704,11 +706,15 @@ def import_to_native_type(value: Any, data_type: str) -> Any:
     from PIL import Image
     import base64
     with io.BytesIO(base64.b64decode(value.encode('utf-8'))) as f:
-      return Image.open(f)
-  elif data_type in ["string", "varchar", "int", "float", "double", "long", "real"]:
+      i = Image.open(f)
+      i.getexif()
+      return i
+  elif data_type in ["double", "float", "real"]:
+    return float(value)
+  elif data_type in ["string", "varchar", "int", "long"]:
     return value
   else:
-    print("Unknown type: "+data_type)
+    #print("Unknown type: "+data_type)
     return value
 
 
@@ -734,32 +740,49 @@ def export_from_native_type(value: Any, data_type: str, context="the value") -> 
     return value
   elif data_type == DATATYPE_DATETIME or data_type == DATATYPE_DATE:
     return value.isoformat()
+  elif data_type in ["double", "float", "real"]:
+    if value == math.inf:
+      return "infinity"
+    elif value == -math.inf:
+      return "-infinity"
+    else:
+      return value
   else:
     return value
 
 
-TYPE_MAPPINGS = [
-  (datetime.date, [DATATYPE_DATE]),
-  (datetime.datetime, [DATATYPE_DATETIME]),
-  (int, [DATATYPE_INT, DATATYPE_SHORT, DATATYPE_LONG]),
-  (float, [DATATYPE_REAL]),
-  (str, [DATATYPE_VARCHAR]),
-  (bytes, [DATATYPE_BINARY]),
-]
-
-PYTHON_TO_VIZIER_TYPES = {p: tlist[0] for (p, tlist) in TYPE_MAPPINGS}
-VIZIER_TO_PYTHON_TYPES = {t: p for (p, tlist) in TYPE_MAPPINGS for t in tlist}
+PYTHON_TO_VIZIER_TYPES = {
+  datetime.date: [DATATYPE_DATE],
+  datetime.datetime: [DATATYPE_DATETIME],
+  int: [DATATYPE_INT, DATATYPE_SHORT, DATATYPE_LONG, DATATYPE_REAL],
+  float: [DATATYPE_REAL],
+  str: [DATATYPE_VARCHAR],
+  bytes: [DATATYPE_BINARY],
+}
+VIZIER_TYPES = set(
+  v
+  for p in PYTHON_TO_VIZIER_TYPES
+  for v in PYTHON_TO_VIZIER_TYPES[p]
+)
+VIZIER_TO_PYTHON_TYPES = {
+  v: [
+    p
+    for p in PYTHON_TO_VIZIER_TYPES
+    if v in PYTHON_TO_VIZIER_TYPES[p]
+  ]
+  for v in VIZIER_TYPES
+}
 
 
 def assert_type(value: Any, data_type: str, context="the value") -> Any:
   if value is None:
     return value
   elif data_type in VIZIER_TO_PYTHON_TYPES:
-    python_type = VIZIER_TO_PYTHON_TYPES[data_type]
-    if isinstance(value, python_type):
-      return value
-    else:
-      raise ValueError(f"{context} ({value}) is a {type(value)} but should be a {data_type}")
+    valid_python_types = VIZIER_TO_PYTHON_TYPES[data_type]
+    for python_type in valid_python_types:
+      if isinstance(value, python_type):
+        return value
+    raise ValueError(f"{context} ({value}) is a {type(value)} but should be a {data_type}")
     # Special-case handling for Geometry types
   elif data_type == DATATYPE_IMAGE:
     from PIL.Image import Image

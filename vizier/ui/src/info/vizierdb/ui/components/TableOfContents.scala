@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -47,13 +48,6 @@ class TableOfContents(
     )
   }
 
-  val packages = 
-    Seq[(String,String)](
-      "Vizier" -> "https://github.com/VizierDB/vizier-scala/wiki",
-      "Spark" -> "https://spark.apache.org/docs/3.3.1/sql-programming-guide.html",
-      "Sedona" -> "https://sedona.apache.org/1.5.0/"
-    )
-
   def LinkToModule(element: WorkflowElement, body: Frag*): Frag =
     a(
         // The href exists for copyable links
@@ -71,9 +65,20 @@ class TableOfContents(
   def ModuleSummary(module: Module): Frag =
     Rx {
       val clazz = s"${module.subscription.state().toString.toLowerCase}_state"
+      val icon: Option[Frag] = 
+        module.subscription.state() match {
+          case ExecutionState.DONE      => None
+          case ExecutionState.ERROR     => Some(FontAwesome("exclamation-triangle"))
+          case ExecutionState.WAITING   => Some(FontAwesome("clock-o"))
+          case ExecutionState.STALE     => Some(FontAwesome("clock-o"))
+          case ExecutionState.CANCELLED => Some(FontAwesome("ban"))
+          case ExecutionState.FROZEN    => Some(FontAwesome("snowflake-o"))
+          case ExecutionState.RUNNING   => Some(FontAwesome("cogs"))
+        }
       module.toc.map { toc => 
                       li(`class` := clazz + toc.titleLevel.map { " level_"+_ }.getOrElse { "" },
                         LinkToModule(module, toc.title),
+                        icon.map { span(" (", _, ")") },
                         onmouseover := { _:dom.Event => module.highlight() = true },
                         onmouseout := { _:dom.Event => module.highlight() = false }
                       )
@@ -81,7 +86,8 @@ class TableOfContents(
                     .getOrElse { 
                       li(
                         `class` := clazz,
-                        s"${module.subscription.packageId}.${module.subscription.commandId}"
+                        s"${module.subscription.packageId}.${module.subscription.commandId}",
+                        icon.map { span(" (", _, ")") },
                       ) 
                     }
     }.reactive
@@ -108,11 +114,11 @@ class TableOfContents(
 
 
   val moduleNodes =
-    RxBufferView(ol(`class` := "the_modules"), 
+    RxBufferView(ol(`class` := "the_modules").render, 
       modules.rxMap { 
-                case module:Module => ModuleSummary(module)
-                case edit:TentativeModule => TentativeSummary(edit)
-                case inspector:ArtifactInspector => InspectorSummary(inspector)
+                case module:Module => ModuleSummary(module).render
+                case edit:TentativeModule => TentativeSummary(edit).render
+                case inspector:ArtifactInspector => InspectorSummary(inspector).render
                 case _ => div().render
               }
     )
@@ -243,12 +249,6 @@ class TableOfContents(
             }
             .reactive
 
-  val documentationNodes = 
-    ul(
-      packages.map { case (name, link) =>
-        li( FontAwesome("book"), a(href := link, name, target := "_blank") )
-      }
-    ).render
 
   val projectNameEditor = 
     Var[Option[dom.html.Input]](None)
@@ -266,9 +266,9 @@ class TableOfContents(
         artifactSearch.root,
         artifactNodes,
       ),
-      div(`class` := "documentation_list",
-        h3(`class` := "title", "Packages"),
-        documentationNodes,
-      )
+      // div(`class` := "documentation_list",
+      //   h3(`class` := "title", "Packages"),
+      //   documentationNodes,
+      // )
     )
 }

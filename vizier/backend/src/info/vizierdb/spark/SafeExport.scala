@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +21,8 @@ import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.sedona_sql.expressions.ST_AsText
 import org.apache.spark.sql.Column
 import org.mimirdb.caveats.implicits._
+import org.apache.spark.sql.functions.base64
+import org.apache.spark.sql.types.BinaryType
 
 /**
  * Certain column types (most notably UDTs) are not safe for export through 
@@ -36,7 +39,10 @@ object SafeExport
 
         column.dataType match {
           case t:UserDefinedType[_] if t.isInstanceOf[GeometryUDT] =>
-            new Column(ST_AsText(Seq(base.expr)))
+            new Column(ST_AsText(Seq(base.expr))) as column.name
+
+          case BinaryType => 
+            base64(base) as column.name
 
           case _ => 
             base

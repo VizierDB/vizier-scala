@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -107,7 +108,7 @@ class Module(val subscription: ModuleSubscription)
   /**
    * A reactive DOM node of all of the messages displayed with this module
    */
-  val messageView = RxBufferView(ul(`class` := "messages"), messages.rxMap { _.root })
+  val messageView = RxBufferView(ul(`class` := "messages").render, messages.rxMap { _.root })
   logger.trace(s"${messageView.root.childNodes.length} messages rendered")
 
   /**
@@ -255,6 +256,18 @@ class Module(val subscription: ModuleSubscription)
             `class` := "confirm",
             FontAwesome("check"),
             onclick := { _:dom.Event => subscription.delete(); }
+          ).render
+        ),
+        PopUpButton(
+          button(
+            `class` := "to_confirm",
+            FontAwesome("refresh"), 
+            Tooltip("Re-run this cell")
+          ).render,
+          button(
+            `class` := "confirm",
+            FontAwesome("check"),
+            onclick := { _:dom.Event => subscription.reRunModule(); }
           ).render
         ),
         div(`class` := "spacer")

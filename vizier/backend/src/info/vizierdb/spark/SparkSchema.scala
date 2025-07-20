@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +24,7 @@ import org.apache.spark.sql.types.UDTRegistration
 import info.vizierdb.spark.udt.ImageUDT
 import org.apache.spark.mllib.linalg.VectorUDT
 import info.vizierdb.util.StringUtils
+import info.vizierdb.Vizier
 
 object SparkSchema {
   def apply(df: DataFrame): Seq[StructField] =
@@ -73,7 +75,14 @@ object SparkSchema {
 
   lazy val vectorSingleton = new VectorUDT
 
+  def loadUserDefinedType(fullyQualifiedName: String): UserDefinedType[_] =
+  {
+    val clazz = Class.forName(fullyQualifiedName, true, Vizier.mainClassLoader)
+    clazz.newInstance().asInstanceOf[UserDefinedType[_]]
+  }
+
   def decodeType(t: String): DataType =
+  {
     t match  {
       case "varchar" => StringType
       case "int" => IntegerType
@@ -87,9 +96,11 @@ object SparkSchema {
         Json.parse(t).as[DataType]
       case _ if t.startsWith("array:") => 
         ArrayType(decodeType(t.substring(6)))
+      case _ if t.startsWith("udt:") =>
+        loadUserDefinedType(t.substring(4))
       case _ if t.startsWith("map:") => 
         {
-          val map = Json.parse(t.substring(6))
+          val map = Json.parse(t.substring(4))
           MapType(
             (map \ "key").as[DataType],
             (map \ "value").as[DataType],
@@ -99,8 +110,10 @@ object SparkSchema {
       case _ => 
         DataType.fromJson("\""+t+"\"")
     }
+  }
 
   def encodeType(t: DataType): String =
+  {
     t match {
       case (_:ArrayType) | (_:StructType) | (_:MapType) => Json.toJson(t).toString
       case DoubleType => "real"
@@ -113,9 +126,18 @@ object SparkSchema {
       case _ if t.isInstanceOf[RasterUDT] => "raster"
       case _ if t.isInstanceOf[VectorUDT] => "vector"
       case _ if t.isInstanceOf[ImageUDT] => "image/png"
-      case _ => assert(t.typeName != "map"); t.typeName
+      case _ if t.isInstanceOf[UserDefinedType[_]] => 
+        {
+          // TODO: We need cleaner UDT handling.  Convention in most UDT-based systems is to 
+          // adopt a UDT object with the same name as the actual UDT.  Drop down to the base
+          // UDT if we see this
+          var udtName = t.getClass().getCanonicalName()
+          if(udtName.endsWith("$")){ udtName = udtName.dropRight(1) }
+          /* return */ "udt:"+udtName
+        }
+      case _ => t.typeName
     }
-
+  }
 
   implicit val fieldFormat = Format[StructField](
     new Reads[StructField] { 

@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,6 +30,7 @@ import info.vizierdb.catalog.ArtifactRef
 import info.vizierdb.spark.vizual.{ VizualCommand, VizualScriptConstructor }
 import info.vizierdb.spark.caveats.QueryWithCaveats
 import info.vizierdb.util.ExperimentalOptions
+import info.vizierdb.util.JsonUtils
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.serialized
@@ -90,7 +92,7 @@ object Python extends Command
     python.send("script", 
       "script" -> JsString(script), 
       "artifacts" -> 
-        JsObject(context.scope.mapValues { artifact => 
+        JsObject(context.artifacts(registerInput = false).mapValues { artifact => 
           Json.obj(
             "type" -> artifact.t.toString(),
             "mimeType" -> artifact.mimeType,
@@ -139,7 +141,7 @@ object Python extends Command
               // each message object already gets a free newline, so trim here
               case "stderr" => {
                 logger.warn( (event\"content").as[String].trim() )
-                context.error( (event\"content").as[String].trim() )
+                context.warn( (event\"content").as[String].trim() )
               }
               case x => context.error(s"Received message on unknown stream '$x'")
             }
@@ -227,7 +229,29 @@ object Python extends Command
                   handler(Some(existingDs.id), Some(existingDs.datasetSchema)) 
                 }
             }
-
+          case "vizier_script" => 
+            {
+              val inputs = (event\"inputs").as[Map[String, String]]
+              val outputs = (event\"outputs").as[Map[String, String]]
+              val quiet = (event\"quiet").asOpt[Boolean].getOrElse(true)
+              context.runScript(
+                name = (event\"script").as[String],
+                inputs = inputs,
+                outputs = outputs,
+              )
+              python.send("script_datasets",
+                "outputs" -> JsObject(
+                  outputs.map { case (scriptName, myName) =>
+                    val artifact = context.artifact(myName, registerInput = false).get
+                    myName -> Json.obj(
+                      "type" -> artifact.t.toString(),
+                      "mimeType" -> artifact.mimeType,
+                      "artifactId" -> artifact.id
+                    )
+                  }.toMap
+                )
+              )
+            }
           case "create_dataset" => 
             {
               val artifact = 
@@ -324,15 +348,26 @@ object Python extends Command
             python.kill()
         }
       } catch {
+        case m:UnsupportedOperationException => 
+          {
+            context.error(m.getMessage())
+            python.kill()
+          }
+
+        case j:JsResultException =>
+          {
+            context.error(s"INTERNAL ERROR: $j")
+            for(i <- JsonUtils.prettyJsonParseError(j))
+            {
+              System.err.println(i)
+            }
+            j.printStackTrace()
+            python.kill()
+          }
+
         case e: Exception => 
           {
-            e match {
-              case m:UnsupportedOperationException => 
-                context.error(m.getMessage())
-              case _ => 
-                e.printStackTrace()
-                context.error(s"INTERNAL ERROR: $e")
-            }
+            e.printStackTrace()
             python.kill()
           }
       }

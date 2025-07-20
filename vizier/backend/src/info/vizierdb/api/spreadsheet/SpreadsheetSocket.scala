@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -52,7 +53,7 @@ class SpreadsheetSocket(client: String)(implicit val ec: ExecutionContext, syste
   logger.debug(s"[$client] Websocket opened")
   
   val (remote, publisher): (ActorRef, Publisher[TextMessage.Strict]) =
-        Source.actorRef[String](4096, OverflowStrategy.fail)
+        Source.actorRef[String](100000, OverflowStrategy.fail)
           .map(msg => TextMessage.Strict(msg))
           .toMat(Sink.asPublisher(false))(Keep.both)
           .run()

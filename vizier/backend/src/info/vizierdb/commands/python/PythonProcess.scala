@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -123,15 +124,16 @@ object PythonProcess
    * module_to_test_package_existence -> pypi_package_name
    */
   def REQUIRED_PACKAGES = Seq[(String, String)](
-    "numpy"      -> "numpy",
-    "bokeh"      -> "bokeh",
-    "matplotlib" -> "matplotlib",
-    "astor"      -> "astor",
-    "pyarrow"    -> "pyarrow",
-    "pandas"     -> "pandas",
-    "shapely"    -> "shapely",
-    "pyspark"    -> "pyspark==3.3.1",
-    "PIL"        -> "Pillow"
+    "numpy"       -> "numpy",
+    "bokeh"       -> "bokeh",
+    "matplotlib"  -> "matplotlib",
+    "astor"       -> "astor",
+    "pyarrow"     -> "pyarrow",
+    "pandas"      -> "pandas",
+    "shapely"     -> "shapely",
+    "pyspark"     -> "pyspark==3.3.1",
+    "PIL"         -> "Pillow",
+    "fastparquet" -> "fastparquet",
   )
 
   def checkPython(environment: PythonEnvironment = SystemPython)

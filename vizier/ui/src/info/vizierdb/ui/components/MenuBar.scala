@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,7 +28,17 @@ import info.vizierdb.ui.Vizier
 class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 {  
 
-
+  /**
+   * A list of packages to provide help for.
+   * 
+   * Todo: These should be derived from dependencies in the notebook.
+   */
+  val packages = 
+    Seq[(String,String)](
+      "Vizier" -> "https://github.com/VizierDB/vizier-scala/wiki",
+      "Spark" -> "https://spark.apache.org/docs/3.3.1/sql-programming-guide.html",
+      "Sedona" -> "https://sedona.apache.org/1.5.0/"
+    )
 
   def Menu(clazz: String, title: Modifier*)(items: Frag*) = 
   {
@@ -37,16 +48,27 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
     div(contents:_*)
   }
 
-  def MenuItem(title: String, action: () => Unit, icon: String = null, enabled: Boolean = true): Frag =
+  def MenuItem(
+    title: String, 
+    action: () => Unit = { () => () }, 
+    icon: String = null, 
+    enabled: Boolean = true, 
+    link: String = null
+  ): Frag =
   {
     var contents = Seq[Modifier](title)
 
     if(!enabled){ contents = contents :+ (`class` := "disabled") }
-    else { contents = contents :+ (onclick := { _:dom.Event => action() })}
+    else if(link == null) {
+      contents = contents :+ (onclick := { _:dom.Event => action() })
+    }
 
     if(icon != null){ contents = FontAwesome(icon) +: contents }
-    
-    li(contents)
+  
+    var body: Frag = li(contents)
+    if(link != null && enabled){ body = a(href := link, target := "_blank", body) }
+
+    return body
   }
 
   def Separator: Frag = li(`class` := "separator")
@@ -140,7 +162,14 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
                 { () => project.setActiveBranch(id) }, 
                 icon = if(id == activeBranchId){ "code-fork" } else { null }
               )
-            }
+            } ++ Seq[Frag](
+              Separator,
+              Rx { 
+                val projectId = project.projectId
+                val branchId =project.activeBranch().getOrElse(-1)
+                a(href := s"script.html?project=${projectId}&branch=${branchId}", target := "_blank", li("Publish as script..."))
+              }.reactive
+            )
           ):_*
         )
       }.reactive,
@@ -152,6 +181,14 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
         MenuItem("Scala Settings", { () => println("Scala Settings") }, enabled = false),
         Separator,
         a(href := "http://localhost:4040", target := "_blank", li("Spark Dashboard")),
+      ),
+
+      ////////////////// Help Menu ////////////////// \
+
+      Menu(s"left item", FontAwesome("question-circle"))(
+        packages.map { case (name, link) =>
+          MenuItem(name, link = link, icon = "book")
+        }
       ),
 
       ////////////////// Spacer ////////////////// 
@@ -214,14 +251,6 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
 
         Menu(s"right item state_$stateClass", icon)(options:_*)
       }.reactive,
-
-      ////////////////// Help Menu ////////////////// 
-      a(
-        `class` := "right item", 
-        href := "https://www.github.com/VizierDB/vizier-scala/wiki", 
-        target := "_blank",
-        FontAwesome("question-circle")
-      ),
     ).render
 
 }

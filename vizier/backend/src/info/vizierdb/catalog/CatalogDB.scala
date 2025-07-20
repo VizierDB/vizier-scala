@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -58,4 +59,30 @@ object CatalogDB
 
   def withDBReadOnly[T]( op: DBSession => T ): T = 
     traceLongHolds( DB.readOnly { implicit s => op(s) })
+
+  /**
+   * Initialize ScalikeJDBC's lazy variables
+   * 
+   * ScalikeJDBC involves a number of lazy variables that store the actual column names.  They are
+   * initialized by setting up a database connection.  Because SQLite is not reentrant, it's not 
+   * possible to initialize them from within a DB Session.  Instead, you get a DB 'timeout' as the 
+   * initializer tries and fails to acquire a connection.
+   * 
+   * Instead of hoping that they get initialized outside of a session, this method explicitly forces 
+   * materialization of all of the lazy variables
+   */
+  def initialize(): Unit =
+  {
+    Project.columns;
+    Branch.columns;
+    Workflow.columns;
+    Cell.columns;
+    Branch.columns;
+    Artifact.columns;
+    InputArtifactRef.columns;
+    OutputArtifactRef.columns;
+    Result.columns;
+    Script.columns;
+    ScriptRevision.columns;
+  }
 }

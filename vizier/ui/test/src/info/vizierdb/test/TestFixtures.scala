@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -121,10 +122,10 @@ object TestFixtures
     Seq(
       BuildA.Package("debug")(
         BuildA.Command("add")(
-          SimpleParameterDescription("output", "Output", "string", false, false, None, _, None)
+          SimpleParameterDescription("output", "Output", "string", false, false, None, _, None, None)
         ),
         BuildA.Command("drop")(
-          SimpleParameterDescription("dataset", "Dataset", "string", false, false, None, _, None)
+          SimpleParameterDescription("dataset", "Dataset", "string", false, false, None, _, None, None)
         )
       )
     )

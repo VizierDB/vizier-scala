@@ -1,7 +1,8 @@
-/* -- copyright-header:v2 --
- * Copyright (C) 2017-2021 University at Buffalo,
+/* -- copyright-header:v4 --
+ * Copyright (C) 2017-2025 University at Buffalo,
  *                         New York University,
- *                         Illinois Institute of Technology.
+ *                         Illinois Institute of Technology,
+ *                         Breadcrumb Analytics.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,9 +21,6 @@ object PythonSnippets extends SnippetsBase
   AddGroup("desktop", "Access and Output")(
     "Get Artifact"            -> """# Get the artifact with the given name.
                                    |ds = vizierdb['ARTIFACT_NAME']""".stripMargin,
-
-    "Get Dataset Dataframe"   -> """# Get read-only pandas dataframe object for dataset with given name.');
-                                   |df = vizierdb.get_data_frame('UNIQUE_DS_NAME')""".stripMargin,
 
     "Print Column Names"      -> """# Iterate over list of dataset columns and print column name
                                    |for col in ds.columns:
