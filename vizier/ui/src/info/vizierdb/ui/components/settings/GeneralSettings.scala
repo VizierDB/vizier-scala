@@ -24,9 +24,11 @@ import info.vizierdb.ui.Vizier
 import scala.util.Failure
 import scala.util.Success
 import info.vizierdb.ui.widgets.SystemNotification
+import scala.annotation.nowarn
 
 class GeneralSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends SettingsTab
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val title = "General"

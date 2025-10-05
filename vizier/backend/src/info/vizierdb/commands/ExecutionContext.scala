@@ -583,7 +583,6 @@ class ExecutionContext(
                   dataset.datasetData(
                     offset = Some(offset),
                     limit  = Some(limit),
-                    includeCaveats = true
                   )
                 }()
 

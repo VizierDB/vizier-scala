@@ -21,8 +21,6 @@ import org.apache.spark.sql.DataFrame
 
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.types.{ Identifier, ArtifactType }
-import info.vizierdb.spark.caveats.CaveatFormat._
-import info.vizierdb.spark.caveats.ExplainCaveats
 import info.vizierdb.api.response._
 import info.vizierdb.api.handler.{ Handler, ClientConnection }
 import info.vizierdb.VizierException

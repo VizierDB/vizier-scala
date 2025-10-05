@@ -26,6 +26,7 @@ import info.vizierdb.ui.rxExtras.implicits._
 import scala.util.Success
 import scala.util.Failure
 import info.vizierdb.ui.widgets.ShowModal
+import scala.annotation.nowarn
 
 case class CaveatModal(
   projectId: Identifier, 
@@ -35,9 +36,10 @@ case class CaveatModal(
 ) 
 {
   implicit val ctx = Vizier.ctx
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  val caveatsOrError = Var[Option[Either[Seq[Caveat],String]]](None)
+  val caveatsOrError = Var[Option[Either[Seq[Caveat],String]]](Some(Right("Caveats are not supported for now")))
 
 
   val root = 
@@ -59,15 +61,6 @@ case class CaveatModal(
       }.reactive
     ).render
 
-  Vizier.api.artifactGetAnnotations(
-    projectId = projectId,
-    artifactId = datasetId,
-    column = column,
-    row = row
-  ).onComplete { 
-    case Success(caveats) => caveatsOrError() = Some(Left(caveats))
-    case Failure(e) => caveatsOrError() = Some(Right(e.getMessage))
-  }
 
   def show() = ShowModal.acknowledge(root)
 }

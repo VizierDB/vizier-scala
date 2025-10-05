@@ -19,7 +19,6 @@ import org.scalajs.dom
 import scalatags.JsDom.all._
 import info.vizierdb.ui.rxExtras.implicits._
 import rx._
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.types.ArtifactType
 import info.vizierdb.serialized
 import scala.concurrent.{ Future, Promise }
@@ -29,6 +28,7 @@ import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.util.Trie
 import info.vizierdb.ui.widgets.ScrollIntoView
 import info.vizierdb.ui.widgets.Tooltip
+import scala.annotation.nowarn
 
 class TentativeModule(
   val editList: TentativeEdits, 
@@ -40,6 +40,9 @@ class TentativeModule(
   with ModuleEditorDelegate
   with ScrollIntoView.CanScroll
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   var defaultModule: Option[(String, String)] = None
 
   val activeView = Var[Option[Either[CommandList, ModuleEditor]]](None)

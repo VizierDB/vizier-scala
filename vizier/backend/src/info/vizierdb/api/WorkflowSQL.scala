@@ -80,7 +80,6 @@ object WorkflowSQL
     QueryWithCaveats(
       query = query.get,
       views = datasets,
-      includeCaveats = true,
     )
   } 
 }

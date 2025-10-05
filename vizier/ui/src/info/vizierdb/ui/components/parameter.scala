@@ -33,6 +33,7 @@ import info.vizierdb.ui.components.snippets.SnippetsBase
 import info.vizierdb.ui.components.snippets.ScalaSnippets
 import org.scalajs.dom.Node
 import info.vizierdb.ui.Vizier
+import scala.annotation.nowarn
 
 class ParameterError(msg: String, val parameter: Parameter) extends Exception(msg)
 
@@ -1105,9 +1106,10 @@ class EnvironmentParameter(
   val hidden: Boolean
 )(implicit owner: Ctx.Owner) extends Parameter
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-  
-  def this(parameter: serialized.CodeParameterDescription)(implicit owner: Ctx.Owner)
+
+    def this(parameter: serialized.CodeParameterDescription)(implicit owner: Ctx.Owner)
   {
     this(
       id = parameter.id,

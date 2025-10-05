@@ -20,7 +20,6 @@ import scalatags.JsDom.all._
 import rx._
 import scala.scalajs.js
 import info.vizierdb.serialized
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.util.Logging
 import info.vizierdb.serializers._
 import info.vizierdb.api.websocket
@@ -42,11 +41,15 @@ import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.components.editors._
 import info.vizierdb.ui.widgets.FontAwesome
+import scala.annotation.nowarn
 
 trait ModuleEditor
   extends Object
   with Logging
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   def saveState()
   {
     val response = 

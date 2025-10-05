@@ -179,7 +179,6 @@ case class Artifact(
                 offset = offset, 
                 limit = Some(actualLimit), 
                 forceProfiler = forceProfiler, 
-                includeCaveats = false//true
               )(session)
 
           val df = dataframe
@@ -241,7 +240,6 @@ case class Artifact(
     offset: Option[Long] = None, 
     limit: Option[Int] = None,
     forceProfiler: Boolean = false,
-    includeCaveats: Boolean = false
   )(implicit session: DBSession): () => DataContainer = 
   {
     assert(t.equals(ArtifactType.DATASET))
@@ -250,33 +248,14 @@ case class Artifact(
                  Map(id -> this), 
                  Artifact.get(_:Identifier)
                )
-    val computeCaveats = 
-      ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats
     return { () => 
-      try {
         QueryWithCaveats(
           query = descriptor.construct(deps(_)),
-          includeCaveats = computeCaveats,
           limit = limit,
           offset = offset,
-          computedProperties = descriptor.properties,
           cacheAs = None,
           columns = None
         )
-      } catch {
-        case a:AnalysisException if computeCaveats =>
-          logger.debug(a.getStackTrace().map { _.toString }.mkString("\n"))
-          logger.warn(s"Error applying caveats (${a.getMessage}).  Trying without.")
-          QueryWithCaveats(
-            query = descriptor.construct(deps(_)),
-            includeCaveats = false,
-            limit = limit,
-            offset = offset,
-            computedProperties = descriptor.properties,
-            cacheAs = None,
-            columns = None
-          )
-      }
     }
 
   }

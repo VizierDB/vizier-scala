@@ -162,7 +162,6 @@ for( (domain, routes) <- routesByDomain )
        |import de.heikoseeberger.akkahttpplayjson.PlayJsonSupport._
        |import VizierServer.RouteImplicits._
        |import scala.jdk.CollectionConverters._
-       |import info.vizierdb.spark.caveats.CaveatFormat._
        |
        |object $clazz
        |{
@@ -310,10 +309,12 @@ def renderWebsocketRouteHandler(route: Route): (String, String) =
        |import info.vizierdb.serializers._
        |import scala.concurrent.Future
        |import info.vizierdb.spark.caveats.DataContainer
-       |import scala.concurrent.ExecutionContext.Implicits.global
+       |import scala.annotation.nowarn
        |
        |abstract class BranchWatcherAPIProxy
        |{
+       |  @nowarn("cat=other")
+       |  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
        |  def sendRequest(leafPath: Seq[String], args: Map[String, JsValue]): Future[JsValue]
        |
        |${WEBSOCKET_ROUTES.map { renderWebsocketRouteHandler(_)._2 }
@@ -424,6 +425,7 @@ def websocketAPICall(route: Route): String =
 
   val data: String =
     s"""package info.vizierdb.ui.network
+       |$AUTOGEN_HEADER
        |import scala.scalajs.js
        |import play.api.libs.json._
        |import org.scalajs.dom.ext.Ajax
@@ -431,7 +433,6 @@ def websocketAPICall(route: Route): String =
        |
        |import info.vizierdb.types._
        |import scala.concurrent.Future
-       |import scala.concurrent.ExecutionContext.Implicits.global
        |
        |import info.vizierdb.serialized
        |import info.vizierdb.ui.components.Parameter
@@ -439,12 +440,15 @@ def websocketAPICall(route: Route): String =
        |import info.vizierdb.serializers._
        |import info.vizierdb.spark.caveats.DataContainer
        |import info.vizierdb.nativeTypes.Caveat
+       |import scala.annotation.nowarn
        |
        |case class API(baseUrl: String)
        |  extends Object
        |  with Logging
        |  with APIExtras
        |{
+       |  @nowarn("cat=other")
+       |  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
        |
        |  def makeUrl(path: String, query: (String, Option[String])*): String = 
        |    baseUrl + path + (

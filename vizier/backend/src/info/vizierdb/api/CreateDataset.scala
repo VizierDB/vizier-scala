@@ -38,7 +38,6 @@ object CreateDataset
     rows: Seq[DatasetRow],
     name: Option[String],
     properties: Option[serialized.PropertyList.T],
-    annotations: Option[DatasetAnnotation]
   ): serialized.ArtifactSummary =
   {
     CatalogDB.withDB { implicit s => 

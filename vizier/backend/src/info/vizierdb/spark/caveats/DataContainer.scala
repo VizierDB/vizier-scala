@@ -17,9 +17,7 @@ package info.vizierdb.spark.caveats
 
 import play.api.libs.json._
 import org.apache.spark.sql.types.{ StructType, StructField }
-import info.vizierdb.spark.caveats.CaveatFormat._
 import info.vizierdb.api.JsonResponse
-import org.mimirdb.caveats.Caveat
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import info.vizierdb.spark.SparkPrimitive
 
@@ -29,7 +27,6 @@ case class DataContainer (
                   prov: Seq[String],
                   colTaint: Seq[Seq[Boolean]],
                   rowTaint: Seq[Boolean],
-                  reasons: Seq[Seq[Caveat]],
                   properties: Map[String,JsValue]
 ) extends JsonResponse[DataContainer]
 {
@@ -85,9 +82,6 @@ object DataContainer {
             parsed("prov").as[Seq[String]],
             parsed("colTaint").as[Seq[Seq[Boolean]]],
             parsed("rowTaint").as[Seq[Boolean]],
-            if(parsed contains "reasons"){
-              parsed("reasons").as[Seq[Seq[Caveat]]]
-            } else { Seq.empty },
             parsed("properties").as[Map[String,JsValue]]
           )
         )
@@ -106,7 +100,6 @@ object DataContainer {
           "prov" -> data.prov,
           "colTaint" -> data.colTaint,
           "rowTaint" -> data.rowTaint,
-          "reasons" -> data.reasons,
           "properties" -> data.properties
         )
       }

@@ -25,10 +25,13 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.ui.components.DisplayArtifact
 import scala.util.{ Try, Success, Failure }
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.annotation.nowarn
 
 object ArtifactView
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   def apply(arguments: Map[String, String])(implicit owner: Ctx.Owner): Unit =
   {
     val projectId = arguments.get("project").get.toLong

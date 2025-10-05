@@ -24,13 +24,16 @@ import scala.util.{ Try, Success, Failure }
 import info.vizierdb.ui.components.Project
 import info.vizierdb.util.Logging
 import info.vizierdb.ui.widgets.Spinner
-import scala.concurrent.ExecutionContext.Implicits.global
 import rx._
 import info.vizierdb.ui.rxExtras.OnMount
+import scala.annotation.nowarn
 
 object ProjectView
   extends Logging
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   def apply(arguments: Map[String, String])(implicit owner: Ctx.Owner): Unit =
   {
     val projectId = 

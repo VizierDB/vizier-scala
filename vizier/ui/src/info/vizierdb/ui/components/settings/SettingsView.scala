@@ -24,9 +24,11 @@ import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.Vizier
 import scala.util.Failure
 import scala.util.Success
+import scala.annotation.nowarn
 
 class SettingsView(initialTab: Option[String] = None)(implicit owner: Ctx.Owner)
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
   
   val tabs = Seq[SettingsTab](

@@ -177,18 +177,6 @@ class TableOfContents(
                         // Category-specific actions
                         artifact.category match {
                           case ArtifactType.DATASET => Seq[Frag](
-                              // Caveat list
-                              a(
-                                href := Vizier.api.artifactDsGetAnnotationsURL(projectId, artifact.id),
-                                onclick := { _:dom.Event =>
-                                  CaveatModal(projectId, artifact.id,
-                                    row = None,
-                                    column = None
-                                  ).show()
-                                  /* return */ false // avoid link from triggering
-                                },
-                                FontAwesome("exclamation-triangle")
-                              ),
 
                               // Spreadsheet view
                               a(

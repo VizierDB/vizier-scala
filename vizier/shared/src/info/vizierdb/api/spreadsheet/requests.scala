@@ -20,6 +20,7 @@ import play.api.libs.json._
 import info.vizierdb.nativeTypes.CellDataType
 import info.vizierdb.serialized
 import info.vizierdb.serializers._
+import scala.annotation.nowarn
 
 sealed trait SpreadsheetRequest
 
@@ -86,7 +87,11 @@ object EditCell
   implicit val format: Format[EditCell] = Json.format
 }
 
+
 object SpreadsheetRequest
 {
+  // Since this file is shared between the front and the backend, on one side of the fence (I'm not sure which), the
+  // following line is unreachable... but on the other it's required
+  @nowarn
   implicit val format: Format[SpreadsheetRequest] = Json.format
 }

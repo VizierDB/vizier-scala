@@ -25,7 +25,6 @@ import info.vizierdb.ui.rxExtras.OnMount
 import info.vizierdb.ui.widgets.Spinner
 import scala.concurrent.Future
 import info.vizierdb.serialized.VizierScript
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.serialized.VizierScriptModule
 import info.vizierdb.ui.rxExtras.RxBuffer
 import info.vizierdb.ui.rxExtras.RxBufferView
@@ -36,9 +35,12 @@ import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.ui.widgets.Tooltip
 import scala.util.{ Success, Failure }
 import info.vizierdb.ui.widgets.BrowserLocation
+import scala.annotation.nowarn
 
 class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val modules: RxBufferVar[VizierScriptModule] = 
     RxBuffer.ofSeq(script.modules)
@@ -375,6 +377,9 @@ class ScriptEditor(script: VizierScript)(implicit owner: Ctx.Owner)
 
 object ScriptEditor
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   def apply(arguments: Map[String, String])(implicit owner: Ctx.Owner): Unit =
   {
     val projectId = arguments.get("project").map { _.toLong }

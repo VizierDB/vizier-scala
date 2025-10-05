@@ -17,7 +17,6 @@ package info.vizierdb.ui.roots
 
 import rx._
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.ui.Vizier
 import org.scalajs.dom.document
 import org.scalajs.dom
@@ -27,9 +26,13 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.OnMount
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.ui.components
+import scala.annotation.nowarn
 
 object StaticWorkflow
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   def apply(arguments: Map[String, String])(implicit owner: Ctx.Owner): Unit =
   {
     val projectId = arguments.get("project").get.toLong

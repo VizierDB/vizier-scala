@@ -150,7 +150,7 @@ object Python extends Command
               python.send("dataset",
                 "data" -> Json.toJson(
                   CatalogDB.withDB { implicit s => 
-                    artifact.datasetData(includeCaveats = true)
+                    artifact.datasetData()
                   }()
 
                 ),
@@ -314,7 +314,6 @@ object Python extends Command
                 val connection = ArrowQuery(
                   QueryWithCaveats.build(
                     CatalogDB.withDB { implicit s => artifact.dataframe }(),
-                    includeCaveats = false,
                     includeRowids = false,
                   )
                 )

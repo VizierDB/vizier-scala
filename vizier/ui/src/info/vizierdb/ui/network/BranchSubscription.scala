@@ -25,7 +25,6 @@ import scala.concurrent.{ Promise, Future }
 import info.vizierdb.ui.rxExtras.RxBufferVar
 import info.vizierdb.types._
 import scala.scalajs.js.timers._
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.util.Logging
 import info.vizierdb.serialized
 import info.vizierdb.api.websocket
@@ -35,6 +34,7 @@ import scala.util.{ Success, Failure }
 import info.vizierdb.ui.components.Project
 import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.widgets.SystemNotification
+import scala.annotation.nowarn
 
 class BranchSubscription(
   project: Project, 
@@ -43,6 +43,9 @@ class BranchSubscription(
   extends Object
   with Logging
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   var socket = getSocket() 
   var keepaliveTimer: SetIntervalHandle = null
 

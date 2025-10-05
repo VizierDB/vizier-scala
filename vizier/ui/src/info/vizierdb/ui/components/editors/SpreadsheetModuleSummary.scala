@@ -39,6 +39,7 @@ import info.vizierdb.api.spreadsheet.SaveWorkflowCell
 import info.vizierdb.serialized.CommandArgumentList
 import info.vizierdb.api.spreadsheet.OpenWorkflowCell
 import info.vizierdb.ui.network.SpreadsheetTools
+import scala.annotation.nowarn
 
 
 class SpreadsheetModuleSummary(
@@ -48,7 +49,8 @@ class SpreadsheetModuleSummary(
   with Logging
 {
 
-  implicit val ec: ExecutionContext = ExecutionContext.global
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val inputName: Rx[Option[String]] = 
     module.subscription

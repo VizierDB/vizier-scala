@@ -23,7 +23,6 @@ import scala.concurrent.{ Promise, Future }
 import info.vizierdb.serialized
 import info.vizierdb.ui.network.{ API, BranchSubscription }
 import info.vizierdb.ui.rxExtras.implicits._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
 import info.vizierdb.util.Logging
 import info.vizierdb.types.Identifier
@@ -31,12 +30,16 @@ import info.vizierdb.nativeTypes.JsValue
 import play.api.libs.json.JsString
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.Vizier
+import scala.annotation.nowarn
 
 class Project(val projectId: Identifier, autosubscribe: Boolean = true)
              (implicit owner: Ctx.Owner)
   extends Object
   with Logging
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   val properties = Var[Map[String, JsValue]](Map.empty)
   val projectName = Rx { 
     properties().get("name")

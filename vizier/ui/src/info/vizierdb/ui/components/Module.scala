@@ -33,6 +33,7 @@ import java.awt.Font
 import info.vizierdb.ui.widgets.Tooltip
 import info.vizierdb.ui.widgets.PopUpButton
 import info.vizierdb.ui.widgets.ScrollIntoView
+import scala.annotation.nowarn
 
 class Module(val subscription: ModuleSubscription)
             (implicit owner: Ctx.Owner)
@@ -40,6 +41,7 @@ class Module(val subscription: ModuleSubscription)
   with Logging
   with ModuleEditorDelegate
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   /**

@@ -35,6 +35,7 @@ import info.vizierdb.util.Logging
 import info.vizierdb.types.DatasetFormat
 import play.api.libs.json._
 import info.vizierdb.serializers._
+import scala.annotation.nowarn
 
 class LoadDatasetEditor(
   val delegate: ModuleEditorDelegate,
@@ -44,8 +45,6 @@ class LoadDatasetEditor(
   extends ModuleEditor
   with Logging
 {
-  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-
   val urlField = input(`type` := "text", 
                        name := "url",
                        placeholder := "https://url/of/file.csv      OR      path/to/file.csv",

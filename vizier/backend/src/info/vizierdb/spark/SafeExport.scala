@@ -20,7 +20,6 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 import org.apache.spark.sql.sedona_sql.expressions.ST_AsText
 import org.apache.spark.sql.Column
-import org.mimirdb.caveats.implicits._
 import org.apache.spark.sql.functions.base64
 import org.apache.spark.sql.types.BinaryType
 
@@ -50,6 +49,6 @@ object SafeExport
 
       }
     
-    df.select(mapping:_*).stripCaveats
+    df.select(mapping:_*)
   }
 }

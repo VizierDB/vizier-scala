@@ -35,10 +35,12 @@ import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.rxExtras.RxBufferView
 import info.vizierdb.types._
 import scala.scalajs.js
+import scala.annotation.nowarn
 
 
 class PythonSettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends SettingsTab
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   sealed trait PythonPackageEntry { 

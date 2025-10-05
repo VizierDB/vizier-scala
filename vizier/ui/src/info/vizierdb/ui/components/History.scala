@@ -26,6 +26,7 @@ import info.vizierdb.ui.Vizier
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.widgets.FontAwesome
+import scala.annotation.nowarn
 
 
 class History(
@@ -34,6 +35,7 @@ class History(
   branches: Rx[Seq[(String, Identifier)]]
 )(implicit owner: Ctx.Owner)
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   def this(project: Project)(implicit owner: Ctx.Owner) =

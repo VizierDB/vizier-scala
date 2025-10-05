@@ -28,6 +28,7 @@ import scala.util.Success
 import scala.util.Failure
 import info.vizierdb.ui.Vizier
 import info.vizierdb.serialized
+import scala.annotation.nowarn
 
 /**
  * A user interface widget to help users to inspect the contents of artifacts.  These are
@@ -41,6 +42,7 @@ class ArtifactInspector(
   with NoWorkflowOutputs
   with ScrollIntoView.CanScroll
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
   val selected = Var[Either[(String, ArtifactDescription), String]](Right("Select an artifact..."))
 

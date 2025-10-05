@@ -48,7 +48,6 @@ import java.awt.image.BufferedImage
 import info.vizierdb.spark.udt.ImageUDT
 import scala.sys.process.Process
 import info.vizierdb.util.StringUtils
-import info.vizierdb.spark.caveats.ExplainCaveats
 import info.vizierdb.api.BrowseFilesystem
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.api.akka.VizierServer

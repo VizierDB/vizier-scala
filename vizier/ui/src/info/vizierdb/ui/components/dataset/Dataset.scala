@@ -31,6 +31,7 @@ import info.vizierdb.ui.Vizier
 import info.vizierdb.util.RowCache
 import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.ui.network.SpreadsheetClient
+import scala.annotation.nowarn
 
 /**
  * A representation of a dataset artifact
@@ -57,6 +58,7 @@ class Dataset(
 {
   val ROW_HEIGHT = 30
 
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val cache = new RowCache[DatasetRow] (

@@ -26,9 +26,6 @@ import info.vizierdb.spark.{ InjectedSparkSQL, SparkSchema, DataFrameCache }
 import info.vizierdb.spark.rowids.{ AnnotateWithRowIds, AnnotateWithSequenceNumber }
 import org.mimirdb.caveats.lifting.ResolveLifts
 import org.apache.spark.sql.execution.{ ExtendedMode => SelectedExplainMode }
-import org.mimirdb.caveats.implicits._
-import org.mimirdb.caveats.{ Constants => CaveatConsts }
-import org.mimirdb.caveats.Caveats
 import org.apache.spark.sql.types._
 import info.vizierdb.catalog.Artifact
 import org.apache.spark.sql.AnalysisException
@@ -46,7 +43,6 @@ object QueryWithCaveats
 
   def apply(
     query: String,
-    includeCaveats: Boolean,
     limit: Option[Int] = None,
     sparkSession: SparkSession = Vizier.sparkSession,
     views: Map[String, () => DataFrame],
@@ -60,9 +56,7 @@ object QueryWithCaveats
         functionMappings = functions, 
         allowMappedTablesOnly = true
       ),
-      includeCaveats = includeCaveats, 
       limit = limit,
-      computedProperties = Map.empty,
       offset = None,
       cacheAs = None,
       columns = None
@@ -71,14 +65,11 @@ object QueryWithCaveats
 
   def apply(
     query: DataFrame,
-    includeCaveats: Boolean
   ): DataContainer =
   {
     apply(
       query, 
-      includeCaveats = includeCaveats, 
       limit = None,
-      computedProperties = Map.empty,
       offset = None,
       cacheAs = None,
       columns = None
@@ -89,7 +80,6 @@ object QueryWithCaveats
 
   def build(
     query: DataFrame, 
-    includeCaveats: Boolean,
     includeRowids: Boolean = true
   ): DataFrame =
   {
@@ -122,15 +112,6 @@ object QueryWithCaveats
     /////// Either way, after we track the caveats, we no longer need the
     /////// ApplyCaveat decorators
 
-    // temporarily working around a bug in pedantic caveatting: 
-    // https://github.com/VizierDB/vizier-scala/issues/230
-    if(ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats){
-      df = Caveats.annotate(df, CaveatExistsInPlanNonPedantic)
-                  .stripCaveats 
-    } else {
-      df = df.stripCaveats
-    }
-    
     logger.trace(s"############ \n${df.queryExecution.analyzed.treeString}")
     logger.trace("############")
 
@@ -141,9 +122,7 @@ object QueryWithCaveats
 
   def apply(
     query: DataFrame,
-    includeCaveats: Boolean,
     limit: Option[Int],
-    computedProperties: Map[String,JsValue],
     offset: Option[Long],
     cacheAs: Option[String],
     columns: Option[Seq[String]]
@@ -152,11 +131,7 @@ object QueryWithCaveats
 
     // With/Without caveats ends up with a different table, so 
     // make sure to distinguish the identifiers.
-    val cacheIdentifier = cacheAs.map { 
-      (
-        (if(includeCaveats){ "+caveat:" } else { "-caveat:" })
-      ) + _
-    }
+    val cacheIdentifier = cacheAs 
 
     // The route to generating results is different, depending on
     // whether we're able to cache or not.
@@ -166,7 +141,7 @@ object QueryWithCaveats
 
           // If we're allowed to use the cache...
           logger.trace(s"Checking cache for `$id`")
-          val cache = DataFrameCache(id) { build(query, includeCaveats) }
+          val cache = DataFrameCache(id) { build(query) }
 
           // With the cache, we can defer limit/offset to the
           // cache.
@@ -191,7 +166,7 @@ object QueryWithCaveats
 
           logger.trace("About to build query")
           // If we're not allowed to use the cache
-          var df = build(query, includeCaveats)
+          var df = build(query)
           logger.trace("Done building query; about to check offset/limit")
 
           // We can't offload limit/offset to the cache, so
@@ -283,16 +258,7 @@ object QueryWithCaveats
     /////// If necessary, extract which rows/cells are affected by caveats from
     /////// the result table.
     val (colTaint, rowTaint): (Seq[Seq[Boolean]], Seq[Boolean]) = 
-      if(ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats){
-        results.map { row =>
-          val annotation = row.getAs[Row](CaveatConsts.ANNOTATION_ATTRIBUTE)
-          val columnAnnotations = annotation.getAs[Row](CaveatConsts.ATTRIBUTE_FIELD)
-          (
-            schema.map { attribute => columnAnnotations.getAs[Boolean](attribute.name) },
-            annotation.getAs[Boolean](CaveatConsts.ROW_FIELD)
-          )
-        }.toSeq.unzip[Seq[Boolean], Boolean]
-      } else { (Seq[Seq[Boolean]](), Seq[Boolean]()) }
+      (Seq[Seq[Boolean]](), Seq[Boolean]()) 
 
     /////// Dump the final results.
     DataContainer(
@@ -302,8 +268,7 @@ object QueryWithCaveats
       results.map { row => s"${row.get(identifierAnnotation)}" }.toSeq,
       colTaint, 
       rowTaint,
-      Seq(),
-      computedProperties
+      Map(),
     )
   }
 

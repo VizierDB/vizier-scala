@@ -17,15 +17,17 @@ package info.vizierdb.ui.network
 
 import scala.concurrent.Future
 import info.vizierdb.serialized
-import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.libs.json.JsValue
 import org.scalajs.dom.raw.XMLHttpRequest
 import play.api.libs.json.Json
 import info.vizierdb.ui.Vizier
 import info.vizierdb.util.Cached
+import scala.annotation.nowarn
 
 trait APIExtras
 {
+  implicit val ec: scala.concurrent.ExecutionContext
+
   def serviceDescriptor():Future[serialized.ServiceDescriptor]
 
   def makeUrl(path: String, query: (String, Option[String])*): String

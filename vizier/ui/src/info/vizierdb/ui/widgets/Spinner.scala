@@ -22,11 +22,13 @@ import scala.concurrent.Future
 import scala.util.Success
 import scala.util.Failure
 import info.vizierdb.ui.Vizier
+import scala.annotation.nowarn
 
 // Modeled after bootstrap
 // https://getbootstrap.com/docs/4.3/components/spinners/
 object Spinner
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   def apply(size: Int = 15): dom.Node =

@@ -26,15 +26,18 @@ import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import scala.util.{ Success, Failure }
 import info.vizierdb.ui.Vizier
-import scala.concurrent.ExecutionContext.Implicits.global
 import info.vizierdb.nativeTypes
 import info.vizierdb.ui.rxExtras.implicits._
 import info.vizierdb.ui.widgets.FontAwesome
+import scala.annotation.nowarn
 
 
 object LandingPage
   extends Logging
 {
+  @nowarn("cat=other")
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
   class ProjectView()(implicit owner: Ctx.Owner)
   {
     val projects = Var[Option[serialized.ProjectList]](None)

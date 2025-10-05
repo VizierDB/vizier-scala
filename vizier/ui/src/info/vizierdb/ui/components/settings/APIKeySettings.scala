@@ -24,9 +24,11 @@ import dom.experimental.{ Notification => BrowserNotification }
 import info.vizierdb.ui.Vizier
 import scala.util.Failure
 import scala.util.Success
+import scala.annotation.nowarn
 
 class APIKeySettings(parent: SettingsView)(implicit owner: Ctx.Owner) extends SettingsTab
 {
+  @nowarn("cat=other")
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val title = "API Keys"
