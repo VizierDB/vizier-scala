@@ -47,7 +47,6 @@ import info.vizierdb.catalog.Doctor
 import java.awt.image.BufferedImage
 import info.vizierdb.spark.udt.ImageUDT
 import scala.sys.process.Process
-import org.mimirdb.caveats.Caveat
 import info.vizierdb.util.StringUtils
 import info.vizierdb.spark.caveats.ExplainCaveats
 import info.vizierdb.api.BrowseFilesystem
@@ -312,33 +311,8 @@ object Vizier
           }
           println("... execution finished.")
           if(config.run.showCaveats()){
-            val caveats: Map[String, Seq[Caveat]] =
-              project.artifacts
-                     .toSeq
-                     .filter { _._2.t.equals(ArtifactType.DATASET) }
-                     .map { case (name, artifact) =>
-                        name -> ExplainCaveats(
-                          CatalogDB.withDB { implicit s => 
-                            artifact.dataframe
-                          }()
-                        )
-                      }
-                     .filterNot { _._2.isEmpty }
-                     .toMap
-            if(!caveats.isEmpty){
-              System.err.println("\nThere were potential problems with generated datasets")
-              for( (artifact, caveats) <- caveats ){
-                System.err.println(s"\n==== $artifact ====")
-                for( caveat <- caveats ){
-                  System.err.println( " * " + caveat.message )
-                }
-              }
-              System.err.println("")
-              System.exit(-1)
-            } else {
-              println("... all datasets check out")
-              System.exit(0)
-            }
+            println("Show caveats is not supported at the moment")
+            System.exit(-1)
           }
 
         } else { 

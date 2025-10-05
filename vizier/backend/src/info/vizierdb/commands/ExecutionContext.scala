@@ -152,6 +152,10 @@ class ExecutionContext(
       throw new VizierException(s"No such dataset: $name")
     }
 
+  // def substrait(name: String, registerInput:Boolean = true): io.substrait.plan.Plan = {
+  //   ???
+  // }
+
   /** 
    * Retrieve the spark dataframe for the specified dataset
    * 

@@ -34,7 +34,6 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.{Materializer, OverflowStrategy}
 import org.reactivestreams.Publisher
-import spire.implicits
 import info.vizierdb.catalog.Project
 import info.vizierdb.catalog.Branch
 import info.vizierdb.commands.Arguments

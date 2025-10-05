@@ -557,9 +557,8 @@ class MutableProject(
     val artifact: Artifact = this.artifact(artifactName)
     artifact.t match {
       case ArtifactType.DATASET => {
-        import org.mimirdb.caveats.implicits._
         val df = CatalogDB.withDB { implicit s => artifact.dataframe }()
-        df.showCaveats(count = Option(rows).map { _.toInt }.getOrElse(20))
+        df.show()
       }
       case _ => throw new VizierException(s"Show unsupported for ${artifact.t}")
     }

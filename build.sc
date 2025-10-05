@@ -116,10 +116,10 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
  *************************************************/
   def mvnDeps = Seq(
     ////////////////////// Mimir ///////////////////////////
-    MIMIR_CAVEATS
-      .exclude(
-        "org.apache.logging.log4j" -> "log4j-slf4j-impl"
-      ),
+    // MIMIR_CAVEATS
+    //   .exclude(
+    //     "org.apache.logging.log4j" -> "log4j-slf4j-impl"
+    //   ),
 
     ////////////////////// Catalog Management //////////////
     mvn"org.scalikejdbc::scalikejdbc::4.0.0",
@@ -177,6 +177,10 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
 
     // Python
     mvn"me.shadaj::scalapy-core:0.5.2",
+
+    // Substrait
+    mvn"io.substrait:core:0.65.0",
+    mvn"io.substrait:spark:0.65.0",
 
     ////////////////////// Logging /////////////////////////
     mvn"com.typesafe.scala-logging::scala-logging::3.9.4",

@@ -21,7 +21,6 @@ import org.apache.spark.sql.DataFrame
 
 import info.vizierdb.catalog.Artifact
 import info.vizierdb.types.{ Identifier, ArtifactType }
-import org.mimirdb.caveats.Caveat
 import info.vizierdb.spark.caveats.CaveatFormat._
 import info.vizierdb.spark.caveats.ExplainCaveats
 import info.vizierdb.api.response._
@@ -100,32 +99,6 @@ object GetArtifact
     expecting = Some(expectedType),
     name = name,
   )
-
-  object Annotations
-  {
-    def apply(
-      projectId: Identifier,
-      artifactId: Identifier,
-      column: Option[Int],
-      row: Option[String],
-    ): Seq[Caveat] =
-    {
-      getArtifact(projectId, artifactId, Some(ArtifactType.DATASET)) match { 
-        case Some(artifact) => 
-          val df:DataFrame = CatalogDB.withDB { implicit s => artifact.dataframe }()
-          ExplainCaveats(
-            df,
-            rows = row.map { Seq(_) }.getOrElse { null },
-            cols = column.map { col => 
-                      Seq( df.columns(col) )
-                   }.getOrElse { null }
-          )
-      
-        case None => 
-          ErrorResponse.noSuchEntity
-      }
-    }
-  }
 
   object Summary
   {
