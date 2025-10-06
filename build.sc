@@ -133,9 +133,9 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
                "com.fasterxml.jackson.core" -> "*",
              ),
 
-    mvn"com.crealytics::spark-excel:0.13.3+17-b51cc0ac+20200722-1201-SNAPSHOT".exclude(
-               "javax.servlet" -> "*",
-             ), 
+    // mvn"com.crealytics::spark-excel:0.13.3+17-b51cc0ac+20200722-1201-SNAPSHOT".exclude(
+    //            "javax.servlet" -> "*",
+    //          ), 
 
     ////////////////////// Interfacing /////////////////////
     mvn"org.rogach::scallop:3.4.0",
@@ -179,8 +179,11 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
     mvn"me.shadaj::scalapy-core:0.5.2",
 
     // Substrait
-    mvn"io.substrait:core:0.65.0",
-    mvn"io.substrait:spark:0.65.0",
+    // mvn"io.substrait:core:0.65.0",
+    mvn"io.substrait:spark:0.65.0".exclude(
+      "com.fasterxml.jackson.core" -> "*",
+      "com.fasterxml.jackson.datatype" -> "*",
+    ),
     mvn"org.apache.spark::spark-mllib:3.4.4", // substrait doesn't import sparml by default
 
     ////////////////////// Logging /////////////////////////
