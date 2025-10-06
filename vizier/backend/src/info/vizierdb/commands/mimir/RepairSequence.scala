@@ -22,7 +22,6 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.types.{ ShortType, IntegerType, LongType }
 import org.apache.spark.sql.{ DataFrame, Row }
 import org.apache.spark.sql.functions._
-import org.mimirdb.caveats.implicits._
 
 object RepairSequence 
   extends LensCommand
@@ -94,10 +93,10 @@ object RepairSequence
         "left_outer"
       )
     // Register a caveat for any record that doesn't have a match
-      .caveatIf(
-        concat(lit("A missing key ("), idField, lit(s") in ${arguments.pretty(PARAM_DATASET)} was added")),
-        df(key).isNull
-      )
+      // .caveatIf(
+      //   concat(lit("A missing key ("), idField, lit(s") in ${arguments.pretty(PARAM_DATASET)} was added")),
+      //   df(key).isNull
+      // )
     // And project out the new "id" field.
       .select(fieldRefs:_*)
   }

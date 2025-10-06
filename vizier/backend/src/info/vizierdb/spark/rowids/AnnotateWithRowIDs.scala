@@ -29,7 +29,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.catalyst.plans.LeftSemi
 import org.apache.spark.sql.catalyst.plans.NaturalJoin
 import org.apache.spark.sql.catalyst.plans.Inner
-import org.mimirdb.spark.expressionLogic
+import info.vizierdb.spark.expressionLogic
 
 object AnnotateWithRowIds
 {

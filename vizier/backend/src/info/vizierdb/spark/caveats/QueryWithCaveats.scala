@@ -24,13 +24,11 @@ import info.vizierdb.util.TimerUtils
 import info.vizierdb.Vizier
 import info.vizierdb.spark.{ InjectedSparkSQL, SparkSchema, DataFrameCache }
 import info.vizierdb.spark.rowids.{ AnnotateWithRowIds, AnnotateWithSequenceNumber }
-import org.mimirdb.caveats.lifting.ResolveLifts
 import org.apache.spark.sql.execution.{ ExtendedMode => SelectedExplainMode }
 import org.apache.spark.sql.types._
 import info.vizierdb.catalog.Artifact
 import org.apache.spark.sql.AnalysisException
 import info.vizierdb.catalog.CatalogDB
-import org.mimirdb.caveats.annotate.CaveatExistsInPlan
 import info.vizierdb.util.ExperimentalOptions
 
 object QueryWithCaveats
@@ -76,7 +74,7 @@ object QueryWithCaveats
     )
   }
 
-  object CaveatExistsInPlanNonPedantic extends CaveatExistsInPlan(pedantic = false)
+  // object CaveatExistsInPlanNonPedantic extends CaveatExistsInPlan(pedantic = false)
 
   def build(
     query: DataFrame, 
@@ -96,7 +94,7 @@ object QueryWithCaveats
       df = AnnotateImplicitHeuristics(df)
 
       /////// ResolvePossible
-      df = ResolveLifts(df)
+      // df = ResolveLifts(df)
     }
 
 

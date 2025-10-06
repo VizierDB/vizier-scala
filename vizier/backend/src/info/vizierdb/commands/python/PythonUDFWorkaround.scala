@@ -18,7 +18,7 @@ package org.apache.spark
 
 import java.util.{ArrayList => JArrayList, List => JList, Map => JMap}
 import org.apache.spark.sql.types._
-import org.apache.spark.api.python.PythonFunction
+import org.apache.spark.api.python.SimplePythonFunction
 import org.apache.spark.sql.catalyst.expressions.{ PythonUDF, Expression, ExprId, NamedExpression }
 import org.apache.spark.api.python.PythonAccumulatorV2
 
@@ -52,7 +52,7 @@ object PythonUDFWorkaround
   ): PythonUDF =
     PythonUDF(
       name = name,
-      func = PythonFunction(
+      func = SimplePythonFunction(
         command = command,
         envVars = envVars,
         pythonIncludes = pythonIncludes,

@@ -23,7 +23,6 @@ import info.vizierdb.spark.SparkSchema
 import info.vizierdb.spark.SparkPrimitive.dataTypeFormat
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{ DataType, StringType }
-import org.mimirdb.lenses.inference.InferTypes
 
 object TypeInference
   extends LensCommand
@@ -51,32 +50,33 @@ object TypeInference
 
   def train(df: DataFrame, arguments: Arguments, context: ExecutionContext): Map[String, Any] =
   {
-    var targets = arguments.getList(PARAM_SCHEMA).map { col =>
-                    StructField(
-                      df.columns(col.get[Int](PARAM_COLUMN)),
-                      SparkSchema.decodeType(col.get[String](PARAM_DATATYPE))
-                    )
-                  }
+    ???
+    // var targets = arguments.getList(PARAM_SCHEMA).map { col =>
+    //                 StructField(
+    //                   df.columns(col.get[Int](PARAM_COLUMN)),
+    //                   SparkSchema.decodeType(col.get[String](PARAM_DATATYPE))
+    //                 )
+    //               }
     
-    if(!targets.isEmpty) { return Map.empty }
-    context.message("No target columns specified.  Taking all string columns.")
+    // if(!targets.isEmpty) { return Map.empty }
+    // context.message("No target columns specified.  Taking all string columns.")
 
-    targets = df.schema.filter { _.dataType == StringType }
+    // targets = df.schema.filter { _.dataType == StringType }
 
-    val inferred = 
-      InferTypes(df, attributes = targets.map { _.name }.toSeq)
-        .map { field => field.name -> SparkSchema.encodeType(field.dataType) }
-        .toMap
-    Map(
-      PARAM_SCHEMA -> Seq(
-        df.schema.zipWithIndex.map { case (col, idx) => 
-          Map(
-            PARAM_COLUMN -> idx, 
-            PARAM_DATATYPE -> inferred.getOrElse(col.name, SparkSchema.encodeType(col.dataType))
-          )
-        }
-      )
-    )
+    // val inferred = 
+    //   InferTypes(df, attributes = targets.map { _.name }.toSeq)
+    //     .map { field => field.name -> SparkSchema.encodeType(field.dataType) }
+    //     .toMap
+    // Map(
+    //   PARAM_SCHEMA -> Seq(
+    //     df.schema.zipWithIndex.map { case (col, idx) => 
+    //       Map(
+    //         PARAM_COLUMN -> idx, 
+    //         PARAM_DATATYPE -> inferred.getOrElse(col.name, SparkSchema.encodeType(col.dataType))
+    //       )
+    //     }
+    //   )
+    // )
   }
   def build(df: DataFrame, arguments: Arguments, projectId: Identifier): DataFrame =
   {

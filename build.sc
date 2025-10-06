@@ -181,6 +181,7 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
     // Substrait
     mvn"io.substrait:core:0.65.0",
     mvn"io.substrait:spark:0.65.0",
+    mvn"org.apache.spark::spark-mllib:3.4.4", // substrait doesn't import sparml by default
 
     ////////////////////// Logging /////////////////////////
     mvn"com.typesafe.scala-logging::scala-logging::3.9.4",

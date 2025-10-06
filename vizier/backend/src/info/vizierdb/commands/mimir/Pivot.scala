@@ -23,7 +23,6 @@ import org.apache.spark.sql.types.{ StructField, StringType }
 import org.apache.spark.sql.{ DataFrame, Column }
 import org.apache.spark.sql.functions._
 import com.typesafe.scalalogging.LazyLogging
-import org.mimirdb.caveats.implicits._
 
 /**
  * The pivot lens "pivots" a table, modifying rows into columns.
@@ -148,16 +147,12 @@ object Pivot
                 :+ lit(s" ${arguments.pretty(PARAM_DATASET)} (pivoted on ${pivotColumn})")
             ):_*) 
 
-            val caveatCondition = 
-              col(countColumn(valueName, safePivot)) =!= 1
-
             (
               first(valueIfPivotOtherwiseNull, ignoreNulls = true)
                 .as(selectedValueColumn(valueName, safePivot)), 
               countDistinct(valueIfPivotOtherwiseNull)
                 .as(countColumn(valueName, safePivot)), 
               col(selectedValueColumn(valueName, safePivot))
-                .caveatIf(caveatMessage, caveatCondition)
                 .as(s"${valueName}_${pivot}")
             )
           }:Seq[(Column, Column, Column)]

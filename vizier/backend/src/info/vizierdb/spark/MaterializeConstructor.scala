@@ -21,7 +21,6 @@ import org.apache.spark.sql.{ SparkSession, DataFrame }
 import org.apache.spark.sql.types.{ DataType, StructField }
 import info.vizierdb.spark.rowids.AnnotateWithRowIds
 import info.vizierdb.spark.caveats.AnnotateImplicitHeuristics
-import org.mimirdb.caveats.implicits._
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import info.vizierdb.types._
 import info.vizierdb.filestore.Filestore

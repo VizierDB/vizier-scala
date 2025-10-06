@@ -23,7 +23,6 @@ import org.apache.spark.sql.{ DataFrame, Row }
 import org.apache.spark.sql.functions.expr
 import info.vizierdb.spark.caveats.QueryWithCaveats
 import info.vizierdb.spark.caveats.QueryWithCaveats.ResultTooBig
-import org.mimirdb.caveats.implicits._
 import org.apache.spark.unsafe.types.UTF8String
 import info.vizierdb.VizierException
 import info.vizierdb.viztrails.ProvenancePrediction

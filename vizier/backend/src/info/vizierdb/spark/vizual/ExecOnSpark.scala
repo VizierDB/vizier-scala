@@ -25,7 +25,6 @@ import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.spark.rowids.AnnotateWithRowIds
 import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
 import info.vizierdb.spark.SparkPrimitive
-import org.mimirdb.caveats.implicits._
 import org.apache.spark.sql.sedona_sql.UDT.GeometryUDT
 
 object ExecOnSpark
@@ -220,7 +219,7 @@ object ExecOnSpark
                 // case we're about to do that.
                 if(targetColumn.dataType.equals(StringType)){
                   update.cast(targetColumn.dataType)
-                        .caveat(s"Automatically casting `${targetColumn.name} $value` from ${update.expr.dataType} to the native column type (${targetColumn.dataType}).  Add an explicit .cast() to silence this warning.")
+                        // .caveat(s"Automatically casting `${targetColumn.name} $value` from ${update.expr.dataType} to the native column type (${targetColumn.dataType}).  Add an explicit .cast() to silence this warning.")
                 } else {
                   update.cast(targetColumn.dataType)
                 }
@@ -238,21 +237,22 @@ object ExecOnSpark
               } else if(Cast.canCast(update.expr.dataType, targetColumn.dataType)) {
                 update.cast(targetColumn.dataType)
                 // Of course, we can still warn the user about what they've done.
-                      .caveat(s"Updating `${targetColumn.name} $value` (${update.expr.dataType}) doesn't match the type of ${targetColumn.name} (${targetColumn.dataType}).  Add an explicit .cast() to fix this error.")
+                      // .caveat(s"Updating `${targetColumn.name} $value` (${update.expr.dataType}) doesn't match the type of ${targetColumn.name} (${targetColumn.dataType}).  Add an explicit .cast() to fix this error.")
               
               // If this isn't a safe cast, let's try going the other way.
               } else if(Cast.canCast(targetColumn.dataType, update.expr.dataType)) {
                 base = base.cast(update.expr.dataType)
                 // Again, warn the user if we've broken things
-                           .caveat(s"Update `${targetColumn.name} $value` forced me to change the type of ${targetColumn.name} from ${targetColumn.dataType} to ${update.expr.dataType}.  Add an explicit .cast() to fix this error.")
+                           // .caveat(s"Update `${targetColumn.name} $value` forced me to change the type of ${targetColumn.name} from ${targetColumn.dataType} to ${update.expr.dataType}.  Add an explicit .cast() to fix this error.")
                 update // and return the update
 
               // If all else fails, make everything a string.
               } else {
                 val msg = s"Update `${targetColumn.name} $value` forced me to change the type of ${targetColumn.name} to string.  Add an explicit .cast() to fix this error."
                 base = base.cast(StringType)
-                           .caveat(msg)
-                update.cast(StringType).caveat(msg)
+                           // .caveat(msg)
+                update.cast(StringType)
+                      // .caveat(msg)
               }
 
             }
@@ -280,7 +280,7 @@ object ExecOnSpark
               // now)
               if(update == null) {
                 base = base.cast(StringType)
-                           .caveat(s"Couldn't interpret '$value' in ${targetColumn.name}'s native type (${targetColumn.dataType}), so I made the entire column a string.  Add an explicit .cast() to fix this error.")
+                           // .caveat(s"Couldn't interpret '$value' in ${targetColumn.name}'s native type (${targetColumn.dataType}), so I made the entire column a string.  Add an explicit .cast() to fix this error.")
                 lit(SparkPrimitive.decode(value, StringType).toString) // and return the update string
 
               // If the updated value casts successfully, great
@@ -293,9 +293,9 @@ object ExecOnSpark
           logger.trace(s"   ... update before comment = $update")
 
           // Apply the comment if provided
-          if(comment.isDefined){
-            update = update.caveat(comment.get)
-          }
+          // if(comment.isDefined){
+          //   update = update.caveat(comment.get)
+          // }
 
           logger.trace(s"   ... update = $update")
 

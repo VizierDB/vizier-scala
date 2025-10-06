@@ -153,7 +153,6 @@ object Commands
     // "picker"         -> info.vizierdb.commands.mimir.MergeColumns,
     "type_inference" -> info.vizierdb.commands.mimir.TypeInference,
     "shape_watcher"  -> info.vizierdb.commands.mimir.ShapeWatcher,
-    "comment"        -> info.vizierdb.commands.mimir.Comment,
     "pivot"          -> info.vizierdb.commands.mimir.Pivot,
     "geotag"         -> info.vizierdb.commands.mimir.Geotag,
   )

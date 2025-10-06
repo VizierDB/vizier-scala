@@ -29,8 +29,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.catalyst.csv.CSVOptions
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.StringType
-import org.mimirdb.caveats.implicits.dataFrameImplicits
-import org.mimirdb.lenses.implicits.columnImplicits 
 import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
 import org.apache.spark.sql.execution.datasources.csv.TextInputCSVDataSource
 import org.apache.spark.sql.catalyst.expressions.{ CsvToStructs, Literal }
@@ -70,14 +68,14 @@ case class LoadSparkCSV(
                 LoadSparkCSV.OPTIONS ++ sparkOptions
               ) as "csv"
             )
-            .caveatIf(
-              concat(
-                lit("Error Loading Row: '"), 
-                col("raw"), 
-                lit(s"'${contextText.map { " (in "+_+")" }.getOrElse {""}}")
-              ),
-              col("csv").isNull or not(col(s"csv.${LoadSparkCSV.ERROR_COL}").isNull)
-            )
+            // .caveatIf(
+            //   concat(
+            //     lit("Error Loading Row: '"), 
+            //     col("raw"), 
+            //     lit(s"'${contextText.map { " (in "+_+")" }.getOrElse {""}}")
+            //   ),
+            //   col("csv").isNull or not(col(s"csv.${LoadSparkCSV.ERROR_COL}").isNull)
+            // )
           .select(
             schema.map { field => 
               col("csv").getField(field.name)
@@ -86,10 +84,11 @@ case class LoadSparkCSV(
                         // type, and dataWithCsvStruct isn't properly analyzed
                         // yet.  
                         .cast(StringType) 
-                        .castWithCaveat(
-                          field.dataType,
-                          s"${field.name} from ${contextText.getOrElse(url)}"
-                        )
+                        .cast(field.dataType)
+                        // .castWithCaveat(
+                        //   field.dataType,
+                        //   s"${field.name} from ${contextText.getOrElse(url)}"
+                        // )
                         .as(field.name)
             }:_*
           )

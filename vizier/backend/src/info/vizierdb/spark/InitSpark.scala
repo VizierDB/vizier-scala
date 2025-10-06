@@ -20,7 +20,6 @@ import org.apache.sedona.sql.utils.{Adapter, SedonaSQLRegistrator}
 import org.apache.sedona.viz.core.Serde.SedonaVizKryoRegistrator
 import org.apache.sedona.viz.sql.utils.SedonaVizRegistrator
 import org.apache.spark.serializer.KryoSerializer
-import org.mimirdb.caveats.Caveats
 import org.apache.spark.sql.types.UDTRegistration
 import java.awt.image.BufferedImage
 import info.vizierdb.spark.udt.ImageUDT
@@ -109,7 +108,7 @@ object InitSpark
     // SedonaSQLRegistrator.registerAll(spark)
     // SedonaVizRegistrator.registerAll(spark)
     System.setProperty("geospark.global.charset", "utf8")
-    Caveats.registerAllUDFs(spark)
+    // Caveats.registerAllUDFs(spark)
     UDTRegistration.register(classOf[BufferedImage].getName, classOf[ImageUDT].getName)
 
     spark.udf.register("vector_to_array", vectorToArrayUdf)

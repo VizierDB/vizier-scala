@@ -31,7 +31,6 @@ import info.vizierdb.catalog.PublishedArtifact
 import info.vizierdb.viztrails.ProvenancePrediction
 import info.vizierdb.catalog.CatalogDB
 import info.vizierdb.spark.load.LoadSparkCSV
-import spire.syntax.action
 import info.vizierdb.spark.load.LoadSparkDataset
 import info.vizierdb.spark.DataFrameConstructor
 import info.vizierdb.util.ExperimentalOptions

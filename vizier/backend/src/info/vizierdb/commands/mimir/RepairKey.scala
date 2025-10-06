@@ -22,7 +22,6 @@ import org.apache.spark.sql.{ DataFrame, Column }
 import info.vizierdb.types._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.mimirdb.caveats.implicits._
 
 object RepairKey 
   extends LensCommand
@@ -78,29 +77,30 @@ object RepairKey
         .map { 
           case field if field.equalsIgnoreCase(keyName) => output(field)
           case field => {
-            output(field).caveatIf(
-              concat(
-                output(field),
-                lit(" could be one of "),
-                (output(COUNT_COLUMN(field)) - lit(1)).cast(StringType),
-                lit(s" other distinct values for $context.$field when $context.${keyName} = "),
-                outputKeyAttribute.cast(StringType),
-                lit(", including "),
-                concat_ws(", ",
-                  slice(
-                    filter(
-                      output(COUNT_EXAMPLES(field)),
-                      (x) => output(field) =!= x
-                    ),
-                    1, 3 // limit to 3 examples
-                  )
-                ),
-                // we display 4 values.  3 examples + 1 baseline.
-                when(output(COUNT_COLUMN(field)) > lit(4), lit(", ... and more"))
-                  .otherwise("")
-              ),
-              output(COUNT_COLUMN(field)) > 1
-            ).as(field)
+            output(field)
+            // .caveatIf(
+            //   concat(
+            //     output(field),
+            //     lit(" could be one of "),
+            //     (output(COUNT_COLUMN(field)) - lit(1)).cast(StringType),
+            //     lit(s" other distinct values for $context.$field when $context.${keyName} = "),
+            //     outputKeyAttribute.cast(StringType),
+            //     lit(", including "),
+            //     concat_ws(", ",
+            //       slice(
+            //         filter(
+            //           output(COUNT_EXAMPLES(field)),
+            //           (x) => output(field) =!= x
+            //         ),
+            //         1, 3 // limit to 3 examples
+            //       )
+            //     ),
+            //     // we display 4 values.  3 examples + 1 baseline.
+            //     when(output(COUNT_COLUMN(field)) > lit(4), lit(", ... and more"))
+            //       .otherwise("")
+            //   ),
+            //   output(COUNT_COLUMN(field)) > 1
+            // ).as(field)
           }
        }
     output.select(outputSchema:_*)

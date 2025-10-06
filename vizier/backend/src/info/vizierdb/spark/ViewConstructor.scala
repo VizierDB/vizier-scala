@@ -23,7 +23,6 @@ import org.apache.spark.sql.{ SparkSession, DataFrame }
 import org.apache.spark.sql.catalyst.expressions.Expression
 import info.vizierdb.commands.python.PythonProcess
 import info.vizierdb.spark.caveats.AnnotateImplicitHeuristics
-import org.mimirdb.caveats.lifting.ResolveLifts
 import org.apache.spark.sql.types.StructField
 import info.vizierdb.spark.SparkSchema.fieldFormat
 import breeze.linalg.View
@@ -59,7 +58,7 @@ case class ViewConstructor(
                 variables = variables.getOrElse { Map.empty }.mapValues { id => () => Literal(context(id).parameter.nativeValue) }
               )
     df = AnnotateImplicitHeuristics(df)
-    df = ResolveLifts(df)
+    // df = ResolveLifts(df)
     return df 
   }
 

@@ -32,8 +32,6 @@ import info.vizierdb.Vizier
 import info.vizierdb.types._
 import info.vizierdb.spark.rowids.AnnotateWithSequenceNumber
 import info.vizierdb.spark.SparkSchema.fieldFormat
-import org.mimirdb.caveats.implicits._
-import org.mimirdb.lenses.inference.InferTypes
 import info.vizierdb.catalog.Artifact
 
 case class LoadConstructor(
@@ -147,12 +145,12 @@ case class LoadConstructor(
                 df(curr.name).as(target.name)
               }
             } else {
-              import org.mimirdb.lenses.implicits._
               df(curr.name)
-                .castWithCaveat(
-                  target.dataType, 
-                  s"${curr.name} from ${contextText.getOrElse(url)}"
-                )
+                .cast(target.dataType)
+                // .castWithCaveat(
+                //   target.dataType, 
+                //   s"${curr.name} from ${contextText.getOrElse(url)}"
+                // )
                 .as(target.name)
             }
       }):_*)
@@ -182,30 +180,31 @@ case class LoadConstructor(
 
   def withInferredTypes: LoadConstructor =
   {
-    val df = construct(_ => ???)
-    val unproposedSchema = 
-      df.schema.drop(proposedSchema.map { _.size }.getOrElse(0))
+    return this
+    // val df = construct(_ => ???)
+    // val unproposedSchema = 
+    //   df.schema.drop(proposedSchema.map { _.size }.getOrElse(0))
     
-    if(unproposedSchema.isEmpty){ return this }
+    // if(unproposedSchema.isEmpty){ return this }
 
-    val columnsToGuess = 
-      unproposedSchema.filter { _.dataType == StringType }
-                      .map { _.name }
+    // val columnsToGuess = 
+    //   unproposedSchema.filter { _.dataType == StringType }
+    //                   .map { _.name }
 
-    val inferred = 
-      InferTypes(df, attributes = columnsToGuess)
-        .map { c => c.name -> c }
-        .toMap
+    // val inferred = 
+    //   InferTypes(df, attributes = columnsToGuess)
+    //     .map { c => c.name -> c }
+    //     .toMap
 
-    return copy(
-      proposedSchema = 
-        Some(
-          proposedSchema.getOrElse(Seq.empty) ++ 
-            unproposedSchema.map { c => 
-              inferred.getOrElse(c.name, c)
-            }
-        )
-    )
+    // return copy(
+    //   proposedSchema = 
+    //     Some(
+    //       proposedSchema.getOrElse(Seq.empty) ++ 
+    //         unproposedSchema.map { c => 
+    //           inferred.getOrElse(c.name, c)
+    //         }
+    //     )
+    // )
   }
 
   def loadCSVWithCaveats(): DataFrame =
@@ -289,18 +288,18 @@ case class LoadConstructor(
             extraOptions ++ sparkOptions 
           )
         // ) 
-      as "csv"
-      ).caveatIf(
-        concat(
-          lit("Error Loading Row: '"), 
-          col("raw"), 
-          lit(s"'${contextText.map { " (in "+_+")" }.getOrElse {""}}")
-        ),
-        col("csv").isNull or not(col(s"csv.$ERROR_COL").isNull)
+            as "csv"
       )
-        .select(
+      // .caveatIf(
+      //   concat(
+      //     lit("Error Loading Row: '"), 
+      //     col("raw"), 
+      //     lit(s"'${contextText.map { " (in "+_+")" }.getOrElse {""}}")
+      //   ),
+      //   col("csv").isNull or not(col(s"csv.$ERROR_COL").isNull)
+      // )
+      .select(
         baseSchema.map { field => 
-              import org.mimirdb.lenses.implicits._
           // when(col("csv").isNull, null)
             // .otherwise(
               col("csv").getField(field.name)
@@ -309,10 +308,11 @@ case class LoadConstructor(
                         // type, and dataWithCsvStruct isn't properly analyzed
                         // yet.  
                         .cast(StringType) 
-                        .castWithCaveat(
-                          field.dataType,
-                          s"${field.name} from ${contextText.getOrElse(url)}"
-                        )
+                        .cast(field.dataType) 
+                        // .castWithCaveat(
+                        //   field.dataType,
+                        //   s"${field.name} from ${contextText.getOrElse(url)}"
+                        // )
             // )
                         .as(field.name)
         }:_*

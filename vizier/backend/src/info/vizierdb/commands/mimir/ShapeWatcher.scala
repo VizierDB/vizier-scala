@@ -21,7 +21,6 @@ import org.apache.spark.sql.types.StructField
 import info.vizierdb.commands.mimir.facets._
 import org.apache.spark.sql.DataFrame
 import info.vizierdb.types._
-import org.mimirdb.caveats.implicits._
 
 object ShapeWatcher
   extends LensCommand
@@ -79,12 +78,12 @@ object ShapeWatcher
     }.foldLeft(input){ (df:DataFrame, error:(String, Option[String])) => 
       logger.debug(s"Building $df <- $error")
       error match {
-        case (msg, None) => df.caveat(msg)
+        case (msg, None) => df//.caveat(msg)
         case (msg, Some(errorColumn)) => 
           df.select(
             df.columns.map { col =>
               if(col.equalsIgnoreCase(errorColumn)){ 
-                df(col).caveat(msg).as(col)
+                df(col)/*.caveat(msg)*/.as(col)
               } else { 
                 df(col)
               }
