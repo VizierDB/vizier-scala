@@ -42,6 +42,9 @@ import info.vizierdb.ui.network.BranchSubscription
 import info.vizierdb.ui.network.BranchWatcherAPIProxy
 import info.vizierdb.ui.components.editors._
 import info.vizierdb.ui.widgets.FontAwesome
+import info.vizierdb.util.PluginLoader
+import scala.util.Try
+import info.vizierdb.util.FrontendPlugin
 
 trait ModuleEditor
   extends Object
@@ -96,6 +99,7 @@ trait ModuleEditor
   def delegate: ModuleEditorDelegate
   def currentState: Seq[CommandArgument]
   val editorFields: Frag
+  def selectedDataset = Var[Option[String]](None)
 
   def serialized: CommandDescription =
     CommandDescription(
@@ -115,8 +119,10 @@ trait ModuleEditor
     )
 }
 
+
 object ModuleEditor
 {
+  
   def apply(
     packageId: String, 
     command: serialized.PackageCommand, 
@@ -125,11 +131,91 @@ object ModuleEditor
     (packageId, command.id) match {
       case ("data", "load")   => new LoadDatasetEditor(delegate)
       case ("data", "unload") => new UnloadDatasetEditor(delegate)
+      case (pkgId, cmdId) => {
+        println(s"plugin check => pkg: ${pkgId}, cmd: ${cmdId}")
+        PluginModuleEditor.pluginCommandEditors(pkgId, command, delegate) match {
+          case Some(pe) => pe
+          case _ => new DefaultModuleEditor(packageId, command, delegate)
+        }
+      }
       case _ => new DefaultModuleEditor(packageId, command, delegate)
     }
   }
 }
 
+trait PluginCommandRegistration {
+  def packageId: String
+  def commandId(): String = { "na" }
+  def stateBegin(state:Seq[CommandArgument]):Seq[CommandArgument]
+  def stateEnd: Seq[CommandArgument] 
+  def editorFields:Frag
+}
+
+object PluginModuleEditor {
+  def pluginCommandEditors(
+    packageId:String, 
+    command: serialized.PackageCommand, 
+    delegate: ModuleEditorDelegate
+  )(implicit owner: Ctx.Owner): Option[PluginModuleEditor] = 
+    PluginLoader.loadedPlugins.get(packageId) match {
+      case Some(pkg) => pkg.getPluginCommandEditor(packageId, command, delegate) match {
+        case None => {
+          println(s"NOT loading plugin command ${packageId} ${command.id}")
+          None
+        }
+        case pce => Some(new PluginModuleEditor(packageId, command, delegate, pce.asInstanceOf[Option[PluginCommandRegistration]].get))
+      }
+      case None => None
+    }
+}
+
+class PluginModuleEditor(
+  val packageId: String, 
+  val command: serialized.PackageCommand, 
+  val delegate: ModuleEditorDelegate,
+  val pluginEditor: PluginCommandRegistration
+)(implicit owner: Ctx.Owner)  extends ModuleEditor
+{
+  def loadState(arguments: Seq[CommandArgument])
+  {
+    for(arg <- arguments){
+      getParameter.get(arg.id) match {
+        case Some(parameter) => parameter.set(arg.value)
+        case None => logger.warn(s"Load state with undefined parameter: ${arg.id}")
+      }
+    }
+  }
+
+  def commandId() = {
+    command.id
+  }
+
+  override val selectedDataset = Var[Option[String]](None)
+
+  val parameters: Seq[Parameter] = 
+    ParameterDescriptionTree(
+      command.parameters.toSeq
+    ).map { Parameter(_, this) }
+
+  parameters.collect { 
+    case dsParam:ArtifactParameter if dsParam.artifactType == ArtifactType.DATASET => dsParam 
+  }.headOption match {
+    case None => ()
+    case Some(dsParameter) => 
+      dsParameter.selectedDataset.trigger {
+        selectedDataset() = dsParameter.selectedDataset.now
+      }
+  }
+
+  lazy val getParameter:Map[String, Parameter] = 
+    parameters.map { p => p.id -> p }.toMap
+
+  def currentState: Seq[CommandArgument] =
+    parameters.map { _.toArgument }
+
+  val editorFields = pluginEditor.editorFields
+
+}
 
 
 class DefaultModuleEditor(
@@ -153,7 +239,7 @@ class DefaultModuleEditor(
 
   def commandId = command.id
 
-  val selectedDataset = Var[Option[String]](None)
+  override val selectedDataset = Var[Option[String]](None)
 
   val parameters: Seq[Parameter] = 
     ParameterDescriptionTree(

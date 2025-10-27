@@ -174,7 +174,7 @@ object Parameter
    * Decode a [[ParameterDescriptor]] into a [[Parameter]] for use with the
    * specified [[ModuleEditor]]
    */
-  def apply(tree: serialized.ParameterDescriptionTree, editor: DefaultModuleEditor)
+  def apply(tree: serialized.ParameterDescriptionTree, editor: ModuleEditor)
            (implicit owner: Ctx.Owner): Parameter =
   {
     def visibleArtifactsByType = editor.delegate
