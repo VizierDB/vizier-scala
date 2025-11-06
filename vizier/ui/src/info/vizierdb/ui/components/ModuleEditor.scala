@@ -45,6 +45,7 @@ import info.vizierdb.ui.widgets.FontAwesome
 import info.vizierdb.util.PluginLoader
 import scala.util.Try
 import info.vizierdb.util.FrontendPlugin
+import scala.scalajs.js.annotation._
 
 trait ModuleEditor
   extends Object
@@ -133,22 +134,26 @@ object ModuleEditor
       case ("data", "unload") => new UnloadDatasetEditor(delegate)
       case (pkgId, cmdId) => {
         println(s"plugin check => pkg: ${pkgId}, cmd: ${cmdId}")
-        PluginModuleEditor.pluginCommandEditors(pkgId, command, delegate) match {
-          case Some(pe) => pe
-          case _ => new DefaultModuleEditor(packageId, command, delegate)
-        }
+        PluginModuleEditor(pkgId, command, delegate)
       }
       case _ => new DefaultModuleEditor(packageId, command, delegate)
     }
   }
 }
 
-trait PluginCommandRegistration {
-  def packageId: String
-  def commandId(): String = { "na" }
-  def stateBegin(state:Seq[CommandArgument]):Seq[CommandArgument]
-  def stateEnd: Seq[CommandArgument] 
-  def editorFields:Frag
+@js.native
+trait PluginCommandRegistration extends js.Object {
+  def commandId:String
+  def beginDisplay(artifacts:Seq[String], state:Seq[Parameter]):Seq[CommandArgument]
+  def endDisplay: Seq[CommandArgument] 
+  def editorFields:dom.Element 
+}
+
+trait PluginCommandRegistrationSjs {
+  def commandId:String
+  def beginDisplay(artifacts:Seq[String], state:Seq[Parameter]):Seq[CommandArgument]
+  def endDisplay: Seq[CommandArgument] 
+  def editorFields:dom.Element 
 }
 
 object PluginModuleEditor {
@@ -158,16 +163,59 @@ object PluginModuleEditor {
     delegate: ModuleEditorDelegate
   )(implicit owner: Ctx.Owner): Option[PluginModuleEditor] = 
     PluginLoader.loadedPlugins.get(packageId) match {
-      case Some(pkg) => pkg.getPluginCommandEditor(packageId, command, delegate) match {
-        case None => {
-          println(s"NOT loading plugin command ${packageId} ${command.id}")
-          None
+      case Some(pkg) => {
+        /*(try {
+          println(s"type of plugin PluginCommandEditorRegistration ${pkg}")
+          val raw = js.eval(s"$packageId")
+          // Defensive: Check if defined and has the right method(s)
+          (if (!js.isUndefined(raw) && js.typeOf(raw) == "object")
+            Some(raw.asInstanceOf[FrontendPlugin])
+          else
+            None)
+          .map(frontendPlugin => {
+            //val pkgcmded = pkg.getPluginCommandEditor(packageId, command, delegate)
+            //println(s"result of plugin PluginCommandEditorRegistration ${pkgcmded}")
+            println(s"type of eval PluginCommandEditorRegistration ${frontendPlugin}")
+            val pkgcmded = frontendPlugin.getPluginCommandEditor(packageId, command.id)
+            println(s"result of plugin PluginCommandEditorRegistration: ")
+            pkgcmded
+          })
         }
-        case pce => Some(new PluginModuleEditor(packageId, command, delegate, pce.asInstanceOf[Option[PluginCommandRegistration]].get))
+        catch {
+          case t:Throwable => {
+            println(s"$t -> ${t.getStackTrace().mkString("\n")}")
+            None
+          }
+        })*/ Try(pkg.pluginCommandEditor(command.id).asInstanceOf[PluginCommandRegistration]).toOption match {
+          case None => {
+            println(s"NOT loading plugin command ${packageId} ${command.id}")
+            None
+          }
+          case pce => {
+            if(pkg.asInstanceOf[js.Dynamic].pluginCommandEditorIds.asInstanceOf[Seq[String]].contains(command.id)){
+              val resolvedPce = pce.get
+              Some(new PluginModuleEditor(packageId, command, delegate, resolvedPce))
+            }
+            else None
+          }
+        }
       }
       case None => None
     }
+
+  def apply(
+      packageId: String, 
+      command: serialized.PackageCommand, 
+      delegate: ModuleEditorDelegate
+    )(implicit owner: Ctx.Owner): ModuleEditor = {
+      pluginCommandEditors(packageId, command, delegate) match {
+        case Some(pe) => pe
+        case _ => new DefaultModuleEditor(packageId, command, delegate)
+      }
+    }
+    //val cachedPluginModuleEditors: scala.collection.mutable.Map[(String, String), PluginModuleEditor] = scala.collection.mutable.Map()
 }
+
 
 class PluginModuleEditor(
   val packageId: String, 
@@ -206,14 +254,47 @@ class PluginModuleEditor(
         selectedDataset() = dsParameter.selectedDataset.now
       }
   }
+ 
+  def visibleArtifacts = delegate.visibleArtifacts.now.keySet.toSeq
 
   lazy val getParameter:Map[String, Parameter] = 
     parameters.map { p => p.id -> p }.toMap
 
+  /*js.eval(s"""${packageId}.getPluginCommandEditor("${packageId}", "${command.id}").stateBegin""")
+    .asInstanceOf[js.Function1[Any,Seq[CommandArgument]]].apply(parameters.map(_.value))*/
+    
+  //pluginEditor.stateBegin( parameters )
+
   def currentState: Seq[CommandArgument] =
     parameters.map { _.toArgument }
 
-  val editorFields = pluginEditor.editorFields
+  val editorFields = {
+    try{
+      //println(s"PluginModuleEditor.editorFields result: ${pluginEditor.editorFields}")
+      pluginEditor.beginDisplay(visibleArtifacts,  parameters )
+      //pluginEditor.asInstanceOf[js.Dynamic].applyDynamic("beginDisplay")(parameters)   
+      //(pluginEditor.beginDisplay _).asInstanceOf[js.Function1[Seq[Parameter], Unit]].apply(parameters)
+      /*js.eval(s"""${packageId}.getPluginCommandEditor("${packageId}","${command.id}").stateBeginJS;""")
+        .asInstanceOf[(Seq[Parameter]) => Seq[CommandArgument]].apply(parameters)*/
+    }
+    catch {
+      case tr:Throwable => println(s"problem setting plugin editor state: ${tr}/n ${tr.getStackTrace().mkString("\n")}")
+    }
+    //val eff = js.eval(s"""${packageId}.getPluginCommandEditor("${packageId}", "${command.id}").editorFields()""").asInstanceOf[dom.raw.Element]
+    val eff = (pluginEditor.editorFields)
+    println(s"PluginModuleEditor.editorFields result: ${eff}")
+
+     div(
+      width := "100%",
+      // h4(command.name),
+      eff,
+      parameters.filter { !_.hidden }
+                .map { param => div(width := "100%", param.root) }
+    )
+    
+  }
+
+  
 
 }
 

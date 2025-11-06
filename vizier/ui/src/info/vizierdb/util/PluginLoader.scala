@@ -6,16 +6,22 @@ import info.vizierdb.ui.components.ModuleEditorDelegate
 import info.vizierdb.serialized.PackageCommand
 import info.vizierdb.ui.components.ModuleEditor
 import rx.Ctx
-import info.vizierdb.ui.components.PluginCommandRegistration
+import info.vizierdb.ui.components.{ PluginCommandRegistration, PluginCommandRegistrationSjs} 
 
 object PluginLoader {
   val loadedPlugins = scala.collection.mutable.Map[String, FrontendPlugin]()
 
+  /*@js.annotation.JSExportTopLevel("VizierPluginLoaderRegisterPlugin")
+  def registerPlugin(packageId:String, plugin: FrontendPlugin) = {
+    println(s"PluginLoader.registerPlugin: ${packageId}")
+    loadedPlugins.update(packageId, plugin)
+  }*/
+
   def loadPlugins() = {
     //TODO: Load this from a server endpoint or session
     Seq("modelingplugin").map(packageId => packageId -> loadPlugin(packageId, () => {
-        val loadedPlugin = js.Dynamic.global.eval(s"${packageId}").asInstanceOf[FrontendPlugin]
-        //loadedPlugin.init()
+        val loadedPlugin = js.Dynamic.global.eval(s"${packageId};").asInstanceOf[FrontendPlugin]
+        //loadedPlugin.registered()
         loadedPlugins.update(packageId, loadedPlugin)
     })).map(pkgIdScriptEl => {
         val (pkgId, scriptEl) = pkgIdScriptEl
@@ -24,6 +30,7 @@ object PluginLoader {
   }
 
   def loadPlugin(packageId:String, onLoad: () => Unit) = {
+    //TODO: load the js bundle from the plugin jar resources
     loadJs(s"/vendor/${packageId}.js", onLoad)
   }
   
@@ -40,13 +47,20 @@ object PluginLoader {
   }
 }
 
-trait FrontendPlugin {
+trait FrontendPluginReg {
     def packageId:String
     def init():Unit
-    def getPluginCommandEditor(packageId: String, 
-                              command: PackageCommand, 
-                              delegate: ModuleEditorDelegate): Option[PluginCommandRegistration]
+    def pluginCommandEditors:Seq[PluginCommandRegistration] 
 }
 
-// Usage example:
-// ScriptLoader.loadPlugin("modelingplugin")
+trait FrontendPlugin {
+    def packageId:String
+    def registered():Unit
+    /* def getPluginCommandEditor(packageId: String, 
+                              command: PackageCommand, 
+                              delegate: ModuleEditorDelegate): PluginCommandRegistration */
+   def pluginCommandEditorIds:Seq[String]                           
+   def pluginCommandEditor(commandId:String): js.Dynamic
+}
+
+

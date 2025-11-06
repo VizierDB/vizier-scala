@@ -261,9 +261,9 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
  *** Frontend Dependencies
  *************************************************/
     def mvnDeps = Seq(
-      mvn"org.scala-js::scalajs-dom::1.0.0",
+      mvn"org.scala-js::scalajs-dom::2.8.1",
       mvn"com.lihaoyi::scalarx::0.4.3",
-      mvn"com.lihaoyi::scalatags::0.9.4",
+      mvn"com.lihaoyi::scalatags::0.13.1",
       mvn"com.typesafe.play::play-json::2.9.2",
     )
 

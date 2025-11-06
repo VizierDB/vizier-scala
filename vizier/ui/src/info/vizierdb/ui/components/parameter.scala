@@ -139,25 +139,33 @@ sealed trait Parameter
       }:_*
     )
 
+  
   def inputNode[T <: dom.Node]: T = 
     findArgumentNode(root).get.asInstanceOf[T]
 
   def findArgumentNode(search: dom.Node): Option[dom.Node] = 
   {
-    if(search.attributes.equals(js.undefined)) { return None }
-    val classAttr = 
-      search.attributes.getNamedItem("class")
-    val isCommand = 
-      Option(classAttr).map { _.value.split(" ") contains Parameter.PARAMETER_WIDGET_CLASS }
-                       .getOrElse { false }
-    if(isCommand) {
-      return Some(search)
-    } else {
-      for(i <- 0 until search.childNodes.length){
-        val r = findArgumentNode(search.childNodes(i))
-        if(r.isDefined) { return r }
+    search match {
+      case searchEl: org.scalajs.dom.Element if !searchEl.attributes.equals(js.undefined) => {
+        val classAttr = 
+          searchEl.attributes.getNamedItem("class")
+        val isCommand = 
+          Option(classAttr).map { _.value.split(" ") contains Parameter.PARAMETER_WIDGET_CLASS }
+                        .getOrElse { false }
+        if(isCommand) {
+          Some(search)
+        } else {
+          search.childNodes.flatMap(cnode => {
+            val r = findArgumentNode(cnode)
+            if(r.isDefined) r
+            else None
+          }).headOption
+        }
       }
-      return None
+      case _ => {
+        //println("Node is not an Element")
+        None
+      }
     }
   }
 }
@@ -555,7 +563,7 @@ class DecimalParameter(
   val root = 
     input(`type` := "number", step := "0.01").render.asInstanceOf[dom.html.Input]
   def value = 
-    JsNumber(inputNode[dom.html.Input].value.toDouble)
+    scala.util.Try(JsNumber(inputNode[dom.html.Input].value.toDouble)).toOption.getOrElse(JsNumber(0.0))
   override def set(v: JsValue): Unit = 
     inputNode[dom.html.Input].value = v.as[Float].toString
 }
@@ -701,7 +709,7 @@ class IntParameter(
   val root = 
     input(`type` := "number", step := "1").render.asInstanceOf[dom.html.Input]
   def value = 
-    JsNumber(inputNode[dom.html.Input].value.toInt)
+    scala.util.Try(JsNumber(inputNode[dom.html.Input].value.toInt)).toOption.getOrElse(JsNumber(0))
   def set(v: JsValue): Unit = 
     inputNode[dom.html.Input].value = v.as[Int].toString
 }
