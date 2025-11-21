@@ -46,6 +46,7 @@ import info.vizierdb.util.PluginLoader
 import scala.util.Try
 import info.vizierdb.util.FrontendPlugin
 import scala.scalajs.js.annotation._
+import _root_.info.vizierdb.util.PluginCommandRegistration
 
 trait ModuleEditor
   extends Object
@@ -141,20 +142,7 @@ object ModuleEditor
   }
 }
 
-@js.native
-trait PluginCommandRegistration extends js.Object {
-  def commandId:String
-  def beginDisplay(artifacts:Seq[String], state:Seq[Parameter]):Seq[Parameter]
-  def endDisplay: Seq[Parameter] 
-  def editorFields:dom.Element 
-}
 
-trait PluginCommandRegistrationSjs {
-  def commandId:String
-  def beginDisplay(artifacts:Seq[String], state:Seq[Parameter]):Seq[Parameter]
-  def endDisplay: Seq[Parameter] 
-  def editorFields:dom.Element 
-}
 
 object PluginModuleEditor {
   def pluginCommandEditors(
@@ -162,21 +150,13 @@ object PluginModuleEditor {
     command: serialized.PackageCommand, 
     delegate: ModuleEditorDelegate
   )(implicit owner: Ctx.Owner): Option[PluginModuleEditor] = 
-    PluginLoader.loadedPlugins.get(packageId) match {
+    PluginLoader.loadedPlugins.toSeq.find(_.packageId == packageId) match {
       case Some(pkg) => {
-        Try(pkg.pluginCommandEditor(command.id).asInstanceOf[PluginCommandRegistration]).toOption match {
-          case None => {
-            //logger.warn(s"NOT loading plugin command ${packageId} ${command.id}")
-            None
-          }
-          case pce => {
-            if(pkg.asInstanceOf[js.Dynamic].pluginCommandEditorIds.asInstanceOf[Seq[String]].contains(command.id)){
-              val resolvedPce = pce.get
-              Some(new PluginModuleEditor(packageId, command, delegate, resolvedPce))
-            }
-            else None
-          }
+        if(pkg.pluginCommandEditorIds.contains(command.id)){
+          val pcr = pkg.pluginCommandEditor(command.id).asInstanceOf[PluginCommandRegistration]
+          Some(new PluginModuleEditor(packageId, command, delegate, pcr))
         }
+        else None
       }
       case None => None
     }
@@ -201,6 +181,12 @@ class PluginModuleEditor(
   val pluginEditor: PluginCommandRegistration
 )(implicit owner: Ctx.Owner)  extends ModuleEditor
 {
+  import js.JSConverters._
+  
+  /*override def saveState(): Unit = {
+    super.saveState()
+  }*/
+  
   def loadState(arguments: Seq[CommandArgument])
   {
     for(arg <- arguments){
@@ -232,17 +218,17 @@ class PluginModuleEditor(
       }
   }
  
-  def visibleArtifacts = delegate.visibleArtifacts.now.keySet.toSeq
+  def visibleArtifacts = delegate.visibleArtifacts.now.values.toSeq.unzip._1//keySet.toSeq
 
   lazy val getParameter:Map[String, Parameter] = 
     parameters.map { p => p.id -> p }.toMap
 
   def currentState: Seq[CommandArgument] =
-    parameters.map { _.toArgument }
+    pluginEditor.endDisplay.toSeq.map { _.toArgument }
 
   val editorFields = {
     try{
-      pluginEditor.beginDisplay(visibleArtifacts,  parameters )
+      pluginEditor.beginDisplay(js.Array.from(visibleArtifacts.toJSIterable),  js.Array.from(parameters.toJSIterable) )
     }
     catch {
       case tr:Throwable => logger.error(s"problem setting plugin editor state: ${tr}/n ${tr.getStackTrace().mkString("\n")}")
