@@ -128,12 +128,17 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
 
 
     ////////////////////// Import/Export Support ///////////
+    mvn"org.apache.tinkerpop:gremlin-core:3.5.3",
+    mvn"org.apache.tinkerpop:gremlin-driver:3.5.3",
+    mvn"org.apache.tinkerpop:tinkergraph-gremlin:3.5.3",
+    mvn"com.michaelpollmeier::gremlin-scala:3.5.3.7",
     mvn"org.apache.commons:commons-compress:1.21",
+    mvn"org.apache.commons:commons-text:1.14.0",
     PLAY_JS.exclude(
                "com.fasterxml.jackson.core" -> "*",
              ),
 
-    mvn"com.crealytics::spark-excel:0.13.3+17-b51cc0ac+20200722-1201-SNAPSHOT".exclude(
+    mvn"com.crealytics::spark-excel:0.13.4".exclude(
                "javax.servlet" -> "*",
              ), 
 
