@@ -53,9 +53,9 @@ import info.vizierdb.catalog.ScriptRevision
 class ExecutionContext(
   val projectId: Identifier,
   val scope: Map[String, Artifact],
-  workflow: Workflow,
+  val workflow: Workflow,
   cell: Cell,
-  module: Module,
+  val module: Module,
   stdout: (String, Array[Byte]) => Unit,
   stderr: String => Unit,
   subId: Option[Integer] = None

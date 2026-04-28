@@ -48,8 +48,13 @@ object PluginLoader {
     
     //my hack way
     //TODO: Load this Seq from a server endpoint or session
-    Seq("modelingplugin").map( packageId => { fetchAndLoadJs(s"/vendor/${packageId}.js")
-      println(s"package module loaded: ${packageId}")
+    Seq("modelingplugin").map( packageId => { 
+      //fetchAndLoadJs(s"/vendor/${packageId}.js")
+      /*runESRegister(packageId, (evt:dom.Event) => {
+        println(s"package module onload: ${packageId}")
+      })*/
+      fetchAndLoadJsWebpackBundle(packageId)
+      println(s"package module load called: ${packageId}")
       //loadedPlugins.update(packageId, loadedPlugin)
     })
   }
@@ -77,6 +82,28 @@ object PluginLoader {
         println(s"Error: ${e.getMessage}")
     }
   }
+
+   private def fetchAndLoadJsWebpackBundle(packageId:String) = {
+    import dom.fetch
+    import js.Thenable.Implicits._
+    import scala.concurrent.ExecutionContext.Implicits.global
+    import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
+
+    val responseText = for {
+      response <- fetch(s"/vendor/${packageId}.js")
+      text <- response.text()
+    } yield text
+
+    responseText.onComplete {
+      case Success(text) => {
+        js.eval(text)
+        println(s"fetchAndLoadJsWebpackBundle: ${text.length()}")
+        js.eval(s"window.${packageId}.registerPlugin();")//dom.window.asInstanceOf[js.Dynamic](packageId).registerPlugin()
+      }
+      case Failure(e) =>
+        println(s"Error: ${e.getMessage}")
+    }
+  }
   
   /** Dynamically load a .js file into the global scope */
   private def loadJs(url: String, onLoad: () => Unit): Unit = {
@@ -90,13 +117,22 @@ object PluginLoader {
     scriptElem
   }
 
-  private def runESRegister(moduleImportName: String, onLoad: () => Unit): Unit = {
+  private def runESRegister(moduleImportName: String, onLoad: (dom.Event) => Unit): Unit = {
     val scriptElem = dom.document.createElement("script").asInstanceOf[dom.raw.HTMLScriptElement]
     scriptElem.`type` = "module"//"text/javascript"
-    scriptElem.src = s"""data:text/javascript,import * as ${moduleImportName} from 'http://localhost:5050/vendor/${moduleImportName}.js';  ${moduleImportName}.register${moduleImportName}(); console.log("register plugin done....")"""
+    //scriptElem.src = s"""data:text/javascript,import * as ${moduleImportName} from 'http://localhost:5050/vendor/${moduleImportName}.js';  /*${moduleImportName}.register${moduleImportName}();*/ console.log("register plugin done....")"""
+    scriptElem.src = s"""data:text/javascript,
+    //import * as ${moduleImportName} from 'http://localhost:5050/vendor/${moduleImportName}.js';   
+    console.log("registering plugin: ${moduleImportName}....");
+    async function doimport() {
+      const module = await import('http://localhost:5050/vendor/${moduleImportName}.js');
+      module.registerPlugin();
+    };
+    doimport();
+    console.log("register plugin done....");"""
     // (optional) Set async, defer, etc. as needed
     scriptElem.async = false
-    scriptElem.onload = (_: dom.Event) => onLoad()
+    scriptElem.onload = onLoad
     dom.document.head.appendChild(scriptElem)
     scriptElem
   }

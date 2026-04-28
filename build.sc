@@ -173,6 +173,7 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
     mvn"org.apache.sedona::sedona-spark-shaded-3.0:1.5.0",
     // mvn"org.apache.sedona::sedona-viz-3.0:1.5.0",
     mvn"org.datasyslab:geotools-wrapper:1.5.0-28.2",
+    mvn"com.acervera.osm4scala:osm4scala-spark3-shaded_2.12:1.0.11",
 
     // Charts
     mvn"info.vizierdb::vega:1.0.0",
