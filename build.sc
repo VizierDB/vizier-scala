@@ -191,6 +191,8 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
     mvn"org.apache.logging.log4j:log4j-1.2-api:2.17.1",
     mvn"org.apache.logging.log4j:log4j-jcl:2.17.1",
     mvn"org.slf4j:jul-to-slf4j:1.7.36",
+    mvn"org.sejda.imageio:webp-imageio:0.1.6",
+    
   )
 
 /*************************************************
