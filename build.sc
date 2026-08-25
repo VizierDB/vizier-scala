@@ -16,10 +16,10 @@ import java.util.Calendar
  *** The Vizier Backend 
  *************************************************/
 object vizier extends ScalaModule with SonatypeCentralPublishModule {
-  val VERSION       = "2.1.2-SNAPSHOT"
+  val VERSION       = "2.1.3"
   val PLAY_JS       = mvn"com.typesafe.play::play-json::2.9.2"
                            
-  val MIMIR_CAVEATS = mvn"info.vizierdb::mimir-caveats::0.3.6"
+  val MIMIR_CAVEATS = mvn"org.mimirdb::mimir-caveats::0.4.0"
                           .exclude(
                             "org.slf4j" -> "*",
                             "com.typesafe.play" -> "*",
@@ -133,7 +133,7 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
     mvn"org.apache.tinkerpop:tinkergraph-gremlin:3.5.3",
     mvn"com.michaelpollmeier::gremlin-scala:3.5.3.7",
     mvn"org.apache.commons:commons-compress:1.21",
-    mvn"org.apache.commons:commons-text:1.14.0",
+    mvn"org.apache.commons:commons-text:1.10.0",
     PLAY_JS.exclude(
                "com.fasterxml.jackson.core" -> "*",
              ),

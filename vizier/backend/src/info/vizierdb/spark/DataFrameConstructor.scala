@@ -89,3 +89,34 @@ trait DefaultProvenance
   def provenance(context: (Identifier => Artifact)): DataFrame =
     construct(context)
 }
+
+object ArtifactProvenance
+{
+  val COLUMN = "__vizier_provenance__"
+
+  /**
+   * Stamp `df` with `artifactId` in the per-row provenance column.
+   * - Column absent  → create as Array[artifactId]
+   * - Column present → append artifactId to the existing array
+   */
+  def stamp(df: org.apache.spark.sql.DataFrame, artifactId: Long): org.apache.spark.sql.DataFrame =
+  {
+    import org.apache.spark.sql.functions.{ col, array, lit, concat }
+    import org.apache.spark.sql.types.LongType
+    if (df.schema.fieldNames.contains(COLUMN))
+      df.withColumn(COLUMN, concat(col(COLUMN), array(lit(artifactId).cast(LongType))))
+    else
+      df.withColumn(COLUMN, array(lit(artifactId).cast(LongType)))
+  }
+
+  def strip(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
+    if (df.schema.fieldNames.contains(COLUMN)) df.drop(COLUMN) else df
+
+  def moveToLast(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
+    if (!df.schema.fieldNames.contains(COLUMN)) df
+    else {
+      import org.apache.spark.sql.functions.col
+      val others = df.schema.fieldNames.filterNot(_ == COLUMN)
+      df.select((others.map(col(_)) :+ col(COLUMN)):_*)
+    }
+}

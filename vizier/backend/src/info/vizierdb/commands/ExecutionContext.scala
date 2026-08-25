@@ -31,6 +31,7 @@ import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.delta.DeltaBus
 import info.vizierdb.spark.DataFrameConstructor
+import info.vizierdb.spark.ArtifactProvenance
 import info.vizierdb.artifacts.Dataset
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.catalog.ArtifactRef
@@ -160,7 +161,7 @@ class ExecutionContext(
    */
   def dataframeOpt(name: String, registerInput: Boolean = true): Option[DataFrame] =
     artifact(name, registerInput)
-      .map { a => CatalogDB.withDBReadOnly { implicit s => a.dataframe }() }
+      .map { a => ArtifactProvenance.strip(CatalogDB.withDBReadOnly { implicit s => a.dataframe }()) }
 
 
   /**
@@ -220,8 +221,10 @@ class ExecutionContext(
 
   def outputDataframe(name: String, dataframe: DataFrame, properties: Map[String,JsObject] = Map.empty): Artifact =
   {
+    val orderedDf = ArtifactProvenance.moveToLast(dataframe)
+    val cleanSchema = ArtifactProvenance.strip(orderedDf).schema
     outputDatasetWithFile(name, { artifact =>
-      dataframe.write
+      orderedDf.write
                .parquet(artifact.absoluteFile.toString)
       (
         new LoadConstructor(
@@ -229,7 +232,7 @@ class ExecutionContext(
           format = "parquet",
           sparkOptions = Map(),
           contextText = Some(name),
-          proposedSchema = Some(dataframe.schema),
+          proposedSchema = Some(cleanSchema),
           projectId = projectId
         ),
       )
