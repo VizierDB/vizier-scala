@@ -37,6 +37,7 @@ import org.apache.spark.sql.AnalysisException
 import com.typesafe.scalalogging.LazyLogging
 import info.vizierdb.api.akka.VizierServer
 import info.vizierdb.util.ExperimentalOptions
+import info.vizierdb.spark.ArtifactProvenance
 
 case class Artifact(
   id: Identifier,
@@ -81,18 +82,19 @@ case class Artifact(
    * @param  session   Dataframe construction may need to retrieve a series of other, dependent
    *                   artifacts, so the caller needs to provide a database session.
    */
-  def dataframe(implicit session:DBSession):() => DataFrame = 
+  def dataframe(implicit session:DBSession):() => DataFrame =
   {
     val descriptor = datasetDescriptor
     val deps = descriptor.transitiveDependencies(
-                 Map(id -> this), 
+                 Map(id -> this),
                  Artifact.get(_:Identifier)
                )
-    return { () => descriptor.construct(deps) }
+    val capturedId = id
+    return { () => ArtifactProvenance.moveToLast(ArtifactProvenance.stamp(descriptor.construct(deps), capturedId)) }
   }
 
   def dataframeFromContext(ctx: Identifier => Artifact): DataFrame =
-    datasetDescriptor.construct(ctx)
+    ArtifactProvenance.moveToLast(ArtifactProvenance.stamp(datasetDescriptor.construct(ctx), id))
 
   /**
    * Retrieve a summary (an abbreviated [[description]]) of the specified artifact
@@ -250,31 +252,32 @@ case class Artifact(
                  Map(id -> this), 
                  Artifact.get(_:Identifier)
                )
-    val computeCaveats = 
+    val computeCaveats =
       ExperimentalOptions.isEnabled("ENABLE-MIMIR") && includeCaveats
-    return { () => 
+    val capturedId = id
+    return { () =>
       try {
         QueryWithCaveats(
-          query = descriptor.construct(deps(_)),
+          query = ArtifactProvenance.stamp(descriptor.construct(deps(_)), capturedId),
           includeCaveats = computeCaveats,
           limit = limit,
           offset = offset,
           computedProperties = descriptor.properties,
           cacheAs = None,
-          columns = None
+          columns = Some(descriptor.schema.map(_.name))
         )
       } catch {
         case a:AnalysisException if computeCaveats =>
           logger.debug(a.getStackTrace().map { _.toString }.mkString("\n"))
           logger.warn(s"Error applying caveats (${a.getMessage}).  Trying without.")
           QueryWithCaveats(
-            query = descriptor.construct(deps(_)),
+            query = ArtifactProvenance.stamp(descriptor.construct(deps(_)), capturedId),
             includeCaveats = false,
             limit = limit,
             offset = offset,
             computedProperties = descriptor.properties,
             cacheAs = None,
-            columns = None
+            columns = Some(descriptor.schema.map(_.name))
           )
       }
     }

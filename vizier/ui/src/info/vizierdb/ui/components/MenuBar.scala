@@ -117,7 +117,7 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
         val activeBranchId = project.activeBranch().getOrElse(-100)
         Menu("left item", FontAwesome("code-fork"))(
           (
-            Seq(
+            Seq[Frag](
               MenuItem("Rename Branch...", { () =>
                 val nameInput = 
                   input(
@@ -155,6 +155,14 @@ class MenuBar(project: Project)(implicit owner: Ctx.Owner)
               MenuItem("History", { () => 
                   ShowModal.acknowledge(new History(project).root)
                 }, icon = "history"),
+              Separator,
+              Rx {
+                val projectId = project.projectId
+                val branchId:Identifier = project.activeBranch().getOrElse(-1)
+                val url = Vizier.api.workflowHeadGraphURL(projectId, branchId)
+                
+                a(href := url, target := "_blank", li("Workflow Graph"))
+              }.reactive,
               Separator,
             ) ++ project.branches().map { case (id, branch) => 
               MenuItem(

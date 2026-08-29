@@ -43,6 +43,7 @@ import info.vizierdb.ui.widgets.Spinner
 import info.vizierdb.ui.widgets.SystemNotification
 import info.vizierdb.ui.widgets.Toast
 import info.vizierdb.util.Logging
+import info.vizierdb.util.PluginLoader
 import scala.concurrent.Future
 import scala.util.{ Try, Success, Failure }
 
@@ -70,6 +71,7 @@ object Vizier
   {
     api = API(url+"vizier-db/api/v1")
     links = ClientURLs(url)
+    PluginLoader.loadPlugins()
   }
 
   lazy val arguments: Map[String, String] = 

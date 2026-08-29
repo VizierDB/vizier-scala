@@ -54,7 +54,7 @@ case class LoadConstructor(
       projectId = projectId,
       noRelativePaths = true
     )
-  lazy val schema = construct().schema
+  lazy val schema = construct().schema.fields.toSeq.filterNot(_.name == ArtifactProvenance.COLUMN)
 
   def construct(context: Identifier => Artifact): DataFrame = construct()
   def construct(): DataFrame =

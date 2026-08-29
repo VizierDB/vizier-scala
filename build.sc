@@ -16,10 +16,10 @@ import java.util.Calendar
  *** The Vizier Backend 
  *************************************************/
 object vizier extends ScalaModule with SonatypeCentralPublishModule {
-  val VERSION       = "2.1.2-SNAPSHOT"
+  val VERSION       = "2.1.3"
   val PLAY_JS       = mvn"com.typesafe.play::play-json::2.9.2"
                            
-  val MIMIR_CAVEATS = mvn"info.vizierdb::mimir-caveats::0.3.6"
+  val MIMIR_CAVEATS = mvn"org.mimirdb::mimir-caveats::0.4.0"
                           .exclude(
                             "org.slf4j" -> "*",
                             "com.typesafe.play" -> "*",
@@ -128,12 +128,17 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
 
 
     ////////////////////// Import/Export Support ///////////
+    mvn"org.apache.tinkerpop:gremlin-core:3.5.3",
+    mvn"org.apache.tinkerpop:gremlin-driver:3.5.3",
+    mvn"org.apache.tinkerpop:tinkergraph-gremlin:3.5.3",
+    mvn"com.michaelpollmeier::gremlin-scala:3.5.3.7",
     mvn"org.apache.commons:commons-compress:1.21",
+    mvn"org.apache.commons:commons-text:1.10.0",
     PLAY_JS.exclude(
                "com.fasterxml.jackson.core" -> "*",
              ),
 
-    mvn"com.crealytics::spark-excel:0.13.3+17-b51cc0ac+20200722-1201-SNAPSHOT".exclude(
+    mvn"com.crealytics::spark-excel:0.13.4".exclude(
                "javax.servlet" -> "*",
              ), 
 
@@ -168,6 +173,7 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
     mvn"org.apache.sedona::sedona-spark-shaded-3.0:1.5.0",
     // mvn"org.apache.sedona::sedona-viz-3.0:1.5.0",
     mvn"org.datasyslab:geotools-wrapper:1.5.0-28.2",
+    mvn"com.acervera.osm4scala:osm4scala-spark3-shaded_2.12:1.0.11",
 
     // Charts
     mvn"info.vizierdb::vega:1.0.0",
@@ -185,6 +191,8 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
     mvn"org.apache.logging.log4j:log4j-1.2-api:2.17.1",
     mvn"org.apache.logging.log4j:log4j-jcl:2.17.1",
     mvn"org.slf4j:jul-to-slf4j:1.7.36",
+    mvn"org.sejda.imageio:webp-imageio:0.1.6",
+    
   )
 
 /*************************************************
@@ -261,9 +269,9 @@ object vizier extends ScalaModule with SonatypeCentralPublishModule {
  *** Frontend Dependencies
  *************************************************/
     def mvnDeps = Seq(
-      mvn"org.scala-js::scalajs-dom::1.0.0",
+      mvn"org.scala-js::scalajs-dom::2.8.1",
       mvn"com.lihaoyi::scalarx::0.4.3",
-      mvn"com.lihaoyi::scalatags::0.9.4",
+      mvn"com.lihaoyi::scalatags::0.13.1",
       mvn"com.typesafe.play::play-json::2.9.2",
     )
 
