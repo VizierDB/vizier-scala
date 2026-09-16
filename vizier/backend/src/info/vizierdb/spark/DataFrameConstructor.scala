@@ -92,31 +92,50 @@ trait DefaultProvenance
 
 object ArtifactProvenance
 {
-  val COLUMN = "__vizier_provenance__"
+  val FAMILY = "vizier_provenance"
 
   /**
-   * Stamp `df` with `artifactId` in the per-row provenance column.
-   * - Column absent  → create as Array[artifactId]
-   * - Column present → append artifactId to the existing array
+   * Stamp every row of `df` with `artifactId` by injecting an ApplyCaveat node into
+   * the Spark logical plan.  The caveat uses family=FAMILY and carries the artifact ID
+   * as its message.  No physical column is added; the annotation is invisible to user
+   * code and survives filter/project/join transformations automatically.
    */
   def stamp(df: org.apache.spark.sql.DataFrame, artifactId: Long): org.apache.spark.sql.DataFrame =
   {
-    import org.apache.spark.sql.functions.{ col, array, lit, concat }
-    import org.apache.spark.sql.types.LongType
-    if (df.schema.fieldNames.contains(COLUMN))
-      df.withColumn(COLUMN, concat(col(COLUMN), array(lit(artifactId).cast(LongType))))
-    else
-      df.withColumn(COLUMN, array(lit(artifactId).cast(LongType)))
+    import org.mimirdb.caveats.implicits._
+    import org.apache.spark.sql.functions.lit
+    df.filter(lit(true).caveat(lit(artifactId.toString), FAMILY)())
   }
 
+  /**
+   * Remove all ApplyCaveat nodes from the plan (including any non-provenance caveats).
+   * Use before writing to Parquet or before handing a DF to code that must not see caveats.
+   */
   def strip(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
-    if (df.schema.fieldNames.contains(COLUMN)) df.drop(COLUMN) else df
+    org.mimirdb.caveats.Caveats.strip(df)
 
-  def moveToLast(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
-    if (!df.schema.fieldNames.contains(COLUMN)) df
-    else {
-      import org.apache.spark.sql.functions.col
-      val others = df.schema.fieldNames.filterNot(_ == COLUMN)
-      df.select((others.map(col(_)) :+ col(COLUMN)):_*)
-    }
+  /**
+   * Walk the analyzed logical plan and collect every artifact ID that was stamped into
+   * this DataFrame via provenance caveats.  Returns an empty set if none were found or
+   * if plan analysis fails.
+   */
+  def artifactIds(df: org.apache.spark.sql.DataFrame): Set[Long] =
+  {
+    import org.mimirdb.caveats.ApplyCaveat
+    import org.apache.spark.sql.catalyst.expressions.Literal
+    val ids = scala.collection.mutable.Set[Long]()
+    try {
+      df.queryExecution.analyzed.foreachUp { plan =>
+        plan.expressions.foreach(_.foreach {
+          case ap: ApplyCaveat if ap.family.contains(FAMILY) =>
+            ap.message match {
+              case Literal(v, _) => scala.util.Try(v.toString.toLong).foreach(ids += _)
+              case _ => ()
+            }
+          case _ => ()
+        })
+      }
+    } catch { case _: Throwable => () }
+    ids.toSet
+  }
 }

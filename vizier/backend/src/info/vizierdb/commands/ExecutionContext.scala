@@ -161,7 +161,7 @@ class ExecutionContext(
    */
   def dataframeOpt(name: String, registerInput: Boolean = true): Option[DataFrame] =
     artifact(name, registerInput)
-      .map { a => ArtifactProvenance.strip(CatalogDB.withDBReadOnly { implicit s => a.dataframe }()) }
+      .map { a => CatalogDB.withDBReadOnly { implicit s => a.dataframe }() }
 
 
   /**
@@ -221,10 +221,14 @@ class ExecutionContext(
 
   def outputDataframe(name: String, dataframe: DataFrame, properties: Map[String,JsObject] = Map.empty): Artifact =
   {
-    val orderedDf = ArtifactProvenance.moveToLast(dataframe)
-    val cleanSchema = ArtifactProvenance.strip(orderedDf).schema
+    val provenanceIds = ArtifactProvenance.artifactIds(dataframe).toSeq.sorted
+    // Write the original DataFrame without stripping caveats first.  Caveats are plan-level
+    // annotations that evaluate to their wrapped value — they pass every row through unchanged
+    // and add no columns.  Stripping creates a new DataFrame whose sub-plans no longer match
+    // any .cache() entries established during this cell's execution, forcing a full re-run of
+    // expensive operations (spatial joins, etc.).  The Parquet output is identical either way.
     outputDatasetWithFile(name, { artifact =>
-      orderedDf.write
+      dataframe.write
                .parquet(artifact.absoluteFile.toString)
       (
         new LoadConstructor(
@@ -232,7 +236,8 @@ class ExecutionContext(
           format = "parquet",
           sparkOptions = Map(),
           contextText = Some(name),
-          proposedSchema = Some(cleanSchema),
+          proposedSchema = Some(dataframe.schema),
+          provenanceIds = if (provenanceIds.nonEmpty) Some(provenanceIds) else None,
           projectId = projectId
         ),
       )

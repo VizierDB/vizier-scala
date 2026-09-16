@@ -90,11 +90,11 @@ case class Artifact(
                  Artifact.get(_:Identifier)
                )
     val capturedId = id
-    return { () => ArtifactProvenance.moveToLast(ArtifactProvenance.stamp(descriptor.construct(deps), capturedId)) }
+    return { () => ArtifactProvenance.stamp(descriptor.construct(deps), capturedId) }
   }
 
   def dataframeFromContext(ctx: Identifier => Artifact): DataFrame =
-    ArtifactProvenance.moveToLast(ArtifactProvenance.stamp(datasetDescriptor.construct(ctx), id))
+    ArtifactProvenance.stamp(datasetDescriptor.construct(ctx), id)
 
   /**
    * Retrieve a summary (an abbreviated [[description]]) of the specified artifact
