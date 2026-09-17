@@ -60,11 +60,34 @@ case class LoadConstructor(
   lazy val schema = construct().schema.fields.toSeq
 
   // Apply stored provenance stamps so the chain survives Parquet round-trips.
+  // When a per-row PROVENANCE_COLUMN is present (written by outputDataframe for
+  // multi-source datasets), each artifact ID is stamped only onto the rows that
+  // actually carry it, preserving per-row attribution across heterogeneous unions.
   def construct(context: Identifier => Artifact): DataFrame =
   {
-    val df = construct()
-    provenanceIds.getOrElse(Seq.empty).foldLeft(df) { (acc, id) =>
-      ArtifactProvenance.stamp(acc, id)
+    if (format == DatasetFormat.CSV) {
+      val df = loadCSVWithCaveats()
+      provenanceIds.getOrElse(Seq.empty).foldLeft(df) { (acc, id) =>
+        ArtifactProvenance.stamp(acc, id)
+      }
+    } else {
+      var raw = loadWithoutCaveats(applySchema = false)
+      if (raw.schema.fieldNames.contains(ArtifactProvenance.PROVENANCE_COLUMN)) {
+        import org.mimirdb.caveats.implicits._
+        import org.apache.spark.sql.functions.{ lit, array_contains }
+        val provCol = raw(ArtifactProvenance.PROVENANCE_COLUMN)
+        var df = provenanceIds.getOrElse(Seq.empty).foldLeft(raw) { (acc, id) =>
+          acc.filter(lit(true).caveatIf(lit(id.toString), ArtifactProvenance.FAMILY,
+                                        array_contains(provCol, id.toString))())
+        }
+        df = df.drop(ArtifactProvenance.PROVENANCE_COLUMN)
+        convertToProposedSchema(df)
+      } else {
+        val df = convertToProposedSchema(raw)
+        provenanceIds.getOrElse(Seq.empty).foldLeft(df) { (acc, id) =>
+          ArtifactProvenance.stamp(acc, id)
+        }
+      }
     }
   }
 
@@ -75,9 +98,9 @@ case class LoadConstructor(
         case DatasetFormat.CSV => loadCSVWithCaveats()
         case _ => loadWithoutCaveats()
       }
-    // Drop legacy physical provenance column from pre-caveat artifacts.
-    if (df.schema.fieldNames.contains("__vizier_provenance__"))
-      df = df.drop("__vizier_provenance__")
+    // Drop the physical provenance column — it's internal and must not be visible to users.
+    if (df.schema.fieldNames.contains(ArtifactProvenance.PROVENANCE_COLUMN))
+      df = df.drop(ArtifactProvenance.PROVENANCE_COLUMN)
     df
   }
 
@@ -173,14 +196,14 @@ case class LoadConstructor(
 
   }
 
-  def loadWithoutCaveats(): DataFrame = 
+  def loadWithoutCaveats(applySchema: Boolean = true): DataFrame =
   {
     var parser = Vizier.sparkSession.read.format(format)
     for((option, value) <- sparkOptions){
       parser = parser.option(option, value)
     }
     var df = parser.load(absoluteUrl)
-    df = convertToProposedSchema(df)
+    if (applySchema) df = convertToProposedSchema(df)
     return df
   }
 

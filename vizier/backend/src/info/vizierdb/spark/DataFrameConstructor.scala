@@ -95,6 +95,13 @@ object ArtifactProvenance
   val FAMILY = "vizier_provenance"
 
   /**
+   * Physical column written to Parquet that stores the per-row Array[String] of
+   * artifact IDs. Used by LoadConstructor to selectively re-stamp rows on read-back
+   * so that heterogeneous-source unions preserve per-row attribution.
+   */
+  val PROVENANCE_COLUMN = "__vizier_provenance__"
+
+  /**
    * Stamp every row of `df` with `artifactId` by injecting an ApplyCaveat node into
    * the Spark logical plan.  The caveat uses family=FAMILY and carries the artifact ID
    * as its message.  No physical column is added; the annotation is invisible to user
@@ -105,6 +112,19 @@ object ArtifactProvenance
     import org.mimirdb.caveats.implicits._
     import org.apache.spark.sql.functions.lit
     df.filter(lit(true).caveat(lit(artifactId.toString), FAMILY)())
+  }
+
+  /**
+   * Add per-row provenance tracking to the DataFrame before writing to Parquet.
+   * Computes an Array[String] column (PROVENANCE_COLUMN) containing the artifact IDs
+   * from vizier_provenance caveats for each individual row.  This preserves per-row
+   * attribution through Parquet round-trips when rows from heterogeneous sources
+   * have been unioned or joined.
+   */
+  def addPerRowProvenanceColumn(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
+  {
+    import info.vizierdb.spark.caveats.CaveatMessagesInPlan
+    new CaveatMessagesInPlan(FAMILY, PROVENANCE_COLUMN)(df)
   }
 
   /**
