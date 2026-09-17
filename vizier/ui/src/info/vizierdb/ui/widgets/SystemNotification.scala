@@ -101,9 +101,9 @@ object SystemNotification
   def apply(mode: Mode.T)(text: String) =
   {
     if(isActive(mode) && browserNotificationsEnabled){
-      new dom.experimental.Notification(
+      new dom.Notification(
           "VizierDB", 
-          dom.experimental.NotificationOptions(text)
+          dom.NotificationOptions(text)
         )
     }
   }

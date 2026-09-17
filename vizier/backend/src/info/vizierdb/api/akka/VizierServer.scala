@@ -90,6 +90,11 @@ object VizierServer
       )
   }
 
+  private val pluginRoutes = scala.collection.mutable.Map[String, Route]()
+  def registerPluginRoute(packageId:String, route:Route):Unit = {
+    pluginRoutes.update(packageId, route)
+  }
+
   def run()
   {
     val mainServer = 
@@ -159,6 +164,14 @@ object VizierServer
                     s"${publicURL}project.html?projectId=${projectId}",
                     MovedPermanently
                   )
+                },
+
+                // Requests for plugin registered routes
+                pathPrefix("plugins" / Segment ) { packageId =>
+                  pluginRoutes.get(packageId) match {
+                    case None => complete(400, s"plugin package has no registered routes: ${packageId}")
+                    case Some(route) => route
+                  }
                 },
 
                 // Raw file requests get directed to the ui directory

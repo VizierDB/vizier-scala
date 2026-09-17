@@ -63,7 +63,8 @@ class TentativeModule(
 
   def selectCommand(packageId: String, command: serialized.PackageCommand)
   {
-    activeView() = Some(Right(ModuleEditor(packageId, command, this)))
+    val tme = ModuleEditor(packageId, command, this)
+    activeView() = Some(Right(tme))
   }
   def cancelSelectCommand(): TentativeModule =
   {
