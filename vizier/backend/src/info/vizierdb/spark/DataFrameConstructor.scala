@@ -92,68 +92,87 @@ trait DefaultProvenance
 
 object ArtifactProvenance
 {
-  val FAMILY = "vizier_provenance"
+  /**
+   * Prefix used for SubqueryAlias node names that carry provenance.
+   * e.g. "vizier_prov_42" stamps artifact ID 42; "vizier_prov_42_43" stamps both.
+   */
+  val VIEW_PREFIX = "vizier_prov_"
 
   /**
    * Physical column written to Parquet that stores the per-row Array[String] of
-   * artifact IDs. Used by LoadConstructor to selectively re-stamp rows on read-back
-   * so that heterogeneous-source unions preserve per-row attribution.
+   * artifact IDs.  ViewProvenanceInPlan reads this directly from leaf scan nodes so
+   * LoadConstructor does not need to re-stamp rows on read-back.
    */
   val PROVENANCE_COLUMN = "__vizier_provenance__"
 
   /**
-   * Stamp every row of `df` with `artifactId` by injecting an ApplyCaveat node into
-   * the Spark logical plan.  The caveat uses family=FAMILY and carries the artifact ID
-   * as its message.  No physical column is added; the annotation is invisible to user
-   * code and survives filter/project/join transformations automatically.
+   * Stamp every row of `df` with `artifactId` by wrapping the plan in a SubqueryAlias
+   * whose name encodes the artifact ID.  Any existing PROVENANCE_COLUMN is dropped
+   * first so it does not appear in the user-visible schema; ViewProvenanceInPlan can
+   * still reach it through the underlying scan node.
    */
   def stamp(df: org.apache.spark.sql.DataFrame, artifactId: Long): org.apache.spark.sql.DataFrame =
   {
-    import org.mimirdb.caveats.implicits._
-    import org.apache.spark.sql.functions.lit
-    df.filter(lit(true).caveat(lit(artifactId.toString), FAMILY)())
+    val base = if (df.columns.contains(PROVENANCE_COLUMN)) df.drop(PROVENANCE_COLUMN) else df
+    base.as(s"${VIEW_PREFIX}${artifactId}")
   }
 
   /**
    * Add per-row provenance tracking to the DataFrame before writing to Parquet.
-   * Computes an Array[String] column (PROVENANCE_COLUMN) containing the artifact IDs
-   * from vizier_provenance caveats for each individual row.  This preserves per-row
-   * attribution through Parquet round-trips when rows from heterogeneous sources
-   * have been unioned or joined.
+   * Computes an Array[String] column (PROVENANCE_COLUMN) by walking the analyzed plan
+   * for vizier_prov_* SubqueryAlias nodes (or reading the physical column from leaf
+   * scans for Parquet-backed DataFrames).
    */
   def addPerRowProvenanceColumn(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
   {
-    import info.vizierdb.spark.caveats.CaveatMessagesInPlan
-    new CaveatMessagesInPlan(FAMILY, PROVENANCE_COLUMN)(df)
+    import info.vizierdb.spark.caveats.ViewProvenanceInPlan
+    new ViewProvenanceInPlan(PROVENANCE_COLUMN)(df)
   }
 
   /**
-   * Remove all ApplyCaveat nodes from the plan (including any non-provenance caveats).
-   * Use before writing to Parquet or before handing a DF to code that must not see caveats.
+   * Remove all vizier_prov_* SubqueryAlias nodes from the analyzed plan.
+   * Use before writing to Parquet or before handing a DF to code that must not see
+   * provenance wrappers.
    */
   def strip(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
-    org.mimirdb.caveats.Caveats.strip(df)
+  {
+    import org.apache.spark.sql.catalyst.plans.logical.{ LogicalPlan, SubqueryAlias }
+    import org.apache.spark.sql.catalyst.encoders.RowEncoder
+    import org.apache.spark.sql.types.StructType
+
+    def stripPlan(plan: LogicalPlan): LogicalPlan = plan match {
+      case sa: SubqueryAlias if sa.identifier.name.startsWith(VIEW_PREFIX) =>
+        stripPlan(sa.child)
+      case _ =>
+        plan.withNewChildren(plan.children.map(stripPlan))
+    }
+
+    val stripped = stripPlan(df.queryExecution.analyzed)
+    new org.apache.spark.sql.DataFrame(
+      df.queryExecution.sparkSession,
+      stripped,
+      RowEncoder(StructType(df.schema.fields))
+    )
+  }
 
   /**
    * Walk the analyzed logical plan and collect every artifact ID that was stamped into
-   * this DataFrame via provenance caveats.  Returns an empty set if none were found or
-   * if plan analysis fails.
+   * this DataFrame via vizier_prov_* SubqueryAlias nodes.  Returns an empty set if
+   * none were found or if plan analysis fails.
    */
   def artifactIds(df: org.apache.spark.sql.DataFrame): Set[Long] =
   {
-    import org.mimirdb.caveats.ApplyCaveat
-    import org.apache.spark.sql.catalyst.expressions.Literal
+    import org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias
     val ids = scala.collection.mutable.Set[Long]()
     try {
-      df.queryExecution.analyzed.foreachUp { plan =>
-        plan.expressions.foreach(_.foreach {
-          case ap: ApplyCaveat if ap.family.contains(FAMILY) =>
-            ap.message match {
-              case Literal(v, _) => scala.util.Try(v.toString.toLong).foreach(ids += _)
-              case _ => ()
+      df.queryExecution.analyzed.foreachUp { (node: org.apache.spark.sql.catalyst.plans.logical.LogicalPlan) =>
+        node match {
+          case sa: SubqueryAlias if sa.identifier.name.startsWith(VIEW_PREFIX) =>
+            sa.identifier.name.drop(VIEW_PREFIX.length).split("_").foreach { part =>
+              scala.util.Try(part.toLong).foreach(ids += _)
             }
-          case _ => ()
-        })
+          case _ =>
+        }
       }
     } catch { case _: Throwable => () }
     ids.toSet

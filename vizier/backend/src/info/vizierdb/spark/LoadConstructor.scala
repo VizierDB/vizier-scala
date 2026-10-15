@@ -73,15 +73,10 @@ case class LoadConstructor(
     } else {
       var raw = loadWithoutCaveats(applySchema = false)
       if (raw.schema.fieldNames.contains(ArtifactProvenance.PROVENANCE_COLUMN)) {
-        import org.mimirdb.caveats.implicits._
-        import org.apache.spark.sql.functions.{ lit, array_contains }
-        val provCol = raw(ArtifactProvenance.PROVENANCE_COLUMN)
-        var df = provenanceIds.getOrElse(Seq.empty).foldLeft(raw) { (acc, id) =>
-          acc.filter(lit(true).caveatIf(lit(id.toString), ArtifactProvenance.FAMILY,
-                                        array_contains(provCol, id.toString))())
-        }
-        df = df.drop(ArtifactProvenance.PROVENANCE_COLUMN)
-        convertToProposedSchema(df)
+        // __vizier_provenance__ remains accessible in the leaf scan node for
+        // ViewProvenanceInPlan to read directly.  No re-stamping required;
+        // stamp() in Artifact.dataframe drops the column and adds the view alias.
+        convertToProposedSchema(raw)
       } else {
         val df = convertToProposedSchema(raw)
         provenanceIds.getOrElse(Seq.empty).foldLeft(df) { (acc, id) =>
