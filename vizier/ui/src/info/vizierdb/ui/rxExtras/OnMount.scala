@@ -43,20 +43,26 @@ object OnMount
 
   def traverse(node: dom.Node)
   {
+    
     // println(s"Trigger: $node")
     for(child <- node.childNodes.asInstanceOf[js.Array[dom.Node]]) { 
       traverse(child) 
     }
-    if(!node.attributes.equals(js.undefined)){
-      // println(s"Checking attributes: ${node.attributes} (${node.attributes.length} elems)")
-      // for(i <- 0 until node.attributes.length){
-      //   println(node.attributes.item(i).name)
-      // }
-      if(node.attributes.hasOwnProperty(ID)){
-        val id = node.attributes.getNamedItem(ID).value.asInstanceOf[String]
-        node.attributes.removeNamedItem(ID)
-        triggers.remove(id).foreach { _ .apply(node) }
+    node match {
+      case nodeEl: org.scalajs.dom.Element => {
+        if(!nodeEl.attributes.equals(js.undefined)){
+          // println(s"Checking attributes: ${node.attributes} (${node.attributes.length} elems)")
+          // for(i <- 0 until node.attributes.length){
+          //   println(node.attributes.item(i).name)
+          // }
+          if(nodeEl.attributes.hasOwnProperty(ID)){
+            val id = nodeEl.attributes.getNamedItem(ID).value.asInstanceOf[String]
+            nodeEl.attributes.removeNamedItem(ID)
+            triggers.remove(id).foreach { _ .apply(node) }
+          }
+        }
       }
+      case _ => ()
     }
   }
 

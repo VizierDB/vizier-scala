@@ -89,3 +89,92 @@ trait DefaultProvenance
   def provenance(context: (Identifier => Artifact)): DataFrame =
     construct(context)
 }
+
+object ArtifactProvenance
+{
+  /**
+   * Prefix used for SubqueryAlias node names that carry provenance.
+   * e.g. "vizier_prov_42" stamps artifact ID 42; "vizier_prov_42_43" stamps both.
+   */
+  val VIEW_PREFIX = "vizier_prov_"
+
+  /**
+   * Physical column written to Parquet that stores the per-row Array[String] of
+   * artifact IDs.  ViewProvenanceInPlan reads this directly from leaf scan nodes so
+   * LoadConstructor does not need to re-stamp rows on read-back.
+   */
+  val PROVENANCE_COLUMN = "__vizier_provenance__"
+
+  /**
+   * Stamp every row of `df` with `artifactId` by wrapping the plan in a SubqueryAlias
+   * whose name encodes the artifact ID.  Any existing PROVENANCE_COLUMN is dropped
+   * first so it does not appear in the user-visible schema; ViewProvenanceInPlan can
+   * still reach it through the underlying scan node.
+   */
+  def stamp(df: org.apache.spark.sql.DataFrame, artifactId: Long): org.apache.spark.sql.DataFrame =
+  {
+    val base = if (df.columns.contains(PROVENANCE_COLUMN)) df.drop(PROVENANCE_COLUMN) else df
+    base.as(s"${VIEW_PREFIX}${artifactId}")
+  }
+
+  /**
+   * Add per-row provenance tracking to the DataFrame before writing to Parquet.
+   * Computes an Array[String] column (PROVENANCE_COLUMN) by walking the analyzed plan
+   * for vizier_prov_* SubqueryAlias nodes (or reading the physical column from leaf
+   * scans for Parquet-backed DataFrames).
+   */
+  def addPerRowProvenanceColumn(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
+  {
+    import info.vizierdb.spark.caveats.ViewProvenanceInPlan
+    new ViewProvenanceInPlan(PROVENANCE_COLUMN)(df)
+  }
+
+  /**
+   * Remove all vizier_prov_* SubqueryAlias nodes from the analyzed plan.
+   * Use before writing to Parquet or before handing a DF to code that must not see
+   * provenance wrappers.
+   */
+  def strip(df: org.apache.spark.sql.DataFrame): org.apache.spark.sql.DataFrame =
+  {
+    import org.apache.spark.sql.catalyst.plans.logical.{ LogicalPlan, SubqueryAlias }
+    import org.apache.spark.sql.catalyst.encoders.RowEncoder
+    import org.apache.spark.sql.types.StructType
+
+    def stripPlan(plan: LogicalPlan): LogicalPlan = plan match {
+      case sa: SubqueryAlias if sa.identifier.name.startsWith(VIEW_PREFIX) =>
+        stripPlan(sa.child)
+      case _ =>
+        plan.withNewChildren(plan.children.map(stripPlan))
+    }
+
+    val stripped = stripPlan(df.queryExecution.analyzed)
+    new org.apache.spark.sql.DataFrame(
+      df.queryExecution.sparkSession,
+      stripped,
+      RowEncoder(StructType(df.schema.fields))
+    )
+  }
+
+  /**
+   * Walk the analyzed logical plan and collect every artifact ID that was stamped into
+   * this DataFrame via vizier_prov_* SubqueryAlias nodes.  Returns an empty set if
+   * none were found or if plan analysis fails.
+   */
+  def artifactIds(df: org.apache.spark.sql.DataFrame): Set[Long] =
+  {
+    import org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias
+    val ids = scala.collection.mutable.Set[Long]()
+    try {
+      df.queryExecution.analyzed.foreachUp { (node: org.apache.spark.sql.catalyst.plans.logical.LogicalPlan) =>
+        node match {
+          case sa: SubqueryAlias if sa.identifier.name.startsWith(VIEW_PREFIX) =>
+            sa.identifier.name.drop(VIEW_PREFIX.length).split("_").foreach { part =>
+              scala.util.Try(part.toLong).foreach(ids += _)
+            }
+          case _ =>
+        }
+      }
+    } catch { case _: Throwable => () }
+    ids.toSet
+  }
+}

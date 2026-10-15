@@ -31,6 +31,7 @@ import info.vizierdb.serialized
 import info.vizierdb.serializers._
 import info.vizierdb.delta.DeltaBus
 import info.vizierdb.spark.DataFrameConstructor
+import info.vizierdb.spark.ArtifactProvenance
 import info.vizierdb.artifacts.Dataset
 import info.vizierdb.viztrails.ScopeSummary
 import info.vizierdb.catalog.ArtifactRef
@@ -53,9 +54,9 @@ import info.vizierdb.catalog.ScriptRevision
 class ExecutionContext(
   val projectId: Identifier,
   val scope: Map[String, Artifact],
-  workflow: Workflow,
+  val workflow: Workflow,
   cell: Cell,
-  module: Module,
+  val module: Module,
   stdout: (String, Array[Byte]) => Unit,
   stderr: String => Unit,
   subId: Option[Integer] = None
@@ -220,8 +221,15 @@ class ExecutionContext(
 
   def outputDataframe(name: String, dataframe: DataFrame, properties: Map[String,JsObject] = Map.empty): Artifact =
   {
+    val provenanceIds = ArtifactProvenance.artifactIds(dataframe).toSeq.sorted
+    // When there are multiple provenance sources, attach a per-row Array[String] column
+    // so LoadConstructor can selectively re-stamp each row on read-back, preserving
+    // per-row attribution through the Parquet round-trip.
+    val dfToWrite =
+      if (provenanceIds.size > 1) ArtifactProvenance.addPerRowProvenanceColumn(dataframe)
+      else dataframe
     outputDatasetWithFile(name, { artifact =>
-      dataframe.write
+      dfToWrite.write
                .parquet(artifact.absoluteFile.toString)
       (
         new LoadConstructor(
@@ -230,6 +238,7 @@ class ExecutionContext(
           sparkOptions = Map(),
           contextText = Some(name),
           proposedSchema = Some(dataframe.schema),
+          provenanceIds = if (provenanceIds.nonEmpty) Some(provenanceIds) else None,
           projectId = projectId
         ),
       )

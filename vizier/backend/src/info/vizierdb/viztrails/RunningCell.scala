@@ -102,7 +102,7 @@ class RunningCell(
       } catch {
         case e: Throwable =>
           logger.error(s"A really serious internal error occurred: ${e.getMessage}")
-          e.printStackTrace()
+          logger.error(s"${e.getStackTrace().mkString("\n")}")
           /* return */ false
       } finally {
         logger.debug(s"Cell: $cell complete.  Signalling workflow")

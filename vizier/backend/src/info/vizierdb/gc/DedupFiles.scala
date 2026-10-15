@@ -172,7 +172,7 @@ object DedupFiles
       for(a <- allDatasets){
         val dataset = a.datasetDescriptor
         dataset.constructor match {
-          case l@LoadConstructor(f@FileArgument(Some(fileid), _, _, _),_,_,_,_,_,_) 
+          case l@LoadConstructor(f@FileArgument(Some(fileid), _, _, _),_,_,_,_,_,_,_)
             if(artifactIdsToRename.contains(fileid)) =>
             a.replaceData(Json.toJson(
               dataset.copy(

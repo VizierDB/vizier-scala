@@ -55,6 +55,7 @@ object InitSpark
       .config("spark.kryoserializer.buffer.max", "2000m")
       .master("local[*]")
       .config("spark.sql.warehouse.dir", warehouseDir.getAbsolutePath())
+      .config("spark.jars.packages", "com.acervera.osm4scala:osm4scala-spark3-shaded_2.12:1.0.11")
       .getOrCreate()
 
     // For some silly reason, Hadoop needs some poking to make the local 

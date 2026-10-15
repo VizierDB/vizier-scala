@@ -43,20 +43,49 @@ case class LoadConstructor(
   contextText: Option[String] = None,
   proposedSchema: Option[Seq[StructField]] = None,
   urlIsRelativeToDataDir: Option[Boolean] = None,
-  projectId: Identifier
-) 
+  projectId: Identifier,
+  // Artifact IDs whose provenance should be re-stamped on every read.
+  // Persists the caveat-based ancestry chain across Parquet write/read boundaries.
+  provenanceIds: Option[Seq[Long]] = None
+)
   extends DataFrameConstructor
   with LazyLogging
   with DefaultProvenance
 {
-  lazy val (absoluteUrl: String, _) = 
+  lazy val (absoluteUrl: String, _) =
     url.getPath(
       projectId = projectId,
       noRelativePaths = true
     )
-  lazy val schema = construct().schema
+  lazy val schema = construct().schema.fields.toSeq
 
-  def construct(context: Identifier => Artifact): DataFrame = construct()
+  // Apply stored provenance stamps so the chain survives Parquet round-trips.
+  // When a per-row PROVENANCE_COLUMN is present (written by outputDataframe for
+  // multi-source datasets), each artifact ID is stamped only onto the rows that
+  // actually carry it, preserving per-row attribution across heterogeneous unions.
+  def construct(context: Identifier => Artifact): DataFrame =
+  {
+    if (format == DatasetFormat.CSV) {
+      val df = loadCSVWithCaveats()
+      provenanceIds.getOrElse(Seq.empty).foldLeft(df) { (acc, id) =>
+        ArtifactProvenance.stamp(acc, id)
+      }
+    } else {
+      var raw = loadWithoutCaveats(applySchema = false)
+      if (raw.schema.fieldNames.contains(ArtifactProvenance.PROVENANCE_COLUMN)) {
+        // __vizier_provenance__ remains accessible in the leaf scan node for
+        // ViewProvenanceInPlan to read directly.  No re-stamping required;
+        // stamp() in Artifact.dataframe drops the column and adds the view alias.
+        convertToProposedSchema(raw)
+      } else {
+        val df = convertToProposedSchema(raw)
+        provenanceIds.getOrElse(Seq.empty).foldLeft(df) { (acc, id) =>
+          ArtifactProvenance.stamp(acc, id)
+        }
+      }
+    }
+  }
+
   def construct(): DataFrame =
   {
     var df =
@@ -64,8 +93,10 @@ case class LoadConstructor(
         case DatasetFormat.CSV => loadCSVWithCaveats()
         case _ => loadWithoutCaveats()
       }
-
-    return df
+    // Drop the physical provenance column — it's internal and must not be visible to users.
+    if (df.schema.fieldNames.contains(ArtifactProvenance.PROVENANCE_COLUMN))
+      df = df.drop(ArtifactProvenance.PROVENANCE_COLUMN)
+    df
   }
 
 
@@ -160,14 +191,14 @@ case class LoadConstructor(
 
   }
 
-  def loadWithoutCaveats(): DataFrame = 
+  def loadWithoutCaveats(applySchema: Boolean = true): DataFrame =
   {
     var parser = Vizier.sparkSession.read.format(format)
     for((option, value) <- sparkOptions){
       parser = parser.option(option, value)
     }
     var df = parser.load(absoluteUrl)
-    df = convertToProposedSchema(df)
+    if (applySchema) df = convertToProposedSchema(df)
     return df
   }
 
